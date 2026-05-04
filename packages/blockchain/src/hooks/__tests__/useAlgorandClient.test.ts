@@ -21,6 +21,7 @@ import { useNetwork } from '../useNetwork'
 vi.mock('@algorandfoundation/algokit-utils', () => {
     const mockClient = {
         setDefaultSigner: vi.fn(),
+        setDefaultValidityWindow: vi.fn(),
         registerErrorTransformer: vi.fn(),
     }
     return {
@@ -81,7 +82,7 @@ describe('services/blockchain/hooks', () => {
         const { result } = renderHook(() => useAlgorandClient())
 
         expect(AlgorandClient.fromConfig).toHaveBeenCalledTimes(1)
-        expect(result.current.setDefaultSigner).not.toHaveBeenCalled()
+        expect(result.current.setDefaultSigner).toHaveBeenCalledTimes(1)
     })
 
     test('returns fromConfig client for testnet', () => {
@@ -95,7 +96,25 @@ describe('services/blockchain/hooks', () => {
         const { result } = renderHook(() => useAlgorandClient())
 
         expect(AlgorandClient.fromConfig).toHaveBeenCalledTimes(1)
-        expect(result.current.setDefaultSigner).not.toHaveBeenCalled()
+        expect(result.current.setDefaultSigner).toHaveBeenCalledTimes(1)
+    })
+
+    test('registers a placeholder default signer when no real signer is supplied so composer.build() succeeds', async () => {
+        const { result } = renderHook(() => useAlgorandClient())
+
+        const placeholder = (result.current.setDefaultSigner as Mock).mock
+            .calls[0][0]
+        await expect(placeholder()).rejects.toThrow(
+            /should not be invoked/,
+        )
+    })
+
+    test('sets a 1000-round default validity window so hardware-wallet users can confirm on-device before expiry', () => {
+        const { result } = renderHook(() => useAlgorandClient())
+
+        expect(result.current.setDefaultValidityWindow).toHaveBeenCalledWith(
+            1000,
+        )
     })
 
     test('configures signer when provided', async () => {

@@ -21,7 +21,7 @@ const mockNavigate = vi.fn()
 const mockGetAddress = vi.fn()
 const mockDisconnectTransport = vi.fn()
 const mockConnect = vi.fn()
-const mockDisconnect = vi.fn()
+const mockGetProviderRegistry = vi.fn()
 const mockErrorToast = vi.fn()
 
 vi.mock('@hooks/useAppNavigation', () => ({
@@ -48,10 +48,11 @@ vi.mock('@hooks/useToast', () => ({
     }),
 }))
 
-vi.mock('../../../hooks', () => ({
-    useLedgerConnection: () => ({
-        connect: mockConnect,
-        disconnect: mockDisconnect,
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({
+        hardwareWalletRegistry: {
+            getProvider: mockGetProviderRegistry,
+        },
     }),
 }))
 
@@ -105,12 +106,13 @@ describe('useLedgerSelectAccountsScreen', () => {
         mockGetAddress.mockReset()
         mockDisconnectTransport.mockReset()
         mockConnect.mockReset()
-        mockDisconnect.mockReset()
+        mockGetProviderRegistry.mockReset()
         mockErrorToast.mockReset()
 
         const transport = buildTransport()
         mockConnect.mockResolvedValue(transport)
         mockDisconnectTransport.mockResolvedValue(undefined)
+        mockGetProviderRegistry.mockReturnValue({ connect: mockConnect })
     })
 
     it('exposes the route accounts unchanged on initial render', () => {

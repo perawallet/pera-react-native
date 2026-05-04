@@ -74,6 +74,13 @@ const createTransportWrapper = (
     },
 })
 
+type LedgerHIDDescriptor = {
+    deviceId?: number | string
+    productId?: number
+    vendorId?: number
+    deviceName?: Nullable<string>
+}
+
 /**
  * Maps a HID descriptor product ID to a friendly model name.
  * IDs from https://developers.ledger.com (vendor 0x2C97).
@@ -109,6 +116,10 @@ export class RNLedgerUsbService implements HardwareWalletService {
 
     createTransportProvider(): HardwareWalletTransportProvider {
         const { manufacturer } = this
+        // Native HID.openDevice reads vendorId off a ReadableMap, so we must
+        // hand back the original descriptor — a bare id string is rejected.
+        const descriptorsById = new Map<string, LedgerHIDDescriptor>()
+
         return {
             manufacturer,
             transportType: 'usb',
@@ -120,21 +131,21 @@ export class RNLedgerUsbService implements HardwareWalletService {
                 const subscription = TransportHID.listen({
                     next: (event: {
                         type: string
-                        descriptor: {
-                            deviceId?: number | string
-                            productId?: number
-                            vendorId?: number
-                            deviceName?: Nullable<string>
-                        }
+                        descriptor: LedgerHIDDescriptor
                     }) => {
                         if (event.type !== 'add') return
 
                         const { deviceId, productId, deviceName } =
                             event.descriptor
                         const model = resolveModel(productId ?? null)
+                        const id = String(
+                            deviceId ?? productId ?? 'usb-ledger',
+                        )
+
+                        descriptorsById.set(id, event.descriptor)
 
                         onDevice({
-                            id: String(deviceId ?? productId ?? 'usb-ledger'),
+                            id,
                             name: deviceName || `Ledger ${model}`,
                             manufacturer: 'ledger',
                             transportType: 'usb',
@@ -157,11 +168,15 @@ export class RNLedgerUsbService implements HardwareWalletService {
             },
 
             async connect(deviceId): Promise<HardwareWalletTransport> {
+                const descriptor = descriptorsById.get(deviceId)
+                if (!descriptor) {
+                    throw new LedgerConnectionError(
+                        `No HID descriptor for device id "${deviceId}". Call scan() before connect().`,
+                    )
+                }
                 try {
-                    // TransportHID.open's typed signature expects a DeviceObj,
-                    // but the native module accepts a deviceId string at runtime.
                     const hidTransport = await TransportHID.open(
-                        deviceId as unknown as Parameters<
+                        descriptor as unknown as Parameters<
                             typeof TransportHID.open
                         >[0],
                     )

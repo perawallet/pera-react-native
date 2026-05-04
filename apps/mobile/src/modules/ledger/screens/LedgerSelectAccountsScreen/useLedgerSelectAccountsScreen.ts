@@ -15,11 +15,11 @@ import { RouteProp, useRoute } from '@react-navigation/native'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import type { LedgerAccount } from '@perawallet/wallet-core-ledger'
 import type { HardwareWalletTransport } from '@perawallet/wallet-core-hardware-wallet'
 import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
-import { useLedgerConnection } from '../../hooks'
 import { getLedgerErrorPreset } from '@modules/ledger/utils'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
@@ -57,7 +57,6 @@ export const useLedgerSelectAccountsScreen =
         const navigation = useAppNavigation()
         const allAccounts = useAllAccounts()
         const { errorToast } = useToast()
-        const { connect } = useLedgerConnection()
 
         const [accounts, setAccounts] = useState<LedgerAccount[]>(routeAccounts)
         const [isFetchingMore, setIsFetchingMore] = useState(false)
@@ -157,7 +156,17 @@ export const useLedgerSelectAccountsScreen =
             setIsFetchingMore(true)
             try {
                 if (!transportRef.current) {
-                    transportRef.current = await connect(deviceId)
+                    const provider =
+                        getProvider().hardwareWalletRegistry.getProvider(
+                            'ledger',
+                            transportType,
+                        )
+                    if (!provider) {
+                        throw new Error(
+                            `No Ledger provider for transport "${transportType}"`,
+                        )
+                    }
+                    transportRef.current = await provider.connect(deviceId)
                 }
 
                 const nextIndex =
@@ -186,7 +195,7 @@ export const useLedgerSelectAccountsScreen =
                     setIsFetchingMore(false)
                 }
             }
-        }, [connect, deviceId, errorToast, t])
+        }, [deviceId, transportType, errorToast, t])
 
         const areAllImported = newAccounts.length === 0
         const canContinue =

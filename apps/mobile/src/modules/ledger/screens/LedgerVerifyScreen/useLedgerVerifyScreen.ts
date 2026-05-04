@@ -14,12 +14,14 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { RouteProp, useRoute } from '@react-navigation/native'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     useAccountsStore,
     useSetAccounts,
     useSelectedAccountAddress,
     AccountTypes,
 } from '@perawallet/wallet-core-accounts'
+import type { HardwareWalletTransport } from '@perawallet/wallet-core-hardware-wallet'
 import type { LedgerAccount } from '@perawallet/wallet-core-ledger'
 import { verifyLedgerAddress } from '@perawallet/wallet-core-ledger'
 import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
@@ -29,7 +31,6 @@ import {
     type LedgerErrorPreset,
 } from '@modules/ledger/utils'
 
-import { useLedgerConnection } from '../../hooks'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type LedgerVerifyRouteProp = RouteProp<AddAccountStackParamList, 'LedgerVerify'>
@@ -61,7 +62,6 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
     const { setAccounts } = useSetAccounts()
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
     const { exitAccountFlow } = useExitAccountFlow()
-    const { connect, disconnect } = useLedgerConnection()
     const navigation = useAppNavigation()
 
     const [verificationState, setVerificationState] =
@@ -77,11 +77,22 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
             : null
 
     const verifyAndSave = useCallback(async () => {
+        let transport: Nullable<HardwareWalletTransport> = null
         try {
             setVerificationState('connecting')
             setError(null)
 
-            const transport = await connect(deviceId)
+            const provider = getProvider().hardwareWalletRegistry.getProvider(
+                'ledger',
+                transportType,
+            )
+            if (!provider) {
+                throw new Error(
+                    `No Ledger provider for transport "${transportType}"`,
+                )
+            }
+
+            transport = await provider.connect(deviceId)
             setVerificationState('verifying')
 
             for (let i = 0; i < selectedAccounts.length; i++) {
@@ -116,11 +127,11 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
             setError(verifyError)
             setVerificationState('error')
         } finally {
-            await disconnect()
+            if (transport) {
+                await transport.disconnect().catch(() => {})
+            }
         }
     }, [
-        connect,
-        disconnect,
         deviceId,
         deviceName,
         transportType,

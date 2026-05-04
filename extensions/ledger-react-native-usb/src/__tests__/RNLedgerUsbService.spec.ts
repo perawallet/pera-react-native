@@ -36,6 +36,30 @@ vi.mock('@ledgerhq/hw-app-algorand', () => ({
 
 import { RNLedgerUsbService } from '../RNLedgerUsbService'
 
+const NANO_S_PLUS_DESCRIPTOR = {
+    deviceId: 1234,
+    productId: 0x4011,
+    vendorId: 0x2c97,
+    deviceName: 'Nano S Plus',
+}
+
+const wireListenMock = (): { emit: (event: unknown) => void } => {
+    let observer: { next: (event: unknown) => void } = { next: () => {} }
+    transportListenMock.mockImplementation(subscription => {
+        observer = subscription
+        return { unsubscribe: vi.fn() }
+    })
+    return { emit: event => observer.next(event) }
+}
+
+const scanThenConnect = async (descriptor: typeof NANO_S_PLUS_DESCRIPTOR) => {
+    const { emit } = wireListenMock()
+    const provider = new RNLedgerUsbService().createTransportProvider()
+    provider.scan(() => {})
+    emit({ type: 'add', descriptor })
+    return provider.connect(String(descriptor.deviceId))
+}
+
 describe('RNLedgerUsbService', () => {
     beforeEach(() => {
         transportListenMock.mockReset()
@@ -53,9 +77,7 @@ describe('RNLedgerUsbService', () => {
     })
 
     test('scan emits "add" events as devices tagged transportType "usb"', () => {
-        let observer: {
-            next: (event: unknown) => void
-        } = { next: () => {} }
+        let observer: { next: (event: unknown) => void } = { next: () => {} }
         const unsubscribe = vi.fn()
         transportListenMock.mockImplementation(subscription => {
             observer = subscription
@@ -67,15 +89,7 @@ describe('RNLedgerUsbService', () => {
             .createTransportProvider()
             .scan(onDevice)
 
-        observer.next({
-            type: 'add',
-            descriptor: {
-                deviceId: 1234,
-                productId: 0x4011,
-                vendorId: 0x2c97,
-                deviceName: 'Nano S Plus',
-            },
-        })
+        observer.next({ type: 'add', descriptor: NANO_S_PLUS_DESCRIPTOR })
 
         expect(onDevice).toHaveBeenCalledTimes(1)
         expect(onDevice).toHaveBeenCalledWith(
@@ -91,31 +105,34 @@ describe('RNLedgerUsbService', () => {
     })
 
     test('scan ignores non-"add" events', () => {
-        let observer: { next: (event: unknown) => void } = { next: () => {} }
-        transportListenMock.mockImplementation(subscription => {
-            observer = subscription
-            return { unsubscribe: vi.fn() }
-        })
+        const { emit } = wireListenMock()
 
         const onDevice = vi.fn()
         new RNLedgerUsbService().createTransportProvider().scan(onDevice)
 
-        observer.next({ type: 'remove', descriptor: { deviceId: 1 } })
+        emit({ type: 'remove', descriptor: { deviceId: 1 } })
         expect(onDevice).not.toHaveBeenCalled()
     })
 
-    test('connect opens TransportHID and returns a wrapped transport', async () => {
-        const hidTransport = { close: transportCloseMock }
-        transportOpenMock.mockResolvedValue(hidTransport)
+    test('connect forwards the original HID descriptor (not the id) to TransportHID.open', async () => {
+        transportOpenMock.mockResolvedValue({ close: transportCloseMock })
 
-        const transport = await new RNLedgerUsbService()
-            .createTransportProvider()
-            .connect('usb-dev-1')
+        const transport = await scanThenConnect(NANO_S_PLUS_DESCRIPTOR)
 
-        expect(transportOpenMock).toHaveBeenCalledWith('usb-dev-1')
+        expect(transportOpenMock).toHaveBeenCalledWith(NANO_S_PLUS_DESCRIPTOR)
         expect(typeof transport.getAddress).toBe('function')
         expect(typeof transport.signTransaction).toBe('function')
         expect(typeof transport.disconnect).toBe('function')
+    })
+
+    test('connect rejects when called before scan tracked the device', async () => {
+        wireListenMock()
+        const provider = new RNLedgerUsbService().createTransportProvider()
+
+        await expect(provider.connect('unknown-id')).rejects.toThrow(
+            /No HID descriptor/,
+        )
+        expect(transportOpenMock).not.toHaveBeenCalled()
     })
 
     test('wrapped transport.getAddress delegates to AppAlgorand and returns public-key bytes', async () => {
@@ -126,9 +143,7 @@ describe('RNLedgerUsbService', () => {
                 'aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899',
         })
 
-        const transport = await new RNLedgerUsbService()
-            .createTransportProvider()
-            .connect('usb-dev-1')
+        const transport = await scanThenConnect(NANO_S_PLUS_DESCRIPTOR)
 
         const account = await transport.getAddress(0)
         expect(algorandGetAddressMock).toHaveBeenCalledWith(
@@ -146,9 +161,7 @@ describe('RNLedgerUsbService', () => {
             signature: Buffer.from([1, 2, 3]),
         })
 
-        const transport = await new RNLedgerUsbService()
-            .createTransportProvider()
-            .connect('usb-dev-1')
+        const transport = await scanThenConnect(NANO_S_PLUS_DESCRIPTOR)
 
         const sig = await transport.signTransaction(0, new Uint8Array([10]))
         expect(algorandSignMock).toHaveBeenCalled()
@@ -159,9 +172,7 @@ describe('RNLedgerUsbService', () => {
         transportOpenMock.mockResolvedValue({ close: transportCloseMock })
         transportCloseMock.mockResolvedValue(undefined)
 
-        const transport = await new RNLedgerUsbService()
-            .createTransportProvider()
-            .connect('usb-dev-1')
+        const transport = await scanThenConnect(NANO_S_PLUS_DESCRIPTOR)
 
         await transport.disconnect()
         expect(transportCloseMock).toHaveBeenCalled()
