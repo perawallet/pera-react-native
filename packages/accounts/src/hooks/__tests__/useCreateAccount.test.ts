@@ -168,11 +168,11 @@ describe('useCreateAccount', () => {
         expect(created.id).toBe('ACC1')
         expect(created.address).toBeTruthy()
         expect(created.type).toBe('hdWallet')
-        expect(created.entropyKeyId).toBe('ks-entropy-1')
+        expect(created.keyPairId).toBe('WALLET1')
         expect(useAccountsStore.getState().accounts).toHaveLength(1)
     })
 
-    test('creates account with existing key without entropyKeyId', async () => {
+    test('creates a sibling HD account on an existing wallet root', async () => {
         kmsMock.getKey.mockReturnValueOnce({
             id: 'EXISTING_WALLET',
             type: KeyType.HDWalletRootKey,
@@ -188,14 +188,14 @@ describe('useCreateAccount', () => {
         await act(async () => {
             created = await result.current.createHdWalletAccount({
                 walletId: 'EXISTING_WALLET',
-                account: 0,
+                account: 1,
                 keyIndex: 0,
             })
         })
 
         expect(kmsMock.createHDWalletKey).not.toHaveBeenCalled()
         expect(created.keyPairId).toBe('EXISTING_WALLET')
-        expect(created.entropyKeyId).toBeUndefined()
+        expect(created.hdWalletDetails.account).toBe(1)
     })
 
     test('throws error when key derivation fails', async () => {
@@ -257,7 +257,7 @@ describe('useCreateAccount', () => {
         })
     })
 
-    test('creates algo25 account with seedKeyId', async () => {
+    test('creates a new algo25 account', async () => {
         uuidSpies.v7
             .mockImplementationOnce(() => 'WALLET1')
             .mockImplementationOnce(() => 'ACC1')
@@ -272,10 +272,9 @@ describe('useCreateAccount', () => {
         expect(created.type).toBe('algo25')
         expect(created.address).toBe('ALGO25_PUBLIC_KEY')
         expect(created.keyPairId).toBe('WALLET1')
-        expect(created.seedKeyId).toBe('ks-seed-1')
     })
 
-    test('creates algo25 account from existing key without seedKeyId', async () => {
+    test('creates an algo25 account from an existing root key', async () => {
         kmsMock.getKey.mockReturnValueOnce({
             id: 'WALLET1',
             type: KeyType.Algo25Key,
@@ -293,9 +292,9 @@ describe('useCreateAccount', () => {
             })
         })
 
+        expect(kmsMock.createAlgo25Key).not.toHaveBeenCalled()
         expect(created.type).toBe('algo25')
         expect(created.address).toBe('ALGO25_PUBLIC_KEY')
         expect(created.keyPairId).toBe('WALLET1')
-        expect(created.seedKeyId).toBeUndefined()
     })
 })

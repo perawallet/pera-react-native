@@ -30,22 +30,34 @@ vi.mock('@algorandfoundation/algokit-utils', () => ({
     encodeAddress: (...args: any[]) => mockEncodeAddress(...args),
 }))
 
-const mockSaveKey = vi.fn()
 const mockCheckAccess = vi.fn()
 const mockKeyStoreImport = vi.fn()
 const mockKeyStoreExport = vi.fn()
 const mockKeyStoreSign = vi.fn()
 const mockKeyStoreRemove = vi.fn()
+const mockCommit = vi.fn()
+
+vi.mock('@algorandfoundation/keystore', () => ({
+    clearKeyData: vi.fn(),
+}))
+
+vi.mock('@algorandfoundation/react-native-keystore', () => ({
+    commit: (...args: any[]) => mockCommit(...args),
+}))
+
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getKeystoreStore: () => ({
+        state: { keys: [], status: 'idle' },
+        setState: vi.fn(),
+        subscribe: () => ({ unsubscribe: () => {} }),
+    }),
+    getKeystoreHooks: () => ({ wrap: vi.fn() }),
+}))
 
 const mockClearKeyData = vi.fn()
 
-vi.mock('@algorandfoundation/keystore', () => ({
-    clearKeyData: (...args: any[]) => mockClearKeyData(...args),
-}))
-
 vi.mock('../useKMSServices', () => ({
     useKMSService: () => ({
-        saveKey: (...args: any[]) => mockSaveKey(...args),
         checkAccess: (...args: any[]) => mockCheckAccess(...args),
         keyStore: {
             import: (...args: any[]) => mockKeyStoreImport(...args),
@@ -80,17 +92,15 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
 describe('useAlgo25', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockKeyStoreImport
-            .mockResolvedValueOnce('ks-algo25-1')
-            .mockResolvedValueOnce('ks-algo25-1-seed')
+        mockKeyStoreImport.mockResolvedValue('ks-algo25-1-seed')
+        mockCommit.mockResolvedValue(undefined)
     })
 
     describe('createAlgo25Key', () => {
-        test('creates and saves an Algo25 key with provided mnemonic and id', async () => {
+        test('creates and stores an Algo25 key with provided mnemonic and id', async () => {
             const fakeSeed = new Uint8Array(32).fill(1)
             mockSeedFromMnemonic.mockReturnValue(fakeSeed)
             mockEncodeAddress.mockReturnValue('ALGO25ADDR')
-            mockSaveKey.mockImplementation(async (key: KeyPair) => key)
 
             const { result } = renderHook(() => useAlgo25())
 
@@ -105,15 +115,14 @@ describe('useAlgo25', () => {
             expect(keyResult!.keyPair.id).toBe('my-key')
             expect(keyResult!.keyPair.publicKey).toBe('ALGO25ADDR')
             expect(keyResult!.keyPair.type).toBe(KeyType.Algo25Key)
-            expect(keyResult!.keyPair.keystoreKeyId).toBe('ks-algo25-1')
+            expect(keyResult!.keyPair.keystoreKeyId).toBe('my-key')
             expect(keyResult!.seedKeyId).toBe('ks-algo25-1-seed')
         })
 
-        test('imports signing key without mnemonic in metadata and seed as separate key', async () => {
+        test('commits root key with type "algo25" via react-native-keystore commit()', async () => {
             const fakeSeed = new Uint8Array(32).fill(1)
             mockSeedFromMnemonic.mockReturnValue(fakeSeed)
             mockEncodeAddress.mockReturnValue('ADDR')
-            mockSaveKey.mockImplementation(async (key: KeyPair) => key)
 
             const { result } = renderHook(() => useAlgo25())
 
@@ -124,25 +133,23 @@ describe('useAlgo25', () => {
                 })
             })
 
-            expect(mockKeyStoreImport).toHaveBeenCalledTimes(2)
+            expect(mockCommit).toHaveBeenCalledTimes(1)
+            const commitArg = mockCommit.mock.calls[0][0]
+            expect(commitArg.keyData).toMatchObject({
+                id: 'my-key',
+                type: 'algo25',
+                algorithm: 'EdDSA',
+                extractable: true,
+                publicKey: expect.any(Uint8Array),
+                privateKey: expect.any(Uint8Array),
+            })
+            expect(commitArg.keyData.metadata?.pera).toMatchObject({
+                createdAt: expect.any(String),
+            })
 
-            // First call: signing key without mnemonic in metadata
-            expect(mockKeyStoreImport).toHaveBeenNthCalledWith(
-                1,
-                expect.objectContaining({
-                    type: 'hd-derived-ed25519',
-                    algorithm: 'EdDSA',
-                    extractable: true,
-                }),
-                'raw',
-            )
-            // Ensure no mnemonic in the signing key import
-            const signingKeyArg = mockKeyStoreImport.mock.calls[0][0]
-            expect(signingKeyArg.metadata?.mnemonic).toBeUndefined()
-
-            // Second call: seed key with raw seed bytes
-            expect(mockKeyStoreImport).toHaveBeenNthCalledWith(
-                2,
+            // Seed key still uses keyStore.import
+            expect(mockKeyStoreImport).toHaveBeenCalledTimes(1)
+            expect(mockKeyStoreImport).toHaveBeenCalledWith(
                 expect.objectContaining({
                     id: 'my-key-seed',
                     type: 'hd-seed',
@@ -158,7 +165,6 @@ describe('useAlgo25', () => {
             const fakeSeed = new Uint8Array(32).fill(1)
             mockSeedFromMnemonic.mockReturnValue(fakeSeed)
             mockEncodeAddress.mockReturnValue('ADDR')
-            mockSaveKey.mockImplementation(async (key: KeyPair) => key)
 
             const { result } = renderHook(() => useAlgo25())
 
@@ -172,11 +178,10 @@ describe('useAlgo25', () => {
             expect(keyResult!.keyPair.id).toBe('mock-uuid-v7')
         })
 
-        test('zeros out the seed and secret key after saving', async () => {
+        test('zeros out the seed and secret key after committing', async () => {
             const fakeSeed = new Uint8Array(32).fill(99)
             mockSeedFromMnemonic.mockReturnValue(fakeSeed)
             mockEncodeAddress.mockReturnValue('ADDR')
-            mockSaveKey.mockImplementation(async (key: KeyPair) => key)
 
             const { result } = renderHook(() => useAlgo25())
 
@@ -189,7 +194,6 @@ describe('useAlgo25', () => {
 
         test('generates a new key when no mnemonic is provided', async () => {
             mockEncodeAddress.mockReturnValue('NEWADDR')
-            mockSaveKey.mockImplementation(async (key: KeyPair) => key)
 
             const { result } = renderHook(() => useAlgo25())
 
@@ -200,23 +204,17 @@ describe('useAlgo25', () => {
 
             expect(mockSeedFromMnemonic).not.toHaveBeenCalled()
             expect(keyResult!.keyPair.publicKey).toBe('NEWADDR')
-
-            // Signing key should not contain mnemonic
-            const signingKeyArg = mockKeyStoreImport.mock.calls[0][0]
-            expect(signingKeyArg.metadata?.mnemonic).toBeUndefined()
-
-            // Seed key should be imported separately
-            expect(mockKeyStoreImport).toHaveBeenCalledTimes(2)
+            expect(mockCommit).toHaveBeenCalledTimes(1)
+            expect(mockKeyStoreImport).toHaveBeenCalledTimes(1)
         })
 
-        test('rolls back signing key if seed key import fails', async () => {
+        test('rolls back the root key if seed key import fails', async () => {
             const fakeSeed = new Uint8Array(32).fill(1)
             mockSeedFromMnemonic.mockReturnValue(fakeSeed)
             mockEncodeAddress.mockReturnValue('ADDR')
-            mockKeyStoreImport
-                .mockReset()
-                .mockResolvedValueOnce('ks-algo25-1')
-                .mockRejectedValueOnce(new Error('Seed import failed'))
+            mockKeyStoreImport.mockRejectedValueOnce(
+                new Error('Seed import failed'),
+            )
 
             const { result } = renderHook(() => useAlgo25())
 
@@ -233,7 +231,7 @@ describe('useAlgo25', () => {
             })
 
             expect(caughtError?.message).toBe('Seed import failed')
-            expect(mockKeyStoreRemove).toHaveBeenCalledWith('ks-algo25-1')
+            expect(mockKeyStoreRemove).toHaveBeenCalledWith('my-key')
         })
     })
 
@@ -242,21 +240,20 @@ describe('useAlgo25', () => {
             id: 'algo-key-1',
             publicKey: 'ADDR',
             type: KeyType.Algo25Key,
-            keystoreKeyId: 'ks-algo25-1',
+            keystoreKeyId: 'algo-key-1',
         }
 
         beforeEach(() => {
+            // The seed for tweetnacl. fromSeed(seed) deterministically produces
+            // the keypair below.
             const fakeSeed = new Uint8Array(32).fill(1)
-            const fakeSecretKey = new Uint8Array(64)
-            fakeSecretKey.set(fakeSeed)
             mockKeyStoreExport.mockResolvedValue({
-                privateKey: fakeSecretKey,
                 publicKey: new Uint8Array(32).fill(2),
-                metadata: { mnemonic: 'test mnemonic words' },
+                privateKey: fakeSeed,
             })
         })
 
-        test('signs transaction data using nacl via keystore export', async () => {
+        test('signs transaction data locally via tweetnacl after exporting the seed', async () => {
             const { result } = renderHook(() => useAlgo25())
 
             let signResult: Uint8Array | undefined
@@ -264,20 +261,19 @@ describe('useAlgo25', () => {
                 signResult = await result.current.withAlgo25Session(
                     mockKey,
                     'test-domain',
-                    async session => {
-                        return session.signTransaction(
-                            new Uint8Array([1, 2, 3]),
-                        )
-                    },
+                    async session =>
+                        session.signTransaction(new Uint8Array([1, 2, 3])),
                 )
             })
 
-            expect(mockKeyStoreExport).toHaveBeenCalledWith('ks-algo25-1')
+            expect(mockKeyStoreExport).toHaveBeenCalledWith('algo-key-1')
             expect(signResult).toBeInstanceOf(Uint8Array)
             expect(signResult!.length).toBe(64)
+            // Local signing — the platform keystore's sign is never invoked.
+            expect(mockKeyStoreSign).not.toHaveBeenCalled()
         })
 
-        test('signs arbitrary data using nacl', async () => {
+        test('signs arbitrary data locally via tweetnacl', async () => {
             const { result } = renderHook(() => useAlgo25())
 
             let signResult: Uint8Array | undefined
@@ -285,17 +281,17 @@ describe('useAlgo25', () => {
                 signResult = await result.current.withAlgo25Session(
                     mockKey,
                     'test-domain',
-                    async session => {
-                        return session.signData(new Uint8Array([4, 5, 6]))
-                    },
+                    async session =>
+                        session.signData(new Uint8Array([4, 5, 6])),
                 )
             })
 
             expect(signResult).toBeInstanceOf(Uint8Array)
             expect(signResult!.length).toBe(64)
+            expect(mockKeyStoreSign).not.toHaveBeenCalled()
         })
 
-        test('getPublicKey returns the public key', async () => {
+        test('getPublicKey returns the raw public key derived from the seed', async () => {
             const { result } = renderHook(() => useAlgo25())
 
             let pubKey: Uint8Array | undefined
@@ -303,9 +299,7 @@ describe('useAlgo25', () => {
                 pubKey = await result.current.withAlgo25Session(
                     mockKey,
                     'test-domain',
-                    async session => {
-                        return session.getPublicKey()
-                    },
+                    async session => session.getPublicKey(),
                 )
             })
 
@@ -313,17 +307,15 @@ describe('useAlgo25', () => {
             expect(pubKey!.length).toBe(32)
         })
 
-        test('getMnemonic retrieves mnemonic from seed key when seedKeyId is provided', async () => {
+        test('getMnemonic exports the seed entry by deterministic id', async () => {
             const fakeSeed = new Uint8Array(32).fill(1)
             mockKeyStoreExport
+                .mockReset()
                 .mockResolvedValueOnce({
-                    privateKey: new Uint8Array(64).fill(1),
                     publicKey: new Uint8Array(32).fill(2),
-                    metadata: {},
-                })
-                .mockResolvedValueOnce({
                     privateKey: fakeSeed,
                 })
+                .mockResolvedValueOnce({ privateKey: fakeSeed })
             mockMnemonicFromSeed.mockReturnValue('recovered mnemonic words')
 
             const { result } = renderHook(() => useAlgo25())
@@ -333,10 +325,7 @@ describe('useAlgo25', () => {
                 mnemonic = await result.current.withAlgo25Session(
                     mockKey,
                     'test-domain',
-                    async session => {
-                        return session.getMnemonic()
-                    },
-                    'ks-seed-1',
+                    async session => session.getMnemonic(),
                 )
             })
 
@@ -344,11 +333,24 @@ describe('useAlgo25', () => {
             expect(new TextDecoder().decode(mnemonic)).toBe(
                 'recovered mnemonic words',
             )
-            expect(mockKeyStoreExport).toHaveBeenCalledWith('ks-seed-1')
-            expect(mockMnemonicFromSeed).toHaveBeenCalled()
+            // First export = root key (for sign session); second = seed entry.
+            expect(mockKeyStoreExport).toHaveBeenNthCalledWith(1, 'algo-key-1')
+            expect(mockKeyStoreExport).toHaveBeenNthCalledWith(
+                2,
+                'algo-key-1-seed',
+            )
         })
 
-        test('getMnemonic throws when no seedKeyId is provided', async () => {
+        test('getMnemonic throws when seed keystore entry has no privateKey', async () => {
+            const fakeSeed = new Uint8Array(32).fill(1)
+            mockKeyStoreExport
+                .mockReset()
+                .mockResolvedValueOnce({
+                    publicKey: new Uint8Array(32).fill(2),
+                    privateKey: fakeSeed,
+                })
+                .mockResolvedValueOnce({})
+
             const { result } = renderHook(() => useAlgo25())
 
             await expect(
@@ -356,9 +358,7 @@ describe('useAlgo25', () => {
                     await result.current.withAlgo25Session(
                         mockKey,
                         'test-domain',
-                        async session => {
-                            return session.getMnemonic()
-                        },
+                        async session => session.getMnemonic(),
                     )
                 }),
             ).rejects.toThrow(KeyManagementError)
@@ -391,76 +391,6 @@ describe('useAlgo25', () => {
                 act(async () => {
                     await result.current.withAlgo25Session(
                         keyWithoutKeystoreId,
-                        'test-domain',
-                        async session => session.getPublicKey(),
-                    )
-                }),
-            ).rejects.toThrow(KeyManagementError)
-        })
-
-        test('clears exported key data after session completes', async () => {
-            const mockKeyData = {
-                privateKey: new Uint8Array(64).fill(1),
-                publicKey: new Uint8Array(32).fill(2),
-                metadata: { mnemonic: 'test mnemonic words' },
-            }
-            mockKeyStoreExport.mockResolvedValue(mockKeyData)
-
-            const { result } = renderHook(() => useAlgo25())
-
-            await act(async () => {
-                await result.current.withAlgo25Session(
-                    mockKey,
-                    'test-domain',
-                    async session => session.getPublicKey(),
-                )
-            })
-
-            expect(mockClearKeyData).toHaveBeenCalledWith(mockKeyData)
-        })
-
-        test('clears exported key data even when handler throws', async () => {
-            const mockKeyData = {
-                privateKey: new Uint8Array(64).fill(1),
-                publicKey: new Uint8Array(32).fill(2),
-                metadata: { mnemonic: 'test mnemonic words' },
-            }
-            mockKeyStoreExport.mockResolvedValue(mockKeyData)
-
-            const { result } = renderHook(() => useAlgo25())
-
-            let caughtError: Error | undefined
-            await act(async () => {
-                try {
-                    await result.current.withAlgo25Session(
-                        mockKey,
-                        'test-domain',
-                        async () => {
-                            throw new Error('handler error')
-                        },
-                    )
-                } catch (e) {
-                    caughtError = e as Error
-                }
-            })
-
-            expect(caughtError?.message).toBe('handler error')
-            expect(mockClearKeyData).toHaveBeenCalledWith(mockKeyData)
-        })
-
-        test('throws KeyManagementError when exported key has no privateKey', async () => {
-            mockKeyStoreExport.mockResolvedValue({
-                privateKey: undefined,
-                publicKey: new Uint8Array(32),
-                metadata: {},
-            })
-
-            const { result } = renderHook(() => useAlgo25())
-
-            await expect(
-                act(async () => {
-                    await result.current.withAlgo25Session(
-                        mockKey,
                         'test-domain',
                         async session => session.getPublicKey(),
                     )

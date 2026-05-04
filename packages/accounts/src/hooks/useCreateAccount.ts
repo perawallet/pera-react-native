@@ -61,23 +61,19 @@ export const useCreateAccount = () => {
 
     const createHdWalletAccount = async ({
         walletId,
-        entropyKeyId: providedEntropyKeyId,
         account,
         keyIndex,
     }: {
         walletId?: string
-        entropyKeyId?: string
         account: number
         keyIndex: number
     }) => {
         const rootWalletId = walletId ?? generateOrderedUniqueId()
         let rootKey = getKey(rootWalletId)
-        let entropyKeyId = providedEntropyKeyId
 
         if (!rootKey) {
             const result = await createHDWalletKey({ id: rootWalletId })
             rootKey = result.keyPair
-            entropyKeyId = result.entropyKeyId
         }
 
         if (!rootKey?.id || !rootKey.keystoreKeyId) {
@@ -110,7 +106,6 @@ export const useCreateAccount = () => {
                         keystoreKeyId: derivedKeystoreKeyId,
                     },
                     keyPairId: rootWalletId,
-                    entropyKeyId,
                 } satisfies WalletAccount
             },
         )
@@ -119,21 +114,13 @@ export const useCreateAccount = () => {
         return newAccount
     }
 
-    const createAlgo25WalletAccount = async ({
-        id,
-        seedKeyId: providedSeedKeyId,
-    }: {
-        id?: string
-        seedKeyId?: string
-    }) => {
+    const createAlgo25WalletAccount = async ({ id }: { id?: string }) => {
         const keyId = id ?? generateOrderedUniqueId()
         let rootKey = getKey(keyId)
-        let seedKeyId = providedSeedKeyId
 
         if (!rootKey) {
             const result = await createAlgo25Key({ id: keyId })
             rootKey = result.keyPair
-            seedKeyId = result.seedKeyId
         }
 
         if (!rootKey?.id) {
@@ -145,7 +132,6 @@ export const useCreateAccount = () => {
             address: rootKey.publicKey,
             type: AccountTypes.algo25,
             keyPairId: rootKey.id,
-            seedKeyId,
         }
 
         await saveAndUpdateAccounts(newAccount)

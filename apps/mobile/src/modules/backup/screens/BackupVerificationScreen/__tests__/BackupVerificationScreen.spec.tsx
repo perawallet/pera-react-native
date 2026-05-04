@@ -27,7 +27,6 @@ const account: WalletAccount = {
     type: AccountTypes.algo25,
     address: 'ADDR',
     keyPairId: 'kp',
-    seedKeyId: 'seed-1',
 }
 
 const CORRECT_PAIRS = [
