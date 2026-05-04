@@ -15,7 +15,7 @@ import { renderHook, act } from '@testing-library/react'
 import { useQRViewScreen } from '../useQRViewScreen'
 import { shareText } from '@utils/shareText'
 import { useReceiveFunds } from '@modules/transactions/hooks'
-import { useToast } from '@hooks/useToast'
+import { useErrorToast } from '@hooks/useErrorToast'
 import { useClipboard } from '@hooks/useClipboard'
 import { useDeepLink } from '@hooks/useDeepLink'
 
@@ -23,8 +23,8 @@ vi.mock('@modules/transactions/hooks', () => ({
     useReceiveFunds: vi.fn(),
 }))
 
-vi.mock('@hooks/useToast', () => ({
-    useToast: vi.fn(),
+vi.mock('@hooks/useErrorToast', () => ({
+    useErrorToast: vi.fn(),
 }))
 
 vi.mock('@hooks/useClipboard', () => ({
@@ -39,10 +39,6 @@ vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
         t: (key: string) => key,
     }),
-}))
-
-vi.mock('@perawallet/wallet-core-config', () => ({
-    config: { debugEnabled: false },
 }))
 
 vi.mock('@components/core', () => ({
@@ -60,7 +56,7 @@ const mockAccount = {
 }
 
 describe('useQRViewScreen', () => {
-    const mockShowToast = vi.fn()
+    const mockShowError = vi.fn()
     const mockCopyToClipboard = vi.fn()
     const mockBuildAccountDeeplink = vi.fn()
 
@@ -69,8 +65,8 @@ describe('useQRViewScreen', () => {
         ;(useReceiveFunds as Mock).mockReturnValue({
             selectedAccount: mockAccount,
         })
-        ;(useToast as Mock).mockReturnValue({
-            showToast: mockShowToast,
+        ;(useErrorToast as Mock).mockReturnValue({
+            showError: mockShowError,
         })
         ;(useClipboard as Mock).mockReturnValue({
             copyToClipboard: mockCopyToClipboard,
@@ -158,7 +154,8 @@ describe('useQRViewScreen', () => {
     })
 
     it('shows toast on share error', async () => {
-        vi.mocked(shareText).mockRejectedValue(new Error('Share failed'))
+        const shareError = new Error('Share failed')
+        vi.mocked(shareText).mockRejectedValue(shareError)
 
         const { result } = renderHook(() => useQRViewScreen())
 
@@ -166,8 +163,9 @@ describe('useQRViewScreen', () => {
             await result.current.handleShareAddress()
         })
 
-        expect(mockShowToast).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'error' }),
+        expect(mockShowError).toHaveBeenCalledWith(
+            shareError,
+            'errors.general.title',
             expect.anything(),
         )
     })

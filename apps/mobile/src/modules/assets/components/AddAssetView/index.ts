@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { AddAssetScreen } from './AddAssetScreen'
+export { AddAssetView } from './AddAssetView'

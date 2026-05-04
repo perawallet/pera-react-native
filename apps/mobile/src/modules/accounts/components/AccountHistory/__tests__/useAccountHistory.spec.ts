@@ -22,6 +22,7 @@ import {
 import { shareCsvFile } from '@utils/shareCsvFile'
 import { useToast } from '@hooks/useToast'
 import { TransactionFilter } from '../../TransactionsFilterBottomSheet/types'
+import { useErrorToast } from '@hooks/useErrorToast'
 
 // Mock dependencies
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -39,6 +40,10 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
 
 vi.mock('@hooks/useToast', () => ({
     useToast: vi.fn(),
+}))
+
+vi.mock('@hooks/useErrorToast', () => ({
+    useErrorToast: vi.fn(),
 }))
 
 vi.mock('@hooks/useLanguage', () => ({
@@ -92,6 +97,10 @@ describe('useAccountHistory', () => {
         vi.mocked(useNetwork).mockReturnValue(mockNetwork as any)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         vi.mocked(useToast).mockReturnValue({ showToast: mockShowToast } as any)
+        vi.mocked(useErrorToast).mockReturnValue({
+            showError: mockShowToast,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any)
 
         vi.mocked(useTransactionHistoryQuery).mockReturnValue({
             transactions: [],

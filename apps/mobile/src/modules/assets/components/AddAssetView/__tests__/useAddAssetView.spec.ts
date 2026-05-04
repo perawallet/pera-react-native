@@ -13,7 +13,7 @@
 import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { useAddAssetScreen } from '../useAddAssetScreen'
+import { useAddAssetView } from '../useAddAssetView'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 
 const mockAccount = { address: 'test-address', name: 'Test Account' }
@@ -70,10 +70,10 @@ vi.mock('@hooks/useToast', () => ({
     useToast: () => ({ showToast: mockShowToast }),
 }))
 
-vi.mock('@hooks/useAlgodErrorMessage', () => ({
-    useAlgodErrorMessage: () => ({
-        getMessage: (_err: unknown) => ({ title: 'Error', body: 'error body' }),
-    }),
+const { mockShowError } = vi.hoisted(() => ({ mockShowError: vi.fn() }))
+
+vi.mock('@hooks/useErrorToast', () => ({
+    useErrorToast: () => ({ showError: mockShowError }),
 }))
 
 vi.mock('@hooks/useLanguage', () => ({
@@ -100,7 +100,7 @@ vi.mock('@constants/ui', () => ({
     SEARCH_DEBOUNCE_TIME: 300,
 }))
 
-describe('useAddAssetScreen', () => {
+describe('useAddAssetView', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockGetSelectedAccount.mockReturnValue(mockAccount)
@@ -109,7 +109,7 @@ describe('useAddAssetScreen', () => {
     it('does not show an error toast when user cancels the signing overlay', async () => {
         mockOptIn.mockRejectedValueOnce(new UserRejectedSigningError())
 
-        const { result } = renderHook(() => useAddAssetScreen())
+        const { result } = renderHook(() => useAddAssetView())
 
         // Request and confirm opt-in for an asset
         act(() => {
@@ -120,15 +120,17 @@ describe('useAddAssetScreen', () => {
             await result.current.handleConfirmAdd()
         })
 
+        expect(mockShowError).not.toHaveBeenCalled()
         expect(mockShowToast).not.toHaveBeenCalledWith(
             expect.objectContaining({ type: 'error' }),
         )
     })
 
     it('shows an error toast when opt-in fails with a non-cancel error', async () => {
-        mockOptIn.mockRejectedValueOnce(new Error('Network error'))
+        const optInError = new Error('Network error')
+        mockOptIn.mockRejectedValueOnce(optInError)
 
-        const { result } = renderHook(() => useAddAssetScreen())
+        const { result } = renderHook(() => useAddAssetView())
 
         act(() => {
             result.current.handleRequestAdd('999')
@@ -138,8 +140,9 @@ describe('useAddAssetScreen', () => {
             await result.current.handleConfirmAdd()
         })
 
-        expect(mockShowToast).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'error' }),
+        expect(mockShowError).toHaveBeenCalledWith(
+            optInError,
+            'add_asset.opt_in.failed_title',
         )
     })
 })

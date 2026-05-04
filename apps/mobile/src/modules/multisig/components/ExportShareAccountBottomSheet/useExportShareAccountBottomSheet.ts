@@ -15,10 +15,9 @@ import { bottomSheetNotifier } from '@components/core'
 import { useClipboard } from '@hooks/useClipboard'
 import { useDeepLink } from '@hooks/useDeepLink'
 import { useLanguage } from '@hooks/useLanguage'
-import { useToast } from '@hooks/useToast'
 import { DeeplinkType } from '@hooks/deeplink/types'
 import { shareText } from '@utils/shareText'
-import { config } from '@perawallet/wallet-core-config'
+import { useErrorToast } from '@hooks/useErrorToast'
 
 export type UseExportShareAccountBottomSheetParams = {
     accountAddress: string
@@ -34,7 +33,7 @@ export const useExportShareAccountBottomSheet = ({
     accountAddress,
 }: UseExportShareAccountBottomSheetParams): UseExportShareAccountBottomSheetResult => {
     const { t } = useLanguage()
-    const { showToast } = useToast()
+    const { showError } = useErrorToast()
     const { copyToClipboard } = useClipboard()
     const { buildDeeplink } = useDeepLink()
 
@@ -58,20 +57,11 @@ export const useExportShareAccountBottomSheet = ({
                 message: exportUrl,
             })
         } catch (error) {
-            showToast(
-                {
-                    title: t('errors.general.title'),
-                    body: config.debugEnabled
-                        ? `${error}`
-                        : t('errors.general.body'),
-                    type: 'error',
-                },
-                {
-                    notifier: bottomSheetNotifier.current ?? undefined,
-                },
-            )
+            showError(error, t('errors.general.title'), {
+                notifier: bottomSheetNotifier.current ?? undefined,
+            })
         }
-    }, [exportUrl, showToast, t])
+    }, [exportUrl, showError, t])
 
     return {
         exportUrl,

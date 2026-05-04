@@ -14,7 +14,6 @@ import { useEffect, useMemo } from 'react'
 import { BackHandler } from 'react-native'
 
 import { bottomSheetNotifier } from '@components/core'
-import { useToast } from '@hooks/useToast'
 import { useSendFunds } from '@modules/transactions/hooks'
 import {
     useAccountBalancesInvalidator,
@@ -29,8 +28,7 @@ import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
-import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
-import { logger } from '@perawallet/wallet-core-shared'
+import { useErrorToast } from '@hooks/useErrorToast'
 
 export const useTransactionProcessingScreen = () => {
     const navigation =
@@ -55,8 +53,7 @@ export const useTransactionProcessingScreen = () => {
         return assets.get(selectedAssetId)
     }, [selectedAssetId, assets])
     const selectedAccount = useSelectedAccount()
-    const { showToast } = useToast()
-    const { getMessage } = useAlgodErrorMessage()
+    const { showError } = useErrorToast()
     const { invalidate: invalidateAccountBalances } =
         useAccountBalancesInvalidator()
 
@@ -94,18 +91,9 @@ export const useTransactionProcessingScreen = () => {
                     navigation.goBack()
                     return
                 }
-                logger.error('Transaction failed', { error })
-                const { title, body } = getMessage(error)
-                showToast(
-                    {
-                        title,
-                        body,
-                        type: 'error',
-                    },
-                    {
-                        notifier: bottomSheetNotifier.current ?? undefined,
-                    },
-                )
+                showError(error, undefined, {
+                    notifier: bottomSheetNotifier.current ?? undefined,
+                })
                 navigation.goBack()
             })
 

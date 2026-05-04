@@ -146,6 +146,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
             try {
                 await shareCsvFile(result.filename, result.csvContent)
             } catch (error) {
+                // guardrails-ignore-next-line no-error-toast-in-catch reason: csv share path stringifies the raw error directly into the body; predates useErrorToast
                 showToast({
                     title: t('errors.general.title'),
                     body: `${error}`,

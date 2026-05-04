@@ -15,8 +15,6 @@ import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { useToast } from '@hooks/useToast'
-import { useLanguage } from '@hooks/useLanguage'
 import {
     useTransactionHistoryQuery,
     useCsvExportMutation,
@@ -35,6 +33,7 @@ import {
 import type { TransactionSection } from '../../../../accounts/components/AccountHistory/useAccountHistory'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { useErrorToast } from '@hooks/useErrorToast'
 
 type UseAssetTransactionListParams = {
     account: WalletAccount
@@ -118,8 +117,7 @@ export const useAssetTransactionList = ({
         refetch()
     }, [refetch])
 
-    const { t } = useLanguage()
-    const { showToast } = useToast()
+    const { showError } = useErrorToast()
 
     const { exportCsv, isLoading: isExportingCsv } = useCsvExportMutation({
         network,
@@ -127,19 +125,11 @@ export const useAssetTransactionList = ({
             try {
                 await shareCsvFile(result.filename, result.csvContent)
             } catch (error) {
-                showToast({
-                    title: t('errors.general.title'),
-                    body: `${error}`,
-                    type: 'error',
-                })
+                showError(error)
             }
         },
         onError: error => {
-            showToast({
-                title: t('errors.general.title'),
-                body: error?.message || t('errors.general.body'),
-                type: 'error',
-            })
+            showError(error)
         },
     })
 

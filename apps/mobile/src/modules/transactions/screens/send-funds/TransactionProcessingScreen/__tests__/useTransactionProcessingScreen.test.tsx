@@ -16,7 +16,7 @@ import { useTransactionProcessingScreen } from '../useTransactionProcessingScree
 import { Decimal } from 'decimal.js'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
-import { useToast } from '@hooks/useToast'
+import { useErrorToast } from '@hooks/useErrorToast'
 import { useSendFunds } from '@modules/transactions/hooks'
 import { useTransactionSendFlow } from '@perawallet/wallet-core-transactions'
 
@@ -56,8 +56,8 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
     useTransactionSendFlow: vi.fn(),
 }))
 
-vi.mock('@hooks/useToast', () => ({
-    useToast: vi.fn(),
+vi.mock('@hooks/useErrorToast', () => ({
+    useErrorToast: vi.fn(),
 }))
 
 vi.mock('@modules/transactions/hooks', () => ({
@@ -77,12 +77,8 @@ vi.mock('@hooks/useLanguage', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-config', () => ({
-    config: { debugEnabled: false },
-}))
-
 describe('useTransactionProcessingScreen', () => {
-    const mockShowToast = vi.fn()
+    const mockShowError = vi.fn()
     const mockExecute = vi.fn()
 
     const mockAccount = {
@@ -115,8 +111,8 @@ describe('useTransactionProcessingScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockExecute.mockResolvedValue('TX_ID_123')
-        ;(useToast as Mock).mockReturnValue({
-            showToast: mockShowToast,
+        ;(useErrorToast as Mock).mockReturnValue({
+            showError: mockShowError,
         })
         ;(useSelectedAccount as Mock).mockReturnValue(null)
         ;(useAssetsQuery as Mock).mockReturnValue({
@@ -197,18 +193,9 @@ describe('useTransactionProcessingScreen', () => {
             renderHook(() => useTransactionProcessingScreen())
         })
 
-        expect(mockShowToast).toHaveBeenCalledWith(
-            expect.objectContaining({
-                title: expect.stringContaining(
-                    'errors.algod.unknown_node_error',
-                ),
-                body: expect.stringContaining(
-                    'errors.algod.unknown_node_error',
-                ),
-                type: 'error',
-            }),
-            { notifier: undefined },
-        )
+        expect(mockShowError).toHaveBeenCalledWith(mockError, undefined, {
+            notifier: undefined,
+        })
         expect(mockGoBack).toHaveBeenCalled()
     })
 

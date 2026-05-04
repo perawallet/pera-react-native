@@ -104,6 +104,7 @@ export const useNameAccountScreen = () => {
 
             exitAccountFlow()
         } catch (error) {
+            // guardrails-ignore-next-line no-error-toast-in-catch reason: localized create_account.error_message wraps the raw error; preserved verbatim
             showToast({
                 title: t('onboarding.create_account.error_title'),
                 body: t('onboarding.create_account.error_message', {

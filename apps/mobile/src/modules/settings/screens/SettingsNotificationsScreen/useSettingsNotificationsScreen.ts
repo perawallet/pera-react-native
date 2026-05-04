@@ -58,6 +58,7 @@ export const useSettingsNotificationsScreen =
                     status: enabled,
                 }).catch(() => {
                     setAccountEnabled(account.address, !enabled)
+                    // guardrails-ignore-next-line no-error-toast-in-catch reason: localized common.error copy preserved; no exception detail surfaced
                     showToast({
                         title: t('common.error.title'),
                         body: t('common.error.body'),

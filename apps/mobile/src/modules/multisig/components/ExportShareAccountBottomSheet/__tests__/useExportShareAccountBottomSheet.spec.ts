@@ -31,8 +31,8 @@ vi.mock('@hooks/useDeepLink', () => ({
     }),
 }))
 
-vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({ showToast: mockShowToast }),
+vi.mock('@hooks/useErrorToast', () => ({
+    useErrorToast: () => ({ showError: mockShowToast }),
 }))
 
 vi.mock('@hooks/useLanguage', () => ({
@@ -110,7 +110,8 @@ describe('useExportShareAccountBottomSheet', () => {
         })
 
         expect(mockShowToast).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'error' }),
+            expect.any(Error),
+            expect.any(String),
             expect.any(Object),
         )
     })

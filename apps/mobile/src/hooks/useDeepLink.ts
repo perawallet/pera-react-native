@@ -342,6 +342,7 @@ export const useDeepLink = () => {
             onSuccess?.()
         } catch (error) {
             logger.error(error as Error, { url })
+            // guardrails-ignore-next-line no-error-toast-in-catch reason: bespoke deeplink-failure copy preserved verbatim
             showToast({
                 title: 'Navigation Error',
                 body: 'Could not navigate to the requested screen',

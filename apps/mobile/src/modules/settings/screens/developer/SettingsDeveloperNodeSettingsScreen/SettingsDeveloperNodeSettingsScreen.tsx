@@ -43,6 +43,7 @@ export const SettingsDeveloperNodeSettingsScreen = () => {
                 // SyncService not yet initialized
             }
         } catch {
+            // guardrails-ignore-next-line no-error-toast-in-catch reason: localized network-switch error copy preserved
             showToast({
                 title: t('settings.developer.node_settings.switch_error_title'),
                 body: t('settings.developer.node_settings.switch_error_body'),
