@@ -35,7 +35,7 @@
     "base64-js": "^1.5.1",
     "bip39": "catalog:",
     "decimal.js": "^10.6.0",
-    "ky": "^1.14.0",
+    "ky": "^2.0.2",
     "react": "catalog:",
     "react-native-quick-base64": "^2.2.2",
     "util": "catalog:",
