@@ -20,6 +20,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => [],
     getAccountDisplayName: (account: { name?: string }) =>
         account?.name ?? 'Account',
+    isMultisigAccount: () => false,
 }))
 
 vi.mock(
