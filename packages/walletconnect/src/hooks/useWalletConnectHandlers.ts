@@ -28,6 +28,7 @@ import { useWalletConnectStore } from '../store'
 import {
     PeraSignedTransaction,
     useTransactionEncoder,
+    validateArc0001SignTxnParams,
 } from '@perawallet/wallet-core-blockchain'
 import {
     type ArbitraryDataSignRequest,
@@ -244,7 +245,8 @@ export const useWalletConnectHandlers = () => {
     const connections = useWalletConnectStore(
         state => state.walletConnectConnections,
     )
-    const { addSignRequest } = useSigningRequest()
+    const { addSignRequest, removeSignRequest, clearLastFailedRequest } =
+        useSigningRequest()
     const { encodeSignedTransactions, decodeTransactions } =
         useTransactionEncoder()
     const accounts = useAllAccounts()
@@ -257,7 +259,6 @@ export const useWalletConnectHandlers = () => {
             error: Nullable<Error>,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             payload: any,
-            onError: (error: Error) => void,
         ) => {
             const { stdSigData, metadata } = validateArc60Request(
                 connector,
@@ -268,7 +269,7 @@ export const useWalletConnectHandlers = () => {
                 error,
             )
 
-            addSignRequest({
+            const signRequest: Arc60SignRequest = {
                 id: generateOrderedUniqueId(),
                 type: 'arc60',
                 transport: 'callback',
@@ -303,11 +304,32 @@ export const useWalletConnectHandlers = () => {
                     })
                 },
                 error: async (err: Error) => {
-                    onError(new WalletConnectSignRequestError(err.message))
+                    connector.rejectRequest({
+                        id: payload.id,
+                        error: err,
+                    })
+                    useWalletConnectStore
+                        .getState()
+                        .setConnectionError(
+                            new WalletConnectSignRequestError(err.message),
+                        )
+                    // Pull the request out of the queue and clear the
+                    // failed-request flag so the WC error bottom sheet is the
+                    // only surface — otherwise we'd also flash the signing
+                    // pipeline's full-screen "Signing Failed" view.
+                    clearLastFailedRequest()
+                    removeSignRequest(signRequest)
                 },
-            } as Arc60SignRequest)
+            } as Arc60SignRequest
+            addSignRequest(signRequest)
         },
-        [connections, accounts, addSignRequest],
+        [
+            connections,
+            accounts,
+            addSignRequest,
+            removeSignRequest,
+            clearLastFailedRequest,
+        ],
     )
 
     const handleSignData = useCallback(
@@ -318,7 +340,6 @@ export const useWalletConnectHandlers = () => {
             //TODO type this correctly
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             payload: Nullable<any>,
-            onError: (error: Error) => void,
         ) => {
             const params = payload?.params
 
@@ -334,7 +355,7 @@ export const useWalletConnectHandlers = () => {
                     params.metadata?.scope != null)
 
             if (isArc60Payload) {
-                handleArc60SignData(connector, network, error, payload, onError)
+                handleArc60SignData(connector, network, error, payload)
                 return
             }
 
@@ -347,7 +368,7 @@ export const useWalletConnectHandlers = () => {
                 error,
             )
 
-            addSignRequest({
+            const signRequest: ArbitraryDataSignRequest = {
                 id: generateOrderedUniqueId(),
                 type: 'arbitrary-data',
                 transport: 'callback',
@@ -381,11 +402,29 @@ export const useWalletConnectHandlers = () => {
                     })
                 },
                 error: async (error: Error) => {
-                    onError(new WalletConnectSignRequestError(error.message))
+                    connector.rejectRequest({
+                        id: payload.id,
+                        error,
+                    })
+                    useWalletConnectStore
+                        .getState()
+                        .setConnectionError(
+                            new WalletConnectSignRequestError(error.message),
+                        )
+                    clearLastFailedRequest()
+                    removeSignRequest(signRequest)
                 },
-            } as ArbitraryDataSignRequest)
+            } as ArbitraryDataSignRequest
+            addSignRequest(signRequest)
         },
-        [connections, accounts, addSignRequest],
+        [
+            connections,
+            accounts,
+            addSignRequest,
+            removeSignRequest,
+            clearLastFailedRequest,
+            handleArc60SignData,
+        ],
     )
 
     const handleSignTransaction = useCallback(
@@ -394,7 +433,6 @@ export const useWalletConnectHandlers = () => {
             network: Network,
             error: Nullable<Error>,
             payload: Nullable<WalletConnectTransactionPayload>,
-            onError: (error: Error) => void,
         ) => {
             logger.debug('handleSignTransaction', { payload, network })
             validateRequest(connector, connections, network, error)
@@ -403,6 +441,16 @@ export const useWalletConnectHandlers = () => {
                 throw new WalletConnectSignRequestError(
                     'Invalid data found - parameter required',
                 )
+            }
+
+            // ARC-0001: reject malformed address fields (bad authAddr / signers)
+            // before decoding so the user sees a wallet-side error instead of
+            // the signing sheet for txns the node would reject anyway.
+            // (Group ID integrity is validated downstream by the signing
+            // pipeline analyzer, since it applies to every signing source.)
+            const arc0001Error = validateArc0001SignTxnParams(paramOne)
+            if (arc0001Error) {
+                throw new WalletConnectSignRequestError(arc0001Error.message)
             }
 
             // Decode all transactions upfront so we can inspect senders
@@ -433,7 +481,7 @@ export const useWalletConnectHandlers = () => {
             const signableTxns = indicesToSign.map(i => allTxnObjects[i])
             const signableRawTxns = indicesToSign.map(i => paramOne[i].txn)
 
-            addSignRequest({
+            const signRequest: TransactionSignRequest = {
                 id: generateOrderedUniqueId(),
                 type: 'transactions',
                 transport: 'callback',
@@ -468,11 +516,28 @@ export const useWalletConnectHandlers = () => {
                     })
                 },
                 error: async (error: Error) => {
-                    onError(new WalletConnectSignRequestError(error.message))
+                    connector.rejectRequest({
+                        id: payload.id,
+                        error,
+                    })
+                    useWalletConnectStore
+                        .getState()
+                        .setConnectionError(
+                            new WalletConnectSignRequestError(error.message),
+                        )
+                    clearLastFailedRequest()
+                    removeSignRequest(signRequest)
                 },
-            } as TransactionSignRequest)
+            } as TransactionSignRequest
+            addSignRequest(signRequest)
         },
-        [connections, addSignRequest, signingAccounts],
+        [
+            connections,
+            addSignRequest,
+            removeSignRequest,
+            clearLastFailedRequest,
+            signingAccounts,
+        ],
     )
 
     return {

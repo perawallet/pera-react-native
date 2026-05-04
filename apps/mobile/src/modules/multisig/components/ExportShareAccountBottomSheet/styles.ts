@@ -10,11 +10,27 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-walletconnect'
+import { makeStyles } from '@rneui/themed'
 
-export * from './models'
-export * from './errors'
-export * from './hooks/useWalletConnectSessionRequests'
-export * from './hooks/useWalletConnect'
-export * from './constants'
-export { useWalletConnectStore } from './store'
+export const useStyles = makeStyles(theme => ({
+    container: {
+        paddingHorizontal: theme.spacing.xl,
+        paddingBottom: theme.spacing.xxl,
+    },
+    qrSection: {
+        alignItems: 'center',
+        gap: theme.spacing.md,
+        marginTop: theme.spacing.xl,
+    },
+    label: {
+        textAlign: 'center',
+    },
+    url: {
+        color: theme.colors.textGray,
+        textAlign: 'center',
+    },
+    actions: {
+        gap: theme.spacing.md,
+        marginTop: theme.spacing.xl,
+    },
+}))

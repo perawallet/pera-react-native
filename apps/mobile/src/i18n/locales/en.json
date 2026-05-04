@@ -280,6 +280,8 @@
         "undo_rekey": "Undo Rekey",
         "rekey_to_ledger": "Rekey to Ledger Account",
         "rekey_to_standard": "Rekey to Standard Account",
+        "rekey_to_shared": "Rekey to Shared Account",
+        "export_share_account": "Export/Share Account",
         "rename_account": "Rename Account",
         "mute_notifications": "Mute Notifications",
         "unmute_notifications": "Unmute Notifications",
@@ -314,7 +316,7 @@
         "type_algo25": "Algo25 Account",
         "type_watch": "Watch Account",
         "type_ledger": "Ledger Account",
-        "type_multisig": "Multisig Account",
+        "type_multisig": "Shared Account ({{count}})",
         "type_unknown": "Unknown Account"
     },
     "account_type_info": {
@@ -761,6 +763,18 @@
             "address_label": "Account Address",
             "remove": "Remove Address",
             "done": "Done"
+        },
+        "detail": {
+            "title": "Shared account details",
+            "number_of_accounts": "Number of accounts",
+            "threshold": "Threshold",
+            "accounts_title": "Accounts ({{count}})"
+        },
+        "export": {
+            "title": "Export/Share Account",
+            "url_label": "Account Export URL",
+            "copy_url": "Copy URL",
+            "share_url": "Share URL"
         },
         "invitation": {
             "sheet_title": "Shared Account",
