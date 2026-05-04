@@ -13,8 +13,10 @@
 import { useCallback, useMemo } from 'react'
 import { bottomSheetNotifier } from '@components/core'
 import { useClipboard } from '@hooks/useClipboard'
+import { useDeepLink } from '@hooks/useDeepLink'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
+import { DeeplinkType } from '@hooks/deeplink/types'
 import { shareText } from '@utils/shareText'
 import { config } from '@perawallet/wallet-core-config'
 
@@ -34,11 +36,16 @@ export const useExportShareAccountBottomSheet = ({
     const { t } = useLanguage()
     const { showToast } = useToast()
     const { copyToClipboard } = useClipboard()
+    const { buildDeeplink } = useDeepLink()
 
-    const exportUrl = useMemo(() => {
-        const encodedAddress = encodeURIComponent(accountAddress)
-        return `perawallet://app/joint-account-import/?address=${encodedAddress}`
-    }, [accountAddress])
+    const exportUrl = useMemo(
+        () =>
+            buildDeeplink({
+                type: DeeplinkType.SHARED_ACCOUNT_IMPORT,
+                address: accountAddress,
+            }),
+        [accountAddress, buildDeeplink],
+    )
 
     const handleCopyUrl = useCallback(() => {
         copyToClipboard(exportUrl)

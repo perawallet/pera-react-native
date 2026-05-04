@@ -24,6 +24,13 @@ vi.mock('@hooks/useClipboard', () => ({
     useClipboard: () => ({ copyToClipboard: mockCopyToClipboard }),
 }))
 
+vi.mock('@hooks/useDeepLink', () => ({
+    useDeepLink: () => ({
+        buildDeeplink: ({ address }: { address: string }) =>
+            `perawallet://app/shared-account-import/?address=${encodeURIComponent(address)}`,
+    }),
+}))
+
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({ showToast: mockShowToast }),
 }))
@@ -58,7 +65,7 @@ describe('useExportShareAccountBottomSheet', () => {
         )
 
         expect(result.current.exportUrl).toBe(
-            `perawallet://app/joint-account-import/?address=${encodeURIComponent(TEST_ADDRESS)}`,
+            `perawallet://app/shared-account-import/?address=${encodeURIComponent(TEST_ADDRESS)}`,
         )
     })
 
