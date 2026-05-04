@@ -10,4 +10,5 @@
  limitations under the License
  */
 
-export * from './store'
+export { ExportShareAccountBottomSheet } from './ExportShareAccountBottomSheet'
+export type { ExportShareAccountBottomSheetProps } from './ExportShareAccountBottomSheet'

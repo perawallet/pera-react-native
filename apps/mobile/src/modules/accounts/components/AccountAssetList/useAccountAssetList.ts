@@ -32,7 +32,7 @@ import {
 import { useGlobalSearch } from '@perawallet/wallet-core-search'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
-import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
+import { useErrorToast } from '@hooks/useErrorToast'
 import { useModalState, ModalState } from '@hooks/useModalState'
 import { useToast } from '@hooks/useToast'
 import { useState } from 'react'
@@ -130,7 +130,7 @@ export const useAccountAssetList = ({
     const { data: assetPrices } = useAssetPricesQuery(assetIDs)
     const { optOut, isLoading: isOptingOut } = useAssetOptOutMutation()
     const { showToast } = useToast()
-    const { getMessage } = useAlgodErrorMessage()
+    const { showError } = useErrorToast()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
 
     const { sortedBalances, assetSortMode } = useSortedAssetBalances(
@@ -208,11 +208,7 @@ export const useAccountAssetList = ({
                 // User dismissed the LedgerSigningOverlay — overlay already went away; no toast.
                 return
             }
-            showToast({
-                title: t('asset_opt_out.error'),
-                body: getMessage(err).body,
-                type: 'error',
-            })
+            showError(err, t('asset_opt_out.error'))
         } finally {
             optOutConfirmationState.close()
             setAssetForOptOut(null)
@@ -225,7 +221,7 @@ export const useAccountAssetList = ({
         optOutConfirmationState,
         showToast,
         t,
-        getMessage,
+        showError,
     ])
 
     const handleCloseOptOut = useCallback(() => {

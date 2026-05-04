@@ -14,7 +14,6 @@ import {
     initDecimalConfig,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-
 // Initialize Decimal.js configuration before any other imports that may use it
 initDecimalConfig()
 

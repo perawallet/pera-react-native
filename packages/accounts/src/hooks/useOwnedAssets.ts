@@ -50,14 +50,17 @@ export const useOwnedAssets = (
         staleTime: OWNED_ASSET_IDS_STALE_TIME_MS,
     })
 
-    const { data: assetsMap, isPending: isAssetsPending } =
-        useAssetsQuery(ownedAssetIds)
+    // ALGO isn't stored in the holdings table (it lives on the account balance
+    // row), but it is seeded into the assets metadata DB on bootstrap — so we
+    // include its ID here to pick up DB-backed peraMetadata (e.g. isFavorited).
+    // The constant only acts as a pre-seed fallback.
+    const { data: assetsMap, isPending: isAssetsPending } = useAssetsQuery([
+        ALGO_ASSET_ID,
+        ...ownedAssetIds,
+    ])
 
     const assets = useMemo<PeraAsset[]>(() => {
-        // ALGO isn't stored in the holdings table (it lives on the account
-        // balance row) nor in the assets metadata DB, so it never comes back
-        // from the underlying queries — but every account implicitly holds it.
-        const list: PeraAsset[] = [ALGO_ASSET]
+        const list: PeraAsset[] = [assetsMap.get(ALGO_ASSET_ID) ?? ALGO_ASSET]
         for (const id of ownedAssetIds) {
             if (id === ALGO_ASSET_ID) continue
             const asset = assetsMap.get(id)

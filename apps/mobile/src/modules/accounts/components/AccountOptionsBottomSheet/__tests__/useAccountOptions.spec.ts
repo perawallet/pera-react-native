@@ -132,6 +132,16 @@ describe('useAccountOptions', () => {
         },
     }
 
+    const multisigAccount: WalletAccount = {
+        id: 'acc-6',
+        address: 'MULTISIGADDRESS',
+        type: AccountTypes.multisig,
+        multisigDetails: {
+            threshold: 2,
+            addresses: ['ALGO25ADDRESS', 'HARDWAREADDRESS'],
+        },
+    }
+
     beforeEach(() => {
         vi.clearAllMocks()
         mockIsAccountEnabled.mockReturnValue(true)
@@ -148,6 +158,8 @@ describe('useAccountOptions', () => {
                     return 'RekeyedAuth'
                 case hardwareAccount.address:
                     return 'LedgerBle'
+                case multisigAccount.address:
+                    return 'Multisig'
                 default:
                     return null
             }
@@ -239,6 +251,7 @@ describe('useAccountOptions', () => {
             expect(optionIds).toContain('rekey-to-standard')
             expect(optionIds).toContain('undo-rekey')
             expect(optionIds).not.toContain('view-passphrase')
+            expect(optionIds).not.toContain('rekey-to-shared')
         })
 
         it('shows rekey options but hides passphrase for a hardware account', () => {
@@ -260,6 +273,29 @@ describe('useAccountOptions', () => {
                 'toggle-notifications',
                 'remove-account',
             ])
+        })
+
+        it('shows rekey-to-shared and export options for a shared account', () => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: multisigAccount,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const optionIds = result.current.options.map(o => o.id)
+            expect(optionIds).toEqual([
+                'copy-address',
+                'show-address',
+                'rekey-to-shared',
+                'export-share-account',
+                'rename-account',
+                'toggle-notifications',
+                'remove-account',
+            ])
+            expect(optionIds).not.toContain('rekey-to-ledger')
+            expect(optionIds).not.toContain('rekey-to-standard')
         })
     })
 
@@ -583,7 +619,30 @@ describe('useAccountOptions', () => {
             expect(mockOnShowAddress).toHaveBeenCalled()
         })
 
-        it('shows not implemented toast for view-passphrase', () => {
+        it('closes the options sheet and opens the passphrase flow when view-passphrase is pressed', () => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            expect(result.current.isPassphraseFlowVisible).toBe(false)
+
+            const passphraseOption = result.current.options.find(
+                o => o.id === 'view-passphrase',
+            )
+
+            act(() => {
+                passphraseOption?.onPress()
+            })
+
+            expect(mockOnClose).toHaveBeenCalled()
+            expect(result.current.isPassphraseFlowVisible).toBe(true)
+        })
+
+        it('hides the passphrase flow when handleClosePassphraseFlow is called', () => {
             const { result } = renderHook(() =>
                 useAccountOptions({
                     account: algo25Account,
@@ -600,12 +659,13 @@ describe('useAccountOptions', () => {
                 passphraseOption?.onPress()
             })
 
-            expect(mockShowToast).toHaveBeenCalledWith({
-                title: 'common.not_implemented.title',
-                body: 'common.not_implemented.body',
-                type: 'error',
+            expect(result.current.isPassphraseFlowVisible).toBe(true)
+
+            act(() => {
+                result.current.handleClosePassphraseFlow()
             })
-            expect(mockOnClose).toHaveBeenCalled()
+
+            expect(result.current.isPassphraseFlowVisible).toBe(false)
         })
 
         it('shows not implemented toast for rekey-to-ledger', () => {
@@ -654,6 +714,51 @@ describe('useAccountOptions', () => {
                 body: 'common.not_implemented.body',
                 type: 'error',
             })
+        })
+
+        it('shows not implemented toast for rekey-to-shared', () => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: multisigAccount,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const rekeyOption = result.current.options.find(
+                o => o.id === 'rekey-to-shared',
+            )
+
+            act(() => {
+                rekeyOption?.onPress()
+            })
+
+            expect(mockShowToast).toHaveBeenCalledWith({
+                title: 'common.not_implemented.title',
+                body: 'common.not_implemented.body',
+                type: 'error',
+            })
+        })
+
+        it('navigates to export shared account screen', () => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: multisigAccount,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const exportOption = result.current.options.find(
+                o => o.id === 'export-share-account',
+            )
+
+            act(() => {
+                exportOption?.onPress()
+            })
+
+            expect(mockOnClose).toHaveBeenCalled()
+            expect(result.current.isExportShareVisible).toBe(true)
         })
 
         it('shows not implemented toast for undo-rekey', () => {

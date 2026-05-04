@@ -18,3 +18,9 @@ export * from './errors'
 export { WORDLIST as MNEMONIC_WORDLIST } from './crypto/wordlist'
 export { uniformIntBelow, pickDistinctIndexes } from './crypto/random'
 export { zeroBytes } from './crypto/secure-memory'
+export { ALGO25_KEYSTORE_TYPE } from './constants'
+
+// `installKMSKeystoreHooks` is intentionally NOT re-exported here — it pulls
+// `@algorandfoundation/react-native-keystore` (MMKV native), which would
+// break sibling-package vitest runs. Import it from
+// `@perawallet/wallet-core-kms/bootstrap` in the app's entry module.

@@ -56,7 +56,7 @@ describe('useMarkMnemonicBackupComplete', () => {
         mockUseAccountsStore.mockReset()
     })
 
-    test('marks the single key id when account is Algo25', async () => {
+    test('marks the wallet root id when account is Algo25', async () => {
         const { useMnemonicBackupStore } = await import('../../store')
         const { useMarkMnemonicBackupComplete } =
             await import('../useMarkMnemonicBackupComplete')
@@ -65,7 +65,6 @@ describe('useMarkMnemonicBackupComplete', () => {
             type: AccountTypes.algo25,
             address: 'ADDR',
             keyPairId: 'kp-1',
-            seedKeyId: 'seed-1',
         }
 
         mockUseAccountsStore.mockReturnValue([account])
@@ -76,11 +75,11 @@ describe('useMarkMnemonicBackupComplete', () => {
         })
 
         expect(useMnemonicBackupStore.getState().backedUpKeyIds).toEqual({
-            'seed-1': true,
+            'kp-1': true,
         })
     })
 
-    test('marks all HD siblings sharing the same entropyKeyId', async () => {
+    test('marks all HD siblings sharing the same wallet root', async () => {
         const { useMnemonicBackupStore } = await import('../../store')
         const { useMarkMnemonicBackupComplete } =
             await import('../useMarkMnemonicBackupComplete')
@@ -94,22 +93,19 @@ describe('useMarkMnemonicBackupComplete', () => {
         const a1: WalletAccount = {
             type: AccountTypes.hdWallet,
             address: 'HD1',
-            keyPairId: 'kp-1',
-            entropyKeyId: 'entropy-A',
+            keyPairId: 'kp-shared',
             hdWalletDetails: hdDetails,
         }
         const a2: WalletAccount = {
             type: AccountTypes.hdWallet,
             address: 'HD2',
-            keyPairId: 'kp-2',
-            entropyKeyId: 'entropy-A',
+            keyPairId: 'kp-shared',
             hdWalletDetails: { ...hdDetails, keyIndex: 1 },
         }
         const a3: WalletAccount = {
             type: AccountTypes.hdWallet,
             address: 'HD3',
-            keyPairId: 'kp-3',
-            entropyKeyId: 'entropy-B',
+            keyPairId: 'kp-other',
             hdWalletDetails: hdDetails,
         }
 
@@ -121,7 +117,7 @@ describe('useMarkMnemonicBackupComplete', () => {
         })
 
         expect(useMnemonicBackupStore.getState().backedUpKeyIds).toEqual({
-            'entropy-A': true,
+            'kp-shared': true,
         })
     })
 

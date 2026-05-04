@@ -35,6 +35,7 @@ import {
     SellDeeplink,
     AccountDetailDeeplink,
     InternalBrowserDeeplink,
+    SharedAccountImportDeeplink,
     HomeDeeplink,
 } from './types'
 import {
@@ -287,6 +288,18 @@ export function parsePerawalletAppUri(
             sourceUrl: url,
             address: params.address,
         } as AccountDetailDeeplink
+    }
+
+    if (
+        cleanPath === 'shared-account-import' ||
+        cleanPath === 'joint-account-import'
+    ) {
+        if (!params.address) return null
+        return {
+            type: DeeplinkType.SHARED_ACCOUNT_IMPORT,
+            sourceUrl: url,
+            address: params.address,
+        } as SharedAccountImportDeeplink
     }
 
     if (cleanPath === 'internal-browser') {

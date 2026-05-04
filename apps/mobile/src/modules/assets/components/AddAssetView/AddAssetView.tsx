@@ -18,7 +18,7 @@ import { AssetSearchItem } from '@modules/assets/components/AssetSearchItem'
 import { OptInConfirmationBottomSheet } from '@modules/assets/components/OptInConfirmationBottomSheet'
 import type { AssetSearchItem as AssetSearchItemType } from '@perawallet/wallet-core-assets'
 import type { AddAssetBottomSheetVariant } from '@modules/assets/components/AddAssetBottomSheet'
-import { useAddAssetScreen } from './useAddAssetScreen'
+import { useAddAssetView } from './useAddAssetView'
 import { useStyles } from './styles'
 import { LoadingView } from '@components/LoadingView'
 import { SearchInput } from '@components/SearchInput'
@@ -27,7 +27,7 @@ type AddAssetScreenProps = {
     variant?: AddAssetBottomSheetVariant
 }
 
-export const AddAssetScreen = ({ variant = 'asset' }: AddAssetScreenProps) => {
+export const AddAssetView = ({ variant = 'asset' }: AddAssetScreenProps) => {
     const styles = useStyles()
     const isCollectible = variant === 'collectible'
     const {
@@ -47,7 +47,7 @@ export const AddAssetScreen = ({ variant = 'asset' }: AddAssetScreenProps) => {
         selectedAccountAddress,
         selectedAccountName,
         t,
-    } = useAddAssetScreen({ variant })
+    } = useAddAssetView({ variant })
 
     const renderItem = useCallback(
         ({ item }: { item: AssetSearchItemType }) => (

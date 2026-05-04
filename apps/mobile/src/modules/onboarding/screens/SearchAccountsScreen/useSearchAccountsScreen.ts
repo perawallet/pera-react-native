@@ -174,6 +174,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                 }
             }
         } catch {
+            // guardrails-ignore-next-line no-error-toast-in-catch reason: localized import_account.failed_body preserved; raw error not surfaced to user
             showToast({
                 type: 'error',
                 title: t('onboarding.import_account.failed_title'),

@@ -69,6 +69,7 @@ export const useAddAccountScreen = () => {
                     navigation.push('NameAccount', { account: newAccount })
                 }
             } catch (error) {
+                // guardrails-ignore-next-line no-error-toast-in-catch reason: localized create_account.error_message wraps the raw error; preserved verbatim
                 showToast({
                     title: t('onboarding.create_account.error_title'),
                     body: t('onboarding.create_account.error_message', {
@@ -130,6 +131,7 @@ export const useAddAccountScreen = () => {
                 })
                 navigation.push('NameAccount', { account: newAccount })
             } catch (error) {
+                // guardrails-ignore-next-line no-error-toast-in-catch reason: localized create_account.error_message wraps the raw error; preserved verbatim
                 showToast({
                     title: t('onboarding.create_account.error_title'),
                     body: t('onboarding.create_account.error_message', {
@@ -157,6 +159,7 @@ export const useAddAccountScreen = () => {
                 const newAccount = await createAlgo25WalletAccount({})
                 navigation.push('NameAccount', { account: newAccount })
             } catch (error) {
+                // guardrails-ignore-next-line no-error-toast-in-catch reason: localized create_account.error_message wraps the raw error; preserved verbatim
                 showToast({
                     title: t('onboarding.create_account.error_title'),
                     body: t('onboarding.create_account.error_message', {

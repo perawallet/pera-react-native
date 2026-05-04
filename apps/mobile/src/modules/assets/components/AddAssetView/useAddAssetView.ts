@@ -19,18 +19,18 @@ import type { AssetSearchItem } from '@perawallet/wallet-core-assets'
 import { useGlobalSearch } from '@perawallet/wallet-core-search'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { useAssetOptInMutation } from '@perawallet/wallet-core-transactions'
-import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
+import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { SEARCH_DEBOUNCE_TIME } from '@constants/ui'
 import type { AddAssetBottomSheetVariant } from '@modules/assets/components/AddAssetBottomSheet'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
-type UseAddAssetScreenOptions = {
+type UseAddAssetViewOptions = {
     variant?: AddAssetBottomSheetVariant
 }
 
-type UseAddAssetScreenResult = {
+type UseAddAssetViewResult = {
     searchQuery: string
     handleSearchChange: (text: string) => void
     results: AssetSearchItem[]
@@ -50,9 +50,9 @@ type UseAddAssetScreenResult = {
     t: (key: string, params?: Record<string, string | number>) => string
 }
 
-export const useAddAssetScreen = (
-    options?: UseAddAssetScreenOptions,
-): UseAddAssetScreenResult => {
+export const useAddAssetView = (
+    options?: UseAddAssetViewOptions,
+): UseAddAssetViewResult => {
     const { t } = useLanguage()
     const hasCollectible = options?.variant === 'collectible'
     const [optingInAssetIds, setOptingInAssetIds] = useState<Set<string>>(
@@ -71,7 +71,7 @@ export const useAddAssetScreen = (
     )
     const { optIn } = useAssetOptInMutation()
     const { showToast } = useToast()
-    const { getMessage } = useAlgodErrorMessage()
+    const { showError } = useErrorToast()
 
     const {
         value: searchQuery,
@@ -168,11 +168,7 @@ export const useAddAssetScreen = (
                 // User dismissed the LedgerSigningOverlay — overlay already went away; no toast.
                 return
             }
-            showToast({
-                title: t('add_asset.opt_in.failed_title'),
-                body: getMessage(err).body,
-                type: 'error',
-            })
+            showError(err, t('add_asset.opt_in.failed_title'))
         } finally {
             setOptingInAssetIds(prev => {
                 const next = new Set(prev)
@@ -188,7 +184,7 @@ export const useAddAssetScreen = (
         optingInAssetIds,
         showToast,
         t,
-        getMessage,
+        showError,
     ])
 
     return {
@@ -213,4 +209,4 @@ export const useAddAssetScreen = (
     }
 }
 
-export type { UseAddAssetScreenResult }
+export type { UseAddAssetViewResult }

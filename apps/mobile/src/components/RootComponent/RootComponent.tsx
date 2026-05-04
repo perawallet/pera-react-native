@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { config } from '@perawallet/wallet-core-config'
 import { useEffect, useRef } from 'react'
 import { AppState } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
@@ -20,7 +19,7 @@ import { useStyles } from './styles'
 import { PWText, PWView } from '@components/core'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import ErrorBoundary from 'react-native-error-boundary'
-import { useToast } from '@hooks/useToast'
+import { useErrorToast } from '@hooks/useErrorToast'
 import { useDevice } from '@perawallet/wallet-core-device'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
@@ -38,6 +37,7 @@ import {
     getPollingTransitionAction,
 } from '@utils/app-state'
 import { getSyncService } from '@perawallet/wallet-core-background'
+import { config } from '@perawallet/wallet-core-config'
 
 export type RootComponentProps = {
     fcmToken: Nullable<string>
@@ -48,7 +48,7 @@ const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
     const { hasInternet } = useNetworkStatus()
-    const { showToast } = useToast()
+    const { showError } = useErrorToast()
     const { t } = useLanguage()
 
     // Initialize network status listener (replaces NetworkStatusProvider)
@@ -57,22 +57,16 @@ const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
     // Initialize FCM token (replaces TokenInitializer)
     useTokenListener(fcmToken)
 
-    const showError = (error: string | Error) => {
+    const handleBoundaryError = (error: string | Error) => {
         logger.critical(error, {
             source: 'RootComponentErrorBoundary',
         })
 
-        showToast({
-            title: 'Error',
-            body: config.debugEnabled
-                ? `Details: ${error}`
-                : 'An error has occured, please try again.',
-            type: 'error',
-        })
+        showError(error, t('errors.general.title'))
     }
 
     return (
-        <ErrorBoundary onError={showError}>
+        <ErrorBoundary onError={handleBoundaryError}>
             <PWView style={styles.container}>
                 {isTestnet && (
                     <PWView style={styles.testnetBar}>

@@ -42,7 +42,10 @@ export const ConnectionSuccessBottomSheet = ({
                 size='xl'
                 style={styles.icon}
             />
-            <PWText variant='h3'>
+            <PWText
+                variant='h3'
+                style={styles.message}
+            >
                 {t('walletconnect.request.success_sheet_title', {
                     name: dAppName,
                 })}

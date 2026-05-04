@@ -26,8 +26,9 @@ import {
 const hd = (address: string, keyIndex: number): WalletAccount => ({
     type: AccountTypes.hdWallet,
     address,
-    keyPairId: `kp-${address}`,
-    entropyKeyId: 'entropy-shared',
+    // All siblings share the same root (keyPairId), which keys their backup
+    // state — see getMnemonicBackupKeyId.
+    keyPairId: 'shared-root',
     hdWalletDetails: {
         account: 0,
         change: 0,
@@ -52,7 +53,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 })
 
 describe('Backup flow - HD sibling dedup', () => {
-    test('marking one HD account backed up flags every sibling sharing the entropy id', () => {
+    test('marking one HD account backed up flags every sibling sharing the wallet root', () => {
         useMnemonicBackupStore.getState().resetState()
 
         let mark: ((acc: WalletAccount) => void) | undefined
@@ -76,7 +77,7 @@ describe('Backup flow - HD sibling dedup', () => {
 
         rerender(<Probe />)
         expect(
-            useMnemonicBackupStore.getState().isBackedUp('entropy-shared'),
+            useMnemonicBackupStore.getState().isBackedUp('shared-root'),
         ).toBe(true)
         expect(sibling1Requires.at(-1)).toBe(false)
         expect(sibling2Requires.at(-1)).toBe(false)

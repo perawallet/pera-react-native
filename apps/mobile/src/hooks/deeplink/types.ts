@@ -34,6 +34,7 @@ export const DeeplinkType = {
     SELL: 'SELL',
     ACCOUNT_DETAIL: 'ACCOUNT_DETAIL',
     INTERNAL_BROWSER: 'INTERNAL_BROWSER',
+    SHARED_ACCOUNT_IMPORT: 'SHARED_ACCOUNT_IMPORT',
     HOME: 'HOME',
 } as const
 
@@ -197,6 +198,11 @@ export interface HomeDeeplink extends ParsedDeeplink {
     type: typeof DeeplinkType.HOME
 }
 
+export interface SharedAccountImportDeeplink extends ParsedDeeplink {
+    type: typeof DeeplinkType.SHARED_ACCOUNT_IMPORT
+    address: string
+}
+
 export type AnyParsedDeeplink =
     | AddContactDeeplink
     | EditContactDeeplink
@@ -221,4 +227,5 @@ export type AnyParsedDeeplink =
     | SellDeeplink
     | AccountDetailDeeplink
     | InternalBrowserDeeplink
+    | SharedAccountImportDeeplink
     | HomeDeeplink

@@ -13,7 +13,6 @@
 import type { KeyStoreAPI, KeyData, KeyId } from '@algorandfoundation/keystore'
 import { clearKeyData } from '@algorandfoundation/keystore'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { useKeyManagerStore } from '../store'
 import { AccessControlPermission, KeyPair } from '../models'
 import { KeyAccessError } from '../errors'
 import { useCallback } from 'react'
@@ -39,7 +38,6 @@ type WithExportedKey = <T>(
 
 type UseKMSServiceResult = {
     deleteKey: (id: string) => Promise<void>
-    saveKey: (key: KeyPair) => Promise<KeyPair>
     checkAccess: typeof checkAccess
     keyStore: KeyStoreAPI
     withExportedKey: WithExportedKey
@@ -47,32 +45,15 @@ type UseKMSServiceResult = {
 
 export const useKMSService = (): UseKMSServiceResult => {
     const keyStore = getProvider().key.store
-    const addKey = useKeyManagerStore(state => state.addKey)
-    const getKey = useKeyManagerStore(state => state.getKey)
-    const removeKey = useKeyManagerStore(state => state.removeKey)
 
-    const saveKey = useCallback(
-        async (key: KeyPair) => {
-            addKey(key)
-            return key
-        },
-        [addKey],
-    )
-
+    // The keystore is the single source of truth — `keyStore.remove` mutates
+    // the reactive store that `useKeystoreKeys` subscribes to, so React
+    // consumers re-render automatically.
     const deleteKey = useCallback(
         async (id: string) => {
-            const key = getKey(id)
-            if (!key) {
-                return
-            }
-
-            if (key.keystoreKeyId) {
-                await keyStore.remove(key.keystoreKeyId)
-            }
-
-            removeKey(id)
+            await keyStore.remove(id)
         },
-        [getKey, removeKey, keyStore],
+        [keyStore],
     )
 
     const withExportedKey: WithExportedKey = async (keyId, handler) => {
@@ -86,7 +67,6 @@ export const useKMSService = (): UseKMSServiceResult => {
 
     return {
         deleteKey,
-        saveKey,
         checkAccess,
         keyStore,
         withExportedKey,

@@ -10,4 +10,5 @@
  limitations under the License
  */
 
-export { AddAssetScreen } from './AddAssetScreen'
+export { PassphraseAcknowledgeBottomSheet } from './PassphraseAcknowledgeBottomSheet'
+export type { PassphraseAcknowledgeBottomSheetProps } from './PassphraseAcknowledgeBottomSheet'

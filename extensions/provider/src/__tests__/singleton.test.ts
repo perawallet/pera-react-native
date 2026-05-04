@@ -43,6 +43,8 @@ vi.mock('before-after-hook', () => ({
 
 import {
     getProvider,
+    getKeystoreStore,
+    getKeystoreHooks,
     initializeProvider,
     resetProvider,
     clearKeystore,
@@ -83,5 +85,19 @@ describe('provider singleton', () => {
         expect(keystoreClearMock).toHaveBeenCalledWith(
             expect.objectContaining({ store: expect.any(Object) }),
         )
+    })
+
+    test('getKeystoreStore returns the same TanStack Store instance the keystore extension was wired with', () => {
+        const store = getKeystoreStore()
+        expect(store).toBeDefined()
+        // Same instance across calls — must be a singleton so kms-side
+        // subscriptions and the platform keystore agree on state.
+        expect(getKeystoreStore()).toBe(store)
+    })
+
+    test('getKeystoreHooks returns the same Hook.Collection across calls', () => {
+        const hooks = getKeystoreHooks()
+        expect(hooks).toBeDefined()
+        expect(getKeystoreHooks()).toBe(hooks)
     })
 })

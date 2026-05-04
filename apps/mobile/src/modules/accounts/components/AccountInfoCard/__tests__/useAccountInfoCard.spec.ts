@@ -16,6 +16,7 @@ import { useAccountInfoCard } from '../useAccountInfoCard'
 import type {
     HDWalletAccount,
     HardwareWalletAccount,
+    MultiSigAccount,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 
@@ -26,10 +27,12 @@ vi.mock('@routes/navigationRef', () => ({
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
-        t: (key: string, params?: Record<string, unknown>) =>
-            params?.number != null
-                ? key.replace('{{number}}', String(params.number))
-                : key,
+        t: (key: string, params?: Record<string, unknown>) => {
+            if (params?.number != null)
+                return key.replace('{{number}}', String(params.number))
+            if (params?.count != null) return `${key} (${params.count})`
+            return key
+        },
     }),
 }))
 
@@ -87,6 +90,15 @@ const watchAccount: WalletAccount = {
     address: 'WATCH_ADDR',
 }
 
+const multisigAccount: MultiSigAccount = {
+    type: 'multisig',
+    address: 'MULTISIG_ADDR',
+    multisigDetails: {
+        threshold: 2,
+        addresses: ['ADDR_1', 'ADDR_2', 'ADDR_3'],
+    },
+}
+
 describe('useAccountInfoCard', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -121,6 +133,7 @@ describe('useAccountInfoCard', () => {
             if (address === hdAccount.address) return 'HdKey'
             if (address === ledgerAccount.address) return 'LedgerBle'
             if (address === watchAccount.address) return 'NoAuth'
+            if (address === multisigAccount.address) return 'Multisig'
             return null
         })
     })
@@ -151,6 +164,25 @@ describe('useAccountInfoCard', () => {
         )
         expect(result.current.showStructure).toBe(false)
         expect(result.current.structureAccounts).toEqual([])
+    })
+
+    test('Multisig account: shows shared account details entry with participant count', () => {
+        const { result } = renderHook(() =>
+            useAccountInfoCard({
+                account: multisigAccount,
+                onClose: vi.fn(),
+            }),
+        )
+
+        expect(result.current.accountTypeLabel).toBe(
+            'account_info.type_multisig (3)',
+        )
+        expect(result.current.showSharedAccountDetails).toBe(true)
+        expect(result.current.sharedAccountDetails).toEqual({
+            participantCount: 3,
+            threshold: 2,
+            addresses: ['ADDR_1', 'ADDR_2', 'ADDR_3'],
+        })
     })
 
     test('HD wallet handleScanAddresses navigates to SearchAccounts', () => {

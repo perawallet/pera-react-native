@@ -400,6 +400,44 @@ describe('Deeplink Parser - New Format', () => {
         })
     })
 
+    describe('Shared Account Import', () => {
+        it('parses shared-account-import deeplink', () => {
+            const result = parseDeeplink(
+                `perawallet://app/shared-account-import/?address=${TEST_ADDRESS}`,
+            )
+            expect(result).toBeDefined()
+            expect(result?.type).toBe(DeeplinkType.SHARED_ACCOUNT_IMPORT)
+            if (result?.type === DeeplinkType.SHARED_ACCOUNT_IMPORT) {
+                expect(result.address).toBe(TEST_ADDRESS)
+            }
+        })
+
+        it('parses legacy joint-account-import deeplink as SHARED_ACCOUNT_IMPORT', () => {
+            const result = parseDeeplink(
+                `perawallet://app/joint-account-import/?address=${TEST_ADDRESS}`,
+            )
+            expect(result).toBeDefined()
+            expect(result?.type).toBe(DeeplinkType.SHARED_ACCOUNT_IMPORT)
+            if (result?.type === DeeplinkType.SHARED_ACCOUNT_IMPORT) {
+                expect(result.address).toBe(TEST_ADDRESS)
+            }
+        })
+
+        it('returns null for shared-account-import without address', () => {
+            expect(
+                parsePerawalletAppUri(
+                    'perawallet://app/shared-account-import/',
+                ),
+            ).toBeNull()
+        })
+
+        it('returns null for legacy joint-account-import without address', () => {
+            expect(
+                parsePerawalletAppUri('perawallet://app/joint-account-import/'),
+            ).toBeNull()
+        })
+    })
+
     describe('Edge Cases & Missing Params', () => {
         it('returns null for recover-address without mnemonic', () => {
             // Coverage for new-parser.ts line 170
