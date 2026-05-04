@@ -38,7 +38,7 @@ type PeraMetadata = {
     expiresAt?: string
 }
 
-const keystoreTypeToWalletType: Record<string, KeyType | undefined> = {
+const keystoreTypeToWalletType: Record<string, KeyType> = {
     'hd-root-key': KeyType.HDWalletRootKey,
     [ALGO25_KEYSTORE_TYPE]: KeyType.Algo25Key,
     'hd-derived-p256': KeyType.DeterministicP256Key,

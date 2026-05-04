@@ -63,38 +63,7 @@ export const useAlgo25 = () => {
         const naclKeyPair = nacl.sign.keyPair.fromSeed(seed)
         const publicKey = encodeAddress(naclKeyPair.publicKey)
 
-        // First-class Algo25 type: store via `commit()` directly because the
-        // default `keyStore.import` rejects unknown types in its switch
-        // statement. Signing is local (see withAlgo25Session below) — we never
-        // route Algo25 through `keyStore.sign`, which is HD-only.
-        // The privateKey is the 32-byte seed; nacl.sign.keyPair.fromSeed
-        // reproduces the keypair on demand.
-        // Lazy imports keep the kms package importable in test environments
-        // that don't have react-native-mmkv (which
-        // @algorandfoundation/react-native-keystore pulls in transitively).
-        try {
-            const [{ commit }, { getKeystoreStore }] = await Promise.all([
-                import('@algorandfoundation/react-native-keystore'),
-                import('@perawallet/wallet-extension-provider'),
-            ])
-            await commit({
-                store: getKeystoreStore(),
-                keyData: {
-                    id: keyId,
-                    type: ALGO25_KEYSTORE_TYPE,
-                    algorithm: 'EdDSA',
-                    format: 'raw',
-                    extractable: true,
-                    keyUsages: ['sign'],
-                    publicKey: naclKeyPair.publicKey,
-                    privateKey: new Uint8Array(seed),
-                    metadata: peraMetadataFor({ createdAt: new Date() }),
-                } as unknown as KeyData,
-            })
-        } catch (e) {
-            zeroBytes(seed, naclKeyPair.secretKey)
-            throw e
-        }
+        addKeyToKeystore(keyId, seed, naclKeyPair)
 
         // Import raw seed as a separate keystore key for mnemonic recovery
         let seedKeyId: KeyId
@@ -124,6 +93,45 @@ export const useAlgo25 = () => {
         })
 
         return { keyPair, seedKeyId }
+    }
+
+    // First-class Algo25 type: store via `commit()` directly because the
+    // default `keyStore.import` rejects unknown types in its switch
+    // statement. Signing is local (see withAlgo25Session below) — we never
+    // route Algo25 through `keyStore.sign`, which is HD-only.
+    // The privateKey is the 32-byte seed; nacl.sign.keyPair.fromSeed
+    // reproduces the keypair on demand.
+    // Lazy imports keep the kms package importable in test environments
+    // that don't have react-native-mmkv (which
+    // @algorandfoundation/react-native-keystore pulls in transitively).
+    const addKeyToKeystore = async (
+        keyId: string,
+        seed: Uint8Array,
+        naclKeyPair: nacl.SignKeyPair,
+    ) => {
+        try {
+            const [{ commit }, { getKeystoreStore }] = await Promise.all([
+                import('@algorandfoundation/react-native-keystore'),
+                import('@perawallet/wallet-extension-provider'),
+            ])
+            await commit({
+                store: getKeystoreStore(),
+                keyData: {
+                    id: keyId,
+                    type: ALGO25_KEYSTORE_TYPE,
+                    algorithm: 'EdDSA',
+                    format: 'raw',
+                    extractable: true,
+                    keyUsages: ['sign'],
+                    publicKey: naclKeyPair.publicKey,
+                    privateKey: new Uint8Array(seed),
+                    metadata: peraMetadataFor({ createdAt: new Date() }),
+                } as unknown as KeyData,
+            })
+        } catch (e) {
+            zeroBytes(seed, naclKeyPair.secretKey)
+            throw e
+        }
     }
 
     const withAlgo25Session = async <T>(

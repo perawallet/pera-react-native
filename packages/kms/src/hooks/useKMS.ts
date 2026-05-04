@@ -50,8 +50,6 @@ export const useKMS = () => {
             const kp = keys.get(keyId)
             if (!kp) return null
             if (kp.expiresAt && Date.now() > kp.expiresAt.getTime()) {
-                // Expired — fire-and-forget removal. The keystore mutation
-                // updates the reactive store, so the next render returns null.
                 void keyStore.remove(keyId)
                 return null
             }
