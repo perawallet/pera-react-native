@@ -107,7 +107,7 @@
     "expo-status-bar": "~55.0.5",
     "expo-video": "55.0.15",
     "fast-text-encoding": "^1.0.6",
-    "i18next": "^25.7.2",
+    "i18next": "^26.0.8",
     "intl-pluralrules": "^2.0.1",
     "lottie-react-native": "^7.3.4",
     "react": "catalog:",
