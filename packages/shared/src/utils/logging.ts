@@ -168,6 +168,27 @@ class Logger {
         }
     }
 
+    /**
+     * `console.error` is intercepted by RN's LogBox in dev mode. With multiple
+     * `ReactNativeHost`s registered (Expo dev client + the app host) LogBox
+     * occasionally crashes with "Cannot read property 'log' of undefined"
+     * inside `LogBoxData.addLog`. The crash bubbles out of `console.error` and
+     * masks the actual error we're trying to log. Wrap the call so the
+     * downstream `reportError` (Sentry / etc.) still fires, and fall back to
+     * `console.log` so the message is at least visible in the dev console.
+     */
+    private safeConsoleError(message: string, args: unknown[]) {
+        try {
+            console.error(message, ...args)
+        } catch {
+            try {
+                console.log(`[ERROR] ${message}`, ...args)
+            } catch {
+                // give up — never let logging crash the app.
+            }
+        }
+    }
+
     private log(
         level: LogLevel,
         messageOrError: string | Error,
@@ -195,11 +216,11 @@ class Logger {
                 console.warn(`${prefix} ${message}`, ...args)
                 break
             case LogLevel.ERROR:
-                console.error(`${prefix} ${message}`, ...args)
+                this.safeConsoleError(`${prefix} ${message}`, args)
                 this.reportError('error', messageOrError, context)
                 break
             case LogLevel.CRITICAL:
-                console.error(`${prefix} ${message}`, ...args)
+                this.safeConsoleError(`${prefix} ${message}`, args)
                 this.reportError('critical', messageOrError, context)
                 break
         }

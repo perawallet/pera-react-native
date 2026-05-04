@@ -196,5 +196,53 @@ describe('logging', () => {
             }
             expect(reported.error.message).toContain('[unserializable context]')
         })
+
+        test('does not crash when console.error throws (RN LogBox in dev)', () => {
+            const errorReporter = vi.fn()
+            logger.setErrorReporter(errorReporter)
+
+            // Simulate RN LogBox crashing inside console.error.
+            ;(console.error as ReturnType<typeof vi.fn>).mockImplementation(
+                () => {
+                    throw new TypeError(
+                        "Cannot read property 'log' of undefined",
+                    )
+                },
+            )
+
+            expect(() => logger.error('still reports')).not.toThrow()
+
+            // Falls back to console.log so the dev still sees the message.
+            expect(console.log).toHaveBeenCalledWith(
+                '[ERROR] [ERROR] still reports',
+            )
+
+            // Error reporter (Sentry / etc.) still fires.
+            expect(errorReporter).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    severity: 'error',
+                    error: expect.any(Error),
+                }),
+            )
+        })
+
+        test('does not crash when both console.error and console.log throw', () => {
+            const errorReporter = vi.fn()
+            logger.setErrorReporter(errorReporter)
+
+            ;(console.error as ReturnType<typeof vi.fn>).mockImplementation(
+                () => {
+                    throw new Error('LogBox blew up')
+                },
+            )
+            ;(console.log as ReturnType<typeof vi.fn>).mockImplementation(
+                () => {
+                    throw new Error('also broken')
+                },
+            )
+
+            expect(() => logger.error('still reports')).not.toThrow()
+            expect(errorReporter).toHaveBeenCalled()
+        })
     })
 })
