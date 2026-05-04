@@ -17,8 +17,12 @@ import type {
     HardwareWalletTransportProvider,
     HardwareWalletConnectionStatus,
 } from '@perawallet/wallet-core-hardware-wallet'
-import { LEDGER_SCAN_TIMEOUT_MS } from '@perawallet/wallet-extension-ledger-react-native/protocol'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import {
+    LEDGER_SCAN_TIMEOUT_MS,
+    LedgerProviderNotFoundError,
+    classifyLedgerError,
+} from '@perawallet/wallet-extension-ledger-react-native/protocol'
+import type { AppError, Nullable } from '@perawallet/wallet-core-shared'
 
 export type UseLedgerConnectionResult = {
     devices: HardwareWalletDevice[]
@@ -28,7 +32,7 @@ export type UseLedgerConnectionResult = {
     stopScan: () => void
     connect: (device: HardwareWalletDevice) => Promise<HardwareWalletTransport>
     disconnect: () => Promise<void>
-    error: Nullable<Error>
+    error: Nullable<AppError>
 }
 
 const buildDeviceKey = (device: HardwareWalletDevice): string =>
@@ -50,7 +54,7 @@ export const useLedgerConnection = (
     const [devices, setDevices] = useState<HardwareWalletDevice[]>([])
     const [connectionStatus, setConnectionStatus] =
         useState<HardwareWalletConnectionStatus>('disconnected')
-    const [error, setError] = useState<Nullable<Error>>(null)
+    const [error, setError] = useState<Nullable<AppError>>(null)
 
     const stopScansRef = useRef<Array<() => void>>([])
     const scanTimeoutRef = useRef<Nullable<ReturnType<typeof setTimeout>>>(null)
@@ -87,7 +91,7 @@ export const useLedgerConnection = (
                     setDevices(prev => [...prev, device])
                 },
                 (err: Error) => {
-                    setError(err)
+                    setError(classifyLedgerError(err))
                     stopScan()
                 },
             ),
@@ -109,7 +113,9 @@ export const useLedgerConnection = (
             const key = buildDeviceKey(device)
             const provider = deviceProviderRef.current.get(key)
             if (!provider) {
-                const e = new Error(`No provider tracked for device "${key}"`)
+                const e = new LedgerProviderNotFoundError(
+                    `No provider tracked for device "${key}"`,
+                )
                 setError(e)
                 setConnectionStatus('disconnected')
                 throw e
@@ -121,8 +127,7 @@ export const useLedgerConnection = (
                 setConnectionStatus('connected')
                 return transport
             } catch (err) {
-                const connectError =
-                    err instanceof Error ? err : new Error(String(err))
+                const connectError = classifyLedgerError(err)
                 setError(connectError)
                 setConnectionStatus('disconnected')
                 throw connectError

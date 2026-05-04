@@ -16,14 +16,19 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { LedgerConnectionStatus } from '@perawallet/wallet-core-ledger'
-import { connectAndDiscoverAccounts } from '@perawallet/wallet-core-ledger'
+import {
+    connectAndDiscoverAccounts,
+    LedgerNoAccountsFoundError,
+    LedgerProviderNotFoundError,
+    classifyLedgerError,
+} from '@perawallet/wallet-core-ledger'
 import type { HardwareWalletTransport } from '@perawallet/wallet-core-hardware-wallet'
+import type { AppError, Nullable } from '@perawallet/wallet-core-shared'
 import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
 import {
     getLedgerErrorPreset,
     type LedgerErrorPreset,
 } from '@modules/ledger/utils'
-import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type LedgerFetchAccountsRouteProp = RouteProp<
     AddAccountStackParamList,
@@ -34,7 +39,7 @@ type UseLedgerFetchAccountsScreenResult = {
     connectionStatus: LedgerConnectionStatus
     isDiscovering: boolean
     progress: { current: number; total: Nullable<number> }
-    error: Nullable<Error>
+    error: Nullable<AppError>
     errorPreset: Nullable<LedgerErrorPreset>
     handleRetry: () => void
     handleTroubleshoot: () => void
@@ -56,7 +61,7 @@ export const useLedgerFetchAccountsScreen =
             current: number
             total: Nullable<number>
         }>({ current: 0, total: null })
-        const [error, setError] = useState<Nullable<Error>>(null)
+        const [error, setError] = useState<Nullable<AppError>>(null)
 
         const hasStartedRef = useRef(false)
         const mountedRef = useRef(true)
@@ -75,7 +80,7 @@ export const useLedgerFetchAccountsScreen =
                         transportType,
                     )
                 if (!provider) {
-                    throw new Error(
+                    throw new LedgerProviderNotFoundError(
                         `No Ledger provider registered for transport "${transportType}"`,
                     )
                 }
@@ -100,7 +105,7 @@ export const useLedgerFetchAccountsScreen =
                 setIsDiscovering(false)
 
                 if (result.accounts.length === 0) {
-                    throw new Error('No accounts found on this device')
+                    throw new LedgerNoAccountsFoundError()
                 }
 
                 navigation.replace('LedgerSelectAccounts', {
@@ -111,8 +116,7 @@ export const useLedgerFetchAccountsScreen =
                 })
             } catch (err) {
                 if (!mountedRef.current) return
-                const resolvedError =
-                    err instanceof Error ? err : new Error(String(err))
+                const resolvedError = classifyLedgerError(err)
                 setError(resolvedError)
                 setConnectionStatus('disconnected')
                 setIsDiscovering(false)

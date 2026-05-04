@@ -30,44 +30,6 @@ const initialState = {
     manualAccountOrder: [] as string[],
 }
 
-export const migrateState = (
-    persistedState: unknown,
-    version: number,
-): AccountsState => {
-    // Mutates persistedState in place — Zustand's persist middleware
-    // owns this object and expects in-place updates.
-    const state = persistedState as Record<string, unknown>
-
-    if (version < 2) {
-        const raw = state.accounts
-        const accounts: WalletAccount[] = Array.isArray(raw)
-            ? (raw as WalletAccount[])
-            : []
-        state.sortMode = 'manual'
-        state.manualAccountOrder = accounts.map(a => a.address)
-    }
-
-    if (version < 3) {
-        const raw = state.accounts
-        const accounts: Array<Record<string, unknown>> = Array.isArray(raw)
-            ? raw
-            : []
-        for (const account of accounts) {
-            if (!account || typeof account !== 'object') continue
-            if (account.type !== 'hardware') continue
-            const hardwareDetails = account.hardwareDetails
-            if (!hardwareDetails || typeof hardwareDetails !== 'object')
-                continue
-            const hd = hardwareDetails as Record<string, unknown>
-            if (hd.transportType !== undefined) continue
-            hd.transportType = 'ble'
-        }
-        state.accounts = accounts as unknown as WalletAccount[]
-    }
-
-    return state as AccountsState
-}
-
 export const useAccountsStore: UseBoundStore<
     WithPersist<StoreApi<AccountsState>, unknown>
 > = create<AccountsState>()(
@@ -144,14 +106,13 @@ export const useAccountsStore: UseBoundStore<
         {
             name: STORE_NAME,
             storage: createJSONStorage(() => getProvider().keyValueStorage),
-            version: 3,
+            version: 2,
             partialize: state => ({
                 accounts: state.accounts,
                 selectedAccountAddress: state.selectedAccountAddress,
                 sortMode: state.sortMode,
                 manualAccountOrder: state.manualAccountOrder,
             }),
-            migrate: migrateState,
         },
     ),
 )

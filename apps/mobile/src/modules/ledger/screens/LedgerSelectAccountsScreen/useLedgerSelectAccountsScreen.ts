@@ -15,6 +15,10 @@ import { RouteProp, useRoute } from '@react-navigation/native'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import type { LedgerAccount } from '@perawallet/wallet-core-ledger'
+import {
+    LedgerProviderNotFoundError,
+    classifyLedgerError,
+} from '@perawallet/wallet-core-ledger'
 import type { HardwareWalletTransport } from '@perawallet/wallet-core-hardware-wallet'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -162,8 +166,8 @@ export const useLedgerSelectAccountsScreen =
                             transportType,
                         )
                     if (!provider) {
-                        throw new Error(
-                            `No Ledger provider for transport "${transportType}"`,
+                        throw new LedgerProviderNotFoundError(
+                            `No Ledger provider registered for transport "${transportType}"`,
                         )
                     }
                     transportRef.current = await provider.connect(deviceId)
@@ -185,8 +189,7 @@ export const useLedgerSelectAccountsScreen =
                 setAccounts(prev => [...prev, next])
             } catch (err) {
                 if (!isMountedRef.current) return
-                const error =
-                    err instanceof Error ? err : new Error(String(err))
+                const error = classifyLedgerError(err)
                 const preset = getLedgerErrorPreset(error, t)
                 errorToast(preset.title, preset.body)
             } finally {

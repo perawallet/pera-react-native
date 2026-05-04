@@ -56,7 +56,7 @@ export type HardwareWalletDetails = {
     deviceName: string
     /** Sequential account index on the hardware wallet device (0, 1, 2...) */
     accountIndex: number
-    /** Transport used to reach the device. Defaults to 'ble' for legacy accounts. */
+    /** Transport used to reach the device. */
     transportType: LedgerTransportType
 }
 

@@ -24,7 +24,7 @@ import type {
     LedgerDevice,
     LedgerAccount,
 } from './types'
-import { classifyLedgerError, LedgerConnectionError } from './errors'
+import { classifyLedgerError, LedgerSigningError } from './errors'
 import { resolveDeviceModel, buildLedgerAccountPath } from './constants'
 
 /**
@@ -64,17 +64,11 @@ const createTransportWrapper = (
             const result = await algorandApp.sign(path, hexMessage)
 
             if (!result.signature) {
-                throw new LedgerConnectionError(
-                    'Signing returned empty signature',
-                )
+                throw new LedgerSigningError('Empty signature returned')
             }
 
             return Uint8Array.from(result.signature)
         } catch (error) {
-            // Re-throw already-classified errors
-            if (error instanceof LedgerConnectionError) {
-                throw error
-            }
             throw classifyLedgerError(error)
         }
     },
@@ -130,11 +124,7 @@ export class RNLedgerService implements HardwareWalletService {
                     },
                     error: (err: unknown) => {
                         if (onError) {
-                            const classified =
-                                err instanceof Error
-                                    ? classifyLedgerError(err)
-                                    : new LedgerConnectionError(String(err))
-                            onError(classified)
+                            onError(classifyLedgerError(err))
                         }
                     },
                     complete: () => {},

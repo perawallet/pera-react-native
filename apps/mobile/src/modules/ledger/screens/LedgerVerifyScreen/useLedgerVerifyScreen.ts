@@ -21,8 +21,12 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import type { HardwareWalletTransport } from '@perawallet/wallet-core-hardware-wallet'
 import type { LedgerAccount } from '@perawallet/wallet-core-ledger'
-import { verifyLedgerAddress } from '@perawallet/wallet-core-ledger'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import {
+    verifyLedgerAddress,
+    LedgerProviderNotFoundError,
+    classifyLedgerError,
+} from '@perawallet/wallet-core-ledger'
+import type { AppError, Nullable } from '@perawallet/wallet-core-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
@@ -41,7 +45,7 @@ type UseLedgerVerifyScreenResult = {
     currentIndex: number
     totalAccounts: number
     currentAddress: Nullable<string>
-    error: Nullable<Error>
+    error: Nullable<AppError>
     errorPreset: Nullable<LedgerErrorPreset>
     handleRetry: () => void
     handleTroubleshoot: () => void
@@ -66,7 +70,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
     const [verificationState, setVerificationState] =
         useState<VerificationState>('connecting')
     const [currentIndex, setCurrentIndex] = useState(0)
-    const [error, setError] = useState<Nullable<Error>>(null)
+    const [error, setError] = useState<Nullable<AppError>>(null)
 
     const hasStartedRef = useRef(false)
 
@@ -86,8 +90,8 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                 transportType,
             )
             if (!provider) {
-                throw new Error(
-                    `No Ledger provider for transport "${transportType}"`,
+                throw new LedgerProviderNotFoundError(
+                    `No Ledger provider registered for transport "${transportType}"`,
                 )
             }
 
@@ -121,8 +125,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
             setSelectedAccountAddress(hwAccounts[0].address)
             exitAccountFlow()
         } catch (err) {
-            const verifyError =
-                err instanceof Error ? err : new Error(String(err))
+            const verifyError = classifyLedgerError(err)
             setError(verifyError)
             setVerificationState('error')
         } finally {

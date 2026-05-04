@@ -86,7 +86,7 @@ describe('useLedgerConnection', () => {
 
         act(() => onError(new Error('ble unavailable')))
 
-        expect(result.current.error?.message).toBe('ble unavailable')
+        expect(result.current.error?.message).toMatch(/ble unavailable/)
         expect(result.current.isScanning).toBe(false)
     })
 
@@ -169,8 +169,8 @@ describe('useLedgerConnection', () => {
             }
         })
 
-        expect(caught?.message).toBe('connect failed')
-        expect(result.current.error?.message).toBe('connect failed')
+        expect(caught?.message).toMatch(/connect failed/)
+        expect(result.current.error?.message).toMatch(/connect failed/)
         expect(result.current.connectionStatus).toBe('disconnected')
     })
 

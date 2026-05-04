@@ -79,8 +79,8 @@ describe('useLedgerAccounts', () => {
             }
         })
 
-        expect(caught?.message).toBe('device locked')
-        expect(result.current.error?.message).toBe('device locked')
+        expect(caught?.message).toMatch(/device locked/)
+        expect(result.current.error?.message).toMatch(/device locked/)
         expect(result.current.isDiscovering).toBe(false)
     })
 
