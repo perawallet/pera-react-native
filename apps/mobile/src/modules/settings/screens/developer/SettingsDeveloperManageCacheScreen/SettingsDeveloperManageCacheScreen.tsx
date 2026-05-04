@@ -40,6 +40,7 @@ export const SettingsDeveloperManageCacheScreen = () => {
                 type: 'success',
             })
         } catch {
+            // guardrails-ignore-next-line no-error-toast-in-catch reason: localized refresh_cache error copy preserved; no exception detail surfaced to user
             showToast({
                 title: t('settings.developer.refresh_cache_error_title'),
                 body: t('settings.developer.refresh_cache_error_body'),
