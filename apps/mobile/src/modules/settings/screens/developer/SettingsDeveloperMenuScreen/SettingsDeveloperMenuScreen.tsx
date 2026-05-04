@@ -23,6 +23,7 @@ export const SettingsDeveloperMenuScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
+
     const openTestingWebview = () => {
         pushWebView({
             url: config.onrampBaseUrl + 'test',
@@ -59,6 +60,11 @@ export const SettingsDeveloperMenuScreen = () => {
                 onPress={() => openTestingDapp()}
                 icon='globe'
                 title={t('settings.developer.debug_dapp')}
+            />
+            <PWListItem
+                onPress={() => handleTapEvent('ManageCache')}
+                icon='reload'
+                title={t('settings.developer.manage_cache')}
             />
         </PWView>
     )
