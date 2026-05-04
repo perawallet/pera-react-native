@@ -31,8 +31,8 @@ vi.mock('@hooks/useDeepLink', () => ({
     }),
 }))
 
-vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({ showToast: mockShowToast }),
+vi.mock('@hooks/useErrorToast', () => ({
+    useErrorToast: () => ({ showError: mockShowToast }),
 }))
 
 vi.mock('@hooks/useLanguage', () => ({
