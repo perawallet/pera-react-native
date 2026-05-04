@@ -73,6 +73,7 @@ const makeLedgerAccount = (
             deviceId: 'device-1',
             deviceName: 'Nano X',
             accountIndex,
+            transportType: 'ble',
         },
     }) as HardwareWalletAccount
 
@@ -118,6 +119,7 @@ const makeMockProvider = (
     transport: HardwareWalletTransport,
 ): HardwareWalletTransportProvider => ({
     manufacturer: 'ledger',
+    transportType: 'ble',
     scan: () => () => {},
     connect: vi.fn().mockResolvedValue(transport),
     isSupported: vi.fn().mockResolvedValue(true),
@@ -352,6 +354,33 @@ describe('createHardwareStrategy', () => {
             ).rejects.toThrow('transport_unavailable')
         })
 
+        it('routes to USB provider for accounts with transportType "usb"', async () => {
+            const usbProvider = makeMockProvider(mockTransport)
+            usbProvider.transportType = 'usb'
+            const registry = createHardwareWalletRegistry()
+            registry.register(usbProvider)
+
+            const strategy = createHardwareStrategy({
+                hardwareWalletRegistry: registry,
+                encodeTransaction,
+            })
+            const usbAccount = {
+                ...makeLedgerAccount(),
+                hardwareDetails: {
+                    manufacturer: 'ledger' as const,
+                    deviceId: 'usb-dev-1',
+                    deviceName: 'Nano S Plus',
+                    accountIndex: 0,
+                    transportType: 'usb' as const,
+                },
+            }
+            const group = makeGroup([mockTransaction()], [0])
+
+            await strategy.sign(group, usbAccount)
+
+            expect(usbProvider.connect).toHaveBeenCalledWith('usb-dev-1')
+        })
+
         it('calls onSigningStart before signing loop', async () => {
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: mockRegistry,
@@ -461,6 +490,7 @@ describe('createHardwareStrategy', () => {
                     | undefined
                 const provider: HardwareWalletTransportProvider = {
                     manufacturer: 'ledger',
+                    transportType: 'ble',
                     scan: () => () => {},
                     connect: vi.fn().mockImplementation(
                         () =>

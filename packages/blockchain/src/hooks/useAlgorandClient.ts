@@ -23,6 +23,18 @@ import { encodeSignedTransactions } from '@algorandfoundation/algokit-utils/tran
 import { logger } from '@perawallet/wallet-core-shared'
 import { toAlgodError } from '../errors'
 
+// composer.build() requires every transaction to have a signer bound, even
+// though Pera extracts the unsigned txns and routes them through the XState
+// pipeline rather than calling composer.send/execute. Without a default
+// signer, getSigner throws "No signer found for address". This stub satisfies
+// the build-time requirement and surfaces a clear error if anything actually
+// invokes it.
+const pipelineRoutedSigner: PeraEncodedTransactionSigner = async () => {
+    throw new Error(
+        'AlgorandClient default signer should not be invoked: signing is routed through the XState pipeline. Use useSignAndSubmitGroup instead.',
+    )
+}
+
 export const useAlgorandClient = (signer?: PeraTransactionSigner) => {
     const { networkConfig, network } = useNetwork()
 
@@ -36,6 +48,10 @@ export const useAlgorandClient = (signer?: PeraTransactionSigner) => {
             token: config.indexerApiKey,
         }
         const client = AlgorandClient.fromConfig({ algodConfig, indexerConfig })
+        // algokit-utils defaults this to 10 rounds (~30s) on non-localnet,
+        // which expires before a hardware-wallet user can confirm on-device.
+        // 1000 rounds (~50min) matches the standard Algorand SDK default.
+        client.setDefaultValidityWindow(1000)
         client.registerErrorTransformer(async error => toAlgodError(error))
         if (signer) {
             const encodingSigner: PeraEncodedTransactionSigner = async (
@@ -53,6 +69,8 @@ export const useAlgorandClient = (signer?: PeraTransactionSigner) => {
                 }
             }
             client.setDefaultSigner(encodingSigner)
+        } else {
+            client.setDefaultSigner(pipelineRoutedSigner)
         }
         return client
     }, [network, signer])

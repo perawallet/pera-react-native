@@ -1,0 +1,35 @@
+{
+  "name": "@perawallet/wallet-extension-ledger-react-native-usb",
+  "version": "0.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "test": "vitest run",
+    "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
+  },
+  "dependencies": {
+    "@perawallet/wallet-extension-platform": "workspace:*",
+    "@perawallet/wallet-core-hardware-wallet": "workspace:*",
+    "@perawallet/wallet-core-shared": "workspace:*",
+    "@perawallet/wallet-extension-ledger-react-native": "workspace:*",
+    "@ledgerhq/errors": "^6.32.0",
+    "@ledgerhq/hw-app-algorand": "^6.34.1",
+    "@ledgerhq/react-native-hid": "^6.39.1"
+  },
+  "devDependencies": {
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-dts": "^4.5.4",
+    "vitest": "catalog:",
+    "@perawallet/wallet-core-devtools": "workspace:*"
+  }
+}

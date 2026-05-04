@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import type { HardwareWalletManufacturer } from '@perawallet/wallet-core-hardware-wallet'
+import type {
+    HardwareWalletManufacturer,
+    LedgerTransportType,
+} from '@perawallet/wallet-core-hardware-wallet'
 
 export const DerivationTypes = {
     Khovratovich: 32,
@@ -47,12 +50,14 @@ export type MultiSigDetails = {
 
 export type HardwareWalletDetails = {
     manufacturer: HardwareWalletManufacturer
-    /** Device identifier for reconnection (e.g. BLE device ID) */
+    /** Device identifier for reconnection (e.g. BLE device ID, USB descriptor id) */
     deviceId: string
     /** User-visible device name (e.g. "Ledger Nano X") */
     deviceName: string
     /** Sequential account index on the hardware wallet device (0, 1, 2...) */
     accountIndex: number
+    /** Transport used to reach the device. */
+    transportType: LedgerTransportType
 }
 
 export type WalletAccount =

@@ -10,12 +10,7 @@
  limitations under the License
  */
 
-export { useLedgerAccounts } from './useLedgerAccounts'
-export {
-    useLedgerConnection,
-    type UseLedgerConnectionResult,
-} from './useLedgerConnection'
-export {
-    useLedgerPairing,
-    type UseLedgerPairingResult,
-} from './useLedgerPairing'
+export const name = '@perawallet/wallet-extension-ledger-react-native-usb'
+
+export { WithLedgerUsbExtension } from './extension'
+export { RNLedgerUsbService } from './RNLedgerUsbService'

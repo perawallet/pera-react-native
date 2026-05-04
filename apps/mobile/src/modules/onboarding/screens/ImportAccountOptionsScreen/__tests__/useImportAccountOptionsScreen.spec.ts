@@ -11,7 +11,8 @@
  */
 
 import { renderHook, act } from '@test-utils/render'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { Platform } from 'react-native'
 import { useImportAccountOptionsScreen } from '../useImportAccountOptionsScreen'
 
 const mockPush = vi.fn()
@@ -66,14 +67,29 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
 })
 
 describe('useImportAccountOptionsScreen', () => {
+    const originalOS = Platform.OS
+
     beforeEach(() => {
         vi.clearAllMocks()
+        Platform.OS = 'ios'
     })
 
-    it('returns 5 options', () => {
+    afterEach(() => {
+        Platform.OS = originalOS
+    })
+
+    it('returns 5 options on iOS', () => {
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
         expect(result.current.options).toHaveLength(5)
+    })
+
+    it('returns 6 options on Android (includes USB)', () => {
+        Platform.OS = 'android'
+
+        const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+        expect(result.current.options).toHaveLength(6)
     })
 
     it('options have correct testIDs', () => {
@@ -88,6 +104,28 @@ describe('useImportAccountOptionsScreen', () => {
         expect(testIDs).toContain('import_account_options_pair_ledger_button')
         expect(testIDs).toContain('import_account_options_pera_web_button')
         expect(testIDs).toContain('import_account_options_asb_button')
+    })
+
+    it('USB option is hidden on iOS', () => {
+        const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+        const testIDs = result.current.options.map(o => o.testID)
+
+        expect(testIDs).not.toContain(
+            'import_account_options_pair_ledger_usb_button',
+        )
+    })
+
+    it('USB option is shown on Android', () => {
+        Platform.OS = 'android'
+
+        const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+        const testIDs = result.current.options.map(o => o.testID)
+
+        expect(testIDs).toContain(
+            'import_account_options_pair_ledger_usb_button',
+        )
     })
 
     it('recover wallet option opens import options bottom sheet', () => {
@@ -122,7 +160,7 @@ describe('useImportAccountOptionsScreen', () => {
         expect(result.current.isQRScannerVisible).toBe(true)
     })
 
-    it('Ledger option navigates to LedgerInstructions', () => {
+    it('Ledger BLE option navigates to LedgerInstructions with ble transportType', () => {
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
         const ledgerOption = result.current.options.find(
@@ -133,7 +171,27 @@ describe('useImportAccountOptionsScreen', () => {
             ledgerOption.onPress()
         })
 
-        expect(mockPush).toHaveBeenCalledWith('LedgerInstructions')
+        expect(mockPush).toHaveBeenCalledWith('LedgerInstructions', {
+            transportType: 'ble',
+        })
+    })
+
+    it('Ledger USB option navigates to LedgerInstructions with usb transportType on Android', () => {
+        Platform.OS = 'android'
+
+        const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+        const usbOption = result.current.options.find(
+            o => o.testID === 'import_account_options_pair_ledger_usb_button',
+        )!
+
+        act(() => {
+            usbOption.onPress()
+        })
+
+        expect(mockPush).toHaveBeenCalledWith('LedgerInstructions', {
+            transportType: 'usb',
+        })
     })
 
     it('Pera Web option shows not implemented toast', () => {

@@ -11,7 +11,8 @@
  */
 
 import { render, fireEvent, screen } from '@test-utils/render'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { Platform } from 'react-native'
 import { ImportAccountOptionsScreen } from '../ImportAccountOptionsScreen'
 
 const mockPush = vi.fn()
@@ -66,8 +67,15 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
 })
 
 describe('ImportAccountOptionsScreen', () => {
+    const originalOS = Platform.OS
+
     beforeEach(() => {
         vi.clearAllMocks()
+        Platform.OS = 'ios'
+    })
+
+    afterEach(() => {
+        Platform.OS = originalOS
     })
 
     it('renders the screen title', () => {
@@ -106,7 +114,7 @@ describe('ImportAccountOptionsScreen', () => {
         ).toBeTruthy()
     })
 
-    it('navigates to LedgerInstructions when Pair Ledger is pressed', () => {
+    it('navigates to LedgerInstructions with ble transportType when Pair Ledger is pressed', () => {
         render(<ImportAccountOptionsScreen />)
 
         const ledgerButton = screen.getByText(
@@ -114,7 +122,46 @@ describe('ImportAccountOptionsScreen', () => {
         )
         fireEvent.click(ledgerButton)
 
-        expect(mockPush).toHaveBeenCalledWith('LedgerInstructions')
+        expect(mockPush).toHaveBeenCalledWith('LedgerInstructions', {
+            transportType: 'ble',
+        })
+    })
+
+    it('does not render the USB option on iOS', () => {
+        render(<ImportAccountOptionsScreen />)
+
+        expect(
+            screen.queryByText(
+                'onboarding.import_account_options.pair_ledger_usb_title',
+            ),
+        ).toBeNull()
+    })
+
+    it('renders the USB option on Android', () => {
+        Platform.OS = 'android'
+
+        render(<ImportAccountOptionsScreen />)
+
+        expect(
+            screen.getByText(
+                'onboarding.import_account_options.pair_ledger_usb_title',
+            ),
+        ).toBeTruthy()
+    })
+
+    it('navigates to LedgerInstructions with usb transportType when Pair Ledger USB is pressed on Android', () => {
+        Platform.OS = 'android'
+
+        render(<ImportAccountOptionsScreen />)
+
+        const usbButton = screen.getByText(
+            'onboarding.import_account_options.pair_ledger_usb_title',
+        )
+        fireEvent.click(usbButton)
+
+        expect(mockPush).toHaveBeenCalledWith('LedgerInstructions', {
+            transportType: 'usb',
+        })
     })
 
     it('shows not implemented toast when Pera Web is pressed', () => {

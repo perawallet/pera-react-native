@@ -916,8 +916,10 @@
             "recover_wallet_description": "I want to recover an Algorand wallet",
             "recover_qr_title": "Recover an account with QR code",
             "recover_qr_description": "I want to recover an Algorand account using a QR code",
-            "pair_ledger_title": "Pair Ledger Device",
-            "pair_ledger_description": "I want to recover an Algorand account that is backed by my Ledger hardware wallet",
+            "pair_ledger_title": "Pair Ledger via Bluetooth",
+            "pair_ledger_description": "I want to recover an Algorand account that is backed by my Ledger hardware wallet via Bluetooth",
+            "pair_ledger_usb_title": "Pair Ledger via USB",
+            "pair_ledger_usb_description": "I want to recover an Algorand account that is backed by my Ledger hardware wallet via USB cable",
             "pera_web_title": "Import from Pera Web",
             "pera_web_description": "I want to import Algorand accounts from Pera Web",
             "asb_title": "Algorand Secure Backup",
@@ -1635,7 +1637,14 @@
             "step_3": "Keep your Ledger device nearby",
             "continue": "Continue",
             "permission_required_title": "Bluetooth Permission Required",
-            "permission_required_message": "Pera needs Bluetooth permission to communicate with your Ledger device. Please enable it in Settings."
+            "permission_required_message": "Pera needs Bluetooth permission to communicate with your Ledger device. Please enable it in Settings.",
+            "usb": {
+                "title": "Connect Ledger via USB",
+                "description": "Follow these steps to connect your Ledger device via USB:",
+                "step_1": "Plug your Ledger device into your phone with a USB cable",
+                "step_2": "Unlock your Ledger and open the Algorand app",
+                "step_3": "Allow USB access if your phone asks, then tap continue"
+            }
         },
         "scan": {
             "title": "Looking for Devices",

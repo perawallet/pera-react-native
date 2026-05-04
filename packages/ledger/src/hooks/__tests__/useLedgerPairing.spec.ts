@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wallet'
 
@@ -48,6 +48,7 @@ const device: HardwareWalletDevice = {
     model: 'nanoX',
     rssi: -50,
     manufacturer: 'ledger',
+    transportType: 'ble',
 } as HardwareWalletDevice
 
 describe('useLedgerPairing', () => {
@@ -121,5 +122,32 @@ describe('useLedgerPairing', () => {
         })
 
         expect(onReady).not.toHaveBeenCalled()
+    })
+
+    test('USB devices skip pairing-instructions and invoke onReady directly', () => {
+        useLedgerPairingStore.setState({
+            pairedDeviceIds: [],
+            pendingPairingDevice: null,
+        })
+
+        const { result } = renderHook(() => useLedgerPairing())
+        const onReady = vi.fn()
+
+        act(() => {
+            result.current.requestPairing(
+                {
+                    id: 'usb-dev-1',
+                    name: 'Nano S Plus',
+                    manufacturer: 'ledger',
+                    transportType: 'usb',
+                    model: 'nanoSPlus',
+                    rssi: null,
+                },
+                onReady,
+            )
+        })
+
+        expect(onReady).toHaveBeenCalledTimes(1)
+        expect(useLedgerPairingStore.getState().pendingPairingDevice).toBeNull()
     })
 })

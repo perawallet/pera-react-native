@@ -15,6 +15,8 @@ import type {
     LedgerAccount,
     LedgerTransport,
 } from '@perawallet/wallet-extension-ledger-react-native/protocol'
+import { classifyLedgerError } from '@perawallet/wallet-extension-ledger-react-native/protocol'
+import type { AppError } from '@perawallet/wallet-core-shared'
 import { discoverLedgerAccounts } from '../discovery'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
@@ -22,7 +24,7 @@ type UseLedgerAccountsResult = {
     accounts: LedgerAccount[]
     isDiscovering: boolean
     progress: { current: number; total: Nullable<number> }
-    error: Nullable<Error>
+    error: Nullable<AppError>
     discover: (transport: LedgerTransport) => Promise<LedgerAccount[]>
     retry: () => void
 }
@@ -39,7 +41,7 @@ export const useLedgerAccounts = (): UseLedgerAccountsResult => {
         current: number
         total: Nullable<number>
     }>({ current: 0, total: null })
-    const [error, setError] = useState<Nullable<Error>>(null)
+    const [error, setError] = useState<Nullable<AppError>>(null)
     const [lastTransport, setLastTransport] =
         useState<Nullable<LedgerTransport>>(null)
 
@@ -62,8 +64,7 @@ export const useLedgerAccounts = (): UseLedgerAccountsResult => {
                 setAccounts(discovered)
                 return discovered
             } catch (err) {
-                const discoverError =
-                    err instanceof Error ? err : new Error(String(err))
+                const discoverError = classifyLedgerError(err)
                 setError(discoverError)
                 throw discoverError
             } finally {

@@ -128,6 +128,7 @@ describe('useAccountOptions', () => {
             deviceId: 'test-device',
             deviceName: 'Ledger Nano X',
             accountIndex: 0,
+            transportType: 'ble',
         },
     }
 

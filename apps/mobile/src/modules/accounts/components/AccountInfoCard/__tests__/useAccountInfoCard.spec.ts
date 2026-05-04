@@ -81,6 +81,7 @@ const ledgerAccount: HardwareWalletAccount = {
         deviceId: 'device-abc',
         deviceName: 'My Ledger',
         accountIndex: 0,
+        transportType: 'ble',
     },
 }
 
@@ -213,6 +214,7 @@ describe('useAccountInfoCard', () => {
             params: {
                 deviceId: 'device-abc',
                 deviceName: 'My Ledger',
+                transportType: 'ble',
             },
         })
     })
