@@ -195,6 +195,7 @@ export const useCollectibleDetail = (
                 type: 'success',
             })
         } catch {
+            // guardrails-ignore-next-line no-error-toast-in-catch reason: title-only collectible image-copy error; bespoke localized title preserved
             showToast({
                 title: t('asset_details.collectible.image_copy_failed'),
                 body: '',
@@ -239,6 +240,7 @@ export const useCollectibleDetail = (
                 type: 'success',
             })
         } catch {
+            // guardrails-ignore-next-line no-error-toast-in-catch reason: title-only collectible image-save error; bespoke localized title preserved
             showToast({
                 title: t('asset_details.collectible.image_save_failed'),
                 body: '',
