@@ -11,7 +11,7 @@
  */
 
 import { IClientMeta, IWalletConnectSession } from '@walletconnect/types'
-import { BaseStoreState } from '@perawallet/wallet-core-shared'
+import { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
 
 export type AlgorandChainId = 416001 | 416002 | 416003 | 4160
 
@@ -63,10 +63,13 @@ export type WalletConnectSessionRequest = {
 export type WalletConnectStore = BaseStoreState & {
     walletConnectConnections: WalletConnectConnection[]
     sessionRequests: WalletConnectSessionRequest[]
+    /** Transient — the most recent error to surface in the WC error bottom sheet. */
+    connectionError: Nullable<Error>
     setWalletConnectConnections: (
         walletConnectConnections: WalletConnectConnection[],
     ) => void
     setSessionRequests: (sessionRequests: WalletConnectSessionRequest[]) => void
+    setConnectionError: (connectionError: Nullable<Error>) => void
 }
 
 export type WalletConnectTransactionPayload = {
@@ -81,4 +84,6 @@ export type WalletConnectTransactionParam = {
     txn: string
     /** ARC-0001: addresses that must sign. Empty array = do not sign. Absent = sign with sender/auth. */
     signers?: string[]
+    /** ARC-0001: rekeyed auth address that should sign on behalf of the sender. */
+    authAddr?: string
 }
