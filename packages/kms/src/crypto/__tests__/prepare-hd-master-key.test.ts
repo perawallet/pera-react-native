@@ -1,0 +1,45 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+// @vitest-environment node
+import { describe, test, expect } from 'vitest'
+import { prepareHDMasterKey } from '../prepare-hd-master-key'
+
+const USER_MNEMONIC =
+    'achieve plunge scare have music possible will garden expect kangaroo impulse deny obvious inhale expand process betray voice crash insane electric mean test rude'
+
+describe('prepareHDMasterKey', () => {
+    test('returns rootKey (96B), entropy (32B), and a stable id when mnemonic provided', async () => {
+        const result = await prepareHDMasterKey({ mnemonic: USER_MNEMONIC })
+        expect(result.rootKey.byteLength).toBe(96)
+        expect(result.entropy.byteLength).toBe(32)
+        expect(typeof result.keyId).toBe('string')
+        expect(result.keyId.length).toBeGreaterThan(0)
+        expect(result.mnemonic).toBe(USER_MNEMONIC)
+    })
+
+    test('uses the supplied id when given', async () => {
+        const result = await prepareHDMasterKey({
+            mnemonic: USER_MNEMONIC,
+            id: 'fixed-id-123',
+        })
+        expect(result.keyId).toBe('fixed-id-123')
+    })
+
+    test('generates a fresh mnemonic when none provided', async () => {
+        const a = await prepareHDMasterKey()
+        const b = await prepareHDMasterKey()
+        expect(a.mnemonic.split(' ').length).toBe(24)
+        expect(b.mnemonic.split(' ').length).toBe(24)
+        expect(a.mnemonic).not.toBe(b.mnemonic)
+    })
+})

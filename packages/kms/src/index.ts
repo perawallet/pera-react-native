@@ -18,6 +18,10 @@ export * from './errors'
 export { WORDLIST as MNEMONIC_WORDLIST } from './crypto/wordlist'
 export { uniformIntBelow, pickDistinctIndexes } from './crypto/random'
 export { zeroBytes } from './crypto/secure-memory'
+export {
+    prepareHDMasterKey,
+    type PreparedHDMasterKey,
+} from './crypto/prepare-hd-master-key'
 export { ALGO25_KEYSTORE_TYPE } from './constants'
 
 // `installKMSKeystoreHooks` is intentionally NOT re-exported here — it pulls
