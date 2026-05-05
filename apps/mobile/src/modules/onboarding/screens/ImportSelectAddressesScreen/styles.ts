@@ -11,9 +11,8 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { EdgeInsets } from 'react-native-safe-area-context'
 
-export const useStyles = makeStyles((theme, insets?: EdgeInsets) => ({
+export const useStyles = makeStyles(theme => ({
     container: {
         flex: 1,
         backgroundColor: theme.colors.background,
@@ -76,9 +75,7 @@ export const useStyles = makeStyles((theme, insets?: EdgeInsets) => ({
         marginBottom: theme.spacing.xxs,
     },
     footer: {
-        paddingTop: theme.spacing.xl,
-        paddingHorizontal: theme.spacing.xl,
-        paddingBottom: theme.spacing.xl + (insets?.bottom ?? 0),
+        padding: theme.spacing.xl,
         borderTopWidth: theme.borders.sm,
         borderTopColor: theme.colors.layerGrayLighter,
         backgroundColor: theme.colors.background,
