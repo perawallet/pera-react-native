@@ -69,32 +69,39 @@ export const useHDImportSession = (): UseHDImportSessionResult => {
         [],
     )
 
-    const commitImport = async ({
-        walletKeyId,
-        selectedAccounts,
-    }: {
-        walletKeyId: string
-        selectedAccounts: HDWalletAccount[]
-    }) => {
-        const pending = useHDImportSessionStore.getState().pending
-        if (!pending || pending.walletKeyId !== walletKeyId) {
-            throw new HDImportSessionNotFoundError(walletKeyId)
-        }
+    // NOTE: `persistHDMasterKey`'s identity is unstable across renders, so
+    // this `useCallback` is effectively a no-op for memoization purposes.
+    // It is kept for surface consistency with the other functions returned
+    // by this hook, all of which are wrapped in `useCallback`.
+    const commitImport = useCallback(
+        async ({
+            walletKeyId,
+            selectedAccounts,
+        }: {
+            walletKeyId: string
+            selectedAccounts: HDWalletAccount[]
+        }) => {
+            const pending = useHDImportSessionStore.getState().pending
+            if (!pending || pending.walletKeyId !== walletKeyId) {
+                throw new HDImportSessionNotFoundError(walletKeyId)
+            }
 
-        await persistHDMasterKey({
-            keyId: pending.walletKeyId,
-            rootKey: pending.rootKey,
-            entropy: pending.entropy,
-        })
+            await persistHDMasterKey({
+                keyId: pending.walletKeyId,
+                rootKey: pending.rootKey,
+                entropy: pending.entropy,
+            })
 
-        const existing = useAccountsStore.getState().accounts
-        const next = [...existing, ...selectedAccounts]
-        setAccounts(next)
+            const existing = useAccountsStore.getState().accounts
+            const next = [...existing, ...selectedAccounts]
+            setAccounts(next)
 
-        useHDImportSessionStore.getState().clear()
+            useHDImportSessionStore.getState().clear()
 
-        return selectedAccounts
-    }
+            return selectedAccounts
+        },
+        [persistHDMasterKey, setAccounts],
+    )
 
     const cancelImport = useCallback(() => {
         useHDImportSessionStore.getState().clear()

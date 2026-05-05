@@ -162,14 +162,29 @@ describe('useImportSelectAddressesScreen — import mode', () => {
         expect(result.current.canContinue).toBe(false)
     })
 
-    test('cancelImport runs when handleBack is invoked', async () => {
-        const { result } = renderHook(() => useImportSelectAddressesScreen())
-
-        act(() => {
-            result.current.handleBack()
+    test('cancelImport runs when navigation beforeRemove fires (back/swipe)', async () => {
+        let beforeRemoveCallback: (() => void) | undefined
+        const addListenerSpy = vi.fn((eventName: string, cb: () => void) => {
+            if (eventName === 'beforeRemove') {
+                beforeRemoveCallback = cb
+            }
+            return () => {}
         })
 
+        const reactNavigationMock = await import('@react-navigation/native')
+        ;(
+            reactNavigationMock as unknown as { useNavigation: () => unknown }
+        ).useNavigation = () => ({ addListener: addListenerSpy })
+
+        renderHook(() => useImportSelectAddressesScreen())
+
+        expect(addListenerSpy).toHaveBeenCalledWith(
+            'beforeRemove',
+            expect.any(Function),
+        )
+
+        act(() => beforeRemoveCallback?.())
+
         expect(mockCancelImport).toHaveBeenCalled()
-        expect(mockGoBack).toHaveBeenCalled()
     })
 })

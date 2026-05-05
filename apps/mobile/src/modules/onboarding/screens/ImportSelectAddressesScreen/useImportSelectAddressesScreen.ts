@@ -44,7 +44,6 @@ export type UseImportSelectAddressesScreenResult = {
     toggleSelection: (address: string) => void
     toggleSelectAll: () => void
     handleContinue: () => void
-    handleBack: () => void
     t: (key: string, options?: Record<string, unknown>) => string
 }
 
@@ -179,13 +178,6 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
         setAccounts,
     ])
 
-    const handleBack = useCallback(() => {
-        if (isImportMode) {
-            cancelImport()
-        }
-        navigation.goBack()
-    }, [isImportMode, cancelImport, navigation])
-
     useEffect(() => {
         if (!isImportMode) return
         const unsub = reactNavigation.addListener('beforeRemove', () => {
@@ -211,7 +203,6 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
         toggleSelection,
         toggleSelectAll,
         handleContinue,
-        handleBack,
         t,
     }
 }
