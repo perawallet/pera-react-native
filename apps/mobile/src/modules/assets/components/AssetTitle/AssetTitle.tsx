@@ -82,24 +82,23 @@ export const AssetTitle = ({
                         />
                     )}
                 </PWView>
-                {isDeleted ? (
+                {isDeleted && (
                     <PWText
                         variant='caption'
                         style={styles.deletedLabel}
                     >
                         {t('asset.deleted_label')}
                     </PWText>
-                ) : (
-                    showId && (
-                        <CopyableText copyValue={String(asset.assetId)}>
-                            <PWText
-                                variant='caption'
-                                style={styles.id}
-                            >
-                                {asset.assetId}
-                            </PWText>
-                        </CopyableText>
-                    )
+                )}
+                {!isDeleted && showId && (
+                    <CopyableText copyValue={String(asset.assetId)}>
+                        <PWText
+                            variant='caption'
+                            style={styles.id}
+                        >
+                            {asset.assetId}
+                        </PWText>
+                    </CopyableText>
                 )}
             </PWView>
         </PWView>

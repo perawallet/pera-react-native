@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import {
     DEFAULT_PRECISION,
@@ -63,9 +64,9 @@ export const AccountOverviewHeader = ({
     // overlay. By the time the overlay unmounts, everything below is settled.
     const showPrimary = hasBalance || isLoading
 
-    return (
-        <PWView style={styles.headerContainer}>
-            {showPrimary ? (
+    const renderContent = useCallback(() => {
+        if (showPrimary) {
+            return (
                 <>
                     <PWTouchableOpacity
                         onPress={togglePrivacyMode}
@@ -133,29 +134,53 @@ export const AccountOverviewHeader = ({
                         </PWView>
                     </ExpandablePanel>
 
-                    {!canSign ? <WatchAccountButtonPanel /> : <ButtonPanel />}
+                    {canSign ? <ButtonPanel /> : <WatchAccountButtonPanel />}
                 </>
-            ) : !canSign ? (
-                <WatchAccountButtonPanel />
-            ) : (
-                <>
-                    <PWView style={styles.noBalanceContainer}>
-                        <PWText
-                            variant='body'
-                            style={styles.noBalanceWelcomeText}
-                        >
-                            {t('account_details.no_balance.welcome')}
-                        </PWText>
-                        <PWText
-                            variant='h1'
-                            style={styles.centeredText}
-                        >
-                            {t('account_details.no_balance.get_started')}
-                        </PWText>
-                    </PWView>
-                    <NoFundsButtonPanel />
-                </>
-            )}
+            )
+        }
+
+        if (!canSign) {
+            return <WatchAccountButtonPanel />
+        }
+
+        return (
+            <>
+                <PWView style={styles.noBalanceContainer}>
+                    <PWText
+                        variant='body'
+                        style={styles.noBalanceWelcomeText}
+                    >
+                        {t('account_details.no_balance.welcome')}
+                    </PWText>
+                    <PWText
+                        variant='h1'
+                        style={styles.centeredText}
+                    >
+                        {t('account_details.no_balance.get_started')}
+                    </PWText>
+                </PWView>
+                <NoFundsButtonPanel />
+            </>
+        )
+    }, [
+        showPrimary,
+        canSign,
+        togglePrivacyMode,
+        styles,
+        selectedPoint,
+        portfolioAlgoValue,
+        isPending,
+        account,
+        period,
+        chartVisible,
+        handleChartSelectionChange,
+        setPeriod,
+        t,
+    ])
+
+    return (
+        <PWView style={styles.headerContainer}>
+            {renderContent()}
 
             {isLoading && (
                 <PWView style={styles.skeletonOverlay}>
