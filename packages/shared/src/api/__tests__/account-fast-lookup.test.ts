@@ -28,31 +28,74 @@ describe('fetchAccountFastLookup', () => {
         queryClientMock.mockReset()
     })
 
-    test('POSTs the address list to the fast-lookup endpoint and returns the response data', async () => {
-        const responseData = [
-            { address: 'ADDR1', accountExists: true },
-            { address: 'ADDR2', accountExists: false },
-        ]
-        queryClientMock.mockResolvedValue({ data: responseData })
+    test('issues one GET per address and maps account_exists into accountExists', async () => {
+        queryClientMock.mockImplementation(async ({ url }: { url: string }) => {
+            if (url === '/v1/accounts/fast-lookup/ADDR1/') {
+                return {
+                    data: {
+                        algo_value: '0.328',
+                        usd_value: '0.10',
+                        calculation_type: 'algo',
+                        account_exists: true,
+                    },
+                }
+            }
+            return {
+                data: {
+                    algo_value: '0',
+                    usd_value: '0',
+                    calculation_type: 'algo',
+                    account_exists: false,
+                },
+            }
+        })
 
         const result = await fetchAccountFastLookup(
             ['ADDR1', 'ADDR2'],
             'mainnet',
         )
 
+        expect(queryClientMock).toHaveBeenCalledTimes(2)
         expect(queryClientMock).toHaveBeenCalledWith({
             backend: 'pera',
             network: 'mainnet',
-            method: 'POST',
-            url: '/v1/accounts/fast-lookup/',
-            data: { addresses: ['ADDR1', 'ADDR2'] },
+            method: 'GET',
+            url: '/v1/accounts/fast-lookup/ADDR1/',
         })
-        expect(result).toEqual(responseData)
+        expect(queryClientMock).toHaveBeenCalledWith({
+            backend: 'pera',
+            network: 'mainnet',
+            method: 'GET',
+            url: '/v1/accounts/fast-lookup/ADDR2/',
+        })
+
+        expect(result).toEqual([
+            { address: 'ADDR1', accountExists: true },
+            { address: 'ADDR2', accountExists: false },
+        ])
     })
 
-    test('getAccountFastLookupEndpointPath returns the canonical URL path', () => {
-        expect(getAccountFastLookupEndpointPath()).toBe(
-            '/v1/accounts/fast-lookup/',
+    test('treats request failures as inactive accounts', async () => {
+        queryClientMock.mockImplementation(async ({ url }: { url: string }) => {
+            if (url === '/v1/accounts/fast-lookup/ADDR1/') {
+                throw new Error('boom')
+            }
+            return { data: { account_exists: true } }
+        })
+
+        const result = await fetchAccountFastLookup(
+            ['ADDR1', 'ADDR2'],
+            'mainnet',
+        )
+        expect(result).toEqual([
+            { address: 'ADDR1', accountExists: false },
+            { address: 'ADDR2', accountExists: true },
+        ])
+    })
+
+    test('getAccountFastLookupEndpointPath embeds the address in the URL', () => {
+        expect(getAccountFastLookupEndpointPath('SOMEADDRESS')).toBe(
+            '/v1/accounts/fast-lookup/SOMEADDRESS/',
         )
     })
 })
