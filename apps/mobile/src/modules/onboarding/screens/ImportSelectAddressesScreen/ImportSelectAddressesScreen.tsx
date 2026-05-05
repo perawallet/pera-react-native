@@ -21,6 +21,7 @@ import {
     PWFlatList,
     PWLoadingOverlay,
 } from '@components/core'
+import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { useStyles } from './styles'
 import { useImportSelectAddressesScreen } from './useImportSelectAddressesScreen'
@@ -148,7 +149,10 @@ export const ImportSelectAddressesScreen = () => {
                 />
             </PWView>
 
-            <PWView style={styles.footer}>
+            <SafeAreaView
+                edges={['bottom']}
+                style={styles.footer}
+            >
                 <PWButton
                     testID='import_select_addresses_continue_button'
                     title={t('onboarding.import_select_addresses.continue')}
@@ -156,7 +160,7 @@ export const ImportSelectAddressesScreen = () => {
                     variant='primary'
                     isDisabled={!canContinue}
                 />
-            </PWView>
+            </SafeAreaView>
 
             <PWLoadingOverlay
                 isVisible={isProcessing}

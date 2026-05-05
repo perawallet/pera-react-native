@@ -79,6 +79,5 @@ export const useStyles = makeStyles(theme => ({
         borderTopWidth: theme.borders.sm,
         borderTopColor: theme.colors.layerGrayLighter,
         backgroundColor: theme.colors.background,
-        paddingBottom: theme.spacing.xl + 20, // Extra padding for safe area logic usually handled by SafeAreaView but good to have buffer
     },
 }))
