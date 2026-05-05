@@ -11,7 +11,7 @@
  */
 
 import { useState, useMemo, useCallback, useEffect } from 'react'
-import { RouteProp, useRoute } from '@react-navigation/native'
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native'
 import {
     useAllAccounts,
     useSetAccounts,
@@ -60,6 +60,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
     const { commitImport, cancelImport } = useHDImportSession()
     const markBackupComplete = useMarkMnemonicBackupComplete()
     const navigation = useAppNavigation()
+    const reactNavigation = useNavigation()
 
     const { exitAccountFlow } = useExitAccountFlow()
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
@@ -187,14 +188,14 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
 
     useEffect(() => {
         if (!isImportMode) return
-        const unsub = navigation.addListener('beforeRemove', () => {
+        const unsub = reactNavigation.addListener('beforeRemove', () => {
             // Only trigger cancellation when leaving without committing.
             if (!isProcessing) {
                 cancelImport()
             }
         })
         return unsub
-    }, [isImportMode, navigation, isProcessing, cancelImport])
+    }, [isImportMode, reactNavigation, isProcessing, cancelImport])
 
     const areAllImported = newAccounts.length === 0
     const canContinue = areAllImported || selectedAddresses.size > 0

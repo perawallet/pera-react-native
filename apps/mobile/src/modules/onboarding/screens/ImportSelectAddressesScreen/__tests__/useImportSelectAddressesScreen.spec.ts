@@ -55,6 +55,7 @@ vi.mock('@hooks/useAppNavigation', () => ({
 }))
 vi.mock('@react-navigation/native', () => ({
     useRoute: () => ({ params: mockRouteParams.current }),
+    useNavigation: () => ({ addListener: vi.fn(() => () => {}) }),
 }))
 vi.mock('../../../hooks', () => ({
     useExitAccountFlow: () => ({ exitAccountFlow: mockExitAccountFlow }),
