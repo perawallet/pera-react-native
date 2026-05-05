@@ -24,4 +24,14 @@ describe('PWIcon', () => {
         )
         expect(screen.getByTestId('algo-icon')).toBeTruthy()
     })
+
+    it('renders the warning glyph (registered for destructive flows)', () => {
+        render(
+            <PWIcon
+                name='warning'
+                testID='warning-icon'
+            />,
+        )
+        expect(screen.getByTestId('warning-icon')).toBeTruthy()
+    })
 })

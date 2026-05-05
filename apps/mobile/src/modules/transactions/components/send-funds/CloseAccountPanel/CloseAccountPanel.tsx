@@ -42,7 +42,7 @@ export const CloseAccountPanel = ({
             innerContainerStyle={styles.container}
         >
             <PWIcon
-                name='info'
+                name='warning'
                 size='xxl'
                 variant='error'
             />

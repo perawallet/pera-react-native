@@ -89,7 +89,7 @@ export const SecurityGuardBottomSheet = (
             enablePanDownToClose
         >
             <PWIcon
-                name='info'
+                name='warning'
                 variant='error'
                 size='xxl'
                 style={styles.bottomSheetIcon}

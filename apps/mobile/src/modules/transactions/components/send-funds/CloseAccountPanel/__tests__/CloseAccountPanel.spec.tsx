@@ -85,7 +85,7 @@ describe('CloseAccountPanel', () => {
             />,
         )
 
-        expect(screen.getByTestId('icon-info-error')).toBeTruthy()
+        expect(screen.getByTestId('icon-warning-error')).toBeTruthy()
     })
 
     it('calls onClose when cancel button is pressed', () => {

@@ -59,7 +59,7 @@ export const BalancePercentageSection = ({
             {isError && (
                 <PWView style={styles.errorRow}>
                     <PWIcon
-                        name='info'
+                        name='warning'
                         variant='error'
                         size='sm'
                     />

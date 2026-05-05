@@ -63,7 +63,7 @@ export const SlippageToleranceSection = ({
             {isError && (
                 <PWView style={styles.errorRow}>
                     <PWIcon
-                        name='info'
+                        name='warning'
                         variant='error'
                         size='sm'
                     />
