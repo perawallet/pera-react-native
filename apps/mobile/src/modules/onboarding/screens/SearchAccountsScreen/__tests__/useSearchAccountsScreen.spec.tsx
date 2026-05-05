@@ -14,6 +14,7 @@ import { renderHook, waitFor } from '@test-utils/render'
 import { vi } from 'vitest'
 import { useSearchAccountsScreen } from '../useSearchAccountsScreen'
 import { AccountTypes } from '@perawallet/wallet-core-accounts'
+import type { SearchAccountsParams } from '../../../routes/types'
 
 const {
     mockShowToast,
@@ -21,6 +22,8 @@ const {
     mockReplace,
     mockDiscoverAccounts,
     mockDiscoverRekeyedAccounts,
+    mockDiscoverImportAccounts,
+    mockCancelImport,
     mockExitAccountFlow,
     mockSetSelectedAccountAddress,
     mockCreateHdWalletAccount,
@@ -32,6 +35,8 @@ const {
     mockReplace: vi.fn(),
     mockDiscoverAccounts: vi.fn(),
     mockDiscoverRekeyedAccounts: vi.fn(),
+    mockDiscoverImportAccounts: vi.fn(),
+    mockCancelImport: vi.fn(),
     mockExitAccountFlow: vi.fn(),
     mockSetSelectedAccountAddress: vi.fn(),
     mockCreateHdWalletAccount: vi.fn(),
@@ -51,7 +56,7 @@ const {
                 },
             },
             createIfEmpty: undefined as boolean | undefined,
-        },
+        } as SearchAccountsParams,
     },
 }))
 
@@ -83,6 +88,12 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     useAccountDiscovery: () => ({
         discoverAccounts: mockDiscoverAccounts,
         discoverRekeyedAccounts: mockDiscoverRekeyedAccounts,
+    }),
+    useHDImportSession: () => ({
+        prepareImport: vi.fn(),
+        discoverImportAccounts: mockDiscoverImportAccounts,
+        commitImport: vi.fn(),
+        cancelImport: mockCancelImport,
     }),
     useSelectedAccountAddress: () => ({
         setSelectedAccountAddress: mockSetSelectedAccountAddress,
@@ -136,7 +147,7 @@ describe('useSearchAccountsScreen', () => {
                 },
             },
             createIfEmpty: undefined,
-        }
+        } as SearchAccountsParams
     })
 
     it('navigates back and shows toast on error', async () => {
@@ -218,7 +229,21 @@ describe('useSearchAccountsScreen', () => {
     })
 
     it('creates next derivation and navigates to NameAccount when createIfEmpty without scanning for rekeys', async () => {
-        mockRouteParams.current.createIfEmpty = true
+        mockRouteParams.current = {
+            account: {
+                id: '1',
+                address: 'MOCK_ADDRESS',
+                type: 'hdWallet' as const,
+                keyPairId: 'wallet-1',
+                hdWalletDetails: {
+                    account: 0,
+                    change: 0,
+                    keyIndex: 0,
+                    derivationType: 9,
+                },
+            },
+            createIfEmpty: true,
+        } as SearchAccountsParams
         mockAllAccounts.current = [
             {
                 id: '1',
@@ -266,7 +291,21 @@ describe('useSearchAccountsScreen', () => {
     })
 
     it('shows error toast and goes back when createIfEmpty account creation fails', async () => {
-        mockRouteParams.current.createIfEmpty = true
+        mockRouteParams.current = {
+            account: {
+                id: '1',
+                address: 'MOCK_ADDRESS',
+                type: 'hdWallet' as const,
+                keyPairId: 'wallet-1',
+                hdWalletDetails: {
+                    account: 0,
+                    change: 0,
+                    keyIndex: 0,
+                    derivationType: 9,
+                },
+            },
+            createIfEmpty: true,
+        } as SearchAccountsParams
         mockAllAccounts.current = [
             {
                 id: '1',
@@ -298,6 +337,62 @@ describe('useSearchAccountsScreen', () => {
             expect(mockShowToast).toHaveBeenCalledWith(
                 expect.objectContaining({ type: 'error' }),
             )
+            expect(mockGoBack).toHaveBeenCalled()
+        })
+    })
+
+    it('in import mode, always navigates to ImportSelectAddresses with the discovered accounts', async () => {
+        mockRouteParams.current = {
+            mode: 'import',
+            walletKeyId: 'w-1',
+            derivationType: 9,
+        } as SearchAccountsParams
+        const discovered = [
+            {
+                id: '1',
+                address: 'CBLW...',
+                type: AccountTypes.hdWallet,
+                keyPairId: 'w-1',
+                hdWalletDetails: {
+                    account: 1,
+                    change: 0,
+                    keyIndex: 0,
+                    derivationType: 9,
+                },
+            },
+        ]
+        mockDiscoverImportAccounts.mockResolvedValue(discovered)
+
+        renderHook(() => useSearchAccountsScreen())
+
+        await waitFor(() => {
+            expect(mockReplace).toHaveBeenCalledWith('ImportSelectAddresses', {
+                mode: 'import',
+                walletKeyId: 'w-1',
+                accounts: discovered,
+            })
+            expect(mockSetSelectedAccountAddress).not.toHaveBeenCalled()
+            expect(mockCancelImport).not.toHaveBeenCalled()
+        })
+    })
+
+    it('in import mode, on discovery error cancels the import session and goes back', async () => {
+        mockRouteParams.current = {
+            mode: 'import',
+            walletKeyId: 'w-1',
+            derivationType: 9,
+        } as SearchAccountsParams
+        mockDiscoverImportAccounts.mockRejectedValue(new Error('boom'))
+
+        renderHook(() => useSearchAccountsScreen())
+
+        await waitFor(() => {
+            expect(mockCancelImport).toHaveBeenCalled()
+            expect(mockShowToast).toHaveBeenCalledWith({
+                type: 'error',
+                title: 'onboarding.import_account.failed_title',
+                body: 'onboarding.import_account.failed_body',
+            })
             expect(mockGoBack).toHaveBeenCalled()
         })
     })
