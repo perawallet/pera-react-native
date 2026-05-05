@@ -11,16 +11,13 @@
  */
 
 import type { KMSHDWalletSession } from '../models/session'
-import { fromSeed, KeyContext } from '@algorandfoundation/xhd-wallet-api'
+import { KeyContext } from '@algorandfoundation/xhd-wallet-api'
 import { KeyPair, KeyType } from '../models'
 import { makeKeyPair, peraMetadataFor } from '../utils'
-import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import { KeyManagementError } from '../errors'
 import { useKMSService } from './useKMSServices'
-import {
-    entropyToMnemonic,
-    generateHDMasterKey,
-} from '../crypto/hdwallet-utils'
+import { entropyToMnemonic } from '../crypto/hdwallet-utils'
+import { prepareHDMasterKey } from '../crypto/prepare-hd-master-key'
 import { zeroBytes } from '../crypto/secure-memory'
 import type { KeyData, KeyId } from '@algorandfoundation/keystore'
 
@@ -36,16 +33,21 @@ export const useHDWallet = () => {
         id?: string
         mnemonic?: string
     }): Promise<HDWalletKeyResult> => {
-        const keyId = params?.id ?? generateOrderedUniqueId()
-        const masterKey = await generateHDMasterKey(params?.mnemonic)
+        const prepared = await prepareHDMasterKey(params)
+        return persistHDMasterKey({
+            keyId: prepared.keyId,
+            rootKey: prepared.rootKey,
+            entropy: prepared.entropy,
+        })
+    }
 
-        // Convert BIP39 seed to XHD root key (96 bytes: kL || kR || chainCode)
-        const rootKey = fromSeed(masterKey.seed)
+    const persistHDMasterKey = async (prepared: {
+        keyId: string
+        rootKey: Uint8Array
+        entropy: Uint8Array
+    }): Promise<HDWalletKeyResult> => {
+        const { keyId, rootKey, entropy } = prepared
 
-        // Import root key into keystore. We force `id: keyId` (same id used for
-        // the entropy entry below) so the keystore record id matches our
-        // wallet-domain key id — making the keystore the single source of truth
-        // for `KeyPair` metadata via the `keystoreKeyToKeyPair` adapter.
         const keystoreKeyId = await keyStore.import(
             {
                 id: keyId,
@@ -62,8 +64,6 @@ export const useHDWallet = () => {
             'raw',
         )
 
-        // Import entropy as a separate keystore key for mnemonic recovery
-        const entropyBytes = Buffer.from(masterKey.entropy, 'hex')
         let entropyKeyId: KeyId
         try {
             entropyKeyId = await keyStore.import(
@@ -72,7 +72,7 @@ export const useHDWallet = () => {
                     type: 'hd-seed',
                     algorithm: 'raw',
                     extractable: true,
-                    privateKey: new Uint8Array(entropyBytes),
+                    privateKey: entropy,
                 } as unknown as Omit<KeyData, 'id'>,
                 'raw',
             )
@@ -81,7 +81,7 @@ export const useHDWallet = () => {
             throw e
         }
 
-        zeroBytes(masterKey.seed, rootKey, entropyBytes)
+        zeroBytes(rootKey, entropy)
 
         const keyPair = makeKeyPair({
             id: keyId,
@@ -189,6 +189,7 @@ export const useHDWallet = () => {
 
     return {
         createHDWalletKey,
+        persistHDMasterKey,
         generateDerivedKey,
         withHDSession,
     }

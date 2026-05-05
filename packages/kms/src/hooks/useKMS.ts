@@ -28,7 +28,7 @@ export type ExecuteWithMnemonicHandler<T> = (words: string[]) => T | Promise<T>
 export const useKMS = () => {
     const keystoreKeys = useKeystoreKeys()
     const { withAlgo25Session, createAlgo25Key } = useAlgo25()
-    const { withHDSession, createHDWalletKey, generateDerivedKey } =
+    const { withHDSession, createHDWalletKey, persistHDMasterKey, generateDerivedKey } =
         useHDWallet()
     const { deleteKey, keyStore, withExportedKey } = useKMSService()
 
@@ -171,6 +171,7 @@ export const useKMS = () => {
         createAlgo25Key,
         withHDSession,
         createHDWalletKey,
+        persistHDMasterKey,
         generateDerivedKey,
         keyStore,
         withExportedKey,
