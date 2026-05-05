@@ -17,6 +17,7 @@ import { useHDImportSessionStore } from '../import-session'
 import { discoverAccounts, createXHDGetPublicKey } from '../account-discovery'
 import { HDWalletAccount } from '../models/accounts'
 import { useAccountsStore } from '../store'
+import { HDImportSessionNotFoundError } from '../errors'
 
 export type UseHDImportSessionResult = {
     prepareImport: (params: { mnemonic?: string }) => Promise<{
@@ -56,9 +57,7 @@ export const useHDImportSession = (): UseHDImportSessionResult => {
         async ({ walletKeyId }: { walletKeyId: string }) => {
             const pending = useHDImportSessionStore.getState().pending
             if (!pending || pending.walletKeyId !== walletKeyId) {
-                throw new Error(
-                    'No pending HD import session for the given walletKeyId',
-                )
+                throw new HDImportSessionNotFoundError(walletKeyId)
             }
             const getPublicKey = createXHDGetPublicKey(pending.rootKey)
             return discoverAccounts({
@@ -70,37 +69,32 @@ export const useHDImportSession = (): UseHDImportSessionResult => {
         [],
     )
 
-    const commitImport = useCallback(
-        async ({
-            walletKeyId,
-            selectedAccounts,
-        }: {
-            walletKeyId: string
-            selectedAccounts: HDWalletAccount[]
-        }) => {
-            const pending = useHDImportSessionStore.getState().pending
-            if (!pending || pending.walletKeyId !== walletKeyId) {
-                throw new Error(
-                    'No pending HD import session for the given walletKeyId',
-                )
-            }
+    const commitImport = async ({
+        walletKeyId,
+        selectedAccounts,
+    }: {
+        walletKeyId: string
+        selectedAccounts: HDWalletAccount[]
+    }) => {
+        const pending = useHDImportSessionStore.getState().pending
+        if (!pending || pending.walletKeyId !== walletKeyId) {
+            throw new HDImportSessionNotFoundError(walletKeyId)
+        }
 
-            await persistHDMasterKey({
-                keyId: pending.walletKeyId,
-                rootKey: pending.rootKey,
-                entropy: pending.entropy,
-            })
+        await persistHDMasterKey({
+            keyId: pending.walletKeyId,
+            rootKey: pending.rootKey,
+            entropy: pending.entropy,
+        })
 
-            const existing = useAccountsStore.getState().accounts
-            const next = [...existing, ...selectedAccounts]
-            setAccounts(next)
+        const existing = useAccountsStore.getState().accounts
+        const next = [...existing, ...selectedAccounts]
+        setAccounts(next)
 
-            useHDImportSessionStore.getState().clear()
+        useHDImportSessionStore.getState().clear()
 
-            return selectedAccounts
-        },
-        [persistHDMasterKey, setAccounts],
-    )
+        return selectedAccounts
+    }
 
     const cancelImport = useCallback(() => {
         useHDImportSessionStore.getState().clear()

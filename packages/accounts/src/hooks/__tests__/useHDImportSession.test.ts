@@ -15,6 +15,7 @@ import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import { useHDImportSession } from '../useHDImportSession'
 import { useHDImportSessionStore } from '../../import-session'
 import { useAccountsStore } from '../../store'
+import { HDImportSessionNotFoundError } from '../../errors'
 
 const kmsMock = vi.hoisted(() => ({
     persistHDMasterKey: vi.fn(),
@@ -140,7 +141,7 @@ describe('useHDImportSession', () => {
                     walletKeyId: 'wrong',
                     selectedAccounts: [],
                 }),
-            ).rejects.toThrow()
+            ).rejects.toThrow(HDImportSessionNotFoundError)
         })
         expect(useHDImportSessionStore.getState().pending?.walletKeyId).toBe(
             'w-1',

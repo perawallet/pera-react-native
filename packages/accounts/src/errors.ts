@@ -64,3 +64,18 @@ export class RekeyTargetNotFoundError extends AccountError {
         )
     }
 }
+
+/**
+ * No pending HD import session matches the given walletKeyId
+ */
+export class HDImportSessionNotFoundError extends AccountError {
+    constructor(walletKeyId: string) {
+        super(
+            `No pending HD import session for walletKeyId=${walletKeyId}`,
+            undefined,
+            {
+                params: { walletKeyId },
+            },
+        )
+    }
+}
