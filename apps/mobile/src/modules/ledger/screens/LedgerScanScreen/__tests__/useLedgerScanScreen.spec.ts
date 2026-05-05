@@ -61,6 +61,7 @@ const makeDevice = (id: string): HardwareWalletDevice =>
         model: 'nanoX',
         rssi: -50,
         manufacturer: 'ledger',
+        transportType: 'ble',
     }) as HardwareWalletDevice
 
 describe('useLedgerScanScreen', () => {
@@ -82,6 +83,7 @@ describe('useLedgerScanScreen', () => {
         expect(mockNavigate).toHaveBeenCalledWith('LedgerFetchAccounts', {
             deviceId: 'device-known',
             deviceName: 'Fred Nano X',
+            transportType: 'ble',
         })
         expect(result.current.pendingPairingDevice).toBeNull()
     })
@@ -111,6 +113,7 @@ describe('useLedgerScanScreen', () => {
         expect(mockNavigate).toHaveBeenCalledWith('LedgerFetchAccounts', {
             deviceId: 'device-new',
             deviceName: 'Fred Nano X',
+            transportType: 'ble',
         })
         expect(result.current.pendingPairingDevice).toBeNull()
     })

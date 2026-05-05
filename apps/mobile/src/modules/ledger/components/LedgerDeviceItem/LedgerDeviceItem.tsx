@@ -65,6 +65,18 @@ export const LedgerDeviceItem = ({
                 </PWText>
             </PWView>
 
+            <PWView
+                style={styles.transportBadge}
+                testID={`ledger_device_item_${device.id}_transport_${device.transportType}`}
+            >
+                <PWText
+                    variant='caption'
+                    style={styles.transportBadgeText}
+                >
+                    {device.transportType === 'usb' ? 'USB' : 'BLE'}
+                </PWText>
+            </PWView>
+
             <PWIcon
                 name='chevron-right'
                 size='sm'

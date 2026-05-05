@@ -21,10 +21,12 @@ import {
     type PlatformExtension,
 } from '@perawallet/wallet-extension-platform-driver'
 import { WithLedgerExtension } from '@perawallet/wallet-extension-ledger-react-native'
+import { WithLedgerUsbExtension } from '@perawallet/wallet-extension-ledger-react-native-usb'
 
 type PeraExtensions = readonly [
     typeof WithPlatformExtension,
     typeof WithLedgerExtension,
+    typeof WithLedgerUsbExtension,
     typeof WithKeyStore,
 ]
 
@@ -44,6 +46,7 @@ export const PeraProvider: {
 } & typeof Provider = Provider.withExtensions([
     WithPlatformExtension,
     WithLedgerExtension,
+    WithLedgerUsbExtension,
     WithKeyStore,
 ] as const)
 

@@ -47,6 +47,7 @@ const ledger = (address: string): HardwareWalletAccount => ({
         deviceId: 'd',
         deviceName: 'Ledger',
         accountIndex: 0,
+        transportType: 'ble',
     },
 })
 

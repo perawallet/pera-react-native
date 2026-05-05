@@ -13,25 +13,40 @@
 import type {
     HardwareWalletManufacturer,
     HardwareWalletTransportProvider,
+    LedgerTransportType,
 } from './types'
 
 /**
  * Registry for hardware wallet transport providers.
- * Each manufacturer registers exactly one provider. The signing pipeline
- * resolves the correct provider based on the account's manufacturer field.
+ * Each (manufacturer, transportType) pair registers exactly one provider.
+ * The signing pipeline resolves the correct provider based on the account's
+ * manufacturer + transportType fields.
  */
 export type HardwareWalletRegistry = {
-    /** Register a transport provider for a manufacturer. Replaces any existing provider for that manufacturer. */
+    /** Register a transport provider. Replaces any existing provider for the same (manufacturer, transportType). */
     register: (provider: HardwareWalletTransportProvider) => void
-    /** Look up the provider for a given manufacturer. Returns undefined if not registered. */
+    /** Look up the provider for a given (manufacturer, transportType). Returns undefined if not registered. */
     getProvider: (
         manufacturer: HardwareWalletManufacturer,
+        transportType: LedgerTransportType,
     ) => HardwareWalletTransportProvider | undefined
     /** Return all registered providers. */
     getAllProviders: () => HardwareWalletTransportProvider[]
-    /** Check if a provider is registered for a manufacturer. */
-    hasProvider: (manufacturer: HardwareWalletManufacturer) => boolean
+    /** Return all providers registered for a given manufacturer (across transports). */
+    getProvidersByManufacturer: (
+        manufacturer: HardwareWalletManufacturer,
+    ) => HardwareWalletTransportProvider[]
+    /** Check if a provider is registered for a (manufacturer, transportType). */
+    hasProvider: (
+        manufacturer: HardwareWalletManufacturer,
+        transportType: LedgerTransportType,
+    ) => boolean
 }
+
+const buildKey = (
+    manufacturer: HardwareWalletManufacturer,
+    transportType: LedgerTransportType,
+): string => `${manufacturer}:${transportType}`
 
 /**
  * Creates a new hardware wallet registry.
@@ -42,18 +57,19 @@ export const createHardwareWalletRegistry = (): HardwareWalletRegistry => {
 
     return {
         register: (provider: HardwareWalletTransportProvider): void => {
-            providers.set(provider.manufacturer, provider)
+            providers.set(
+                buildKey(provider.manufacturer, provider.transportType),
+                provider,
+            )
         },
-        getProvider: (
-            manufacturer: HardwareWalletManufacturer,
-        ): HardwareWalletTransportProvider | undefined => {
-            return providers.get(manufacturer)
-        },
-        getAllProviders: (): HardwareWalletTransportProvider[] => {
-            return [...providers.values()]
-        },
-        hasProvider: (manufacturer: HardwareWalletManufacturer): boolean => {
-            return providers.has(manufacturer)
-        },
+        getProvider: (manufacturer, transportType) =>
+            providers.get(buildKey(manufacturer, transportType)),
+        getAllProviders: () => [...providers.values()],
+        getProvidersByManufacturer: manufacturer =>
+            [...providers.values()].filter(
+                p => p.manufacturer === manufacturer,
+            ),
+        hasProvider: (manufacturer, transportType) =>
+            providers.has(buildKey(manufacturer, transportType)),
     }
 }

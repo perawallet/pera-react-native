@@ -37,6 +37,7 @@ vi.mock('@ledgerhq/hw-app-algorand', () => ({
 import { RNLedgerService } from '../RNLedgerService'
 import {
     LedgerConnectionError,
+    LedgerSigningError,
     LedgerUserRejectedError,
     LedgerAppNotOpenError,
     LedgerDisconnectedError,
@@ -96,6 +97,7 @@ describe('RNLedgerService', () => {
                     id: 'd1',
                     name: 'My Nano',
                     manufacturer: 'ledger',
+                    transportType: 'ble',
                     rssi: -60,
                 }),
             )
@@ -252,25 +254,25 @@ describe('RNLedgerService', () => {
             expect(Array.from(sig)).toEqual([1, 2, 3])
         })
 
-        test('signTransaction throws LedgerConnectionError on empty signature', async () => {
+        test('signTransaction throws LedgerSigningError on empty signature', async () => {
             algorandSignMock.mockResolvedValue({ signature: null })
             const transport = await mountTransport()
 
             await expect(
                 transport.signTransaction(0, new Uint8Array([1])),
-            ).rejects.toBeInstanceOf(LedgerConnectionError)
+            ).rejects.toBeInstanceOf(LedgerSigningError)
         })
 
-        test('signTransaction passes through already-classified LedgerConnectionError', async () => {
+        test('signTransaction passes through already-classified Ledger errors without re-wrapping', async () => {
             algorandSignMock.mockResolvedValue({ signature: null })
             const transport = await mountTransport()
 
-            // First call establishes a LedgerConnectionError via the empty-signature
-            // branch; ensure it is not wrapped again.
+            // The empty-signature branch raises a LedgerSigningError; the
+            // outer catch must not re-wrap it via classifyLedgerError.
             await expect(
                 transport.signTransaction(0, new Uint8Array([1])),
             ).rejects.toSatisfy(
-                err => err instanceof LedgerConnectionError && !err.cause,
+                err => err instanceof LedgerSigningError && !err.cause,
             )
         })
 

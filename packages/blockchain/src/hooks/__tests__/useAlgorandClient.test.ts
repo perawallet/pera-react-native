@@ -21,6 +21,7 @@ import { useNetwork } from '../useNetwork'
 vi.mock('@algorandfoundation/algokit-utils', () => {
     const mockClient = {
         setDefaultSigner: vi.fn(),
+        setDefaultValidityWindow: vi.fn(),
         registerErrorTransformer: vi.fn(),
     }
     return {
@@ -81,11 +82,6 @@ describe('services/blockchain/hooks', () => {
         const { result } = renderHook(() => useAlgorandClient())
 
         expect(AlgorandClient.fromConfig).toHaveBeenCalledTimes(1)
-        // A throw-on-invocation default signer is registered so that
-        // composer.build() can attach a signer reference per transaction
-        // without requiring callers to wire one up. The placeholder is
-        // never actually called — real signing flows through the XState
-        // pipeline.
         expect(result.current.setDefaultSigner).toHaveBeenCalledTimes(1)
     })
 
@@ -103,14 +99,19 @@ describe('services/blockchain/hooks', () => {
         expect(result.current.setDefaultSigner).toHaveBeenCalledTimes(1)
     })
 
-    test('placeholder signer throws if invoked', async () => {
+    test('registers a placeholder default signer when no real signer is supplied so composer.build() succeeds', async () => {
         const { result } = renderHook(() => useAlgorandClient())
 
-        const placeholderSigner = (result.current.setDefaultSigner as Mock).mock
+        const placeholder = (result.current.setDefaultSigner as Mock).mock
             .calls[0][0]
+        await expect(placeholder()).rejects.toThrow(/should not be invoked/)
+    })
 
-        await expect(placeholderSigner([], [])).rejects.toThrow(
-            /Default algokit signer invoked/,
+    test('sets a 1000-round default validity window so hardware-wallet users can confirm on-device before expiry', () => {
+        const { result } = renderHook(() => useAlgorandClient())
+
+        expect(result.current.setDefaultValidityWindow).toHaveBeenCalledWith(
+            1000,
         )
     })
 

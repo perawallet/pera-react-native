@@ -138,6 +138,7 @@ describe('services/accounts/utils - account type checks', () => {
                     deviceId: 'test-device',
                     deviceName: 'Ledger Nano X',
                     accountIndex: 0,
+                    transportType: 'ble',
                 },
             } as any),
         ).toBe(true)
@@ -336,6 +337,7 @@ describe('services/accounts/utils - isSigningAccount', () => {
                 deviceId: 'test-device',
                 deviceName: 'Ledger Nano X',
                 accountIndex: 0,
+                transportType: 'ble',
             },
         } as any
         const account = {

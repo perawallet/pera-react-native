@@ -24,6 +24,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         software: 'software',
         hardware: 'hardware',
     },
+    isMultisigAccount: () => false,
 }))
 
 vi.mock('@perawallet/wallet-core-contacts', () => ({

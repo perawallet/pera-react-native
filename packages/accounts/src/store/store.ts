@@ -113,15 +113,6 @@ export const useAccountsStore: UseBoundStore<
                 sortMode: state.sortMode,
                 manualAccountOrder: state.manualAccountOrder,
             }),
-            migrate: (persistedState: unknown, version: number) => {
-                const state = persistedState as Record<string, unknown>
-                if (version < 2) {
-                    const accounts = (state.accounts ?? []) as WalletAccount[]
-                    state.sortMode = 'manual'
-                    state.manualAccountOrder = accounts.map(a => a.address)
-                }
-                return state as AccountsState
-            },
         },
     ),
 )

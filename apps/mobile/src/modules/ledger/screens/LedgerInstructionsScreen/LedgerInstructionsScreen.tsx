@@ -16,15 +16,31 @@ import { PWView, PWText, PWButton, PWIcon } from '@components/core'
 import { useStyles } from './styles'
 import { useLedgerInstructionsScreen } from './useLedgerInstructionsScreen'
 
-const INSTRUCTIONS = [
+const BLE_INSTRUCTIONS = [
     { step: 1, key: 'ledger.instructions.step_1' },
     { step: 2, key: 'ledger.instructions.step_2' },
     { step: 3, key: 'ledger.instructions.step_3' },
 ] as const
 
+const USB_INSTRUCTIONS = [
+    { step: 1, key: 'ledger.instructions.usb.step_1' },
+    { step: 2, key: 'ledger.instructions.usb.step_2' },
+    { step: 3, key: 'ledger.instructions.usb.step_3' },
+] as const
+
 export const LedgerInstructionsScreen = () => {
     const styles = useStyles()
-    const { isChecking, handleContinue, t } = useLedgerInstructionsScreen()
+    const { isChecking, transportType, handleContinue, t } =
+        useLedgerInstructionsScreen()
+
+    const isUsb = transportType === 'usb'
+    const titleKey = isUsb
+        ? 'ledger.instructions.usb.title'
+        : 'ledger.instructions.title'
+    const descriptionKey = isUsb
+        ? 'ledger.instructions.usb.description'
+        : 'ledger.instructions.description'
+    const instructions = isUsb ? USB_INSTRUCTIONS : BLE_INSTRUCTIONS
 
     return (
         <PWView style={styles.container}>
@@ -40,18 +56,18 @@ export const LedgerInstructionsScreen = () => {
                     variant='h1'
                     style={styles.title}
                 >
-                    {t('ledger.instructions.title')}
+                    {t(titleKey)}
                 </PWText>
 
                 <PWText
                     variant='h4'
                     style={styles.description}
                 >
-                    {t('ledger.instructions.description')}
+                    {t(descriptionKey)}
                 </PWText>
 
                 <PWView style={styles.instructionsList}>
-                    {INSTRUCTIONS.map(({ step, key }) => (
+                    {instructions.map(({ step, key }) => (
                         <PWView
                             key={step}
                             style={styles.instructionItem}

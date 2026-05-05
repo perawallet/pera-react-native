@@ -284,6 +284,7 @@ export const signTransactionsOnHardwareWallet = async (
 
     const transportProvider = registry?.getProvider(
         hwAccount.hardwareDetails.manufacturer,
+        hwAccount.hardwareDetails.transportType,
     )
     if (!transportProvider) {
         throw new HardwareWalletError('transport_unavailable')

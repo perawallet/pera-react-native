@@ -24,7 +24,7 @@ import type {
     LedgerDevice,
     LedgerAccount,
 } from './types'
-import { classifyLedgerError, LedgerConnectionError } from './errors'
+import { classifyLedgerError, LedgerSigningError } from './errors'
 import { resolveDeviceModel, buildLedgerAccountPath } from './constants'
 
 /**
@@ -64,17 +64,11 @@ const createTransportWrapper = (
             const result = await algorandApp.sign(path, hexMessage)
 
             if (!result.signature) {
-                throw new LedgerConnectionError(
-                    'Signing returned empty signature',
-                )
+                throw new LedgerSigningError('Empty signature returned')
             }
 
             return Uint8Array.from(result.signature)
         } catch (error) {
-            // Re-throw already-classified errors
-            if (error instanceof LedgerConnectionError) {
-                throw error
-            }
             throw classifyLedgerError(error)
         }
     },
@@ -85,7 +79,7 @@ const createTransportWrapper = (
 })
 
 /**
- * React Native implementation of LedgerService using BLE transport.
+ * React Native implementation of HardwareWalletService for Ledger BLE.
  * Uses @ledgerhq/react-native-hw-transport-ble for BLE communication
  * and @ledgerhq/hw-app-algorand for Algorand-specific APDU commands.
  */
@@ -96,6 +90,7 @@ export class RNLedgerService implements HardwareWalletService {
         const { manufacturer } = this
         return {
             manufacturer,
+            transportType: 'ble' as const,
             scan(
                 onDevice: (device: LedgerDevice) => void,
                 onError?: (error: Error) => void,
@@ -122,17 +117,14 @@ export class RNLedgerService implements HardwareWalletService {
                                 name ||
                                 `Ledger ${model.charAt(0).toUpperCase() + model.slice(1)}`,
                             manufacturer: 'ledger',
+                            transportType: 'ble',
                             model,
                             rssi: rssi ?? null,
                         })
                     },
                     error: (err: unknown) => {
                         if (onError) {
-                            const classified =
-                                err instanceof Error
-                                    ? classifyLedgerError(err)
-                                    : new LedgerConnectionError(String(err))
-                            onError(classified)
+                            onError(classifyLedgerError(err))
                         }
                     },
                     complete: () => {},
@@ -159,7 +151,15 @@ export class RNLedgerService implements HardwareWalletService {
             },
 
             async isSupported(): Promise<boolean> {
-                return TransportBLE.isSupported()
+                try {
+                    return await TransportBLE.isSupported()
+                } catch {
+                    // The native BLE module may be missing or refuse to
+                    // initialize on environments where Bluetooth is
+                    // disabled at the OS level. Treat as unsupported
+                    // rather than letting the rejection bubble up.
+                    return false
+                }
             },
         }
     }

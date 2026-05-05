@@ -124,6 +124,60 @@ export class LedgerAddressMismatchError extends AppError {
 }
 
 /**
+ * The Ledger device returned an empty signature for a signing request.
+ * Indicates a protocol or device-state failure rather than user rejection.
+ */
+export class LedgerSigningError extends AppError {
+    constructor(message: string, originalError?: Error) {
+        super(
+            `Ledger signing error: ${message}`,
+            {
+                severity: ErrorSeverity.HIGH,
+                category: ErrorCategory.BLOCKCHAIN,
+                retryable: true,
+            },
+            originalError,
+        )
+    }
+}
+
+/**
+ * No transport provider is registered for the requested (manufacturer,
+ * transportType) tuple, or no provider was tracked for a scanned device.
+ */
+export class LedgerProviderNotFoundError extends AppError {
+    constructor(reason: string, originalError?: Error) {
+        super(
+            `Ledger provider not found: ${reason}`,
+            {
+                severity: ErrorSeverity.HIGH,
+                category: ErrorCategory.BLOCKCHAIN,
+                retryable: false,
+                params: { reason },
+            },
+            originalError,
+        )
+    }
+}
+
+/**
+ * Account discovery completed without finding any usable accounts on the device.
+ */
+export class LedgerNoAccountsFoundError extends AppError {
+    constructor(originalError?: Error) {
+        super(
+            'No accounts were found on this Ledger device',
+            {
+                severity: ErrorSeverity.MEDIUM,
+                category: ErrorCategory.BLOCKCHAIN,
+                retryable: true,
+            },
+            originalError,
+        )
+    }
+}
+
+/**
  * Extract the APDU status code from a Ledger SDK error.
  * Ledger errors typically have a `statusCode` property.
  */
@@ -141,9 +195,13 @@ const getStatusCode = (error: unknown): Nullable<number> => {
 
 /**
  * Maps raw errors from `@ledgerhq/hw-app-algorand` or BLE transport
- * to typed Ledger error classes.
+ * to typed Ledger error classes. Pass-through for already-classified
+ * AppError instances so re-classification at catch sites preserves the
+ * specific error type.
  */
 export const classifyLedgerError = (error: unknown): AppError => {
+    if (error instanceof AppError) return error
+
     const statusCode = getStatusCode(error)
 
     if (statusCode !== null) {

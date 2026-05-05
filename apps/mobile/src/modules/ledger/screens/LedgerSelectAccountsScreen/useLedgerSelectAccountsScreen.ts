@@ -12,16 +12,20 @@
 
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { RouteProp, useRoute } from '@react-navigation/native'
+import { getProvider } from '@perawallet/wallet-extension-provider'
+import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import type { LedgerAccount } from '@perawallet/wallet-core-ledger'
+import {
+    LedgerProviderNotFoundError,
+    classifyLedgerError,
+} from '@perawallet/wallet-core-ledger'
+import type { HardwareWalletTransport } from '@perawallet/wallet-core-hardware-wallet'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import type { LedgerAccount } from '@perawallet/wallet-core-ledger'
-import type { HardwareWalletTransport } from '@perawallet/wallet-core-hardware-wallet'
 import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
-import { useLedgerConnection } from '../../hooks'
 import { getLedgerErrorPreset } from '@modules/ledger/utils'
-import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type LedgerSelectAccountsRouteProp = RouteProp<
     AddAccountStackParamList,
@@ -46,13 +50,17 @@ type UseLedgerSelectAccountsScreenResult = {
 export const useLedgerSelectAccountsScreen =
     (): UseLedgerSelectAccountsScreenResult => {
         const {
-            params: { deviceId, deviceName, accounts: routeAccounts },
+            params: {
+                deviceId,
+                deviceName,
+                transportType = 'ble',
+                accounts: routeAccounts,
+            },
         } = useRoute<LedgerSelectAccountsRouteProp>()
         const { t } = useLanguage()
         const navigation = useAppNavigation()
         const allAccounts = useAllAccounts()
         const { errorToast } = useToast()
-        const { connect } = useLedgerConnection()
 
         const [accounts, setAccounts] = useState<LedgerAccount[]>(routeAccounts)
         const [isFetchingMore, setIsFetchingMore] = useState(false)
@@ -134,9 +142,17 @@ export const useLedgerSelectAccountsScreen =
             navigation.navigate('LedgerVerify', {
                 deviceId,
                 deviceName,
+                transportType,
                 selectedAccounts,
             })
-        }, [accounts, selectedAddresses, deviceId, deviceName, navigation])
+        }, [
+            accounts,
+            selectedAddresses,
+            deviceId,
+            deviceName,
+            transportType,
+            navigation,
+        ])
 
         const handleFindAnother = useCallback(async () => {
             if (inFlightRef.current) return
@@ -144,7 +160,17 @@ export const useLedgerSelectAccountsScreen =
             setIsFetchingMore(true)
             try {
                 if (!transportRef.current) {
-                    transportRef.current = await connect(deviceId)
+                    const provider =
+                        getProvider().hardwareWalletRegistry.getProvider(
+                            'ledger',
+                            transportType,
+                        )
+                    if (!provider) {
+                        throw new LedgerProviderNotFoundError(
+                            `No Ledger provider registered for transport "${transportType}"`,
+                        )
+                    }
+                    transportRef.current = await provider.connect(deviceId)
                 }
 
                 const nextIndex =
@@ -163,8 +189,7 @@ export const useLedgerSelectAccountsScreen =
                 setAccounts(prev => [...prev, next])
             } catch (err) {
                 if (!isMountedRef.current) return
-                const error =
-                    err instanceof Error ? err : new Error(String(err))
+                const error = classifyLedgerError(err)
                 const preset = getLedgerErrorPreset(error, t)
                 errorToast(preset.title, preset.body)
             } finally {
@@ -173,7 +198,7 @@ export const useLedgerSelectAccountsScreen =
                     setIsFetchingMore(false)
                 }
             }
-        }, [connect, deviceId, errorToast, t])
+        }, [deviceId, transportType, errorToast, t])
 
         const areAllImported = newAccounts.length === 0
         const canContinue =

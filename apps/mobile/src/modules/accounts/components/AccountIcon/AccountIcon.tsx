@@ -10,24 +10,27 @@
  limitations under the License
  */
 
-import { IconName, PWIcon } from '@components/core'
+import { IconName, PWIcon, PWView } from '@components/core'
 
 import { useMemo } from 'react'
 import {
     AccountTypes,
+    isMultisigAccount,
     useAccountLogicalType,
     type AccountLogicalType,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { SvgProps } from 'react-native-svg'
+import { AccountIconBadge } from './AccountIconBadge'
+import { AccountIconSize, useStyles } from './styles'
 
 const THEME_TOKEN = '__theme__'
 const FALLBACK_ASSET = `accounts/${THEME_TOKEN}/unknown-account`
 
 export type AccountIconProps = {
     account?: WalletAccount
-    size?: 'sm' | 'md' | 'lg' | 'xl'
+    size?: AccountIconSize
 } & SvgProps
 
 const iconNames = {
@@ -57,13 +60,14 @@ export const AccountIcon = (props: AccountIconProps) => {
     const { account, size = 'md', ...rest } = props
     const darkmode = useIsDarkMode()
     const logicalType = useAccountLogicalType(account?.address)
+    const styles = useStyles({ size })
 
     const icon = useMemo(() => {
-        if (!account || !logicalType) return <></>
+        if (!account || !logicalType) return null
 
         const theme = darkmode ? 'dark' : 'light'
-        const icon = resolveIconAsset(logicalType, account)
-        const iconName: IconName = icon.replaceAll(
+        const asset = resolveIconAsset(logicalType, account)
+        const iconName: IconName = asset.replaceAll(
             THEME_TOKEN,
             theme,
         ) as IconName
@@ -76,5 +80,22 @@ export const AccountIcon = (props: AccountIconProps) => {
         )
     }, [account, logicalType, darkmode, rest, size])
 
-    return icon
+    if (!icon) return <></>
+
+    const isBadgeVisible =
+        !!account &&
+        isMultisigAccount(account) &&
+        (size === 'lg' || size === 'xl')
+
+    return (
+        <PWView style={styles.container}>
+            {icon}
+            {isBadgeVisible && (
+                <AccountIconBadge
+                    count={account.multisigDetails.addresses.length}
+                    size={size}
+                />
+            )}
+        </PWView>
+    )
 }

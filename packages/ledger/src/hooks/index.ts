@@ -11,7 +11,10 @@
  */
 
 export { useLedgerAccounts } from './useLedgerAccounts'
-export { useLedgerConnection } from './useLedgerConnection'
+export {
+    useLedgerConnection,
+    type UseLedgerConnectionResult,
+} from './useLedgerConnection'
 export {
     useLedgerPairing,
     type UseLedgerPairingResult,

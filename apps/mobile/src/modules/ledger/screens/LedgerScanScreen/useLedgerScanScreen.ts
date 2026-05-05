@@ -61,6 +61,7 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
             navigation.navigate('LedgerFetchAccounts', {
                 deviceId: device.id,
                 deviceName: device.name,
+                transportType: device.transportType,
             })
         },
         [stopScan, navigation],

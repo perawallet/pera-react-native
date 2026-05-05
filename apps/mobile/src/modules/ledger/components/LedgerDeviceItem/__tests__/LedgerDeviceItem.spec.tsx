@@ -24,6 +24,7 @@ const makeDevice = (
         model: 'nanoX',
         rssi: -55,
         manufacturer: 'ledger',
+        transportType: 'ble',
         ...overrides,
     }) as HardwareWalletDevice
 
@@ -74,5 +75,45 @@ describe('LedgerDeviceItem', () => {
         fireEvent.click(screen.getByTestId('ledger_device_item_device-1'))
 
         expect(onPress).toHaveBeenCalledWith(device)
+    })
+
+    it('renders a USB badge for USB-discovered devices', () => {
+        render(
+            <LedgerDeviceItem
+                device={{
+                    id: 'usb-1',
+                    name: 'Nano S Plus',
+                    manufacturer: 'ledger',
+                    transportType: 'usb',
+                    model: 'nanoSPlus',
+                    rssi: null,
+                }}
+                onPress={() => {}}
+            />,
+        )
+
+        expect(
+            screen.getByTestId('ledger_device_item_usb-1_transport_usb'),
+        ).toBeTruthy()
+    })
+
+    it('renders a BLE badge for BLE-discovered devices', () => {
+        render(
+            <LedgerDeviceItem
+                device={{
+                    id: 'ble-1',
+                    name: 'Nano X',
+                    manufacturer: 'ledger',
+                    transportType: 'ble',
+                    model: 'nanoX',
+                    rssi: -50,
+                }}
+                onPress={() => {}}
+            />,
+        )
+
+        expect(
+            screen.getByTestId('ledger_device_item_ble-1_transport_ble'),
+        ).toBeTruthy()
     })
 })

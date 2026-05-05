@@ -149,6 +149,7 @@ export const buildTestPlatform = (
     const defaultHardwareWalletRegistry = createHardwareWalletRegistry()
     defaultHardwareWalletRegistry.register({
         manufacturer: 'ledger',
+        transportType: 'ble',
         scan: () => () => {},
         connect: async () => ({
             getAddress: async (accountIndex: number) => ({

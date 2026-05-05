@@ -32,6 +32,7 @@
     "@expo/config-plugins": "~55.0.8",
     "@gorhom/bottom-sheet": "^5.2.8",
     "@hookform/resolvers": "^5.2.2",
+    "@ledgerhq/react-native-hid": "^6.39.1",
     "@legendapp/list": "^2.0.19",
     "@notifee/react-native": "^9.1.8",
     "@perawallet/wallet-core-accounts": "workspace:*",
