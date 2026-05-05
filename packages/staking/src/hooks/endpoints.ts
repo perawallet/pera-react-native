@@ -26,5 +26,9 @@ export const fetchStakingProjectsInfo = async (network: Network) => {
         url: STAKING_PROJECTS_INFORMATION_ENDPOINT,
     })
 
-    return stakingProjectsApiResponseSchema.parse(response.data)
+    // The endpoint sometimes returns 200 with an empty body when no project
+    // has TVL data yet; queryClient surfaces that as `data: undefined`. Treat
+    // it as an empty TVL record — the schema is `z.record(string, ...)` so an
+    // empty `{}` parses cleanly and downstream `mapProjects` falls back to 0.
+    return stakingProjectsApiResponseSchema.parse(response.data ?? {})
 }
