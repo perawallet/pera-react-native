@@ -208,7 +208,6 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
             if (actorRefsMap.has(request.id)) {
                 return
             }
-            })
 
             const actor = createSigningMachine(
                 request,
