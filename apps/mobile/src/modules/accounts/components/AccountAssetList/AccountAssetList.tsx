@@ -132,7 +132,9 @@ export const AccountAssetList = ({
                                 />
                                 <PWButton
                                     icon='plus'
-                                    title={t('account_details.assets.add_asset')}
+                                    title={t(
+                                        'account_details.assets.add_asset',
+                                    )}
                                     variant='helper'
                                     paddingStyle='dense'
                                     onPress={addAssetSheetState.open}

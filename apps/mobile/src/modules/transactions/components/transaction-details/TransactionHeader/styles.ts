@@ -13,37 +13,36 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-        container: {
-            alignItems: 'flex-start',
-            gap: theme.spacing.md,
-            width: '100%' as const,
-        },
-        idContainer: {
-            flexDirection: 'row' as const,
-            alignItems: 'center' as const,
-            gap: theme.spacing.xl,
-        },
-        idTextContainer: {
-            alignItems: 'flex-start' as const,
-            gap: theme.spacing.sm,
-        },
-        blockContainer: {
-            flexDirection: 'row' as const,
-            alignItems: 'flex-start' as const,
-            justifyContent: 'space-between' as const,
-            gap: theme.spacing.lg,
-            paddingHorizontal: theme.spacing.sm,
-        },
-        blockColumn: {
-            flexDirection: 'row' as const,
-            alignItems: 'flex-start' as const,
-            gap: theme.spacing.sm,
-        },
-        blockTitle: {
-            color: theme.colors.textGray,
-        },
-        blockValue: {
-            color: theme.colors.textMain,
-        },
-    }
-))
+    container: {
+        alignItems: 'flex-start',
+        gap: theme.spacing.md,
+        width: '100%' as const,
+    },
+    idContainer: {
+        flexDirection: 'row' as const,
+        alignItems: 'center' as const,
+        gap: theme.spacing.xl,
+    },
+    idTextContainer: {
+        alignItems: 'flex-start' as const,
+        gap: theme.spacing.sm,
+    },
+    blockContainer: {
+        flexDirection: 'row' as const,
+        alignItems: 'flex-start' as const,
+        justifyContent: 'space-between' as const,
+        gap: theme.spacing.lg,
+        paddingHorizontal: theme.spacing.sm,
+    },
+    blockColumn: {
+        flexDirection: 'row' as const,
+        alignItems: 'flex-start' as const,
+        gap: theme.spacing.sm,
+    },
+    blockTitle: {
+        color: theme.colors.textGray,
+    },
+    blockValue: {
+        color: theme.colors.textMain,
+    },
+}))
