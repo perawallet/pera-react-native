@@ -53,6 +53,7 @@ export const TransactionConfirmationScreen = () => {
         openNote,
         closeNote,
         handleConfirm,
+        isCollectible,
         isReady,
         isCloseAccount,
         isRecipientBelowMbr,
@@ -71,18 +72,20 @@ export const TransactionConfirmationScreen = () => {
                     variant='h3'
                     currency={asset?.unitName ?? ''}
                     precision={asset?.decimals ?? DEFAULT_PRECISION}
-                    minPrecision={DEFAULT_PRECISION}
+                    minPrecision={isCollectible ? 0 : DEFAULT_PRECISION}
                     showSymbol
                     value={amount ?? new Decimal(0)}
                 />
-                <PreferredCurrencyDisplay
-                    style={styles.secondaryAmount}
-                    sourceAmount={amount}
-                    sourceAssetId={selectedAssetId ?? ''}
-                    precision={asset?.decimals ?? DEFAULT_PRECISION}
-                    minPrecision={DEFAULT_PRECISION}
-                    showSymbol
-                />
+                {!isCollectible && (
+                    <PreferredCurrencyDisplay
+                        style={styles.secondaryAmount}
+                        sourceAmount={amount}
+                        sourceAssetId={selectedAssetId ?? ''}
+                        precision={asset?.decimals ?? DEFAULT_PRECISION}
+                        minPrecision={DEFAULT_PRECISION}
+                        showSymbol
+                    />
+                )}
             </KeyValueRow>
             <PWDivider />
             {!!selectedAccount && (
@@ -105,7 +108,7 @@ export const TransactionConfirmationScreen = () => {
                 <CurrencyDisplay
                     currency='ALGO'
                     precision={ALGO_ASSET.decimals}
-                    minPrecision={DEFAULT_PRECISION}
+                    minPrecision={isCollectible ? 0 : DEFAULT_PRECISION}
                     showSymbol
                     value={
                         params?.minFee != null
@@ -123,19 +126,21 @@ export const TransactionConfirmationScreen = () => {
                     <CurrencyDisplay
                         currency={asset?.unitName ?? ''}
                         precision={asset?.decimals ?? DEFAULT_PRECISION}
-                        minPrecision={DEFAULT_PRECISION}
+                        minPrecision={isCollectible ? 0 : DEFAULT_PRECISION}
                         showSymbol
                         value={currentBalance.amount}
                         isLoading={currentBalancePending}
                     />
-                    <PreferredCurrencyDisplay
-                        sourceAmount={currentBalance.amount}
-                        sourceAssetId={selectedAssetId ?? ''}
-                        precision={asset?.decimals ?? DEFAULT_PRECISION}
-                        minPrecision={DEFAULT_PRECISION}
-                        showSymbol
-                        style={styles.secondaryAmount}
-                    />
+                    {!isCollectible && (
+                        <PreferredCurrencyDisplay
+                            sourceAmount={currentBalance.amount}
+                            sourceAssetId={selectedAssetId ?? ''}
+                            precision={asset?.decimals ?? DEFAULT_PRECISION}
+                            minPrecision={DEFAULT_PRECISION}
+                            showSymbol
+                            style={styles.secondaryAmount}
+                        />
+                    )}
                 </KeyValueRow>
             )}
             <PWDivider />
