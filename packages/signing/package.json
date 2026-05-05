@@ -17,6 +17,7 @@
     "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
   },
   "dependencies": {
+    "@algorandfoundation/algokit-utils": "catalog:",
     "@babel/runtime": "catalog:",
     "@noble/hashes": "catalog:",
     "@perawallet/wallet-core-accounts": "workspace:*",

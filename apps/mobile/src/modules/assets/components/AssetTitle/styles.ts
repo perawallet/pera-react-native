@@ -15,17 +15,14 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => {
     const id = {
         color: theme.colors.textGray,
-        lineHeight: theme.spacing.lg,
     }
     const name = {
         color: theme.colors.textMain,
-        lineHeight: theme.spacing.lg,
         paddingRight: theme.spacing.xs,
         flexShrink: 1,
     }
     const suspiciousName = {
         color: theme.colors.error,
-        lineHeight: theme.spacing.lg,
         paddingRight: theme.spacing.xs,
         flexShrink: 1,
     }

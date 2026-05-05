@@ -36,6 +36,27 @@ import type { SigningMachineDeps } from '../machine/context'
 import type { SigningCallbacks } from '../pipeline/types'
 import type { SignRequest } from '../models'
 
+// Process-wide registry of running signing-machine actors, keyed by
+// request id. Hoisted to module scope (rather than per-hook `useRef`) so
+// that simultaneously-mounted consumers of `useSigningActorLifecycle`
+// share a single Map: only the first hook instance whose effect runs for
+// a given request creates the actor, and all the others see the entry
+// already exists and bail. Without this, every consumer would race and
+// produce one parallel signing machine per mount.
+const actorRefsMap = new Map<string, AnyActorRef>()
+
+/**
+ * Test-only: stops every running actor and clears the module-level
+ * registry. Call from `beforeEach` so leftover actors from one test never
+ * leak into the next.
+ */
+export const __resetSigningActorRegistryForTests = (): void => {
+    for (const actor of actorRefsMap.values()) {
+        actor.stop()
+    }
+    actorRefsMap.clear()
+}
+
 const isTimeoutError = (error: Error): boolean =>
     error instanceof LedgerTimeoutError ||
     (error instanceof LedgerConnectionError && /timed out/.test(error.message))
@@ -78,6 +99,20 @@ const isNonRetryableFailure = (
     const error = snapshot.context.error
     if (!error || !(error instanceof AppError)) return true
     return error.metadata.retryable !== true
+}
+
+/**
+ * Headless callers (e.g. internal send/swap flows) have no retry UI, so a
+ * `failed` state is terminal for them regardless of the error's retryable
+ * flag — otherwise the actor and request both leak, blocking every
+ * subsequent request because the single-flight queue guard sees a running
+ * actor.
+ */
+const isHeadlessFailure = (
+    snapshot: SnapshotFrom<typeof signingMachine>,
+): boolean => {
+    if (!snapshot.matches('failed')) return false
+    return snapshot.context.request.headless === true
 }
 
 // =============================================================================
@@ -127,9 +162,6 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
     const { network } = useNetwork()
     const allAccounts = useAllAccounts()
 
-    // Actor refs stored in a Map ref — ephemeral, not persisted, no re-renders
-    const actorRefsMap = useRef(new Map<string, AnyActorRef>())
-
     // Stable refs so the actor subscription callback never becomes stale
     const removeSignRequestFromStoreRef = useRef(removeSignRequestFromStore)
     const setLastCompletedRequestRef = useRef(setLastCompletedRequest)
@@ -173,7 +205,9 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
     // Creates, subscribes to, and starts an actor for the given request.
     const createActorForRequest = useCallback(
         (request: SignRequest) => {
-            if (actorRefsMap.current.has(request.id)) return
+            if (actorRefsMap.has(request.id)) {
+                return
+            }
 
             const actor = createSigningMachine(
                 request,
@@ -184,7 +218,8 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
             actor.subscribe(snapshot => {
                 const isTerminal =
                     snapshot.status === 'done' ||
-                    isNonRetryableFailure(snapshot)
+                    isNonRetryableFailure(snapshot) ||
+                    isHeadlessFailure(snapshot)
 
                 if (!isTerminal) return
 
@@ -239,14 +274,14 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
 
                 if (keepForInlineError) return
 
-                actorRefsMap.current.delete(actor.id)
+                actorRefsMap.delete(actor.id)
                 // Removing from the store triggers pendingSignRequests to change,
                 // which fires the reactive effect below to start the next actor.
                 removeSignRequestFromStoreRef.current(req)
             })
 
             actor.start()
-            actorRefsMap.current.set(request.id, actor)
+            actorRefsMap.set(request.id, actor)
         },
         [allAccounts, buildDeps],
     )
@@ -256,15 +291,15 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
     createActorRef.current = createActorForRequest
 
     const stopActor = useCallback((requestId: string) => {
-        const actor = actorRefsMap.current.get(requestId)
+        const actor = actorRefsMap.get(requestId)
         if (actor) {
             actor.stop()
-            actorRefsMap.current.delete(requestId)
+            actorRefsMap.delete(requestId)
         }
     }, [])
 
     const getActorRef = useCallback((requestId: string) => {
-        return actorRefsMap.current.get(requestId)
+        return actorRefsMap.get(requestId)
     }, [])
 
     // Reactive queue effect: starts the next actor whenever
@@ -273,7 +308,7 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
     useEffect(() => {
         const next = getNextQueuedRequest(
             pendingSignRequests,
-            actorRefsMap.current.size,
+            actorRefsMap.size,
         )
         if (next) {
             createActorRef.current(next)

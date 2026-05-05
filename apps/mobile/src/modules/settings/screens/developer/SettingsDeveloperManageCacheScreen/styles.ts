@@ -12,20 +12,11 @@
 
 import { makeStyles } from '@rneui/themed'
 
-type StyleProps = { hasPadding: boolean }
-
-export const useStyles = makeStyles((theme, { hasPadding }: StyleProps) => ({
-    searchContainer: {
-        paddingHorizontal: hasPadding ? theme.spacing.md : 0,
-        marginBottom: theme.spacing.md,
-    },
-    listContent: {
-        flexGrow: 1,
-        gap: theme.spacing.md,
-        paddingBottom: theme.spacing['3xl'],
-    },
-    item: {
-        width: '100%',
-        paddingHorizontal: hasPadding ? theme.spacing.md : 0,
+export const useStyles = makeStyles(theme => ({
+    container: {
+        flex: 1,
+        backgroundColor: theme.colors.background,
+        paddingHorizontal: theme.spacing.lg,
+        paddingTop: theme.spacing.lg,
     },
 }))

@@ -38,6 +38,7 @@ import {
 } from '@perawallet/wallet-core-database'
 import { seedAlgoAsset } from '@perawallet/wallet-core-assets'
 import { initializeSyncService } from '@perawallet/wallet-core-background'
+import { setOnConfirmedHandler } from '@perawallet/wallet-core-signing'
 import { createCrashReportingErrorReporter } from '@perawallet/wallet-extension-platform'
 import {
     getProvider,
@@ -108,7 +109,10 @@ const AppContent = () => {
                 await initializeDatabase(provider.database)
                 await seedAlgoAsset(getDatabase())
 
-                initializeSyncService({ queryClient })
+                initializeSyncService({
+                    queryClient,
+                    registerCompletionHandler: setOnConfirmedHandler,
+                })
 
                 updateQueryHeaders()
 

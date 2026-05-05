@@ -28,7 +28,7 @@ const mockSendRawTransaction = vi.fn()
 const mockPrepareTransactions = vi.fn()
 const mockUpdateSwapStatus = vi.fn()
 
-// We deliberately do NOT delegate to the real `submitSignedTransactionGroup`
+// We deliberately do NOT delegate to the real `submitAndAutoRefresh`
 // via `vi.importActual` here. Importing the signing package transitively
 // pulls in its store (`registerStore`, `createPersistStorage`, etc.), and
 // the local `@perawallet/wallet-core-shared` mock below is intentionally
@@ -38,7 +38,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: () => ({
         addSignRequest: mockAddSignRequest,
     }),
-    submitSignedTransactionGroup: async (
+    submitAndAutoRefresh: async (
         _algokit: unknown,
         encodeSignedTransactions: (
             txns: PeraSignedTransaction[],

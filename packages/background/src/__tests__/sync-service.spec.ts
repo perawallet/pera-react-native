@@ -98,7 +98,7 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
-    logger: { warn: vi.fn(), error: vi.fn() },
+    logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() },
     Networks: { mainnet: 'mainnet', testnet: 'testnet' },
     partition: (arr: unknown[], size: number) => {
         const result = []
@@ -379,6 +379,104 @@ describe('SyncService', () => {
         vi.mocked(fetchAndPersistAccount).mockImplementation(() =>
             Promise.resolve(),
         )
+    })
+
+    describe('refreshAccounts', () => {
+        it('returns early when given an empty address list', async () => {
+            const { fetchAndPersistAccount } =
+                await import('@perawallet/wallet-core-accounts')
+            const { fetchAndPersistTransactions } =
+                await import('@perawallet/wallet-core-transactions')
+
+            await service.refreshAccounts([], 'mainnet')
+
+            expect(fetchAndPersistAccount).not.toHaveBeenCalled()
+            expect(fetchAndPersistTransactions).not.toHaveBeenCalled()
+        })
+
+        it('fetches account info and transactions for each given address', async () => {
+            const { fetchAndPersistAccount, invalidateAccountQueries } =
+                await import('@perawallet/wallet-core-accounts')
+            const {
+                fetchAndPersistTransactions,
+                invalidateTransactionQueries,
+            } = await import('@perawallet/wallet-core-transactions')
+
+            await service.refreshAccounts(['ADDR1', 'ADDR2'], 'testnet')
+
+            expect(fetchAndPersistAccount).toHaveBeenCalledTimes(2)
+            expect(fetchAndPersistAccount).toHaveBeenCalledWith(
+                'ADDR1',
+                'testnet',
+            )
+            expect(fetchAndPersistAccount).toHaveBeenCalledWith(
+                'ADDR2',
+                'testnet',
+            )
+            expect(fetchAndPersistTransactions).toHaveBeenCalledTimes(2)
+            expect(fetchAndPersistTransactions).toHaveBeenCalledWith(
+                'ADDR1',
+                'testnet',
+            )
+            expect(fetchAndPersistTransactions).toHaveBeenCalledWith(
+                'ADDR2',
+                'testnet',
+            )
+            expect(invalidateAccountQueries).toHaveBeenCalledWith(queryClient)
+            expect(invalidateTransactionQueries).toHaveBeenCalledWith(
+                queryClient,
+            )
+        })
+
+        it('logs and swallows individual fetch failures, never throwing', async () => {
+            const { fetchAndPersistAccount } =
+                await import('@perawallet/wallet-core-accounts')
+            const { logger } = await import('@perawallet/wallet-core-shared')
+
+            vi.mocked(fetchAndPersistAccount).mockImplementationOnce(
+                async () => {
+                    throw new Error('boom')
+                },
+            )
+
+            await expect(
+                service.refreshAccounts(['ADDR1', 'ADDR2'], 'mainnet'),
+            ).resolves.toBeUndefined()
+
+            expect(logger.warn).toHaveBeenCalledWith(
+                'Sync step failed',
+                expect.objectContaining({
+                    phase: 'refresh-accounts',
+                    error: expect.objectContaining({ message: 'boom' }),
+                }),
+            )
+
+            vi.mocked(fetchAndPersistAccount).mockImplementation(() =>
+                Promise.resolve(),
+            )
+        })
+
+        it('still invalidates queries when fetches fail', async () => {
+            const { fetchAndPersistAccount, invalidateAccountQueries } =
+                await import('@perawallet/wallet-core-accounts')
+            const { invalidateTransactionQueries } =
+                await import('@perawallet/wallet-core-transactions')
+
+            vi.mocked(fetchAndPersistAccount).mockRejectedValueOnce(
+                new Error('all fetches fail'),
+            )
+
+            await service.refreshAccounts(['ADDR1'], 'mainnet')
+
+            expect(invalidateAccountQueries).toHaveBeenCalledWith(queryClient)
+            expect(invalidateTransactionQueries).toHaveBeenCalledWith(
+                queryClient,
+            )
+
+            vi.mocked(fetchAndPersistAccount).mockImplementation(() =>
+                Promise.resolve(),
+            )
+        })
     })
 
     it('logs non-429 failures for assets and transactions phases', async () => {

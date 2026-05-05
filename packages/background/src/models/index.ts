@@ -11,7 +11,27 @@
  */
 
 import type { QueryClient } from '@tanstack/react-query'
+import type { Network } from '@perawallet/wallet-core-shared'
+
+/**
+ * Handler invoked after a submitted transaction group involves wallet-held
+ * addresses. Structurally compatible with `OnConfirmedHandler` from
+ * `@perawallet/wallet-core-signing`; duplicated here to keep the
+ * dependency edge `signing → background` (not the reverse).
+ */
+export type SyncCompletionHandler = (
+    addresses: string[],
+    network: Network,
+) => void | Promise<void>
 
 export type SyncServiceDeps = {
     queryClient: QueryClient
+    /**
+     * Optional registration function for the post-confirmation refresh
+     * hook. When provided, `initializeSyncService` wires the freshly-built
+     * SyncService instance into the registry so `submitAndAutoRefresh`
+     * (in @perawallet/wallet-core-signing) can call back without the
+     * background package depending on signing.
+     */
+    registerCompletionHandler?: (handler: SyncCompletionHandler) => void
 }

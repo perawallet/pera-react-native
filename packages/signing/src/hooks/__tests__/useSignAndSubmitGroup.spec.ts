@@ -23,7 +23,7 @@ import type {
 import type { TransactionSignRequest } from '../../models'
 
 const mockAddSignRequest = vi.fn()
-const mockSubmitSignedTransactionGroup = vi.fn()
+const mockSubmitAndAutoRefresh = vi.fn()
 
 vi.mock('../useSigningRequest', () => ({
     useSigningRequest: () => ({
@@ -40,9 +40,9 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     }),
 }))
 
-vi.mock('../../pipeline/submission/submitSignedTransactionGroup', () => ({
-    submitSignedTransactionGroup: (...args: unknown[]) =>
-        mockSubmitSignedTransactionGroup(...args),
+vi.mock('../../pipeline/submission/submitAndAutoRefresh', () => ({
+    submitAndAutoRefresh: (...args: unknown[]) =>
+        mockSubmitAndAutoRefresh(...args),
 }))
 
 const fakeTxn = {
@@ -55,7 +55,7 @@ describe('useSignAndSubmitGroup', () => {
     })
 
     it('resolves with the algod txIds after the pipeline approves', async () => {
-        mockSubmitSignedTransactionGroup.mockResolvedValue(['tx1', 'tx2'])
+        mockSubmitAndAutoRefresh.mockResolvedValue(['tx1', 'tx2'])
         let captured: TransactionSignRequest | undefined
         mockAddSignRequest.mockImplementation((r: TransactionSignRequest) => {
             captured = r
@@ -82,7 +82,7 @@ describe('useSignAndSubmitGroup', () => {
         expect(captured?.transport).toBe('callback')
         expect(captured?.sourceType).toBe('local')
         expect(captured?.txs).toEqual([fakeTxn, fakeTxn])
-        expect(mockSubmitSignedTransactionGroup).toHaveBeenCalledTimes(1)
+        expect(mockSubmitAndAutoRefresh).toHaveBeenCalledTimes(1)
     })
 
     it('rejects with UserRejectedSigningError when reject() fires', async () => {
@@ -103,7 +103,7 @@ describe('useSignAndSubmitGroup', () => {
         await captured?.reject?.()
 
         await expect(promise).rejects.toBeInstanceOf(UserRejectedSigningError)
-        expect(mockSubmitSignedTransactionGroup).not.toHaveBeenCalled()
+        expect(mockSubmitAndAutoRefresh).not.toHaveBeenCalled()
     })
 
     it('rejects with the original error when error() fires', async () => {
@@ -125,7 +125,7 @@ describe('useSignAndSubmitGroup', () => {
         await captured?.error?.(upstream)
 
         await expect(promise).rejects.toBe(upstream)
-        expect(mockSubmitSignedTransactionGroup).not.toHaveBeenCalled()
+        expect(mockSubmitAndAutoRefresh).not.toHaveBeenCalled()
     })
 
     it('returns immediately with no submission when given an empty group', async () => {
@@ -140,6 +140,6 @@ describe('useSignAndSubmitGroup', () => {
 
         expect(res).toEqual({ txIds: [] })
         expect(mockAddSignRequest).not.toHaveBeenCalled()
-        expect(mockSubmitSignedTransactionGroup).not.toHaveBeenCalled()
+        expect(mockSubmitAndAutoRefresh).not.toHaveBeenCalled()
     })
 })

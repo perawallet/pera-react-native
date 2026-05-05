@@ -20,7 +20,7 @@ import type {
 } from '../types'
 import { NetworkChangedError, TransportError } from '../errors'
 import {
-    submitSignedTransactionGroup,
+    submitAndAutoRefresh,
     type AlgokitClientInterface,
     type EncodeSignedTransactionsFn,
 } from '../submission'
@@ -70,7 +70,7 @@ export const createAlgodTransport = (
             const { signed } = result.signedData
 
             try {
-                const txIds = await submitSignedTransactionGroup(
+                const txIds = await submitAndAutoRefresh(
                     algokit,
                     encodeSignedTransactions,
                     signed,

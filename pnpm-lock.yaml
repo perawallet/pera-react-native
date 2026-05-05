@@ -2300,6 +2300,9 @@ importers:
 
   packages/signing:
     dependencies:
+      '@algorandfoundation/algokit-utils':
+        specifier: 'catalog:'
+        version: 10.0.0-beta.1
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.2

@@ -21,6 +21,10 @@ import { useSendFunds } from '@modules/transactions/hooks'
 import { useLanguage } from '@hooks/useLanguage'
 import { AccountAssetSelectionList } from '@modules/assets/components/AccountAssetSelectionList'
 
+const hasBalanceFilter = (item: AssetWithAccountBalance) => {
+    return item.amount.gt(Decimal(0))
+}
+
 export const AssetSelectionScreen = () => {
     const { t } = useLanguage()
     const { setSelectedAssetId, setAmount } = useSendFunds()
@@ -56,6 +60,7 @@ export const AssetSelectionScreen = () => {
             )}
             emptyResultTitle={t('send_funds.asset_selection.no_results_title')}
             emptyResultBody={t('send_funds.asset_selection.no_results_body')}
+            filterAsset={hasBalanceFilter}
         />
     )
 }

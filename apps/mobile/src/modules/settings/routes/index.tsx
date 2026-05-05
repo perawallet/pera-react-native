@@ -33,6 +33,7 @@ import { WalletConnectConnection } from '@perawallet/wallet-core-walletconnect'
 import { SettingsWalletConnectDetailsScreen } from '@modules/settings/screens/SettingsWalletConnectDetailsScreen/SettingsWalletConnectDetailsScreen'
 import { SettingsDeveloperMenuScreen } from '../screens/developer/SettingsDeveloperMenuScreen/SettingsDeveloperMenuScreen'
 import { SettingsDeveloperFeatureFlagsScreen } from '../screens/developer/SettingsDeveloperFeatureFlagsScreen/SettingsDeveloperFeatureFlagsScreen'
+import { SettingsDeveloperManageCacheScreen } from '../screens/developer/SettingsDeveloperManageCacheScreen'
 
 export type DeveloperSettingsStackParamsList = {
     DeveloperSettingsHome: undefined
@@ -40,6 +41,7 @@ export type DeveloperSettingsStackParamsList = {
     DispenserSettings: undefined
     DevMenu: undefined
     FeatureFlags: undefined
+    ManageCache: undefined
 }
 
 const DeveloperSettingsStack =
@@ -93,6 +95,13 @@ const DeveloperSettingsStackNavigator = () => {
                     title: 'screens.feature_flags',
                 }}
                 component={SettingsDeveloperFeatureFlagsScreen}
+            />
+            <DeveloperSettingsStack.Screen
+                name='ManageCache'
+                options={{
+                    title: 'screens.manage_cache',
+                }}
+                component={SettingsDeveloperManageCacheScreen}
             />
         </DeveloperSettingsStack.Navigator>
     )

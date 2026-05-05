@@ -16,7 +16,7 @@ import { SyncService } from './service'
 import type { SyncServiceDeps } from './models'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
-export type { SyncServiceDeps } from './models'
+export type { SyncServiceDeps, SyncCompletionHandler } from './models'
 export { SyncService } from './service'
 
 let instance: Nullable<SyncService> = null
@@ -25,8 +25,12 @@ export const initializeSyncService = (deps: SyncServiceDeps): SyncService => {
     if (instance !== null) {
         instance.stop()
     }
-    instance = new SyncService(deps)
-    return instance
+    const newInstance = new SyncService(deps)
+    instance = newInstance
+    deps.registerCompletionHandler?.((addresses, network) =>
+        newInstance.refreshAccounts(addresses, network),
+    )
+    return newInstance
 }
 
 export const getSyncService = (): SyncService => {

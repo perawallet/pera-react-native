@@ -77,6 +77,7 @@ export const AccountAssetSelectionList = ({
                 renderItem={renderItem}
                 keyExtractor={item => item.assetId}
                 keyboardDismissMode='on-drag'
+                showsVerticalScrollIndicator={false}
                 inBottomSheet={inBottomSheet}
                 ListEmptyComponent={
                     debouncedSearchFilter ? (

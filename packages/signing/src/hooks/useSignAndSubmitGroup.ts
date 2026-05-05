@@ -20,7 +20,7 @@ import type {
     PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
-import { submitSignedTransactionGroup } from '../pipeline/submission/submitSignedTransactionGroup'
+import { submitAndAutoRefresh } from '../pipeline/submission/submitAndAutoRefresh'
 import type { TransactionSignRequest } from '../models'
 import { useSigningRequest } from './useSigningRequest'
 
@@ -88,7 +88,7 @@ export const useSignAndSubmitGroup = (): SignAndSubmitGroupResult => {
                     sourceMetadata: source,
                     approve: async (signed: PeraSignedTransaction[]) => {
                         try {
-                            const txIds = await submitSignedTransactionGroup(
+                            const txIds = await submitAndAutoRefresh(
                                 algokit,
                                 encodeSignedTransactions,
                                 signed,

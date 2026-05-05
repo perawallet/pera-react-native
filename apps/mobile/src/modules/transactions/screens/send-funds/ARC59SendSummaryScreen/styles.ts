@@ -37,6 +37,10 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        gap: theme.spacing.lg,
+    },
+    rowAssetContainer: {
+        flexShrink: 1,
     },
     rowLabel: {
         color: theme.colors.textGray,
