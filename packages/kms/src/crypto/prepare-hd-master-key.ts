@@ -13,6 +13,7 @@
 import { fromSeed } from '@algorandfoundation/xhd-wallet-api'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import { generateHDMasterKey } from './hdwallet-utils'
+import { zeroBytes } from './secure-memory'
 
 export type PreparedHDMasterKey = {
     keyId: string
@@ -35,6 +36,8 @@ export const prepareHDMasterKey = async (params?: {
 
     const rootKey = fromSeed(masterKey.seed)
     const entropy = new Uint8Array(Buffer.from(masterKey.entropy, 'hex'))
+
+    zeroBytes(masterKey.seed)
 
     return {
         keyId,
