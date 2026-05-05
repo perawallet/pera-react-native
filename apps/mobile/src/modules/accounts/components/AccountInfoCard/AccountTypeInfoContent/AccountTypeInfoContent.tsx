@@ -11,7 +11,6 @@
  */
 
 import {
-    PWButton,
     PWDivider,
     PWIcon,
     PWText,
@@ -51,16 +50,20 @@ export const AccountTypeInfoContent = ({
 
             <PWText style={styles.description}>{description}</PWText>
 
-            <PWView style={styles.linkContainer}>
-                <PWButton
+            <PWTouchableOpacity
+                style={styles.learnMoreRow}
+                onPress={handleLearnMore}
+                testID='account-type-info-learn-more-button'
+            >
+                <PWIcon
+                    name='info'
+                    size='sm'
                     variant='link'
-                    icon='info'
-                    title={t('account_type_info.learn_more')}
-                    paddingStyle='none'
-                    onPress={handleLearnMore}
-                    testID='account-type-info-learn-more-button'
                 />
-            </PWView>
+                <PWText variant='link'>
+                    {t('account_type_info.learn_more')}
+                </PWText>
+            </PWTouchableOpacity>
 
             {actions.length > 0 && (
                 <>
