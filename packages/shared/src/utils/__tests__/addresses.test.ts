@@ -29,4 +29,10 @@ describe('utils/addresses - truncateAlgorandAddress', () => {
             'ABCDE...VWXYZ',
         )
     })
+
+    test('uses an even split when maxLength is even', () => {
+        expect(
+            truncateAlgorandAddress('ABCDEFGHIJKLMNOPQRSTUVWXYZ', 8),
+        ).toEqual('ABCD...WXYZ')
+    })
 })

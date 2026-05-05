@@ -13,11 +13,14 @@
 import ky, {
     type SearchParamsOption,
     type KyInstance,
-    type KyRequest,
-    type KyResponse,
-    type Options,
-    BeforeRetryState,
+    type BeforeRequestState,
+    type BeforeRetryState,
+    type BeforeErrorState,
+    type AfterResponseState,
     HTTPError,
+    isHTTPError,
+    isNetworkError,
+    isTimeoutError,
 } from 'ky'
 import { config } from '@perawallet/wallet-core-config'
 import { RequestConfiguration, ResponseConfiguration } from '../models/queries'
@@ -30,25 +33,71 @@ type BackendInstances = {
     pera: KyInstance
 }
 
-const logRequest = (request: KyRequest) => {
+type DiagnosticContext = {
+    startTime?: number
+    abortReason?: string
+}
+
+const stringifyAbortReason = (reason: unknown): string => {
+    if (reason === undefined || reason === null) return 'no-reason'
+    if (reason instanceof Error) return `${reason.name}: ${reason.message}`
+    try {
+        return String(reason)
+    } catch {
+        return 'unstringifiable'
+    }
+}
+
+const logRequest = ({ request, options }: BeforeRequestState) => {
+    const context = options.context as DiagnosticContext
+    context.startTime = Date.now()
+
+    request.signal?.addEventListener(
+        'abort',
+        () => {
+            context.abortReason = stringifyAbortReason(request.signal?.reason)
+        },
+        { once: true },
+    )
+
     logger.debug('Sending request', {
         url: request.url,
         method: request.method,
     })
 }
 
-const logResponse = (_: KyRequest, __: Options, response: KyResponse) => {
+const logResponse = ({ response }: AfterResponseState) => {
     logger.debug('Received response', {
         status: response.status,
         url: response.url,
     })
 }
 
-const logError = (error: HTTPError) => {
-    if (error.response?.status === 404) {
+const logError = ({ request, options, error }: BeforeErrorState): Error => {
+    const context = options.context as DiagnosticContext
+    const durationMs =
+        context.startTime !== undefined
+            ? Date.now() - context.startTime
+            : undefined
+
+    if (isHTTPError(error) && error.response?.status === 404) {
         logger.info('Resource not found', {
-            url: error.request?.url,
+            url: request?.url,
             status: 404,
+        })
+        return error
+    }
+
+    // Timeouts and network errors are transient and expected at the edges of
+    // connectivity. v1 of ky did not invoke beforeError for these cases at all,
+    // so they were silently propagated to the consumer. Logging at warn keeps
+    // observability without polluting error-level reporting.
+    if (isTimeoutError(error) || isNetworkError(error)) {
+        logger.warn('Request did not complete', {
+            url: request?.url,
+            name: error.name,
+            durationMs,
+            abortReason: context.abortReason,
         })
         return error
     }
@@ -57,7 +106,9 @@ const logError = (error: HTTPError) => {
         message: error.message,
         name: error.name,
         // safely attempt to get response info if available
-        status: error.response?.status,
+        status: error instanceof HTTPError ? error.response?.status : undefined,
+        durationMs,
+        abortReason: context.abortReason,
         details: JSON.stringify(error, (_key, value) =>
             typeof value === 'bigint' ? value.toString() : value,
         ),
@@ -147,7 +198,7 @@ const createFetchClient = (clients: Map<string, BackendInstances>) => {
 
 const clients = new Map<Network, BackendInstances>()
 
-const setStandardHeaders = (request: KyRequest) => {
+const setStandardHeaders = ({ request }: BeforeRequestState) => {
     request.headers.set('Content-Type', 'application/json')
 
     if (config.backendAPIKey?.length) {
@@ -174,7 +225,7 @@ const mainnetPeraClient = ky.create({
         ...standardHooks,
         beforeRequest: [setStandardHeaders, ...standardHooks.beforeRequest],
     },
-    prefixUrl: config.mainnetBackendUrl,
+    prefix: config.mainnetBackendUrl,
     retry: peraRetryConfig,
 })
 
@@ -183,14 +234,14 @@ const testnetPeraClient = ky.create({
         ...standardHooks,
         beforeRequest: [setStandardHeaders, ...standardHooks.beforeRequest],
     },
-    prefixUrl: config.testnetBackendUrl,
+    prefix: config.testnetBackendUrl,
     retry: peraRetryConfig,
 })
 const mainnetAlgodClient = ky.create({
     hooks: {
         ...standardHooks,
         beforeRequest: [
-            request => {
+            ({ request }) => {
                 request.headers.set('Content-Type', 'application/json')
 
                 if (config.algodApiKey?.length) {
@@ -200,13 +251,13 @@ const mainnetAlgodClient = ky.create({
             ...standardHooks.beforeRequest,
         ],
     },
-    prefixUrl: config.mainnetAlgodUrl,
+    prefix: config.mainnetAlgodUrl,
 })
 const testnetAlgodClient = ky.create({
     hooks: {
         ...standardHooks,
         beforeRequest: [
-            request => {
+            ({ request }) => {
                 request.headers.set('Content-Type', 'application/json')
 
                 if (config.algodApiKey?.length) {
@@ -216,14 +267,14 @@ const testnetAlgodClient = ky.create({
             ...standardHooks.beforeRequest,
         ],
     },
-    prefixUrl: config.testnetAlgodUrl,
+    prefix: config.testnetAlgodUrl,
 })
 
 const mainnetIndexerClient = ky.create({
     hooks: {
         ...standardHooks,
         beforeRequest: [
-            request => {
+            ({ request }) => {
                 request.headers.set('Content-Type', 'application/json')
 
                 if (config.indexerApiKey?.length) {
@@ -236,13 +287,13 @@ const mainnetIndexerClient = ky.create({
             ...standardHooks.beforeRequest,
         ],
     },
-    prefixUrl: config.mainnetIndexerUrl,
+    prefix: config.mainnetIndexerUrl,
 })
 const testnetIndexerClient = ky.create({
     hooks: {
         ...standardHooks,
         beforeRequest: [
-            request => {
+            ({ request }) => {
                 request.headers.set('Content-Type', 'application/json')
 
                 if (config.indexerApiKey?.length) {
@@ -255,7 +306,7 @@ const testnetIndexerClient = ky.create({
             ...standardHooks.beforeRequest,
         ],
     },
-    prefixUrl: config.testnetIndexerUrl,
+    prefix: config.testnetIndexerUrl,
 })
 
 clients.set(Networks.mainnet, {
@@ -275,7 +326,7 @@ export const updateBackendHeaders = (headers: Map<string, string>) => {
             hooks: {
                 beforeRequest: [
                     setStandardHeaders,
-                    request => {
+                    ({ request }) => {
                         headers.forEach((v, k) => {
                             request.headers.set(k, v)
                         })

@@ -69,6 +69,21 @@ describe('logging', () => {
             )
         })
 
+        test('omits stack from formatted Error context value when missing', () => {
+            const error = new Error('no stack')
+            error.stack = undefined
+            logger.error('operation failed', { error })
+            expect(console.error).toHaveBeenCalledWith(
+                '[ERROR] operation failed',
+                {
+                    error: {
+                        name: 'Error',
+                        message: 'no stack',
+                    },
+                },
+            )
+        })
+
         test('passes non-Error context values through as-is', () => {
             logger.warn('something happened', { error: 'a string error' })
             expect(console.warn).toHaveBeenCalledWith(

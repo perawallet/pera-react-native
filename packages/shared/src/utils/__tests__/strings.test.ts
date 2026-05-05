@@ -213,6 +213,10 @@ describe('utils/strings - formatDatetime', () => {
         const result = formatDatetime(datetime, 'en-US')
         expect(result).toMatch(/October 5, 2023 at \d{1,2}:\d{2} (AM|PM)/)
     })
+
+    test('returns an empty string when datetime is undefined', () => {
+        expect(formatDatetime(undefined)).toBe('')
+    })
 })
 
 describe('utils/strings - formatRelativeTime', () => {

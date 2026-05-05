@@ -11,7 +11,12 @@
  */
 
 import { describe, test, expect, beforeEach, vi } from 'vitest'
-import { AppError, ErrorSeverity, ErrorCategory } from '../base'
+import {
+    AppError,
+    ErrorSeverity,
+    ErrorCategory,
+    isRetryableError,
+} from '../base'
 
 describe('ErrorSeverity', () => {
     test('has correct values', () => {
@@ -221,5 +226,29 @@ describe('AppError', () => {
 
         expect(error instanceof Error).toBe(true)
         expect(error instanceof AppError).toBe(true)
+    })
+})
+
+describe('isRetryableError', () => {
+    test('returns false for null', () => {
+        expect(isRetryableError(null)).toBe(false)
+    })
+
+    test('returns false for undefined', () => {
+        expect(isRetryableError(undefined as unknown as Error)).toBe(false)
+    })
+
+    test('returns false for a plain Error', () => {
+        expect(isRetryableError(new Error('boom'))).toBe(false)
+    })
+
+    test('returns false for a non-retryable AppError', () => {
+        const error = new AppError('not retryable', { retryable: false })
+        expect(isRetryableError(error)).toBe(false)
+    })
+
+    test('returns true for a retryable AppError', () => {
+        const error = new AppError('retryable', { retryable: true })
+        expect(isRetryableError(error)).toBe(true)
     })
 })
