@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { deferToNextCycle } from '../async'
+import { calculateBackoff, deferToNextCycle, withTimeout } from '../async'
 
 describe('deferToNextCycle', () => {
     beforeEach(() => {
@@ -117,5 +117,89 @@ describe('deferToNextCycle', () => {
         await promise
 
         expect(true).toBe(true) // Promise should have resolved
+    })
+})
+
+describe('calculateBackoff', () => {
+    it('doubles the interval by default', () => {
+        expect(calculateBackoff(1000)).toBe(2000)
+    })
+
+    it('honors a custom multiplier', () => {
+        expect(calculateBackoff(500, 3)).toBe(1500)
+    })
+
+    it('caps at the default maxInterval (30s)', () => {
+        expect(calculateBackoff(20000)).toBe(30000)
+    })
+
+    it('honors a custom maxInterval', () => {
+        expect(calculateBackoff(4000, 2, 5000)).toBe(5000)
+    })
+})
+
+describe('withTimeout', () => {
+    beforeEach(() => {
+        vi.useFakeTimers()
+    })
+
+    afterEach(() => {
+        vi.useRealTimers()
+    })
+
+    it('resolves with the underlying promise value when it settles in time', async () => {
+        const promise = withTimeout(Promise.resolve('ok'), 1000, 'op')
+        await expect(promise).resolves.toBe('ok')
+    })
+
+    it('rejects with the default error after the timeout elapses', async () => {
+        const pending = new Promise<string>(() => {})
+        const wrapped = withTimeout(pending, 500, 'op').catch(error => error)
+
+        await vi.advanceTimersByTimeAsync(500)
+
+        const error = await wrapped
+        expect(error).toBeInstanceOf(Error)
+        expect((error as Error).message).toBe('op timed out after 500ms')
+    })
+
+    it('uses a custom rejectWith factory when provided', async () => {
+        class TimeoutError extends Error {
+            constructor(
+                public op: string,
+                public ms: number,
+            ) {
+                super(`custom: ${op}/${ms}`)
+            }
+        }
+        const pending = new Promise<string>(() => {})
+        const wrapped = withTimeout(
+            pending,
+            250,
+            'fetch',
+            (op, ms) => new TimeoutError(op, ms),
+        ).catch(error => error)
+
+        await vi.advanceTimersByTimeAsync(250)
+
+        const error = await wrapped
+        expect(error).toBeInstanceOf(TimeoutError)
+        expect((error as TimeoutError).op).toBe('fetch')
+        expect((error as TimeoutError).ms).toBe(250)
+    })
+
+    it('clears the timer when the promise settles before timeout', async () => {
+        const clearSpy = vi.spyOn(globalThis, 'clearTimeout')
+
+        await withTimeout(Promise.resolve('done'), 10000, 'op')
+
+        expect(clearSpy).toHaveBeenCalled()
+    })
+
+    it('forwards rejections from the wrapped promise', async () => {
+        const wrappedError = new Error('wrapped failed')
+        await expect(
+            withTimeout(Promise.reject(wrappedError), 1000, 'op'),
+        ).rejects.toBe(wrappedError)
     })
 })
