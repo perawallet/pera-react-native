@@ -34,6 +34,7 @@ export const useStyles = makeStyles(theme => ({
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingVertical: theme.spacing.md,
+        marginBottom: theme.spacing.lg,
         borderBottomWidth: theme.borders.sm,
         borderBottomColor: theme.colors.layerGrayLighter,
     },

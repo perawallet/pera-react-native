@@ -31,6 +31,7 @@ export const useStyles = makeStyles(theme => {
         contentContainer: {
             gap: theme.spacing.lg,
             flexGrow: 1,
+            paddingBottom: theme.spacing.xl,
         },
         title: {},
         accountDisplay: {

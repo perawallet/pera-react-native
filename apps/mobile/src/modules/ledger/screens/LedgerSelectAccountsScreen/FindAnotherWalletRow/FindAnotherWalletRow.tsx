@@ -45,7 +45,7 @@ export const FindAnotherWalletRow = ({
                 ) : (
                     <PWIcon
                         name='plus'
-                        variant='link'
+                        variant='positive'
                         size='md'
                     />
                 )}
