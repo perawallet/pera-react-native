@@ -25,6 +25,7 @@ import {
 import {
     ALGO_ASSET,
     ALGO_ASSET_ID,
+    isCollectible,
     toWholeUnits,
     useAssetsQuery,
     type PeraAsset,
@@ -54,6 +55,7 @@ type useTransactionConfirmationScreenResult = {
     openNote: () => void
     closeNote: () => void
     handleConfirm: () => void
+    isCollectible: boolean
     isReady: boolean
     isCloseAccount: boolean
     isRecipientBelowMbr: boolean
@@ -185,6 +187,8 @@ export const useTransactionConfirmationScreen =
             asset
         )
 
+        const isCollectibleAsset = asset ? isCollectible(asset) : false
+
         return {
             asset,
             amount,
@@ -200,6 +204,7 @@ export const useTransactionConfirmationScreen =
             openNote,
             closeNote,
             handleConfirm,
+            isCollectible: isCollectibleAsset,
             isReady,
             isCloseAccount,
             isRecipientBelowMbr,
