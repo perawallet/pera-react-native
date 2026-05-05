@@ -57,16 +57,5 @@ export const useStyles = makeStyles(theme => {
             textAlign: 'center',
             color: theme.colors.textGray,
         },
-        overlayBackdrop: {
-            backgroundColor: theme.colors.backdropModalBg,
-        },
-        overlay: {
-            padding: theme.spacing.xl,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: theme.colors.layerGray,
-            borderRadius: theme.spacing.lg,
-            gap: theme.spacing.md,
-        },
     }
 })

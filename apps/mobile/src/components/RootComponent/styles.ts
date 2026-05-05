@@ -31,11 +31,6 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
             justifyContent: 'center',
             alignItems: 'center',
         },
-        mainnetBar: {
-            backgroundColor: theme.colors.background,
-            height: insets.top + theme.spacing.sm,
-            zIndex: theme.zIndex.layer1,
-        },
         offlineTextContainer: {
             alignItems: 'center',
             justifyContent: 'center',

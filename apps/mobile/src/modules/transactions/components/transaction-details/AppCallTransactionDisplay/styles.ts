@@ -19,14 +19,6 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.lg,
         paddingVertical: theme.spacing.lg,
     },
-    detailRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.md,
-        overflow: 'hidden',
-        flexWrap: 'nowrap',
-        flexShrink: 1,
-    },
     detailContainer: {
         gap: theme.spacing.lg,
         paddingHorizontal: theme.spacing.sm,

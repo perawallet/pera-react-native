@@ -12,8 +12,6 @@
 
 import { makeStyles } from '@rneui/themed'
 
-const ACTION_BUTTON_SIZE = 40
-
 export const useStyles = makeStyles(theme => ({
     keyboardAvoidingViewContainer: {
         flexGrow: 1,
@@ -27,10 +25,6 @@ export const useStyles = makeStyles(theme => ({
         marginTop: theme.spacing.sm,
         marginBottom: theme.spacing.md,
     },
-    loadingContainer: {
-        gap: theme.spacing.md,
-    },
-    title: {},
     titleBar: {
         gap: theme.spacing.md,
         flexDirection: 'row',
@@ -43,35 +37,6 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         gap: theme.spacing.md,
         alignItems: 'center',
-    },
-    listContainer: {
-        marginTop: theme.spacing.xl,
-    },
-    manageButtonContainer: {
-        backgroundColor: theme.colors.buttonSquareBg,
-        borderRadius: theme.spacing.sm,
-        width: ACTION_BUTTON_SIZE,
-        height: ACTION_BUTTON_SIZE,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    addButtonContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: theme.spacing.md,
-        borderRadius: theme.spacing.sm,
-        gap: theme.spacing.sm,
-        backgroundColor: theme.colors.buttonSquareBg,
-        height: ACTION_BUTTON_SIZE,
-    },
-    addButtonTitle: {
-        color: theme.colors.buttonSquareIcon,
-    },
-    itemContainer: {
-        marginVertical: theme.spacing.md,
-    },
-    footer: {
-        marginVertical: theme.spacing.md,
     },
     loading: {
         justifyContent: 'flex-start',

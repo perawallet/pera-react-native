@@ -43,7 +43,7 @@ export const FeeDisplay = ({ transaction, label }: FeeDisplayProps) => {
     }
 
     return (
-        <PWView style={styles.container}>
+        <PWView>
             <PWView style={styles.feeContainer}>
                 <PWText style={styles.label}>
                     {label ?? t('transactions.common.tx_fee')}

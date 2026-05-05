@@ -45,7 +45,6 @@ export const useStyles = makeStyles(theme => ({
         paddingVertical: theme.spacing.lg,
         alignItems: 'center',
     },
-    title: {},
     titleBar: {
         gap: theme.spacing.md,
         flexDirection: 'row',
@@ -61,15 +60,6 @@ export const useStyles = makeStyles(theme => ({
     },
     transparentButton: {
         backgroundColor: 'transparent',
-    },
-    listContainer: {
-        marginTop: theme.spacing.xl,
-    },
-    itemContainer: {
-        marginVertical: theme.spacing.md,
-        padding: theme.spacing.md,
-        backgroundColor: theme.colors.layerGrayLighter,
-        borderRadius: theme.spacing.sm,
     },
     footer: {
         marginVertical: theme.spacing.md,

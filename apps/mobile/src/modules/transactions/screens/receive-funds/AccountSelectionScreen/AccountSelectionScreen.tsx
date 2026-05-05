@@ -38,14 +38,11 @@ export const AccountSelectionScreen = () => {
 
     const renderItem = useCallback(
         ({ item }: { item: WalletAccount }) => (
-            <PWTouchableOpacity
-                onPress={() => handleSelected(item)}
-                style={styles.accountItem}
-            >
+            <PWTouchableOpacity onPress={() => handleSelected(item)}>
                 <AccountWithBalance account={item} />
             </PWTouchableOpacity>
         ),
-        [handleSelected, styles.accountItem],
+        [handleSelected],
     )
 
     const keyExtractor = useCallback((item: WalletAccount) => item.address, [])

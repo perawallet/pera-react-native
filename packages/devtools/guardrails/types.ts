@@ -21,8 +21,20 @@ export type CheckVisitor = (
     emit: EmitViolation,
 ) => void
 
+export type EmitFinalizeViolation = (
+    violation: Omit<Violation, 'ruleId'>,
+) => void
+
+export interface FinalizeContext {
+    sources: SourceMap
+    emit: EmitFinalizeViolation
+}
+
+export type CheckFinalize = (ctx: FinalizeContext) => void
+
 export interface Check {
     id: string
     description: string
     visitors: Partial<Record<ts.SyntaxKind, CheckVisitor>>
+    finalize?: CheckFinalize
 }

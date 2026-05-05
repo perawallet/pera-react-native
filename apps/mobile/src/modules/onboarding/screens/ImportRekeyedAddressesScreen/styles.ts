@@ -25,10 +25,6 @@ export const useStyles = makeStyles((theme, insets?: EdgeInsets) => {
             flex: 1,
             backgroundColor: theme.colors.background,
         },
-        content: {
-            flex: 1,
-            paddingHorizontal: theme.spacing.xl,
-        },
         headerContainer: {
             marginVertical: theme.spacing.xl,
             gap: theme.spacing.lg,
@@ -89,9 +85,6 @@ export const useStyles = makeStyles((theme, insets?: EdgeInsets) => {
         itemSubtitle,
         infoIconContainer: {
             marginLeft: theme.spacing.sm,
-        },
-        infoIcon: {
-            color: theme.colors.textGray,
         },
         footer: {
             paddingTop: theme.spacing.xl,

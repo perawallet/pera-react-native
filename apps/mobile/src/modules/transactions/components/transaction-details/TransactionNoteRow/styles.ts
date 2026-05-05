@@ -18,34 +18,4 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.md,
         width: '100%',
     },
-    idContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.xl,
-    },
-    idTextContainer: {
-        alignItems: 'flex-start',
-        gap: theme.spacing.sm,
-    },
-    wrappedText: {
-        flexShrink: 1,
-    },
-    blockContainer: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        justifyContent: 'space-between',
-        gap: theme.spacing.lg,
-        paddingHorizontal: theme.spacing.sm,
-    },
-    blockColumn: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        gap: theme.spacing.sm,
-    },
-    blockTitle: {
-        color: theme.colors.textGray,
-    },
-    blockValue: {
-        color: theme.colors.textMain,
-    },
 }))

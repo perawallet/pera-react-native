@@ -27,6 +27,4 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'flex-start',
         gap: theme.spacing.md,
     },
-    body: {},
-    message: {},
 }))

@@ -38,11 +38,6 @@ export const useStyles = makeStyles(theme => {
             justifyContent: 'flex-start',
             gap: theme.spacing.lg,
         },
-        warningSectionAddressContainer: {
-            alignItems: 'center',
-            justifyContent: 'flex-start',
-            padding: theme.spacing.md,
-        },
         warningMessageContainer: {
             flexShrink: 1,
             gap: theme.spacing.xs,
@@ -50,35 +45,9 @@ export const useStyles = makeStyles(theme => {
         warningMessage: {
             flexShrink: 1,
         },
-        warningLinkContainer: {
-            alignItems: 'flex-start',
-            justifyContent: 'flex-start',
-            gap: theme.spacing.xs,
-            marginHorizontal: theme.spacing.lg,
-            padding: theme.spacing.md,
-            borderRadius: theme.spacing.md,
-            backgroundColor: theme.colors.suspiciousBannerBg,
-        },
-        warningTitleContainer: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'flex-start',
-            gap: theme.spacing.md,
-            backgroundColor: 'transparent',
-        },
-        warningLink: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'flex-start',
-            gap: theme.spacing.md,
-        },
         divider: {
             marginVertical: theme.spacing.md,
             width: '100%',
-        },
-        warningTitle: {
-            color: theme.colors.suspiciousBannerContent,
-            backgroundColor: 'transparent',
         },
     }
 })

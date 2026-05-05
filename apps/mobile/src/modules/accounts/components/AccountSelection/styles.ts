@@ -24,8 +24,5 @@ export const useStyles = makeStyles(theme => {
             borderRadius: theme.spacing.xl,
             backgroundColor: theme.colors.background,
         },
-        text: {
-            color: theme.colors.textGray,
-        },
     }
 })

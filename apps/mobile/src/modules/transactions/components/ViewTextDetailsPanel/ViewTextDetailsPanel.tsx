@@ -89,21 +89,18 @@ export const ViewTextDetailsPanel = ({
                     <PWBadge
                         variant={mode === 'text' ? 'primary' : 'secondary'}
                         value={t('common.text.label')}
-                        containerStyle={styles.button}
                         textStyle={styles.buttonText}
                         onPress={() => setMode('text')}
                     />
                     <PWBadge
                         variant={mode === 'hex' ? 'primary' : 'secondary'}
                         value={t('common.hex.label')}
-                        containerStyle={styles.button}
                         textStyle={styles.buttonText}
                         onPress={() => setMode('hex')}
                     />
                     <PWBadge
                         variant={mode === 'base64' ? 'primary' : 'secondary'}
                         value={t('common.base64.label')}
-                        containerStyle={styles.button}
                         textStyle={styles.buttonText}
                         onPress={() => setMode('base64')}
                     />

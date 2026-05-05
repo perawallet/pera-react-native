@@ -51,11 +51,6 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
         justifyContent: 'space-between',
         paddingVertical: theme.spacing.sm,
     },
-    accountInfo: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.sm,
-    },
     sendersSection: {
         gap: theme.spacing.md,
     },

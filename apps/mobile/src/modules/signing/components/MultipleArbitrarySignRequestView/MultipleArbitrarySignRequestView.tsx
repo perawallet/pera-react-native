@@ -46,13 +46,10 @@ export const MultipleArbitrarySignRequestView = ({
                         )}
                         showChevron={false}
                     />
-                    <PWText
-                        variant='h3'
-                        style={styles.body}
-                    >
+                    <PWText variant='h3'>
                         {t('signing.arbitrary_data_view.body')}
                     </PWText>
-                    <PWText style={styles.message}>{request.message}</PWText>
+                    <PWText>{request.message}</PWText>
                     <PWButton
                         title={t('signing.arbitrary_data_view.show_details')}
                         variant='link'

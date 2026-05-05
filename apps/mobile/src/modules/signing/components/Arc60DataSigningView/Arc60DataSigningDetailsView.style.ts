@@ -16,9 +16,6 @@ export const useStyles = makeStyles(theme => ({
     container: {
         flex: 1,
     },
-    title: {
-        textAlign: 'center',
-    },
     titleSection: {
         alignItems: 'center',
         gap: theme.spacing.md,

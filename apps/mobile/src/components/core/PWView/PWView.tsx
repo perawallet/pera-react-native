@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { useStyles } from './styles'
 import { View, ViewProps } from 'react-native'
 import { getTestProps } from '@utils/test-id-helper'
 
@@ -19,11 +18,9 @@ export type PWViewProps = ViewProps & {
 }
 
 export const PWView = ({ children, style, testID, ...props }: PWViewProps) => {
-    const styles = useStyles(props)
-
     return (
         <View
-            style={[styles.defaultStyle, style]}
+            style={[style]}
             {...getTestProps(testID)}
             {...props}
         >

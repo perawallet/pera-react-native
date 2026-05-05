@@ -17,28 +17,12 @@ export const useStyles = makeStyles(theme => {
         container: {
             flex: 1,
         },
-        title: {
-            textAlign: 'center',
-        },
         titleSection: {
             alignItems: 'center',
             gap: theme.spacing.xl,
         },
         description: {
             textAlign: 'center',
-        },
-        metadataIcon: {
-            width: theme.spacing['4xl'],
-            height: theme.spacing['4xl'],
-            borderRadius: theme.spacing['4xl'],
-        },
-        metadataIconContainer: {
-            width: theme.spacing['4xl'],
-            height: theme.spacing['4xl'],
-            borderRadius: theme.spacing['4xl'],
-            justifyContent: 'center',
-            alignItems: 'center',
-            backgroundColor: theme.colors.layerGrayLighter,
         },
         section: {
             borderBottomWidth: theme.borders.sm,

@@ -41,15 +41,6 @@ export const useStyles = makeStyles(theme => {
             marginTop: theme.spacing.xs,
             width: '100%',
         },
-        assetContainer: {
-            justifyContent: 'center',
-            gap: theme.spacing.xs,
-        },
-        assetIcon: {
-            borderWidth: theme.borders.sm,
-            borderColor: 'blue',
-        },
-        assetName: {},
         assetId,
         amountPositive: {
             color: theme.colors.positive,

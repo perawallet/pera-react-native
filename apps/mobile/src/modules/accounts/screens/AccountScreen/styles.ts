@@ -25,56 +25,5 @@ export const useStyles = makeStyles(theme => {
             flexDirection: 'row',
             gap: theme.spacing.lg,
         },
-        accountSelection: {
-            borderWidth: theme.borders.sm,
-            borderColor: theme.colors.layerGray,
-            borderRadius: theme.spacing.xl,
-            paddingVertical: theme.spacing.xs,
-            paddingHorizontal: theme.spacing.md,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: theme.spacing.sm,
-        },
-        valueBar: {
-            paddingTop: theme.spacing.md,
-            paddingBottom: theme.spacing.xxl,
-        },
-        secondaryValueBar: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-        },
-        valueTitleBar: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: theme.spacing.sm,
-            paddingTop: theme.spacing.xl,
-        },
-        valueTitle: {
-            color: theme.colors.textGray,
-        },
-        dateDisplay: {
-            color: theme.colors.textGray,
-            textAlign: 'left',
-        },
-        primaryCurrency: {
-            color: theme.colors.textMain,
-        },
-        scrollView: {
-            flex: 1,
-            paddingHorizontal: theme.spacing.xl,
-        },
-        scrollViewContent: {
-            paddingBottom: theme.spacing.xl,
-            flex: 1,
-        },
-        scannerClose: {
-            marginTop: theme.spacing.xxl,
-            marginLeft: theme.spacing.lg,
-            width: theme.spacing['3xl'],
-            height: theme.spacing['3xl'],
-            alignItems: 'center',
-            justifyContent: 'center',
-        },
     }
 })

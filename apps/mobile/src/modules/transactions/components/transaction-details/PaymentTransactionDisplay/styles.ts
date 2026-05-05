@@ -27,9 +27,6 @@ export const useStyles = makeStyles(theme => ({
         flexWrap: 'nowrap',
         flexShrink: 1,
     },
-    wrappedText: {
-        flexShrink: 1,
-    },
     amountPositive: {
         marginVertical: theme.spacing.sm,
         color: theme.colors.positive,

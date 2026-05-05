@@ -20,7 +20,4 @@ export const useStyles = makeStyles(theme => ({
         paddingVertical: theme.spacing.xl,
         paddingHorizontal: theme.spacing.md,
     },
-    blackButton: {
-        backgroundColor: theme.colors.buttonHelperBg,
-    },
 }))

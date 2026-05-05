@@ -12,6 +12,4 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(() => ({
-    defaultStyle: {},
-}))
+export const useStyles = makeStyles(() => ({}))

@@ -118,10 +118,7 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
                     ListHeaderComponent={
                         <PWView style={styles.headerContainer}>
                             <PWView style={styles.titleBar}>
-                                <PWText
-                                    style={styles.title}
-                                    variant='h4'
-                                >
+                                <PWText variant='h4'>
                                     {t('asset_details.transaction_list.title')}
                                 </PWText>
                                 <PWView style={styles.titleBarButtonContainer}>

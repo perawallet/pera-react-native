@@ -22,8 +22,6 @@ export const useStyles = makeStyles(theme => ({
         justifyContent: 'center',
         gap: theme.spacing.md,
     },
-    message: {},
-    body: {},
     accountContainer: {
         alignItems: 'center',
         gap: theme.spacing.md,

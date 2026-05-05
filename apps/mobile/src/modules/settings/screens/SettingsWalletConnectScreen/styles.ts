@@ -19,14 +19,6 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
             flex: 1,
             marginBottom: insets.bottom,
         },
-        scannerClose: {
-            marginTop: theme.spacing.xxl,
-            marginLeft: theme.spacing.lg,
-            width: theme.spacing['3xl'],
-            height: theme.spacing['3xl'],
-            alignItems: 'center',
-            justifyContent: 'center',
-        },
         listContainer: {
             flexGrow: 1,
             padding: theme.spacing.xl,
@@ -36,24 +28,6 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
             justifyContent: 'center',
             alignItems: 'center',
             backgroundColor: theme.colors.background,
-        },
-        sessionItem: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: theme.spacing.lg,
-            padding: theme.spacing.md,
-        },
-        sessionInfo: {
-            flex: 1,
-        },
-        sessionNameContainer: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: theme.spacing.md,
-        },
-        icon: {
-            width: theme.spacing.xl,
-            height: theme.spacing.xl,
         },
         listFooter: {
             flex: 1,

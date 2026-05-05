@@ -33,28 +33,6 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    closeButton: {
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    indicator: {
-        position: 'absolute',
-        bottom: theme.spacing.xxl,
-        left: 0,
-        right: 0,
-        flexDirection: 'row',
-        justifyContent: 'center',
-        gap: theme.spacing.xs,
-    },
-    dot: {
-        width: theme.spacing.xs,
-        height: theme.spacing.xs,
-        borderRadius: theme.spacing.xs,
-        backgroundColor: theme.colors.layerGray,
-    },
-    dotActive: {
-        backgroundColor: theme.colors.white,
-    },
     counterText: {
         position: 'absolute',
         bottom: theme.spacing.xxl,

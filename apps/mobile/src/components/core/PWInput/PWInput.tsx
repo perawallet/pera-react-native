@@ -106,13 +106,13 @@ export const PWInput = forwardRef<PWInputRef, PWInputProps>(
                     minimumFontScale: resolvedMinimumFontScale,
                 }}
                 {...getTestProps(testID)}
-                containerStyle={[styles.container, containerStyle]}
+                containerStyle={containerStyle}
                 inputContainerStyle={[
                     styles.inputContainer,
                     inputContainerStyle,
                 ]}
                 inputStyle={[styles.input, inputStyle]}
-                labelStyle={[styles.label, labelStyle]}
+                labelStyle={labelStyle}
             />
         )
     },

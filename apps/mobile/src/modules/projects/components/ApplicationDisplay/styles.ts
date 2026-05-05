@@ -18,7 +18,6 @@ export const useStyles = makeStyles(theme => {
         lineHeight: theme.spacing.md,
     }
     return {
-        container: {},
         row: {
             flexDirection: 'row',
             alignItems: 'center',

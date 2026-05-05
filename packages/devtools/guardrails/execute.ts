@@ -101,6 +101,17 @@ export async function runChecksAgainstPaths(
     const timings: Record<string, number> = {}
     const raw: Violation[] = []
     sharedWalk(sources, checks, timings, raw)
+    for (const check of checks) {
+        if (!check.finalize) continue
+        const t0 = performance.now()
+        check.finalize({
+            sources,
+            emit: payload => {
+                raw.push({ ...payload, ruleId: check.id })
+            },
+        })
+        timings[check.id] = (timings[check.id] ?? 0) + (performance.now() - t0)
+    }
     const walkMs = performance.now() - walkStart
 
     const violations = filterSuppressed(raw, sources)

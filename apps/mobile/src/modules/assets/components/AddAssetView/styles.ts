@@ -44,9 +44,6 @@ export const useStyles = makeStyles(theme => ({
     noteIcon: {
         marginTop: theme.spacing.xs,
     },
-    listContent: {
-        paddingHorizontal: theme.spacing.md,
-    },
     loadingContainer: {
         flex: 1,
         alignItems: 'center',

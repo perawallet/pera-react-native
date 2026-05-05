@@ -104,8 +104,5 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
             width: '100%',
             justifyContent: 'flex-end',
         },
-        expandIcon: {
-            alignSelf: 'flex-end',
-        },
     }
 })

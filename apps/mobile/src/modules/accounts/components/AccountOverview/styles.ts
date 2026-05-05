@@ -21,40 +21,6 @@ export const useStyles = makeStyles(theme => {
         container: {
             flex: 1,
         },
-        drawer: {
-            width: '90%',
-        },
-        iconBar: {
-            paddingVertical: 0,
-            paddingHorizontal: theme.spacing.md,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-        },
-        iconBarSection: {
-            flexDirection: 'row',
-            gap: theme.spacing.lg,
-        },
-        accountSelection: {
-            borderWidth: theme.borders.sm,
-            borderColor: theme.colors.layerGray,
-            borderRadius: theme.spacing.xl,
-            paddingVertical: theme.spacing.xs,
-            paddingHorizontal: theme.spacing.md,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: theme.spacing.sm,
-        },
-        icon: {
-            width: theme.spacing.xl,
-            height: theme.spacing.xl,
-            backgroundColor: theme.colors.background,
-        },
-        iconLight: {
-            width: theme.spacing.xl,
-            height: theme.spacing.xl,
-            backgroundColor: theme.colors.layerGray,
-        },
         valueBarContainer: {
             paddingVertical: theme.spacing.md,
             paddingHorizontal: theme.spacing.md,
@@ -70,12 +36,6 @@ export const useStyles = makeStyles(theme => {
             justifyContent: 'space-between',
             gap: theme.spacing.md,
         },
-        valueTitleBar: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: theme.spacing.sm,
-            paddingTop: theme.spacing.xl,
-        },
         valueTitle: {
             color: theme.colors.textGray,
         },
@@ -86,21 +46,6 @@ export const useStyles = makeStyles(theme => {
         },
         primaryCurrency: {
             color: theme.colors.textMain,
-        },
-        scrollView: {
-            flex: 1,
-            paddingHorizontal: theme.spacing.xl,
-        },
-        scrollViewContent: {
-            paddingBottom: theme.spacing.xl,
-            flex: 1,
-        },
-        scannerClose: {
-            marginTop: theme.spacing.xl,
-            marginLeft: theme.spacing.lg,
-            width: theme.spacing['3xl'],
-            height: theme.spacing['3xl'],
-            zIndex: theme.zIndex.layer2,
         },
         chartContainer: {
             gap: theme.spacing.md,

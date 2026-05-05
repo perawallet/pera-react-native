@@ -42,9 +42,6 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         gap: theme.spacing.xs,
     },
-    accountAddress: {
-        color: theme.colors.textMain,
-    },
     description: {
         color: theme.colors.textMain,
     },

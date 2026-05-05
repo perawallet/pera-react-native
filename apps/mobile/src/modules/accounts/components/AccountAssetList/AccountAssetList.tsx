@@ -115,38 +115,29 @@ export const AccountAssetList = ({
                 account={account}
                 isLoading={isLoading}
             />
-            {headerState.isOpen && (
-                <>
-                    {header}
-                    <PWView style={styles.titleBar}>
-                        <PWText
-                            style={styles.title}
-                            variant='h4'
-                        >
-                            {t('account_details.assets.title')}
-                        </PWText>
-                        {!isWatch && (
-                            <PWView style={styles.titleBarButtonContainer}>
-                                <PWButton
-                                    icon='sliders'
-                                    variant='helper'
-                                    paddingStyle='dense'
-                                    onPress={manageSheetState.open}
-                                />
-                                <PWButton
-                                    icon='plus'
-                                    title={t(
-                                        'account_details.assets.add_asset',
-                                    )}
-                                    variant='helper'
-                                    paddingStyle='dense'
-                                    onPress={addAssetSheetState.open}
-                                />
-                            </PWView>
-                        )}
+            {header}
+            <PWView style={styles.titleBar}>
+                <PWText variant='h4'>
+                    {t('account_details.assets.title')}
+                </PWText>
+                {!isWatch && (
+                    <PWView style={styles.titleBarButtonContainer}>
+                        <PWButton
+                            icon='sliders'
+                            variant='helper'
+                            paddingStyle='dense'
+                            onPress={manageSheetState.open}
+                        />
+                        <PWButton
+                            icon='plus'
+                            title={t('account_details.assets.add_asset')}
+                            variant='helper'
+                            paddingStyle='dense'
+                            onPress={addAssetSheetState.open}
+                        />
                     </PWView>
-                </>
-            )}
+                )}
+            </PWView>
         </PWView>
     )
 

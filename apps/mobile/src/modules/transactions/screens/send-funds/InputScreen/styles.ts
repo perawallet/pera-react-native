@@ -72,9 +72,6 @@ export const useStyles = makeStyles(theme => {
             borderColor: theme.colors.layerGrayLighter,
             borderRadius: theme.spacing.xs,
         },
-        secondaryButtonTitle: {
-            color: theme.colors.textGray,
-        },
         numpadContainer: {
             paddingHorizontal: theme.spacing.xl,
         },

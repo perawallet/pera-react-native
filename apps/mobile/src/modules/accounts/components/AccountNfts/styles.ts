@@ -80,22 +80,4 @@ export const useStyles = makeStyles(theme => ({
     layoutToggleButtonActive: {
         backgroundColor: theme.colors.layerGrayLighter,
     },
-    noMatchContainer: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: theme.spacing.xxl,
-    },
-    noMatchTitle: {
-        color: theme.colors.textMain,
-        textAlign: 'center',
-        marginBottom: theme.spacing.sm,
-    },
-    noMatchBody: {
-        color: theme.colors.textGray,
-        textAlign: 'center',
-    },
-    footer: {
-        marginVertical: theme.spacing.md,
-    },
 }))

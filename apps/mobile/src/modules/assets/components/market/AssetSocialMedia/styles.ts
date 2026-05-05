@@ -26,9 +26,6 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         alignItems: 'center',
     },
-    icon: {
-        marginRight: theme.spacing.sm,
-    },
     label: {
         color: theme.colors.textMain,
     },

@@ -21,7 +21,6 @@ export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
     const maxHeight = dimensions.width - 2 * theme.spacing.lg
 
     return {
-        container: {},
         image: {
             width: '100%',
             height: '100%',
