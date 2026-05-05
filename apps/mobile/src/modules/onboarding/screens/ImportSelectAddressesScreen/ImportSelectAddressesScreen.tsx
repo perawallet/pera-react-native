@@ -21,6 +21,7 @@ import {
     PWFlatList,
     PWLoadingOverlay,
 } from '@components/core'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { useStyles } from './styles'
 import { useImportSelectAddressesScreen } from './useImportSelectAddressesScreen'
@@ -30,7 +31,8 @@ import {
 } from '@perawallet/wallet-core-accounts'
 
 export const ImportSelectAddressesScreen = () => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles(insets)
     const {
         accounts,
         selectedAddresses,

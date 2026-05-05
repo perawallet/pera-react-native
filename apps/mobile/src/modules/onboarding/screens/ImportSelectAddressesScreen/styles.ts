@@ -11,8 +11,9 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { EdgeInsets } from 'react-native-safe-area-context'
 
-export const useStyles = makeStyles(theme => ({
+export const useStyles = makeStyles((theme, insets?: EdgeInsets) => ({
     container: {
         flex: 1,
         backgroundColor: theme.colors.background,
@@ -75,10 +76,11 @@ export const useStyles = makeStyles(theme => ({
         marginBottom: theme.spacing.xxs,
     },
     footer: {
-        padding: theme.spacing.xl,
+        paddingTop: theme.spacing.xl,
+        paddingHorizontal: theme.spacing.xl,
+        paddingBottom: theme.spacing.xl + (insets?.bottom ?? 0),
         borderTopWidth: theme.borders.sm,
         borderTopColor: theme.colors.layerGrayLighter,
         backgroundColor: theme.colors.background,
-        paddingBottom: theme.spacing.xl + 20, // Extra padding for safe area logic usually handled by SafeAreaView but good to have buffer
     },
 }))
