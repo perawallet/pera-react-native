@@ -43,6 +43,7 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
         handleLoadMore,
         handleExportCsv,
         isExportingCsv,
+        isCsvExportVisible,
         activeFilter,
         customRange,
         handleApplyFilter,
@@ -135,16 +136,18 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
                                         paddingStyle='dense'
                                         onPress={() => setIsFilterVisible(true)}
                                     />
-                                    <PWButton
-                                        icon='document-download'
-                                        title={t(
-                                            'asset_details.transaction_list.csv',
-                                        )}
-                                        variant='helper'
-                                        paddingStyle='dense'
-                                        onPress={handleExportCsv}
-                                        isLoading={isExportingCsv}
-                                    />
+                                    {isCsvExportVisible && (
+                                        <PWButton
+                                            icon='document-download'
+                                            title={t(
+                                                'asset_details.transaction_list.csv',
+                                            )}
+                                            variant='helper'
+                                            paddingStyle='dense'
+                                            onPress={handleExportCsv}
+                                            isLoading={isExportingCsv}
+                                        />
+                                    )}
                                 </PWView>
                             </PWView>
                         </PWView>

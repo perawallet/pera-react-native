@@ -105,6 +105,12 @@ export const useCsvExportMutation = (
     const { network, onSuccess, onError } = params
 
     const mutation = useMutation({
+        // The global default mutation config sets throwOnError: true so that
+        // unhandled mutation errors surface to the nearest ErrorBoundary. This
+        // mutation has its own onError handler (toast surfacing), so we opt
+        // out — otherwise an API failure (e.g. 404 on empty history) would
+        // double-fire as both a toast and a critical ErrorBoundary trip.
+        throwOnError: false,
         mutationFn: async (exportParams: ExportMutationParams) => {
             return fetchTransactionsCsv({
                 accountAddress: exportParams.accountAddress,

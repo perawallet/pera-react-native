@@ -44,6 +44,7 @@ export const AssetTransactionList = ({
         handleLoadMore,
         handleExportCsv,
         isExportingCsv,
+        isCsvExportVisible,
         activeFilter,
         customRange,
         handleApplyFilter,
@@ -96,16 +97,18 @@ export const AssetTransactionList = ({
                                     paddingStyle='dense'
                                     onPress={handleOpenFilter}
                                 />
-                                <PWButton
-                                    title={t(
-                                        'asset_details.transaction_list.csv',
-                                    )}
-                                    variant='helper'
-                                    icon='text-document'
-                                    paddingStyle='dense'
-                                    onPress={handleExportCsv}
-                                    isLoading={isExportingCsv}
-                                />
+                                {isCsvExportVisible && (
+                                    <PWButton
+                                        title={t(
+                                            'asset_details.transaction_list.csv',
+                                        )}
+                                        variant='helper'
+                                        icon='text-document'
+                                        paddingStyle='dense'
+                                        onPress={handleExportCsv}
+                                        isLoading={isExportingCsv}
+                                    />
+                                )}
                             </PWView>
                         </PWView>
                     </PWView>
