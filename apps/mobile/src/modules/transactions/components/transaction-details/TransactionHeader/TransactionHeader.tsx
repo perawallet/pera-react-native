@@ -56,7 +56,7 @@ export const TransactionHeader = ({
                             <AddressDisplay
                                 address={transaction.id}
                                 addressFormat='long'
-                                textProps={{ style: styles.addressText }}
+                                textProps={{ variant: 'body' }}
                             />
                         )}
                     </PWView>
