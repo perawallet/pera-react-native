@@ -35,6 +35,7 @@ import { multisigSignerActor } from './actors/signers/multisigSignerActor'
 import { transportActor } from './actors/transports/transportActor'
 import { LedgerUserRejectedError } from '@perawallet/wallet-core-ledger'
 import { resolveInitialContext, makeFailedContext } from './actions'
+import { SigningError } from '../pipeline/errors'
 
 /**
  * Returns the next signer type that hasn't been completed yet,
@@ -102,7 +103,8 @@ export const signingMachine = setup({
         isNextSignerLocalKey: ({ context }) =>
             getNextPendingSignerType(context) === 'localKey',
         isNextSignerHardware: ({ context }) =>
-            getNextPendingSignerType(context) === 'hardware',
+            getNextPendingSignerType(context) === 'hardware' &&
+            context.deps.hardwareWalletRegistry !== undefined,
         isNextSignerMultisig: ({ context }) =>
             getNextPendingSignerType(context) === 'multisig',
         isRetryable: ({ context }) => isRetryableError(context.error),
@@ -173,6 +175,13 @@ export const signingMachine = setup({
         setSigningError: assign({
             error: ({ event }) =>
                 toError((event as unknown as { error: unknown }).error),
+            failedDuringState: () => 'signing' as const,
+        }),
+        setDispatchingFallbackError: assign({
+            error: () =>
+                new SigningError(
+                    'Signing dispatching reached an unresolvable state',
+                ),
             failedDuringState: () => 'signing' as const,
         }),
 
@@ -294,7 +303,10 @@ export const signingMachine = setup({
                         { guard: 'isNextSignerHardware', target: 'hardware' },
                         { guard: 'isNextSignerMultisig', target: 'multisig' },
                         // No pending signer type — should not happen
-                        { target: '#signingMachine.failed' },
+                        {
+                            target: '#signingMachine.failed',
+                            actions: 'setDispatchingFallbackError',
+                        },
                     ],
                 },
 
@@ -363,6 +375,13 @@ export const signingMachine = setup({
                                 'multisig',
                             ),
                             allAccounts: context.allAccounts,
+                            signTransactions: context.deps.signTransactions,
+                            signArbitraryData: context.deps.signArbitraryData,
+                            signArc60: context.deps.signArc60,
+                            encodeTransaction: context.deps.encodeTransaction,
+                            hardwareWalletRegistry:
+                                context.deps.hardwareWalletRegistry,
+                            signingCallbacks: context.deps.signingCallbacks,
                         }),
                         onDone: {
                             target: 'dispatching',

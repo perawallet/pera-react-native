@@ -2336,6 +2336,9 @@ importers:
       '@perawallet/wallet-core-ledger':
         specifier: workspace:*
         version: link:../ledger
+      '@perawallet/wallet-core-multisig':
+        specifier: workspace:*
+        version: link:../multisig
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared

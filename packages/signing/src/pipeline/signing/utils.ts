@@ -20,13 +20,19 @@ import {
 } from '@perawallet/wallet-core-accounts'
 
 /**
- * Get local participants for a multisig account.
- * These are accounts in the user's wallet that are part of the multisig
- * and have signing capability.
+ * Get local participants for a multisig account, ordered by their position
+ * in the multisig's `participantAddresses` (NOT wallet order).
+ *
+ * Stable participant-list order matters because `signers[0]` is used as the
+ * proposer when calling the propose endpoint — wallet-dependent ordering
+ * would make different devices pick different proposers for the same
+ * multisig, which is undesirable. Mirrors Android's
+ * `GetJointAccountProposerAddressUseCase`.
  *
  * @param account - The multisig account
  * @param allAccounts - All accounts in the wallet
- * @returns Array of local accounts that can sign for this multisig
+ * @returns Local accounts that are participants and can sign, in
+ *          participant-list order
  */
 export const getLocalParticipants = (
     account: WalletAccount,
@@ -39,18 +45,14 @@ export const getLocalParticipants = (
     const multisigAccount = account as MultiSigAccount
     const participantAddresses = multisigAccount.multisigDetails.addresses
 
-    // Find local accounts that are participants and can sign
-    return allAccounts.filter(localAccount => {
-        // Check if this account is a participant
-        const isParticipant = participantAddresses.includes(
-            localAccount.address,
+    return participantAddresses.flatMap(participantAddress => {
+        const localAccount = allAccounts.find(
+            a => a.address === participantAddress,
         )
-        if (!isParticipant) {
-            return false
-        }
-
-        // Check if this account can sign (has keys or is rekeyed to an account with keys)
+        if (!localAccount) return []
         return canSignWithAccount(localAccount, allAccounts)
+            ? [localAccount]
+            : []
     })
 }
 

@@ -89,6 +89,22 @@ describe('getLocalParticipants', () => {
 
         expect(participants).toEqual([accountA])
     })
+
+    test('returns participants in participant-list order, not wallet order', () => {
+        mocks.isMultisigAccount.mockReturnValue(true)
+        mocks.canSignWithAccount.mockReturnValue(true)
+        // Multisig participants are [B, A]; wallet stores them as [A, B].
+        // Result must follow participant-list order so the proposer pick
+        // (signers[0]) is stable across devices regardless of wallet sort.
+        const multisig = makeMultisig(2, ['B', 'A'])
+
+        const participants = getLocalParticipants(multisig, [
+            accountA,
+            accountB,
+        ])
+
+        expect(participants).toEqual([accountB, accountA])
+    })
 })
 
 describe('canMeetThresholdLocally', () => {
