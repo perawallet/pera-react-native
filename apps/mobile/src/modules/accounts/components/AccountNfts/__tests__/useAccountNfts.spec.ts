@@ -348,7 +348,7 @@ describe('useAccountNfts', () => {
             })
         })
 
-        it('hides zero-amount NFTs by default', () => {
+        it('hides zero-amount NFTs when showOptedIn is false', () => {
             const { result } = renderHook(() => useAccountNfts())
 
             expect(result.current.collectibles).toHaveLength(1)
