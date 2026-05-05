@@ -10,18 +10,4 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-accounts'
-
-export * from './constants'
-export * from './models'
-export * from './hooks'
-export * from './errors'
-export * from './utils'
-export * from './logical-type'
-export * from './bip44'
-export * from './account-discovery'
-export * from './db'
-export * from './import-session'
-
-export { useAccountsStore } from './store'
-export { fetchAndPersistAccount } from './sync/account-syncer'
+export { useHDImportSessionStore, type HDImportSession } from './store'
