@@ -43,8 +43,9 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
 }))
 
 const createMockGetPublicKey = (): GetPublicKey =>
-    vi.fn(async (params: { account: number; keyIndex: number }) =>
-        new Uint8Array([params.account, params.keyIndex]),
+    vi.fn(
+        async (params: { account: number; keyIndex: number }) =>
+            new Uint8Array([params.account, params.keyIndex]),
     )
 
 describe('discoverAccounts', () => {
