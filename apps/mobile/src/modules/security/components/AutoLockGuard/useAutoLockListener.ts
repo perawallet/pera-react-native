@@ -60,7 +60,14 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
             setIsChecking(true)
             try {
                 const expired = await checkAutoLock()
-                setIsLocked(expired)
+                // One-way: only ever flip to locked. Never write `false`
+                // here — on iOS the biometric prompt briefly drives the app
+                // through inactive→active, and an `else` branch would unlock
+                // an already-locked app within milliseconds of showing the
+                // lock screen. (PERA-4196)
+                if (expired) {
+                    setIsLocked(true)
+                }
             } catch (error) {
                 logger.error('Auto-lock foreground check failed', {
                     source: 'AutoLockGuard.useAutoLockListener',
