@@ -15,12 +15,26 @@ import { useKMS } from '@perawallet/wallet-core-kms'
 import {
     discoverAccounts as baseDiscoverAccounts,
     discoverRekeyedAccounts as baseDiscoverRekeyedAccounts,
+    type GetPublicKey,
 } from '../account-discovery'
 import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import { KEY_DOMAIN } from '../constants'
 
 export const useAccountDiscovery = () => {
     const { withHDSession, getKeyOrThrow } = useKMS()
+
+    const sessionGetPublicKey = useCallback(
+        async (
+            walletKeyId: string,
+            params: Parameters<GetPublicKey>[0],
+        ): Promise<Uint8Array> => {
+            const key = getKeyOrThrow(walletKeyId)
+            return withHDSession(key, KEY_DOMAIN, async session =>
+                session.getPublicKey(params),
+            )
+        },
+        [getKeyOrThrow, withHDSession],
+    )
 
     const discoverAccounts = useCallback(
         async (params: {
@@ -29,15 +43,14 @@ export const useAccountDiscovery = () => {
             accountGapLimit?: number
             keyIndexGapLimit?: number
         }) => {
-            const key = getKeyOrThrow(params.walletKeyId)
-            return withHDSession(key, KEY_DOMAIN, async session => {
-                return baseDiscoverAccounts({
-                    ...params,
-                    session,
-                })
+            const getPublicKey: GetPublicKey = inner =>
+                sessionGetPublicKey(params.walletKeyId, inner)
+            return baseDiscoverAccounts({
+                ...params,
+                getPublicKey,
             })
         },
-        [withHDSession],
+        [sessionGetPublicKey],
     )
 
     const discoverRekeyedAccounts = useCallback(
@@ -48,24 +61,26 @@ export const useAccountDiscovery = () => {
             keyIndexGapLimit?: number
             accountAddresses?: string[]
         }) => {
-            // When account addresses are provided (e.g. Algo25 imports),
-            // no HD session is needed — just check rekeyed accounts by address.
+            // Address-only path doesn't need an HD session.
             if (params.accountAddresses && params.accountAddresses.length > 0) {
                 return baseDiscoverRekeyedAccounts({
                     ...params,
-                    session: null as never,
+                    getPublicKey: (() => {
+                        throw new Error(
+                            'getPublicKey unused for address-only rekey scan',
+                        )
+                    }) as GetPublicKey,
                 })
             }
 
-            const key = getKeyOrThrow(params.walletKeyId)
-            return withHDSession(key, KEY_DOMAIN, async session => {
-                return baseDiscoverRekeyedAccounts({
-                    ...params,
-                    session,
-                })
+            const getPublicKey: GetPublicKey = inner =>
+                sessionGetPublicKey(params.walletKeyId, inner)
+            return baseDiscoverRekeyedAccounts({
+                ...params,
+                getPublicKey,
             })
         },
-        [withHDSession, getKeyOrThrow],
+        [sessionGetPublicKey],
     )
 
     return {

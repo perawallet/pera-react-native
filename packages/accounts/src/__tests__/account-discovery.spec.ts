@@ -11,13 +11,18 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { discoverAccounts, discoverRekeyedAccounts } from '../account-discovery'
+import {
+    discoverAccounts,
+    discoverRekeyedAccounts,
+    type GetPublicKey,
+} from '../account-discovery'
 import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import { getAlgorandClient } from '@perawallet/wallet-core-blockchain'
-import type { KMSHDWalletSession } from '@perawallet/wallet-core-kms'
 
 vi.mock('@algorandfoundation/xhd-wallet-api', () => ({
     BIP32DerivationType: { Peikert: 0 },
+    KeyContext: { Address: 0 },
+    XHDWalletAPI: class {},
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
@@ -37,15 +42,10 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
         mockFetchAccountFastLookup(...args),
 }))
 
-const createMockSession = (): KMSHDWalletSession => ({
-    getPublicKey: vi.fn(
-        async (params: { account: number; keyIndex: number }) =>
-            new Uint8Array([params.account, params.keyIndex]),
-    ),
-    signTransaction: vi.fn(),
-    signData: vi.fn(),
-    getMnemonic: vi.fn(),
-})
+const createMockGetPublicKey = (): GetPublicKey =>
+    vi.fn(async (params: { account: number; keyIndex: number }) =>
+        new Uint8Array([params.account, params.keyIndex]),
+    )
 
 describe('discoverAccounts', () => {
     const derivationType = BIP32DerivationType.Peikert
@@ -72,9 +72,8 @@ describe('discoverAccounts', () => {
             ),
         )
 
-        const session = createMockSession()
         const accounts = await discoverAccounts({
-            session,
+            getPublicKey: createMockGetPublicKey(),
             derivationType,
             walletKeyId: 'test-wallet',
             keyIndexGapLimit: 2,
@@ -99,9 +98,8 @@ describe('discoverAccounts', () => {
             { address: 'ADDRESS_0_2', accountExists: true },
         ])
 
-        const session = createMockSession()
         const accounts = await discoverAccounts({
-            session,
+            getPublicKey: createMockGetPublicKey(),
             derivationType,
             walletKeyId: 'test-wallet',
             keyIndexGapLimit: 5,
@@ -117,21 +115,19 @@ describe('discoverAccounts', () => {
     })
 
     it('should stop after account gap limit', async () => {
-        let callCount = 0
         mockFetchAccountFastLookup.mockImplementation(async addresses => {
-            callCount++
             const hasActivity = addresses.some(
-                addr => addr === 'ADDRESS_0_0' || addr === 'ADDRESS_2_0',
+                (addr: string) =>
+                    addr === 'ADDRESS_0_0' || addr === 'ADDRESS_2_0',
             )
-            return addresses.map(addr => ({
+            return addresses.map((addr: string) => ({
                 address: addr,
                 accountExists: hasActivity,
             }))
         })
 
-        const session = createMockSession()
         const accounts = await discoverAccounts({
-            session,
+            getPublicKey: createMockGetPublicKey(),
             derivationType,
             walletKeyId: 'test-wallet',
             accountGapLimit: 5,
@@ -146,9 +142,8 @@ describe('discoverAccounts', () => {
             { address: 'ADDRESS_0_0', accountExists: false },
         ])
 
-        const session = createMockSession()
         const accounts = await discoverAccounts({
-            session,
+            getPublicKey: createMockGetPublicKey(),
             derivationType,
             walletKeyId: 'test-wallet',
             accountGapLimit: 2,
@@ -165,12 +160,14 @@ describe('discoverAccounts', () => {
         const addressesChecked: string[] = []
         mockFetchAccountFastLookup.mockImplementation(async addresses => {
             addressesChecked.push(...addresses)
-            return addresses.map(addr => ({ address, accountExists: false }))
+            return addresses.map((addr: string) => ({
+                address: addr,
+                accountExists: false,
+            }))
         })
 
-        const session = createMockSession()
         await discoverAccounts({
-            session,
+            getPublicKey: createMockGetPublicKey(),
             derivationType,
             walletKeyId: 'test-wallet',
             accountGapLimit: 2,
@@ -185,7 +182,6 @@ describe('discoverAccounts', () => {
 
 describe('discoverRekeyedAccounts', () => {
     const derivationType = BIP32DerivationType.Peikert
-    const mockGetAlgorandClient = vi.fn()
 
     beforeEach(() => {
         vi.clearAllMocks()
@@ -222,9 +218,8 @@ describe('discoverRekeyedAccounts', () => {
             },
         } as any)
 
-        const session = createMockSession()
         const accounts = await discoverRekeyedAccounts({
-            session,
+            getPublicKey: createMockGetPublicKey(),
             derivationType,
             walletKeyId: 'test-wallet',
             keyIndexGapLimit: 1,
@@ -255,9 +250,12 @@ describe('discoverRekeyedAccounts', () => {
             },
         } as any)
 
-        const session = createMockSession()
+        // When accountAddresses is provided, getPublicKey is unused. Pass a
+        // throwing stub to verify it is never invoked.
         const accounts = await discoverRekeyedAccounts({
-            session,
+            getPublicKey: (() => {
+                throw new Error('getPublicKey should not be called')
+            }) as GetPublicKey,
             derivationType,
             walletKeyId: 'test-wallet',
             accountAddresses: ['EXPLICIT_ADDRESS', 'OTHER_ADDRESS'],
