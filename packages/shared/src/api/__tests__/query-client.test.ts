@@ -55,6 +55,8 @@ const { mockKy, mockJson } = vi.hoisted(() => {
     }
 
     const mockKy: any = vi.fn(async (path: string, options: any) => {
+        // ky always provides a `context` object on hook state
+        const hookOptions = { ...options, context: options.context ?? {} }
         // Execute beforeRequest hooks
         const mockRequest = {
             url: path,
@@ -62,7 +64,11 @@ const { mockKy, mockJson } = vi.hoisted(() => {
         }
         if (capturedHooks.beforeRequest) {
             for (const hook of capturedHooks.beforeRequest) {
-                await hook({ request: mockRequest, options, retryCount: 0 })
+                await hook({
+                    request: mockRequest,
+                    options: hookOptions,
+                    retryCount: 0,
+                })
             }
         }
 
@@ -77,7 +83,7 @@ const { mockKy, mockJson } = vi.hoisted(() => {
             for (const hook of capturedHooks.afterResponse) {
                 await hook({
                     request: mockRequest,
-                    options,
+                    options: hookOptions,
                     response,
                     retryCount: 0,
                 })

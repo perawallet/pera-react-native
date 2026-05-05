@@ -19,6 +19,8 @@ import ky, {
     type AfterResponseState,
     HTTPError,
     isHTTPError,
+    isNetworkError,
+    isTimeoutError,
 } from 'ky'
 import { config } from '@perawallet/wallet-core-config'
 import { RequestConfiguration, ResponseConfiguration } from '../models/queries'
@@ -31,7 +33,33 @@ type BackendInstances = {
     pera: KyInstance
 }
 
-const logRequest = ({ request }: BeforeRequestState) => {
+type DiagnosticContext = {
+    startTime?: number
+    abortReason?: string
+}
+
+const stringifyAbortReason = (reason: unknown): string => {
+    if (reason === undefined || reason === null) return 'no-reason'
+    if (reason instanceof Error) return `${reason.name}: ${reason.message}`
+    try {
+        return String(reason)
+    } catch {
+        return 'unstringifiable'
+    }
+}
+
+const logRequest = ({ request, options }: BeforeRequestState) => {
+    const context = options.context as DiagnosticContext
+    context.startTime = Date.now()
+
+    request.signal?.addEventListener(
+        'abort',
+        () => {
+            context.abortReason = stringifyAbortReason(request.signal?.reason)
+        },
+        { once: true },
+    )
+
     logger.debug('Sending request', {
         url: request.url,
         method: request.method,
@@ -45,11 +73,31 @@ const logResponse = ({ response }: AfterResponseState) => {
     })
 }
 
-const logError = ({ request, error }: BeforeErrorState): Error => {
+const logError = ({ request, options, error }: BeforeErrorState): Error => {
+    const context = options.context as DiagnosticContext
+    const durationMs =
+        context.startTime !== undefined
+            ? Date.now() - context.startTime
+            : undefined
+
     if (isHTTPError(error) && error.response?.status === 404) {
         logger.info('Resource not found', {
             url: request?.url,
             status: 404,
+        })
+        return error
+    }
+
+    // Timeouts and network errors are transient and expected at the edges of
+    // connectivity. v1 of ky did not invoke beforeError for these cases at all,
+    // so they were silently propagated to the consumer. Logging at warn keeps
+    // observability without polluting error-level reporting.
+    if (isTimeoutError(error) || isNetworkError(error)) {
+        logger.warn('Request did not complete', {
+            url: request?.url,
+            name: error.name,
+            durationMs,
+            abortReason: context.abortReason,
         })
         return error
     }
@@ -59,6 +107,8 @@ const logError = ({ request, error }: BeforeErrorState): Error => {
         name: error.name,
         // safely attempt to get response info if available
         status: error instanceof HTTPError ? error.response?.status : undefined,
+        durationMs,
+        abortReason: context.abortReason,
         details: JSON.stringify(error, (_key, value) =>
             typeof value === 'bigint' ? value.toString() : value,
         ),
