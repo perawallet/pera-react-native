@@ -14,7 +14,9 @@ import React from 'react'
 import LottieView from 'lottie-react-native'
 import { PWBottomSheet, PWButton, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import bluetoothAnimation from '@assets/animations/ledger-bluetooth.json'
+import { useIsDarkMode } from '@hooks/useIsDarkMode'
+import bluetoothAnimationLight from '@assets/animations/ledger-bluetooth.json'
+import bluetoothAnimationDark from '@assets/animations/ledger-bluetooth.dark.json'
 import { useStyles } from './styles'
 
 type LedgerSigningOverlayProps = {
@@ -44,6 +46,10 @@ export const LedgerSigningOverlay = ({
 }: LedgerSigningOverlayProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const isDarkMode = useIsDarkMode()
+    const animationSource = isDarkMode
+        ? bluetoothAnimationDark
+        : bluetoothAnimationLight
 
     const showRetry = status === 'error' || status === 'timeout'
     const showProgress =
@@ -67,7 +73,7 @@ export const LedgerSigningOverlay = ({
                     <LottieView
                         autoPlay
                         loop
-                        source={bluetoothAnimation}
+                        source={animationSource}
                         style={styles.lottie}
                         testID='ledger-signing-overlay-lottie'
                     />

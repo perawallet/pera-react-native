@@ -21,14 +21,32 @@ vi.mock('@hooks/useLanguage', () => ({
     }),
 }))
 
+const mockUseIsDarkMode = vi.fn<() => boolean>(() => false)
+vi.mock('@hooks/useIsDarkMode', () => ({
+    useIsDarkMode: () => mockUseIsDarkMode(),
+}))
+
 vi.mock('lottie-react-native', () => ({
-    default: ({ testID }: { testID?: string }) => (
-        <div data-testid={testID ?? 'lottie-view'} />
+    default: ({
+        testID,
+        source,
+    }: {
+        testID?: string
+        source?: { __variant?: string }
+    }) => (
+        <div
+            data-testid={testID ?? 'lottie-view'}
+            data-variant={source?.__variant ?? ''}
+        />
     ),
 }))
 
 vi.mock('@assets/animations/ledger-bluetooth.json', () => ({
-    default: {},
+    default: { __variant: 'light' },
+}))
+
+vi.mock('@assets/animations/ledger-bluetooth.dark.json', () => ({
+    default: { __variant: 'dark' },
 }))
 
 describe('LedgerSigningOverlay', () => {
@@ -41,6 +59,7 @@ describe('LedgerSigningOverlay', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        mockUseIsDarkMode.mockReturnValue(false)
     })
 
     it('renders the connecting message when status is connecting', () => {
@@ -124,6 +143,38 @@ describe('LedgerSigningOverlay', () => {
         )
 
         expect(screen.getByTestId('ledger-signing-overlay-lottie')).toBeTruthy()
+    })
+
+    it('uses the light Lottie variant when not in dark mode', () => {
+        mockUseIsDarkMode.mockReturnValue(false)
+        render(
+            <LedgerSigningOverlay
+                {...defaultProps}
+                status='connecting'
+            />,
+        )
+
+        expect(
+            screen
+                .getByTestId('ledger-signing-overlay-lottie')
+                .getAttribute('data-variant'),
+        ).toBe('light')
+    })
+
+    it('uses the dark Lottie variant in dark mode', () => {
+        mockUseIsDarkMode.mockReturnValue(true)
+        render(
+            <LedgerSigningOverlay
+                {...defaultProps}
+                status='connecting'
+            />,
+        )
+
+        expect(
+            screen
+                .getByTestId('ledger-signing-overlay-lottie')
+                .getAttribute('data-variant'),
+        ).toBe('dark')
     })
 
     it('hides the Lottie animation in error state (replaced by retry UI)', () => {
