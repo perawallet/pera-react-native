@@ -12,11 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => {
-    const addressText = {
-        lineHeight: theme.spacing.md,
-    }
-    return {
+export const useStyles = makeStyles(theme => ({
         container: {
             alignItems: 'flex-start',
             gap: theme.spacing.md,
@@ -49,6 +45,5 @@ export const useStyles = makeStyles(theme => {
         blockValue: {
             color: theme.colors.textMain,
         },
-        addressText,
     }
-})
+))
