@@ -149,15 +149,12 @@ describe('useImportAccount', () => {
     })
 
     test('hd wallet path: prepares import session, does not create an account', async () => {
-        const prepareMock = vi.fn(async () => ({
+        prepareHDMasterKeyMock.mockResolvedValueOnce({
             keyId: 'WALLET1',
             rootKey: new Uint8Array(96).fill(1),
             entropy: new Uint8Array(32).fill(2),
             mnemonic: 'test mnemonic',
-        }))
-        // The hook now uses prepareHDMasterKey from @perawallet/wallet-core-kms
-        const kmsMod = await import('@perawallet/wallet-core-kms')
-        ;(kmsMod as any).prepareHDMasterKey = prepareMock
+        })
 
         const { result } = renderHook(() => useImportAccount())
 
@@ -179,11 +176,9 @@ describe('useImportAccount', () => {
     })
 
     test('hd wallet path: surfaces prepareHDMasterKey errors', async () => {
-        const prepareMock = vi.fn(async () => {
-            throw new Error('Invalid mnemonic')
-        })
-        const kmsMod = await import('@perawallet/wallet-core-kms')
-        ;(kmsMod as any).prepareHDMasterKey = prepareMock
+        prepareHDMasterKeyMock.mockRejectedValueOnce(
+            new Error('Invalid mnemonic'),
+        )
 
         const { result } = renderHook(() => useImportAccount())
 
