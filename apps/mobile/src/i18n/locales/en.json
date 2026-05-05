@@ -91,7 +91,7 @@
         "deselect_all": "Deselect All",
         "remove_selected": "Remove Selected ({{count}})",
         "empty_title": "No Removable Assets",
-        "empty_body": "All your assets have a non-zero balance",
+        "empty_body": "Only assets with a zero balance that you didn't create can be removed.",
         "confirmation_title": "Remove {{count}} Assets?",
         "confirmation_body": "This will opt you out of the selected assets. This action cannot be undone.",
         "confirm": "Remove",

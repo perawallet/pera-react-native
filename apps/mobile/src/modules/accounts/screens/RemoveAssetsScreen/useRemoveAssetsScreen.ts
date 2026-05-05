@@ -37,6 +37,10 @@ type UseRemoveAssetsScreenResult = {
     selectedAssetIds: Set<string>
     isAllSelected: boolean
     isRemoving: boolean
+    /** Whether the Select All header action should be offered to the user */
+    isSelectAllVisible: boolean
+    /** Whether the Remove Selected footer CTA should be rendered */
+    isRemoveSelectedVisible: boolean
     handleToggleSelect: (assetId: string) => void
     handleToggleSelectAll: () => void
     handleRemoveSelected: () => void
@@ -174,12 +178,22 @@ export const useRemoveAssetsScreen = ({
         showError,
     ])
 
+    // Header Select All and footer Remove Selected only make sense when there
+    // is at least one removable asset to act on. Both share the same predicate
+    // today, but they're exposed separately so each can evolve independently
+    // (e.g. a future "max-selectable" rule for the footer).
+    const hasRemovableAssets = filteredRemovableAssets.length > 0
+    const isSelectAllVisible = hasRemovableAssets
+    const isRemoveSelectedVisible = hasRemovableAssets
+
     return {
         removableAssets: filteredRemovableAssets,
         assets,
         selectedAssetIds,
         isAllSelected,
         isRemoving,
+        isSelectAllVisible,
+        isRemoveSelectedVisible,
         handleToggleSelect,
         handleToggleSelectAll,
         handleRemoveSelected,

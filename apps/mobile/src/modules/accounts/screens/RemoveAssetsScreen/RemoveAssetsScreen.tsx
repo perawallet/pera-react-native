@@ -45,6 +45,8 @@ export const RemoveAssetsScreen = () => {
         selectedAssetIds,
         isAllSelected,
         isRemoving,
+        isSelectAllVisible,
+        isRemoveSelectedVisible,
         handleToggleSelect,
         handleToggleSelectAll,
         handleRemoveSelected,
@@ -52,7 +54,7 @@ export const RemoveAssetsScreen = () => {
     } = useRemoveAssetsScreen({ onAfterRemove: handleAfterRemove })
 
     useNavigationHeader({
-        right: (
+        right: isSelectAllVisible ? (
             <PWTouchableOpacity onPress={handleToggleSelectAll}>
                 <PWText>
                     {isAllSelected
@@ -60,7 +62,7 @@ export const RemoveAssetsScreen = () => {
                         : t('remove_assets.select_all')}
                 </PWText>
             </PWTouchableOpacity>
-        ),
+        ) : null,
     })
 
     const renderItem = useCallback(
@@ -103,17 +105,19 @@ export const RemoveAssetsScreen = () => {
                 }
             />
 
-            <PWView style={styles.footerContainer}>
-                <PWButton
-                    title={t('remove_assets.remove_selected', {
-                        count: selectedAssetIds.size,
-                    })}
-                    variant='destructive'
-                    onPress={handleRemoveSelected}
-                    isDisabled={selectedAssetIds.size === 0 || isRemoving}
-                    isLoading={isRemoving}
-                />
-            </PWView>
+            {isRemoveSelectedVisible && (
+                <PWView style={styles.footerContainer}>
+                    <PWButton
+                        title={t('remove_assets.remove_selected', {
+                            count: selectedAssetIds.size,
+                        })}
+                        variant='destructive'
+                        onPress={handleRemoveSelected}
+                        isDisabled={selectedAssetIds.size === 0 || isRemoving}
+                        isLoading={isRemoving}
+                    />
+                </PWView>
+            )}
         </PWView>
     )
 }
