@@ -12,6 +12,8 @@
 
 import { create } from 'zustand'
 import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
+import { zeroBytes } from '@perawallet/wallet-core-kms'
+import { registerStore } from '@perawallet/wallet-core-shared'
 
 /**
  * Holds the in-flight HD import session: the data we computed in memory
@@ -36,12 +38,7 @@ type Actions = {
     clear: () => void
 }
 
-const zeroBytes = (...arrs: Uint8Array[]) => {
-    for (const a of arrs) {
-        if (!a) continue
-        for (let i = 0; i < a.length; i++) a[i] = 0
-    }
-}
+const STORE_NAME = 'hd-import-session-store'
 
 export const useHDImportSessionStore = create<State & Actions>((set, get) => ({
     pending: null,
@@ -56,3 +53,10 @@ export const useHDImportSessionStore = create<State & Actions>((set, get) => ({
         set({ pending: null })
     },
 }))
+
+registerStore({
+    name: STORE_NAME,
+    // In-memory only store; nothing persisted to clear.
+    clearStorage: () => {},
+    resetState: () => useHDImportSessionStore.getState().clear(),
+})
