@@ -62,7 +62,7 @@ const { mockKy, mockJson } = vi.hoisted(() => {
         }
         if (capturedHooks.beforeRequest) {
             for (const hook of capturedHooks.beforeRequest) {
-                await hook(mockRequest)
+                await hook({ request: mockRequest, options, retryCount: 0 })
             }
         }
 
@@ -75,7 +75,12 @@ const { mockKy, mockJson } = vi.hoisted(() => {
         // Execute afterResponse hooks
         if (capturedHooks.afterResponse) {
             for (const hook of capturedHooks.afterResponse) {
-                await hook(mockRequest, options, response)
+                await hook({
+                    request: mockRequest,
+                    options,
+                    response,
+                    retryCount: 0,
+                })
             }
         }
 
