@@ -33,5 +33,4 @@ export const useStyles = makeStyles(theme => ({
         backgroundColor: theme.colors.buttonSquareBg,
         borderRadius: theme.spacing.xl,
     },
-    trendIconDown: {},
 }))

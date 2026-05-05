@@ -17,7 +17,6 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { useState } from 'react'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useStyles } from './styles'
 import { AssetMarkets } from '@modules/assets/components/market/AssetMarkets'
 import { AssetHoldings } from '@modules/assets/components/holdings/AssetHoldings'
@@ -46,8 +45,7 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
     const assetId = route.params?.assetId
     const { t } = useLanguage()
 
-    const insets = useSafeAreaInsets()
-    const styles = useStyles({ insets, safeArea: false })
+    const styles = useStyles()
 
     const account = useSelectedAccount()
     const { data: asset, isPending } = useSingleAssetDetailsQuery(assetId ?? '')

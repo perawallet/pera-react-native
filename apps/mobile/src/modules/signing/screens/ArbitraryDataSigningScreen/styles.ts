@@ -24,9 +24,6 @@ export const useStyles = makeStyles(theme => ({
     bodyContainer: {
         flexGrow: 1,
     },
-    title: {
-        alignSelf: 'center',
-    },
     buttonContainer: {
         flexDirection: 'row',
         gap: theme.spacing.lg,

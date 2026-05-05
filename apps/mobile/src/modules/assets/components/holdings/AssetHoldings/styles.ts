@@ -13,10 +13,6 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        flex: 1,
-        backgroundColor: theme.colors.background,
-    },
     contentContainer: {
         paddingTop: theme.spacing.md,
         paddingBottom: theme.spacing.md,
@@ -34,9 +30,6 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.sm,
-    },
-    fiatText: {
-        color: theme.colors.textGray,
     },
     chartContainer: {
         gap: theme.spacing.md,

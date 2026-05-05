@@ -119,10 +119,7 @@ export const AccountAssetList = ({
                 <>
                     {header}
                     <PWView style={styles.titleBar}>
-                        <PWText
-                            style={styles.title}
-                            variant='h4'
-                        >
+                        <PWText variant='h4'>
                             {t('account_details.assets.title')}
                         </PWText>
                         {!isWatch && (

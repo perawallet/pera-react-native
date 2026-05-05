@@ -33,7 +33,6 @@ export const useStyles = makeStyles(theme => {
             flexGrow: 1,
             paddingBottom: theme.spacing.xl,
         },
-        title: {},
         accountDisplay: {
             flexDirection: 'row',
             alignItems: 'center',

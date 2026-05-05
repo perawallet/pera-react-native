@@ -15,9 +15,6 @@ import { makeStyles } from '@rneui/themed'
 const DROPDOWN_MIN_WIDTH = 200
 
 export const useStyles = makeStyles(theme => ({
-    overlay: {
-        backgroundColor: 'transparent',
-    },
     modalOverlay: {
         flex: 1,
         backgroundColor: 'transparent',

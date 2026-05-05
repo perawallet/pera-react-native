@@ -36,9 +36,4 @@ export const useStyles = makeStyles(theme => ({
     statusContainer: {
         marginTop: theme.spacing.lg,
     },
-    errorText: {
-        color: theme.colors.negative,
-        textAlign: 'center',
-        marginBottom: theme.spacing.xl,
-    },
 }))

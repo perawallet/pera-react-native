@@ -20,10 +20,6 @@ export const useStyles = makeStyles(theme => ({
         flexGrow: 1,
         marginTop: theme.spacing.md,
     },
-    title: {
-        textAlign: 'center',
-        width: '100%',
-    },
     textContainer: {
         alignItems: 'center',
         gap: theme.spacing.xs,
@@ -47,13 +43,5 @@ export const useStyles = makeStyles(theme => ({
     amountContainer: {
         marginTop: theme.spacing.md,
         alignItems: 'center',
-    },
-    assetIconContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.xs,
-    },
-    assetName: {
-        color: theme.colors.textMain,
     },
 }))

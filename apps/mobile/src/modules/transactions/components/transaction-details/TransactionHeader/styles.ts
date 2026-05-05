@@ -27,9 +27,6 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'flex-start' as const,
         gap: theme.spacing.sm,
     },
-    wrappedText: {
-        flexShrink: 1,
-    },
     blockContainer: {
         flexDirection: 'row' as const,
         alignItems: 'flex-start' as const,

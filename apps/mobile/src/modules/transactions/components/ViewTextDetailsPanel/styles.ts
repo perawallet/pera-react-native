@@ -32,7 +32,6 @@ export const useStyles = makeStyles(theme => {
             gap: theme.spacing.sm,
             paddingHorizontal: theme.spacing.xl,
         },
-        button: {},
         buttonText,
         noteText: {
             marginBottom: theme.spacing.xl,

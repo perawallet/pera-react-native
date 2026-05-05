@@ -43,9 +43,4 @@ export const useStyles = makeStyles(theme => ({
         textAlign: 'center',
         marginTop: theme.spacing.lg,
     },
-    errorText: {
-        color: theme.colors.negative,
-        textAlign: 'center',
-        marginBottom: theme.spacing.xl,
-    },
 }))

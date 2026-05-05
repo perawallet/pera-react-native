@@ -41,7 +41,7 @@ export const ApplicationDisplay = ({
         >
             {application ? (
                 <CopyableText copyValue={applicationId}>
-                    <PWView style={styles.container}>
+                    <PWView>
                         <PWView style={styles.row}>
                             <PWText variant='h4'>{application.name}</PWText>
                             {!!application?.project?.verificationTier && (

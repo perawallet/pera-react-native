@@ -20,31 +20,5 @@ export const useStyles = makeStyles(theme => {
             gap: theme.spacing.md,
             paddingHorizontal: theme.spacing.xl,
         },
-        row: {
-            flexDirection: 'row',
-            paddingVertical: theme.spacing.md,
-            paddingHorizontal: theme.spacing.md,
-            justifyContent: 'space-between',
-            alignItems: 'center',
-        },
-        radioContainer: {
-            borderWidth: theme.borders.sm,
-            borderRadius: theme.spacing.xl,
-            borderColor: theme.colors.layerGray,
-            width: theme.spacing.xl,
-            height: theme.spacing.xl,
-            justifyContent: 'center',
-            alignItems: 'center',
-        },
-        selectedRadio: {
-            borderRadius: theme.spacing.lg,
-            width: theme.spacing.lg,
-            height: theme.spacing.lg,
-            backgroundColor: theme.colors.positive,
-        },
-        input: {
-            paddingHorizontal: theme.spacing.md,
-            borderRadius: theme.spacing.sm,
-        },
     }
 })

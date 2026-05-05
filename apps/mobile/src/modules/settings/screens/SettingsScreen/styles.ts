@@ -29,9 +29,6 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
         sectionRow: {
             paddingHorizontal: theme.spacing.xs,
         },
-        sectionRowTitle: {
-            flexGrow: 1,
-        },
         scrollView: {
             flex: 1,
             marginHorizontal: theme.spacing.lg,

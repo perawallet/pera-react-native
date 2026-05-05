@@ -46,30 +46,8 @@ export const useStyles = makeStyles(theme => {
             gap: theme.spacing.md,
             alignItems: 'center',
         },
-        fullWidth: {
-            width: '100%',
-        },
-        tabs: {
-            marginTop: theme.spacing.md,
-            paddingHorizontal: 0,
-            paddingBottom: theme.spacing.sm,
-            margin: 0,
-            borderWidth: theme.borders.sm,
-            borderColor: 'transparent',
-        },
-        activeTab: {
-            padding: 0,
-            margin: 0,
-        },
-        inactiveTab: {
-            padding: 0,
-            margin: 0,
-        },
         activeTitle: {
             color: theme.colors.textMain,
-        },
-        inactiveTitle: {
-            color: theme.colors.textGrayLighter,
         },
     }
 })

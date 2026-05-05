@@ -88,9 +88,7 @@ export const PriceTrend = ({
                     name={isPositive ? 'arrow-up' : 'arrow-down'}
                     variant={isPositive ? 'helper' : 'error'}
                     size='sm'
-                    style={
-                        isPositive ? styles.trendIconUp : styles.trendIconDown
-                    }
+                    style={isPositive ? styles.trendIconUp : undefined}
                 />
                 <PWText
                     style={isPositive ? styles.itemUp : styles.itemDown}

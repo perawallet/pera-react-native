@@ -114,6 +114,15 @@ function runOneWorker(
     })
 }
 
+function mergeChunkResult(target: AggregateResult, result: ChunkResult): void {
+    target.violations.push(...result.violations)
+    for (const [id, ms] of Object.entries(result.timings)) {
+        target.timings[id] = (target.timings[id] ?? 0) + ms
+    }
+    target.parseMs += result.parseMs
+    target.walkMs += result.walkMs
+}
+
 async function dispatch(
     paths: string[],
     checks: Check[],
@@ -121,34 +130,47 @@ async function dispatch(
 ): Promise<AggregateResult> {
     const override = readWorkerCountOverride(process.env.GUARDRAILS_WORKERS)
     const force = shouldForceWorkers(process.env.GUARDRAILS_FORCE_WORKERS)
-    const useWorkers = force || paths.length >= IN_PROCESS_THRESHOLD
-    if (!useWorkers) {
-        const result = await runChecksAgainstPaths(paths, checks)
-        return { ...result, workers: 0 }
-    }
-    const count =
-        override ??
-        pickWorkerCount({ files: paths.length, cpus: cpus().length })
-    const chunks = roundRobin(paths, count)
-    const workerUrl = new URL('./worker-entry.mjs', import.meta.url)
-    const results = await Promise.all(
-        chunks.map(chunk => runOneWorker(chunk, workerUrl, checksDirUrl.href)),
-    )
+    // Cross-file checks (those with a `finalize` hook) need to see every
+    // SourceFile in one context. Sharding their paths across workers would
+    // produce false positives, so they always run in-process on the main
+    // thread. Per-file checks remain shardable via the worker pool.
+    const perFileChecks = checks.filter(c => c.finalize === undefined)
+    const crossFileChecks = checks.filter(c => c.finalize !== undefined)
+    const useWorkers =
+        perFileChecks.length > 0 &&
+        (force || paths.length >= IN_PROCESS_THRESHOLD)
+
     const merged: AggregateResult = {
         violations: [],
         timings: {},
         parseMs: 0,
         walkMs: 0,
-        workers: count,
+        workers: 0,
     }
-    for (const r of results) {
-        merged.violations.push(...r.violations)
-        for (const [id, ms] of Object.entries(r.timings)) {
-            merged.timings[id] = (merged.timings[id] ?? 0) + ms
-        }
-        merged.parseMs += r.parseMs
-        merged.walkMs += r.walkMs
+
+    if (useWorkers) {
+        const count =
+            override ??
+            pickWorkerCount({ files: paths.length, cpus: cpus().length })
+        const chunks = roundRobin(paths, count)
+        const workerUrl = new URL('./worker-entry.mjs', import.meta.url)
+        const results = await Promise.all(
+            chunks.map(chunk =>
+                runOneWorker(chunk, workerUrl, checksDirUrl.href),
+            ),
+        )
+        merged.workers = count
+        for (const r of results) mergeChunkResult(merged, r)
+    } else if (perFileChecks.length > 0) {
+        const result = await runChecksAgainstPaths(paths, perFileChecks)
+        mergeChunkResult(merged, result)
     }
+
+    if (crossFileChecks.length > 0) {
+        const result = await runChecksAgainstPaths(paths, crossFileChecks)
+        mergeChunkResult(merged, result)
+    }
+
     return merged
 }
 

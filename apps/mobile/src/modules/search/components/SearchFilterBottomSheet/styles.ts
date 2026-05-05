@@ -18,9 +18,6 @@ export const useStyles = makeStyles(theme => ({
         paddingVertical: theme.spacing.lg,
         gap: theme.spacing.xs,
     },
-    title: {
-        marginBottom: theme.spacing.sm,
-    },
     row: {
         flexDirection: 'row',
         alignItems: 'center',

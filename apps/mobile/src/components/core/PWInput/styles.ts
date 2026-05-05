@@ -23,12 +23,10 @@ export const useStyles = makeStyles((theme, { variant }: PWInputStyleProps) => {
         lineHeight: undefined,
     }
     return {
-        container: {},
         inputContainer: {
             paddingHorizontal: theme.spacing.md,
             borderRadius: theme.borderRadius.xs,
         },
         input,
-        label: {},
     }
 })

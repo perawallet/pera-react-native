@@ -50,18 +50,6 @@ export const useStyles = makeStyles(theme => {
             justifyContent: 'center',
             alignItems: 'center',
         },
-        itemUp: {
-            color: theme.colors.positive,
-        },
-        itemDown: {
-            color: theme.colors.alertNegative,
-        },
-        trendIconUp: {
-            color: theme.colors.positive,
-        },
-        trendIconDown: {
-            color: theme.colors.alertNegative,
-        },
         valueTitleBar: {
             flexDirection: 'row',
             alignItems: 'center',

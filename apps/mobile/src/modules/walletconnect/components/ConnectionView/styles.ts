@@ -73,11 +73,6 @@ export const useStyles = makeStyles(theme => {
             color: theme.colors.textGray,
             marginBottom: theme.spacing.md,
         },
-        accountsContainer: {
-            gap: theme.spacing.md,
-            flexGrow: 1,
-            flexShrink: 1,
-        },
         buttonContainer: {
             flexDirection: 'row',
             alignItems: 'center',

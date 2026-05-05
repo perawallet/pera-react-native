@@ -11,33 +11,18 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { EdgeInsets } from 'react-native-safe-area-context'
 
-type StyleProps = {
-    insets: EdgeInsets
-    safeArea: boolean
-}
-
-export const useStyles = makeStyles(
-    (theme, { insets, safeArea }: StyleProps) => ({
-        fullWidth: {
-            width: '100%',
-            paddingHorizontal: theme.spacing.lg,
-        },
-        contentContainer: {
-            flex: 1,
-            backgroundColor: theme.colors.background,
-        },
-        toolbar: {
-            marginTop: safeArea ? insets.top : 0,
-        },
-        headerTitleContainer: {
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: theme.spacing.xs,
-        },
-        headerSubtitle: {
-            color: theme.colors.textGray,
-        },
-    }),
-)
+export const useStyles = makeStyles(theme => ({
+    contentContainer: {
+        flex: 1,
+        backgroundColor: theme.colors.background,
+    },
+    headerTitleContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: theme.spacing.xs,
+    },
+    headerSubtitle: {
+        color: theme.colors.textGray,
+    },
+}))

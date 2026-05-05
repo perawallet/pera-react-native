@@ -48,10 +48,6 @@ export const useStyles = makeStyles(theme => {
         icon: {
             backgroundColor: theme.colors.layerGrayLighter,
         },
-        buttonIcon: {
-            color: theme.colors.buttonPrimaryText,
-            backgroundColor: theme.colors.primary,
-        },
         backgroundImage: {
             marginTop: theme.spacing.lg,
             width: BACKGROUND_IMAGE_WIDTH,

@@ -17,23 +17,6 @@ export const useStyles = makeStyles(theme => ({
         paddingHorizontal: theme.spacing.lg,
         paddingBottom: theme.spacing.lg,
     },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: theme.spacing.lg,
-        paddingVertical: theme.spacing.md,
-    },
-    headerAction: {
-        width: theme.spacing.xl,
-        height: theme.spacing.xl,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    headerTitle: {
-        color: theme.colors.textMain,
-        textAlign: 'center',
-    },
     body: {
         paddingHorizontal: theme.spacing.lg,
         gap: theme.spacing.md,
@@ -81,8 +64,5 @@ export const useStyles = makeStyles(theme => ({
     buttonContainer: {
         gap: theme.spacing.sm,
         marginTop: theme.spacing.md,
-    },
-    copyButton: {
-        borderRadius: theme.borderRadius.full,
     },
 }))

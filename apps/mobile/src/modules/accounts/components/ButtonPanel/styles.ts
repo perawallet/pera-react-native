@@ -20,7 +20,4 @@ export const useStyles = makeStyles(theme => ({
         justifyContent: 'center',
         marginTop: theme.spacing.xl,
     },
-    blackButton: {
-        backgroundColor: theme.colors.buttonHelperBg,
-    },
 }))

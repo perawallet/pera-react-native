@@ -19,7 +19,6 @@ export const useStyles = makeStyles(theme => ({
     contentContainer: {
         paddingHorizontal: theme.spacing.xl,
     },
-    listContainer: {},
     transactionListHeaderText: {
         color: theme.colors.textGray,
         marginBottom: theme.spacing.sm,

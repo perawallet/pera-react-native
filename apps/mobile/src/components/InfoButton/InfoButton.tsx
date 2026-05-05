@@ -70,7 +70,6 @@ export const InfoButton = ({
                     variant='secondary'
                     title={t('common.close.label')}
                     onPress={bottomSheetState.close}
-                    style={styles.closeButton}
                 />
             </PWBottomSheet>
         </>

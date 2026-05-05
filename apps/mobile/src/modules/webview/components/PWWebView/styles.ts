@@ -32,12 +32,6 @@ export const useStyles = makeStyles(theme => {
             flexGrow: 1,
             backgroundColor: theme.colors.background,
         },
-        loading: {
-            flexGrow: 1,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: theme.colors.background,
-        },
         container: {
             backgroundColor: theme.colors.background,
             flex: 1,

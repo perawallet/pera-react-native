@@ -12,23 +12,4 @@
 
 import { makeStyles } from '@rneui/themed'
 
-const BUTTON_MIN_WIDTH = 200
-
-export const useStyles = makeStyles(theme => ({
-    container: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: theme.spacing.xl,
-        gap: theme.spacing.lg,
-    },
-    title: {
-        textAlign: 'center',
-    },
-    message: {
-        textAlign: 'center',
-    },
-    button: {
-        minWidth: BUTTON_MIN_WIDTH,
-    },
-}))
+export const useStyles = makeStyles(() => ({}))

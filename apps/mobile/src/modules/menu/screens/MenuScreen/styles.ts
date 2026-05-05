@@ -40,12 +40,5 @@ export const useStyles = makeStyles(theme => {
             flexDirection: 'column',
             marginTop: theme.spacing.xl,
         },
-        scannerClose: {
-            marginTop: theme.spacing.xl,
-            marginLeft: theme.spacing.lg,
-            width: theme.spacing['3xl'],
-            height: theme.spacing['3xl'],
-            zIndex: theme.zIndex.layer2,
-        },
     }
 })

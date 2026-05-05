@@ -45,9 +45,6 @@ export const useStyles = makeStyles(theme => ({
     rowLabel: {
         color: theme.colors.textGray,
     },
-    rowValue: {
-        textAlign: 'right',
-    },
     divider: {
         height: theme.borders.sm,
         backgroundColor: theme.colors.layerGrayLighter,
@@ -55,11 +52,6 @@ export const useStyles = makeStyles(theme => ({
     disclaimer: {
         color: theme.colors.textMain,
         marginTop: theme.spacing.md,
-    },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
     },
     inboxIcon: {
         alignSelf: 'center',

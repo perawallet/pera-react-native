@@ -16,17 +16,8 @@ export const useStyles = makeStyles(theme => ({
     container: {
         padding: theme.spacing.xl,
     },
-    innerContainer: {},
-    titleContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
     contentContainer: {
         marginBottom: theme.spacing.xl,
-    },
-    icon: {
-        marginRight: theme.spacing.sm,
     },
     title: {
         textAlign: 'left',
@@ -37,5 +28,4 @@ export const useStyles = makeStyles(theme => ({
         height: theme.spacing.xl,
         width: theme.spacing.xl,
     },
-    closeButton: {},
 }))

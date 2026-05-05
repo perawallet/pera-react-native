@@ -16,5 +16,4 @@ export const useStyles = makeStyles(theme => ({
     container: {
         gap: theme.spacing.lg,
     },
-    accountItem: {},
 }))

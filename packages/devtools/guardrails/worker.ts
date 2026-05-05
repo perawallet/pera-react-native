@@ -8,7 +8,11 @@ const port = parentPort
 const checksDirUrl = new URL(
     (workerData as { checksDirHref: string }).checksDirHref,
 )
-const checks = await loadChecks(checksDirUrl)
+// Workers only run per-file checks. Cross-file checks (with a `finalize`
+// hook) need every SourceFile in one context and run on the main thread.
+const checks = (await loadChecks(checksDirUrl)).filter(
+    c => c.finalize === undefined,
+)
 
 interface WorkerMessage {
     paths: string[]

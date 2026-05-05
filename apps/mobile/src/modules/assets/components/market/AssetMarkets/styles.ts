@@ -70,34 +70,10 @@ export const useStyles = makeStyles(theme => {
         discoverLinkText: {
             marginRight: theme.spacing.xs,
         },
-        sectionTitle: {
-            color: theme.colors.textGray,
-            marginTop: theme.spacing.xl,
-            marginBottom: theme.spacing.md,
-            textTransform: 'uppercase',
-        },
-        tagsContainer: {
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            gap: theme.spacing.sm,
-            marginTop: theme.spacing.xl,
-        },
-        tag: {
-            backgroundColor: theme.colors.layerGrayLighter,
-            borderRadius: theme.spacing.sm,
-            paddingHorizontal: theme.spacing.md,
-            paddingVertical: theme.spacing.xs,
-            flexDirection: 'row',
-            alignItems: 'center',
-        },
         tagText,
         loadingContainer: {
             padding: theme.spacing.xl,
             gap: theme.spacing.md,
-        },
-        skeleton: {
-            height: theme.spacing['5xl'],
-            width: '100%',
         },
         trendContainer: {
             flexDirection: 'row',

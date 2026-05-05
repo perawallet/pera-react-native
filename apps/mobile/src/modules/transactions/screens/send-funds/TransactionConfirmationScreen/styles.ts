@@ -20,10 +20,6 @@ export const useStyles = makeStyles(theme => {
             flex: 1,
             paddingTop: theme.spacing.lg,
         },
-        divider: {
-            paddingTop: theme.spacing.md,
-            marginBottom: theme.spacing.md,
-        },
         secondaryAmount: {
             color: theme.colors.textGray,
         },

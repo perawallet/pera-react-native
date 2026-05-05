@@ -29,10 +29,6 @@ export const useStyles = makeStyles(theme => ({
     description: {
         color: theme.colors.textGray,
     },
-    sectionTitle: {
-        color: theme.colors.textGray,
-        marginBottom: theme.spacing.sm,
-    },
     spacer: {
         flexGrow: 1,
         alignItems: 'flex-start',

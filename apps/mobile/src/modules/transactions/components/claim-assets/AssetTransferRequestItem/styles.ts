@@ -37,17 +37,8 @@ export const useStyles = makeStyles(theme => ({
         justifyContent: 'space-between',
         alignItems: 'center',
     },
-    nameRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.xs,
-        flex: 1,
-    },
     nameText: {
         flexShrink: 1,
-    },
-    amountText: {
-        textAlign: 'right',
     },
     bottomRow: {
         flexDirection: 'row',
@@ -59,12 +50,5 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         gap: theme.spacing.xs,
         flex: 1,
-    },
-    unitNameText: {
-        color: theme.colors.textGray,
-    },
-    usdText: {
-        color: theme.colors.textGray,
-        textAlign: 'right',
     },
 }))

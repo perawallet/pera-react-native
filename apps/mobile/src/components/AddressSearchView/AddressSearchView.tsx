@@ -66,12 +66,7 @@ export const AddressSearchView = ({
                 case 'section_header':
                     return (
                         <PWView style={styles.sectionHeader}>
-                            <PWText
-                                variant='h4'
-                                style={styles.title}
-                            >
-                                {t(item.title)}
-                            </PWText>
+                            <PWText variant='h4'>{t(item.title)}</PWText>
                         </PWView>
                     )
                 case 'contact':

@@ -26,34 +26,6 @@ export const useStyles = makeStyles(
                 flex: 1,
                 backgroundColor: theme.colors.background,
             },
-            keyboardAvoidingView: {
-                flex: 1,
-                backgroundColor: theme.colors.background,
-            },
-            helperText: {
-                color: theme.colors.textGray,
-                paddingBottom: theme.spacing['3xl'],
-            },
-            walletNameContainer: {
-                backgroundColor: theme.colors.layerGrayLighter,
-                borderRadius: theme.spacing.sm,
-                paddingVertical: theme.spacing.md,
-                flexDirection: 'row',
-                flexWrap: 'nowrap',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: theme.spacing.sm,
-            },
-            nameText: {
-                color: theme.colors.textGray,
-                alignSelf: 'center',
-            },
-            finishButton: {
-                marginHorizontal: 0, // Footers padding handles this
-            },
-            spacer: {
-                flexGrow: 1,
-            },
             wordContainer: {
                 flexDirection: 'row',
                 justifyContent: 'space-between',
