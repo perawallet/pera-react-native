@@ -73,6 +73,10 @@ const I18N_MAP = {
     },
 } satisfies Record<AccountLogicalType, { title: string; description: string }>
 
+const LEARN_MORE_URL_MAP: Partial<Record<AccountLogicalType, string>> = {
+    LedgerBle: config.ledgerAccountSupportUrl,
+}
+
 export const useAccountTypeInfo = ({
     account,
     onClose,
@@ -96,8 +100,10 @@ export const useAccountTypeInfo = ({
     }, [showToast, t, onClose])
 
     const handleLearnMore = useCallback(() => {
-        pushWebView({ url: config.accountTypeSupportUrl })
-    }, [pushWebView])
+        const url =
+            LEARN_MORE_URL_MAP[logicalType] ?? config.accountTypeSupportUrl
+        pushWebView({ url })
+    }, [pushWebView, logicalType])
 
     const actions = useMemo(() => {
         const items: AccountTypeAction[] = []

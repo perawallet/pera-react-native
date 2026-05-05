@@ -42,6 +42,8 @@ vi.mock('@perawallet/wallet-core-config', () => ({
     config: {
         accountTypeSupportUrl:
             'https://support.perawallet.app/en/category/accounts/',
+        ledgerAccountSupportUrl:
+            'https://support.perawallet.app/en/article/how-to-rekey-an-algorand-account-with-pera-mobile-13ykjxs/',
     },
 }))
 
@@ -228,6 +230,21 @@ describe('useAccountTypeInfo', () => {
 
         expect(mockPushWebView).toHaveBeenCalledWith({
             url: 'https://support.perawallet.app/en/category/accounts/',
+        })
+    })
+
+    it('opens webview with rekey article when learn more is pressed for Ledger', () => {
+        mockUseAccountLogicalType.mockReturnValue('LedgerBle')
+        const { result } = renderHook(() =>
+            useAccountTypeInfo({ account: algo25Account, onClose }),
+        )
+
+        act(() => {
+            result.current.handleLearnMore()
+        })
+
+        expect(mockPushWebView).toHaveBeenCalledWith({
+            url: 'https://support.perawallet.app/en/article/how-to-rekey-an-algorand-account-with-pera-mobile-13ykjxs/',
         })
     })
 })

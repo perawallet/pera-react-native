@@ -24,8 +24,11 @@ export const useStyles = makeStyles(theme => ({
     description: {
         color: theme.colors.textGray,
     },
-    linkContainer: {
+    learnMoreRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
         alignSelf: 'flex-start',
+        gap: theme.spacing.sm,
     },
     actionsContainer: {
         width: '100%',

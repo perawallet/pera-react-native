@@ -47,6 +47,8 @@ vi.mock('@perawallet/wallet-core-config', () => ({
     config: {
         accountTypeSupportUrl:
             'https://support.perawallet.app/en/category/accounts/',
+        ledgerAccountSupportUrl:
+            'https://support.perawallet.app/en/article/how-to-rekey-an-algorand-account-with-pera-mobile-13ykjxs/',
     },
 }))
 
