@@ -60,6 +60,8 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     useAssetPricesQuery: vi.fn(),
     ALGO_ASSET_ID: '0',
     ALGO_ASSET: { id: '0', decimals: 6 },
+    isCollectible: (asset: { peraMetadata?: { type?: string } }) =>
+        asset?.peraMetadata?.type === 'collectible',
     toDecimalUnits: (value: number | Decimal) => {
         if (value instanceof Decimal) {
             return value
@@ -543,6 +545,69 @@ describe('useTransactionConfirmationScreen', () => {
             )
 
             expect(result.current.asset).toBeUndefined()
+        })
+    })
+
+    describe('isCollectible', () => {
+        it('returns true when the resolved asset is a collectible', () => {
+            ;(useSendFunds as Mock).mockReturnValue({
+                ...mockSendFundsState,
+                selectedAssetId: mockSelectedAssetId,
+            })
+            ;(useAssetsQuery as Mock).mockReturnValue({
+                data: new Map([
+                    [
+                        '123',
+                        {
+                            ...mockAsset,
+                            peraMetadata: { type: 'collectible' },
+                        },
+                    ],
+                ]),
+            })
+
+            const { result } = renderHook(() =>
+                useTransactionConfirmationScreen(),
+            )
+
+            expect(result.current.isCollectible).toBe(true)
+        })
+
+        it('returns false for non-collectible assets', () => {
+            ;(useSendFunds as Mock).mockReturnValue({
+                ...mockSendFundsState,
+                selectedAssetId: mockSelectedAssetId,
+            })
+            ;(useAssetsQuery as Mock).mockReturnValue({
+                data: new Map([
+                    [
+                        '123',
+                        {
+                            ...mockAsset,
+                            peraMetadata: { type: 'standard_asset' },
+                        },
+                    ],
+                ]),
+            })
+
+            const { result } = renderHook(() =>
+                useTransactionConfirmationScreen(),
+            )
+
+            expect(result.current.isCollectible).toBe(false)
+        })
+
+        it('returns false when asset cannot be resolved', () => {
+            ;(useSendFunds as Mock).mockReturnValue({
+                ...mockSendFundsState,
+                selectedAssetId: undefined,
+            })
+
+            const { result } = renderHook(() =>
+                useTransactionConfirmationScreen(),
+            )
+
+            expect(result.current.isCollectible).toBe(false)
         })
     })
 

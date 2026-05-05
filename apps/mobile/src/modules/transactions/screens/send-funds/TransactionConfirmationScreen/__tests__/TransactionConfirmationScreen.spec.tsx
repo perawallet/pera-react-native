@@ -70,6 +70,13 @@ vi.mock('@components/CurrencyDisplay', () => ({
     ),
 }))
 
+vi.mock('@components/PreferredCurrencyDisplay', () => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    PreferredCurrencyDisplay: ({ sourceAssetId }: any) => (
+        <span data-testid={`preferred-currency-display-${sourceAssetId}`} />
+    ),
+}))
+
 vi.mock('@modules/accounts/components/AccountDisplay', () => ({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     AccountDisplay: ({ account }: any) => (
@@ -438,5 +445,35 @@ describe('TransactionConfirmationScreen', () => {
         const { queryByTestId } = render(<TransactionConfirmationScreen />)
 
         expect(queryByTestId('recipient-below-mbr-warning')).toBeNull()
+    })
+
+    it('renders fiat values for amount and current balance for non-collectibles', () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ;(useTransactionConfirmationScreen as any).mockReturnValue({
+            ...defaultHookReturn,
+            isCollectible: false,
+            selectedAssetId: '123',
+        })
+
+        const { queryAllByTestId } = render(<TransactionConfirmationScreen />)
+
+        expect(queryAllByTestId('preferred-currency-display-123').length).toBe(
+            2,
+        )
+    })
+
+    it('hides fiat values when sending a collectible', () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ;(useTransactionConfirmationScreen as any).mockReturnValue({
+            ...defaultHookReturn,
+            isCollectible: true,
+            selectedAssetId: '123',
+        })
+
+        const { queryAllByTestId } = render(<TransactionConfirmationScreen />)
+
+        expect(queryAllByTestId('preferred-currency-display-123').length).toBe(
+            0,
+        )
     })
 })
