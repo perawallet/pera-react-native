@@ -101,6 +101,20 @@ const isNonRetryableFailure = (
     return error.metadata.retryable !== true
 }
 
+/**
+ * Headless callers (e.g. internal send/swap flows) have no retry UI, so a
+ * `failed` state is terminal for them regardless of the error's retryable
+ * flag — otherwise the actor and request both leak, blocking every
+ * subsequent request because the single-flight queue guard sees a running
+ * actor.
+ */
+const isHeadlessFailure = (
+    snapshot: SnapshotFrom<typeof signingMachine>,
+): boolean => {
+    if (!snapshot.matches('failed')) return false
+    return snapshot.context.request.headless === true
+}
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -191,7 +205,10 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
     // Creates, subscribes to, and starts an actor for the given request.
     const createActorForRequest = useCallback(
         (request: SignRequest) => {
-            if (actorRefsMap.has(request.id)) return
+            if (actorRefsMap.has(request.id)) {
+                return
+            }
+            })
 
             const actor = createSigningMachine(
                 request,
@@ -202,7 +219,8 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
             actor.subscribe(snapshot => {
                 const isTerminal =
                     snapshot.status === 'done' ||
-                    isNonRetryableFailure(snapshot)
+                    isNonRetryableFailure(snapshot) ||
+                    isHeadlessFailure(snapshot)
 
                 if (!isTerminal) return
 
