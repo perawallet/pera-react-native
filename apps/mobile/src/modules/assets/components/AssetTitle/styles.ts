@@ -26,6 +26,10 @@ export const useStyles = makeStyles(theme => {
         paddingRight: theme.spacing.xs,
         flexShrink: 1,
     }
+    const deletedLabel = {
+        color: theme.colors.negative,
+        lineHeight: theme.spacing.lg,
+    }
     return {
         container: {
             flexDirection: 'row',
@@ -46,5 +50,6 @@ export const useStyles = makeStyles(theme => {
         id,
         name,
         suspiciousName,
+        deletedLabel,
     }
 })

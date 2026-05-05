@@ -59,7 +59,7 @@ describe('assets endpoints', () => {
         queryClientMock.mockReset()
     })
 
-    test('fetchAssets calls /v1/assets/ with comma-joined asset_ids', async () => {
+    test('fetchAssets calls /v1/assets/ with comma-joined asset_ids and include_deleted', async () => {
         queryClientMock.mockResolvedValue({ data: validAssetsResponse })
 
         await fetchAssets(['1', '2', '3'], 'mainnet')
@@ -67,7 +67,7 @@ describe('assets endpoints', () => {
         expect(queryClientMock).toHaveBeenCalledWith(
             expect.objectContaining({
                 url: '/v1/assets/',
-                params: { asset_ids: '1,2,3' },
+                params: { asset_ids: '1,2,3', include_deleted: true },
             }),
         )
     })

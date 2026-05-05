@@ -35,6 +35,9 @@ export const useStyles = makeStyles(theme => {
             color: theme.colors.error,
             flexShrink: 1,
         },
+        deletedLabel: {
+            color: theme.colors.negative,
+        },
         primaryUnit: {
             flexShrink: 1,
         },

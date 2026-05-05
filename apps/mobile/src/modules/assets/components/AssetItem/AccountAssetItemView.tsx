@@ -30,6 +30,7 @@ import {
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
 import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
+import { useLanguage } from '@hooks/useLanguage'
 import { getVerificationIcon } from '@modules/assets/utils/verification'
 import { useStyles } from './styles'
 import { useMemo } from 'react'
@@ -49,6 +50,7 @@ export const AccountAssetItemView = ({
     ...rest
 }: AccountAssetItemViewProps) => {
     const styles = useStyles()
+    const { t } = useLanguage()
 
     // Use pre-fetched asset data when available to avoid N+1 queries.
     // Falls back to individual fetch for callers that don't populate accountBalance.asset.
@@ -83,6 +85,7 @@ export const AccountAssetItemView = ({
     }, [asset, isAlgo])
 
     const isFavorited = asset?.peraMetadata?.isFavorited ?? false
+    const isDeleted = asset?.peraMetadata?.isDeleted === true
 
     const item = useMemo(() => {
         if (asset && isCollectible(asset)) {
@@ -169,14 +172,23 @@ export const AccountAssetItemView = ({
                             />
                         ) : null}
                     </PWView>
-                    <CopyableText copyValue={String(asset.assetId)}>
+                    {isDeleted ? (
                         <PWText
-                            style={styles.secondaryUnit}
+                            style={styles.deletedLabel}
                             numberOfLines={1}
                         >
-                            {secondaryText}
+                            {t('asset.deleted_label')}
                         </PWText>
-                    </CopyableText>
+                    ) : (
+                        <CopyableText copyValue={String(asset.assetId)}>
+                            <PWText
+                                style={styles.secondaryUnit}
+                                numberOfLines={1}
+                            >
+                                {secondaryText}
+                            </PWText>
+                        </CopyableText>
+                    )}
                 </PWView>
                 <PWView style={styles.amountContainer}>
                     <CurrencyDisplay

@@ -15,13 +15,26 @@ import { renderHook, act } from '@testing-library/react'
 import { useAccountOverview } from '../useAccountOverview'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 
-const { mockSetSelectedAccount, mockSetCanSelectAccount } = vi.hoisted(() => ({
+const {
+    mockSetSelectedAccount,
+    mockSetCanSelectAccount,
+    mockBalancesPending,
+    mockHistoryPending,
+} = vi.hoisted(() => ({
     mockSetSelectedAccount: vi.fn(),
     mockSetCanSelectAccount: vi.fn(),
+    mockBalancesPending: { value: false },
+    mockHistoryPending: { value: false },
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(() => ({ address: 'selected-address' })),
+    useAccountBalancesQuery: vi.fn(() => ({
+        isPending: mockBalancesPending.value,
+    })),
+    useAccountBalancesHistoryQuery: vi.fn(() => ({
+        isPending: mockHistoryPending.value,
+    })),
 }))
 
 vi.mock('@modules/transactions/hooks', () => ({
@@ -31,15 +44,24 @@ vi.mock('@modules/transactions/hooks', () => ({
     })),
 }))
 
-describe('useAccountOverview', () => {
-    const mockAccount = { address: 'test-address' } as WalletAccount
+const mockAccount = { address: 'test-address' } as WalletAccount
 
+const renderUseAccountOverview = (
+    onSwipeEnabledChange?: (enabled: boolean) => void,
+) =>
+    renderHook(() =>
+        useAccountOverview({ account: mockAccount, onSwipeEnabledChange }),
+    )
+
+describe('useAccountOverview', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockBalancesPending.value = false
+        mockHistoryPending.value = false
     })
 
     it('opens send funds modal when openSendFunds is called', () => {
-        const { result } = renderHook(() => useAccountOverview(mockAccount))
+        const { result } = renderUseAccountOverview()
 
         expect(result.current.isSendFundsVisible).toBe(false)
 
@@ -51,7 +73,7 @@ describe('useAccountOverview', () => {
     })
 
     it('closes send funds modal when handleCloseSendFunds is called', () => {
-        const { result } = renderHook(() => useAccountOverview(mockAccount))
+        const { result } = renderUseAccountOverview()
 
         act(() => {
             result.current.openSendFunds()
@@ -67,7 +89,7 @@ describe('useAccountOverview', () => {
     })
 
     it('opens receive funds modal and sets selected account when openReceiveFunds is called', () => {
-        const { result } = renderHook(() => useAccountOverview(mockAccount))
+        const { result } = renderUseAccountOverview()
 
         expect(result.current.isReceiveFundsVisible).toBe(false)
 
@@ -83,7 +105,7 @@ describe('useAccountOverview', () => {
     })
 
     it('closes receive funds modal when handleCloseReceiveFunds is called', () => {
-        const { result } = renderHook(() => useAccountOverview(mockAccount))
+        const { result } = renderUseAccountOverview()
 
         act(() => {
             result.current.openReceiveFunds()
@@ -99,7 +121,7 @@ describe('useAccountOverview', () => {
     })
 
     it('opens account options when openAccountOptions is called', () => {
-        const { result } = renderHook(() => useAccountOverview(mockAccount))
+        const { result } = renderUseAccountOverview()
 
         expect(result.current.isAccountOptionsVisible).toBe(false)
 
@@ -111,7 +133,7 @@ describe('useAccountOverview', () => {
     })
 
     it('closes account options when handleCloseAccountOptions is called', () => {
-        const { result } = renderHook(() => useAccountOverview(mockAccount))
+        const { result } = renderUseAccountOverview()
 
         act(() => {
             result.current.openAccountOptions()
@@ -127,13 +149,13 @@ describe('useAccountOverview', () => {
     })
 
     it('starts with scrolling enabled', () => {
-        const { result } = renderHook(() => useAccountOverview(mockAccount))
+        const { result } = renderUseAccountOverview()
 
         expect(result.current.scrollingEnabled).toBe(true)
     })
 
     it('updates scrolling state when onScrollEnabledChange is called', () => {
-        const { result } = renderHook(() => useAccountOverview(mockAccount))
+        const { result } = renderUseAccountOverview()
 
         act(() => {
             result.current.onScrollEnabledChange(false)
@@ -146,5 +168,57 @@ describe('useAccountOverview', () => {
         })
 
         expect(result.current.scrollingEnabled).toBe(true)
+    })
+
+    it('forwards scrollingEnabled changes to onSwipeEnabledChange', () => {
+        const onSwipeEnabledChange = vi.fn()
+        const { result } = renderUseAccountOverview(onSwipeEnabledChange)
+
+        expect(onSwipeEnabledChange).toHaveBeenLastCalledWith(true)
+
+        act(() => {
+            result.current.onScrollEnabledChange(false)
+        })
+
+        expect(onSwipeEnabledChange).toHaveBeenLastCalledWith(false)
+    })
+
+    it('isLoading is true while balances or history are pending and stays false once both have completed', () => {
+        mockBalancesPending.value = true
+        mockHistoryPending.value = true
+        const { result, rerender } = renderUseAccountOverview()
+
+        expect(result.current.isLoading).toBe(true)
+
+        mockBalancesPending.value = false
+        rerender()
+        expect(result.current.isLoading).toBe(true)
+
+        mockHistoryPending.value = false
+        rerender()
+        expect(result.current.isLoading).toBe(false)
+
+        // Sticky: once cleared, isLoading does not flip back to true.
+        mockBalancesPending.value = true
+        rerender()
+        expect(result.current.isLoading).toBe(false)
+    })
+
+    it('exposes a contextValue containing the account and modal openers', () => {
+        const { result } = renderUseAccountOverview()
+
+        expect(result.current.contextValue.account).toBe(mockAccount)
+        expect(typeof result.current.contextValue.openSendFunds).toBe(
+            'function',
+        )
+        expect(typeof result.current.contextValue.openReceiveFunds).toBe(
+            'function',
+        )
+        expect(typeof result.current.contextValue.openAccountOptions).toBe(
+            'function',
+        )
+        expect(typeof result.current.contextValue.onScrollEnabledChange).toBe(
+            'function',
+        )
     })
 })

@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { useEffect, useMemo } from 'react'
 import { AccountOverviewHeader } from './AccountOverviewHeader'
 import { SendFundsBottomSheet } from '@modules/transactions/components/send-funds/SendFundsBottomSheet/SendFundsBottomSheet'
 import { ReceiveFundsBottomSheet } from '@modules/transactions/components/receive-funds/ReceiveFundsBottomSheet'
@@ -20,10 +19,7 @@ import { useAccountOverview } from './useAccountOverview'
 import { PWView } from '@components/core'
 import { AccountAssetList } from '../AccountAssetList'
 import { AccountOptionsBottomSheet } from '../AccountOptionsBottomSheet'
-import {
-    AccountOverviewModalContext,
-    UseAccountOverviewModalResult,
-} from './AccountOverviewModalContext'
+import { AccountOverviewModalContext } from './AccountOverviewModalContext'
 
 export type AccountOverviewProps = {
     account: WalletAccount
@@ -39,38 +35,16 @@ export const AccountOverview = ({
     const styles = useStyles()
     const {
         isSendFundsVisible,
-        openSendFunds,
         handleCloseSendFunds,
         isReceiveFundsVisible,
         openReceiveFunds,
         handleCloseReceiveFunds,
         isAccountOptionsVisible,
-        openAccountOptions,
         handleCloseAccountOptions,
         scrollingEnabled,
-        onScrollEnabledChange,
-    } = useAccountOverview(account)
-
-    useEffect(() => {
-        onSwipeEnabledChange?.(scrollingEnabled)
-    }, [scrollingEnabled, onSwipeEnabledChange])
-
-    const contextValue = useMemo<UseAccountOverviewModalResult>(
-        () => ({
-            account,
-            openSendFunds,
-            openReceiveFunds,
-            openAccountOptions,
-            onScrollEnabledChange,
-        }),
-        [
-            account,
-            openSendFunds,
-            openReceiveFunds,
-            openAccountOptions,
-            onScrollEnabledChange,
-        ],
-    )
+        isLoading,
+        contextValue,
+    } = useAccountOverview({ account, onSwipeEnabledChange })
 
     return (
         <AccountOverviewModalContext.Provider value={contextValue}>
@@ -78,10 +52,12 @@ export const AccountOverview = ({
                 <AccountAssetList
                     account={account}
                     scrollEnabled={scrollingEnabled}
+                    isLoading={isLoading}
                     header={
                         <AccountOverviewHeader
                             account={account}
                             chartVisible={chartVisible}
+                            isLoading={isLoading}
                         />
                     }
                 />

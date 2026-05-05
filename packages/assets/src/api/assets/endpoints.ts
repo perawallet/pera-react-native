@@ -30,6 +30,7 @@ export const fetchAssets = async (assetIDs: string[], network: Network) => {
         url: `/v1/assets/`,
         params: {
             asset_ids: assetIDs.join(','),
+            include_deleted: true,
         },
     })
 

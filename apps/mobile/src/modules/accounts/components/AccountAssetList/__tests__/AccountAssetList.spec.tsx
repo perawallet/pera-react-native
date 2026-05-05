@@ -11,7 +11,9 @@
  */
 
 import { render, screen } from '@test-utils/render'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { act } from 'react'
+import { BACKUP_REMINDER_BANNER_REVEAL_DELAY } from '@constants/ui'
 import { AccountAssetList } from '../AccountAssetList'
 import {
     WalletAccount,
@@ -253,7 +255,18 @@ describe('AccountAssetList', () => {
     describe('backup banner integration', () => {
         beforeEach(() => {
             mockBackupReminderBannerHook.mockReset()
+            vi.useFakeTimers()
         })
+
+        afterEach(() => {
+            vi.useRealTimers()
+        })
+
+        const advancePastRevealDelay = () => {
+            act(() => {
+                vi.advanceTimersByTime(BACKUP_REMINDER_BANNER_REVEAL_DELAY)
+            })
+        }
 
         it('renders backup reminder banner when hook reports visible', () => {
             mockBackupReminderBannerHook.mockReturnValue({
@@ -262,6 +275,7 @@ describe('AccountAssetList', () => {
             })
 
             render(<AccountAssetList account={mockAccount} />)
+            advancePastRevealDelay()
 
             expect(screen.getByTestId('backup_reminder_banner')).toBeTruthy()
         })
@@ -275,6 +289,7 @@ describe('AccountAssetList', () => {
             const { queryByTestId } = render(
                 <AccountAssetList account={mockAccount} />,
             )
+            advancePastRevealDelay()
 
             expect(queryByTestId('backup_reminder_banner')).toBeNull()
         })

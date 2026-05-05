@@ -32,6 +32,7 @@ import {
     CHART_FOCUS_DEBOUNCE_TIME,
     CHART_HEIGHT,
 } from '@constants/ui'
+import { getChartYAxisRange } from '@utils/chart'
 
 type DataPoint = {
     timestamp: Date
@@ -72,16 +73,10 @@ export const AssetWealthChart = ({
         }) ?? []) as DataPoint[]
     }, [data])
 
-    const yAxisOffsets = useMemo(() => {
-        if (dataPoints.length === 0) return [-1, 1]
-        const minValue = Math.min(...dataPoints.map(p => p.value))
-        const maxValue = Math.max(...dataPoints.map(p => p.value))
-        if (minValue === 0 && maxValue === 0) {
-            return [-1, 1]
-        } else {
-            return [minValue - minValue / 10, maxValue + maxValue / 10]
-        }
-    }, [dataPoints])
+    const yAxisRange = useMemo(
+        () => getChartYAxisRange(dataPoints),
+        [dataPoints],
+    )
 
     const onFocus = useCallback(
         ({
@@ -114,18 +109,14 @@ export const AssetWealthChart = ({
         ],
     )
 
-    if (isPending) {
-        return (
-            <LoadingView
-                variant='circle'
-                size='lg'
-            />
-        )
-    }
-
     return (
         <PWView style={themeStyle.container}>
-            {!dataPoints?.length ? (
+            {isPending ? (
+                <LoadingView
+                    variant='circle'
+                    size='lg'
+                />
+            ) : !dataPoints?.length ? (
                 <EmptyView
                     title=''
                     body={t('common.wealth_chart.asset_empty_body')}
@@ -143,8 +134,8 @@ export const AssetWealthChart = ({
                     areaChart
                     yAxisLabelWidth={1}
                     hideYAxisText
-                    yAxisOffset={yAxisOffsets[0]}
-                    maxValue={yAxisOffsets[1]}
+                    yAxisOffset={yAxisRange.yAxisOffset}
+                    maxValue={yAxisRange.maxValue}
                     initialSpacing={0}
                     endSpacing={0}
                     showStripOnFocus

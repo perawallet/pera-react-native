@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWButton, PWText, PWView } from '@components/core'
+import { PWButton, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import type { PWFlatListRef } from '@components/core'
 import React, { useCallback, useEffect, useRef } from 'react'
 import { useStyles } from './styles'
@@ -40,12 +40,14 @@ export type AccountAssetListProps = {
     account: WalletAccount
     scrollEnabled?: boolean
     header?: React.ReactNode
+    isLoading?: boolean
 }
 
 export const AccountAssetList = ({
     account,
     scrollEnabled,
     header,
+    isLoading = false,
 }: AccountAssetListProps) => {
     const listRef = useRef<PWFlatListRef>(null)
     const styles = useStyles()
@@ -62,6 +64,7 @@ export const AccountAssetList = ({
         optOutConfirmationState,
         assetForOptOut,
         isOptingOut,
+        headerState,
         setSearchFilter,
         handleConfirmOptOut,
         handleCloseOptOut,
@@ -108,33 +111,42 @@ export const AccountAssetList = ({
 
     const listHeader = (
         <PWView style={styles.headerContainer}>
-            <BackupReminderBanner account={account} />
-            {header}
-            <PWView style={styles.titleBar}>
-                <PWText
-                    style={styles.title}
-                    variant='h4'
-                >
-                    {t('account_details.assets.title')}
-                </PWText>
-                {!isWatch && (
-                    <PWView style={styles.titleBarButtonContainer}>
-                        <PWButton
-                            icon='sliders'
-                            variant='helper'
-                            paddingStyle='dense'
-                            onPress={manageSheetState.open}
-                        />
-                        <PWButton
-                            icon='plus'
-                            title={t('account_details.assets.add_asset')}
-                            variant='helper'
-                            paddingStyle='dense'
-                            onPress={addAssetSheetState.open}
-                        />
+            <BackupReminderBanner
+                account={account}
+                isLoading={isLoading}
+            />
+            {headerState.isOpen && (
+                <>
+                    {header}
+                    <PWView style={styles.titleBar}>
+                        <PWText
+                            style={styles.title}
+                            variant='h4'
+                        >
+                            {t('account_details.assets.title')}
+                        </PWText>
+                        {!isWatch && (
+                            <PWView style={styles.titleBarButtonContainer}>
+                                <PWButton
+                                    icon='sliders'
+                                    variant='helper'
+                                    paddingStyle='dense'
+                                    onPress={manageSheetState.open}
+                                />
+                                <PWButton
+                                    icon='plus'
+                                    title={t(
+                                        'account_details.assets.add_asset',
+                                    )}
+                                    variant='helper'
+                                    paddingStyle='dense'
+                                    onPress={addAssetSheetState.open}
+                                />
+                            </PWView>
+                        )}
                     </PWView>
-                )}
-            </PWView>
+                </>
+            )}
         </PWView>
     )
 
@@ -145,38 +157,43 @@ export const AccountAssetList = ({
             behavior='padding'
             style={styles.keyboardAvoidingViewContainer}
         >
-            <SearchableList
-                ref={listRef}
-                data={balances}
-                renderItem={renderItem}
-                scrollEnabled={scrollEnabled}
-                keyExtractor={item => item.assetId}
-                estimatedItemSize={72}
-                recycleItems
-                automaticallyAdjustKeyboardInsets
-                keyboardDismissMode='interactive'
-                contentContainerStyle={styles.rootContainer}
-                ListHeaderComponent={listHeader}
-                searchPlaceholder={t(
-                    'account_details.assets.search_placeholder',
-                )}
-                onSearchChange={setSearchFilter}
-                ListEmptyComponent={
-                    isPending ? (
-                        <LoadingView
-                            variant='skeleton'
-                            size='sm'
-                            count={8}
-                            style={styles.loading}
-                        />
-                    ) : (
-                        <EmptyView
-                            title={getEmptyTitle()}
-                            body={getEmptyBody()}
-                        />
-                    )
-                }
-            />
+            <PWTouchableOpacity
+                style={styles.keyboardAvoidingViewContainer}
+                onPress={headerState.open}
+            >
+                <SearchableList
+                    ref={listRef}
+                    data={balances}
+                    renderItem={renderItem}
+                    scrollEnabled={scrollEnabled}
+                    keyExtractor={item => item.assetId}
+                    estimatedItemSize={72}
+                    recycleItems
+                    automaticallyAdjustKeyboardInsets
+                    keyboardDismissMode='interactive'
+                    contentContainerStyle={styles.rootContainer}
+                    ListHeaderComponent={listHeader}
+                    searchPlaceholder={t(
+                        'account_details.assets.search_placeholder',
+                    )}
+                    onSearchChange={setSearchFilter}
+                    ListEmptyComponent={
+                        isPending ? (
+                            <LoadingView
+                                variant='skeleton'
+                                size='sm'
+                                count={8}
+                                style={styles.loading}
+                            />
+                        ) : (
+                            <EmptyView
+                                title={getEmptyTitle()}
+                                body={getEmptyBody()}
+                            />
+                        )
+                    }
+                />
+            </PWTouchableOpacity>
 
             <ManageAssetsBottomSheet
                 isVisible={manageSheetState.isOpen}

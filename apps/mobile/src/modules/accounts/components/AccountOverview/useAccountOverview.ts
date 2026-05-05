@@ -10,13 +10,26 @@
  limitations under the License
  */
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
+    useAccountBalancesHistoryQuery,
+    useAccountBalancesQuery,
     useSelectedAccount,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { HistoryPeriod } from '@perawallet/wallet-core-shared'
 import { useModalState } from '@hooks/useModalState'
 import { useReceiveFunds } from '@modules/transactions/hooks'
+import { UseAccountOverviewModalResult } from './AccountOverviewModalContext'
+
+// Matches the default in useChartInteraction so balances + history queries
+// share keys with the header's chart and we don't double-fetch.
+const INITIAL_HISTORY_PERIOD: HistoryPeriod = 'one-week'
+
+export type UseAccountOverviewParams = {
+    account: WalletAccount
+    onSwipeEnabledChange?: (enabled: boolean) => void
+}
 
 export type UseAccountOverviewResult = {
     isSendFundsVisible: boolean
@@ -30,11 +43,14 @@ export type UseAccountOverviewResult = {
     handleCloseAccountOptions: () => void
     scrollingEnabled: boolean
     onScrollEnabledChange: (enabled: boolean) => void
+    isLoading: boolean
+    contextValue: UseAccountOverviewModalResult
 }
 
-export const useAccountOverview = (
-    _account: WalletAccount,
-): UseAccountOverviewResult => {
+export const useAccountOverview = ({
+    account,
+    onSwipeEnabledChange,
+}: UseAccountOverviewParams): UseAccountOverviewResult => {
     const selectedAccount = useSelectedAccount()
     const { setSelectedAccount, setCanSelectAccount } = useReceiveFunds()
 
@@ -71,6 +87,44 @@ export const useAccountOverview = (
 
     const [scrollingEnabled, setScrollingEnabled] = useState<boolean>(true)
 
+    useEffect(() => {
+        onSwipeEnabledChange?.(scrollingEnabled)
+    }, [scrollingEnabled, onSwipeEnabledChange])
+
+    // Combine balance + history pending into one sticky `isLoading` flag so the
+    // skeleton header reveals as a single beat and doesn't reappear when the
+    // user later changes period.
+    const { isPending: isBalancesPending } = useAccountBalancesQuery(
+        account ? [account] : [],
+    )
+    const { isPending: isHistoryPending } = useAccountBalancesHistoryQuery(
+        account ? [account.address] : [],
+        INITIAL_HISTORY_PERIOD,
+    )
+    const [hasCompletedInitialLoad, setHasCompletedInitialLoad] =
+        useState(false)
+    useEffect(() => {
+        if (
+            !hasCompletedInitialLoad &&
+            !isBalancesPending &&
+            !isHistoryPending
+        ) {
+            setHasCompletedInitialLoad(true)
+        }
+    }, [hasCompletedInitialLoad, isBalancesPending, isHistoryPending])
+    const isLoading = !hasCompletedInitialLoad
+
+    const contextValue = useMemo<UseAccountOverviewModalResult>(
+        () => ({
+            account,
+            openSendFunds,
+            openReceiveFunds,
+            openAccountOptions,
+            onScrollEnabledChange: setScrollingEnabled,
+        }),
+        [account, openSendFunds, openReceiveFunds, openAccountOptions],
+    )
+
     return {
         isSendFundsVisible,
         openSendFunds,
@@ -83,5 +137,7 @@ export const useAccountOverview = (
         handleCloseAccountOptions,
         scrollingEnabled,
         onScrollEnabledChange: setScrollingEnabled,
+        isLoading,
+        contextValue,
     }
 }
