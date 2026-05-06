@@ -21,6 +21,7 @@ import {
 } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useDeepLink } from '../useDeepLink'
+import { useMnemonicHandoffStore } from '@modules/onboarding/hooks/useMnemonicHandoffStore'
 import { useDeeplinkListener } from '../useDeeplinkListener'
 import { StackActions } from '@react-navigation/native'
 import { parseDeeplink } from '../deeplink/parser'
@@ -122,6 +123,7 @@ vi.mock('react-native', () => ({
 describe('useDeepLink', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        useMnemonicHandoffStore.getState().resetState()
     })
 
     it('should validate deeplink', () => {
@@ -687,13 +689,25 @@ describe('useDeepLink', () => {
             )
         })
 
-        expect(mockNavigate).toHaveBeenCalledWith('AddAccount', {
-            screen: 'ImportAccount',
-            params: {
-                accountType: 'hdWallet',
-                mnemonic:
-                    'word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12 word13 word14 word15 word16 word17 word18 word19 word20 word21 word22 word23 word24',
-            },
+        expect(mockNavigate).toHaveBeenCalledWith(
+            'AddAccount',
+            expect.objectContaining({
+                screen: 'ImportAccount',
+                params: expect.objectContaining({
+                    accountType: 'hdWallet',
+                    handoffId: expect.any(String),
+                }),
+            }),
+        )
+        const navParams = mockNavigate.mock.calls.at(-1)?.[1] as {
+            params: { handoffId: string }
+        }
+        expect(
+            useMnemonicHandoffStore.getState().consume(navParams.params.handoffId),
+        ).toEqual({
+            accountType: 'hdWallet',
+            mnemonic:
+                'word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12 word13 word14 word15 word16 word17 word18 word19 word20 word21 word22 word23 word24',
         })
     })
 
@@ -713,13 +727,25 @@ describe('useDeepLink', () => {
             )
         })
 
-        expect(mockNavigate).toHaveBeenCalledWith('AddAccount', {
-            screen: 'ImportAccount',
-            params: {
-                accountType: 'algo25',
-                mnemonic:
-                    'word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12 word13 word14 word15 word16 word17 word18 word19 word20 word21 word22 word23 word24 word25',
-            },
+        expect(mockNavigate).toHaveBeenCalledWith(
+            'AddAccount',
+            expect.objectContaining({
+                screen: 'ImportAccount',
+                params: expect.objectContaining({
+                    accountType: 'algo25',
+                    handoffId: expect.any(String),
+                }),
+            }),
+        )
+        const navParams = mockNavigate.mock.calls.at(-1)?.[1] as {
+            params: { handoffId: string }
+        }
+        expect(
+            useMnemonicHandoffStore.getState().consume(navParams.params.handoffId),
+        ).toEqual({
+            accountType: 'algo25',
+            mnemonic:
+                'word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12 word13 word14 word15 word16 word17 word18 word19 word20 word21 word22 word23 word24 word25',
         })
     })
 

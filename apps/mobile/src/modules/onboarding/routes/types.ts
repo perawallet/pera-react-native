@@ -64,7 +64,7 @@ export type ImportFlowParamList = {
     }
     ImportAccount: {
         accountType: ImportAccountType
-        mnemonic?: string
+        handoffId?: string
     }
     SearchAccounts: SearchAccountsParams
     LedgerInstructions: { transportType?: LedgerTransportType } | undefined

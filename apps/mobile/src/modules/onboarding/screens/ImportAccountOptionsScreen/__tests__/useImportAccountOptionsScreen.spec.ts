@@ -13,6 +13,9 @@
 import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { Platform } from 'react-native'
+import { resolveImportAccountType } from '@perawallet/wallet-core-accounts'
+import { DeeplinkType } from '@hooks/deeplink/types'
+import { useMnemonicHandoffStore } from '@modules/onboarding/hooks/useMnemonicHandoffStore'
 import { useImportAccountOptionsScreen } from '../useImportAccountOptionsScreen'
 
 const mockPush = vi.fn()
@@ -321,5 +324,37 @@ describe('useImportAccountOptionsScreen', () => {
         })
 
         expect(result.current.isQRScannerVisible).toBe(false)
+    })
+
+    it('handleQRScannerSuccess stashes mnemonic and pushes ImportAccount with handoffId', () => {
+        const mnemonic = new Array(24).fill('word').join(' ')
+        mockParseDeeplink.mockReturnValue({
+            type: DeeplinkType.RECOVER_ADDRESS,
+            mnemonic,
+        })
+        vi.mocked(resolveImportAccountType).mockReturnValue({
+            success: true,
+            accountType: 'hdWallet',
+        })
+        useMnemonicHandoffStore.getState().resetState()
+
+        const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+        act(() => {
+            result.current.handleQRScannerSuccess('perawallet://recover/...')
+        })
+
+        expect(mockPush).toHaveBeenCalledWith(
+            'ImportAccount',
+            expect.objectContaining({
+                accountType: 'hdWallet',
+                handoffId: expect.any(String),
+            }),
+        )
+        const handoffId = mockPush.mock.calls.at(-1)?.[1]?.handoffId as string
+        expect(useMnemonicHandoffStore.getState().consume(handoffId)).toEqual({
+            accountType: 'hdWallet',
+            mnemonic,
+        })
     })
 })

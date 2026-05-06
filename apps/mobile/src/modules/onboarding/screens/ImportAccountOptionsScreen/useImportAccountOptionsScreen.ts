@@ -21,6 +21,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useDeepLink } from '@hooks/useDeepLink'
 import { DeeplinkType } from '@hooks/deeplink/types'
 import { type AccountOption } from '@modules/onboarding/types'
+import { useMnemonicHandoffStore } from '@modules/onboarding/hooks/useMnemonicHandoffStore'
 
 export type UseImportAccountOptionsScreenResult = {
     options: AccountOption[]
@@ -99,9 +100,15 @@ export const useImportAccountOptionsScreen =
                         return
                     }
 
+                    const handoffId = useMnemonicHandoffStore
+                        .getState()
+                        .stash({
+                            accountType: result.accountType,
+                            mnemonic: parsedDeeplink.mnemonic,
+                        })
                     navigation.push('ImportAccount', {
                         accountType: result.accountType,
-                        mnemonic: parsedDeeplink.mnemonic,
+                        handoffId,
                     })
                     return
                 }

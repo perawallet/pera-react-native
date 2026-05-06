@@ -12,9 +12,11 @@
 
 import { renderHook, act } from '@testing-library/react'
 import * as Clipboard from 'expo-clipboard'
+import { useRoute } from '@react-navigation/native'
 import { useImportAccount } from '@perawallet/wallet-core-accounts'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 import { useImportAccountScreen } from '../useImportAccountScreen'
+import { useMnemonicHandoffStore } from '@modules/onboarding/hooks/useMnemonicHandoffStore'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 
 const mockShowToast = vi.fn()
@@ -112,12 +114,38 @@ describe('useImportAccountScreen', () => {
         vi.mocked(useMarkMnemonicBackupComplete).mockReturnValue(
             mockMarkBackupComplete,
         )
+        useMnemonicHandoffStore.getState().resetState()
+        vi.mocked(useRoute).mockReturnValue({
+            params: { accountType: 'hdWallet' },
+            key: 'ImportAccount-test',
+            name: 'ImportAccount',
+        } as unknown as ReturnType<typeof useRoute>)
     })
 
     it('initializes with empty words', () => {
         const { result } = renderHook(() => useImportAccountScreen())
         expect(result.current.words).toHaveLength(24)
         expect(result.current.words.every(w => w === '')).toBe(true)
+    })
+
+    it('prefills the words from useMnemonicHandoffStore when params.handoffId is set', () => {
+        const mnemonic = new Array(24).fill('word').join(' ')
+        const handoffId = useMnemonicHandoffStore.getState().stash({
+            accountType: 'hdWallet',
+            mnemonic,
+        })
+        vi.mocked(useRoute).mockReturnValue({
+            params: { accountType: 'hdWallet', handoffId },
+            key: 'ImportAccount-test',
+            name: 'ImportAccount',
+        } as unknown as ReturnType<typeof useRoute>)
+
+        const { result } = renderHook(() => useImportAccountScreen())
+
+        expect(result.current.words.every(w => w === 'word')).toBe(true)
+        expect(
+            useMnemonicHandoffStore.getState().consume(handoffId),
+        ).toBeNull()
     })
 
     it('updates a single word at a specific index', () => {

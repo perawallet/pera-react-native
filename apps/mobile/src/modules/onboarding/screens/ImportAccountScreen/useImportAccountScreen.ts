@@ -30,6 +30,7 @@ import type { UseImportAccountScreenResult } from './types'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useMnemonicHandoffStore } from '@modules/onboarding/hooks/useMnemonicHandoffStore'
 import {
     deferToNextCycle,
     logger,
@@ -44,7 +45,7 @@ const MAX_SUGGESTIONS = 4
 
 export function useImportAccountScreen(): UseImportAccountScreenResult {
     const {
-        params: { accountType, mnemonic: initialMnemonic },
+        params: { accountType, handoffId },
     } = useRoute<RouteProp<OnboardingStackParamList, 'ImportAccount'>>()
     const navigation = useAppNavigation()
     const importAccount = useImportAccount()
@@ -95,8 +96,10 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     }, [])
 
     useEffect(() => {
-        if (initialMnemonic) {
-            updateWord(initialMnemonic, 0)
+        if (!handoffId) return
+        const entry = useMnemonicHandoffStore.getState().consume(handoffId)
+        if (entry) {
+            updateWord(entry.mnemonic, 0)
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])

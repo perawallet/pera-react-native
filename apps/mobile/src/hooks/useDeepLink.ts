@@ -23,6 +23,7 @@ import {
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useWebView } from '@modules/webview/hooks/useWebViewStore'
+import { useMnemonicHandoffStore } from '@modules/onboarding/hooks/useMnemonicHandoffStore'
 import {
     isSafeBrowserUrl,
     isSafeRelativePath,
@@ -172,11 +173,17 @@ export const useDeepLink = () => {
                     const result = resolveImportAccountType(parsedData.mnemonic)
                     if (!result.success) break
 
+                    const handoffId = useMnemonicHandoffStore
+                        .getState()
+                        .stash({
+                            accountType: result.accountType,
+                            mnemonic: parsedData.mnemonic,
+                        })
                     navigateToScreen(replaceCurrentScreen, 'AddAccount', {
                         screen: 'ImportAccount',
                         params: {
                             accountType: result.accountType,
-                            mnemonic: parsedData.mnemonic,
+                            handoffId,
                         },
                     })
                     break
