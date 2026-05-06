@@ -12,6 +12,7 @@
 
 import { useCallback, useMemo } from 'react'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import { fetchRekeyedAddresses } from '../account-discovery'
 import { AccountTypes, type WatchAccount } from '../models'
 import { useAccountsStore } from '../store'
@@ -70,8 +71,15 @@ export const useRescanRekeyedAccounts = (): UseRescanRekeyedAccountsResult => {
             if (addresses.length === 0) return
 
             const watchAccounts: WatchAccount[] = addresses
-                // Defensive: never re-add an address that already exists.
-                .filter(addr => !localAddresses.has(addr))
+                // Defensive: never re-add an address that already exists,
+                // and reject anything that doesn't validate as an Algorand
+                // address — the indexer is a remote dependency and a typo
+                // / compromise should never persist garbage to the store.
+                .filter(
+                    addr =>
+                        isValidAlgorandAddress(addr) &&
+                        !localAddresses.has(addr),
+                )
                 .map(address => ({
                     id: generateOrderedUniqueId(),
                     address,
@@ -81,8 +89,12 @@ export const useRescanRekeyedAccounts = (): UseRescanRekeyedAccountsResult => {
 
             if (watchAccounts.length === 0) return
 
-            // Snapshot current array — `accounts` from the closure may be
-            // stale; read the freshest from the store before merging.
+            // Read the freshest state from the store (the closure-captured
+            // `accounts` may be stale by the time we get here) and append
+            // immediately. `getState()` and `setAccounts()` are both
+            // synchronous, and React Native's JS runtime is single-threaded —
+            // nothing else can interleave between these two lines, so this
+            // is atomic by construction. No CAS / versioning needed.
             const current = useAccountsStore.getState().accounts
             setAccounts([...current, ...watchAccounts])
         },

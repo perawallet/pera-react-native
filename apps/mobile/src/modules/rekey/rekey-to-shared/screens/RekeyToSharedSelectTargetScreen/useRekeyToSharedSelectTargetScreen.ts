@@ -44,7 +44,11 @@ export const useRekeyToSharedSelectTargetScreen =
         const targets = useMemo(
             () =>
                 accounts.filter(account =>
-                    isEligibleSharedRekeyTarget(account, sourceAddress),
+                    isEligibleSharedRekeyTarget(
+                        account,
+                        sourceAddress,
+                        accounts,
+                    ),
                 ),
             [accounts, sourceAddress],
         )

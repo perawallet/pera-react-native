@@ -141,14 +141,27 @@ export const isEligibleLedgerRekeyTarget = (
  * Android's joint-rekey rule: shared accounts can only be rekeyed to
  * another shared account. The target must be a multisig account in the
  * wallet, not the source itself, and not already rekeyed away.
+ *
+ * Additionally rejects multisigs whose threshold can't be met by the
+ * participants this wallet holds — rekeying to such a multisig would
+ * permanently lock the source account because no one here can produce
+ * the required number of signatures for subsequent transactions.
  */
 export const isEligibleSharedRekeyTarget = (
     target: WalletAccount,
     sourceAddress: string,
+    allAccounts: WalletAccount[],
 ): boolean => {
     if (target.address === sourceAddress) return false
     if (target.type !== AccountTypes.multisig) return false
     if (target.rekeyAddress) return false
+
+    const heldAddresses = new Set(allAccounts.map(a => a.address))
+    const heldParticipants = target.multisigDetails.addresses.filter(addr =>
+        heldAddresses.has(addr),
+    ).length
+    if (heldParticipants < target.multisigDetails.threshold) return false
+
     return true
 }
 
@@ -163,27 +176,42 @@ export const isSigningAccount = (
 ): boolean => isSigningLogicalType(deriveAccountLogicalType(account, accounts))
 
 /**
- * Resolve the auth account for a given account.
- * If the account is rekeyed, returns the rekey target.
- * Only follows one level to prevent circular references.
+ * Walks the rekey chain to its end and returns the terminal auth account —
+ * the one that actually holds the signing keys. Mirrors `canSignAccount`'s
+ * recursive walk in logical-type.ts so eligibility and signer-routing agree.
+ *
+ * Terminates on:
+ * - account with no `rekeyAddress` (final auth)
+ * - cycle detected via `visited` set
+ *
+ * Throws `RekeyTargetNotFoundError` if any link in the chain references an
+ * address we don't hold (auth chain is broken in our local view).
  */
 export const resolveAuthAccount = (
     account: WalletAccount,
     allAccounts: WalletAccount[],
 ): WalletAccount => {
-    if (!account.rekeyAddress) {
-        return account
+    const visited = new Set<string>()
+    let current = account
+
+    while (current.rekeyAddress) {
+        if (visited.has(current.address)) {
+            // Circular rekey chain — return whatever we landed on rather than
+            // looping forever. Realistically unreachable on-chain (Algorand
+            // doesn't permit cycles via simple rekey), but defensive against
+            // a malformed local store.
+            return current
+        }
+        visited.add(current.address)
+
+        const next = allAccounts.find(a => a.address === current.rekeyAddress)
+        if (!next) {
+            throw new RekeyTargetNotFoundError(current.rekeyAddress)
+        }
+        current = next
     }
 
-    const rekeyTarget = allAccounts.find(
-        a => a.address === account.rekeyAddress,
-    )
-
-    if (!rekeyTarget) {
-        throw new RekeyTargetNotFoundError(account.rekeyAddress)
-    }
-
-    return rekeyTarget
+    return current
 }
 
 export type MnemonicAccountTypeResult =

@@ -16,14 +16,20 @@ import {
     getAccountDisplayName,
     hasSigningKeys,
     isAlgo25Account,
+    isEligibleLedgerRekeyTarget,
+    isEligibleRekeyTarget,
+    isEligibleSharedRekeyTarget,
     isHDWalletAccount,
     isLedgerAccount,
     isMultisigAccount,
     isSigningAccount,
     isRekeyedAccount,
     isWatchAccount,
+    resolveAuthAccount,
     resolveImportAccountType,
 } from '../utils'
+import { AccountTypes, type WalletAccount } from '../models'
+import { RekeyTargetNotFoundError } from '../errors'
 
 vi.mock('bip39', () => ({
     mnemonicToSeed: vi.fn(async () => Buffer.from(new Uint8Array(64).fill(2))),
@@ -398,5 +404,223 @@ describe('services/accounts/utils - resolveImportAccountType', () => {
         )
         const result = resolveImportAccountType(mnemonic)
         expect(result).toEqual({ success: true, accountType: 'hdWallet' })
+    })
+})
+
+// Helpers for the rekey-flow predicates and the chain-walk resolver.
+const algo25 = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
+    ({
+        id: overrides.id ?? 'a',
+        address: overrides.address ?? 'A',
+        type: AccountTypes.algo25,
+        keyPairId: 'kp',
+        ...overrides,
+    }) as WalletAccount
+
+const hd = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
+    ({
+        id: overrides.id ?? 'h',
+        address: overrides.address ?? 'H',
+        type: AccountTypes.hdWallet,
+        keyPairId: 'kp-hd',
+        hdWalletDetails: {
+            account: 0,
+            change: 0,
+            keyIndex: 0,
+            derivationType: 9,
+        },
+        ...overrides,
+    }) as WalletAccount
+
+const ledger = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
+    ({
+        id: overrides.id ?? 'l',
+        address: overrides.address ?? 'L',
+        type: AccountTypes.hardware,
+        hardwareDetails: { deviceId: 'dev', addressIndex: 0 },
+        ...overrides,
+    }) as WalletAccount
+
+const watch = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
+    ({
+        id: overrides.id ?? 'w',
+        address: overrides.address ?? 'W',
+        type: AccountTypes.watch,
+        ...overrides,
+    }) as WalletAccount
+
+const multisig = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
+    ({
+        id: overrides.id ?? 'm',
+        address: overrides.address ?? 'M',
+        type: AccountTypes.multisig,
+        multisigDetails: {
+            threshold: 2,
+            addresses: ['P1', 'P2', 'P3'],
+            version: 1,
+        },
+        ...overrides,
+    }) as WalletAccount
+
+describe('services/accounts/utils - isEligibleRekeyTarget', () => {
+    test('rejects target equal to source', () => {
+        expect(isEligibleRekeyTarget(algo25({ address: 'A' }), 'A')).toBe(false)
+    })
+
+    test('rejects multisig / hardware / watch targets', () => {
+        expect(isEligibleRekeyTarget(multisig({ address: 'M' }), 'SRC')).toBe(
+            false,
+        )
+        expect(isEligibleRekeyTarget(ledger({ address: 'L' }), 'SRC')).toBe(
+            false,
+        )
+        expect(isEligibleRekeyTarget(watch({ address: 'W' }), 'SRC')).toBe(
+            false,
+        )
+    })
+
+    test('rejects target without signing keys', () => {
+        const noKey = algo25({ address: 'A' })
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ;(noKey as any).keyPairId = undefined
+        expect(isEligibleRekeyTarget(noKey, 'SRC')).toBe(false)
+    })
+
+    test('rejects target already rekeyed away', () => {
+        expect(
+            isEligibleRekeyTarget(
+                algo25({ address: 'A', rekeyAddress: 'B' }),
+                'SRC',
+            ),
+        ).toBe(false)
+    })
+
+    test('accepts valid algo25 / hdWallet target', () => {
+        expect(isEligibleRekeyTarget(algo25({ address: 'A' }), 'SRC')).toBe(
+            true,
+        )
+        expect(isEligibleRekeyTarget(hd({ address: 'H' }), 'SRC')).toBe(true)
+    })
+})
+
+describe('services/accounts/utils - isEligibleLedgerRekeyTarget', () => {
+    test('rejects non-hardware targets', () => {
+        expect(
+            isEligibleLedgerRekeyTarget(algo25({ address: 'A' }), 'SRC'),
+        ).toBe(false)
+        expect(isEligibleLedgerRekeyTarget(hd({ address: 'H' }), 'SRC')).toBe(
+            false,
+        )
+    })
+
+    test('rejects target equal to source / already rekeyed', () => {
+        expect(isEligibleLedgerRekeyTarget(ledger({ address: 'L' }), 'L')).toBe(
+            false,
+        )
+        expect(
+            isEligibleLedgerRekeyTarget(
+                ledger({ address: 'L', rekeyAddress: 'X' }),
+                'SRC',
+            ),
+        ).toBe(false)
+    })
+
+    test('accepts a clean hardware target', () => {
+        expect(
+            isEligibleLedgerRekeyTarget(ledger({ address: 'L' }), 'SRC'),
+        ).toBe(true)
+    })
+})
+
+describe('services/accounts/utils - isEligibleSharedRekeyTarget', () => {
+    test('rejects non-multisig targets', () => {
+        const all: WalletAccount[] = []
+        expect(
+            isEligibleSharedRekeyTarget(algo25({ address: 'A' }), 'SRC', all),
+        ).toBe(false)
+        expect(
+            isEligibleSharedRekeyTarget(ledger({ address: 'L' }), 'SRC', all),
+        ).toBe(false)
+    })
+
+    test('rejects multisig where wallet cannot meet threshold', () => {
+        const ms = multisig({
+            address: 'M',
+            multisigDetails: {
+                threshold: 2,
+                addresses: ['P1', 'P2', 'P3'],
+                version: 1,
+            },
+        })
+        // Only one participant held — threshold is 2 — blocked.
+        const all: WalletAccount[] = [algo25({ id: 'p1', address: 'P1' })]
+        expect(isEligibleSharedRekeyTarget(ms, 'SRC', all)).toBe(false)
+    })
+
+    test('accepts multisig when wallet holds enough participants', () => {
+        const ms = multisig({
+            address: 'M',
+            multisigDetails: {
+                threshold: 2,
+                addresses: ['P1', 'P2', 'P3'],
+                version: 1,
+            },
+        })
+        const all: WalletAccount[] = [
+            algo25({ id: 'p1', address: 'P1' }),
+            algo25({ id: 'p2', address: 'P2' }),
+        ]
+        expect(isEligibleSharedRekeyTarget(ms, 'SRC', all)).toBe(true)
+    })
+
+    test('rejects multisig already rekeyed away', () => {
+        const ms = multisig({
+            address: 'M',
+            rekeyAddress: 'X',
+            multisigDetails: {
+                threshold: 1,
+                addresses: ['P1'],
+                version: 1,
+            },
+        })
+        const all: WalletAccount[] = [algo25({ id: 'p1', address: 'P1' })]
+        expect(isEligibleSharedRekeyTarget(ms, 'SRC', all)).toBe(false)
+    })
+})
+
+describe('services/accounts/utils - resolveAuthAccount', () => {
+    test('returns the account itself when not rekeyed', () => {
+        const a = algo25({ address: 'A' })
+        expect(resolveAuthAccount(a, [a])).toBe(a)
+    })
+
+    test('walks a single rekey hop', () => {
+        const a = algo25({ address: 'A', rekeyAddress: 'B' })
+        const b = algo25({ address: 'B' })
+        expect(resolveAuthAccount(a, [a, b])).toBe(b)
+    })
+
+    test('walks multi-hop chain to the terminal auth account', () => {
+        // A -> B -> C, terminal is C (no rekeyAddress on C).
+        const a = ledger({ address: 'A', rekeyAddress: 'B' })
+        const b = ledger({ address: 'B', rekeyAddress: 'C' })
+        const c = ledger({ address: 'C' })
+        expect(resolveAuthAccount(a, [a, b, c])).toBe(c)
+    })
+
+    test('throws RekeyTargetNotFoundError when chain is broken', () => {
+        const a = algo25({ address: 'A', rekeyAddress: 'MISSING' })
+        expect(() => resolveAuthAccount(a, [a])).toThrow(
+            RekeyTargetNotFoundError,
+        )
+    })
+
+    test('handles a circular rekey gracefully without infinite loop', () => {
+        // Pathological: A -> B -> A. Should not hang. Returns whichever
+        // node we land on when the cycle is detected (here, B).
+        const a = algo25({ address: 'A', rekeyAddress: 'B' })
+        const b = algo25({ address: 'B', rekeyAddress: 'A' })
+        const result = resolveAuthAccount(a, [a, b])
+        expect([a, b]).toContain(result)
     })
 })

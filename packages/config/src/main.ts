@@ -67,6 +67,8 @@ export const configSchema = z.object({
     recoveryPassphraseSupportUrl: z.url(),
     watchAccountSupportUrl: z.url(),
     rekeyToStandardSupportUrl: z.url(),
+    rekeyToSharedSupportUrl: z.url(),
+    rekeyToLedgerSupportUrl: z.url(),
 
     debugEnabled: z.boolean(),
     profilingEnabled: z.boolean(),
@@ -137,6 +139,10 @@ const productionConfig = {
         'https://support.perawallet.app/en/article/recover-or-import-an-algorand-account-with-recovery-passphrase-11gdh1y/',
     watchAccountSupportUrl: 'https://perawallet.app/support/watch-accounts/',
     rekeyToStandardSupportUrl:
+        'https://support.perawallet.app/en/article/how-to-rekey-an-algorand-account-with-pera-mobile-13ykjxs/',
+    rekeyToSharedSupportUrl:
+        'https://support.perawallet.app/en/article/how-to-rekey-an-algorand-account-with-pera-mobile-13ykjxs/',
+    rekeyToLedgerSupportUrl:
         'https://support.perawallet.app/en/article/how-to-rekey-an-algorand-account-with-pera-mobile-13ykjxs/',
 
     notificationRefreshTime: THIRTY_SECONDS,
@@ -212,6 +218,8 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     recoveryPassphraseSupportUrl: 'RECOVERY_PASSPHRASE_SUPPORT_URL',
     watchAccountSupportUrl: 'WATCH_ACCOUNT_SUPPORT_URL',
     rekeyToStandardSupportUrl: 'REKEY_TO_STANDARD_SUPPORT_URL',
+    rekeyToSharedSupportUrl: 'REKEY_TO_SHARED_SUPPORT_URL',
+    rekeyToLedgerSupportUrl: 'REKEY_TO_LEDGER_SUPPORT_URL',
     dispenserUrl: 'DISPENSER_URL',
 
     debugEnabled: 'DEBUG_ENABLED',

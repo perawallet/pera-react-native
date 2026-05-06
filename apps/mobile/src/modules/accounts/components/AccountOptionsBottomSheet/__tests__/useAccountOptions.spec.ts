@@ -183,6 +183,7 @@ describe('useAccountOptions', () => {
                 'view-passphrase',
                 'rekey-to-ledger',
                 'rekey-to-standard',
+                'rescan-rekeyed',
                 'rename-account',
                 'toggle-notifications',
                 'remove-account',
@@ -225,6 +226,7 @@ describe('useAccountOptions', () => {
                 'undo-rekey',
                 'rekey-to-ledger',
                 'rekey-to-standard',
+                'rescan-rekeyed',
                 'rename-account',
                 'toggle-notifications',
                 'remove-account',
@@ -716,7 +718,7 @@ describe('useAccountOptions', () => {
             })
         })
 
-        it('shows not implemented toast for rekey-to-shared', () => {
+        it('navigates to RekeyToShared intro for rekey-to-shared', () => {
             const { result } = renderHook(() =>
                 useAccountOptions({
                     account: multisigAccount,
@@ -733,10 +735,10 @@ describe('useAccountOptions', () => {
                 rekeyOption?.onPress()
             })
 
-            expect(mockShowToast).toHaveBeenCalledWith({
-                title: 'common.not_implemented.title',
-                body: 'common.not_implemented.body',
-                type: 'error',
+            expect(mockOnClose).toHaveBeenCalled()
+            expect(mockNavigate).toHaveBeenCalledWith('RekeyToShared', {
+                screen: 'RekeyToSharedIntro',
+                params: { sourceAddress: multisigAccount.address },
             })
         })
 

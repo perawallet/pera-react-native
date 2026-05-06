@@ -22,6 +22,7 @@ import {
 } from '@components/core'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
+import { RescanCandidateRow } from '../../components/RescanCandidateRow'
 import { useRescanRekeyedSelectScreen } from './useRescanRekeyedSelectScreen'
 import { useStyles } from './styles'
 
@@ -153,39 +154,24 @@ export const RescanRekeyedSelectScreen = () => {
                                 >
                                     {t('rekey.rescan.select_all')}
                                 </PWText>
+                                {/* Display-only — outer PWTouchableOpacity owns
+                                    the gesture so a tap doesn't fire the
+                                    toggle twice. */}
                                 <PWCheckbox
                                     checked={isAllSelected}
-                                    onPress={toggleSelectAll}
                                     containerStyle={styles.checkboxContainer}
                                 />
                             </PWTouchableOpacity>
                         </PWView>
 
-                        {candidateAddresses.map(address => {
-                            const isSelected = selectedAddresses.has(address)
-                            return (
-                                <PWTouchableOpacity
-                                    key={address}
-                                    style={[
-                                        styles.row,
-                                        isSelected && styles.rowSelected,
-                                    ]}
-                                    onPress={() => toggleAddress(address)}
-                                    testID={`rescan-rekeyed-row-${address}`}
-                                >
-                                    <PWText variant='bodyLarge'>
-                                        {truncateAlgorandAddress(address, 9)}
-                                    </PWText>
-                                    <PWCheckbox
-                                        checked={isSelected}
-                                        onPress={() => toggleAddress(address)}
-                                        containerStyle={
-                                            styles.checkboxContainer
-                                        }
-                                    />
-                                </PWTouchableOpacity>
-                            )
-                        })}
+                        {candidateAddresses.map(address => (
+                            <RescanCandidateRow
+                                key={address}
+                                address={address}
+                                isSelected={selectedAddresses.has(address)}
+                                onToggle={toggleAddress}
+                            />
+                        ))}
                     </PWView>
                 )}
 

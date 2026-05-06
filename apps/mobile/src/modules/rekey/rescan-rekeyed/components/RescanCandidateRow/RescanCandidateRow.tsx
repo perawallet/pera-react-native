@@ -1,0 +1,51 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { memo, useCallback } from 'react'
+import { PWCheckbox, PWText, PWTouchableOpacity } from '@components/core'
+import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
+import { useStyles } from './styles'
+
+export type RescanCandidateRowProps = {
+    address: string
+    isSelected: boolean
+    onToggle: (address: string) => void
+}
+
+export const RescanCandidateRow = memo(
+    ({ address, isSelected, onToggle }: RescanCandidateRowProps) => {
+        const styles = useStyles()
+
+        // Stable per-row handler — avoids inline arrows in JSX.
+        const handlePress = useCallback(() => {
+            onToggle(address)
+        }, [address, onToggle])
+
+        return (
+            <PWTouchableOpacity
+                style={[styles.row, isSelected && styles.rowSelected]}
+                onPress={handlePress}
+                testID={`rescan-rekeyed-row-${address}`}
+            >
+                <PWText variant='bodyLarge'>
+                    {truncateAlgorandAddress(address, 9)}
+                </PWText>
+                {/* Display-only — outer PWTouchableOpacity owns the gesture so
+                    a tap doesn't fire the toggle twice. */}
+                <PWCheckbox
+                    checked={isSelected}
+                    containerStyle={styles.checkboxContainer}
+                />
+            </PWTouchableOpacity>
+        )
+    },
+)

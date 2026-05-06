@@ -95,10 +95,6 @@ export const useStyles = makeStyles(theme => ({
         borderRadius: theme.borderRadius.md,
         backgroundColor: theme.colors.layerGrayLighter,
     },
-    rowSelected: {
-        borderColor: theme.colors.positive,
-        backgroundColor: 'transparent',
-    },
     rowDisabled: {
         opacity: 0.6,
     },
