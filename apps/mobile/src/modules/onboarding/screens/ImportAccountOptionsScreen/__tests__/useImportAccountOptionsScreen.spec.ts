@@ -75,6 +75,7 @@ describe('useImportAccountOptionsScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         Platform.OS = 'ios'
+        useMnemonicHandoffStore.getState().resetState()
     })
 
     afterEach(() => {
@@ -336,7 +337,6 @@ describe('useImportAccountOptionsScreen', () => {
             success: true,
             accountType: 'hdWallet',
         })
-        useMnemonicHandoffStore.getState().resetState()
 
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
