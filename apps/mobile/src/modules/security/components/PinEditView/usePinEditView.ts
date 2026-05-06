@@ -14,6 +14,7 @@ import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { usePinCode, useBiometrics } from '@perawallet/wallet-core-security'
 import { useLanguage } from '@hooks/useLanguage'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { useErrorToast } from '@hooks/useErrorToast'
 
 export type PinEntryMode = 'setup' | 'confirm' | 'verify' | 'change_old'
 
@@ -47,6 +48,7 @@ export const usePinEditView = ({
     } = usePinCode()
     const { checkBiometricsEnabled, authenticateWithBiometrics } =
         useBiometrics()
+    const { showError } = useErrorToast()
 
     const [currentMode, setCurrentMode] = useState<Nullable<PinEntryMode>>(mode)
     const [storedPin, setStoredPin] = useState<string>('')
@@ -89,19 +91,23 @@ export const usePinEditView = ({
         lastPromptedModeRef.current = currentMode
 
         let cancelled = false
-        ;(async () => {
-            const enabled = await checkBiometricsEnabled()
-            if (cancelled || !enabled) return
-            const success = await authenticateWithBiometrics()
-            if (cancelled || !success) return
-            resetFailedAttempts()
-            setHasError(false)
-            if (currentMode === 'verify') {
-                onSuccess?.()
-            } else if (currentMode === 'change_old') {
-                setCurrentMode('setup')
-            }
-        })()
+        try {
+            ;(async () => {
+                const enabled = await checkBiometricsEnabled()
+                if (cancelled || !enabled) return
+                const success = await authenticateWithBiometrics()
+                if (cancelled || !success) return
+                resetFailedAttempts()
+                setHasError(false)
+                if (currentMode === 'verify') {
+                    onSuccess?.()
+                } else if (currentMode === 'change_old') {
+                    setCurrentMode('setup')
+                }
+            })()
+        } catch (error) {
+            showError(error)
+        }
         return () => {
             cancelled = true
         }
