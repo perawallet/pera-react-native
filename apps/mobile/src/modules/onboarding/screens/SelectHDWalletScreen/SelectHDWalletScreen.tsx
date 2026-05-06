@@ -95,7 +95,7 @@ export const SelectHDWalletScreen = () => {
                         sourceAmount={groupAlgoValue}
                         precision={2}
                         minPrecision={2}
-                        style={styles.fiatBalance}
+                        style={[styles.fiatBalance, { lineHeight: undefined }]}
                         variant='body'
                     />
                 </PWView>
