@@ -23,6 +23,25 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
     }),
 }))
 
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-accounts')
+        >()
+    return {
+        ...actual,
+        useHDImportSession: () => ({
+            commitImport: vi.fn(),
+            cancelImport: vi.fn(),
+        }),
+        DerivationTypes: { Peikert: 9 },
+    }
+})
+
+vi.mock('@perawallet/wallet-core-backup', () => ({
+    useMarkMnemonicBackupComplete: () => vi.fn(),
+}))
+
 describe('ImportSelectAddressesScreen', () => {
     beforeEach(() => {
         vi.mocked(useRoute).mockReturnValue({

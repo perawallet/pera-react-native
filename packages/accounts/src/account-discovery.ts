@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
+import {
+    BIP32DerivationType,
+    KeyContext,
+    XHDWalletAPI,
+} from '@algorandfoundation/xhd-wallet-api'
 import {
     encodeAlgorandAddress,
     getAlgorandClient,
@@ -18,7 +22,6 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import { AlgorandClient } from '@algorandfoundation/algokit-utils'
 import { Account } from '@algorandfoundation/algokit-utils/indexer-client'
-import type { KMSHDWalletSession } from '@perawallet/wallet-core-kms'
 import {
     AccountTypes,
     HDWalletAccount,
@@ -34,13 +37,35 @@ import {
 const ACCOUNT_GAP_LIMIT = 5
 const KEY_INDEX_GAP_LIMIT = 5
 
+export type GetPublicKey = (params: {
+    account: number
+    keyIndex: number
+    derivationType: BIP32DerivationType
+}) => Promise<Uint8Array>
+
 type DiscoverAccountsParams = {
-    session: KMSHDWalletSession
+    getPublicKey: GetPublicKey
     derivationType: BIP32DerivationType
     walletKeyId: string
     accountGapLimit?: number
     keyIndexGapLimit?: number
     accountAddresses?: string[]
+}
+
+/**
+ * Builds a `getPublicKey` callback backed by an in-memory XHD root key.
+ * Use when discovering before keystore persistence (e.g. mnemonic import).
+ */
+export const createXHDGetPublicKey = (rootKey: Uint8Array): GetPublicKey => {
+    const api = new XHDWalletAPI()
+    return async ({ account, keyIndex, derivationType }) =>
+        api.keyGen(
+            rootKey,
+            KeyContext.Address,
+            account,
+            keyIndex,
+            derivationType,
+        )
 }
 
 async function checkActivityBatch(
@@ -66,7 +91,7 @@ async function checkActivityBatch(
 type ScanAccountKeysParams = {
     accountIdx: number
     keyIndexGapLimit: number
-    session: KMSHDWalletSession
+    getPublicKey: GetPublicKey
     walletKeyId: string
     derivationType: BIP32DerivationType
 }
@@ -79,7 +104,7 @@ type ScanResult = {
 async function scanAccountKeys({
     accountIdx,
     keyIndexGapLimit,
-    session,
+    getPublicKey,
     walletKeyId,
     derivationType,
 }: ScanAccountKeysParams): Promise<ScanResult> {
@@ -97,7 +122,7 @@ async function scanAccountKeys({
             const currentKeyIdx = keyIdx + i
             keyIndices.push(currentKeyIdx)
 
-            const addressBytes = await session.getPublicKey({
+            const addressBytes = await getPublicKey({
                 account: accountIdx,
                 keyIndex: currentKeyIdx,
                 derivationType,
@@ -150,7 +175,7 @@ async function scanAccountKeys({
 }
 
 export async function discoverAccounts({
-    session,
+    getPublicKey,
     derivationType,
     walletKeyId,
     accountGapLimit = ACCOUNT_GAP_LIMIT,
@@ -171,7 +196,7 @@ export async function discoverAccounts({
                 scanAccountKeys({
                     accountIdx: accountIndex + i,
                     keyIndexGapLimit,
-                    session,
+                    getPublicKey,
                     walletKeyId,
                     derivationType,
                 }),
@@ -238,7 +263,7 @@ async function checkRekeyed(
 type ScanRekeyedKeysParams = {
     accountIdx: number
     keyIndexGapLimit: number
-    session: KMSHDWalletSession
+    getPublicKey: GetPublicKey
     derivationType: BIP32DerivationType
     algorandClient: AlgorandClient
 }
@@ -246,7 +271,7 @@ type ScanRekeyedKeysParams = {
 async function scanRekeyedKeys({
     accountIdx,
     keyIndexGapLimit,
-    session,
+    getPublicKey,
     derivationType,
     algorandClient,
 }: ScanRekeyedKeysParams): Promise<WalletAccount[]> {
@@ -261,7 +286,7 @@ async function scanRekeyedKeys({
         for (let i = 0; i < batchSize; i++) {
             const currentKeyIdx = keyIdx + i
             tasks.push(async () => {
-                const addressBytes = await session.getPublicKey({
+                const addressBytes = await getPublicKey({
                     account: accountIdx,
                     keyIndex: currentKeyIdx,
                     derivationType,
@@ -304,7 +329,7 @@ async function scanRekeyedKeys({
 }
 
 export async function discoverRekeyedAccounts({
-    session,
+    getPublicKey,
     derivationType,
     accountGapLimit = ACCOUNT_GAP_LIMIT,
     keyIndexGapLimit = KEY_INDEX_GAP_LIMIT,
@@ -344,7 +369,7 @@ export async function discoverRekeyedAccounts({
                 scanRekeyedKeys({
                     accountIdx: accountIndex + i,
                     keyIndexGapLimit,
-                    session,
+                    getPublicKey,
                     derivationType,
                     algorandClient,
                 }),

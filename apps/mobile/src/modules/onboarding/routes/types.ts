@@ -14,9 +14,33 @@ import {
     WalletAccount,
     HDWalletAccount,
     ImportAccountType,
+    DerivationType,
 } from '@perawallet/wallet-core-accounts'
 import type { LedgerTransportType } from '@perawallet/wallet-core-hardware-wallet'
 import type { LedgerAccount } from '@perawallet/wallet-core-ledger'
+
+export type SearchAccountsParams =
+    | {
+          mode?: 'existing'
+          account: WalletAccount
+          createIfEmpty?: boolean
+      }
+    | {
+          mode: 'import'
+          walletKeyId: string
+          derivationType: DerivationType
+      }
+
+export type ImportSelectAddressesParams =
+    | {
+          mode?: 'existing'
+          accounts: HDWalletAccount[]
+      }
+    | {
+          mode: 'import'
+          walletKeyId: string
+          accounts: HDWalletAccount[]
+      }
 
 export type OnboardingStackParamList = {
     OnboardingHome: undefined
@@ -25,9 +49,7 @@ export type OnboardingStackParamList = {
               account?: WalletAccount
           }
         | undefined
-    ImportSelectAddresses: {
-        accounts: HDWalletAccount[]
-    }
+    ImportSelectAddresses: ImportSelectAddressesParams
     ImportRekeyedAddresses: {
         accounts: WalletAccount[]
     }
@@ -38,10 +60,7 @@ export type OnboardingStackParamList = {
         accountType: ImportAccountType
         mnemonic?: string
     }
-    SearchAccounts: {
-        account: WalletAccount
-        createIfEmpty?: boolean
-    }
+    SearchAccounts: SearchAccountsParams
     LedgerInstructions: { transportType?: LedgerTransportType } | undefined
     LedgerScan: undefined
     LedgerFetchAccounts: {
@@ -75,9 +94,7 @@ export type AddAccountStackParamList = {
               account?: WalletAccount
           }
         | undefined
-    ImportSelectAddresses: {
-        accounts: HDWalletAccount[]
-    }
+    ImportSelectAddresses: ImportSelectAddressesParams
     ImportRekeyedAddresses: {
         accounts: WalletAccount[]
     }
@@ -88,10 +105,7 @@ export type AddAccountStackParamList = {
         accountType: ImportAccountType
         mnemonic?: string
     }
-    SearchAccounts: {
-        account: WalletAccount
-        createIfEmpty?: boolean
-    }
+    SearchAccounts: SearchAccountsParams
     LedgerInstructions: { transportType?: LedgerTransportType } | undefined
     LedgerScan: undefined
     LedgerFetchAccounts: {

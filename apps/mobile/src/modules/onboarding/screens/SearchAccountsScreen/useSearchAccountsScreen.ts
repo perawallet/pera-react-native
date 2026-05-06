@@ -18,6 +18,7 @@ import { useToast } from '@hooks/useToast'
 import { RouteProp, useRoute } from '@react-navigation/native'
 import {
     useAccountDiscovery,
+    useHDImportSession,
     useSelectedAccountAddress,
     useCreateAccount,
     useAllAccounts,
@@ -40,19 +41,18 @@ const TRANSPARENT_OPACITY = 0.3
 const FULL_OPACITY = 1
 
 export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
-    const {
-        params: { account, createIfEmpty },
-    } = useRoute<RouteProp<OnboardingStackParamList, 'SearchAccounts'>>()
+    const route =
+        useRoute<RouteProp<OnboardingStackParamList, 'SearchAccounts'>>()
+    const params = route.params
     const { t } = useLanguage()
     const { showToast } = useToast()
     const navigation = useAppNavigation()
     const { discoverAccounts, discoverRekeyedAccounts } = useAccountDiscovery()
+    const { discoverImportAccounts, cancelImport } = useHDImportSession()
     const { exitAccountFlow } = useExitAccountFlow()
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
     const { createHdWalletAccount } = useCreateAccount()
     const allAccounts = useAllAccounts()
-
-    const walletKeyId = account.keyPairId
 
     const dotOpacities = useRef(
         Array.from(
@@ -90,13 +90,42 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
     const hasSearched = useRef(false)
 
     const searchAccounts = useCallback(async () => {
-        if (!walletKeyId || hasSearched.current) {
-            return
-        }
-
+        if (hasSearched.current) return
         hasSearched.current = true
 
         try {
+            // Import mode: in-memory rootKey only, nothing persisted yet.
+            // Always navigate to selection screen so the user picks the
+            // address(es) to actually import.
+            if ('mode' in params && params.mode === 'import') {
+                const discovered = await discoverImportAccounts({
+                    walletKeyId: params.walletKeyId,
+                })
+                if (discovered.length === 0) {
+                    throw new Error('HD discovery returned no accounts')
+                }
+                navigation.replace('ImportSelectAddresses', {
+                    mode: 'import',
+                    walletKeyId: params.walletKeyId,
+                    accounts: discovered,
+                })
+                return
+            }
+
+            // Existing mode: an account already exists; we may auto-select it
+            // if discovery returns only the master, or open the selection
+            // screen if multiple accounts have on-chain history.
+            // We narrow the discriminated union via the `mode === 'import'`
+            // branch above; here `params` is the existing-mode variant.
+            const existingParams = params as Extract<
+                typeof params,
+                { account: unknown }
+            >
+            const account = existingParams.account
+            const createIfEmpty = existingParams.createIfEmpty
+            const walletKeyId = account.keyPairId
+            if (!walletKeyId) return
+
             if (account.type === AccountTypes.hdWallet) {
                 const derivationType = account.hdWalletDetails.derivationType
 
@@ -107,7 +136,6 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
 
                 if (!discoveredAccounts) return
 
-                // Only the master account was found, skip the selection screen
                 if (discoveredAccounts.length === 1) {
                     if (createIfEmpty) {
                         const walletAccounts = allAccounts
@@ -174,6 +202,11 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                 }
             }
         } catch {
+            // In import mode, abandon the in-memory session so we don't leak
+            // root key material if the user retries.
+            if ('mode' in params && params.mode === 'import') {
+                cancelImport()
+            }
             // guardrails-ignore-next-line no-error-toast-in-catch reason: localized import_account.failed_body preserved; raw error not surfaced to user
             showToast({
                 type: 'error',
@@ -183,16 +216,16 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
             navigation.goBack()
         }
     }, [
-        walletKeyId,
+        params,
         discoverAccounts,
+        discoverImportAccounts,
+        cancelImport,
         discoverRekeyedAccounts,
         navigation,
-        account,
         t,
         showToast,
         exitAccountFlow,
         setSelectedAccountAddress,
-        createIfEmpty,
         createHdWalletAccount,
         allAccounts,
     ])

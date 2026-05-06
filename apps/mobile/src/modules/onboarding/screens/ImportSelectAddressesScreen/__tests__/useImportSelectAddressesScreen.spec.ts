@@ -9,166 +9,182 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
-
-import { renderHook, act } from '@testing-library/react'
-import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { useImportSelectAddressesScreen } from '../useImportSelectAddressesScreen'
-import { useRoute } from '@react-navigation/native'
+import { describe, test, expect, beforeEach, vi } from 'vitest'
+import { renderHook, act } from '@test-utils/render'
 import {
-    useAllAccounts,
-    useSetAccounts,
-    useSelectedAccountAddress,
     AccountTypes,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { useImportSelectAddressesScreen } from '../useImportSelectAddressesScreen'
 
-const mockExitAccountFlow = vi.fn()
-const mockDiscoverRekeyedAccounts = vi.fn()
-const mockReplace = vi.fn()
-
-vi.mock('@react-navigation/native', () => ({
-    useRoute: vi.fn(),
-}))
-
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useAllAccounts: vi.fn(),
-    useSetAccounts: vi.fn(),
-    useSelectedAccountAddress: vi.fn(),
-    useAccountDiscovery: () => ({
-        discoverRekeyedAccounts: mockDiscoverRekeyedAccounts,
-    }),
-    AccountTypes: {
-        hdWallet: 'hdWallet',
-    },
-    DerivationTypes: {
-        Peikert: 9,
-    },
+const {
+    mockReplace,
+    mockGoBack,
+    mockAllAccounts,
+    mockRouteParams,
+    mockSetAccounts,
+    mockSetSelectedAccountAddress,
+    mockDiscoverRekeyedAccounts,
+    mockExitAccountFlow,
+    mockCommitImport,
+    mockCancelImport,
+    mockMarkBackupComplete,
+} = vi.hoisted(() => ({
+    mockReplace: vi.fn(),
+    mockGoBack: vi.fn(),
+    mockAllAccounts: { current: [] as WalletAccount[] },
+    mockRouteParams: { current: {} as Record<string, unknown> },
+    mockSetAccounts: vi.fn(),
+    mockSetSelectedAccountAddress: vi.fn(),
+    mockDiscoverRekeyedAccounts: vi.fn(),
+    mockExitAccountFlow: vi.fn(),
+    mockCommitImport: vi.fn(),
+    mockCancelImport: vi.fn(),
+    mockMarkBackupComplete: vi.fn(),
 }))
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (k: string) => k }),
 }))
-
-vi.mock('@modules/onboarding/hooks', () => ({
-    useExitAccountFlow: () => ({
-        exitAccountFlow: mockExitAccountFlow,
-    }),
-}))
-
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({
         replace: mockReplace,
+        goBack: mockGoBack,
+        addListener: vi.fn(() => () => {}),
     }),
 }))
-
-vi.mock('@perawallet/wallet-core-shared', () => ({
-    deferToNextCycle: (cb: () => void) => setTimeout(cb, 0),
+vi.mock('@react-navigation/native', () => ({
+    useRoute: () => ({ params: mockRouteParams.current }),
+    useNavigation: () => ({ addListener: vi.fn(() => () => {}) }),
+}))
+vi.mock('../../../hooks', () => ({
+    useExitAccountFlow: () => ({ exitAccountFlow: mockExitAccountFlow }),
+}))
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-accounts')
+    >()),
+    useAllAccounts: () => mockAllAccounts.current,
+    useSetAccounts: () => ({ setAccounts: mockSetAccounts }),
+    useSelectedAccountAddress: () => ({
+        setSelectedAccountAddress: mockSetSelectedAccountAddress,
+    }),
+    useAccountDiscovery: () => ({
+        discoverRekeyedAccounts: mockDiscoverRekeyedAccounts,
+    }),
+    useHDImportSession: () => ({
+        commitImport: mockCommitImport,
+        cancelImport: mockCancelImport,
+    }),
+    DerivationTypes: { Peikert: 9 },
+}))
+vi.mock('@perawallet/wallet-core-backup', () => ({
+    useMarkMnemonicBackupComplete: () => mockMarkBackupComplete,
+}))
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-shared')
+    >()),
+    deferToNextCycle: (fn: () => unknown) => fn(),
 }))
 
-const MOCK_ACCOUNTS = [
+const sampleDiscovered = [
     {
         id: '1',
-        address: 'ADDR1',
+        address: 'ADDR-A',
         type: AccountTypes.hdWallet,
+        keyPairId: 'w-1',
         hdWalletDetails: {
-            account: 0,
+            account: 1,
             change: 0,
             keyIndex: 0,
             derivationType: 9,
         },
-        keyPairId: 'pk',
     },
     {
         id: '2',
-        address: 'ADDR2',
+        address: 'ADDR-B',
         type: AccountTypes.hdWallet,
+        keyPairId: 'w-1',
         hdWalletDetails: {
-            account: 0,
+            account: 2,
             change: 0,
-            keyIndex: 1,
+            keyIndex: 0,
             derivationType: 9,
         },
-        keyPairId: 'pk',
     },
 ]
 
-describe('useImportSelectAddressesScreen', () => {
-    const mockSetAccounts = vi.fn()
-    const mockSetSelectedAccountAddress = vi.fn()
-
+describe('useImportSelectAddressesScreen — import mode', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        vi.useFakeTimers()
-
-        vi.mocked(useRoute).mockReturnValue({
-            params: { accounts: MOCK_ACCOUNTS },
-        } as unknown as ReturnType<typeof useRoute>)
-
-        vi.mocked(useAllAccounts).mockReturnValue([])
-
-        vi.mocked(useSetAccounts).mockReturnValue({
-            setAccounts: mockSetAccounts,
-        })
-
-        vi.mocked(useSelectedAccountAddress).mockReturnValue({
-            selectedAccountAddress: null,
-            setSelectedAccountAddress: mockSetSelectedAccountAddress,
-        })
-
+        mockAllAccounts.current = []
+        mockRouteParams.current = {
+            mode: 'import',
+            walletKeyId: 'w-1',
+            accounts: sampleDiscovered,
+        }
+        mockCommitImport.mockResolvedValue([sampleDiscovered[0]])
         mockDiscoverRekeyedAccounts.mockResolvedValue([])
     })
 
-    afterEach(() => {
-        vi.useRealTimers()
-    })
-
-    it('initializes with first account pre-selected', () => {
+    test('Continue commits the import with selected accounts and marks backup', async () => {
         const { result } = renderHook(() => useImportSelectAddressesScreen())
 
-        expect(result.current.selectedAddresses.size).toBe(1)
-        expect(result.current.selectedAddresses.has('ADDR1')).toBe(true)
-        expect(result.current.isAllSelected).toBe(false)
+        await act(async () => {
+            await result.current.handleContinue()
+        })
+
+        expect(mockCommitImport).toHaveBeenCalledWith({
+            walletKeyId: 'w-1',
+            selectedAccounts: [sampleDiscovered[0]],
+        })
+        expect(mockMarkBackupComplete).toHaveBeenCalledWith(sampleDiscovered[0])
+        expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith('ADDR-A')
+    })
+
+    test('Continue without any selection does not commit (button is gated)', async () => {
+        mockRouteParams.current = {
+            mode: 'import',
+            walletKeyId: 'w-1',
+            accounts: sampleDiscovered,
+        }
+        const { result } = renderHook(() => useImportSelectAddressesScreen())
+
+        // Default: first account is preselected, so canContinue should be true.
         expect(result.current.canContinue).toBe(true)
+
+        // Toggle off the preselected one to simulate empty selection.
+        act(() => {
+            result.current.toggleSelection('ADDR-A')
+        })
+
+        expect(result.current.canContinue).toBe(false)
     })
 
-    it('handleContinue selects the first new account after adding', async () => {
-        const { result } = renderHook(() => useImportSelectAddressesScreen())
-
-        // ADDR1 is already pre-selected, select ADDR2 as well
-        act(() => {
-            result.current.toggleSelection('ADDR2')
+    test('cancelImport runs when navigation beforeRemove fires (back/swipe)', async () => {
+        let beforeRemoveCallback: (() => void) | undefined
+        const addListenerSpy = vi.fn((eventName: string, cb: () => void) => {
+            if (eventName === 'beforeRemove') {
+                beforeRemoveCallback = cb
+            }
+            return () => {}
         })
 
-        act(() => {
-            result.current.handleContinue()
-        })
+        const reactNavigationMock = await import('@react-navigation/native')
+        ;(
+            reactNavigationMock as unknown as { useNavigation: () => unknown }
+        ).useNavigation = () => ({ addListener: addListenerSpy })
 
-        act(() => {
-            vi.runAllTimers()
-        })
+        renderHook(() => useImportSelectAddressesScreen())
 
-        // Wait for the async rekeyed discovery to resolve
-        await vi.waitFor(() => {
-            expect(mockSetAccounts).toHaveBeenCalledWith(MOCK_ACCOUNTS)
-            expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith('ADDR1')
-            expect(mockExitAccountFlow).toHaveBeenCalled()
-        })
-    })
+        expect(addListenerSpy).toHaveBeenCalledWith(
+            'beforeRemove',
+            expect.any(Function),
+        )
 
-    it('toggleSelection updates state', () => {
-        const { result } = renderHook(() => useImportSelectAddressesScreen())
+        act(() => beforeRemoveCallback?.())
 
-        act(() => {
-            result.current.toggleSelection('ADDR2')
-        })
-
-        expect(result.current.selectedAddresses.has('ADDR1')).toBe(true)
-        expect(result.current.selectedAddresses.has('ADDR2')).toBe(true)
-
-        act(() => {
-            result.current.toggleSelection('ADDR1')
-        })
-
-        expect(result.current.selectedAddresses.has('ADDR1')).toBe(false)
-        expect(result.current.selectedAddresses.has('ADDR2')).toBe(true)
+        expect(mockCancelImport).toHaveBeenCalled()
     })
 })

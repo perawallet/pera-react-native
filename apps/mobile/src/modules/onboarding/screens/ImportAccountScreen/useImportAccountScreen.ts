@@ -19,6 +19,7 @@ import { OnboardingStackParamList } from '../../routes/types'
 import {
     MNEMONIC_WORD_COUNT,
     useImportAccount,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 import { MNEMONIC_WORDLIST as WORDLIST } from '@perawallet/wallet-core-kms'
@@ -252,14 +253,28 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
             const mnemonic = words.join(' ')
 
             try {
-                const importedAccount = await importAccount({
+                const result = await importAccount({
                     mnemonic,
                     type: accountType,
                 })
-                markBackupComplete(importedAccount)
-                navigation.push('SearchAccounts', {
-                    account: importedAccount,
-                })
+
+                if (result.type === 'hdWallet' && 'walletKeyId' in result) {
+                    // HD import: jump into the discovery flow. Backup is marked
+                    // only after the user commits a selection (see
+                    // ImportSelectAddressesScreen).
+                    navigation.push('SearchAccounts', {
+                        mode: 'import',
+                        walletKeyId: result.walletKeyId,
+                        derivationType: result.derivationType,
+                    })
+                } else {
+                    // algo25 import: the account already exists. Mark backup and
+                    // route through the existing post-create discovery.
+                    markBackupComplete(result as WalletAccount)
+                    navigation.push('SearchAccounts', {
+                        account: result as WalletAccount,
+                    })
+                }
             } catch (e) {
                 logger.error('Import account failed', { error: e })
                 // guardrails-ignore-next-line no-error-toast-in-catch reason: localized import_account.failed_body preserved; raw error not surfaced to user

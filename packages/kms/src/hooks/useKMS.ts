@@ -28,8 +28,12 @@ export type ExecuteWithMnemonicHandler<T> = (words: string[]) => T | Promise<T>
 export const useKMS = () => {
     const keystoreKeys = useKeystoreKeys()
     const { withAlgo25Session, createAlgo25Key } = useAlgo25()
-    const { withHDSession, createHDWalletKey, generateDerivedKey } =
-        useHDWallet()
+    const {
+        withHDSession,
+        createHDWalletKey,
+        persistHDMasterKey,
+        generateDerivedKey,
+    } = useHDWallet()
     const { deleteKey, keyStore, withExportedKey } = useKMSService()
 
     // Wallet-domain view of the keystore: only wallet-root keys (HD roots,
@@ -171,6 +175,7 @@ export const useKMS = () => {
         createAlgo25Key,
         withHDSession,
         createHDWalletKey,
+        persistHDMasterKey,
         generateDerivedKey,
         keyStore,
         withExportedKey,

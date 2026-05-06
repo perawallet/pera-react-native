@@ -12,12 +12,17 @@
 
 import { renderHook, act } from '@testing-library/react'
 import * as Clipboard from 'expo-clipboard'
+import { useImportAccount } from '@perawallet/wallet-core-accounts'
+import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 import { useImportAccountScreen } from '../useImportAccountScreen'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 
 const mockShowToast = vi.fn()
 const mockReplace = vi.fn()
+const mockPush = vi.fn()
 const mockGoBack = vi.fn()
+const mockImportAccount = vi.fn()
+const mockMarkBackupComplete = vi.fn()
 
 vi.mock('react-native', () => ({
     Keyboard: {
@@ -39,6 +44,7 @@ vi.mock('@react-navigation/native', () => ({
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: vi.fn(() => ({
         replace: mockReplace,
+        push: mockPush,
         goBack: mockGoBack,
     })),
 }))
@@ -52,7 +58,17 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-backup', () => ({
-    useMarkMnemonicBackupComplete: vi.fn(() => vi.fn()),
+    useMarkMnemonicBackupComplete: vi.fn(),
+}))
+
+vi.mock('@perawallet/wallet-core-shared', () => ({
+    deferToNextCycle: (fn: () => void) => fn(),
+    logger: {
+        error: vi.fn(),
+        info: vi.fn(),
+        warn: vi.fn(),
+        debug: vi.fn(),
+    },
 }))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
@@ -92,6 +108,10 @@ vi.mock('@hooks/useDeepLink', () => ({
 describe('useImportAccountScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        vi.mocked(useImportAccount).mockReturnValue(mockImportAccount)
+        vi.mocked(useMarkMnemonicBackupComplete).mockReturnValue(
+            mockMarkBackupComplete,
+        )
     })
 
     it('initializes with empty words', () => {
@@ -440,6 +460,33 @@ describe('useImportAccountScreen', () => {
             expect(result.current.words[3]).toBe('device')
             expect(result.current.words[4]).toBe('trap')
             expect(result.current.words[5]).toBe('calm')
+        })
+    })
+
+    describe('handleImportAccount', () => {
+        it('navigates to SearchAccounts in import mode for HD imports without marking backup complete', async () => {
+            mockImportAccount.mockResolvedValue({
+                type: 'hdWallet',
+                walletKeyId: 'WALLET1',
+                derivationType: 9,
+            })
+
+            const { result } = renderHook(() => useImportAccountScreen())
+
+            await act(async () => {
+                result.current.handleImportAccount()
+                // Allow deferred microtask + promise chain to resolve
+                await new Promise(resolve => setTimeout(resolve, 0))
+            })
+
+            expect(mockImportAccount).toHaveBeenCalled()
+            expect(mockPush).toHaveBeenCalledWith('SearchAccounts', {
+                mode: 'import',
+                walletKeyId: 'WALLET1',
+                derivationType: 9,
+            })
+            // markBackupComplete is NOT called yet — the user hasn't committed addresses.
+            expect(mockMarkBackupComplete).not.toHaveBeenCalled()
         })
     })
 })

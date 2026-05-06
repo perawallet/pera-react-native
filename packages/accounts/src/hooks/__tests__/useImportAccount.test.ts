@@ -54,9 +54,12 @@ const kmsMock = vi.hoisted(() => ({
     getKeyOrThrow: vi.fn(),
     createHDWalletKey: vi.fn(),
     createAlgo25Key: vi.fn(),
+    persistHDMasterKey: vi.fn(),
     generateDerivedKey: vi.fn(),
     withExportedKey: vi.fn(),
 }))
+
+const prepareHDMasterKeyMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@perawallet/wallet-core-kms', async () => {
     const actual = await vi.importActual<
@@ -65,6 +68,7 @@ vi.mock('@perawallet/wallet-core-kms', async () => {
     return {
         ...actual,
         useKMS: vi.fn(() => kmsMock),
+        prepareHDMasterKey: prepareHDMasterKeyMock,
     }
 })
 
@@ -135,20 +139,22 @@ describe('useImportAccount', () => {
                 return handler(keyData)
             },
         )
+        prepareHDMasterKeyMock.mockReset()
+        prepareHDMasterKeyMock.mockResolvedValue({
+            keyId: 'WALLET1',
+            rootKey: new Uint8Array(96).fill(1),
+            entropy: new Uint8Array(32).fill(2),
+            mnemonic: 'test mnemonic',
+        })
     })
 
-    test('imports HD wallet account with mnemonic', async () => {
-        // After createHDWalletKey, getKey should return the created key
-        kmsMock.getKey.mockReturnValueOnce({
-            id: 'WALLET1',
-            type: KeyType.HDWalletRootKey,
-            publicKey: '',
-            keystoreKeyId: 'ks-root-1',
+    test('hd wallet path: prepares import session, does not create an account', async () => {
+        prepareHDMasterKeyMock.mockResolvedValueOnce({
+            keyId: 'WALLET1',
+            rootKey: new Uint8Array(96).fill(1),
+            entropy: new Uint8Array(32).fill(2),
+            mnemonic: 'test mnemonic',
         })
-
-        uuidSpies.v7
-            .mockImplementationOnce(() => 'WALLET1')
-            .mockImplementationOnce(() => 'ACC1')
 
         const { result } = renderHook(() => useImportAccount())
 
@@ -160,21 +166,19 @@ describe('useImportAccount', () => {
             })
         })
 
-        expect(kmsMock.createHDWalletKey).toHaveBeenCalledWith({
-            mnemonic: 'test mnemonic',
-        })
-        expect(imported.address).toBeTruthy()
         expect(imported.type).toBe('hdWallet')
-        expect(imported.keyPairId).toBe('WALLET1')
-        expect(useAccountsStore.getState().accounts).toHaveLength(1)
+        expect(imported.walletKeyId).toBe('WALLET1')
+        expect(imported.derivationType).toBe(9)
+        // No WalletAccount should have been pushed to the store yet.
+        expect(useAccountsStore.getState().accounts).toHaveLength(0)
+        // createHDWalletKey must not be called in the new flow.
+        expect(kmsMock.createHDWalletKey).not.toHaveBeenCalled()
     })
 
-    test('throws when createHDWalletKey fails with invalid mnemonic', async () => {
-        kmsMock.createHDWalletKey.mockRejectedValueOnce(
+    test('hd wallet path: surfaces prepareHDMasterKey errors', async () => {
+        prepareHDMasterKeyMock.mockRejectedValueOnce(
             new Error('Invalid mnemonic'),
         )
-
-        uuidSpies.v7.mockImplementationOnce(() => 'WALLET1')
 
         const { result } = renderHook(() => useImportAccount())
 
@@ -186,31 +190,7 @@ describe('useImportAccount', () => {
                 }),
             ).rejects.toThrow('Invalid mnemonic')
         })
-    })
-
-    test('throws when address derivation fails', async () => {
-        kmsMock.getKey.mockReturnValueOnce({
-            id: 'WALLET1',
-            type: KeyType.HDWalletRootKey,
-            publicKey: '',
-            keystoreKeyId: 'ks-root-1',
-        })
-        kmsMock.generateDerivedKey.mockRejectedValueOnce(
-            new Error('Address generation failed'),
-        )
-
-        uuidSpies.v7.mockImplementationOnce(() => 'WALLET1')
-
-        const { result } = renderHook(() => useImportAccount())
-
-        await act(async () => {
-            await expect(
-                result.current({
-                    mnemonic: 'test mnemonic',
-                    type: 'hdWallet',
-                }),
-            ).rejects.toThrow('Address generation failed')
-        })
+        expect(useAccountsStore.getState().accounts).toHaveLength(0)
     })
 
     test('imports algo25 account with mnemonic', async () => {
@@ -250,6 +230,42 @@ describe('useImportAccount', () => {
         expect(imported.type).toBe('algo25')
         expect(imported.keyPairId).toBe('WALLET1')
         expect(useAccountsStore.getState().accounts).toHaveLength(1)
+    })
+
+    test('uses the keyPair from createAlgo25Key without consulting getKey (regression: stale useMemo)', async () => {
+        // Simulate the stale-useMemo race: the freshly-minted key isn't yet
+        // visible to getKey, which reads from a useMemo bound to the previous
+        // render. Without passing the keyPair through, the import would fall
+        // back to creating a new no-mnemonic key (random address).
+        kmsMock.createAlgo25Key.mockResolvedValueOnce({
+            keyPair: {
+                id: 'WALLET1',
+                type: KeyType.Algo25Key,
+                publicKey: 'CORRECT_ADDRESS',
+            },
+            seedKeyId: 'ks-seed-1',
+        })
+        kmsMock.getKey.mockReturnValue(null)
+
+        uuidSpies.v7.mockImplementationOnce(() => 'ACC1')
+
+        const { result } = renderHook(() => useImportAccount())
+
+        let imported: any
+        await act(async () => {
+            imported = await result.current({
+                mnemonic: 'test mnemonic',
+                type: 'algo25',
+            })
+        })
+
+        expect(kmsMock.createAlgo25Key).toHaveBeenCalledTimes(1)
+        expect(kmsMock.createAlgo25Key).toHaveBeenCalledWith({
+            mnemonic: 'test mnemonic',
+        })
+        expect(kmsMock.getKey).not.toHaveBeenCalled()
+        expect(imported.address).toBe('CORRECT_ADDRESS')
+        expect(imported.keyPairId).toBe('WALLET1')
     })
 
     test('throws when createAlgo25Key fails', async () => {

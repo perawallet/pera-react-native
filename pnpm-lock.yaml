@@ -1010,6 +1010,9 @@ importers:
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.14
+      bip39:
+        specifier: 'catalog:'
+        version: 3.1.0
       typescript:
         specifier: 'catalog:'
         version: 5.9.3

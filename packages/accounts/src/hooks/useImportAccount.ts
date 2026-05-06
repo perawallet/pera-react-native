@@ -10,14 +10,24 @@
  limitations under the License
  */
 
+import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useCreateAccount } from './useCreateAccount'
-import { ImportAccountType } from '../models'
+import { useHDImportSession } from './useHDImportSession'
+import { ImportAccountType, WalletAccount } from '../models'
+
+export type ImportHDPendingResult = {
+    type: 'hdWallet'
+    walletKeyId: string
+    derivationType: BIP32DerivationType
+}
+
+export type ImportAccountResult = WalletAccount | ImportHDPendingResult
 
 export const useImportAccount = () => {
-    const { createHDWalletKey, createAlgo25Key } = useKMS()
-    const { createAlgo25WalletAccount, createHdWalletAccount } =
-        useCreateAccount()
+    const { createAlgo25Key } = useKMS()
+    const { createAlgo25WalletAccount } = useCreateAccount()
+    const { prepareImport } = useHDImportSession()
 
     return async ({
         mnemonic,
@@ -25,17 +35,14 @@ export const useImportAccount = () => {
     }: {
         mnemonic: string
         type: ImportAccountType
-    }) => {
+    }): Promise<ImportAccountResult> => {
         if (type === 'hdWallet') {
-            const { keyPair } = await createHDWalletKey({ mnemonic })
-            return await createHdWalletAccount({
-                walletId: keyPair.id,
-                account: 0,
-                keyIndex: 0,
+            const { walletKeyId, derivationType } = await prepareImport({
+                mnemonic,
             })
-        } else {
-            const { keyPair } = await createAlgo25Key({ mnemonic })
-            return await createAlgo25WalletAccount({ id: keyPair.id })
+            return { type: 'hdWallet', walletKeyId, derivationType }
         }
+        const { keyPair } = await createAlgo25Key({ mnemonic })
+        return await createAlgo25WalletAccount({ keyPair })
     }
 }
