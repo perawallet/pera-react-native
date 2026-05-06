@@ -19,10 +19,16 @@
  * No `persist` middleware: the mnemonic must never reach disk. The `Map`
  * data shape would also fail JSON serialization, surfacing any future
  * accidental `persist` config as a loud error rather than a silent leak.
+ *
+ * Each stashed entry is auto-evicted after `TTL_MS` so a leaked entry
+ * (user backs out before destination mounts) doesn't sit in memory
+ * indefinitely. `consume` and `resetState` both cancel pending timers.
  */
 
 import { create } from 'zustand'
 import type { ImportAccountType } from '@perawallet/wallet-core-accounts'
+
+const TTL_MS = 30_000
 
 type HandoffEntry = {
     accountType: ImportAccountType
@@ -31,6 +37,7 @@ type HandoffEntry = {
 
 type State = {
     pending: Map<string, HandoffEntry>
+    timers: Map<string, ReturnType<typeof setTimeout>>
     nextId: number
 }
 
@@ -44,6 +51,7 @@ type Store = State & Actions
 
 const initialState: State = {
     pending: new Map(),
+    timers: new Map(),
     nextId: 1,
 }
 
@@ -51,23 +59,52 @@ export const useMnemonicHandoffStore = create<Store>((set, get) => ({
     ...initialState,
     stash: entry => {
         const id = String(get().nextId)
+        const timer = setTimeout(() => {
+            set(state => {
+                if (!state.pending.has(id)) return state
+                const nextPending = new Map(state.pending)
+                const nextTimers = new Map(state.timers)
+                nextPending.delete(id)
+                nextTimers.delete(id)
+                return { pending: nextPending, timers: nextTimers }
+            })
+        }, TTL_MS)
         set(state => {
-            const next = new Map(state.pending)
-            next.set(id, entry)
-            return { pending: next, nextId: state.nextId + 1 }
+            const nextPending = new Map(state.pending)
+            const nextTimers = new Map(state.timers)
+            nextPending.set(id, entry)
+            nextTimers.set(id, timer)
+            return {
+                pending: nextPending,
+                timers: nextTimers,
+                nextId: state.nextId + 1,
+            }
         })
         return id
     },
     consume: handoffId => {
         const entry = get().pending.get(handoffId) ?? null
         if (entry) {
+            const timer = get().timers.get(handoffId)
+            if (timer !== undefined) clearTimeout(timer)
             set(state => {
-                const next = new Map(state.pending)
-                next.delete(handoffId)
-                return { pending: next }
+                const nextPending = new Map(state.pending)
+                const nextTimers = new Map(state.timers)
+                nextPending.delete(handoffId)
+                nextTimers.delete(handoffId)
+                return { pending: nextPending, timers: nextTimers }
             })
         }
         return entry
     },
-    resetState: () => set(initialState),
+    resetState: () => {
+        for (const timer of get().timers.values()) {
+            clearTimeout(timer)
+        }
+        set({
+            pending: new Map(),
+            timers: new Map(),
+            nextId: 1,
+        })
+    },
 }))

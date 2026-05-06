@@ -10,12 +10,16 @@
  limitations under the License
  */
 
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { useMnemonicHandoffStore } from '../useMnemonicHandoffStore'
 
 describe('useMnemonicHandoffStore', () => {
     beforeEach(() => {
         useMnemonicHandoffStore.getState().resetState()
+    })
+
+    afterEach(() => {
+        vi.useRealTimers()
     })
 
     it('stash returns a string id and stores the entry', () => {
@@ -65,5 +69,47 @@ describe('useMnemonicHandoffStore', () => {
         useMnemonicHandoffStore.getState().resetState()
 
         expect(useMnemonicHandoffStore.getState().pending.size).toBe(0)
+    })
+
+    it('evicts the entry after the TTL', () => {
+        vi.useFakeTimers()
+        const id = useMnemonicHandoffStore
+            .getState()
+            .stash({ accountType: 'hdWallet', mnemonic: 'a b c' })
+
+        expect(useMnemonicHandoffStore.getState().pending.has(id)).toBe(true)
+
+        vi.advanceTimersByTime(30_000)
+
+        expect(useMnemonicHandoffStore.getState().pending.has(id)).toBe(false)
+        expect(useMnemonicHandoffStore.getState().consume(id)).toBeNull()
+    })
+
+    it('consume cancels the eviction timer', () => {
+        vi.useFakeTimers()
+        const entry = { accountType: 'hdWallet' as const, mnemonic: 'a b c' }
+        const id = useMnemonicHandoffStore.getState().stash(entry)
+
+        expect(vi.getTimerCount()).toBe(1)
+
+        const consumed = useMnemonicHandoffStore.getState().consume(id)
+        expect(consumed).toEqual(entry)
+        expect(vi.getTimerCount()).toBe(0)
+    })
+
+    it('resetState cancels all pending eviction timers', () => {
+        vi.useFakeTimers()
+        useMnemonicHandoffStore
+            .getState()
+            .stash({ accountType: 'hdWallet', mnemonic: 'a' })
+        useMnemonicHandoffStore
+            .getState()
+            .stash({ accountType: 'algo25', mnemonic: 'b' })
+
+        expect(vi.getTimerCount()).toBe(2)
+
+        useMnemonicHandoffStore.getState().resetState()
+
+        expect(vi.getTimerCount()).toBe(0)
     })
 })
