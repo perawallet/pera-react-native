@@ -18,7 +18,6 @@ export const useStyles = makeStyles(theme => {
     }
     const fiatBalance = {
         color: theme.colors.textGray,
-        lineHeight: theme.spacing.md,
     }
     return {
         container: {
