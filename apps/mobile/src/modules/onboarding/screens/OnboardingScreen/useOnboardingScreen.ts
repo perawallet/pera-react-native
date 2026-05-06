@@ -12,6 +12,7 @@
 
 import { useCallback } from 'react'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useIsMounted } from '@hooks/useIsMounted'
 import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
 import { useModalState } from '@hooks/useModalState'
@@ -31,6 +32,7 @@ type UseOnboardingScreenResult = {
 
 export const useOnboardingScreen = (): UseOnboardingScreenResult => {
     const navigation = useAppNavigation()
+    const isMounted = useIsMounted()
     const { pushWebView } = useWebView()
     const {
         isOpen: isCreatingAccount,
@@ -65,8 +67,10 @@ export const useOnboardingScreen = (): UseOnboardingScreenResult => {
                     account: 0,
                     keyIndex: 0,
                 })
+                if (!isMounted()) return
                 navigation.push('NameAccount', { account: newAccount })
             } catch (error) {
+                if (!isMounted()) return
                 // guardrails-ignore-next-line no-error-toast-in-catch reason: localized create_account.error_message wraps the raw error; preserved verbatim
                 showToast({
                     title: t('onboarding.create_account.error_title'),
@@ -77,10 +81,11 @@ export const useOnboardingScreen = (): UseOnboardingScreenResult => {
                 })
                 setIsOnboarding(false)
             } finally {
-                closeCreatingAccount()
+                if (isMounted()) closeCreatingAccount()
             }
         })
     }, [
+        isMounted,
         setIsOnboarding,
         openCreatingAccount,
         closeCreatingAccount,
