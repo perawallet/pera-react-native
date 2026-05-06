@@ -102,17 +102,18 @@ export const IMPORT_FLOW_SCREEN_NAMES = [
     'LedgerTroubleshooting',
 ] as const satisfies ReadonlyArray<keyof ImportFlowParamList>
 
-type ImportFlowStack = ReturnType<
+export type ImportFlowStack = ReturnType<
     typeof createNativeStackNavigator<ImportFlowParamList>
 >
 
 /**
  * Renders the screen registrations shared by `OnboardingStackNavigator` and
- * `AddAccountStackNavigator`. The boundary cast widens the caller's stack
- * typing because both `OnboardingStackParamList` and `AddAccountStackParamList`
- * structurally include every key of `ImportFlowParamList`. If React
- * Navigation's typing of `createNativeStackNavigator` ever supports variance,
- * the cast can be removed.
+ * `AddAccountStackNavigator`. Callers pass a stack whose `ParamList` is a
+ * superset of `ImportFlowParamList` (both `OnboardingStackParamList` and
+ * `AddAccountStackParamList` qualify). React Navigation's
+ * `createNativeStackNavigator` is invariant in its `ParamList`, so call sites
+ * must use `Stack as unknown as ImportFlowStack` until that ever becomes
+ * covariant — see the call sites in `./index.tsx` and `./add-account.tsx`.
  */
 export const renderImportFlowScreens = (
     Stack: ImportFlowStack,
