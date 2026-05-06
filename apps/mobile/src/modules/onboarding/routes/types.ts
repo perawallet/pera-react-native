@@ -42,8 +42,14 @@ export type ImportSelectAddressesParams =
           accounts: HDWalletAccount[]
       }
 
-export type OnboardingStackParamList = {
-    OnboardingHome: undefined
+/**
+ * Param list for screens shared between OnboardingStackNavigator and
+ * AddAccountStackNavigator. Both flows reach these screens after the user
+ * picks an import method on `ImportAccountOptions`. Registered in one place
+ * via `renderImportFlowScreens` (see `./shared-screens.tsx`).
+ */
+export type ImportFlowParamList = {
+    ImportAccountOptions: undefined
     NameAccount:
         | {
               account?: WalletAccount
@@ -83,47 +89,13 @@ export type OnboardingStackParamList = {
     LedgerTroubleshooting: undefined
 }
 
-export type AddAccountStackParamList = {
+export type OnboardingStackParamList = ImportFlowParamList & {
+    OnboardingHome: undefined
+}
+
+export type AddAccountStackParamList = ImportFlowParamList & {
     AddAccountHome: undefined
-    ImportAccountOptions: undefined
     SelectHDWallet: undefined
     WatchInfo: undefined
     WatchAccount: undefined
-    NameAccount:
-        | {
-              account?: WalletAccount
-          }
-        | undefined
-    ImportSelectAddresses: ImportSelectAddressesParams
-    ImportRekeyedAddresses: {
-        accounts: WalletAccount[]
-    }
-    ImportInfo: {
-        accountType: ImportAccountType
-    }
-    ImportAccount: {
-        accountType: ImportAccountType
-        mnemonic?: string
-    }
-    SearchAccounts: SearchAccountsParams
-    LedgerInstructions: { transportType?: LedgerTransportType } | undefined
-    LedgerScan: undefined
-    LedgerFetchAccounts: {
-        deviceId: string
-        deviceName: string
-        transportType: LedgerTransportType
-    }
-    LedgerSelectAccounts: {
-        deviceId: string
-        deviceName: string
-        transportType: LedgerTransportType
-        accounts: LedgerAccount[]
-    }
-    LedgerVerify: {
-        deviceId: string
-        deviceName: string
-        transportType: LedgerTransportType
-        selectedAccounts: LedgerAccount[]
-    }
-    LedgerTroubleshooting: undefined
 }
