@@ -21,14 +21,17 @@ import { deferToNextCycle } from '@perawallet/wallet-core-shared'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 
-export const useOnboardingScreen = () => {
+type UseOnboardingScreenResult = {
+    handleTermsPress: () => void
+    handlePrivacyPress: () => void
+    handleCreateAccount: () => void
+    handleImportAccount: () => void
+    isCreatingAccount: boolean
+}
+
+export const useOnboardingScreen = (): UseOnboardingScreenResult => {
     const navigation = useAppNavigation()
     const { pushWebView } = useWebView()
-    const {
-        isOpen: isImportOptionsVisible,
-        open: openImportOptions,
-        close: closeImportOptions,
-    } = useModalState()
     const {
         isOpen: isCreatingAccount,
         open: openCreatingAccount,
@@ -87,27 +90,16 @@ export const useOnboardingScreen = () => {
         t,
     ])
 
-    const handleHDWalletPress = useCallback(() => {
-        closeImportOptions()
+    const handleImportAccount = useCallback(() => {
         setIsOnboarding(true)
-        navigation.push('ImportInfo', { accountType: 'hdWallet' })
-    }, [closeImportOptions, navigation, setIsOnboarding])
-
-    const handleAlgo25Press = useCallback(() => {
-        closeImportOptions()
-        setIsOnboarding(true)
-        navigation.push('ImportInfo', { accountType: 'algo25' })
-    }, [closeImportOptions, navigation, setIsOnboarding])
+        navigation.push('ImportAccountOptions')
+    }, [navigation, setIsOnboarding])
 
     return {
-        isImportOptionsVisible,
         handleTermsPress,
         handlePrivacyPress,
         handleCreateAccount,
-        handleImportAccount: openImportOptions,
-        handleCloseImportOptions: closeImportOptions,
-        handleHDWalletPress,
-        handleAlgo25Press,
+        handleImportAccount,
         isCreatingAccount,
     }
 }
