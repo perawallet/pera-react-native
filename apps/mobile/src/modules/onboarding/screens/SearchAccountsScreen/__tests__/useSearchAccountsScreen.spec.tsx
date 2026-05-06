@@ -376,6 +376,28 @@ describe('useSearchAccountsScreen', () => {
         })
     })
 
+    it('in import mode, on empty discovery cancels the import session and goes back', async () => {
+        mockRouteParams.current = {
+            mode: 'import',
+            walletKeyId: 'w-1',
+            derivationType: 9,
+        } as SearchAccountsParams
+        mockDiscoverImportAccounts.mockResolvedValue([])
+
+        renderHook(() => useSearchAccountsScreen())
+
+        await waitFor(() => {
+            expect(mockCancelImport).toHaveBeenCalled()
+            expect(mockShowToast).toHaveBeenCalledWith({
+                type: 'error',
+                title: 'onboarding.import_account.failed_title',
+                body: 'onboarding.import_account.failed_body',
+            })
+            expect(mockGoBack).toHaveBeenCalled()
+            expect(mockReplace).not.toHaveBeenCalled()
+        })
+    })
+
     it('in import mode, on discovery error cancels the import session and goes back', async () => {
         mockRouteParams.current = {
             mode: 'import',

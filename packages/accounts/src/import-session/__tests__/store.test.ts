@@ -22,7 +22,7 @@ const sample = () => ({
 
 describe('useHDImportSessionStore', () => {
     beforeEach(() => {
-        useHDImportSessionStore.getState().clear()
+        useHDImportSessionStore.getState().resetState()
     })
 
     test('starts empty', () => {
@@ -35,14 +35,14 @@ describe('useHDImportSessionStore', () => {
         expect(useHDImportSessionStore.getState().pending).toEqual(s)
     })
 
-    test('clear() zeroes the in-memory bytes and unsets pending', () => {
+    test('resetState() zeroes the in-memory bytes and unsets pending', () => {
         const s = sample()
         useHDImportSessionStore.getState().start(s)
         const ref = useHDImportSessionStore.getState().pending!
-        useHDImportSessionStore.getState().clear()
+        useHDImportSessionStore.getState().resetState()
         expect(useHDImportSessionStore.getState().pending).toBeNull()
-        // The buffers we handed in were taken by reference; after clear() they
-        // should be zeroed so any leaked reference is safe.
+        // The buffers we handed in were taken by reference; after resetState()
+        // they should be zeroed so any leaked reference is safe.
         expect(Array.from(ref.rootKey).every(b => b === 0)).toBe(true)
         expect(Array.from(ref.entropy).every(b => b === 0)).toBe(true)
     })

@@ -35,7 +35,7 @@ type State = {
 
 type Actions = {
     start: (session: HDImportSession) => void
-    clear: () => void
+    resetState: () => void
 }
 
 const STORE_NAME = 'hd-import-session-store'
@@ -47,7 +47,7 @@ export const useHDImportSessionStore = create<State & Actions>((set, get) => ({
         if (prev) zeroBytes(prev.rootKey, prev.entropy)
         set({ pending: session })
     },
-    clear: () => {
+    resetState: () => {
         const prev = get().pending
         if (prev) zeroBytes(prev.rootKey, prev.entropy)
         set({ pending: null })
@@ -58,5 +58,5 @@ registerStore({
     name: STORE_NAME,
     // In-memory only store; nothing persisted to clear.
     clearStorage: () => {},
-    resetState: () => useHDImportSessionStore.getState().clear(),
+    resetState: () => useHDImportSessionStore.getState().resetState(),
 })

@@ -101,6 +101,9 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                 const discovered = await discoverImportAccounts({
                     walletKeyId: params.walletKeyId,
                 })
+                if (discovered.length === 0) {
+                    throw new Error('HD discovery returned no accounts')
+                }
                 navigation.replace('ImportSelectAddresses', {
                     mode: 'import',
                     walletKeyId: params.walletKeyId,

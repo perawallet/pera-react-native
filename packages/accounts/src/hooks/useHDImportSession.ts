@@ -96,7 +96,7 @@ export const useHDImportSession = (): UseHDImportSessionResult => {
             const next = [...existing, ...selectedAccounts]
             setAccounts(next)
 
-            useHDImportSessionStore.getState().clear()
+            useHDImportSessionStore.getState().resetState()
 
             return selectedAccounts
         },
@@ -104,7 +104,7 @@ export const useHDImportSession = (): UseHDImportSessionResult => {
     )
 
     const cancelImport = useCallback(() => {
-        useHDImportSessionStore.getState().clear()
+        useHDImportSessionStore.getState().resetState()
     }, [])
 
     return {

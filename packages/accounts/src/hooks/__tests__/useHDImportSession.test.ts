@@ -50,7 +50,7 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
 describe('useHDImportSession', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        useHDImportSessionStore.getState().clear()
+        useHDImportSessionStore.getState().resetState()
         useAccountsStore.setState({ accounts: [] })
         prepareMock.mockResolvedValue({
             keyId: 'w-1',
