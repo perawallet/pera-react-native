@@ -173,12 +173,10 @@ export const useDeepLink = () => {
                     const result = resolveImportAccountType(parsedData.mnemonic)
                     if (!result.success) break
 
-                    const handoffId = useMnemonicHandoffStore
-                        .getState()
-                        .stash({
-                            accountType: result.accountType,
-                            mnemonic: parsedData.mnemonic,
-                        })
+                    const handoffId = useMnemonicHandoffStore.getState().stash({
+                        accountType: result.accountType,
+                        mnemonic: parsedData.mnemonic,
+                    })
                     navigateToScreen(replaceCurrentScreen, 'AddAccount', {
                         screen: 'ImportAccount',
                         params: {

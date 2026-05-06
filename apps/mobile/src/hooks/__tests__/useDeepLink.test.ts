@@ -703,7 +703,9 @@ describe('useDeepLink', () => {
             params: { handoffId: string }
         }
         expect(
-            useMnemonicHandoffStore.getState().consume(navParams.params.handoffId),
+            useMnemonicHandoffStore
+                .getState()
+                .consume(navParams.params.handoffId),
         ).toEqual({
             accountType: 'hdWallet',
             mnemonic:
@@ -741,7 +743,9 @@ describe('useDeepLink', () => {
             params: { handoffId: string }
         }
         expect(
-            useMnemonicHandoffStore.getState().consume(navParams.params.handoffId),
+            useMnemonicHandoffStore
+                .getState()
+                .consume(navParams.params.handoffId),
         ).toEqual({
             accountType: 'algo25',
             mnemonic:

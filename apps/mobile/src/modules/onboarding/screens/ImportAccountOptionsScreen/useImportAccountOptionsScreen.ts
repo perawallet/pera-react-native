@@ -100,12 +100,10 @@ export const useImportAccountOptionsScreen =
                         return
                     }
 
-                    const handoffId = useMnemonicHandoffStore
-                        .getState()
-                        .stash({
-                            accountType: result.accountType,
-                            mnemonic: parsedDeeplink.mnemonic,
-                        })
+                    const handoffId = useMnemonicHandoffStore.getState().stash({
+                        accountType: result.accountType,
+                        mnemonic: parsedDeeplink.mnemonic,
+                    })
                     navigation.push('ImportAccount', {
                         accountType: result.accountType,
                         handoffId,

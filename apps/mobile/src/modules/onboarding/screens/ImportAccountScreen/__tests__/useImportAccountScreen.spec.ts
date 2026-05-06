@@ -143,9 +143,7 @@ describe('useImportAccountScreen', () => {
         const { result } = renderHook(() => useImportAccountScreen())
 
         expect(result.current.words.every(w => w === 'word')).toBe(true)
-        expect(
-            useMnemonicHandoffStore.getState().consume(handoffId),
-        ).toBeNull()
+        expect(useMnemonicHandoffStore.getState().consume(handoffId)).toBeNull()
     })
 
     it('updates a single word at a specific index', () => {
