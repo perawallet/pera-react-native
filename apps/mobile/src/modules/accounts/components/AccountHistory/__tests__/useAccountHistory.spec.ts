@@ -465,7 +465,6 @@ describe('useAccountHistory', () => {
 
             expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
                 transactionId: 'TX_123',
-                groupId: undefined,
             })
         })
 
@@ -495,7 +494,6 @@ describe('useAccountHistory', () => {
 
             expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
                 transactionId: 'TX_456',
-                groupId: 'GROUP_XYZ',
             })
         })
 
@@ -564,7 +562,6 @@ describe('useAccountHistory', () => {
 
             expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
                 transactionId: 'TX_SWAP_NO_GROUP',
-                groupId: undefined,
             })
         })
     })
