@@ -192,6 +192,32 @@ describe('useAlgo25', () => {
             expect(fakeSeed.every(byte => byte === 0)).toBe(true)
         })
 
+        test('commits the seed before zeroBytes runs (regression: addKeyToKeystore must be awaited)', async () => {
+            const fakeSeed = new Uint8Array(32).fill(0xab)
+            mockSeedFromMnemonic.mockReturnValue(fakeSeed)
+            mockEncodeAddress.mockReturnValue('ADDR')
+
+            // `commit` receives `new Uint8Array(seed)`. The copy is taken at
+            // call time, so if zeroBytes wins the race the copy will be all
+            // zeros — captured here from the actual call args.
+            let committedPrivateKey: Uint8Array | undefined
+            mockCommit.mockImplementationOnce(async (arg: any) => {
+                committedPrivateKey = new Uint8Array(arg.keyData.privateKey)
+            })
+
+            const { result } = renderHook(() => useAlgo25())
+
+            await act(async () => {
+                await result.current.createAlgo25Key({
+                    id: 'k',
+                    mnemonic: 'test',
+                })
+            })
+
+            expect(committedPrivateKey).toBeDefined()
+            expect(committedPrivateKey!.every(b => b === 0xab)).toBe(true)
+        })
+
         test('generates a new key when no mnemonic is provided', async () => {
             mockEncodeAddress.mockReturnValue('NEWADDR')
 

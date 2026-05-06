@@ -63,7 +63,12 @@ export const useAlgo25 = () => {
         const naclKeyPair = nacl.sign.keyPair.fromSeed(seed)
         const publicKey = encodeAddress(naclKeyPair.publicKey)
 
-        addKeyToKeystore(keyId, seed, naclKeyPair)
+        // Must await: `addKeyToKeystore` reads the `seed` buffer inside
+        // `commit({ privateKey: new Uint8Array(seed) })` *after* its dynamic
+        // imports resolve. Without await, `zeroBytes(seed, …)` below runs
+        // first and the keystore persists 32 zero bytes — every subsequent
+        // session derives the wrong (zero-seed) keypair.
+        await addKeyToKeystore(keyId, seed, naclKeyPair)
 
         // Import raw seed as a separate keystore key for mnemonic recovery
         let seedKeyId: KeyId

@@ -232,6 +232,42 @@ describe('useImportAccount', () => {
         expect(useAccountsStore.getState().accounts).toHaveLength(1)
     })
 
+    test('uses the keyPair from createAlgo25Key without consulting getKey (regression: stale useMemo)', async () => {
+        // Simulate the stale-useMemo race: the freshly-minted key isn't yet
+        // visible to getKey, which reads from a useMemo bound to the previous
+        // render. Without passing the keyPair through, the import would fall
+        // back to creating a new no-mnemonic key (random address).
+        kmsMock.createAlgo25Key.mockResolvedValueOnce({
+            keyPair: {
+                id: 'WALLET1',
+                type: KeyType.Algo25Key,
+                publicKey: 'CORRECT_ADDRESS',
+            },
+            seedKeyId: 'ks-seed-1',
+        })
+        kmsMock.getKey.mockReturnValue(null)
+
+        uuidSpies.v7.mockImplementationOnce(() => 'ACC1')
+
+        const { result } = renderHook(() => useImportAccount())
+
+        let imported: any
+        await act(async () => {
+            imported = await result.current({
+                mnemonic: 'test mnemonic',
+                type: 'algo25',
+            })
+        })
+
+        expect(kmsMock.createAlgo25Key).toHaveBeenCalledTimes(1)
+        expect(kmsMock.createAlgo25Key).toHaveBeenCalledWith({
+            mnemonic: 'test mnemonic',
+        })
+        expect(kmsMock.getKey).not.toHaveBeenCalled()
+        expect(imported.address).toBe('CORRECT_ADDRESS')
+        expect(imported.keyPairId).toBe('WALLET1')
+    })
+
     test('throws when createAlgo25Key fails', async () => {
         kmsMock.createAlgo25Key.mockRejectedValueOnce(
             new Error('Import failed'),

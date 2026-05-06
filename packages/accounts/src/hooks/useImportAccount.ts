@@ -43,6 +43,6 @@ export const useImportAccount = () => {
             return { type: 'hdWallet', walletKeyId, derivationType }
         }
         const { keyPair } = await createAlgo25Key({ mnemonic })
-        return await createAlgo25WalletAccount({ id: keyPair.id })
+        return await createAlgo25WalletAccount({ keyPair })
     }
 }

@@ -20,7 +20,11 @@ import { AccountTypes, WalletAccount } from '../models'
 import { logger } from '@perawallet/wallet-core-shared'
 import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
-import { KeyNotFoundError, useKMS } from '@perawallet/wallet-core-kms'
+import {
+    KeyNotFoundError,
+    useKMS,
+    type KeyPair,
+} from '@perawallet/wallet-core-kms'
 import { NoHDWalletError } from '../errors'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
@@ -114,17 +118,34 @@ export const useCreateAccount = () => {
         return newAccount
     }
 
-    const createAlgo25WalletAccount = async ({ id }: { id?: string }) => {
-        const keyId = id ?? generateOrderedUniqueId()
-        let rootKey = getKey(keyId)
+    const createAlgo25WalletAccount = async ({
+        keyPair,
+        id,
+    }: {
+        keyPair?: KeyPair
+        id?: string
+    }) => {
+        // When the caller has just minted the key (e.g. import flow), passing
+        // `keyPair` directly avoids `getKey()`. `getKey` reads a `useMemo`
+        // bound to the *previous render's* keystore snapshot, so a key
+        // committed earlier in the same async handler isn't visible yet — we
+        // would otherwise fall through to the no-mnemonic branch below and
+        // mint an algo25 key from a fresh random seed, surfacing a
+        // different (random) address each import.
+        let rootKey: KeyPair | null | undefined = keyPair
 
         if (!rootKey) {
-            const result = await createAlgo25Key({ id: keyId })
-            rootKey = result.keyPair
+            const keyId = id ?? generateOrderedUniqueId()
+            rootKey = getKey(keyId)
+
+            if (!rootKey) {
+                const result = await createAlgo25Key({ id: keyId })
+                rootKey = result.keyPair
+            }
         }
 
         if (!rootKey?.id) {
-            throw new KeyNotFoundError(keyId)
+            throw new KeyNotFoundError(id ?? '')
         }
 
         const newAccount: WalletAccount = {

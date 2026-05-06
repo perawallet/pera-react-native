@@ -297,4 +297,31 @@ describe('useCreateAccount', () => {
         expect(created.address).toBe('ALGO25_PUBLIC_KEY')
         expect(created.keyPairId).toBe('WALLET1')
     })
+
+    test('uses provided keyPair without consulting getKey or createAlgo25Key (regression: stale useMemo)', async () => {
+        // getKey is bound to the previous render's keystore snapshot via
+        // useMemo, so a key just minted in the same async handler isn't
+        // visible. The import flow passes the freshly-minted keyPair
+        // directly to bypass that.
+        uuidSpies.v7.mockImplementationOnce(() => 'ACC1')
+
+        const { result } = renderHook(() => useCreateAccount())
+
+        let created: any
+        await act(async () => {
+            created = await result.current.createAlgo25WalletAccount({
+                keyPair: {
+                    id: 'IMPORTED_KEY',
+                    type: KeyType.Algo25Key,
+                    publicKey: 'IMPORTED_ADDRESS',
+                },
+            })
+        })
+
+        expect(kmsMock.getKey).not.toHaveBeenCalled()
+        expect(kmsMock.createAlgo25Key).not.toHaveBeenCalled()
+        expect(created.type).toBe('algo25')
+        expect(created.address).toBe('IMPORTED_ADDRESS')
+        expect(created.keyPairId).toBe('IMPORTED_KEY')
+    })
 })
