@@ -678,6 +678,83 @@ describe('useAssetTransactionList', () => {
                 transactionId: 'TX_ASSET_123',
             })
         })
+
+        it('navigates to TransactionDetails without groupId for a non-swap transaction with groupId', () => {
+            const { result } = renderHook(() =>
+                useAssetTransactionList({
+                    account: mockAccount,
+                    asset: mockAsset,
+                }),
+            )
+
+            const mockTransaction = {
+                id: 'TX_ASSET_456',
+                txType: 'axfer',
+                sender: 'sender-address',
+                receiver: 'receiver-address',
+                confirmedRound: 250,
+                roundTime: 1704153600,
+                swapGroupDetail: null,
+                interpretedMeaning: null,
+                fee: '1000',
+                groupId: 'GROUP_XYZ',
+                amount: '1000000',
+                closeTo: null,
+                asset: { assetId: '12345', name: 'Test Asset' },
+                applicationId: null,
+                innerTransactionCount: null,
+            }
+
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            result.current.handleTransactionPress(mockTransaction as any)
+
+            expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
+                transactionId: 'TX_ASSET_456',
+            })
+            expect(mockNavigate).not.toHaveBeenCalledWith(
+                'TransactionDetails',
+                expect.objectContaining({ groupId: expect.anything() }),
+            )
+        })
+
+        it('navigates to GroupTransactionList for a swap transaction with groupId', () => {
+            const { result } = renderHook(() =>
+                useAssetTransactionList({
+                    account: mockAccount,
+                    asset: mockAsset,
+                }),
+            )
+
+            const mockTransaction = {
+                id: 'TX_SWAP_123',
+                txType: 'appl',
+                sender: 'sender-address',
+                receiver: null,
+                confirmedRound: 300,
+                roundTime: 1704240000,
+                swapGroupDetail: {
+                    amountIn: '1000000',
+                    assetInUnitName: 'ALGO',
+                    amountOut: '500000',
+                    assetOutUnitName: 'USDC',
+                },
+                interpretedMeaning: null,
+                fee: '2000',
+                groupId: 'SWAP_GROUP_ABC',
+                amount: null,
+                closeTo: null,
+                asset: null,
+                applicationId: '12345',
+                innerTransactionCount: 3,
+            }
+
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            result.current.handleTransactionPress(mockTransaction as any)
+
+            expect(mockNavigate).toHaveBeenCalledWith('GroupTransactionList', {
+                groupId: 'SWAP_GROUP_ABC',
+            })
+        })
     })
 
     describe('filter visibility', () => {
