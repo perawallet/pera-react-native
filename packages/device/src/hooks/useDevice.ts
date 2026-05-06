@@ -157,13 +157,18 @@ export const useDevice = () => {
      * `pushToken.orEmpty()`), routed via the raw endpoint so we hit the
      * *target* network's URL rather than `useNetwork()`'s current value
      * (which has already advanced to the new network by the time this fires).
+     *
+     * `accounts` is sent as `[]` so the PUT can't accidentally overwrite the
+     * old network's account list with the new network's addresses. The
+     * `accounts` field is required by the request schema, but we no longer
+     * own that device for this network — leaving it empty is the safe value.
      */
     const clearDevicePushToken = useCallback(
-        async (targetNetwork: Network, addresses: string[]) => {
+        async (targetNetwork: Network) => {
             const targetDeviceId = deviceIDs?.get(targetNetwork)
             if (!targetDeviceId) return
             try {
-                const payload = await buildPayload(addresses)
+                const payload = await buildPayload([])
                 await updateDeviceEndpoint(targetNetwork, targetDeviceId, {
                     ...payload,
                     push_token: '',

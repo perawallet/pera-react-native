@@ -130,7 +130,7 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
 
         const run = async () => {
             if (isNetworkSwitch) {
-                await clearDevicePushToken(previousNetwork, addresses)
+                await clearDevicePushToken(previousNetwork)
             }
             await registerDevice(addresses)
         }

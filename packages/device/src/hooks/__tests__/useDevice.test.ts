@@ -359,7 +359,7 @@ describe('services/device/hooks', () => {
         expect(mockCreateDevice).toHaveBeenCalledTimes(1)
     })
 
-    test('clearDevicePushToken targets the previous network directly with push_token: ""', async () => {
+    test('clearDevicePushToken targets the previous network directly with push_token: "" and empty accounts', async () => {
         vi.resetModules()
 
         const { useDeviceStore } = await import('../../store')
@@ -388,16 +388,18 @@ describe('services/device/hooks', () => {
         const { result } = renderHook(() => useDevice(), { wrapper })
 
         await act(async () => {
-            await result.current.clearDevicePushToken('testnet', ['account-1'])
+            await result.current.clearDevicePushToken('testnet')
         })
 
         // Routed via the raw endpoint with the *target* network, not the
-        // mutation hook (which captures the current network).
+        // mutation hook (which captures the current network). `accounts` is
+        // sent empty so the new network's address list can't accidentally
+        // overwrite the old device record.
         expect(mockUpdateDeviceEndpoint).toHaveBeenCalledWith(
             'testnet',
             'testnet-device-id',
             {
-                accounts: ['account-1'],
+                accounts: [],
                 platform: 'ios',
                 push_token: '',
                 model: 'iPhone 14',
@@ -428,7 +430,7 @@ describe('services/device/hooks', () => {
         const { result } = renderHook(() => useDevice(), { wrapper })
 
         await act(async () => {
-            await result.current.clearDevicePushToken('testnet', ['account-1'])
+            await result.current.clearDevicePushToken('testnet')
         })
 
         expect(mockUpdateDeviceEndpoint).not.toHaveBeenCalled()
@@ -467,7 +469,7 @@ describe('services/device/hooks', () => {
 
         await expect(
             act(async () => {
-                await result.current.clearDevicePushToken('testnet', [])
+                await result.current.clearDevicePushToken('testnet')
             }),
         ).resolves.not.toThrow()
     })
