@@ -189,6 +189,33 @@ describe('useAutoLockListener', () => {
         )
     })
 
+    it('should not unlock an already-locked app when foreground check returns false (PERA-4196 cancel-FaceID race)', async () => {
+        mockCheckPinEnabled.mockResolvedValue(true)
+        mockCheckAutoLock.mockResolvedValue(false)
+
+        const { result } = renderHook(() => useAutoLockListener())
+
+        await waitFor(() => {
+            expect(result.current.isLocked).toBe(true)
+            expect(result.current.isChecking).toBe(false)
+        })
+
+        // Simulate the iOS biometric prompt round-trip: the prompt makes the
+        // app go through inactive/background and back to active before the
+        // user has authenticated. checkAutoLock will return false because no
+        // real time has elapsed — but the app must remain locked.
+        act(() => {
+            appStateChangeHandler?.('background')
+            appStateChangeHandler?.('active')
+        })
+
+        await waitFor(() => {
+            expect(mockCheckAutoLock).toHaveBeenCalledTimes(1)
+        })
+
+        expect(result.current.isLocked).toBe(true)
+    })
+
     it('should keep lock state and stop checking when foreground check fails', async () => {
         mockCheckPinEnabled.mockResolvedValue(true)
         mockCheckAutoLock.mockRejectedValue(new Error('Auto lock check failed'))

@@ -10,10 +10,11 @@
  limitations under the License
  */
 
-import { useState, useCallback, useMemo, useEffect } from 'react'
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { usePinCode, useBiometrics } from '@perawallet/wallet-core-security'
 import { useLanguage } from '@hooks/useLanguage'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { useErrorToast } from '@hooks/useErrorToast'
 
 export type PinEntryMode = 'setup' | 'confirm' | 'verify' | 'change_old'
 
@@ -27,9 +28,11 @@ type UsePinEditViewResult = {
     hasError: boolean
     isDisabled: boolean
     handlePinComplete: (pin: string) => void
-    handleBiometricPress: () => void
     handleErrorAnimationComplete: () => void
 }
+
+const isVerifyMode = (mode: Nullable<PinEntryMode>): boolean =>
+    mode === 'verify' || mode === 'change_old'
 
 export const usePinEditView = ({
     mode,
@@ -45,6 +48,7 @@ export const usePinEditView = ({
     } = usePinCode()
     const { checkBiometricsEnabled, authenticateWithBiometrics } =
         useBiometrics()
+    const { showError } = useErrorToast()
 
     const [currentMode, setCurrentMode] = useState<Nullable<PinEntryMode>>(mode)
     const [storedPin, setStoredPin] = useState<string>('')
@@ -69,6 +73,51 @@ export const usePinEditView = ({
     useEffect(() => {
         setCurrentMode(mode)
     }, [mode])
+
+    // Auto-prompt biometrics when entering a verification step. The user's
+    // security settings drive which factor is used: if biometrics is enabled,
+    // we prompt automatically; on cancel/failure, the user falls back to PIN.
+    // Tracked per-mode so re-entering verify after a cancelled prompt doesn't
+    // immediately re-fire, but switching from change_old → setup → ... does.
+    // (PERA-4193)
+    const lastPromptedModeRef = useRef<Nullable<PinEntryMode>>(null)
+
+    useEffect(() => {
+        if (!isVerifyMode(currentMode)) {
+            lastPromptedModeRef.current = null
+            return
+        }
+        if (lastPromptedModeRef.current === currentMode) return
+        lastPromptedModeRef.current = currentMode
+
+        let cancelled = false
+        try {
+            ;(async () => {
+                const enabled = await checkBiometricsEnabled()
+                if (cancelled || !enabled) return
+                const success = await authenticateWithBiometrics()
+                if (cancelled || !success) return
+                resetFailedAttempts()
+                setHasError(false)
+                if (currentMode === 'verify') {
+                    onSuccess?.()
+                } else if (currentMode === 'change_old') {
+                    setCurrentMode('setup')
+                }
+            })()
+        } catch (error) {
+            showError(error)
+        }
+        return () => {
+            cancelled = true
+        }
+    }, [
+        currentMode,
+        checkBiometricsEnabled,
+        authenticateWithBiometrics,
+        resetFailedAttempts,
+        onSuccess,
+    ])
 
     const handlePinComplete = useCallback(
         async (pin: string) => {
@@ -117,22 +166,6 @@ export const usePinEditView = ({
         ],
     )
 
-    const handleBiometricPress = useCallback(async () => {
-        const enabled = await checkBiometricsEnabled()
-        if (!enabled) return
-
-        const success = await authenticateWithBiometrics()
-        if (success) {
-            resetFailedAttempts()
-            onSuccess?.()
-        }
-    }, [
-        checkBiometricsEnabled,
-        authenticateWithBiometrics,
-        resetFailedAttempts,
-        onSuccess,
-    ])
-
     const handleErrorAnimationComplete = useCallback(() => {
         setHasError(false)
     }, [])
@@ -142,7 +175,6 @@ export const usePinEditView = ({
         hasError,
         isDisabled: isLockedOut,
         handlePinComplete,
-        handleBiometricPress,
         handleErrorAnimationComplete,
     }
 }

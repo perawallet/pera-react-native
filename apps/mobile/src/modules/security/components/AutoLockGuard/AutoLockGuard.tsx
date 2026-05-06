@@ -48,8 +48,9 @@ export const AutoLockGuard = ({ children }: PropsWithChildren) => {
             {isLocked && (
                 <Modal
                     visible={true}
-                    animationType='slide'
-                    allowSwipeDismissal={false}
+                    transparent={false}
+                    statusBarTranslucent={true}
+                    hardwareAccelerated={true}
                 >
                     <PWView style={styles.container}>
                         {isLockedOut ? (

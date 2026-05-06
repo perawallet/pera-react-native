@@ -29,5 +29,8 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
         right: 0,
         bottom: 0,
         zIndex: theme.zIndex.max,
+        backgroundColor: theme.colors.background,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
 }))

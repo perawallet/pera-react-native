@@ -37,6 +37,11 @@ describe('usePinEditView', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        // Default biometrics to disabled so existing tests don't accidentally
+        // trigger the auto-prompt added for PERA-4193. Tests that exercise the
+        // auto-prompt path override these explicitly.
+        mockCheckBiometricsEnabled.mockResolvedValue(false)
+        mockAuthenticateWithBiometrics.mockResolvedValue(false)
         ;(usePinCode as Mock).mockReturnValue({
             savePin: mockSavePin,
             verifyPin: mockVerifyPin,
@@ -250,54 +255,110 @@ describe('usePinEditView', () => {
         })
     })
 
-    describe('handleBiometricPress', () => {
-        it('should call onSuccess when biometrics is enabled and authentication succeeds', async () => {
+    describe('biometrics auto-prompt (PERA-4193)', () => {
+        it('should auto-prompt biometrics on entering verify mode and call onSuccess on success', async () => {
             mockCheckBiometricsEnabled.mockResolvedValue(true)
             mockAuthenticateWithBiometrics.mockResolvedValue(true)
 
-            const { result } = renderHook(() =>
+            renderHook(() =>
                 usePinEditView({ mode: 'verify', onSuccess: mockOnSuccess }),
             )
 
-            await act(async () => {
-                await result.current.handleBiometricPress()
+            await waitFor(() => {
+                expect(mockAuthenticateWithBiometrics).toHaveBeenCalled()
             })
 
-            expect(mockCheckBiometricsEnabled).toHaveBeenCalled()
-            expect(mockAuthenticateWithBiometrics).toHaveBeenCalled()
             expect(mockResetFailedAttempts).toHaveBeenCalled()
             expect(mockOnSuccess).toHaveBeenCalled()
         })
 
-        it('should not authenticate when biometrics is not enabled', async () => {
+        it('should not auto-prompt biometrics when biometrics is not enabled', async () => {
             mockCheckBiometricsEnabled.mockResolvedValue(false)
 
-            const { result } = renderHook(() =>
+            renderHook(() =>
                 usePinEditView({ mode: 'verify', onSuccess: mockOnSuccess }),
             )
 
-            await act(async () => {
-                await result.current.handleBiometricPress()
+            await waitFor(() => {
+                expect(mockCheckBiometricsEnabled).toHaveBeenCalled()
             })
 
-            expect(mockCheckBiometricsEnabled).toHaveBeenCalled()
             expect(mockAuthenticateWithBiometrics).not.toHaveBeenCalled()
             expect(mockOnSuccess).not.toHaveBeenCalled()
         })
 
-        it('should not call onSuccess when authentication fails', async () => {
+        it('should not call onSuccess when biometrics auth is cancelled or fails', async () => {
             mockCheckBiometricsEnabled.mockResolvedValue(true)
             mockAuthenticateWithBiometrics.mockResolvedValue(false)
 
-            const { result } = renderHook(() =>
+            renderHook(() =>
                 usePinEditView({ mode: 'verify', onSuccess: mockOnSuccess }),
             )
 
-            await act(async () => {
-                await result.current.handleBiometricPress()
+            await waitFor(() => {
+                expect(mockAuthenticateWithBiometrics).toHaveBeenCalled()
             })
 
             expect(mockOnSuccess).not.toHaveBeenCalled()
+        })
+
+        it('should auto-prompt biometrics on entering change_old mode and advance to setup on success', async () => {
+            mockCheckBiometricsEnabled.mockResolvedValue(true)
+            mockAuthenticateWithBiometrics.mockResolvedValue(true)
+
+            const { result } = renderHook(() =>
+                usePinEditView({
+                    mode: 'change_old',
+                    onSuccess: mockOnSuccess,
+                }),
+            )
+
+            await waitFor(() => {
+                expect(result.current.title).toBe('security.pin.setup_title')
+            })
+
+            expect(mockResetFailedAttempts).toHaveBeenCalled()
+            expect(mockOnSuccess).not.toHaveBeenCalled()
+        })
+
+        it('should not auto-prompt biometrics in setup or confirm modes', async () => {
+            mockCheckBiometricsEnabled.mockResolvedValue(true)
+            mockAuthenticateWithBiometrics.mockResolvedValue(true)
+
+            renderHook(() =>
+                usePinEditView({ mode: 'setup', onSuccess: mockOnSuccess }),
+            )
+
+            // Give the effect a chance to run
+            await act(async () => {
+                await Promise.resolve()
+            })
+
+            expect(mockCheckBiometricsEnabled).not.toHaveBeenCalled()
+            expect(mockAuthenticateWithBiometrics).not.toHaveBeenCalled()
+        })
+
+        it('should only auto-prompt once per verify-mode entry (no re-fire after cancel)', async () => {
+            mockCheckBiometricsEnabled.mockResolvedValue(true)
+            mockAuthenticateWithBiometrics.mockResolvedValue(false)
+
+            const { rerender } = renderHook(
+                ({ mode }) =>
+                    usePinEditView({ mode, onSuccess: mockOnSuccess }),
+                { initialProps: { mode: 'verify' as 'verify' | null } },
+            )
+
+            await waitFor(() => {
+                expect(mockAuthenticateWithBiometrics).toHaveBeenCalledTimes(1)
+            })
+
+            // Re-render with the same verify prop — should not re-prompt
+            rerender({ mode: 'verify' })
+            await act(async () => {
+                await Promise.resolve()
+            })
+
+            expect(mockAuthenticateWithBiometrics).toHaveBeenCalledTimes(1)
         })
     })
 
