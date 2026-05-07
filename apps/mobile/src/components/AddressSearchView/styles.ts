@@ -22,6 +22,9 @@ export const useStyles = makeStyles(theme => {
             paddingHorizontal: theme.spacing.sm,
             marginBottom: theme.spacing.xs,
         },
+        searchContainer: {
+            backgroundColor: theme.colors.background,
+        },
         list: {
             flex: 1,
         },
