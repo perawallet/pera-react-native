@@ -11,11 +11,14 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
+import { persist, createJSONStorage } from 'zustand/middleware'
 import {
     registerStore,
     type Network,
     type BaseStoreState,
+    type WithPersist,
 } from '@perawallet/wallet-core-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { config } from '@perawallet/wallet-core-config'
 
 const STORE_NAME = 'network-store'
@@ -29,15 +32,31 @@ const initialState = {
     network: config.defaultNetwork as Network,
 }
 
-export const useNetworkStore: UseBoundStore<StoreApi<NetworkState>> =
-    create<NetworkState>(set => ({
-        ...initialState,
-        setNetwork: (network: Network) => set({ network }),
-        resetState: () => set({ ...initialState }),
-    }))
+export const useNetworkStore: UseBoundStore<
+    WithPersist<StoreApi<NetworkState>, unknown>
+> = create<NetworkState>()(
+    persist(
+        set => ({
+            ...initialState,
+            setNetwork: (network: Network) => set({ network }),
+            resetState: () => set({ ...initialState }),
+        }),
+        {
+            name: STORE_NAME,
+            storage: createJSONStorage(() => getProvider().keyValueStorage),
+            version: 1,
+            partialize: state => ({ network: state.network }),
+        },
+    ),
+)
 
 registerStore({
     name: STORE_NAME,
-    clearStorage: () => {}, // No persistence for network store
+    clearStorage: () =>
+        (
+            useNetworkStore as unknown as {
+                persist: { clearStorage: () => void }
+            }
+        ).persist.clearStorage(),
     resetState: () => useNetworkStore.getState().resetState(),
 })
