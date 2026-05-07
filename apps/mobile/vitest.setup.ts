@@ -64,11 +64,6 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
             getBoolean: vi.fn().mockReturnValue(false),
             getString: vi.fn().mockReturnValue(''),
         },
-        secureStorage: {
-            setItem: vi.fn().mockResolvedValue(undefined),
-            getItem: vi.fn().mockResolvedValue(null),
-            removeItem: vi.fn().mockResolvedValue(undefined),
-        },
     }),
     getPlatformServices: () => ({
         keyValueStorage: {
@@ -118,11 +113,6 @@ vi.mock('@perawallet/wallet-extension-provider', () => {
             getStringValue: vi.fn().mockReturnValue(''),
             getBooleanValue: vi.fn().mockReturnValue(false),
             getNumberValue: vi.fn().mockReturnValue(0),
-        },
-        secureStorage: {
-            setItem: vi.fn().mockResolvedValue(undefined),
-            getItem: vi.fn().mockResolvedValue(null),
-            removeItem: vi.fn().mockResolvedValue(undefined),
         },
         key: {
             store: {
@@ -1977,6 +1967,16 @@ vi.mock('@perawallet/wallet-core-background', () => ({
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
     useKMS: vi.fn(),
+    useKMSService: vi.fn(() => ({
+        commitTypedSecret: vi.fn(async () => {}),
+        withTypedSecret: vi.fn(async () => null),
+        hasTypedSecret: vi.fn(() => false),
+        removeTypedSecret: vi.fn(async () => {}),
+    })),
+    commitTypedSecret: vi.fn(async () => {}),
+    withTypedSecret: vi.fn(async () => null),
+    hasTypedSecret: vi.fn(() => false),
+    removeTypedSecret: vi.fn(async () => {}),
     uniformIntBelow: (max: number) =>
         max <= 0 ? 0 : Math.floor(Math.random() * max),
     pickDistinctIndexes: (count: number, poolSize: number) => {

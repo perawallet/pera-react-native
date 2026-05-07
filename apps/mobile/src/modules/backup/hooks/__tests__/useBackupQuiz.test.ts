@@ -115,4 +115,20 @@ describe('useBackupQuiz', () => {
         expect(result.current.items).toHaveLength(0)
         expect(result.current.isFilled).toBe(false)
     })
+
+    test('rebuilds items when correctPairs arrives after initial render', () => {
+        const { result, rerender } = renderHook(
+            ({ pairs }: { pairs: MnemonicWordAtPosition[] }) =>
+                useBackupQuiz(pairs, DISTRACTOR_POOL, vi.fn(), vi.fn()),
+            { initialProps: { pairs: [] as MnemonicWordAtPosition[] } },
+        )
+
+        expect(result.current.items).toHaveLength(0)
+
+        rerender({ pairs: CORRECT_PAIRS })
+
+        expect(result.current.items).toHaveLength(CORRECT_PAIRS.length)
+        const positions = result.current.items.map(i => i.position)
+        expect(positions).toEqual(CORRECT_PAIRS.map(p => p.index))
+    })
 })

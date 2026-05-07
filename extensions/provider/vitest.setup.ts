@@ -26,16 +26,6 @@ const mockPlatformServices = {
         initializeAnalytics() {},
         logEvent() {},
     },
-    secureStorage: {
-        async setItem() {},
-        async getItem() {
-            return null
-        },
-        async removeItem() {},
-        async authenticate() {
-            return true
-        },
-    },
     biometrics: {
         async getSupportedBiometricType() {
             return 'fingerprint'

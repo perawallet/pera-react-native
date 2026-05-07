@@ -12,20 +12,27 @@
 
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
-import { useBiometrics } from '../useBiometrics'
-import { PIN_STORAGE_KEY, BIOMETRIC_STORAGE_KEY } from '../../constants'
 
-const mockGetItem = vi.fn()
-const mockSetItem = vi.fn()
-const mockRemoveItem = vi.fn()
+const kmsMocks = vi.hoisted(() => ({
+    pinBytes: null as Uint8Array | null,
+    biometricBytes: null as Uint8Array | null,
+    commitTypedSecret: vi.fn(),
+    withTypedSecret: vi.fn(),
+    hasTypedSecret: vi.fn(),
+    removeTypedSecret: vi.fn(),
+}))
+
+vi.mock('@perawallet/wallet-core-kms', () => ({
+    useKMSService: () => ({
+        commitTypedSecret: kmsMocks.commitTypedSecret,
+        withTypedSecret: kmsMocks.withTypedSecret,
+        hasTypedSecret: kmsMocks.hasTypedSecret,
+        removeTypedSecret: kmsMocks.removeTypedSecret,
+    }),
+}))
+
 const mockCheckBiometricsAvailable = vi.fn()
 const mockAuthenticate = vi.fn()
-
-const mockSecureStorage = {
-    getItem: mockGetItem,
-    setItem: mockSetItem,
-    removeItem: mockRemoveItem,
-}
 
 const mockBiometricsService = {
     checkBiometricsAvailable: mockCheckBiometricsAvailable,
@@ -35,10 +42,48 @@ const mockBiometricsService = {
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
-        secureStorage: mockSecureStorage,
         biometrics: mockBiometricsService,
     }),
 }))
+
+import { useBiometrics } from '../useBiometrics'
+import {
+    PIN_RECORD_KEY_ID,
+    BIOMETRIC_BLOB_KEY_ID,
+    BIOMETRIC_BLOB_KEYSTORE_TYPE,
+} from '../../constants'
+
+const wireBlobMocks = () => {
+    kmsMocks.commitTypedSecret.mockImplementation(
+        async ({ id, bytes }: { id: string; bytes: Uint8Array }) => {
+            if (id === PIN_RECORD_KEY_ID) kmsMocks.pinBytes = bytes
+            else kmsMocks.biometricBytes = bytes
+        },
+    )
+    kmsMocks.withTypedSecret.mockImplementation(
+        async (id: string, handler: (bytes: Uint8Array) => unknown) => {
+            const bytes =
+                id === PIN_RECORD_KEY_ID
+                    ? kmsMocks.pinBytes
+                    : kmsMocks.biometricBytes
+            if (!bytes) return null
+            try {
+                return await handler(bytes)
+            } finally {
+                bytes.fill(0)
+            }
+        },
+    )
+    kmsMocks.hasTypedSecret.mockImplementation((id: string) =>
+        id === PIN_RECORD_KEY_ID
+            ? kmsMocks.pinBytes !== null
+            : kmsMocks.biometricBytes !== null,
+    )
+    kmsMocks.removeTypedSecret.mockImplementation(async (id: string) => {
+        if (id === PIN_RECORD_KEY_ID) kmsMocks.pinBytes = null
+        else kmsMocks.biometricBytes = null
+    })
+}
 
 /**
  * Helper to render the hook and flush the initial useEffect that reads
@@ -55,13 +100,14 @@ const renderAndSettle = async () => {
 describe('useBiometrics', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockGetItem.mockResolvedValue(null)
+        kmsMocks.pinBytes = null
+        kmsMocks.biometricBytes = null
+        wireBlobMocks()
         mockCheckBiometricsAvailable.mockResolvedValue(false)
     })
 
     test('initializes isEnabled from secure storage on mount', async () => {
-        const biometricData = new TextEncoder().encode('123456')
-        mockGetItem.mockResolvedValue(biometricData)
+        kmsMocks.biometricBytes = new TextEncoder().encode('123456')
 
         const { result } = renderHook(() => useBiometrics())
 
@@ -85,8 +131,7 @@ describe('useBiometrics', () => {
     })
 
     test('checkBiometricsEnabled returns true when biometric data exists', async () => {
-        const biometricData = new TextEncoder().encode('123456')
-        mockGetItem.mockResolvedValue(biometricData)
+        kmsMocks.biometricBytes = new TextEncoder().encode('123456')
 
         const { result } = await renderAndSettle()
 
@@ -96,12 +141,12 @@ describe('useBiometrics', () => {
         })
 
         expect(isEnabled).toBe(true)
-        expect(mockGetItem).toHaveBeenCalledWith(BIOMETRIC_STORAGE_KEY)
+        expect(kmsMocks.hasTypedSecret).toHaveBeenCalledWith(
+            BIOMETRIC_BLOB_KEY_ID,
+        )
     })
 
     test('checkBiometricsEnabled returns false when no biometric data', async () => {
-        mockGetItem.mockResolvedValue(null)
-
         const { result } = await renderAndSettle()
 
         let isEnabled: boolean = true
@@ -110,7 +155,9 @@ describe('useBiometrics', () => {
         })
 
         expect(isEnabled).toBe(false)
-        expect(mockGetItem).toHaveBeenCalledWith(BIOMETRIC_STORAGE_KEY)
+        expect(kmsMocks.hasTypedSecret).toHaveBeenCalledWith(
+            BIOMETRIC_BLOB_KEY_ID,
+        )
     })
 
     test('checkBiometricsAvailable returns true when available', async () => {
@@ -152,13 +199,15 @@ describe('useBiometrics', () => {
             await result.current.setBiometricsCode(code)
         })
 
-        expect(mockSetItem).toHaveBeenCalledWith(BIOMETRIC_STORAGE_KEY, code)
+        expect(kmsMocks.commitTypedSecret).toHaveBeenCalledWith({
+            id: BIOMETRIC_BLOB_KEY_ID,
+            type: BIOMETRIC_BLOB_KEYSTORE_TYPE,
+            bytes: code,
+        })
         expect(result.current.isEnabled).toBe(true)
     })
 
     test('enableBiometrics returns false when PIN is not enabled', async () => {
-        mockGetItem.mockResolvedValue(null)
-
         const { result } = await renderAndSettle()
 
         let success: boolean = true
@@ -167,13 +216,14 @@ describe('useBiometrics', () => {
         })
 
         expect(success).toBe(false)
-        expect(mockGetItem).toHaveBeenCalledWith(PIN_STORAGE_KEY)
+        expect(kmsMocks.withTypedSecret).toHaveBeenCalledWith(
+            PIN_RECORD_KEY_ID,
+            expect.any(Function),
+        )
         expect(result.current.isEnabled).toBe(false)
     })
 
     test('enableBiometrics returns false when PIN data not found', async () => {
-        mockGetItem.mockResolvedValue(null)
-
         const { result } = await renderAndSettle()
 
         let success: boolean = true
@@ -182,12 +232,15 @@ describe('useBiometrics', () => {
         })
 
         expect(success).toBe(false)
-        expect(mockGetItem).toHaveBeenCalledWith(PIN_STORAGE_KEY)
+        expect(kmsMocks.withTypedSecret).toHaveBeenCalledWith(
+            PIN_RECORD_KEY_ID,
+            expect.any(Function),
+        )
     })
 
     test('enableBiometrics successfully copies PIN to biometric storage and sets isEnabled', async () => {
         const pinData = new TextEncoder().encode('123456')
-        mockGetItem.mockResolvedValue(pinData)
+        kmsMocks.pinBytes = pinData
         mockCheckBiometricsAvailable.mockResolvedValue(true)
         mockAuthenticate.mockResolvedValue(true)
 
@@ -199,16 +252,22 @@ describe('useBiometrics', () => {
         })
 
         expect(success).toBe(true)
-        expect(mockGetItem).toHaveBeenCalledWith(PIN_STORAGE_KEY)
+        expect(kmsMocks.withTypedSecret).toHaveBeenCalledWith(
+            PIN_RECORD_KEY_ID,
+            expect.any(Function),
+        )
         expect(mockCheckBiometricsAvailable).toHaveBeenCalled()
         expect(mockAuthenticate).toHaveBeenCalled()
-        expect(mockSetItem).toHaveBeenCalledWith(BIOMETRIC_STORAGE_KEY, pinData)
+        expect(kmsMocks.commitTypedSecret).toHaveBeenCalledWith({
+            id: BIOMETRIC_BLOB_KEY_ID,
+            type: BIOMETRIC_BLOB_KEYSTORE_TYPE,
+            bytes: pinData,
+        })
         expect(result.current.isEnabled).toBe(true)
     })
 
     test('enableBiometrics returns false on error', async () => {
-        const pinData = new TextEncoder().encode('123456')
-        mockGetItem.mockResolvedValue(pinData)
+        kmsMocks.pinBytes = new TextEncoder().encode('123456')
         mockCheckBiometricsAvailable.mockResolvedValue(true)
         mockAuthenticate.mockRejectedValue(new Error('Auth error'))
 
@@ -223,7 +282,7 @@ describe('useBiometrics', () => {
     })
 
     test('enableBiometrics returns false when biometrics are not available', async () => {
-        mockGetItem.mockResolvedValue(new TextEncoder().encode('123456'))
+        kmsMocks.pinBytes = new TextEncoder().encode('123456')
         mockCheckBiometricsAvailable.mockResolvedValue(false)
 
         const { result } = await renderAndSettle()
@@ -238,7 +297,7 @@ describe('useBiometrics', () => {
     })
 
     test('enableBiometrics returns false when the user declines authentication', async () => {
-        mockGetItem.mockResolvedValue(new TextEncoder().encode('123456'))
+        kmsMocks.pinBytes = new TextEncoder().encode('123456')
         mockCheckBiometricsAvailable.mockResolvedValue(true)
         mockAuthenticate.mockResolvedValue(false)
 
@@ -250,15 +309,15 @@ describe('useBiometrics', () => {
         })
 
         expect(success).toBe(false)
-        expect(mockSetItem).not.toHaveBeenCalledWith(
-            BIOMETRIC_STORAGE_KEY,
-            expect.any(Uint8Array),
+        // The biometric blob must not be committed when auth fails.
+        const commits = kmsMocks.commitTypedSecret.mock.calls.filter(
+            call => call[0].id === BIOMETRIC_BLOB_KEY_ID,
         )
+        expect(commits).toHaveLength(0)
     })
 
     test('disableBiometrics removes biometric data and sets isEnabled to false', async () => {
-        const biometricData = new TextEncoder().encode('123456')
-        mockGetItem.mockResolvedValue(biometricData)
+        kmsMocks.pinBytes = new TextEncoder().encode('123456')
         mockCheckBiometricsAvailable.mockResolvedValue(true)
         mockAuthenticate.mockResolvedValue(true)
 
@@ -274,13 +333,13 @@ describe('useBiometrics', () => {
             await result.current.disableBiometrics()
         })
 
-        expect(mockRemoveItem).toHaveBeenCalledWith(BIOMETRIC_STORAGE_KEY)
+        expect(kmsMocks.removeTypedSecret).toHaveBeenCalledWith(
+            BIOMETRIC_BLOB_KEY_ID,
+        )
         expect(result.current.isEnabled).toBe(false)
     })
 
     test('authenticateWithBiometrics returns false when biometrics not enabled', async () => {
-        mockGetItem.mockResolvedValue(null)
-
         const { result } = await renderAndSettle()
 
         let authenticated: boolean = true
@@ -293,8 +352,7 @@ describe('useBiometrics', () => {
     })
 
     test('authenticateWithBiometrics returns true when biometrics enabled and auth succeeds', async () => {
-        const biometricData = new TextEncoder().encode('123456')
-        mockGetItem.mockResolvedValue(biometricData)
+        kmsMocks.biometricBytes = new TextEncoder().encode('123456')
         mockAuthenticate.mockResolvedValue(true)
 
         const { result } = await renderAndSettle()
@@ -309,7 +367,6 @@ describe('useBiometrics', () => {
     })
 
     test('authenticateWithBiometrics returns false when biometric data missing', async () => {
-        mockGetItem.mockResolvedValue(null)
         mockAuthenticate.mockResolvedValue(true)
 
         const { result } = await renderAndSettle()
@@ -324,8 +381,7 @@ describe('useBiometrics', () => {
     })
 
     test('authenticateWithBiometrics returns false when biometrics auth fails', async () => {
-        const biometricData = new TextEncoder().encode('123456')
-        mockGetItem.mockResolvedValue(biometricData)
+        kmsMocks.biometricBytes = new TextEncoder().encode('123456')
         mockAuthenticate.mockResolvedValue(false)
 
         const { result } = await renderAndSettle()
@@ -339,8 +395,7 @@ describe('useBiometrics', () => {
     })
 
     test('authenticateWithBiometrics returns false on error', async () => {
-        const biometricData = new TextEncoder().encode('123456')
-        mockGetItem.mockResolvedValue(biometricData)
+        kmsMocks.biometricBytes = new TextEncoder().encode('123456')
         mockAuthenticate.mockRejectedValue(new Error('Auth error'))
 
         const { result } = await renderAndSettle()

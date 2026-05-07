@@ -66,9 +66,7 @@ export const useStyles = makeStyles(theme => {
             color: theme.colors.textGray,
             textAlign: 'center',
         },
-        headerContainer: {
-            // Fixed height so the page doesn't reflow as queries resolve and
-            // the skeleton overlay matches the loaded layout exactly.
+        headerContainerLoading: {
             height: HEADER_HEIGHT,
         },
         skeletonOverlay: {

@@ -13,6 +13,7 @@
 export const name = '@perawallet/wallet-core-kms'
 
 export * from './hooks/useKMS'
+export { useKMSService } from './hooks/useKMSServices'
 export * from './models'
 export * from './errors'
 export { WORDLIST as MNEMONIC_WORDLIST } from './crypto/wordlist'
@@ -23,6 +24,13 @@ export {
     type PreparedHDMasterKey,
 } from './crypto/prepare-hd-master-key'
 export { ALGO25_KEYSTORE_TYPE } from './constants'
+export {
+    commitTypedSecret,
+    withTypedSecret,
+    hasTypedSecret,
+    removeTypedSecret,
+    type TypedSecret,
+} from './storage/typedSecret'
 
 // `installKMSKeystoreHooks` is intentionally NOT re-exported here — it pulls
 // `@algorandfoundation/react-native-keystore` (MMKV native), which would

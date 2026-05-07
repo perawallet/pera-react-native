@@ -71,7 +71,6 @@ export const useStyles = makeStyles(theme => {
         fiatBalance,
         footer: {
             paddingHorizontal: theme.spacing.xl,
-            paddingBottom: theme.spacing.xl,
             paddingTop: theme.spacing.md,
         },
     }

@@ -12,10 +12,10 @@
 
 import { useCallback, useState } from 'react'
 import { useNetwork, useNetworkStore } from '@perawallet/wallet-core-blockchain'
-import { logger, type Network } from '@perawallet/wallet-core-shared'
+import { type Network } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useDeviceStore } from '../store'
-import { createDevice, updateDevice, nullifyPushToken } from './endpoints'
+import { createDevice, updateDevice } from './endpoints'
 
 type UseSwitchNetworkResult = {
     switchNetwork: (newNetwork: Network, addresses: string[]) => Promise<void>
@@ -40,8 +40,6 @@ export const useSwitchNetwork = (): UseSwitchNetworkResult => {
 
             setIsSwitching(true)
 
-            const oldNetwork = network
-            const oldDeviceId = deviceIDs.get(oldNetwork) ?? null
             const newDeviceId = deviceIDs.get(newNetwork) ?? null
 
             try {
@@ -71,14 +69,9 @@ export const useSwitchNetwork = (): UseSwitchNetworkResult => {
 
                 setNetwork(newNetwork)
 
-                if (oldDeviceId) {
-                    nullifyPushToken(oldNetwork, oldDeviceId).catch(error => {
-                        logger.warn(
-                            'Failed to nullify push token on previous network',
-                            { error },
-                        )
-                    })
-                }
+                // RootComponent's network-change effect picks up the
+                // setNetwork() and calls clearDevicePushToken(oldNetwork, ...)
+                // — single owner of "stop pushing to the previous network".
             } finally {
                 setIsSwitching(false)
             }

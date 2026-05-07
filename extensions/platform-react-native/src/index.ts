@@ -20,7 +20,6 @@ export {
 export {
     RNFirebaseService,
     RNBiometricsService,
-    RNSecureStorageService,
     RNKeyValueStorageService,
     RNDeviceInfoStorageService,
 } from './services'

@@ -19,6 +19,7 @@ import {
     PWTouchableIcon,
     PWView,
 } from '@components/core'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { KeyboardAvoidingView, Platform } from 'react-native'
 import { useStyles } from './styles'
 
@@ -94,15 +95,19 @@ export const NameAccountForm = ({
                 />
             </PWView>
 
-            <PWButton
-                variant='primary'
-                title={finishButtonTitle}
-                onPress={onFinish}
-                isLoading={isLoading}
-                isDisabled={isDisabled ?? isLoading}
-                style={styles.finishButton}
-                testID='name_account_finish_button'
-            />
+            <SafeAreaView
+                edges={['bottom']}
+                style={styles.footer}
+            >
+                <PWButton
+                    variant='primary'
+                    title={finishButtonTitle}
+                    onPress={onFinish}
+                    isLoading={isLoading}
+                    isDisabled={isDisabled ?? isLoading}
+                    testID='name_account_finish_button'
+                />
+            </SafeAreaView>
 
             <PWLoadingOverlay
                 isVisible={isLoading}

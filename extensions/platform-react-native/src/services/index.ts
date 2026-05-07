@@ -12,7 +12,6 @@
 
 export { RNFirebaseService } from './firebase'
 export { RNBiometricsService } from './biometrics'
-export { RNSecureStorageService } from './secure-storage'
 export { RNKeyValueStorageService } from './key-value-storage'
 export { RNDatabaseService } from './database'
 export { RNDeviceInfoStorageService } from './device'

@@ -18,12 +18,7 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     queryClient: queryClientMock,
 }))
 
-import {
-    createDevice,
-    updateDevice,
-    deleteDevice,
-    nullifyPushToken,
-} from '../endpoints'
+import { createDevice, updateDevice, deleteDevice } from '../endpoints'
 
 describe('device endpoints', () => {
     beforeEach(() => {
@@ -52,7 +47,7 @@ describe('device endpoints', () => {
         expect(result).toEqual({ id: 'new-id' })
     })
 
-    test('updateDevice patches /v1/devices/:id/', async () => {
+    test('updateDevice puts to /v1/devices/:id/', async () => {
         queryClientMock.mockResolvedValue({ data: { id: 'abc' } })
         const data = {
             accounts: ['A'],
@@ -67,25 +62,11 @@ describe('device endpoints', () => {
         expect(queryClientMock).toHaveBeenCalledWith({
             backend: 'pera',
             network: 'testnet',
-            method: 'PATCH',
+            method: 'PUT',
             url: 'v1/devices/abc/',
             data,
         })
         expect(result).toEqual({ id: 'abc' })
-    })
-
-    test('nullifyPushToken sends PUT with push_token: null', async () => {
-        queryClientMock.mockResolvedValue({ data: {} })
-
-        await nullifyPushToken('mainnet', 'abc')
-
-        expect(queryClientMock).toHaveBeenCalledWith({
-            backend: 'pera',
-            network: 'mainnet',
-            method: 'PUT',
-            url: 'v1/devices/abc/',
-            data: { push_token: null },
-        })
     })
 
     test('deleteDevice sends DELETE with text response type', async () => {

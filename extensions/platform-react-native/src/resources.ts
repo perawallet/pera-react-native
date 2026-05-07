@@ -17,7 +17,6 @@ import {
     RNKeyValueStorageService,
     RNFirebaseService,
     RNBiometricsService,
-    RNSecureStorageService,
     RNDeviceInfoStorageService,
 } from './services'
 
@@ -39,7 +38,6 @@ export const platformServices: PlatformServices = {
     crashReporting: firebaseService,
     pushNotification: firebaseService,
     remoteConfig: firebaseService,
-    secureStorage: new RNSecureStorageService(),
     keyValueStorage,
     database: new RNDatabaseService(),
     deviceInfo: new RNDeviceInfoStorageService(),

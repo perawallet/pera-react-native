@@ -19,7 +19,6 @@ initDecimalConfig()
 
 import React, { useEffect, useState } from 'react'
 import './i18n'
-import { Platform } from 'react-native'
 import { ThemeProvider } from '@rneui/themed'
 import { PWText } from '@components/core'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
@@ -42,6 +41,7 @@ import { setOnConfirmedHandler } from '@perawallet/wallet-core-signing'
 import { createCrashReportingErrorReporter } from '@perawallet/wallet-extension-platform'
 import {
     getProvider,
+    hydrateKeystore,
     PeraWalletProvider,
     usePeraProvider,
 } from '@perawallet/wallet-extension-provider'
@@ -55,6 +55,7 @@ SplashScreen.preventAutoHideAsync()
 import { NotifierWrapper } from 'react-native-notifier'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { logger, updateBackendHeaders } from '@perawallet/wallet-core-shared'
+import { EmptyView } from '@components/EmptyView/EmptyView'
 
 const updateQueryHeaders = () => {
     const deviceInfo = getProvider().deviceInfo
@@ -78,6 +79,7 @@ const AppContent = () => {
     const provider = usePeraProvider()
     const isDarkMode = useIsDarkMode()
     const theme = getTheme(isDarkMode ? 'dark' : 'light')
+    const [initError, setInitError] = useState<boolean>(false)
 
     useEffect(() => {
         logger.setErrorReporter(
@@ -94,17 +96,12 @@ const AppContent = () => {
             provider.initialize().then(async ({ token }) => {
                 setFcmToken(token ?? null)
 
-                // iOS Keychain persists across uninstalls. On first launch after
-                // a reinstall, MMKV is empty (wiped by OS) but stale keychain
-                // entries from the previous install remain. Clear them.
-                const APP_INSTALLED_KEY = 'pera.app_installed'
-                if (
-                    Platform.OS === 'ios' &&
-                    !provider.keyValueStorage.getItem(APP_INSTALLED_KEY)
-                ) {
-                    await provider.secureStorage.clearAll()
+                try {
+                    await hydrateKeystore()
+                } catch (err) {
+                    setInitError(true)
+                    logger.error('Keystore hydration failed', { error: err })
                 }
-                provider.keyValueStorage.setItem(APP_INSTALLED_KEY, '1')
 
                 await initializeDatabase(provider.database)
                 await seedAlgoAsset(getDatabase())
@@ -133,6 +130,19 @@ const AppContent = () => {
             })
         }
     }, [bootstrapped, provider])
+
+    if (initError) {
+        return (
+            <ThemeProvider theme={theme}>
+                <SafeAreaProvider>
+                    <EmptyView
+                        title={t('app.initialization_failed.title')}
+                        body={t('app.initialization_failed.body')}
+                    />
+                </SafeAreaProvider>
+            </ThemeProvider>
+        )
+    }
 
     return (
         <ThemeProvider theme={theme}>

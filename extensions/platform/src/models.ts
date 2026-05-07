@@ -21,11 +21,10 @@ import type {
 import type { RemoteConfigService } from './remote-config'
 import type { DatabaseService } from './database'
 import type { CrashReportingService } from './reporting'
-import type { KeyValueStorageService, SecureStorageService } from './storage'
+import type { KeyValueStorageService } from './storage'
 
 export interface PlatformServices {
     keyValueStorage: KeyValueStorageService
-    secureStorage: SecureStorageService
     biometrics: BiometricsService
     pushNotification: PushNotificationService
     remoteConfig: RemoteConfigService

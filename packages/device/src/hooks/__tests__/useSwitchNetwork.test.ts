@@ -15,12 +15,10 @@ import { renderHook, act } from '@testing-library/react'
 
 const mockCreateDevice = vi.fn()
 const mockUpdateDevice = vi.fn()
-const mockNullifyPushToken = vi.fn()
 
 vi.mock('../endpoints', () => ({
     createDevice: (...args: unknown[]) => mockCreateDevice(...args),
     updateDevice: (...args: unknown[]) => mockUpdateDevice(...args),
-    nullifyPushToken: (...args: unknown[]) => mockNullifyPushToken(...args),
 }))
 
 const mockSetNetwork = vi.fn()
@@ -76,10 +74,9 @@ describe('useSwitchNetwork', () => {
         vi.clearAllMocks()
         mockCreateDevice.mockResolvedValue({ id: 'new-testnet-device-id' })
         mockUpdateDevice.mockResolvedValue({})
-        mockNullifyPushToken.mockResolvedValue(undefined)
     })
 
-    test('registers on new network, switches, and nullifies old push token', async () => {
+    test("registers on new network and switches (clearing the old token is RootComponent's job)", async () => {
         vi.resetModules()
 
         const { useDeviceStore } = await import('../../store')
@@ -115,10 +112,10 @@ describe('useSwitchNetwork', () => {
             'new-testnet-device-id',
         )
 
-        expect(mockNullifyPushToken).toHaveBeenCalledWith(
-            'mainnet',
-            'mainnet-device-id',
-        )
+        // The "clear push token on previous network" responsibility now lives
+        // in RootComponent's network-change effect (clearDevicePushToken),
+        // which fires reactively to setNetwork(). useSwitchNetwork no longer
+        // duplicates that call.
     })
 
     test('updates existing device on new network if device ID exists', async () => {
@@ -159,7 +156,7 @@ describe('useSwitchNetwork', () => {
         expect(mockSetNetwork).toHaveBeenCalledWith('testnet')
     })
 
-    test('does not switch network or nullify token on registration failure', async () => {
+    test('does not switch network on registration failure', async () => {
         vi.resetModules()
         mockCreateDevice.mockRejectedValue(new Error('Network error'))
 
@@ -184,7 +181,6 @@ describe('useSwitchNetwork', () => {
         ).rejects.toThrow('Network error')
 
         expect(mockSetNetwork).not.toHaveBeenCalled()
-        expect(mockNullifyPushToken).not.toHaveBeenCalled()
     })
 
     test('no-ops when switching to same network', async () => {
@@ -204,10 +200,9 @@ describe('useSwitchNetwork', () => {
         expect(mockCreateDevice).not.toHaveBeenCalled()
         expect(mockUpdateDevice).not.toHaveBeenCalled()
         expect(mockSetNetwork).not.toHaveBeenCalled()
-        expect(mockNullifyPushToken).not.toHaveBeenCalled()
     })
 
-    test('does not call nullifyPushToken when old network has no device ID', async () => {
+    test('switches network even when old network has no device ID', async () => {
         vi.resetModules()
 
         const { useDeviceStore } = await import('../../store')
@@ -222,7 +217,6 @@ describe('useSwitchNetwork', () => {
         })
 
         expect(mockSetNetwork).toHaveBeenCalledWith('testnet')
-        expect(mockNullifyPushToken).not.toHaveBeenCalled()
     })
 
     test('isSwitching is true while switch is in progress', async () => {
@@ -280,38 +274,5 @@ describe('useSwitchNetwork', () => {
         }
 
         expect(result.current.isSwitching).toBe(false)
-    })
-
-    test('logs a warning when nullifying push token on the old network fails', async () => {
-        vi.resetModules()
-        mockNullifyPushToken.mockRejectedValue(new Error('nullify failed'))
-
-        const { logger } = await import('@perawallet/wallet-core-shared')
-        const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
-
-        const { useDeviceStore } = await import('../../store')
-        const { useSwitchNetwork } = await import('../useSwitchNetwork')
-
-        useDeviceStore.getState().resetState()
-        const { result: store } = renderHook(() => useDeviceStore())
-        act(() => {
-            store.current.setDeviceID('mainnet', 'mainnet-device-id')
-            store.current.setPushToken('fcm-token')
-        })
-
-        const { result } = renderHook(() => useSwitchNetwork())
-
-        await act(async () => {
-            await result.current.switchNetwork('testnet', ['ADDR1'])
-        })
-
-        // Give the fire-and-forget .catch a chance to run
-        await new Promise(resolve => setImmediate(resolve))
-
-        expect(warnSpy).toHaveBeenCalledWith(
-            'Failed to nullify push token on previous network',
-            expect.objectContaining({ error: expect.any(Error) }),
-        )
-        warnSpy.mockRestore()
     })
 })
