@@ -21,30 +21,10 @@ import { usePushToken } from './usePushToken'
 import { useDeviceStore } from '../store'
 import { updateDevice as updateDeviceEndpoint } from './endpoints'
 
-const REGISTER_DEVICE_MAX_RETRIES = 3
-const REGISTER_DEVICE_RETRY_DELAY_MS = 1500
-
-const sleep = (ms: number) =>
-    new Promise<void>(resolve => setTimeout(resolve, ms))
-
 const isNotFoundError = (error: unknown): boolean => {
     const status = (error as { response?: { status?: number } })?.response
         ?.status
     return status === 404
-}
-
-const isTransientError = (error: unknown): boolean => {
-    const name = (error as { name?: string })?.name
-    if (
-        name === 'TimeoutError' ||
-        name === 'AbortError' ||
-        name === 'TypeError' // network unreachable
-    ) {
-        return true
-    }
-    const status = (error as { response?: { status?: number } })?.response
-        ?.status
-    return typeof status === 'number' && status >= 500
 }
 
 export const useDevice = () => {
@@ -92,57 +72,38 @@ export const useDevice = () => {
         [buildPayload, createDevice, setDeviceID],
     )
 
+    // Single-attempt registration. Transient retries (5xx, network errors) are
+    // handled by ky inside the shared query-client; layering another retry
+    // loop here would compound to up to 6 requests per call.
+    //
+    // The 404 → createDevice fallback stays at this layer because it is
+    // application logic, not a transport concern: the server doesn't know
+    // this device anymore (stale ID after env reset, deletion, etc.) so we
+    // re-register. Mirrors Android's 404 → re-register handling.
     const registerDevice = useCallback(
         async (addresses: string[]) => {
             const attemptId = ++inFlightIdRef.current
             const targetNetwork = network
 
-            for (
-                let attempt = 0;
-                attempt < REGISTER_DEVICE_MAX_RETRIES;
-                attempt++
-            ) {
-                if (inFlightIdRef.current !== attemptId) return
+            if (!deviceId) {
+                await createDeviceForNetwork(
+                    targetNetwork,
+                    addresses,
+                    attemptId,
+                )
+                return
+            }
 
-                try {
-                    if (!deviceId) {
-                        await createDeviceForNetwork(
-                            targetNetwork,
-                            addresses,
-                            attemptId,
-                        )
-                    } else {
-                        try {
-                            const payload = await buildPayload(addresses)
-                            await updateDevice({
-                                deviceId,
-                                data: payload,
-                            })
-                        } catch (error) {
-                            // Server doesn't know this device anymore
-                            // (stale ID after env reset, deletion, etc.) —
-                            // fall back to creating a fresh one. Mirrors
-                            // Android's 404 → re-register handling.
-                            if (isNotFoundError(error)) {
-                                await createDeviceForNetwork(
-                                    targetNetwork,
-                                    addresses,
-                                    attemptId,
-                                )
-                            } else {
-                                throw error
-                            }
-                        }
-                    }
-                    return
-                } catch (error) {
-                    const isLastAttempt =
-                        attempt === REGISTER_DEVICE_MAX_RETRIES - 1
-                    if (isLastAttempt || !isTransientError(error)) {
-                        throw error
-                    }
-                    await sleep(REGISTER_DEVICE_RETRY_DELAY_MS)
-                }
+            try {
+                const payload = await buildPayload(addresses)
+                await updateDevice({ deviceId, data: payload })
+            } catch (error) {
+                if (!isNotFoundError(error)) throw error
+                await createDeviceForNetwork(
+                    targetNetwork,
+                    addresses,
+                    attemptId,
+                )
             }
         },
         [deviceId, network, buildPayload, updateDevice, createDeviceForNetwork],

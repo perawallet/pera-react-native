@@ -279,54 +279,11 @@ describe('services/device/hooks', () => {
         expect(store.current.deviceIDs.get('mainnet')).toBe('fresh-id')
     })
 
-    test('useDevice retries transient errors and eventually succeeds', async () => {
-        vi.resetModules()
-        vi.useFakeTimers({ shouldAdvanceTime: true })
-
-        mockCreateDevice
-            .mockRejectedValueOnce(
-                Object.assign(new Error('timeout'), { name: 'TimeoutError' }),
-            )
-            .mockResolvedValueOnce({ id: 'eventual-id' })
-
-        const { useDeviceStore } = await import('../../store')
-        const { useDevice } = await import('../useDevice')
-
-        useDeviceStore.getState().resetState()
-        const { result: store } = renderHook(() => useDeviceStore())
-        act(() => {
-            store.current.setDeviceID('mainnet', null)
-        })
-
-        const queryClient = new QueryClient({
-            defaultOptions: { queries: { retry: false } },
-        })
-        const wrapper = ({ children }: { children: React.ReactNode }) =>
-            React.createElement(
-                QueryClientProvider,
-                { client: queryClient },
-                children,
-            )
-
-        const { result } = renderHook(() => useDevice(), { wrapper })
-
-        await act(async () => {
-            await result.current.registerDevice(['account-1'])
-        })
-
-        expect(mockCreateDevice).toHaveBeenCalledTimes(2)
-        expect(store.current.deviceIDs.get('mainnet')).toBe('eventual-id')
-
-        vi.useRealTimers()
-    })
-
-    test('useDevice does not retry non-transient errors', async () => {
+    test('useDevice does not retry at the application layer (delegated to ky)', async () => {
         vi.resetModules()
 
         mockCreateDevice.mockRejectedValue(
-            Object.assign(new Error('forbidden'), {
-                response: { status: 403 },
-            }),
+            Object.assign(new Error('timeout'), { name: 'TimeoutError' }),
         )
 
         const { useDeviceStore } = await import('../../store')
@@ -354,8 +311,11 @@ describe('services/device/hooks', () => {
             act(async () => {
                 await result.current.registerDevice(['account-1'])
             }),
-        ).rejects.toThrow('forbidden')
+        ).rejects.toThrow('timeout')
 
+        // Single attempt at this layer — transient retries belong to ky in the
+        // shared query-client. Layering retries here would compound to 6
+        // requests (3 outer × 2 inner) per call.
         expect(mockCreateDevice).toHaveBeenCalledTimes(1)
     })
 

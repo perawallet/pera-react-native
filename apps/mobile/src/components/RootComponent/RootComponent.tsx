@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { AppState } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
@@ -20,7 +20,7 @@ import { PWText, PWView } from '@components/core'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import ErrorBoundary from 'react-native-error-boundary'
 import { useErrorToast } from '@hooks/useErrorToast'
-import { useDevice } from '@perawallet/wallet-core-device'
+import { useDeviceRegistration } from '@perawallet/wallet-core-device'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
@@ -93,12 +93,17 @@ const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
 
 export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     const { network } = useNetwork()
-    const { registerDevice, clearDevicePushToken } = useDevice()
     const accounts = useAllAccounts()
 
     const appState = useRef(AppState.currentState)
     const appStatePlatform = useRef(getAppStatePlatform()).current
-    const previousNetworkRef = useRef(network)
+
+    const addresses = useMemo(
+        () => accounts?.map(account => account.address) ?? [],
+        [accounts],
+    )
+
+    useDeviceRegistration(addresses)
 
     const runSyncAction = useCallback((action: 'start' | 'stop') => {
         try {
@@ -117,45 +122,18 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
         }
     }, [])
 
-    // Device registration and query invalidation — re-runs when network or accounts change
+    // Re-read synced queries from the DB when the network changes so the UI
+    // reflects the new network's data.
     useEffect(() => {
-        const addresses = accounts?.map(account => account.address) ?? []
-
-        // On a real network switch, detach the push token from the previous
-        // network's device first so the server stops pushing to a node we've
-        // moved away from. Mirrors Android's `deletePreviousNodePushToken`.
-        const previousNetwork = previousNetworkRef.current
-        const isNetworkSwitch = previousNetwork !== network
-        previousNetworkRef.current = network
-
-        const run = async () => {
-            if (isNetworkSwitch) {
-                await clearDevicePushToken(previousNetwork)
-            }
-            await registerDevice(addresses)
-        }
-
-        // Best-effort: device registration can time out or 5xx; never let it
-        // crash the render. The next render or app foreground will retry.
-        run().catch(error => {
-            logger.warn('Device registration failed', {
-                source: 'RootComponent',
-                error,
-            })
-        })
-
-        // Invalidate all synced queries so the UI re-reads from the DB for the new network
         try {
             getSyncService().invalidateQueries()
         } catch {
             // SyncService not yet initialized
         }
-    }, [accounts, network, registerDevice, clearDevicePushToken])
+    }, [network])
 
     // Sync lifecycle — NOT dependent on network so switching networks won't restart the sync
     useEffect(() => {
-        const addresses = accounts?.map(account => account.address) ?? []
-
         if (!addresses.length) {
             runSyncAction('stop')
         } else if (config.pollingEnabled) {
@@ -186,7 +164,7 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
                 subscription.remove()
             }
         }
-    }, [appStatePlatform, accounts, runSyncAction])
+    }, [appStatePlatform, addresses, runSyncAction])
 
     return (
         <BottomSheetModalProvider>
