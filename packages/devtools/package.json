@@ -9,6 +9,14 @@
     "./vitest/coverage": {
       "types": "./vitest/coverage.d.ts",
       "default": "./vitest/coverage.js"
+    },
+    "./vitest/pool": {
+      "types": "./vitest/pool.d.ts",
+      "default": "./vitest/pool.js"
+    },
+    "./vitest/base": {
+      "types": "./vitest/base.d.ts",
+      "default": "./vitest/base.js"
     }
   },
   "files": ["tsconfig", "vitest", "guardrails"],

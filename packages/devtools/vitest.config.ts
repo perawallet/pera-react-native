@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitest/config'
+import { poolConfig } from '@perawallet/wallet-core-devtools/vitest/pool'
 
 export default defineConfig({
     test: {
@@ -6,4 +7,5 @@ export default defineConfig({
         environment: 'node',
         include: ['guardrails/**/__tests__/**/*.{test,spec}.ts'],
     },
+    ...poolConfig,
 })

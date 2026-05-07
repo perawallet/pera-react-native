@@ -12,6 +12,7 @@
 
 import { defineConfig } from 'vitest/config'
 import { coverageConfig } from '@perawallet/wallet-core-devtools/vitest/coverage'
+import { poolConfig } from '@perawallet/wallet-core-devtools/vitest/pool'
 import react from '@vitejs/plugin-react'
 import svgr from 'vite-plugin-svgr'
 import path from 'path'
@@ -91,6 +92,13 @@ export default defineConfig({
             },
             { find: '@', replacement: path.resolve(__dirname, './src') },
             {
+                find: '@perawallet/wallet-core-shared/test-handlers',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/shared/src/test-handlers.ts',
+                ),
+            },
+            {
                 find: '@perawallet/wallet-core-shared',
                 replacement: path.resolve(
                     __dirname,
@@ -119,6 +127,13 @@ export default defineConfig({
                 ),
             },
             {
+                find: '@perawallet/wallet-core-accounts/test-handlers',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/accounts/src/test-handlers.ts',
+                ),
+            },
+            {
                 find: '@perawallet/wallet-core-accounts',
                 replacement: path.resolve(
                     __dirname,
@@ -130,6 +145,13 @@ export default defineConfig({
                 replacement: path.resolve(
                     __dirname,
                     '../../packages/backup/src/index.ts',
+                ),
+            },
+            {
+                find: '@perawallet/wallet-core-assets/test-handlers',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/assets/src/test-handlers.ts',
                 ),
             },
             {
@@ -151,6 +173,15 @@ export default defineConfig({
                 replacement: path.resolve(
                     __dirname,
                     '../../packages/config/src/index.ts',
+                ),
+            },
+            {
+                // More specific deep-import alias must come BEFORE the
+                // package's main alias so prefix matching doesn't shadow it.
+                find: '@perawallet/wallet-core-currencies/test-handlers',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/currencies/src/test-handlers.ts',
                 ),
             },
             {
@@ -189,6 +220,13 @@ export default defineConfig({
                 ),
             },
             {
+                find: '@perawallet/wallet-core-transactions/test-handlers',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/transactions/src/test-handlers.ts',
+                ),
+            },
+            {
                 find: '@perawallet/wallet-core-transactions',
                 replacement: path.resolve(
                     __dirname,
@@ -196,10 +234,24 @@ export default defineConfig({
                 ),
             },
             {
+                find: '@perawallet/wallet-core-swaps/test-handlers',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/swaps/src/test-handlers.ts',
+                ),
+            },
+            {
                 find: '@perawallet/wallet-core-swaps',
                 replacement: path.resolve(
                     __dirname,
                     '../../packages/swaps/src/index.ts',
+                ),
+            },
+            {
+                find: '@perawallet/wallet-core-polling/test-handlers',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/polling/src/test-handlers.ts',
                 ),
             },
             {
@@ -238,10 +290,24 @@ export default defineConfig({
                 ),
             },
             {
+                find: '@perawallet/wallet-core-messages/test-handlers',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/messages/src/test-handlers.ts',
+                ),
+            },
+            {
                 find: '@perawallet/wallet-core-messages',
                 replacement: path.resolve(
                     __dirname,
                     '../../packages/messages/src/index.ts',
+                ),
+            },
+            {
+                find: '@perawallet/wallet-core-device/test-handlers',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/device/src/test-handlers.ts',
                 ),
             },
             {
@@ -256,6 +322,13 @@ export default defineConfig({
                 replacement: path.resolve(
                     __dirname,
                     '../../packages/remote-config/src/index.ts',
+                ),
+            },
+            {
+                find: '@perawallet/wallet-core-staking/test-handlers',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/staking/src/test-handlers.ts',
                 ),
             },
             {
@@ -317,8 +390,6 @@ export default defineConfig({
         },
         globals: true,
         environment: 'jsdom',
-        pool: 'threads',
-        fileParallelism: false,
         setupFiles: ['./vitest.setup.ts'],
         server: {
             deps: {
@@ -326,4 +397,5 @@ export default defineConfig({
             },
         },
     },
+    ...poolConfig,
 })

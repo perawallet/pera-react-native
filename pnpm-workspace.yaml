@@ -39,6 +39,7 @@ catalog:
   typescript-eslint: 8.59.1
   util: ^0.12.5
   uuid: 14.0.0
+  msw: ^2.12.4
   vite: ^8.0.8
   vitest: ^4.1.4
   xstate: ^5.28.0

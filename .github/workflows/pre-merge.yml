@@ -165,6 +165,9 @@ jobs:
       - name: Build packages
         run: pnpm run build
 
+      - name: Check no test-only modules leaked into prod bundles
+        run: pnpm run lint:bundle
+
       - name: Expo Prebuild
         run: pnpm --filter mobile expo:prebuild
 
@@ -219,6 +222,12 @@ jobs:
           key: build-artifacts-${{ runner.os }}-${{ github.sha }}
 
       - name: Test
+        env:
+          # GitHub-hosted ubuntu-24.04 runners have 4 cores. Without a cap each
+          # of turbo's ~30 sibling vitest processes would request a full thread
+          # pool and over-subscribe; 2 keeps each process responsive while
+          # turbo's own concurrency parallelizes across packages.
+          VITEST_MAX_THREADS: 2
         run: pnpm run test:coverage
 
   gitleaks:
