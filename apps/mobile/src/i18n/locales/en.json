@@ -298,6 +298,7 @@
         "remove_watch_message": "You are about to remove this watch account. This only removes it from your wallet view — the account itself is not affected.",
         "remove_confirm": "Remove",
         "remove_cancel": "Cancel",
+        "remove_account_success_message": "Account removed successfully.",
         "notifications_muted": "Notifications muted",
         "notifications_unmuted": "Notifications unmuted",
         "backup_warning_title": "Have you backed up your account?",

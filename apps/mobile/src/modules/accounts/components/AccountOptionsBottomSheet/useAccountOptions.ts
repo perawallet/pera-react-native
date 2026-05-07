@@ -237,12 +237,19 @@ export const useAccountOptions = ({
             })
             return
         }
-
         const hasOtherAccounts = accounts.length > 1
         if (account.id) {
             removeAccountById(account.id)
         }
         handleCloseRemoveConfirm()
+        setTimeout(() => {
+            showToast({
+                title: t('account_options.remove_account_success_message'),
+                body: '',
+                type: 'success',
+            })
+        }, SHORT_PROMPT_DISPLAY_DELAY)
+        
         if (hasOtherAccounts) {
             navigation.navigate('TabBar', { screen: 'Home' })
         }
