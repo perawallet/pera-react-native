@@ -55,6 +55,7 @@ SplashScreen.preventAutoHideAsync()
 import { NotifierWrapper } from 'react-native-notifier'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { logger, updateBackendHeaders } from '@perawallet/wallet-core-shared'
+import { EmptyView } from '@components/EmptyView/EmptyView'
 
 const updateQueryHeaders = () => {
     const deviceInfo = getProvider().deviceInfo
@@ -78,6 +79,7 @@ const AppContent = () => {
     const provider = usePeraProvider()
     const isDarkMode = useIsDarkMode()
     const theme = getTheme(isDarkMode ? 'dark' : 'light')
+    const [initError, setInitError] = useState<boolean>(false)
 
     useEffect(() => {
         logger.setErrorReporter(
@@ -97,6 +99,7 @@ const AppContent = () => {
                 try {
                     await hydrateKeystore()
                 } catch (err) {
+                    setInitError(true)
                     logger.error('Keystore hydration failed', { error: err })
                 }
 
@@ -127,6 +130,19 @@ const AppContent = () => {
             })
         }
     }, [bootstrapped, provider])
+
+    if (initError) {
+        return (
+            <ThemeProvider theme={theme}>
+                <SafeAreaProvider>
+                    <EmptyView
+                        title={t('app.initialization_failed.title')}
+                        body={t('app.initialization_failed.body')}
+                    />
+                </SafeAreaProvider>
+            </ThemeProvider>
+        )
+    }
 
     return (
         <ThemeProvider theme={theme}>

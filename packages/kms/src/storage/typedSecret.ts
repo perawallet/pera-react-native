@@ -34,10 +34,7 @@ export type TypedSecret = {
 }
 
 /**
- * Upserts a typed secret into the keystore. Always `removeKey` first because
- * `commit()` prepends to the reactive `keys` array without dedupe — calling
- * `commit` twice with the same id would leave two entries in `state.keys`
- * even though MMKV `storage.set` is overwrite-safe.
+ * Upserts a typed secret into the keystore.
  *
  * Lazy imports `@algorandfoundation/react-native-keystore` so this module
  * stays importable in vitest environments that lack `react-native-mmkv`.
@@ -53,10 +50,12 @@ export const commitTypedSecret = async ({
 }: TypedSecret): Promise<void> => {
     const { commit } = await import('@algorandfoundation/react-native-keystore')
 
-    await removeTypedSecret(id)
+    const store = getKeystoreStore()
 
+    // we commit the new key first then remove the old one to ensure that the key is always present in the store (either the old or the new)
+    // and avoid edge cases where the key could be missing if the commit succeeds but the remove fails
     await commit({
-        store: getKeystoreStore(),
+        store,
         keyData: {
             id,
             type,
@@ -69,6 +68,16 @@ export const commitTypedSecret = async ({
             ...(metadata !== undefined ? { metadata } : {}),
         } as unknown as KeyData,
     })
+
+    const seen = new Set<string>()
+    const deduped = store.state.keys.filter(k => {
+        if (seen.has(k.id)) return false
+        seen.add(k.id)
+        return true
+    })
+    if (deduped.length !== store.state.keys.length) {
+        store.setState(s => ({ ...s, keys: deduped }))
+    }
 }
 
 /**

@@ -28,8 +28,22 @@ vi.mock('@algorandfoundation/react-native-keystore', () => ({
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getKeystoreStore: () => ({
-        state: { keys: mocks.keys, status: 'idle' },
-        setState: vi.fn(),
+        get state() {
+            return { keys: mocks.keys, status: 'idle' as const }
+        },
+        setState: (
+            updater: (prev: {
+                keys: Array<{ id: string; type: string }>
+                status: 'idle'
+            }) => {
+                keys: Array<{ id: string; type: string }>
+                status: 'idle'
+            },
+        ) => {
+            const next = updater({ keys: mocks.keys, status: 'idle' })
+            mocks.keys.length = 0
+            mocks.keys.push(...next.keys)
+        },
         subscribe: () => ({ unsubscribe: () => {} }),
     }),
     getProvider: () => ({
@@ -54,6 +68,18 @@ describe('typedSecret', () => {
         // Mutate, don't reassign — the mock factory captures this array by
         // reference.
         mocks.keys.length = 0
+        // Default commit simulates the real keystore: prepends to the
+        // reactive `keys` array without dedupe. Tests that need to exercise
+        // upsert semantics rely on this so they can assert the cleanup that
+        // `commitTypedSecret` performs.
+        mocks.commit.mockImplementation(
+            async ({ keyData }: { keyData: { id: string; type: string } }) => {
+                mocks.keys.unshift({
+                    id: keyData.id,
+                    type: keyData.type,
+                })
+            },
+        )
     })
 
     describe('commitTypedSecret', () => {
@@ -96,11 +122,8 @@ describe('typedSecret', () => {
             expect(arg.keyData.metadata).toEqual({ pera: { createdAt: 'iso' } })
         })
 
-        test('upserts: removes the existing entry before committing again', async () => {
+        test('upserts atomically: commits first, then dedupes the reactive store', async () => {
             mocks.keys.push({ id: 'pera.pinCode', type: 'pera.pin-record' })
-            mocks.removeKey.mockImplementationOnce(async () => {
-                mocks.keys.length = 0
-            })
 
             await commitTypedSecret({
                 id: 'pera.pinCode',
@@ -108,15 +131,41 @@ describe('typedSecret', () => {
                 bytes: new Uint8Array([7]),
             })
 
-            expect(mocks.removeKey).toHaveBeenCalledWith(
-                expect.objectContaining({ keyId: 'pera.pinCode' }),
-            )
-            expect(mocks.removeKey.mock.invocationCallOrder[0]).toBeLessThan(
-                mocks.commit.mock.invocationCallOrder[0],
-            )
+            // commit() ran (and our mock impl prepended), but removeKey did
+            // NOT — we never deleted the prior entry from MMKV before writing
+            // the new one. The MMKV layer overwrites under the same id, and
+            // the reactive store is left with a single deduplicated entry.
+            expect(mocks.commit).toHaveBeenCalledTimes(1)
+            expect(mocks.removeKey).not.toHaveBeenCalled()
+            expect(mocks.keys).toHaveLength(1)
+            expect(mocks.keys[0]).toEqual({
+                id: 'pera.pinCode',
+                type: 'pera.pin-record',
+            })
         })
 
-        test('skips removeKey when no existing entry', async () => {
+        test('preserves the existing entry when commit() throws', async () => {
+            const original = { id: 'pera.pinCode', type: 'pera.pin-record' }
+            mocks.keys.push(original)
+            mocks.commit.mockImplementationOnce(async () => {
+                throw new Error('boom')
+            })
+
+            await expect(
+                commitTypedSecret({
+                    id: 'pera.pinCode',
+                    type: 'pera.pin-record',
+                    bytes: new Uint8Array([7]),
+                }),
+            ).rejects.toThrow('boom')
+
+            // The previous entry is still there — we did not delete first,
+            // so a failed commit is safe.
+            expect(mocks.removeKey).not.toHaveBeenCalled()
+            expect(mocks.keys).toEqual([original])
+        })
+
+        test('fresh insert (no existing entry) commits without dedupe work', async () => {
             await commitTypedSecret({
                 id: 'fresh',
                 type: 'pera.pin-record',
@@ -125,6 +174,8 @@ describe('typedSecret', () => {
 
             expect(mocks.removeKey).not.toHaveBeenCalled()
             expect(mocks.commit).toHaveBeenCalledTimes(1)
+            expect(mocks.keys).toHaveLength(1)
+            expect(mocks.keys[0].id).toBe('fresh')
         })
     })
 

@@ -21,6 +21,12 @@
         "filter": "Filter",
         "remove_assets": "Remove Assets"
     },
+    "app": {
+        "initialization_failed": {
+            "title": "Initialization Failed",
+            "body": "There was an error initializing the app"
+        }
+    },
     "asset_sort": {
         "title": "Sort",
         "done": "Done",
