@@ -12,10 +12,30 @@
 
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
+
+const kmsMocks = vi.hoisted(() => ({
+    pinBytes: null as Uint8Array | null,
+    biometricBytes: null as Uint8Array | null,
+    commitTypedSecret: vi.fn(),
+    withTypedSecret: vi.fn(),
+    hasTypedSecret: vi.fn(),
+    removeTypedSecret: vi.fn(),
+}))
+
+vi.mock('@perawallet/wallet-core-kms', () => ({
+    useKMSService: () => ({
+        commitTypedSecret: kmsMocks.commitTypedSecret,
+        withTypedSecret: kmsMocks.withTypedSecret,
+        hasTypedSecret: kmsMocks.hasTypedSecret,
+        removeTypedSecret: kmsMocks.removeTypedSecret,
+    }),
+}))
+
 import { usePinCode } from '../usePinCode'
 import { useSecurityStore } from '../../store'
 import {
-    PIN_STORAGE_KEY,
+    PIN_RECORD_KEY_ID,
+    PIN_RECORD_KEYSTORE_TYPE,
     MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT,
     INITIAL_LOCKOUT_SECONDS,
 } from '../../constants'
@@ -27,22 +47,8 @@ import {
     serializePinRecord,
 } from '../../pinRecord'
 
-const mockGetItem = vi.fn()
-const mockSetItem = vi.fn()
-const mockRemoveItem = vi.fn()
-
 vi.mock('../../store', () => ({
     useSecurityStore: vi.fn(),
-}))
-
-vi.mock('@perawallet/wallet-extension-provider', () => ({
-    getProvider: () => ({
-        secureStorage: {
-            getItem: mockGetItem,
-            setItem: mockSetItem,
-            removeItem: mockRemoveItem,
-        },
-    }),
 }))
 
 vi.mock('../useBiometrics', () => ({
@@ -53,6 +59,38 @@ vi.mock('../useBiometrics', () => ({
     })),
 }))
 
+const wireBlobMocks = () => {
+    kmsMocks.commitTypedSecret.mockImplementation(
+        async ({ id, bytes }: { id: string; bytes: Uint8Array }) => {
+            if (id === PIN_RECORD_KEY_ID) kmsMocks.pinBytes = bytes
+            if (id !== PIN_RECORD_KEY_ID) kmsMocks.biometricBytes = bytes
+        },
+    )
+    kmsMocks.withTypedSecret.mockImplementation(
+        async (id: string, handler: (bytes: Uint8Array) => unknown) => {
+            const bytes =
+                id === PIN_RECORD_KEY_ID
+                    ? kmsMocks.pinBytes
+                    : kmsMocks.biometricBytes
+            if (!bytes) return null
+            try {
+                return await handler(bytes)
+            } finally {
+                bytes.fill(0)
+            }
+        },
+    )
+    kmsMocks.hasTypedSecret.mockImplementation((id: string) =>
+        id === PIN_RECORD_KEY_ID
+            ? kmsMocks.pinBytes !== null
+            : kmsMocks.biometricBytes !== null,
+    )
+    kmsMocks.removeTypedSecret.mockImplementation(async (id: string) => {
+        if (id === PIN_RECORD_KEY_ID) kmsMocks.pinBytes = null
+        else kmsMocks.biometricBytes = null
+    })
+}
+
 describe('usePinCode', () => {
     const mockIncrementFailedAttempts = vi.fn()
     const mockSetFailedAttempts = vi.fn()
@@ -62,6 +100,9 @@ describe('usePinCode', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        kmsMocks.pinBytes = null
+        kmsMocks.biometricBytes = null
+        wireBlobMocks()
     })
 
     afterEach(() => {
@@ -93,9 +134,7 @@ describe('usePinCode', () => {
 
     test('returns correct PIN enabled state', async () => {
         setupMock({ failedAttempts: 0, lockoutEndTime: null })
-
-        const pinData = new TextEncoder().encode('123456')
-        mockGetItem.mockResolvedValue(pinData)
+        kmsMocks.pinBytes = serializePinRecord(await createPinRecord('123456'))
 
         const { result } = renderHook(() => usePinCode())
 
@@ -104,7 +143,7 @@ describe('usePinCode', () => {
             isEnabled = await result.current.checkPinEnabled()
         })
         expect(isEnabled).toBe(true)
-    })
+    }, 30_000)
 
     test('isLockedOut is true when lockout time is in future', () => {
         vi.useFakeTimers()
@@ -141,7 +180,6 @@ describe('usePinCode', () => {
 
     test('savePin stores a hashed PinRecord, not the raw PIN', async () => {
         setupMock({ failedAttempts: 0, lockoutEndTime: null })
-        mockGetItem.mockResolvedValue(null)
 
         const { result } = renderHook(() => usePinCode())
 
@@ -149,16 +187,17 @@ describe('usePinCode', () => {
             await result.current.savePin('123456')
         })
 
-        expect(mockSetItem).toHaveBeenCalledTimes(1)
-        const [key, payload] = mockSetItem.mock.calls[0] as [string, Uint8Array]
-        expect(key).toBe(PIN_STORAGE_KEY)
-        const record = parsePinRecord(payload)
+        expect(kmsMocks.commitTypedSecret).toHaveBeenCalledTimes(1)
+        const arg = kmsMocks.commitTypedSecret.mock.calls[0][0]
+        expect(arg.id).toBe(PIN_RECORD_KEY_ID)
+        expect(arg.type).toBe(PIN_RECORD_KEYSTORE_TYPE)
+        const record = parsePinRecord(arg.bytes)
         expect(record).not.toBeNull()
         expect(record?.version).toBe(PIN_RECORD_VERSION)
         expect(record?.salt).toMatch(/^[0-9a-f]{32}$/)
         expect(record?.hash).toMatch(/^[0-9a-f]{64}$/)
         // The raw PIN must never appear in the serialized bytes.
-        expect(new TextDecoder().decode(payload)).not.toContain('123456')
+        expect(new TextDecoder().decode(arg.bytes)).not.toContain('123456')
         expect(mockSetFailedAttempts).toHaveBeenCalledWith(0)
         expect(mockSetLockoutEndTime).toHaveBeenCalledWith(null)
     }, 30_000)
@@ -178,7 +217,6 @@ describe('usePinCode', () => {
             isAvailable: true,
         })
         setupMock({ failedAttempts: 0, lockoutEndTime: null })
-        mockGetItem.mockResolvedValue(null)
 
         const { result } = renderHook(() => usePinCode())
 
@@ -204,7 +242,7 @@ describe('usePinCode', () => {
             isAvailable: true,
         })
         setupMock({ failedAttempts: 0, lockoutEndTime: null })
-        mockGetItem.mockResolvedValue(null)
+        kmsMocks.pinBytes = serializePinRecord(await createPinRecord('123456'))
 
         const { result } = renderHook(() => usePinCode())
 
@@ -212,15 +250,17 @@ describe('usePinCode', () => {
             await result.current.savePin(null)
         })
 
-        expect(mockRemoveItem).toHaveBeenCalledWith(PIN_STORAGE_KEY)
+        expect(kmsMocks.removeTypedSecret).toHaveBeenCalledWith(
+            PIN_RECORD_KEY_ID,
+        )
         expect(disableBiometrics).toHaveBeenCalled()
-    })
+    }, 30_000)
 
     test('verifyPin returns true for correct PIN against a hashed record', async () => {
         setupMock({ failedAttempts: 0, lockoutEndTime: null })
 
         const record = await createPinRecord('123456')
-        mockGetItem.mockResolvedValue(serializePinRecord(record))
+        kmsMocks.pinBytes = serializePinRecord(record)
 
         const { result } = renderHook(() => usePinCode())
 
@@ -235,7 +275,7 @@ describe('usePinCode', () => {
         setupMock({ failedAttempts: 0, lockoutEndTime: null })
 
         const record = await createPinRecord('123456')
-        mockGetItem.mockResolvedValue(serializePinRecord(record))
+        kmsMocks.pinBytes = serializePinRecord(record)
 
         const { result } = renderHook(() => usePinCode())
 
@@ -248,7 +288,6 @@ describe('usePinCode', () => {
 
     test('verifyPin returns false when no PIN stored', async () => {
         setupMock({ failedAttempts: 0, lockoutEndTime: null })
-        mockGetItem.mockResolvedValue(null)
 
         const { result } = renderHook(() => usePinCode())
 
@@ -257,40 +296,6 @@ describe('usePinCode', () => {
             isValid = await result.current.verifyPin('123456')
         })
         expect(isValid).toBe(false)
-    })
-
-    test('verifyPin migrates legacy plaintext PIN to a hashed record on success', async () => {
-        setupMock({ failedAttempts: 0, lockoutEndTime: null })
-        mockGetItem.mockResolvedValue(new TextEncoder().encode('123456'))
-
-        const { result } = renderHook(() => usePinCode())
-
-        let isValid = false
-        await act(async () => {
-            isValid = await result.current.verifyPin('123456')
-        })
-
-        expect(isValid).toBe(true)
-        expect(mockSetItem).toHaveBeenCalledTimes(1)
-        const [key, payload] = mockSetItem.mock.calls[0] as [string, Uint8Array]
-        expect(key).toBe(PIN_STORAGE_KEY)
-        const record = parsePinRecord(payload)
-        expect(record?.version).toBe(PIN_RECORD_VERSION)
-    }, 30_000)
-
-    test('verifyPin against legacy plaintext PIN returns false for wrong PIN and does not migrate', async () => {
-        setupMock({ failedAttempts: 0, lockoutEndTime: null })
-        mockGetItem.mockResolvedValue(new TextEncoder().encode('123456'))
-
-        const { result } = renderHook(() => usePinCode())
-
-        let isValid = true
-        await act(async () => {
-            isValid = await result.current.verifyPin('654321')
-        })
-
-        expect(isValid).toBe(false)
-        expect(mockSetItem).not.toHaveBeenCalled()
     })
 
     test('hydrates lockout state from the stored record on mount', async () => {
@@ -302,7 +307,7 @@ describe('usePinCode', () => {
             failedAttempts: 3,
             lockoutEndTime: 987654321,
         }
-        mockGetItem.mockResolvedValue(serializePinRecord(stored))
+        kmsMocks.pinBytes = serializePinRecord(stored)
 
         renderHook(() => usePinCode())
 
@@ -316,13 +321,11 @@ describe('usePinCode', () => {
         setupMock({ failedAttempts: 2, lockoutEndTime: null })
 
         const baseRecord = await createPinRecord('123456')
-        mockGetItem.mockResolvedValue(
-            serializePinRecord({
-                ...baseRecord,
-                failedAttempts: 2,
-                lockoutEndTime: null,
-            }),
-        )
+        kmsMocks.pinBytes = serializePinRecord({
+            ...baseRecord,
+            failedAttempts: 2,
+            lockoutEndTime: null,
+        })
 
         const { result } = renderHook(() => usePinCode())
 
@@ -331,11 +334,9 @@ describe('usePinCode', () => {
         })
 
         expect(mockSetFailedAttempts).toHaveBeenCalledWith(3)
-        const lastCall = mockSetItem.mock.calls.at(-1) as
-            | [string, Uint8Array]
-            | undefined
+        const lastCall = kmsMocks.commitTypedSecret.mock.calls.at(-1)
         expect(lastCall).toBeDefined()
-        const persisted = parsePinRecord(lastCall![1])
+        const persisted = parsePinRecord(lastCall![0].bytes)
         expect(persisted?.failedAttempts).toBe(3)
         expect(persisted?.lockoutEndTime).toBeNull()
     }, 30_000)
@@ -351,13 +352,11 @@ describe('usePinCode', () => {
         })
 
         const baseRecord = await createPinRecord('123456')
-        mockGetItem.mockResolvedValue(
-            serializePinRecord({
-                ...baseRecord,
-                failedAttempts: MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT - 1,
-                lockoutEndTime: null,
-            }),
-        )
+        kmsMocks.pinBytes = serializePinRecord({
+            ...baseRecord,
+            failedAttempts: MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT - 1,
+            lockoutEndTime: null,
+        })
 
         const { result } = renderHook(() => usePinCode())
 
@@ -368,10 +367,8 @@ describe('usePinCode', () => {
         expect(mockSetLockoutEndTime).toHaveBeenCalledWith(
             now + INITIAL_LOCKOUT_SECONDS * 1000,
         )
-        const lastCall = mockSetItem.mock.calls.at(-1) as
-            | [string, Uint8Array]
-            | undefined
-        const persisted = parsePinRecord(lastCall![1])
+        const lastCall = kmsMocks.commitTypedSecret.mock.calls.at(-1)
+        const persisted = parsePinRecord(lastCall![0].bytes)
         expect(persisted?.lockoutEndTime).toBe(
             now + INITIAL_LOCKOUT_SECONDS * 1000,
         )
@@ -388,13 +385,11 @@ describe('usePinCode', () => {
         })
 
         const baseRecord = await createPinRecord('123456')
-        mockGetItem.mockResolvedValue(
-            serializePinRecord({
-                ...baseRecord,
-                failedAttempts: MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT * 2 - 1,
-                lockoutEndTime: null,
-            }),
-        )
+        kmsMocks.pinBytes = serializePinRecord({
+            ...baseRecord,
+            failedAttempts: MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT * 2 - 1,
+            lockoutEndTime: null,
+        })
 
         const { result } = renderHook(() => usePinCode())
 
@@ -439,13 +434,11 @@ describe('usePinCode', () => {
         setupMock({ failedAttempts: 5, lockoutEndTime: null })
 
         const baseRecord = await createPinRecord('123456')
-        mockGetItem.mockResolvedValue(
-            serializePinRecord({
-                ...baseRecord,
-                failedAttempts: 5,
-                lockoutEndTime: 1111,
-            }),
-        )
+        kmsMocks.pinBytes = serializePinRecord({
+            ...baseRecord,
+            failedAttempts: 5,
+            lockoutEndTime: 1111,
+        })
 
         const { result } = renderHook(() => usePinCode())
 
@@ -455,17 +448,14 @@ describe('usePinCode', () => {
 
         expect(mockResetFailedAttempts).toHaveBeenCalled()
         expect(mockSetLockoutEndTime).toHaveBeenCalledWith(null)
-        const lastCall = mockSetItem.mock.calls.at(-1) as
-            | [string, Uint8Array]
-            | undefined
-        const persisted = parsePinRecord(lastCall![1])
+        const lastCall = kmsMocks.commitTypedSecret.mock.calls.at(-1)
+        const persisted = parsePinRecord(lastCall![0].bytes)
         expect(persisted?.failedAttempts).toBe(0)
         expect(persisted?.lockoutEndTime).toBeNull()
     }, 30_000)
 
     test('checkAutoLock returns false when PIN is not enabled', async () => {
         setupMock({ failedAttempts: 0, lockoutEndTime: null })
-        mockGetItem.mockResolvedValue(null)
 
         const { result } = renderHook(() => usePinCode())
 
@@ -482,7 +472,7 @@ describe('usePinCode', () => {
             lockoutEndTime: null,
             autoLockStartedAt: null,
         })
-        mockGetItem.mockResolvedValue(new TextEncoder().encode('123456'))
+        kmsMocks.pinBytes = serializePinRecord(await createPinRecord('123456'))
 
         const { result } = renderHook(() => usePinCode())
 
@@ -491,7 +481,7 @@ describe('usePinCode', () => {
             shouldLock = await result.current.checkAutoLock()
         })
         expect(shouldLock).toBe(false)
-    })
+    }, 30_000)
 
     test('checkAutoLock returns true when timeout exceeded', async () => {
         vi.useFakeTimers()
@@ -503,7 +493,7 @@ describe('usePinCode', () => {
             lockoutEndTime: null,
             autoLockStartedAt: now - 6 * 60 * 1000,
         })
-        mockGetItem.mockResolvedValue(new TextEncoder().encode('123456'))
+        kmsMocks.pinBytes = serializePinRecord(await createPinRecord('123456'))
 
         const { result } = renderHook(() => usePinCode())
 
@@ -512,7 +502,7 @@ describe('usePinCode', () => {
             shouldLock = await result.current.checkAutoLock()
         })
         expect(shouldLock).toBe(true)
-    })
+    }, 30_000)
 
     test('checkAutoLock returns false when timeout not exceeded', async () => {
         vi.useFakeTimers()
@@ -524,7 +514,7 @@ describe('usePinCode', () => {
             lockoutEndTime: null,
             autoLockStartedAt: now - 2 * 60 * 1000,
         })
-        mockGetItem.mockResolvedValue(new TextEncoder().encode('123456'))
+        kmsMocks.pinBytes = serializePinRecord(await createPinRecord('123456'))
 
         const { result } = renderHook(() => usePinCode())
 
@@ -533,5 +523,5 @@ describe('usePinCode', () => {
             shouldLock = await result.current.checkAutoLock()
         })
         expect(shouldLock).toBe(false)
-    })
+    }, 30_000)
 })
