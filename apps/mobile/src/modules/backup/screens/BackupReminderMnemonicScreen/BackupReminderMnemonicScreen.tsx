@@ -11,8 +11,7 @@
  */
 
 import { ActivityIndicator } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { PWButton, PWText, PWView } from '@components/core'
+import { PWButton, PWScrollView, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
 import { PinEditView } from '@modules/security/components/PinEditView'
@@ -22,8 +21,7 @@ import { useStyles } from './styles'
 const SCREEN_CAPTURE_TAG = 'backup-mnemonic'
 
 export const BackupReminderMnemonicScreen = () => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles(insets)
+    const styles = useStyles()
     const { t } = useLanguage()
     const {
         words,
@@ -75,7 +73,10 @@ export const BackupReminderMnemonicScreen = () => {
 
     return (
         <PWView style={styles.root}>
-            <PWView style={styles.content}>
+            <PWScrollView
+                style={styles.scroll}
+                contentContainerStyle={styles.scrollContent}
+            >
                 <PWText
                     variant='h1'
                     style={styles.title}
@@ -101,7 +102,7 @@ export const BackupReminderMnemonicScreen = () => {
                         </PWView>
                     ))}
                 </PWView>
-            </PWView>
+            </PWScrollView>
 
             <PWView style={styles.footer}>
                 <PWButton
