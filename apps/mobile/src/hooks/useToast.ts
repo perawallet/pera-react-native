@@ -62,6 +62,12 @@ const useStyles = makeStyles(theme => {
     }
 })
 
+const DELAY_MAP = {
+    none: 0,
+    short: SHORT_PROMPT_DISPLAY_DELAY,
+    long: LONG_PROMPT_DISPLAY_DELAY,
+} as const
+
 type ToastOptions = ShowNotificationParams & {
     notifier?: NotifierRoot
     delayLength?: 'none' | 'short' | 'long'
@@ -86,17 +92,12 @@ export const useToast = () => {
             }
 
             const {
-                delayLength,
+                delayLength = 'none',
                 notifier: customNotifier,
                 ...notifierOptions
             } = options ?? {}
 
-            const delayMap = {
-                none: 0,
-                short: SHORT_PROMPT_DISPLAY_DELAY,
-                long: LONG_PROMPT_DISPLAY_DELAY,
-            }
-            const delay = delayMap[delayLength ?? 'none']
+            const delay = DELAY_MAP[delayLength]
 
             const notifier = customNotifier ?? Notifier
 
