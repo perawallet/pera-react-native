@@ -1075,8 +1075,15 @@
                 "body": "You are about to rekey this account. It will no longer be able to sign transactions for itself.",
                 "learn_more": "Learn more",
                 "summary_label": "Summary of rekey",
+                "current_auth_label": "Currently Rekeyed",
                 "fee_label": "Transaction Fee",
-                "cta": "Confirm"
+                "cta": "Confirm",
+                "replace_warning": {
+                    "title": "Your previous rekey will be replaced",
+                    "body": "<0>{{currentAuth}}</0> will no longer be authorized to sign transactions for <1>{{source}}</1>. Ensure you understand the implications of this before continuing. <2>Learn more</2>",
+                    "confirm": "Confirm",
+                    "cancel": "Cancel"
+                }
             },
             "success": {
                 "title": "Account successfully rekeyed",

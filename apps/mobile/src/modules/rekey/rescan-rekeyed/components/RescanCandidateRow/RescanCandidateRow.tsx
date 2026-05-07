@@ -12,6 +12,7 @@
 
 import { memo, useCallback } from 'react'
 import { PWCheckbox, PWText, PWTouchableOpacity } from '@components/core'
+import { SHORT_ADDRESS_FORMAT } from '@constants/ui'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 
@@ -25,7 +26,6 @@ export const RescanCandidateRow = memo(
     ({ address, isSelected, onToggle }: RescanCandidateRowProps) => {
         const styles = useStyles()
 
-        // Stable per-row handler — avoids inline arrows in JSX.
         const handlePress = useCallback(() => {
             onToggle(address)
         }, [address, onToggle])
@@ -37,10 +37,8 @@ export const RescanCandidateRow = memo(
                 testID={`rescan-rekeyed-row-${address}`}
             >
                 <PWText variant='bodyLarge'>
-                    {truncateAlgorandAddress(address, 9)}
+                    {truncateAlgorandAddress(address, SHORT_ADDRESS_FORMAT)}
                 </PWText>
-                {/* Display-only — outer PWTouchableOpacity owns the gesture so
-                    a tap doesn't fire the toggle twice. */}
                 <PWCheckbox
                     checked={isSelected}
                     containerStyle={styles.checkboxContainer}

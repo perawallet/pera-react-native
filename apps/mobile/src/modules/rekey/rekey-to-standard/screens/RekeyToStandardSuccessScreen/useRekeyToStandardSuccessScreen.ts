@@ -18,25 +18,29 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import type { RouteProp } from '@react-navigation/native'
 import type { RekeyToStandardStackParamList } from '../../routes/types'
 
-export type UseRekeySuccessScreenResult = {
+export type UseRekeyToStandardSuccessScreenResult = {
     sourceName: string
     handleDone: () => void
 }
 
-export const useRekeySuccessScreen = (): UseRekeySuccessScreenResult => {
-    const navigation = useAppNavigation()
-    const route =
-        useRoute<
-            RouteProp<RekeyToStandardStackParamList, 'RekeyToStandardSuccess'>
-        >()
-    const source = useFindAccountByAddress(route.params.sourceAddress)
+export const useRekeyToStandardSuccessScreen =
+    (): UseRekeyToStandardSuccessScreenResult => {
+        const navigation = useAppNavigation()
+        const route =
+            useRoute<
+                RouteProp<
+                    RekeyToStandardStackParamList,
+                    'RekeyToStandardSuccess'
+                >
+            >()
+        const source = useFindAccountByAddress(route.params.sourceAddress)
 
-    const handleDone = useCallback(() => {
-        navigation.navigate('TabBar', { screen: 'Home' })
-    }, [navigation])
+        const handleDone = useCallback(() => {
+            navigation.navigate('TabBar', { screen: 'Home' })
+        }, [navigation])
 
-    return {
-        sourceName: source?.name ?? '',
-        handleDone,
+        return {
+            sourceName: source?.name ?? '',
+            handleDone,
+        }
     }
-}

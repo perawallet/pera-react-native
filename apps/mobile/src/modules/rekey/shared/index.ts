@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+export { RekeySummaryRow } from './components/RekeySummaryRow'
+export type { RekeySummaryRowProps } from './components/RekeySummaryRow'
 export { useSubmitRekey } from './useSubmitRekey'
 export type { SubmitRekeyParams, UseSubmitRekeyResult } from './useSubmitRekey'
 export { RekeyUserRejectedError } from './requestRekeySignatures'

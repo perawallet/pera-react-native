@@ -11,15 +11,13 @@
  */
 
 import { useCallback } from 'react'
-import { Linking } from 'react-native'
 import { useRoute } from '@react-navigation/native'
+import { config } from '@perawallet/wallet-core-config'
+import { useWebView } from '@modules/webview'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 
 import type { RouteProp } from '@react-navigation/native'
 import type { RekeyToLedgerStackParamList } from '../../routes/types'
-
-const LEARN_MORE_URL =
-    'https://support.perawallet.app/en/article/how-to-rekey-an-algorand-account-with-pera-mobile-13ykjxs/'
 
 export type UseRekeyToLedgerIntroScreenResult = {
     sourceAddress: string
@@ -30,6 +28,7 @@ export type UseRekeyToLedgerIntroScreenResult = {
 export const useRekeyToLedgerIntroScreen =
     (): UseRekeyToLedgerIntroScreenResult => {
         const navigation = useAppNavigation()
+        const { pushWebView } = useWebView()
         const route =
             useRoute<
                 RouteProp<RekeyToLedgerStackParamList, 'RekeyToLedgerIntro'>
@@ -44,8 +43,8 @@ export const useRekeyToLedgerIntroScreen =
         }, [navigation, sourceAddress])
 
         const handleLearnMore = useCallback(() => {
-            Linking.openURL(LEARN_MORE_URL)
-        }, [])
+            pushWebView({ url: config.rekeyToLedgerSupportUrl })
+        }, [pushWebView])
 
         return {
             sourceAddress,

@@ -81,16 +81,17 @@ export const useAccountOptions = ({
     const logicalType = useAccountLogicalType(account.address) ?? 'NoAuth'
     const showPassphrase = logicalType === 'Algo25' || logicalType === 'HdKey'
     const isRekeyed = logicalType === 'Rekeyed' || logicalType === 'RekeyedAuth'
-    // Hide Undo Rekey when the on-chain auth is the account itself — that's
-    // the same as not being rekeyed; the undo would be a no-op that just
-    // burns a fee.
-    const showUndoRekey =
-        isRekeyed &&
-        !!account.rekeyAddress &&
-        account.rekeyAddress !== account.address
     const isHdWallet = logicalType === 'HdKey'
     const canSign = isSigningLogicalType(logicalType)
     const isSharedAccount = isMultisigAccount(account)
+    // Undo Rekey requires holding the auth signing material — `Rekeyed`
+    // accounts (auth chain doesn't terminate at a key we hold) can't sign
+    // the undo. Also hide when the on-chain auth is the account itself,
+    // which is the same as not being rekeyed.
+    const showUndoRekey =
+        canSign &&
+        !!account.rekeyAddress &&
+        account.rekeyAddress !== account.address
 
     const authAccount = useFindAccountByAddress(account.rekeyAddress ?? '')
     const authAccountName = authAccount

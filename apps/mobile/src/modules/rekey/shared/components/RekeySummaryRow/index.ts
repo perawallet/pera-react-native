@@ -10,4 +10,5 @@
  limitations under the License
  */
 
-export { RekeySuccessScreen } from './RekeySuccessScreen'
+export { RekeySummaryRow } from './RekeySummaryRow'
+export type { RekeySummaryRowProps } from './RekeySummaryRow'

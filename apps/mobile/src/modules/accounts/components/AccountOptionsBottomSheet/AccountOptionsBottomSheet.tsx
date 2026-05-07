@@ -10,24 +10,21 @@
  limitations under the License
  */
 
-import {
-    PWBottomSheet,
-    PWDivider,
-    PWIcon,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
+import { useMemo } from 'react'
+import { PWBottomSheet, PWDivider, PWView } from '@components/core'
 import { WalletAccount, isWatchAccount } from '@perawallet/wallet-core-accounts'
 import { ViewPassphraseFlow } from '@modules/view-passphrase'
 import { useStyles } from './styles'
-import { AccountOption, useAccountOptions } from './useAccountOptions'
+import { useAccountOptions } from './useAccountOptions'
+import { AccountOptionsRow } from './AccountOptionsRow'
 import { RenameAccountBottomSheet } from './RenameAccountBottomSheet'
 import { BackupWarningBottomSheet } from './BackupWarningBottomSheet'
 import { RemoveAccountConfirmBottomSheet } from './RemoveAccountConfirmBottomSheet'
 import { AccountInfoCard } from '../AccountInfoCard'
 import { ExportShareAccountBottomSheet } from '@modules/multisig/components/ExportShareAccountBottomSheet'
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet'
+
+import type { AccountOption } from './useAccountOptions'
 
 export type AccountOptionsBottomSheetProps = {
     isVisible: boolean
@@ -36,44 +33,27 @@ export type AccountOptionsBottomSheetProps = {
     account: WalletAccount
 }
 
-const OptionRow = ({
-    option,
-    styles,
-}: {
-    option: AccountOption
-    styles: ReturnType<typeof useStyles>
-}) => {
-    const isDestructive = option.variant === 'destructive'
+const GENERAL_IDS: ReadonlySet<AccountOption['id']> = new Set([
+    'copy-address',
+    'show-address',
+    'view-passphrase',
+    'auth-address',
+])
 
-    return (
-        <PWTouchableOpacity
-            style={styles.optionRow}
-            onPress={option.onPress}
-        >
-            <PWIcon
-                name={option.icon}
-                variant={isDestructive ? 'error' : 'primary'}
-            />
-            <PWView style={styles.optionTextContainer}>
-                <PWText
-                    variant='h4'
-                    style={isDestructive ? styles.dangerText : undefined}
-                >
-                    {option.title}
-                </PWText>
-                {option.subtitle ? (
-                    <PWText
-                        variant='body'
-                        style={styles.optionSubtitle}
-                        numberOfLines={1}
-                    >
-                        {option.subtitle}
-                    </PWText>
-                ) : null}
-            </PWView>
-        </PWTouchableOpacity>
-    )
-}
+const REKEY_IDS: ReadonlySet<AccountOption['id']> = new Set([
+    'undo-rekey',
+    'rekey-to-ledger',
+    'rekey-to-standard',
+    'rekey-to-shared',
+    'rescan-rekeyed',
+    'export-share-account',
+])
+
+const MANAGEMENT_IDS: ReadonlySet<AccountOption['id']> = new Set([
+    'rename-account',
+    'toggle-notifications',
+    'remove-account',
+])
 
 export const AccountOptionsBottomSheet = ({
     isVisible,
@@ -99,29 +79,21 @@ export const AccountOptionsBottomSheet = ({
         handleCloseExportShare,
     } = useAccountOptions({ account, onClose, onShowAddress })
 
-    const generalOptions = options.filter(
-        o =>
-            o.id === 'copy-address' ||
-            o.id === 'show-address' ||
-            o.id === 'view-passphrase' ||
-            o.id === 'auth-address',
-    )
-
-    const rekeyOptions = options.filter(
-        o =>
-            o.id === 'rekey-to-ledger' ||
-            o.id === 'rekey-to-standard' ||
-            o.id === 'rekey-to-shared' ||
-            o.id === 'rescan-rekeyed' ||
-            o.id === 'export-share-account',
-    )
-
-    const managementOptions = options.filter(
-        o =>
-            o.id === 'rename-account' ||
-            o.id === 'toggle-notifications' ||
-            o.id === 'remove-account',
-    )
+    const { generalOptions, rekeyOptions, managementOptions } = useMemo(() => {
+        const general: AccountOption[] = []
+        const rekey: AccountOption[] = []
+        const management: AccountOption[] = []
+        for (const option of options) {
+            if (GENERAL_IDS.has(option.id)) general.push(option)
+            else if (REKEY_IDS.has(option.id)) rekey.push(option)
+            else if (MANAGEMENT_IDS.has(option.id)) management.push(option)
+        }
+        return {
+            generalOptions: general,
+            rekeyOptions: rekey,
+            managementOptions: management,
+        }
+    }, [options])
 
     return (
         <>
@@ -145,10 +117,9 @@ export const AccountOptionsBottomSheet = ({
 
                     <PWView>
                         {generalOptions.map(option => (
-                            <OptionRow
+                            <AccountOptionsRow
                                 key={option.id}
                                 option={option}
-                                styles={styles}
                             />
                         ))}
                     </PWView>
@@ -158,10 +129,9 @@ export const AccountOptionsBottomSheet = ({
                             <PWDivider style={styles.divider} />
                             <PWView>
                                 {rekeyOptions.map(option => (
-                                    <OptionRow
+                                    <AccountOptionsRow
                                         key={option.id}
                                         option={option}
-                                        styles={styles}
                                     />
                                 ))}
                             </PWView>
@@ -171,10 +141,9 @@ export const AccountOptionsBottomSheet = ({
                     <PWDivider style={styles.divider} />
                     <PWView>
                         {managementOptions.map(option => (
-                            <OptionRow
+                            <AccountOptionsRow
                                 key={option.id}
                                 option={option}
-                                styles={styles}
                             />
                         ))}
                     </PWView>

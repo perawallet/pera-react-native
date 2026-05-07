@@ -12,6 +12,7 @@
 
 import { useCallback } from 'react'
 import { PWFlatList, PWText, PWView } from '@components/core'
+import { EmptyView } from '@components/EmptyView'
 import { RekeyTargetRow } from '@modules/rekey/rekey-to-standard/components/RekeyTargetRow'
 import { useLanguage } from '@hooks/useLanguage'
 import { useRekeyToLedgerSelectTargetScreen } from './useRekeyToLedgerSelectTargetScreen'
@@ -37,17 +38,8 @@ export const RekeyToLedgerSelectTargetScreen = () => {
     )
 
     const renderEmpty = useCallback(
-        () => (
-            <PWView style={styles.empty}>
-                <PWText
-                    variant='bodyLarge'
-                    style={styles.emptyText}
-                >
-                    {t('rekey.to_ledger.select.empty')}
-                </PWText>
-            </PWView>
-        ),
-        [styles.empty, styles.emptyText, t],
+        () => <EmptyView body={t('rekey.to_ledger.select.empty')} />,
+        [t],
     )
 
     return (

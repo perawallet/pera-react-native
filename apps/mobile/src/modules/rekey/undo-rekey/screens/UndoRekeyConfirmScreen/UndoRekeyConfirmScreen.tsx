@@ -11,12 +11,11 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { Linking } from 'react-native'
 import { Trans } from 'react-i18next'
 import { microAlgosToAlgos } from '@perawallet/wallet-core-blockchain'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { getAccountDisplayName } from '@perawallet/wallet-core-accounts'
+import { config } from '@perawallet/wallet-core-config'
 import {
     PWButton,
     PWIcon,
@@ -26,67 +25,17 @@ import {
 } from '@components/core'
 import { AccountIcon } from '@modules/accounts/components/AccountIcon'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { ConfirmActionBottomSheet } from '@components/ConfirmActionBottomSheet'
+import { useWebView } from '@modules/webview'
 import { useLanguage } from '@hooks/useLanguage'
-import { UndoRekeyWarningSheet } from '../../components/UndoRekeyWarningSheet'
+import { RekeySummaryRow } from '../../../shared'
 import { useUndoRekeyConfirmScreen } from './useUndoRekeyConfirmScreen'
 import { useStyles } from './styles'
-
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-
-const LEARN_MORE_URL =
-    'https://support.perawallet.app/en/article/how-to-rekey-an-algorand-account-with-pera-mobile-13ykjxs/'
-
-type AccountStateRowProps = {
-    account: WalletAccount
-    showRekeyedIcon: boolean
-    styles: ReturnType<typeof useStyles>
-}
-
-const AccountStateRow = ({
-    account,
-    showRekeyedIcon,
-    styles,
-}: AccountStateRowProps) => {
-    const truncated = truncateAlgorandAddress(account.address, 9)
-
-    return (
-        <PWView style={styles.accountRow}>
-            {showRekeyedIcon ? (
-                <AccountIcon
-                    account={account}
-                    size='lg'
-                />
-            ) : (
-                <PWIcon
-                    name='wallet'
-                    size='lg'
-                    variant='primary'
-                />
-            )}
-            <PWView style={styles.accountText}>
-                <PWText
-                    variant='bodyLarge'
-                    numberOfLines={1}
-                >
-                    {account.name ?? truncated}
-                </PWText>
-                {!!account.name && (
-                    <PWText
-                        variant='body'
-                        style={styles.accountAddress}
-                        numberOfLines={1}
-                    >
-                        {truncated}
-                    </PWText>
-                )}
-            </PWView>
-        </PWView>
-    )
-}
 
 export const UndoRekeyConfirmScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const { pushWebView } = useWebView()
     const {
         source,
         currentAuth,
@@ -105,10 +54,46 @@ export const UndoRekeyConfirmScreen = () => {
     }, [feeMicroAlgos])
 
     const handleLearnMore = useCallback(() => {
-        Linking.openURL(LEARN_MORE_URL)
-    }, [])
+        pushWebView({ url: config.rekeyToStandardSupportUrl })
+    }, [pushWebView])
+
+    const bodyTransComponents = useMemo(
+        () => [
+            <PWText
+                key='learn-more'
+                variant='h4'
+                style={styles.learnMore}
+                onPress={handleLearnMore}
+            />,
+        ],
+        [styles.learnMore, handleLearnMore],
+    )
+
+    const warningTransComponents = useMemo(
+        () => [
+            <PWText
+                key='auth'
+                variant='bodySemibold'
+            />,
+            <PWText
+                key='source'
+                variant='bodySemibold'
+            />,
+            <PWText
+                key='learn-more'
+                variant='link'
+                onPress={handleLearnMore}
+            />,
+        ],
+        [handleLearnMore],
+    )
 
     if (!source) return null
+
+    const sourceName = getAccountDisplayName(source)
+    const currentAuthName = currentAuth
+        ? getAccountDisplayName(currentAuth)
+        : ''
 
     return (
         <PWView
@@ -126,14 +111,7 @@ export const UndoRekeyConfirmScreen = () => {
                     >
                         <Trans
                             i18nKey='rekey.undo.confirm.body'
-                            components={[
-                                <PWText
-                                    key='learn-more'
-                                    variant='h4'
-                                    style={styles.learnMore}
-                                    onPress={handleLearnMore}
-                                />,
-                            ]}
+                            components={bodyTransComponents}
                         />
                     </PWText>
                 </PWView>
@@ -147,10 +125,9 @@ export const UndoRekeyConfirmScreen = () => {
                     </PWText>
 
                     <PWView style={styles.summaryCard}>
-                        <AccountStateRow
+                        <RekeySummaryRow
                             account={source}
-                            showRekeyedIcon
-                            styles={styles}
+                            iconMode='account'
                         />
                         <PWView style={styles.arrowRow}>
                             <PWIcon
@@ -159,10 +136,9 @@ export const UndoRekeyConfirmScreen = () => {
                                 variant='secondary'
                             />
                         </PWView>
-                        <AccountStateRow
+                        <RekeySummaryRow
                             account={source}
-                            showRekeyedIcon={false}
-                            styles={styles}
+                            iconMode='wallet'
                         />
                     </PWView>
                 </PWView>
@@ -220,14 +196,26 @@ export const UndoRekeyConfirmScreen = () => {
                 />
             </PWView>
 
-            <UndoRekeyWarningSheet
+            <ConfirmActionBottomSheet
                 isVisible={isWarningOpen}
-                sourceName={getAccountDisplayName(source)}
-                currentAuthName={
-                    currentAuth ? getAccountDisplayName(currentAuth) : ''
+                icon='warning'
+                iconVariant='error'
+                title={t('rekey.undo.warning.title')}
+                message={
+                    <Trans
+                        i18nKey='rekey.undo.warning.body'
+                        values={{
+                            currentAuth: currentAuthName,
+                            source: sourceName,
+                        }}
+                        components={warningTransComponents}
+                    />
                 }
+                confirmLabel={t('rekey.undo.warning.confirm')}
+                cancelLabel={t('rekey.undo.warning.cancel')}
                 onClose={handleWarningClose}
                 onConfirm={handleWarningConfirm}
+                testID='undo-rekey-warning-sheet'
             />
         </PWView>
     )

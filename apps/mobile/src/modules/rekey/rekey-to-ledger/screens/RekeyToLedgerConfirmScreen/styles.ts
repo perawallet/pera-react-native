@@ -49,16 +49,10 @@ export const useStyles = makeStyles(theme => ({
         width: theme.spacing.xxl,
         alignItems: 'center',
     },
-    accountRow: {
+    currentAuthValue: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: theme.spacing.md,
-    },
-    accountText: {
-        flexShrink: 1,
-    },
-    accountAddress: {
-        color: theme.colors.textGray,
+        gap: theme.spacing.sm,
     },
     row: {
         flexDirection: 'row',

@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { RekeyConfirmScreen } from './RekeyConfirmScreen'
+export { RekeyToStandardSuccessScreen } from './RekeyToStandardSuccessScreen'

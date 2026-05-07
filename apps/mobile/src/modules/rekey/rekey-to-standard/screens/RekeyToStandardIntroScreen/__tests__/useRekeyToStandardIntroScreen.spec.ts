@@ -12,7 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useRekeyIntroScreen } from '../useRekeyIntroScreen'
+import { useRekeyToStandardIntroScreen } from '../useRekeyToStandardIntroScreen'
 
 const mockNavigate = vi.fn()
 vi.mock('@hooks/useAppNavigation', () => ({
@@ -41,13 +41,13 @@ vi.mock('@perawallet/wallet-core-config', () => ({
     },
 }))
 
-describe('useRekeyIntroScreen', () => {
+describe('useRekeyToStandardIntroScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
     })
 
     it('handleStartProcess navigates to the SelectTarget screen with the source address', () => {
-        const { result } = renderHook(() => useRekeyIntroScreen())
+        const { result } = renderHook(() => useRekeyToStandardIntroScreen())
 
         act(() => {
             result.current.handleStartProcess()
@@ -60,7 +60,7 @@ describe('useRekeyIntroScreen', () => {
     })
 
     it('handleLearnMore opens the support article in the in-app webview', () => {
-        const { result } = renderHook(() => useRekeyIntroScreen())
+        const { result } = renderHook(() => useRekeyToStandardIntroScreen())
 
         act(() => {
             result.current.handleLearnMore()

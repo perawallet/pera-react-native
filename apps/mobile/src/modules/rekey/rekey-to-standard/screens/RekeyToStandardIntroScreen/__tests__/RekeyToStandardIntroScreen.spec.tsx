@@ -12,13 +12,13 @@
 
 import { render, screen, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { RekeyIntroScreen } from '../RekeyIntroScreen'
+import { RekeyToStandardIntroScreen } from '../RekeyToStandardIntroScreen'
 
 const mockHandleStartProcess = vi.fn()
 const mockHandleLearnMore = vi.fn()
 
-vi.mock('../useRekeyIntroScreen', () => ({
-    useRekeyIntroScreen: () => ({
+vi.mock('../useRekeyToStandardIntroScreen', () => ({
+    useRekeyToStandardIntroScreen: () => ({
         handleStartProcess: mockHandleStartProcess,
         handleLearnMore: mockHandleLearnMore,
     }),
@@ -34,13 +34,13 @@ vi.mock('@assets/images/rekey-to-standard-hero.jpg', () => ({
     default: 1,
 }))
 
-describe('RekeyIntroScreen', () => {
+describe('RekeyToStandardIntroScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
     })
 
     it('invokes handleStartProcess when the CTA is pressed', () => {
-        render(<RekeyIntroScreen />)
+        render(<RekeyToStandardIntroScreen />)
 
         fireEvent.click(screen.getByTestId('rekey-to-standard-intro-start'))
 
@@ -48,7 +48,7 @@ describe('RekeyIntroScreen', () => {
     })
 
     it('invokes handleLearnMore when the inline link is pressed', () => {
-        render(<RekeyIntroScreen />)
+        render(<RekeyToStandardIntroScreen />)
 
         fireEvent.click(screen.getByText('rekey.to_standard.intro.learn_more'))
 
@@ -56,7 +56,7 @@ describe('RekeyIntroScreen', () => {
     })
 
     it('renders the three "what to expect" rows from i18n', () => {
-        render(<RekeyIntroScreen />)
+        render(<RekeyToStandardIntroScreen />)
 
         expect(
             screen.getByText('rekey.to_standard.intro.expect_1'),

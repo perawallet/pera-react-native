@@ -23,9 +23,9 @@ import { RekeyUserRejectedError, useSubmitRekey } from '../../../shared'
 
 import type { RouteProp } from '@react-navigation/native'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type { RekeyToLedgerStackParamList } from '../../routes/types'
+import type { RekeyToStandardStackParamList } from '../../routes/types'
 
-export type UseRekeyToLedgerConfirmScreenResult = {
+export type UseRekeyToStandardConfirmScreenResult = {
     source: WalletAccount | null
     target: WalletAccount | null
     currentAuth: WalletAccount | null
@@ -39,12 +39,15 @@ export type UseRekeyToLedgerConfirmScreenResult = {
     handleWarningClose: () => void
 }
 
-export const useRekeyToLedgerConfirmScreen =
-    (): UseRekeyToLedgerConfirmScreenResult => {
+export const useRekeyToStandardConfirmScreen =
+    (): UseRekeyToStandardConfirmScreenResult => {
         const navigation = useAppNavigation()
         const route =
             useRoute<
-                RouteProp<RekeyToLedgerStackParamList, 'RekeyToLedgerConfirm'>
+                RouteProp<
+                    RekeyToStandardStackParamList,
+                    'RekeyToStandardConfirm'
+                >
             >()
         const { sourceAddress, targetAddress } = route.params
 
@@ -73,8 +76,8 @@ export const useRekeyToLedgerConfirmScreen =
                     sourceAddress: source.address,
                     rekeyToAddress: target.address,
                 })
-                navigation.navigate('RekeyToLedger', {
-                    screen: 'RekeyToLedgerSuccess',
+                navigation.navigate('RekeyToStandard', {
+                    screen: 'RekeyToStandardSuccess',
                     params: { sourceAddress: source.address },
                 })
             } catch (error) {

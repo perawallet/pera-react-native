@@ -29,22 +29,6 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textGray,
         textAlign: 'center',
     },
-    retryButton: {
-        marginTop: theme.spacing.lg,
-    },
-    emptyContent: {
-        flex: 1,
-        paddingHorizontal: theme.spacing.xl,
-        paddingTop: theme.spacing.lg,
-        gap: theme.spacing.lg,
-        alignItems: 'flex-start',
-    },
-    emptyTitle: {
-        color: theme.colors.textMain,
-    },
-    emptyBody: {
-        color: theme.colors.textGray,
-    },
     scrollContent: {
         paddingHorizontal: theme.spacing.xl,
         paddingTop: theme.spacing.lg,

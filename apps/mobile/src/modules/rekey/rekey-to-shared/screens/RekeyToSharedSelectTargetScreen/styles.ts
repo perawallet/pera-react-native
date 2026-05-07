@@ -31,15 +31,4 @@ export const useStyles = makeStyles(theme => ({
         paddingHorizontal: theme.spacing.xl,
         paddingBottom: theme.spacing.xl,
     },
-    empty: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: theme.spacing['4xl'],
-        paddingHorizontal: theme.spacing.xl,
-    },
-    emptyText: {
-        color: theme.colors.textGray,
-        textAlign: 'center',
-    },
 }))

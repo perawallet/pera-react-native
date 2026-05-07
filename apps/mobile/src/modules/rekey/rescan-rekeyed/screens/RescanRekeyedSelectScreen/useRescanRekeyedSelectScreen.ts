@@ -14,6 +14,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRoute } from '@react-navigation/native'
 import { useRescanRekeyedAccounts } from '@perawallet/wallet-core-accounts'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useErrorToast } from '@hooks/useErrorToast'
 
 import type { RouteProp } from '@react-navigation/native'
 import type { RescanRekeyedStackParamList } from '../../routes/types'
@@ -45,6 +46,7 @@ export const useRescanRekeyedSelectScreen =
         const sourceAddress = route.params.sourceAddress
 
         const { scan, importSelected } = useRescanRekeyedAccounts()
+        const { showError } = useErrorToast()
 
         const [isLoading, setIsLoading] = useState(true)
         const [isError, setIsError] = useState(false)
@@ -119,10 +121,18 @@ export const useRescanRekeyedSelectScreen =
                     Array.from(selectedAddresses),
                 )
                 navigation.navigate('TabBar', { screen: 'Home' })
+            } catch (error) {
+                showError(error)
             } finally {
                 setIsSubmitting(false)
             }
-        }, [importSelected, navigation, selectedAddresses, sourceAddress])
+        }, [
+            importSelected,
+            navigation,
+            selectedAddresses,
+            showError,
+            sourceAddress,
+        ])
 
         const handleSkip = useCallback(() => {
             navigation.goBack()

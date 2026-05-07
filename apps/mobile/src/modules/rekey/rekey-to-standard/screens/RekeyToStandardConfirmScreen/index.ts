@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { RekeyIntroScreen } from './RekeyIntroScreen'
+export { RekeyToStandardConfirmScreen } from './RekeyToStandardConfirmScreen'

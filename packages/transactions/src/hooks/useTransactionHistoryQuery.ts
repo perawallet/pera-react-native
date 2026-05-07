@@ -11,7 +11,7 @@
  */
 
 import { useInfiniteQuery } from '@tanstack/react-query'
-import type { Network, Nullable } from '@perawallet/wallet-core-shared'
+import type { Maybe, Network, Nullable } from '@perawallet/wallet-core-shared'
 import { fetchTransactionHistory, fetchMoreTransactions } from '../api/history'
 import { transactionQueryKeys } from './querykeys'
 import type {
@@ -20,6 +20,18 @@ import type {
 } from '../models/types'
 import { getTransactionHistory } from '../db'
 import { persistTransactionsToDb } from './useTransactionHistoryDb'
+
+type ApiPageParam = {
+    type: 'api'
+    url: string
+    /** Strict round cutoff used to dedupe day-grain API overlap. */
+    beforeRound?: number
+    /** Round time of the oldest carried-over tx (seeds API `before_time`). */
+    beforeRoundTime?: number
+}
+
+/** `null` = initial DB read; otherwise an API page. */
+type PageParam = Nullable<ApiPageParam>
 
 /**
  * Parameters for the useTransactionHistoryQuery hook.
@@ -97,10 +109,10 @@ export const useTransactionHistoryQuery = (
         queryFn: async ({
             pageParam,
         }: {
-            pageParam: Nullable<{ type: 'db' } | { type: 'api'; url: string }>
+            pageParam: PageParam
         }): Promise<TransactionHistoryResult> => {
             // First page: read from DB
-            if (pageParam === null || pageParam.type === 'db') {
+            if (pageParam == null) {
                 const dbTransactions = await getTransactionHistory({
                     accountAddress,
                     network,
@@ -125,10 +137,7 @@ export const useTransactionHistoryQuery = (
             }
 
             // Subsequent pages: fetch from API
-            if (
-                pageParam.type === 'api' &&
-                pageParam.url !== '__load_more_from_api__'
-            ) {
+            if (pageParam.url !== '__load_more_from_api__') {
                 const result = await fetchMoreTransactions({
                     url: pageParam.url,
                     network,
@@ -146,57 +155,62 @@ export const useTransactionHistoryQuery = (
                 return result
             }
 
-            // Transition from DB to API: fetch older transactions
-            // Use beforeTime from the oldest DB transaction
-            const dbTransactions = await getTransactionHistory({
-                accountAddress,
-                network,
-                assetId,
-                limit: 1,
-                beforeRoundTime: undefined,
-            })
-
-            // Get the oldest transaction's roundTime to use as before_time
-            const oldestRoundTime =
-                dbTransactions.length > 0
-                    ? dbTransactions[dbTransactions.length - 1].roundTime
-                    : undefined
+            // Transition from DB to API: fetch older transactions.
+            // The Pera API only supports day-grain `before_time`, so the
+            // boundary day overlaps with the DB page. We carry the oldest
+            // DB tx's `confirmedRound` through pageParam and strip overlap
+            // client-side using rounds (monotonic, unique per block).
+            const beforeRound = pageParam.beforeRound
+            const beforeTimeForApi =
+                pageParam.beforeRoundTime !== undefined
+                    ? new Date(pageParam.beforeRoundTime * 1000)
+                          .toISOString()
+                          .split('T')[0]
+                    : beforeTime
 
             const result = await fetchTransactionHistory({
                 accountAddress,
                 network,
                 assetId,
-                beforeTime: oldestRoundTime
-                    ? new Date(oldestRoundTime * 1000)
-                          .toISOString()
-                          .split('T')[0]
-                    : beforeTime,
+                beforeTime: beforeTimeForApi,
                 limit,
             })
 
+            const dedupedTransactions =
+                beforeRound !== undefined
+                    ? result.transactions.filter(
+                          tx => tx.confirmedRound < beforeRound,
+                      )
+                    : result.transactions
+
             // Persist to DB in background
-            if (result.transactions.length > 0) {
+            if (dedupedTransactions.length > 0) {
                 void persistTransactionsToDb(
-                    result.transactions,
+                    dedupedTransactions,
                     accountAddress,
                     network,
                 )
             }
 
-            return result
+            return {
+                ...result,
+                transactions: dedupedTransactions,
+            }
         },
-        initialPageParam: null as Nullable<
-            { type: 'db' } | { type: 'api'; url: string }
-        >,
+        initialPageParam: null as PageParam,
         getNextPageParam: (
             lastPage: TransactionHistoryResult,
-        ): { type: 'db' } | { type: 'api'; url: string } | undefined => {
+        ): Maybe<ApiPageParam> => {
             if (lastPage.pagination.nextUrl === null) return undefined
 
             if (lastPage.pagination.nextUrl === '__load_more_from_api__') {
+                const oldest =
+                    lastPage.transactions[lastPage.transactions.length - 1]
                 return {
                     type: 'api',
                     url: '__load_more_from_api__',
+                    beforeRound: oldest?.confirmedRound,
+                    beforeRoundTime: oldest?.roundTime,
                 }
             }
 
@@ -206,7 +220,6 @@ export const useTransactionHistoryQuery = (
         enabled: isEnabled && !!accountAddress,
     })
 
-    // Flatten all pages into a single array of transactions
     const transactions =
         query.data?.pages.flatMap(page => page.transactions) ?? []
 

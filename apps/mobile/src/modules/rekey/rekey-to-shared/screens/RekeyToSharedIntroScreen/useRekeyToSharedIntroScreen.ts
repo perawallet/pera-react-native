@@ -11,16 +11,14 @@
  */
 
 import { useCallback } from 'react'
-import { Linking } from 'react-native'
 import { useRoute } from '@react-navigation/native'
 import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
+import { config } from '@perawallet/wallet-core-config'
+import { useWebView } from '@modules/webview'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 
 import type { RouteProp } from '@react-navigation/native'
 import type { RekeyToSharedStackParamList } from '../../routes/types'
-
-const LEARN_MORE_URL =
-    'https://support.perawallet.app/en/article/how-to-rekey-an-algorand-account-with-pera-mobile-13ykjxs/'
 
 export type UseRekeyToSharedIntroScreenResult = {
     sourceAddress: string
@@ -32,6 +30,7 @@ export type UseRekeyToSharedIntroScreenResult = {
 export const useRekeyToSharedIntroScreen =
     (): UseRekeyToSharedIntroScreenResult => {
         const navigation = useAppNavigation()
+        const { pushWebView } = useWebView()
         const route =
             useRoute<
                 RouteProp<RekeyToSharedStackParamList, 'RekeyToSharedIntro'>
@@ -47,8 +46,8 @@ export const useRekeyToSharedIntroScreen =
         }, [navigation, sourceAddress])
 
         const handleLearnMore = useCallback(() => {
-            Linking.openURL(LEARN_MORE_URL)
-        }, [])
+            pushWebView({ url: config.rekeyToSharedSupportUrl })
+        }, [pushWebView])
 
         return {
             sourceAddress,

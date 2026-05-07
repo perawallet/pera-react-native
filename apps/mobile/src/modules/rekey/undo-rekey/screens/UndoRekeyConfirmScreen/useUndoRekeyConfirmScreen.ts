@@ -14,7 +14,7 @@ import { useCallback, useState } from 'react'
 import { useRoute } from '@react-navigation/native'
 import { useSuggestedParametersQuery } from '@perawallet/wallet-core-blockchain'
 import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
-import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
+import { useErrorToast } from '@hooks/useErrorToast'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -49,7 +49,7 @@ export const useUndoRekeyConfirmScreen =
 
         const { t } = useLanguage()
         const { showToast } = useToast()
-        const { getMessage } = useAlgodErrorMessage()
+        const { showError } = useErrorToast()
         const { submitRekey } = useSubmitRekey()
         const { data: suggestedParams, isPending: feePending } =
             useSuggestedParametersQuery()
@@ -80,13 +80,11 @@ export const useUndoRekeyConfirmScreen =
                     })
                     return
                 }
-                const { title, body } = getMessage(error)
-                // guardrails-ignore-next-line no-error-toast-in-catch reason: useAlgodErrorMessage already returns the localized title/body to surface
-                showToast({ title, body, type: 'error' })
+                showError(error)
             } finally {
                 setIsSubmitting(false)
             }
-        }, [submitRekey, getMessage, navigation, showToast, source, t])
+        }, [submitRekey, navigation, showError, showToast, source, t])
 
         const handleContinuePress = useCallback(() => {
             warning.open()
@@ -97,10 +95,7 @@ export const useUndoRekeyConfirmScreen =
             void submit()
         }, [submit, warning])
 
-        const feeMicroAlgos =
-            suggestedParams?.fee && suggestedParams.fee > 0n
-                ? suggestedParams.fee
-                : suggestedParams?.minFee
+        const feeMicroAlgos = suggestedParams?.minFee
 
         return {
             source: source ?? null,

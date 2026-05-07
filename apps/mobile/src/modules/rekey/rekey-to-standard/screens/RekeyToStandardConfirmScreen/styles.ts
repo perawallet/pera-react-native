@@ -45,17 +45,6 @@ export const useStyles = makeStyles(theme => ({
     summaryCard: {
         gap: theme.spacing.md,
     },
-    accountRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.md,
-    },
-    accountText: {
-        flexShrink: 1,
-    },
-    accountAddress: {
-        color: theme.colors.textGray,
-    },
     arrowRow: {
         width: theme.spacing.xxl,
         alignItems: 'center',

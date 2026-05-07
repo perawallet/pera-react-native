@@ -12,6 +12,7 @@
 
 import { useCallback } from 'react'
 import { PWFlatList, PWText, PWView } from '@components/core'
+import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { RekeyTargetRow } from '../../../rekey-to-standard/components/RekeyTargetRow'
 import { useRekeyToSharedSelectTargetScreen } from './useRekeyToSharedSelectTargetScreen'
@@ -37,17 +38,8 @@ export const RekeyToSharedSelectTargetScreen = () => {
     )
 
     const renderEmpty = useCallback(
-        () => (
-            <PWView style={styles.empty}>
-                <PWText
-                    variant='bodyLarge'
-                    style={styles.emptyText}
-                >
-                    {t('rekey.to_shared.select.empty')}
-                </PWText>
-            </PWView>
-        ),
-        [styles.empty, styles.emptyText, t],
+        () => <EmptyView body={t('rekey.to_shared.select.empty')} />,
+        [t],
     )
 
     return (

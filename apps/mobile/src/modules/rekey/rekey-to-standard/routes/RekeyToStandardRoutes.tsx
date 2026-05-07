@@ -12,10 +12,10 @@
 
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { NavigationHeader } from '@components/NavigationHeader'
-import { RekeyConfirmScreen } from '../screens/RekeyConfirmScreen'
-import { RekeyIntroScreen } from '../screens/RekeyIntroScreen'
-import { RekeySelectTargetScreen } from '../screens/RekeySelectTargetScreen'
-import { RekeySuccessScreen } from '../screens/RekeySuccessScreen'
+import { RekeyToStandardConfirmScreen } from '../screens/RekeyToStandardConfirmScreen'
+import { RekeyToStandardIntroScreen } from '../screens/RekeyToStandardIntroScreen'
+import { RekeyToStandardSelectTargetScreen } from '../screens/RekeyToStandardSelectTargetScreen'
+import { RekeyToStandardSuccessScreen } from '../screens/RekeyToStandardSuccessScreen'
 
 import type { NativeStackHeaderProps } from '@react-navigation/native-stack'
 import type { RekeyToStandardStackParamList } from './types'
@@ -34,22 +34,22 @@ export const RekeyToStandardStackNavigator = () => {
         >
             <Stack.Screen
                 name='RekeyToStandardIntro'
-                component={RekeyIntroScreen}
+                component={RekeyToStandardIntroScreen}
                 options={{ title: '' }}
             />
             <Stack.Screen
                 name='RekeyToStandardSelectTarget'
-                component={RekeySelectTargetScreen}
+                component={RekeyToStandardSelectTargetScreen}
                 options={{ title: '' }}
             />
             <Stack.Screen
                 name='RekeyToStandardConfirm'
-                component={RekeyConfirmScreen}
+                component={RekeyToStandardConfirmScreen}
                 options={{ title: '' }}
             />
             <Stack.Screen
                 name='RekeyToStandardSuccess'
-                component={RekeySuccessScreen}
+                component={RekeyToStandardSuccessScreen}
                 options={{ headerShown: false, gestureEnabled: false }}
             />
         </Stack.Navigator>

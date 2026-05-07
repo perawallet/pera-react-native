@@ -49,17 +49,6 @@ export const useStyles = makeStyles(theme => ({
         width: theme.spacing.xxl,
         alignItems: 'center',
     },
-    accountRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.md,
-    },
-    accountText: {
-        flexShrink: 1,
-    },
-    accountAddress: {
-        color: theme.colors.textGray,
-    },
     row: {
         flexDirection: 'row',
         justifyContent: 'space-between',

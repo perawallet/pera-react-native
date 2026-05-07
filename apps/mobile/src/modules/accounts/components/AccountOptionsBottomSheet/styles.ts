@@ -24,20 +24,4 @@ export const useStyles = makeStyles(theme => ({
         marginVertical: theme.spacing.sm,
         marginHorizontal: theme.spacing.xl,
     },
-    optionRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: theme.spacing.lg,
-        paddingHorizontal: theme.spacing.xl,
-        gap: theme.spacing.lg,
-    },
-    optionTextContainer: {
-        flexDirection: 'column',
-    },
-    optionSubtitle: {
-        color: theme.colors.textGray,
-    },
-    dangerText: {
-        color: theme.colors.negative,
-    },
 }))

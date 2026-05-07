@@ -11,12 +11,11 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { Linking } from 'react-native'
 import { Trans } from 'react-i18next'
 import { microAlgosToAlgos } from '@perawallet/wallet-core-blockchain'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { getAccountDisplayName } from '@perawallet/wallet-core-accounts'
+import { config } from '@perawallet/wallet-core-config'
 import {
     PWButton,
     PWIcon,
@@ -26,56 +25,17 @@ import {
 } from '@components/core'
 import { AccountIcon } from '@modules/accounts/components/AccountIcon'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { ConfirmActionBottomSheet } from '@components/ConfirmActionBottomSheet'
+import { useWebView } from '@modules/webview'
 import { useLanguage } from '@hooks/useLanguage'
-import { PreviousRekeyWarningSheet } from '../../../rekey-to-standard/components/PreviousRekeyWarningSheet'
+import { RekeySummaryRow } from '../../../shared'
 import { useRekeyToSharedConfirmScreen } from './useRekeyToSharedConfirmScreen'
 import { useStyles } from './styles'
-
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-
-const LEARN_MORE_URL =
-    'https://support.perawallet.app/en/article/how-to-rekey-an-algorand-account-with-pera-mobile-13ykjxs/'
-
-type SummaryRowProps = {
-    account: WalletAccount | null
-    styles: ReturnType<typeof useStyles>
-}
-
-const SummaryRow = ({ account, styles }: SummaryRowProps) => {
-    if (!account) return null
-
-    const truncated = truncateAlgorandAddress(account.address, 9)
-
-    return (
-        <PWView style={styles.accountRow}>
-            <AccountIcon
-                account={account}
-                size='lg'
-            />
-            <PWView style={styles.accountText}>
-                <PWText
-                    variant='bodyLarge'
-                    numberOfLines={1}
-                >
-                    {account.name ?? truncated}
-                </PWText>
-                {!!account.name && (
-                    <PWText
-                        variant='body'
-                        style={styles.accountAddress}
-                        numberOfLines={1}
-                    >
-                        {truncated}
-                    </PWText>
-                )}
-            </PWView>
-        </PWView>
-    )
-}
 
 export const RekeyToSharedConfirmScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const { pushWebView } = useWebView()
     const {
         source,
         target,
@@ -96,8 +56,44 @@ export const RekeyToSharedConfirmScreen = () => {
     }, [feeMicroAlgos])
 
     const handleLearnMore = useCallback(() => {
-        Linking.openURL(LEARN_MORE_URL)
-    }, [])
+        pushWebView({ url: config.rekeyToSharedSupportUrl })
+    }, [pushWebView])
+
+    const bodyTransComponents = useMemo(
+        () => [
+            <PWText
+                key='learn-more'
+                variant='bodyLarge'
+                style={styles.learnMore}
+                onPress={handleLearnMore}
+            />,
+        ],
+        [styles.learnMore, handleLearnMore],
+    )
+
+    const warningTransComponents = useMemo(
+        () => [
+            <PWText
+                key='auth'
+                variant='bodySemibold'
+            />,
+            <PWText
+                key='source'
+                variant='bodySemibold'
+            />,
+            <PWText
+                key='learn-more'
+                variant='link'
+                onPress={handleLearnMore}
+            />,
+        ],
+        [handleLearnMore],
+    )
+
+    const sourceName = source ? getAccountDisplayName(source) : ''
+    const currentAuthName = currentAuth
+        ? getAccountDisplayName(currentAuth)
+        : ''
 
     return (
         <PWView
@@ -115,14 +111,7 @@ export const RekeyToSharedConfirmScreen = () => {
                     >
                         <Trans
                             i18nKey='rekey.to_shared.confirm.body'
-                            components={[
-                                <PWText
-                                    key='learn-more'
-                                    variant='bodyLarge'
-                                    style={styles.learnMore}
-                                    onPress={handleLearnMore}
-                                />,
-                            ]}
+                            components={bodyTransComponents}
                         />
                     </PWText>
                 </PWView>
@@ -136,10 +125,7 @@ export const RekeyToSharedConfirmScreen = () => {
                     </PWText>
 
                     <PWView style={styles.summaryCard}>
-                        <SummaryRow
-                            account={source}
-                            styles={styles}
-                        />
+                        <RekeySummaryRow account={source} />
                         <PWView style={styles.arrowRow}>
                             <PWIcon
                                 name='arrow-down'
@@ -147,10 +133,7 @@ export const RekeyToSharedConfirmScreen = () => {
                                 variant='secondary'
                             />
                         </PWView>
-                        <SummaryRow
-                            account={target}
-                            styles={styles}
-                        />
+                        <RekeySummaryRow account={target} />
                     </PWView>
                 </PWView>
 
@@ -207,14 +190,30 @@ export const RekeyToSharedConfirmScreen = () => {
                 />
             </PWView>
 
-            <PreviousRekeyWarningSheet
+            <ConfirmActionBottomSheet
                 isVisible={isWarningOpen}
-                sourceName={source ? getAccountDisplayName(source) : ''}
-                currentAuthName={
-                    currentAuth ? getAccountDisplayName(currentAuth) : ''
+                icon='warning'
+                iconVariant='error'
+                title={t('rekey.to_shared.confirm.replace_warning.title')}
+                message={
+                    <Trans
+                        i18nKey='rekey.to_shared.confirm.replace_warning.body'
+                        values={{
+                            currentAuth: currentAuthName,
+                            source: sourceName,
+                        }}
+                        components={warningTransComponents}
+                    />
                 }
+                confirmLabel={t(
+                    'rekey.to_shared.confirm.replace_warning.confirm',
+                )}
+                cancelLabel={t(
+                    'rekey.to_shared.confirm.replace_warning.cancel',
+                )}
                 onClose={handleWarningClose}
                 onConfirm={handleWarningConfirm}
+                testID='rekey-to-shared-previous-rekey-warning-sheet'
             />
         </PWView>
     )

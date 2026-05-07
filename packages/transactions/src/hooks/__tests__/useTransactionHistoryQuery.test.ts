@@ -194,16 +194,25 @@ describe('useTransactionHistoryQuery', () => {
     })
 
     test('fetches next page from API and persists to DB', async () => {
-        // First page from DB with full results
+        // First page from DB with full results, descending rounds.
         const fullPage = Array.from({ length: 25 }, (_, i) => ({
             ...mockTransaction,
             id: `TX${i}`,
+            confirmedRound: 12345 - i,
             roundTime: 1704067200 - i,
         }))
         mockGetTransactionHistory.mockResolvedValue(fullPage)
 
+        // API page returns a tx strictly older than the DB tail.
         const nextPageResult = {
-            transactions: [{ ...mockTransaction, id: 'TX_NEXT' }],
+            transactions: [
+                {
+                    ...mockTransaction,
+                    id: 'TX_NEXT',
+                    confirmedRound: 12000,
+                    roundTime: 1704067100,
+                },
+            ],
             pagination: {
                 hasNextPage: false,
                 hasPreviousPage: true,
@@ -250,5 +259,53 @@ describe('useTransactionHistoryQuery', () => {
                 beforeTime: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
             }),
         )
+    })
+
+    test('strips API rows that overlap the DB tail by round', async () => {
+        // DB tail's oldest tx is at round 12321.
+        const fullPage = Array.from({ length: 25 }, (_, i) => ({
+            ...mockTransaction,
+            id: `TX${i}`,
+            confirmedRound: 12345 - i,
+            roundTime: 1704067200 - i,
+        }))
+        mockGetTransactionHistory.mockResolvedValue(fullPage)
+
+        // The Pera API only supports day-grain `before_time`, so its first
+        // page back can include rows with rounds >= the DB tail. The hook
+        // must filter those out client-side using `confirmedRound`.
+        const apiOverlap = [
+            { ...mockTransaction, id: 'TX24', confirmedRound: 12321 },
+            { ...mockTransaction, id: 'TX_OLDER', confirmedRound: 12300 },
+        ]
+        ;(endpoints.fetchTransactionHistory as Mock).mockResolvedValue({
+            transactions: apiOverlap,
+            pagination: {
+                hasNextPage: false,
+                hasPreviousPage: true,
+                nextUrl: null,
+                previousUrl: null,
+                totalFetched: apiOverlap.length,
+            },
+            currentRound: 12350,
+        })
+
+        const { result } = renderHook(
+            () =>
+                useTransactionHistoryQuery({
+                    accountAddress: mockAddress,
+                    network: 'mainnet',
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
+        result.current.fetchNextPage()
+        await waitFor(() =>
+            expect(result.current.isFetchingNextPage).toBe(false),
+        )
+
+        const ids = result.current.transactions.map(tx => tx.id)
+        expect(ids).toEqual([...fullPage.map(tx => tx.id), 'TX_OLDER'])
     })
 })

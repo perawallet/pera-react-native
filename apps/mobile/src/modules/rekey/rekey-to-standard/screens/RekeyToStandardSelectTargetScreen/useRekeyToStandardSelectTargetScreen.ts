@@ -22,14 +22,14 @@ import type { RouteProp } from '@react-navigation/native'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { RekeyToStandardStackParamList } from '../../routes/types'
 
-export type UseRekeySelectTargetScreenResult = {
+export type UseRekeyToStandardSelectTargetScreenResult = {
     sourceAddress: string
     targets: WalletAccount[]
     handleSelect: (target: WalletAccount) => void
 }
 
-export const useRekeySelectTargetScreen =
-    (): UseRekeySelectTargetScreenResult => {
+export const useRekeyToStandardSelectTargetScreen =
+    (): UseRekeyToStandardSelectTargetScreenResult => {
         const navigation = useAppNavigation()
         const route =
             useRoute<

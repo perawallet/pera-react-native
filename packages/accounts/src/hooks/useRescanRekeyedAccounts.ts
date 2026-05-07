@@ -11,10 +11,8 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import { fetchRekeyedAddresses } from '../account-discovery'
-import { AccountTypes, type WatchAccount } from '../models'
 import { useAccountsStore } from '../store'
 
 export type RekeyedScanResult = {
@@ -39,7 +37,9 @@ export type UseRescanRekeyedAccountsResult = {
 
 export const useRescanRekeyedAccounts = (): UseRescanRekeyedAccountsResult => {
     const accounts = useAccountsStore(state => state.accounts)
-    const setAccounts = useAccountsStore(state => state.setAccounts)
+    const addRekeyedWatchAccounts = useAccountsStore(
+        state => state.addRekeyedWatchAccounts,
+    )
 
     const localAddresses = useMemo(
         () => new Set(accounts.map(a => a.address)),
@@ -70,35 +70,16 @@ export const useRescanRekeyedAccounts = (): UseRescanRekeyedAccountsResult => {
         async (sourceAddress: string, addresses: string[]): Promise<void> => {
             if (addresses.length === 0) return
 
-            const watchAccounts: WatchAccount[] = addresses
-                // Defensive: never re-add an address that already exists,
-                // and reject anything that doesn't validate as an Algorand
-                // address — the indexer is a remote dependency and a typo
-                // / compromise should never persist garbage to the store.
-                .filter(
-                    addr =>
-                        isValidAlgorandAddress(addr) &&
-                        !localAddresses.has(addr),
-                )
-                .map(address => ({
-                    id: generateOrderedUniqueId(),
-                    address,
-                    type: AccountTypes.watch,
-                    rekeyAddress: sourceAddress,
-                }))
+            // Reject anything that doesn't validate as an Algorand address —
+            // the indexer is a remote dependency and a typo / compromise
+            // should never persist garbage to the store. Dedup against the
+            // current store snapshot lives inside addRekeyedWatchAccounts.
+            const valid = addresses.filter(isValidAlgorandAddress)
+            if (valid.length === 0) return
 
-            if (watchAccounts.length === 0) return
-
-            // Read the freshest state from the store (the closure-captured
-            // `accounts` may be stale by the time we get here) and append
-            // immediately. `getState()` and `setAccounts()` are both
-            // synchronous, and React Native's JS runtime is single-threaded —
-            // nothing else can interleave between these two lines, so this
-            // is atomic by construction. No CAS / versioning needed.
-            const current = useAccountsStore.getState().accounts
-            setAccounts([...current, ...watchAccounts])
+            addRekeyedWatchAccounts(sourceAddress, valid)
         },
-        [localAddresses, setAccounts],
+        [addRekeyedWatchAccounts],
     )
 
     return { scan, importSelected }

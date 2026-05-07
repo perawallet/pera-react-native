@@ -11,10 +11,11 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { Linking } from 'react-native'
+import { Trans } from 'react-i18next'
 import { microAlgosToAlgos } from '@perawallet/wallet-core-blockchain'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
+import { getAccountDisplayName } from '@perawallet/wallet-core-accounts'
+import { config } from '@perawallet/wallet-core-config'
 import {
     PWButton,
     PWIcon,
@@ -24,62 +25,29 @@ import {
 } from '@components/core'
 import { AccountIcon } from '@modules/accounts/components/AccountIcon'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { ConfirmActionBottomSheet } from '@components/ConfirmActionBottomSheet'
+import { useWebView } from '@modules/webview'
 import { useLanguage } from '@hooks/useLanguage'
+import { RekeySummaryRow } from '../../../shared'
 import { useRekeyToLedgerConfirmScreen } from './useRekeyToLedgerConfirmScreen'
 import { useStyles } from './styles'
-
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-
-const LEARN_MORE_URL =
-    'https://support.perawallet.app/en/article/how-to-rekey-an-algorand-account-with-pera-mobile-13ykjxs/'
-
-type SummaryRowProps = {
-    account: WalletAccount | null
-    styles: ReturnType<typeof useStyles>
-}
-
-const SummaryRow = ({ account, styles }: SummaryRowProps) => {
-    if (!account) return null
-
-    const truncated = truncateAlgorandAddress(account.address, 9)
-
-    return (
-        <PWView style={styles.accountRow}>
-            <AccountIcon
-                account={account}
-                size='lg'
-            />
-            <PWView style={styles.accountText}>
-                <PWText
-                    variant='bodyLarge'
-                    numberOfLines={1}
-                >
-                    {account.name ?? truncated}
-                </PWText>
-                {!!account.name && (
-                    <PWText
-                        variant='body'
-                        style={styles.accountAddress}
-                        numberOfLines={1}
-                    >
-                        {truncated}
-                    </PWText>
-                )}
-            </PWView>
-        </PWView>
-    )
-}
 
 export const RekeyToLedgerConfirmScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const { pushWebView } = useWebView()
     const {
         source,
         target,
+        currentAuth,
         feeMicroAlgos,
         feePending,
+        hasPreviousRekey,
         isSubmitting,
+        isWarningOpen,
         handleConfirmPress,
+        handleWarningConfirm,
+        handleWarningClose,
     } = useRekeyToLedgerConfirmScreen()
 
     const feeAlgos = useMemo(() => {
@@ -88,8 +56,32 @@ export const RekeyToLedgerConfirmScreen = () => {
     }, [feeMicroAlgos])
 
     const handleLearnMore = useCallback(() => {
-        Linking.openURL(LEARN_MORE_URL)
-    }, [])
+        pushWebView({ url: config.rekeyToLedgerSupportUrl })
+    }, [pushWebView])
+
+    const warningTransComponents = useMemo(
+        () => [
+            <PWText
+                key='auth'
+                variant='bodySemibold'
+            />,
+            <PWText
+                key='source'
+                variant='bodySemibold'
+            />,
+            <PWText
+                key='learn-more'
+                variant='link'
+                onPress={handleLearnMore}
+            />,
+        ],
+        [handleLearnMore],
+    )
+
+    const sourceName = source ? getAccountDisplayName(source) : ''
+    const currentAuthName = currentAuth
+        ? getAccountDisplayName(currentAuth)
+        : ''
 
     return (
         <PWView
@@ -125,10 +117,7 @@ export const RekeyToLedgerConfirmScreen = () => {
                     </PWText>
 
                     <PWView style={styles.summaryCard}>
-                        <SummaryRow
-                            account={source}
-                            styles={styles}
-                        />
+                        <RekeySummaryRow account={source} />
                         <PWView style={styles.arrowRow}>
                             <PWIcon
                                 name='arrow-down'
@@ -136,10 +125,7 @@ export const RekeyToLedgerConfirmScreen = () => {
                                 variant='secondary'
                             />
                         </PWView>
-                        <SummaryRow
-                            account={target}
-                            styles={styles}
-                        />
+                        <RekeySummaryRow account={target} />
                     </PWView>
                 </PWView>
 
@@ -147,6 +133,28 @@ export const RekeyToLedgerConfirmScreen = () => {
             </PWScrollView>
 
             <PWView style={styles.footer}>
+                {hasPreviousRekey && currentAuth && (
+                    <PWView style={styles.row}>
+                        <PWText
+                            variant='bodyLarge'
+                            style={styles.rowLabel}
+                        >
+                            {t('rekey.to_ledger.confirm.current_auth_label')}
+                        </PWText>
+                        <PWView style={styles.currentAuthValue}>
+                            <AccountIcon
+                                account={currentAuth}
+                                size='sm'
+                            />
+                            <PWText
+                                variant='bodyLarge'
+                                numberOfLines={1}
+                            >
+                                {currentAuthName}
+                            </PWText>
+                        </PWView>
+                    </PWView>
+                )}
                 <PWView style={styles.row}>
                     <PWText
                         variant='bodyLarge'
@@ -173,6 +181,32 @@ export const RekeyToLedgerConfirmScreen = () => {
                     testID='rekey-to-ledger-confirm-cta'
                 />
             </PWView>
+
+            <ConfirmActionBottomSheet
+                isVisible={isWarningOpen}
+                icon='warning'
+                iconVariant='error'
+                title={t('rekey.to_ledger.confirm.replace_warning.title')}
+                message={
+                    <Trans
+                        i18nKey='rekey.to_ledger.confirm.replace_warning.body'
+                        values={{
+                            currentAuth: currentAuthName,
+                            source: sourceName,
+                        }}
+                        components={warningTransComponents}
+                    />
+                }
+                confirmLabel={t(
+                    'rekey.to_ledger.confirm.replace_warning.confirm',
+                )}
+                cancelLabel={t(
+                    'rekey.to_ledger.confirm.replace_warning.cancel',
+                )}
+                onClose={handleWarningClose}
+                onConfirm={handleWarningConfirm}
+                testID='rekey-to-ledger-previous-rekey-warning-sheet'
+            />
         </PWView>
     )
 }

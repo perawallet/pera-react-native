@@ -195,13 +195,8 @@ export const resolveAuthAccount = (
     let current = account
 
     while (current.rekeyAddress) {
-        if (visited.has(current.address)) {
-            // Circular rekey chain — return whatever we landed on rather than
-            // looping forever. Realistically unreachable on-chain (Algorand
-            // doesn't permit cycles via simple rekey), but defensive against
-            // a malformed local store.
-            return current
-        }
+        // Defensive: bail if local store has a cycle.
+        if (visited.has(current.address)) return current
         visited.add(current.address)
 
         const next = allAccounts.find(a => a.address === current.rekeyAddress)

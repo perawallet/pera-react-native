@@ -19,6 +19,7 @@ import {
 } from '@components/core'
 import { useStyles } from './styles'
 
+import type { ReactNode } from 'react'
 import type { IconName, PWButtonProps, PWIconVariant } from '@components/core'
 
 /**
@@ -26,7 +27,9 @@ import type { IconName, PWButtonProps, PWIconVariant } from '@components/core'
  * confirm/cancel handlers, and — if they want one — an icon. No default
  * icon is rendered so the component doesn't quietly assume a destructive
  * context. Button variants default to primary/secondary; override per
- * callsite when the design diverges.
+ * callsite when the design diverges. `message` accepts a `ReactNode` so
+ * callers can pass `<Trans>` blocks with inline emphasis or links when a
+ * plain string isn't enough.
  */
 export type ConfirmActionBottomSheetProps = {
     isVisible: boolean
@@ -35,7 +38,7 @@ export type ConfirmActionBottomSheetProps = {
     icon?: IconName
     iconVariant?: PWIconVariant
     title: string
-    message: string
+    message: ReactNode
     confirmLabel: string
     cancelLabel: string
     confirmVariant?: PWButtonProps['variant']

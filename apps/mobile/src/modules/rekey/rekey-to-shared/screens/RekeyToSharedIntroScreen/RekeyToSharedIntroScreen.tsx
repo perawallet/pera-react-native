@@ -12,6 +12,7 @@
 
 import { useMemo } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+// Shared and standard rekey flows reuse the same hero illustration by design.
 import heroImage from '@assets/images/rekey-to-standard-hero.jpg'
 import {
     PWButton,

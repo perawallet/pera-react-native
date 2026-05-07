@@ -10,16 +10,18 @@
  limitations under the License
  */
 
+import { useMemo } from 'react'
 import { ActivityIndicator } from 'react-native'
 import {
     PWButton,
     PWCheckbox,
-    PWIcon,
     PWScrollView,
     PWText,
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
+import { EmptyView } from '@components/EmptyView'
+import { SHORT_ADDRESS_FORMAT } from '@constants/ui'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { RescanCandidateRow } from '../../components/RescanCandidateRow'
@@ -29,6 +31,10 @@ import { useStyles } from './styles'
 export const RescanRekeyedSelectScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const importedRowStyle = useMemo(
+        () => [styles.row, styles.rowDisabled],
+        [styles],
+    )
     const {
         isLoading,
         isError,
@@ -61,21 +67,17 @@ export const RescanRekeyedSelectScreen = () => {
 
     if (isError) {
         return (
-            <PWView style={styles.statusContainer}>
-                <PWText variant='h3'>{t('rekey.rescan.error_title')}</PWText>
-                <PWText
-                    variant='body'
-                    style={styles.statusText}
-                >
-                    {t('rekey.rescan.error_body')}
-                </PWText>
-                <PWButton
-                    variant='primary'
-                    title={t('ledger.fetch_accounts.retry')}
-                    onPress={handleRetry}
-                    style={styles.retryButton}
-                />
-            </PWView>
+            <EmptyView
+                title={t('rekey.rescan.error_title')}
+                body={t('rekey.rescan.error_body')}
+                button={
+                    <PWButton
+                        variant='primary'
+                        title={t('ledger.fetch_accounts.retry')}
+                        onPress={handleRetry}
+                    />
+                }
+            />
         )
     }
 
@@ -84,38 +86,19 @@ export const RescanRekeyedSelectScreen = () => {
 
     if (!hasCandidates && !hasImported) {
         return (
-            <PWView
-                style={styles.container}
+            <EmptyView
                 testID='rescan-rekeyed-empty'
-            >
-                <PWView style={styles.emptyContent}>
-                    <PWIcon
-                        name='wallet'
-                        size='xl'
-                        variant='primary'
-                    />
-                    <PWText
-                        variant='h2'
-                        style={styles.emptyTitle}
-                    >
-                        {t('rekey.rescan.empty_title')}
-                    </PWText>
-                    <PWText
-                        variant='bodyLarge'
-                        style={styles.emptyBody}
-                    >
-                        {t('rekey.rescan.empty_body')}
-                    </PWText>
-                </PWView>
-                <PWView style={styles.footer}>
+                icon='wallet'
+                title={t('rekey.rescan.empty_title')}
+                body={t('rekey.rescan.empty_body')}
+                button={
                     <PWButton
                         variant='secondary'
                         title={t('rekey.rescan.empty_cta')}
                         onPress={handleSkip}
-                        style={styles.cta}
                     />
-                </PWView>
-            </PWView>
+                }
+            />
         )
     }
 
@@ -154,9 +137,6 @@ export const RescanRekeyedSelectScreen = () => {
                                 >
                                     {t('rekey.rescan.select_all')}
                                 </PWText>
-                                {/* Display-only — outer PWTouchableOpacity owns
-                                    the gesture so a tap doesn't fire the
-                                    toggle twice. */}
                                 <PWCheckbox
                                     checked={isAllSelected}
                                     containerStyle={styles.checkboxContainer}
@@ -187,13 +167,16 @@ export const RescanRekeyedSelectScreen = () => {
                         {importedAddresses.map(address => (
                             <PWView
                                 key={address}
-                                style={[styles.row, styles.rowDisabled]}
+                                style={importedRowStyle}
                             >
                                 <PWText
                                     variant='bodyLarge'
                                     style={styles.disabledText}
                                 >
-                                    {truncateAlgorandAddress(address, 9)}
+                                    {truncateAlgorandAddress(
+                                        address,
+                                        SHORT_ADDRESS_FORMAT,
+                                    )}
                                 </PWText>
                             </PWView>
                         ))}

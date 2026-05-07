@@ -12,19 +12,20 @@
 
 import { useCallback } from 'react'
 import { PWFlatList, PWText, PWView } from '@components/core'
+import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { RekeyTargetRow } from '../../components/RekeyTargetRow'
-import { useRekeySelectTargetScreen } from './useRekeySelectTargetScreen'
+import { useRekeyToStandardSelectTargetScreen } from './useRekeyToStandardSelectTargetScreen'
 import { useStyles } from './styles'
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const keyExtractor = (account: WalletAccount) => account.address
 
-export const RekeySelectTargetScreen = () => {
+export const RekeyToStandardSelectTargetScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { targets, handleSelect } = useRekeySelectTargetScreen()
+    const { targets, handleSelect } = useRekeyToStandardSelectTargetScreen()
 
     const renderItem = useCallback(
         ({ item }: { item: WalletAccount }) => (
@@ -37,17 +38,8 @@ export const RekeySelectTargetScreen = () => {
     )
 
     const renderEmpty = useCallback(
-        () => (
-            <PWView style={styles.empty}>
-                <PWText
-                    variant='bodyLarge'
-                    style={styles.emptyText}
-                >
-                    {t('rekey.to_standard.select.empty')}
-                </PWText>
-            </PWView>
-        ),
-        [styles.empty, styles.emptyText, t],
+        () => <EmptyView body={t('rekey.to_standard.select.empty')} />,
+        [t],
     )
 
     return (

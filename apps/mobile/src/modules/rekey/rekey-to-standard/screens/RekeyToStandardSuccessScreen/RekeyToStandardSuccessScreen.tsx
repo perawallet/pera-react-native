@@ -15,14 +15,14 @@ import { useTheme } from '@rneui/themed'
 import CheckIcon from '@assets/icons/check.svg'
 import { PWButton, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { useRekeySuccessScreen } from './useRekeySuccessScreen'
+import { useRekeyToStandardSuccessScreen } from './useRekeyToStandardSuccessScreen'
 import { useStyles } from './styles'
 
-export const RekeySuccessScreen = () => {
+export const RekeyToStandardSuccessScreen = () => {
     const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
-    const { sourceName, handleDone } = useRekeySuccessScreen()
+    const { sourceName, handleDone } = useRekeyToStandardSuccessScreen()
 
     const checkSize = theme.spacing['5xl'] * 2
 

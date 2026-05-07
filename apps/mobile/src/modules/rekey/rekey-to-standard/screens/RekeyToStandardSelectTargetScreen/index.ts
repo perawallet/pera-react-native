@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { RekeySelectTargetScreen } from './RekeySelectTargetScreen'
+export { RekeyToStandardSelectTargetScreen } from './RekeyToStandardSelectTargetScreen'

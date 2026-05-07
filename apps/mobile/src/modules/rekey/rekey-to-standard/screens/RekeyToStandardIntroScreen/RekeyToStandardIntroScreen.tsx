@@ -22,10 +22,10 @@ import {
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { NumberedList } from '../../components/NumberedList'
-import { useRekeyIntroScreen } from './useRekeyIntroScreen'
+import { useRekeyToStandardIntroScreen } from './useRekeyToStandardIntroScreen'
 import { useStyles } from './styles'
 
-export const RekeyIntroScreen = () => {
+export const RekeyToStandardIntroScreen = () => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
     const { t } = useLanguage()
@@ -39,7 +39,8 @@ export const RekeyIntroScreen = () => {
         [t],
     )
 
-    const { handleStartProcess, handleLearnMore } = useRekeyIntroScreen()
+    const { handleStartProcess, handleLearnMore } =
+        useRekeyToStandardIntroScreen()
 
     return (
         <PWView

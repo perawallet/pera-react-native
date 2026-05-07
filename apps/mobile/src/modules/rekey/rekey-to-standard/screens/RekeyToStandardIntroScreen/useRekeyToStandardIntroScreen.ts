@@ -19,33 +19,34 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import type { RouteProp } from '@react-navigation/native'
 import type { RekeyToStandardStackParamList } from '../../routes/types'
 
-export type UseRekeyIntroScreenResult = {
+export type UseRekeyToStandardIntroScreenResult = {
     handleStartProcess: () => void
     handleLearnMore: () => void
 }
 
-export const useRekeyIntroScreen = (): UseRekeyIntroScreenResult => {
-    const navigation = useAppNavigation()
-    const { pushWebView } = useWebView()
-    const route =
-        useRoute<
-            RouteProp<RekeyToStandardStackParamList, 'RekeyToStandardIntro'>
-        >()
-    const sourceAddress = route.params.sourceAddress
+export const useRekeyToStandardIntroScreen =
+    (): UseRekeyToStandardIntroScreenResult => {
+        const navigation = useAppNavigation()
+        const { pushWebView } = useWebView()
+        const route =
+            useRoute<
+                RouteProp<RekeyToStandardStackParamList, 'RekeyToStandardIntro'>
+            >()
+        const sourceAddress = route.params.sourceAddress
 
-    const handleStartProcess = useCallback(() => {
-        navigation.navigate('RekeyToStandard', {
-            screen: 'RekeyToStandardSelectTarget',
-            params: { sourceAddress },
-        })
-    }, [navigation, sourceAddress])
+        const handleStartProcess = useCallback(() => {
+            navigation.navigate('RekeyToStandard', {
+                screen: 'RekeyToStandardSelectTarget',
+                params: { sourceAddress },
+            })
+        }, [navigation, sourceAddress])
 
-    const handleLearnMore = useCallback(() => {
-        pushWebView({ url: config.rekeyToStandardSupportUrl })
-    }, [pushWebView])
+        const handleLearnMore = useCallback(() => {
+            pushWebView({ url: config.rekeyToStandardSupportUrl })
+        }, [pushWebView])
 
-    return {
-        handleStartProcess,
-        handleLearnMore,
+        return {
+            handleStartProcess,
+            handleLearnMore,
+        }
     }
-}

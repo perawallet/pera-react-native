@@ -10,5 +10,4 @@
  limitations under the License
  */
 
-export { PreviousRekeyWarningSheet } from './PreviousRekeyWarningSheet'
-export type { PreviousRekeyWarningSheetProps } from './PreviousRekeyWarningSheet'
+export { RekeyToStandardIntroScreen } from './RekeyToStandardIntroScreen'

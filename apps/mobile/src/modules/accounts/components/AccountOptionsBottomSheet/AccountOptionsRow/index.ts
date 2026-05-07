@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { UndoRekeyWarningSheet } from './UndoRekeyWarningSheet'
-export type { UndoRekeyWarningSheetProps } from './UndoRekeyWarningSheet'
+export { AccountOptionsRow } from './AccountOptionsRow'
+export type { AccountOptionsRowProps } from './AccountOptionsRow'

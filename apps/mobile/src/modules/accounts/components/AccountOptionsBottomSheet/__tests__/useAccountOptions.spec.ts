@@ -256,6 +256,38 @@ describe('useAccountOptions', () => {
             expect(optionIds).not.toContain('rekey-to-shared')
         })
 
+        // Rekeyed = on-chain auth address points at a key we don't hold,
+        // so the wallet can't sign the undo. Surfacing the option would
+        // route to the confirm screen and fail at signing dispatch.
+        it('hides undo-rekey for a Rekeyed account (no signing key for auth)', () => {
+            const rekeyedNoAuthAccount: WalletAccount = {
+                id: 'acc-7',
+                address: 'REKEYEDNOAUTHADDRESS',
+                type: AccountTypes.watch,
+                rekeyAddress: 'UNKNOWNAUTHADDRESS',
+            }
+            mockAllAccounts.mockReturnValue([rekeyedNoAuthAccount])
+            mockUseAccountLogicalType.mockImplementation((address?: string) => {
+                if (address === rekeyedNoAuthAccount.address) {
+                    return 'Rekeyed'
+                }
+                return null
+            })
+
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: rekeyedNoAuthAccount,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const optionIds = result.current.options.map(o => o.id)
+            expect(optionIds).not.toContain('undo-rekey')
+            expect(optionIds).not.toContain('rekey-to-ledger')
+            expect(optionIds).not.toContain('rekey-to-standard')
+        })
+
         it('shows rekey options but hides passphrase for a hardware account', () => {
             const { result } = renderHook(() =>
                 useAccountOptions({
