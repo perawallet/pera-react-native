@@ -56,6 +56,9 @@ vi.mock('@hooks/useDeepLink', () => ({
     }),
 }))
 
+const mockImportAccount = vi.fn()
+const mockMarkBackupComplete = vi.fn()
+
 vi.mock('@perawallet/wallet-core-accounts', async () => {
     const actual = await vi.importActual<object>(
         '@perawallet/wallet-core-accounts',
@@ -63,8 +66,13 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     return {
         ...actual,
         resolveImportAccountType: vi.fn(),
+        useImportAccount: () => mockImportAccount,
     }
 })
+
+vi.mock('@perawallet/wallet-core-backup', () => ({
+    useMarkMnemonicBackupComplete: () => mockMarkBackupComplete,
+}))
 
 describe('ImportAccountOptionsScreen', () => {
     const originalOS = Platform.OS
