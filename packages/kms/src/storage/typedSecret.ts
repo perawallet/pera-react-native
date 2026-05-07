@@ -11,6 +11,7 @@
  */
 
 import type { KeyData } from '@algorandfoundation/keystore'
+import { Nullable } from '@perawallet/wallet-core-shared'
 import {
     getKeystoreStore,
     getProvider,
@@ -100,7 +101,7 @@ export const hasTypedSecret = (id: string): boolean => {
 export const withTypedSecret = async <T>(
     id: string,
     handler: (bytes: Uint8Array) => T | Promise<T>,
-): Promise<T | null> => {
+): Promise<Nullable<T>> => {
     if (!hasTypedSecret(id)) return null
     const data = await getProvider().key.store.export(id)
     const bytes = data.privateKey

@@ -23,6 +23,7 @@ import {
     withTypedSecret,
     type TypedSecret,
 } from '../storage/typedSecret'
+import { Nullable } from '@perawallet/wallet-core-shared'
 
 export const checkAccess = (key: KeyPair, domain: string): void => {
     if (key.acl?.length) {
@@ -52,7 +53,7 @@ type UseKMSServiceResult = {
     withTypedSecret: <T>(
         id: string,
         handler: (bytes: Uint8Array) => T | Promise<T>,
-    ) => Promise<T | null>
+    ) => Promise<Nullable<T>>
     hasTypedSecret: (id: string) => boolean
     removeTypedSecret: (id: string) => Promise<void>
 }
