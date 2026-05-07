@@ -76,9 +76,7 @@ export const TransactionDetailsScreen = () => {
 
     if (transaction) {
         return (
-            <PWScrollView
-                contentContainerStyle={styles.contentContainer}
-            >
+            <PWScrollView contentContainerStyle={styles.contentContainer}>
                 <TransactionDisplay
                     transaction={transaction}
                     onInnerTransactionsPress={handleInnerTransactionPress}
