@@ -21,12 +21,13 @@ import {
 } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useDeepLink } from '../useDeepLink'
-import { useMnemonicHandoffStore } from '@modules/onboarding/hooks/useMnemonicHandoffStore'
 import { useDeeplinkListener } from '../useDeeplinkListener'
 import { StackActions } from '@react-navigation/native'
 import { parseDeeplink } from '../deeplink/parser'
 import { DeeplinkType } from '../deeplink/types'
 import { Linking } from 'react-native'
+import { useImportAccount } from '@perawallet/wallet-core-accounts'
+import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 
 const { mockNavigate, mockDispatch } = vi.hoisted(() => ({
     mockNavigate: vi.fn(),
@@ -73,6 +74,9 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: () => ({ addSignRequest: vi.fn() }),
 }))
 
+const mockImportAccount = vi.fn()
+const mockMarkBackupComplete = vi.fn()
+
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: () => ({ address: 'addr1' }),
     useSelectedAccountAddress: () => ({ setSelectedAccountAddress: vi.fn() }),
@@ -82,6 +86,11 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         if (wordCount === 25) return { success: true, accountType: 'algo25' }
         return { success: false, wordCount }
     },
+    useImportAccount: vi.fn(),
+}))
+
+vi.mock('@perawallet/wallet-core-backup', () => ({
+    useMarkMnemonicBackupComplete: vi.fn(),
 }))
 
 const { mockPushWebView } = vi.hoisted(() => ({
@@ -123,7 +132,10 @@ vi.mock('react-native', () => ({
 describe('useDeepLink', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        useMnemonicHandoffStore.getState().resetState()
+        vi.mocked(useImportAccount).mockReturnValue(mockImportAccount)
+        vi.mocked(useMarkMnemonicBackupComplete).mockReturnValue(
+            mockMarkBackupComplete,
+        )
     })
 
     it('should validate deeplink', () => {
@@ -673,11 +685,16 @@ describe('useDeepLink', () => {
         // Success case (infoPost called)
     })
 
-    it('should handle RECOVER_ADDRESS deeplink and navigate to ImportAccount', async () => {
+    it('should handle RECOVER_ADDRESS deeplink and import as HD wallet from QR', async () => {
         ;(parseDeeplink as Mock).mockReturnValue({
             type: DeeplinkType.RECOVER_ADDRESS,
             mnemonic:
                 'word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12 word13 word14 word15 word16 word17 word18 word19 word20 word21 word22 word23 word24',
+        })
+        mockImportAccount.mockResolvedValue({
+            type: 'hdWallet',
+            walletKeyId: 'test-wallet-key-id',
+            derivationType: 9,
         })
         const { result } = renderHook(() => useDeepLink())
 
@@ -689,36 +706,34 @@ describe('useDeepLink', () => {
             )
         })
 
-        expect(mockNavigate).toHaveBeenCalledWith(
-            'AddAccount',
-            expect.objectContaining({
-                screen: 'ImportAccount',
-                params: expect.objectContaining({
-                    accountType: 'hdWallet',
-                    handoffId: expect.any(String),
-                }),
-            }),
-        )
-        const navParams = mockNavigate.mock.calls.at(-1)?.[1] as {
-            params: { handoffId: string }
-        }
-        expect(
-            useMnemonicHandoffStore
-                .getState()
-                .consume(navParams.params.handoffId),
-        ).toEqual({
-            accountType: 'hdWallet',
+        expect(mockImportAccount).toHaveBeenCalledWith({
             mnemonic:
                 'word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12 word13 word14 word15 word16 word17 word18 word19 word20 word21 word22 word23 word24',
+            type: 'hdWallet',
+        })
+        expect(mockNavigate).toHaveBeenCalledWith('AddAccount', {
+            screen: 'SearchAccounts',
+            params: {
+                mode: 'import',
+                walletKeyId: 'test-wallet-key-id',
+                derivationType: 9,
+            },
         })
     })
 
-    it('should handle RECOVER_ADDRESS deeplink with 25 words as algo25 from QR', async () => {
+    it('should handle RECOVER_ADDRESS deeplink and import as algo25 from QR', async () => {
+        const algo25Account = {
+            id: 'algo25-id',
+            address: 'TEST_ADDRESS',
+            type: 'algo25' as const,
+            keyPairId: 'algo25-keypair-id',
+        }
         ;(parseDeeplink as Mock).mockReturnValue({
             type: DeeplinkType.RECOVER_ADDRESS,
             mnemonic:
                 'word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12 word13 word14 word15 word16 word17 word18 word19 word20 word21 word22 word23 word24 word25',
         })
+        mockImportAccount.mockResolvedValue(algo25Account)
         const { result } = renderHook(() => useDeepLink())
 
         await act(async () => {
@@ -729,27 +744,17 @@ describe('useDeepLink', () => {
             )
         })
 
-        expect(mockNavigate).toHaveBeenCalledWith(
-            'AddAccount',
-            expect.objectContaining({
-                screen: 'ImportAccount',
-                params: expect.objectContaining({
-                    accountType: 'algo25',
-                    handoffId: expect.any(String),
-                }),
-            }),
-        )
-        const navParams = mockNavigate.mock.calls.at(-1)?.[1] as {
-            params: { handoffId: string }
-        }
-        expect(
-            useMnemonicHandoffStore
-                .getState()
-                .consume(navParams.params.handoffId),
-        ).toEqual({
-            accountType: 'algo25',
+        expect(mockImportAccount).toHaveBeenCalledWith({
             mnemonic:
                 'word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12 word13 word14 word15 word16 word17 word18 word19 word20 word21 word22 word23 word24 word25',
+            type: 'algo25',
+        })
+        expect(mockMarkBackupComplete).toHaveBeenCalledWith(algo25Account)
+        expect(mockNavigate).toHaveBeenCalledWith('AddAccount', {
+            screen: 'SearchAccounts',
+            params: {
+                account: algo25Account,
+            },
         })
     })
 

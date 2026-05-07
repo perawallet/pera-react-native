@@ -19,11 +19,12 @@ import { DeeplinkType } from './deeplink/types'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import {
     resolveImportAccountType,
+    useImportAccount,
     useSelectedAccountAddress,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 import { useWebView } from '@modules/webview/hooks/useWebViewStore'
-import { useMnemonicHandoffStore } from '@modules/onboarding/hooks/useMnemonicHandoffStore'
 import {
     isSafeBrowserUrl,
     isSafeRelativePath,
@@ -51,6 +52,8 @@ export const useDeepLink = () => {
     const { network } = useNetwork()
     const { t } = useLanguage()
     const { connect } = useWalletConnect(network)
+    const importAccount = useImportAccount()
+    const markBackupComplete = useMarkMnemonicBackupComplete()
 
     const isValidDeepLink = (url: string): boolean => {
         if (isValidAlgorandAddress(url)) {
@@ -170,20 +173,41 @@ export const useDeepLink = () => {
                 case DeeplinkType.RECOVER_ADDRESS: {
                     if (source !== 'qr') break
 
-                    const result = resolveImportAccountType(parsedData.mnemonic)
-                    if (!result.success) break
+                    const resolved = resolveImportAccountType(
+                        parsedData.mnemonic,
+                    )
+                    if (!resolved.success) break
 
-                    const handoffId = useMnemonicHandoffStore.getState().stash({
-                        accountType: result.accountType,
-                        mnemonic: parsedData.mnemonic,
-                    })
-                    navigateToScreen(replaceCurrentScreen, 'AddAccount', {
-                        screen: 'ImportAccount',
-                        params: {
-                            accountType: result.accountType,
-                            handoffId,
-                        },
-                    })
+                    try {
+                        const result = await importAccount({
+                            mnemonic: parsedData.mnemonic,
+                            type: resolved.accountType,
+                        })
+
+                        if (
+                            result.type === 'hdWallet' &&
+                            'walletKeyId' in result
+                        ) {
+                            navigateToScreen(replaceCurrentScreen, 'AddAccount', {
+                                screen: 'SearchAccounts',
+                                params: {
+                                    mode: 'import',
+                                    walletKeyId: result.walletKeyId,
+                                    derivationType: result.derivationType,
+                                },
+                            })
+                        } else {
+                            markBackupComplete(result as WalletAccount)
+                            navigateToScreen(replaceCurrentScreen, 'AddAccount', {
+                                screen: 'SearchAccounts',
+                                params: {
+                                    account: result as WalletAccount,
+                                },
+                            })
+                        }
+                    } catch (error) {
+                        logger.error('Deeplink import failed', { error })
+                    }
                     break
                 }
 
