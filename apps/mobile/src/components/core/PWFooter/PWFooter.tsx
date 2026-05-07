@@ -23,8 +23,6 @@ export const PWFooter = ({ children, style }: PWFooterProps) => {
     const { bottom } = useSafeAreaInsets()
 
     return (
-        <PWView style={[style, { paddingBottom: bottom }]}>
-            {children}
-        </PWView>
+        <PWView style={[style, { paddingBottom: bottom }]}>{children}</PWView>
     )
 }
