@@ -43,8 +43,8 @@ type TransactionDetailsRouteProp = RouteProp<
 >
 
 export const TransactionDetailsScreen = () => {
-    const styles = useStyles()
-    const { bottom } = useSafeAreaInsets()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles(insets)
     const navigation = useNavigation<NavigationProp>()
     const { t } = useLanguage()
     const route = useRoute<TransactionDetailsRouteProp>()
@@ -77,10 +77,7 @@ export const TransactionDetailsScreen = () => {
     if (transaction) {
         return (
             <PWScrollView
-                contentContainerStyle={[
-                    styles.contentContainer,
-                    { paddingBottom: bottom },
-                ]}
+                contentContainerStyle={styles.contentContainer}
             >
                 <TransactionDisplay
                     transaction={transaction}
