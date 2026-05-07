@@ -20,9 +20,10 @@ export type PWViewProps = ViewProps & {
 export const PWView = ({ children, style, testID, ...props }: PWViewProps) => {
     return (
         <View
-            style={[style]}
+            style={style}
             {...getTestProps(testID)}
             {...props}
+            collapsable={false}
         >
             {children}
         </View>
