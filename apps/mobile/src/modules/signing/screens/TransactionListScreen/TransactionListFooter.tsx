@@ -11,6 +11,7 @@
  */
 
 import { PWView } from '@components/core'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLanguage } from '@hooks/useLanguage'
 import { SigningWarnings } from '@modules/signing/components/SigningWarnings'
 import { FeeDisplay } from '@modules/signing/components/FeeDisplay'
@@ -22,7 +23,10 @@ export const TransactionListFooter = () => {
     const { t } = useLanguage()
 
     return (
-        <PWView style={styles.footerContainer}>
+        <SafeAreaView
+            edges={['bottom']}
+            style={styles.footerContainer}
+        >
             <SigningWarnings isGroup />
 
             <PWView style={styles.feeContainer}>
@@ -30,6 +34,6 @@ export const TransactionListFooter = () => {
             </PWView>
 
             <SigningActionButtons />
-        </PWView>
+        </SafeAreaView>
     )
 }

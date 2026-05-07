@@ -11,6 +11,7 @@
  */
 
 import { PWButton, PWText, PWView } from '@components/core'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLanguage } from '@hooks/useLanguage'
 import { ARC59WarningBottomSheet } from '@modules/transactions/components/send-funds/ARC59WarningBottomSheet'
 import { useStyles } from './styles'
@@ -110,7 +111,10 @@ export const ARC59SendSummaryScreen = () => {
                 </PWView>
             </PWView>
 
-            <PWView style={styles.footer}>
+            <SafeAreaView
+                edges={['bottom']}
+                style={styles.footer}
+            >
                 <PWButton
                     title={t('send_funds.arc59_summary.send_button')}
                     variant='primary'
@@ -122,7 +126,7 @@ export const ARC59SendSummaryScreen = () => {
                     variant='secondary'
                     onPress={handleClose}
                 />
-            </PWView>
+            </SafeAreaView>
 
             <ARC59WarningBottomSheet
                 isVisible={isWarningVisible}
