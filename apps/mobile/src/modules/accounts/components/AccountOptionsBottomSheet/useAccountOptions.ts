@@ -29,7 +29,6 @@ import { useToast } from '@hooks/useToast'
 import { useModalState } from '@hooks/useModalState'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { IconName } from '@components/core'
-import { SHORT_PROMPT_DISPLAY_DELAY } from '@constants/ui'
 
 export type AccountOption = {
     id: string
@@ -210,13 +209,13 @@ export const useAccountOptions = ({
         (newName: string) => {
             updateAccount({ ...account, name: newName })
             handleCloseRename()
-            setTimeout(() => {
                 showToast({
                     title: t('account_options.rename_success'),
                     body: '',
                     type: 'success',
-                })
-            }, SHORT_PROMPT_DISPLAY_DELAY)
+                },
+                { delayLength: 'short' }
+            )
         },
         [updateAccount, account, handleCloseRename, showToast, t],
     )
@@ -242,13 +241,13 @@ export const useAccountOptions = ({
             removeAccountById(account.id)
         }
         handleCloseRemoveConfirm()
-        setTimeout(() => {
             showToast({
                 title: t('account_options.remove_account_success_message'),
                 body: '',
                 type: 'success',
-            })
-        }, SHORT_PROMPT_DISPLAY_DELAY)
+            },
+            { delayLength: 'short' }
+        )
 
         if (hasOtherAccounts) {
             navigation.navigate('TabBar', { screen: 'Home' })
