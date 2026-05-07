@@ -120,13 +120,3 @@ export const parsePinRecord = (data: Uint8Array): PinRecord | null => {
         return null
     }
 }
-
-// Legacy format: raw UTF-8 PIN bytes (no JSON envelope).
-export const isLegacyPinData = (data: Uint8Array): boolean =>
-    data.length > 0 && data[0] !== 0x7b
-
-export const decodeLegacyPin = (data: Uint8Array): string =>
-    decoder.decode(data)
-
-export const constantTimeStringEqual = (a: string, b: string): boolean =>
-    constantTimeEqual(encoder.encode(a), encoder.encode(b))

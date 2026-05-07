@@ -12,11 +12,30 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 
-const keystoreClearMock = vi.hoisted(() => vi.fn())
+const keystoreMocks = vi.hoisted(() => ({
+    clear: vi.fn(),
+    decode: vi.fn(),
+    decryptData: vi.fn(),
+    getMasterKey: vi.fn(),
+    storageGetAllKeys: vi.fn(() => [] as string[]),
+    storageGetString: vi.fn(),
+    initializeKeyStore: vi.fn(),
+}))
 
 vi.mock('@algorandfoundation/react-native-keystore', () => ({
     WithKeyStore: () => ({ key: { store: {} } }),
-    clear: keystoreClearMock,
+    clear: keystoreMocks.clear,
+    decode: keystoreMocks.decode,
+    decryptData: keystoreMocks.decryptData,
+    getMasterKey: keystoreMocks.getMasterKey,
+    storage: {
+        getAllKeys: keystoreMocks.storageGetAllKeys,
+        getString: keystoreMocks.storageGetString,
+    },
+}))
+
+vi.mock('@algorandfoundation/keystore', () => ({
+    initializeKeyStore: keystoreMocks.initializeKeyStore,
 }))
 
 vi.mock('@perawallet/wallet-extension-ledger-react-native', () => ({
@@ -27,9 +46,23 @@ vi.mock('@perawallet/wallet-extension-ledger-react-native-usb', () => ({
     WithLedgerUsbExtension: () => ({}),
 }))
 
+// Minimal fake of @tanstack/store's Store for the singleton's keystoreStore
+// instance. The singleton uses `state.keys` (read) and is mutated via
+// `initializeKeyStore` (which we mock) — neither path needs real subscriptions.
 vi.mock('@tanstack/store', () => ({
     Store: class {
-        constructor() {}
+        state: { keys: unknown[]; status: string }
+        constructor(initial: { keys: unknown[]; status: string }) {
+            this.state = { ...initial }
+        }
+        setState(
+            updater: (prev: { keys: unknown[]; status: string }) => {
+                keys: unknown[]
+                status: string
+            },
+        ) {
+            this.state = updater(this.state)
+        }
     },
 }))
 
@@ -48,12 +81,31 @@ import {
     initializeProvider,
     resetProvider,
     clearKeystore,
+    hydrateKeystore,
 } from '../singleton'
 import { PeraProvider } from '../pera-provider'
 
+const resetKeystoreStateForTest = (): void => {
+    // The keystoreStore singleton is constructed once at module load. Reset
+    // its `state.keys` between tests so hydrateKeystore's "skip if already
+    // populated" guard doesn't leak across cases.
+    const store = getKeystoreStore() as unknown as {
+        state: { keys: unknown[]; status: string }
+    }
+    store.state = { keys: [], status: 'idle' }
+}
+
 describe('provider singleton', () => {
     beforeEach(() => {
-        keystoreClearMock.mockReset()
+        keystoreMocks.clear.mockReset()
+        keystoreMocks.decode.mockReset()
+        keystoreMocks.decryptData.mockReset()
+        keystoreMocks.getMasterKey.mockReset()
+        keystoreMocks.storageGetAllKeys.mockReset()
+        keystoreMocks.storageGetString.mockReset()
+        keystoreMocks.initializeKeyStore.mockReset()
+        keystoreMocks.storageGetAllKeys.mockReturnValue([])
+        resetKeystoreStateForTest()
     })
 
     test('exposes the default PeraProvider before any reinitialization', () => {
@@ -78,11 +130,11 @@ describe('provider singleton', () => {
     })
 
     test('clearKeystore delegates to the native keystore clear', async () => {
-        keystoreClearMock.mockResolvedValue(undefined)
+        keystoreMocks.clear.mockResolvedValue(undefined)
 
         await clearKeystore()
 
-        expect(keystoreClearMock).toHaveBeenCalledWith(
+        expect(keystoreMocks.clear).toHaveBeenCalledWith(
             expect.objectContaining({ store: expect.any(Object) }),
         )
     })
@@ -99,5 +151,123 @@ describe('provider singleton', () => {
         const hooks = getKeystoreHooks()
         expect(hooks).toBeDefined()
         expect(getKeystoreHooks()).toBe(hooks)
+    })
+
+    describe('hydrateKeystore', () => {
+        test('no-ops when MMKV has no entries', async () => {
+            keystoreMocks.storageGetAllKeys.mockReturnValue([])
+
+            await hydrateKeystore()
+
+            expect(keystoreMocks.getMasterKey).not.toHaveBeenCalled()
+            expect(keystoreMocks.initializeKeyStore).not.toHaveBeenCalled()
+        })
+
+        test('skips when reactive store already has entries', async () => {
+            const store = getKeystoreStore() as unknown as {
+                state: { keys: unknown[] }
+            }
+            store.state.keys = [{ id: 'already-here' }]
+
+            await hydrateKeystore()
+
+            expect(keystoreMocks.storageGetAllKeys).not.toHaveBeenCalled()
+            expect(keystoreMocks.getMasterKey).not.toHaveBeenCalled()
+        })
+
+        test('decrypts each MMKV entry, strips private material, and initializes the store', async () => {
+            keystoreMocks.storageGetAllKeys.mockReturnValue([
+                'wallet-1',
+                'wallet-2',
+            ])
+            keystoreMocks.storageGetString.mockImplementation((id: string) =>
+                id === 'wallet-1' ? 'cipher-1' : 'cipher-2',
+            )
+            const masterKey = Buffer.from([1, 2, 3, 4, 5, 6, 7, 8])
+            keystoreMocks.getMasterKey.mockResolvedValue(masterKey)
+            keystoreMocks.decryptData.mockImplementation(
+                (_key: Buffer, payload: string) => `decrypted:${payload}`,
+            )
+            const sensitive1 = new Uint8Array([9, 9, 9])
+            const sensitive2 = new Uint8Array([8, 8])
+            keystoreMocks.decode.mockImplementationOnce(() => ({
+                id: 'wallet-1',
+                type: 'hd-root-key',
+                algorithm: 'raw',
+                privateKey: sensitive1,
+            }))
+            keystoreMocks.decode.mockImplementationOnce(() => ({
+                id: 'wallet-2',
+                type: 'algo25',
+                algorithm: 'EdDSA',
+                seed: sensitive2,
+            }))
+
+            await hydrateKeystore()
+
+            expect(keystoreMocks.initializeKeyStore).toHaveBeenCalledTimes(1)
+            const arg = keystoreMocks.initializeKeyStore.mock.calls[0][0]
+            // The reactive store gets metadata only — never private material.
+            expect(arg.keys).toHaveLength(2)
+            expect(arg.keys[0]).toMatchObject({
+                id: 'wallet-1',
+                type: 'hd-root-key',
+            })
+            expect(arg.keys[0]).not.toHaveProperty('privateKey')
+            expect(arg.keys[1]).toMatchObject({
+                id: 'wallet-2',
+                type: 'algo25',
+            })
+            expect(arg.keys[1]).not.toHaveProperty('seed')
+            // Private material was zeroed before being added to the reactive
+            // store. Master key copy was also zeroed.
+            expect(Array.from(sensitive1)).toEqual([0, 0, 0])
+            expect(Array.from(sensitive2)).toEqual([0, 0])
+            expect(Array.from(masterKey)).toEqual([0, 0, 0, 0, 0, 0, 0, 0])
+        })
+
+        test('skips entries that fail to decode and continues with the rest', async () => {
+            const consoleError = vi
+                .spyOn(console, 'error')
+                .mockImplementation(() => {})
+            keystoreMocks.storageGetAllKeys.mockReturnValue(['good', 'bad'])
+            keystoreMocks.storageGetString.mockReturnValue('cipher')
+            keystoreMocks.getMasterKey.mockResolvedValue(Buffer.from([0]))
+            keystoreMocks.decryptData.mockReturnValue('decrypted')
+            keystoreMocks.decode.mockImplementationOnce(() => ({
+                id: 'good',
+                type: 'algo25',
+                algorithm: 'EdDSA',
+            }))
+            keystoreMocks.decode.mockImplementationOnce(() => {
+                throw new Error('decode failed')
+            })
+
+            await hydrateKeystore()
+
+            const arg = keystoreMocks.initializeKeyStore.mock.calls[0][0]
+            expect(arg.keys).toHaveLength(1)
+            expect(arg.keys[0].id).toBe('good')
+            expect(consoleError).toHaveBeenCalled()
+            consoleError.mockRestore()
+        })
+
+        test('zeros the master key even when an entry throws', async () => {
+            keystoreMocks.storageGetAllKeys.mockReturnValue(['k'])
+            keystoreMocks.storageGetString.mockReturnValue('cipher')
+            const masterKey = Buffer.from([42, 42, 42])
+            keystoreMocks.getMasterKey.mockResolvedValue(masterKey)
+            keystoreMocks.decryptData.mockImplementation(() => {
+                throw new Error('decrypt failed')
+            })
+            const consoleError = vi
+                .spyOn(console, 'error')
+                .mockImplementation(() => {})
+
+            await hydrateKeystore()
+
+            expect(Array.from(masterKey)).toEqual([0, 0, 0])
+            consoleError.mockRestore()
+        })
     })
 })

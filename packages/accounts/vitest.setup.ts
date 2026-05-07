@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { vi, beforeEach } from 'vitest'
+import { vi } from 'vitest'
 
 const kvStore = new Map<string, string>()
 
@@ -46,51 +46,3 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
         },
     }),
 }))
-
-// Create a simple in-memory key store for mocking
-const mockKeyStore = new Map<string, any>()
-
-beforeEach(() => {
-    mockKeyStore.clear()
-})
-
-vi.mock('@perawallet/wallet-core-kms', async importOriginal => {
-    const actual =
-        await importOriginal<typeof import('@perawallet/wallet-core-kms')>()
-    const { useSecureStorageService } =
-        await import('@perawallet/wallet-extension-platform')
-
-    return {
-        ...actual,
-        useKMS: vi.fn(() => ({
-            saveKey: vi.fn(async (keyPair, privateKey) => {
-                const storage = useSecureStorageService()
-                await storage.setItem(keyPair.id, privateKey)
-                mockKeyStore.set(keyPair.id, keyPair)
-            }),
-            deleteKey: vi.fn(async id => {
-                const storage = useSecureStorageService()
-                await storage.removeItem(id)
-                mockKeyStore.delete(id)
-            }),
-            getPrivateData: vi.fn(async id => {
-                const storage = useSecureStorageService()
-                return await storage.getItem(id)
-            }),
-            getKey: vi.fn(id => {
-                return mockKeyStore.get(id) ?? null
-            }),
-            keys: mockKeyStore,
-        })),
-        useWithKey: vi.fn(() => ({
-            executeWithKey: vi.fn(async (id, domain, handler) => {
-                const storage = useSecureStorageService()
-                const data = await storage.getItem(id)
-                if (!data) {
-                    throw new actual.KeyNotFoundError(id)
-                }
-                return handler(data)
-            }),
-        })),
-    }
-})

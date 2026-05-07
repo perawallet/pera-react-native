@@ -70,7 +70,6 @@ describe('PeraWalletProvider', () => {
 
         expect(result.current.analytics).toBe(provider.analytics)
         expect(result.current.keyValueStorage).toBe(provider.keyValueStorage)
-        expect(result.current.secureStorage).toBe(provider.secureStorage)
         expect(result.current.remoteConfig).toBe(provider.remoteConfig)
         expect(result.current.pushNotification).toBe(provider.pushNotification)
         expect(result.current.crashReporting).toBe(provider.crashReporting)

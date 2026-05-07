@@ -21,6 +21,12 @@
         "filter": "Filter",
         "remove_assets": "Remove Assets"
     },
+    "app": {
+        "initialization_failed": {
+            "title": "App Launch Failed",
+            "body": "There was an error initializing the app.  Please try restarting the app. If the issue persists, contact support.\n\nYour funds are safe on the Algorand blockchain."
+        }
+    },
     "asset_sort": {
         "title": "Sort",
         "done": "Done",

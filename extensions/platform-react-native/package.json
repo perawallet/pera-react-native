@@ -25,7 +25,6 @@
     "react": "catalog:",
     "react-native": "0.81.5",
     "react-native-mmkv": "^4.2.0",
-    "react-native-keychain": "^10.0.0",
     "@react-native-firebase/analytics": "^24.0.0",
     "@react-native-firebase/crashlytics": "^24.0.0",
     "@react-native-firebase/messaging": "^24.0.0",

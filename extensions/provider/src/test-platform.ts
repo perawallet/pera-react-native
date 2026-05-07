@@ -24,7 +24,6 @@ import {
     PlatformServices,
     PushNotificationService,
     RemoteConfigService,
-    SecureStorageService,
 } from '@perawallet/wallet-extension-platform'
 import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
 import { createHardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
@@ -34,7 +33,6 @@ import { PeraProvider } from './pera-provider'
 export type TestPlatformOverrides = Partial<{
     analytics: AnalyticsService
     keyValueStorage: KeyValueStorageService
-    secureStorage: SecureStorageService
     biometrics: BiometricsService
     remoteConfig: RemoteConfigService
     pushNotification: PushNotificationService
@@ -54,18 +52,6 @@ export const buildTestPlatform = (
     const defaultAnalytics: AnalyticsService = {
         initializeAnalytics() {},
         logEvent(_event: string, _properties?: Record<string, unknown>) {},
-    }
-
-    const defaultSecure: SecureStorageService = {
-        async setItem(_: string, __: Uint8Array) {},
-        async getItem(_: string) {
-            return null
-        },
-        async removeItem(_: string) {},
-        async clearAll() {},
-        async authenticate() {
-            return true
-        },
     }
 
     const defaultRemote: RemoteConfigService = {
@@ -167,7 +153,6 @@ export const buildTestPlatform = (
         analytics: overrides.analytics ?? defaultAnalytics,
         keyValueStorage:
             overrides.keyValueStorage ?? new MemoryKeyValueStorage(),
-        secureStorage: overrides.secureStorage ?? defaultSecure,
         biometrics: overrides.biometrics ?? defaultBiometrics,
         remoteConfig: overrides.remoteConfig ?? defaultRemote,
         pushNotification: overrides.pushNotification ?? defaultPushNotification,
