@@ -76,26 +76,21 @@ export const useAssetOptOutMutation = (): UseAssetOptOutMutationResult => {
         [network],
     )
 
-    // Returns true when a close-out txn must be built. Returns false when
-    // the asset is no longer held on-chain (a prior opt-out already settled
-    // and the local UI is stale) — submitting again would be rejected as
-    // `duplicate_txn`, so we skip the txn but still reconcile local state.
-    const needsOptOutTxn = (
+    // Hard validation only — throws on caller errors that must surface.
+    // Whether a txn is actually needed (skip when the asset is already gone
+    // on-chain) is a separate decision the caller makes via the holding
+    // lookup; mixing both into one helper produced a confusing
+    // returns-or-throws contract.
+    const assertCanOptOut = (
         params: ResolvedOptOutParams,
-        assets: Array<{ assetId: bigint; amount: bigint }>,
-    ): boolean => {
+        holding: { assetId: bigint; amount: bigint } | undefined,
+    ): void => {
         if (params.sender === params.creator) {
             throw new CreatorCannotOptOutError()
         }
-
-        const holding = assets.find(a => a.assetId === params.assetId)
-        if (!holding) {
-            return false
-        }
-        if (holding.amount !== 0n) {
+        if (holding && holding.amount !== 0n) {
             throw new NonZeroBalanceError()
         }
-        return true
     }
 
     const optOut = useCallback(
@@ -122,9 +117,15 @@ export const useAssetOptOutMutation = (): UseAssetOptOutMutationResult => {
                     await algokit.client.algod.accountInformation(sender)
                 const assets = accountInfo.assets ?? []
 
-                const toSubmit = paramsList.filter(p =>
-                    needsOptOutTxn(p, assets),
-                )
+                // Skip txn-building for assets the chain shows as already
+                // gone (a prior opt-out already settled and the local UI
+                // is stale) — submitting again would be rejected as
+                // `duplicate_txn`. We still reconcile local state below.
+                const toSubmit = paramsList.filter(p => {
+                    const holding = assets.find(a => a.assetId === p.assetId)
+                    assertCanOptOut(p, holding)
+                    return holding !== undefined
+                })
 
                 let txIds: string[] = []
                 if (toSubmit.length > 0) {

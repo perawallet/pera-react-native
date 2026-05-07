@@ -54,6 +54,14 @@ vi.mock('@hooks/useResolvedAddress', () => ({
     })),
 }))
 
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({
+        t: (key: string) => key,
+        currentLanguage: 'en',
+        changeLanguage: vi.fn(),
+    }),
+}))
+
 const USER_ADDRESS = 'USER_ADDRESS'
 const OTHER_ADDRESS = 'OTHER_ADDRESS'
 
@@ -117,39 +125,39 @@ describe('useTransactionListItem', () => {
     })
 
     describe('title', () => {
-        it('returns "Send" for outgoing payment', () => {
+        it('returns send key for outgoing payment', () => {
             const tx = createPaymentTx({ sender: USER_ADDRESS })
             const { result } = renderHook(() =>
                 useTransactionListItem({ transaction: tx }),
             )
-            expect(result.current.title).toBe('Send')
+            expect(result.current.title).toBe('transactions.list_item.send')
         })
 
-        it('returns "Receive" for incoming payment', () => {
+        it('returns receive key for incoming payment', () => {
             const tx = createPaymentTx({ sender: OTHER_ADDRESS })
             const { result } = renderHook(() =>
                 useTransactionListItem({ transaction: tx }),
             )
-            expect(result.current.title).toBe('Receive')
+            expect(result.current.title).toBe('transactions.list_item.receive')
         })
 
-        it('returns "Send" for outgoing asset transfer', () => {
+        it('returns send key for outgoing asset transfer', () => {
             const tx = createAssetTransferTx({ sender: USER_ADDRESS })
             const { result } = renderHook(() =>
                 useTransactionListItem({ transaction: tx }),
             )
-            expect(result.current.title).toBe('Send')
+            expect(result.current.title).toBe('transactions.list_item.send')
         })
 
-        it('returns "Receive" for incoming asset transfer', () => {
+        it('returns receive key for incoming asset transfer', () => {
             const tx = createAssetTransferTx({ sender: OTHER_ADDRESS })
             const { result } = renderHook(() =>
                 useTransactionListItem({ transaction: tx }),
             )
-            expect(result.current.title).toBe('Receive')
+            expect(result.current.title).toBe('transactions.list_item.receive')
         })
 
-        it('returns "Opt-in" for self-transfer with zero amount', () => {
+        it('returns opt_in key for self-transfer with zero amount', () => {
             const tx = createAssetTransferTx({
                 sender: USER_ADDRESS,
                 receiver: USER_ADDRESS,
@@ -158,7 +166,19 @@ describe('useTransactionListItem', () => {
             const { result } = renderHook(() =>
                 useTransactionListItem({ transaction: tx }),
             )
-            expect(result.current.title).toBe('Opt-in')
+            expect(result.current.title).toBe('transactions.list_item.opt_in')
+        })
+
+        it('returns opt_out key for axfer with closeTo (close-out)', () => {
+            const tx = createAssetTransferTx({
+                sender: USER_ADDRESS,
+                receiver: OTHER_ADDRESS,
+                closeTo: OTHER_ADDRESS,
+            })
+            const { result } = renderHook(() =>
+                useTransactionListItem({ transaction: tx }),
+            )
+            expect(result.current.title).toBe('transactions.list_item.opt_out')
         })
 
         it('uses interpretedMeaning title when available', () => {

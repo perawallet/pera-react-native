@@ -1324,6 +1324,18 @@
             "pending": "Pending",
             "raw_transaction": "Raw Transaction"
         },
+        "list_item": {
+            "send": "Send",
+            "receive": "Receive",
+            "swap": "Swap",
+            "opt_in": "Opt-in",
+            "opt_out": "Opt-out",
+            "asset_config": "Asset Configuration",
+            "asset_freeze": "Asset Freeze",
+            "app_call": "App Call",
+            "key_registration": "Key Registration",
+            "default": "Transaction"
+        },
         "type": {
             "pay": "Payment Transaction",
             "keyreg": "Key Registration Transaction",

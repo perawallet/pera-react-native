@@ -22,10 +22,13 @@ import {
     baseUnitsToDisplayUnits,
 } from '@perawallet/wallet-core-blockchain'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
+import { useLanguage } from '@hooks/useLanguage'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import type { TransactionIconType } from '@modules/transactions/components/TransactionIcon'
 import { getTransactionIconType } from './utils'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+
+type TFunction = ReturnType<typeof useLanguage>['t']
 
 export type AmountDisplay = {
     /** Raw amount value for CurrencyDisplay */
@@ -99,40 +102,47 @@ const createAssetAmount = (
 /**
  * Gets the display title for a transaction.
  */
-const getTitle = (tx: TransactionHistoryItem, userAddress: string): string => {
+const getTitle = (
+    tx: TransactionHistoryItem,
+    userAddress: string,
+    t: TFunction,
+): string => {
     if (tx.interpretedMeaning?.title) {
         return tx.interpretedMeaning.title
     }
 
-    if (tx.swapGroupDetail) return 'Swap'
+    if (tx.swapGroupDetail) return t('transactions.list_item.swap')
 
     const isOutgoing = tx.sender === userAddress
+    const sendOrReceive = isOutgoing
+        ? t('transactions.list_item.send')
+        : t('transactions.list_item.receive')
 
     switch (tx.txType) {
         case 'pay':
-            return isOutgoing ? 'Send' : 'Receive'
+            return sendOrReceive
         case 'axfer':
             if (tx.closeTo) {
-                return 'Opt-out'
+                return t('transactions.list_item.opt_out')
             }
             if (
                 tx.sender === tx.receiver &&
                 tx.amount !== null &&
                 tx.amount.isZero()
             ) {
-                return 'Opt-in'
+                return t('transactions.list_item.opt_in')
             }
-            return isOutgoing ? 'Send' : 'Receive'
+            return sendOrReceive
         case 'acfg':
-            return 'Add Asset Fee'
+            return t('transactions.list_item.asset_config')
         case 'afrz':
-            return 'Asset Freeze'
+            return t('transactions.list_item.asset_freeze')
         case 'appl':
-            return 'App Call'
+            return t('transactions.list_item.app_call')
         case 'keyreg':
-            return 'Key Registration'
+            return t('transactions.list_item.key_registration')
         default:
-            return 'Transaction'
+            return t('transactions.list_item.default')
     }
 }
 
@@ -144,6 +154,7 @@ export const useTransactionListItem = ({
     onPress,
 }: UseTransactionListItemParams): UseTransactionListItemResult => {
     const account = useSelectedAccount()
+    const { t } = useLanguage()
     const userAddress = account?.address ?? ''
     const assetId = transaction.asset?.assetId?.toString() ?? ''
     const { data: assetDetails } = useSingleAssetDetailsQuery(assetId)
@@ -172,8 +183,8 @@ export const useTransactionListItem = ({
     )
 
     const title = useMemo(
-        () => getTitle(transaction, userAddress),
-        [transaction, userAddress],
+        () => getTitle(transaction, userAddress, t),
+        [transaction, userAddress, t],
     )
 
     const subtitle = useMemo(() => {
