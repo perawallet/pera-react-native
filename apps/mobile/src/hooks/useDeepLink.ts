@@ -188,22 +188,30 @@ export const useDeepLink = () => {
                             result.type === 'hdWallet' &&
                             'walletKeyId' in result
                         ) {
-                            navigateToScreen(replaceCurrentScreen, 'AddAccount', {
-                                screen: 'SearchAccounts',
-                                params: {
-                                    mode: 'import',
-                                    walletKeyId: result.walletKeyId,
-                                    derivationType: result.derivationType,
+                            navigateToScreen(
+                                replaceCurrentScreen,
+                                'AddAccount',
+                                {
+                                    screen: 'SearchAccounts',
+                                    params: {
+                                        mode: 'import',
+                                        walletKeyId: result.walletKeyId,
+                                        derivationType: result.derivationType,
+                                    },
                                 },
-                            })
+                            )
                         } else {
                             markBackupComplete(result as WalletAccount)
-                            navigateToScreen(replaceCurrentScreen, 'AddAccount', {
-                                screen: 'SearchAccounts',
-                                params: {
-                                    account: result as WalletAccount,
+                            navigateToScreen(
+                                replaceCurrentScreen,
+                                'AddAccount',
+                                {
+                                    screen: 'SearchAccounts',
+                                    params: {
+                                        account: result as WalletAccount,
+                                    },
                                 },
-                            })
+                            )
                         }
                     } catch (error) {
                         logger.error('Deeplink import failed', { error })

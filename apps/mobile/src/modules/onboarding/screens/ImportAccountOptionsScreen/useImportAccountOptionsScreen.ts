@@ -100,7 +100,9 @@ export const useImportAccountOptionsScreen =
 
                 if (parsedDeeplink?.type !== DeeplinkType.RECOVER_ADDRESS) {
                     showToast({
-                        title: t('onboarding.add_account.qr_scan_invalid_title'),
+                        title: t(
+                            'onboarding.add_account.qr_scan_invalid_title',
+                        ),
                         body: t('onboarding.add_account.qr_scan_invalid_body'),
                         type: 'error',
                     })
@@ -132,10 +134,7 @@ export const useImportAccountOptionsScreen =
                         type: resolved.accountType,
                     })
 
-                    if (
-                        result.type === 'hdWallet' &&
-                        'walletKeyId' in result
-                    ) {
+                    if (result.type === 'hdWallet' && 'walletKeyId' in result) {
                         navigation.push('SearchAccounts', {
                             mode: 'import',
                             walletKeyId: result.walletKeyId,
