@@ -95,7 +95,10 @@ export const NameAccountForm = ({
                 />
             </PWView>
 
-            <SafeAreaView edges={['bottom']} style={styles.footer}>
+            <SafeAreaView
+                edges={['bottom']}
+                style={styles.footer}
+            >
                 <PWButton
                     variant='primary'
                     title={finishButtonTitle}

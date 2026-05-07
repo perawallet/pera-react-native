@@ -129,7 +129,10 @@ export const SelectHDWalletScreen = () => {
                         contentContainerStyle={styles.listContent}
                     />
                 </PWView>
-                <SafeAreaView edges={['bottom']} style={styles.footer}>
+                <SafeAreaView
+                    edges={['bottom']}
+                    style={styles.footer}
+                >
                     <PWButton
                         title={t(
                             'onboarding.select_hd_wallet.create_new_wallet',

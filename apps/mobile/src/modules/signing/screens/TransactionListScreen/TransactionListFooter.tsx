@@ -23,7 +23,10 @@ export const TransactionListFooter = () => {
     const { t } = useLanguage()
 
     return (
-        <SafeAreaView edges={['bottom']} style={styles.footerContainer}>
+        <SafeAreaView
+            edges={['bottom']}
+            style={styles.footerContainer}
+        >
             <SigningWarnings isGroup />
 
             <PWView style={styles.feeContainer}>

@@ -111,7 +111,10 @@ export const ARC59SendSummaryScreen = () => {
                 </PWView>
             </PWView>
 
-            <SafeAreaView edges={['bottom']} style={styles.footer}>
+            <SafeAreaView
+                edges={['bottom']}
+                style={styles.footer}
+            >
                 <PWButton
                     title={t('send_funds.arc59_summary.send_button')}
                     variant='primary'
