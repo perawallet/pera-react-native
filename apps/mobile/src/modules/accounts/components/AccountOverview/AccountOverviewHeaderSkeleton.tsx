@@ -16,7 +16,13 @@ import { useStyles } from './styles'
 const PERIOD_BUTTON_COUNT = 5
 const ACTION_BUTTON_COUNT = 4
 
-export const AccountOverviewHeaderSkeleton = () => {
+export type AccountOverviewHeaderSkeletonProps = {
+    chartVisible: boolean
+}
+
+export const AccountOverviewHeaderSkeleton = ({
+    chartVisible,
+}: AccountOverviewHeaderSkeletonProps) => {
     const styles = useStyles()
 
     return (
@@ -42,20 +48,24 @@ export const AccountOverviewHeaderSkeleton = () => {
                     />
                 </PWView>
             </PWView>
-            <PWView style={styles.chartContainer}>
-                <PWView style={[styles.skeletonBlock, styles.skeletonChart]} />
-                <PWView style={styles.skeletonPeriodRow}>
-                    {Array.from({ length: PERIOD_BUTTON_COUNT }, (_, i) => (
-                        <PWView
-                            key={i}
-                            style={[
-                                styles.skeletonBlock,
-                                styles.skeletonPeriodButton,
-                            ]}
-                        />
-                    ))}
+            {chartVisible && (
+                <PWView style={styles.chartContainer}>
+                    <PWView
+                        style={[styles.skeletonBlock, styles.skeletonChart]}
+                    />
+                    <PWView style={styles.skeletonPeriodRow}>
+                        {Array.from({ length: PERIOD_BUTTON_COUNT }, (_, i) => (
+                            <PWView
+                                key={i}
+                                style={[
+                                    styles.skeletonBlock,
+                                    styles.skeletonPeriodButton,
+                                ]}
+                            />
+                        ))}
+                    </PWView>
                 </PWView>
-            </PWView>
+            )}
             <PWView style={styles.skeletonButtonRow}>
                 {Array.from({ length: ACTION_BUTTON_COUNT }, (_, i) => (
                     <PWView

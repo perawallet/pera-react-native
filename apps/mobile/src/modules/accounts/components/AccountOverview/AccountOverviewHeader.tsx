@@ -178,13 +178,19 @@ export const AccountOverviewHeader = ({
         t,
     ])
 
+    const useLoadingHeight = isLoading && chartVisible
+
     return (
-        <PWView style={styles.headerContainer}>
+        <PWView
+            style={useLoadingHeight ? styles.headerContainerLoading : undefined}
+        >
             {renderContent()}
 
             {isLoading && (
                 <PWView style={styles.skeletonOverlay}>
-                    <AccountOverviewHeaderSkeleton />
+                    <AccountOverviewHeaderSkeleton
+                        chartVisible={chartVisible}
+                    />
                 </PWView>
             )}
         </PWView>
