@@ -38,22 +38,12 @@ export const updateDevice = async (
     const response = await queryClient<DeviceResponse, DeviceRequest>({
         backend: 'pera',
         network,
-        method: 'PATCH',
+        method: 'PUT',
         url: getUpdateEndpointPath(deviceId),
         data,
     })
 
     return response.data
-}
-
-export const nullifyPushToken = async (network: Network, deviceId: string) => {
-    await queryClient<DeviceResponse, { push_token: null }>({
-        backend: 'pera',
-        network,
-        method: 'PUT',
-        url: getUpdateEndpointPath(deviceId),
-        data: { push_token: null },
-    })
 }
 
 export const deleteDevice = async (network: Network, data: DeviceRequest) => {
