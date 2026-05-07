@@ -148,6 +148,7 @@ export const useImportAccountOptionsScreen =
                     }
                 } catch (error) {
                     logger.error('QR import failed', { error })
+                    // guardrails-ignore-next-line no-error-toast-in-catch reason: localized import_account.failed_body preserved; raw error not surfaced to user
                     showToast({
                         title: t('onboarding.import_account.failed_title'),
                         body: t('onboarding.import_account.failed_body'),
