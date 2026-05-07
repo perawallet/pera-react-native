@@ -31,6 +31,7 @@ export const AddressSearchInput = ({
             onScanned={onChangeText}
             placeholder={placeholder}
             inputContainerStyle={styles.searchField}
+            containerStyle={styles.container}
             onFocus={onFocus}
             leftIcon={
                 <PWIcon
