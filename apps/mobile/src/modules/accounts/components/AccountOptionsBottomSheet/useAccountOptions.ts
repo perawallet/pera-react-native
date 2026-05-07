@@ -209,12 +209,13 @@ export const useAccountOptions = ({
         (newName: string) => {
             updateAccount({ ...account, name: newName })
             handleCloseRename()
-                showToast({
+            showToast(
+                {
                     title: t('account_options.rename_success'),
                     body: '',
                     type: 'success',
                 },
-                { delayLength: 'short' }
+                { delayLength: 'short' },
             )
         },
         [updateAccount, account, handleCloseRename, showToast, t],
@@ -241,12 +242,13 @@ export const useAccountOptions = ({
             removeAccountById(account.id)
         }
         handleCloseRemoveConfirm()
-            showToast({
+        showToast(
+            {
                 title: t('account_options.remove_account_success_message'),
                 body: '',
                 type: 'success',
             },
-            { delayLength: 'short' }
+            { delayLength: 'short' },
         )
 
         if (hasOtherAccounts) {

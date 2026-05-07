@@ -17,7 +17,10 @@ import {
     NotifierRoot,
     ShowNotificationParams,
 } from 'react-native-notifier'
-import { SHORT_PROMPT_DISPLAY_DELAY, LONG_PROMPT_DISPLAY_DELAY } from '@constants/ui'
+import {
+    SHORT_PROMPT_DISPLAY_DELAY,
+    LONG_PROMPT_DISPLAY_DELAY,
+} from '@constants/ui'
 
 export interface ToastMessage {
     title: string
@@ -68,10 +71,7 @@ export const useToast = () => {
     const styles = useStyles()
 
     const showToast = useCallback(
-        (
-            message: ToastMessage,
-            options?: ToastOptions,
-        ) => {
+        (message: ToastMessage, options?: ToastOptions) => {
             let containerStyle = styles.infoStyle
             let textStyle = styles.infoStyleText
             if (message.type === 'error') {
@@ -85,7 +85,11 @@ export const useToast = () => {
                 textStyle = styles.successStyleText
             }
 
-            const { delayLength, notifier: customNotifier, ...notifierOptions } = options ?? {}
+            const {
+                delayLength,
+                notifier: customNotifier,
+                ...notifierOptions
+            } = options ?? {}
 
             const delayMap = {
                 none: 0,
