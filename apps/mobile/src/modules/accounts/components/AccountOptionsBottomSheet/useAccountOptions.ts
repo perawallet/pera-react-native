@@ -249,7 +249,7 @@ export const useAccountOptions = ({
                 type: 'success',
             })
         }, SHORT_PROMPT_DISPLAY_DELAY)
-        
+
         if (hasOtherAccounts) {
             navigation.navigate('TabBar', { screen: 'Home' })
         }
