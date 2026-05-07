@@ -98,6 +98,8 @@ vi.mock('@perawallet/wallet-core-search', () => ({
 
 vi.mock('@constants/ui', () => ({
     SEARCH_DEBOUNCE_TIME: 300,
+    SHORT_PROMPT_DISPLAY_DELAY: 300,
+    LONG_PROMPT_DISPLAY_DELAY: 600,
 }))
 
 describe('useAddAssetView', () => {

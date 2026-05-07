@@ -117,6 +117,8 @@ vi.mock('@perawallet/wallet-core-search', () => ({
 
 vi.mock('@constants/ui', () => ({
     SEARCH_DEBOUNCE_TIME_SHORT: 150,
+    SHORT_PROMPT_DISPLAY_DELAY: 300,
+    LONG_PROMPT_DISPLAY_DELAY: 600,
 }))
 
 describe('useAccountAssetList', () => {
