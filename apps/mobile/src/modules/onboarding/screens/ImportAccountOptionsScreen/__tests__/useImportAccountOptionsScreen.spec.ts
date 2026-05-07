@@ -13,9 +13,12 @@
 import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { Platform } from 'react-native'
-import { resolveImportAccountType } from '@perawallet/wallet-core-accounts'
+import {
+    resolveImportAccountType,
+    useImportAccount,
+} from '@perawallet/wallet-core-accounts'
+import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 import { DeeplinkType } from '@hooks/deeplink/types'
-import { useMnemonicHandoffStore } from '@modules/onboarding/hooks/useMnemonicHandoffStore'
 import { useImportAccountOptionsScreen } from '../useImportAccountOptionsScreen'
 
 const mockPush = vi.fn()
@@ -59,6 +62,9 @@ vi.mock('@hooks/useDeepLink', () => ({
     }),
 }))
 
+const mockImportAccount = vi.fn()
+const mockMarkBackupComplete = vi.fn()
+
 vi.mock('@perawallet/wallet-core-accounts', async () => {
     const actual = await vi.importActual<object>(
         '@perawallet/wallet-core-accounts',
@@ -66,8 +72,13 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     return {
         ...actual,
         resolveImportAccountType: vi.fn(),
+        useImportAccount: vi.fn(),
     }
 })
+
+vi.mock('@perawallet/wallet-core-backup', () => ({
+    useMarkMnemonicBackupComplete: vi.fn(),
+}))
 
 describe('useImportAccountOptionsScreen', () => {
     const originalOS = Platform.OS
@@ -75,7 +86,10 @@ describe('useImportAccountOptionsScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         Platform.OS = 'ios'
-        useMnemonicHandoffStore.getState().resetState()
+        vi.mocked(useImportAccount).mockReturnValue(mockImportAccount)
+        vi.mocked(useMarkMnemonicBackupComplete).mockReturnValue(
+            mockMarkBackupComplete,
+        )
     })
 
     afterEach(() => {
@@ -327,7 +341,7 @@ describe('useImportAccountOptionsScreen', () => {
         expect(result.current.isQRScannerVisible).toBe(false)
     })
 
-    it('handleQRScannerSuccess stashes mnemonic and pushes ImportAccount with handoffId', () => {
+    it('handleQRScannerSuccess imports the mnemonic and pushes SearchAccounts (HD path)', async () => {
         const mnemonic = new Array(24).fill('word').join(' ')
         mockParseDeeplink.mockReturnValue({
             type: DeeplinkType.RECOVER_ADDRESS,
@@ -337,24 +351,65 @@ describe('useImportAccountOptionsScreen', () => {
             success: true,
             accountType: 'hdWallet',
         })
+        mockImportAccount.mockResolvedValue({
+            type: 'hdWallet',
+            walletKeyId: 'test-wallet-key-id',
+            derivationType: 9,
+        })
 
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
-        act(() => {
-            result.current.handleQRScannerSuccess('perawallet://recover/...')
+        await act(async () => {
+            await result.current.handleQRScannerSuccess(
+                'perawallet://recover/...',
+            )
         })
 
-        expect(mockPush).toHaveBeenCalledWith(
-            'ImportAccount',
-            expect.objectContaining({
-                accountType: 'hdWallet',
-                handoffId: expect.any(String),
-            }),
-        )
-        const handoffId = mockPush.mock.calls.at(-1)?.[1]?.handoffId as string
-        expect(useMnemonicHandoffStore.getState().consume(handoffId)).toEqual({
-            accountType: 'hdWallet',
+        expect(mockImportAccount).toHaveBeenCalledWith({
             mnemonic,
+            type: 'hdWallet',
+        })
+        expect(mockPush).toHaveBeenCalledWith('SearchAccounts', {
+            mode: 'import',
+            walletKeyId: 'test-wallet-key-id',
+            derivationType: 9,
+        })
+        expect(mockMarkBackupComplete).not.toHaveBeenCalled()
+    })
+
+    it('handleQRScannerSuccess imports the mnemonic and pushes SearchAccounts (Algo25 path)', async () => {
+        const mnemonic = new Array(25).fill('word').join(' ')
+        const algo25Account = {
+            id: 'algo25-id',
+            address: 'TEST_ADDRESS',
+            type: 'algo25' as const,
+            keyPairId: 'algo25-keypair-id',
+        }
+        mockParseDeeplink.mockReturnValue({
+            type: DeeplinkType.RECOVER_ADDRESS,
+            mnemonic,
+        })
+        vi.mocked(resolveImportAccountType).mockReturnValue({
+            success: true,
+            accountType: 'algo25',
+        })
+        mockImportAccount.mockResolvedValue(algo25Account)
+
+        const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+        await act(async () => {
+            await result.current.handleQRScannerSuccess(
+                'perawallet://recover/...',
+            )
+        })
+
+        expect(mockImportAccount).toHaveBeenCalledWith({
+            mnemonic,
+            type: 'algo25',
+        })
+        expect(mockMarkBackupComplete).toHaveBeenCalledWith(algo25Account)
+        expect(mockPush).toHaveBeenCalledWith('SearchAccounts', {
+            account: algo25Account,
         })
     })
 })

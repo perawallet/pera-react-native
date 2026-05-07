@@ -12,7 +12,13 @@
 
 import { useCallback, useMemo } from 'react'
 import { Platform } from 'react-native'
-import { resolveImportAccountType } from '@perawallet/wallet-core-accounts'
+import {
+    resolveImportAccountType,
+    useImportAccount,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
+import { logger } from '@perawallet/wallet-core-shared'
 import { type IconName } from '@components/core'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useModalState } from '@hooks/useModalState'
@@ -21,7 +27,6 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useDeepLink } from '@hooks/useDeepLink'
 import { DeeplinkType } from '@hooks/deeplink/types'
 import { type AccountOption } from '@modules/onboarding/types'
-import { useMnemonicHandoffStore } from '@modules/onboarding/hooks/useMnemonicHandoffStore'
 
 export type UseImportAccountOptionsScreenResult = {
     options: AccountOption[]
@@ -31,7 +36,11 @@ export type UseImportAccountOptionsScreenResult = {
     handleAlgo25Press: () => void
     isQRScannerVisible: boolean
     handleCloseQRScanner: () => void
-    handleQRScannerSuccess: (url: string, restartScanning?: () => void) => void
+    handleQRScannerSuccess: (
+        url: string,
+        restartScanning?: () => void,
+    ) => Promise<void>
+    isImporting: boolean
 }
 
 export const useImportAccountOptionsScreen =
@@ -40,6 +49,8 @@ export const useImportAccountOptionsScreen =
         const { showToast } = useToast()
         const { t } = useLanguage()
         const { parseDeeplink } = useDeepLink()
+        const importAccount = useImportAccount()
+        const markBackupComplete = useMarkMnemonicBackupComplete()
 
         const {
             isOpen: isImportOptionsVisible,
@@ -51,6 +62,12 @@ export const useImportAccountOptionsScreen =
             isOpen: isQRScannerVisible,
             open: openQRScanner,
             close: closeQRScanner,
+        } = useModalState()
+
+        const {
+            isOpen: isImporting,
+            open: openImporting,
+            close: closeImporting,
         } = useModalState()
 
         const handleHDWalletPress = useCallback(() => {
@@ -76,49 +93,83 @@ export const useImportAccountOptionsScreen =
         )
 
         const handleQRScannerSuccess = useCallback(
-            (url: string, restartScanning?: () => void) => {
+            async (url: string, restartScanning?: () => void) => {
                 closeQRScanner()
 
                 const parsedDeeplink = parseDeeplink(url)
 
-                if (parsedDeeplink?.type === DeeplinkType.RECOVER_ADDRESS) {
-                    const result = resolveImportAccountType(
-                        parsedDeeplink.mnemonic,
-                    )
-
-                    if (!result.success) {
-                        showToast({
-                            title: t(
-                                'onboarding.add_account.qr_scan_invalid_mnemonic_title',
-                            ),
-                            body: t(
-                                'onboarding.add_account.qr_scan_invalid_mnemonic_body',
-                            ),
-                            type: 'error',
-                        })
-                        restartScanning?.()
-                        return
-                    }
-
-                    const handoffId = useMnemonicHandoffStore.getState().stash({
-                        accountType: result.accountType,
-                        mnemonic: parsedDeeplink.mnemonic,
+                if (parsedDeeplink?.type !== DeeplinkType.RECOVER_ADDRESS) {
+                    showToast({
+                        title: t('onboarding.add_account.qr_scan_invalid_title'),
+                        body: t('onboarding.add_account.qr_scan_invalid_body'),
+                        type: 'error',
                     })
-                    navigation.push('ImportAccount', {
-                        accountType: result.accountType,
-                        handoffId,
-                    })
+                    restartScanning?.()
                     return
                 }
 
-                showToast({
-                    title: t('onboarding.add_account.qr_scan_invalid_title'),
-                    body: t('onboarding.add_account.qr_scan_invalid_body'),
-                    type: 'error',
-                })
-                restartScanning?.()
+                const resolved = resolveImportAccountType(
+                    parsedDeeplink.mnemonic,
+                )
+                if (!resolved.success) {
+                    showToast({
+                        title: t(
+                            'onboarding.add_account.qr_scan_invalid_mnemonic_title',
+                        ),
+                        body: t(
+                            'onboarding.add_account.qr_scan_invalid_mnemonic_body',
+                        ),
+                        type: 'error',
+                    })
+                    restartScanning?.()
+                    return
+                }
+
+                openImporting()
+                try {
+                    const result = await importAccount({
+                        mnemonic: parsedDeeplink.mnemonic,
+                        type: resolved.accountType,
+                    })
+
+                    if (
+                        result.type === 'hdWallet' &&
+                        'walletKeyId' in result
+                    ) {
+                        navigation.push('SearchAccounts', {
+                            mode: 'import',
+                            walletKeyId: result.walletKeyId,
+                            derivationType: result.derivationType,
+                        })
+                    } else {
+                        markBackupComplete(result as WalletAccount)
+                        navigation.push('SearchAccounts', {
+                            account: result as WalletAccount,
+                        })
+                    }
+                } catch (error) {
+                    logger.error('QR import failed', { error })
+                    showToast({
+                        title: t('onboarding.import_account.failed_title'),
+                        body: t('onboarding.import_account.failed_body'),
+                        type: 'error',
+                    })
+                    restartScanning?.()
+                } finally {
+                    closeImporting()
+                }
             },
-            [closeQRScanner, parseDeeplink, navigation, showToast, t],
+            [
+                closeQRScanner,
+                parseDeeplink,
+                navigation,
+                showToast,
+                t,
+                importAccount,
+                markBackupComplete,
+                openImporting,
+                closeImporting,
+            ],
         )
 
         const handleNotImplemented = useCallback(() => {
@@ -210,5 +261,6 @@ export const useImportAccountOptionsScreen =
             isQRScannerVisible,
             handleCloseQRScanner: closeQRScanner,
             handleQRScannerSuccess,
+            isImporting,
         }
     }
