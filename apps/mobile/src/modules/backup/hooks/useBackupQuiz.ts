@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
     type MnemonicWordAtPosition,
     uniformIntBelow,
@@ -80,6 +80,24 @@ export const useBackupQuiz = (
         buildQuestions(correctPairs, distractorPool),
     )
     const [hasError, setHasError] = useState(false)
+
+    // Compare correctPairs by *content* — callers commonly rebuild the array
+    // every render (e.g. `picks ?? []`), so depending on reference identity
+    // would re-fire the effect on every render and reset selections.
+    const correctPairsKey = useMemo(
+        () => correctPairs.map(p => `${p.index}:${p.word}`).join('|'),
+        [correctPairs],
+    )
+
+    // `correctPairs` is fetched asynchronously by the caller, so on first
+    // render it's typically `[]` and the lazy initializer above produces no
+    // questions. Rebuild whenever the pairs content changes so the quiz
+    // appears as soon as the KMS sample resolves.
+    useEffect(() => {
+        setItems(buildQuestions(correctPairs, distractorPool))
+        setHasError(false)
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- key encodes correctPairs content
+    }, [correctPairsKey, distractorPool])
 
     const onSelect = useCallback((questionIdx: number, word: string) => {
         setHasError(false)
