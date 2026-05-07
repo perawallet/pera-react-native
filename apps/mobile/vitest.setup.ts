@@ -589,12 +589,6 @@ vi.mock('@components/core', () => {
                 { ...props, style, 'data-testid': testID || 'PWView' },
                 children,
             ),
-        PWFooter: ({ children, testID, style, ...props }: any) =>
-            React.createElement(
-                'div',
-                { ...props, style, 'data-testid': testID || 'PWFooter' },
-                children,
-            ),
         PWWebView: createMockComponent('PWWebView'),
         PWDropdown: ({ children, testID }: any) =>
             React.createElement(

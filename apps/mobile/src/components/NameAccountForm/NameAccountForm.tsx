@@ -13,13 +13,13 @@
 import { type ReactNode } from 'react'
 import {
     PWButton,
-    PWFooter,
     PWInput,
     PWLoadingOverlay,
     PWText,
     PWTouchableIcon,
     PWView,
 } from '@components/core'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { KeyboardAvoidingView, Platform } from 'react-native'
 import { useStyles } from './styles'
 
@@ -95,7 +95,7 @@ export const NameAccountForm = ({
                 />
             </PWView>
 
-            <PWFooter style={styles.footer}>
+            <SafeAreaView edges={['bottom']} style={styles.footer}>
                 <PWButton
                     variant='primary'
                     title={finishButtonTitle}
@@ -104,7 +104,7 @@ export const NameAccountForm = ({
                     isDisabled={isDisabled ?? isLoading}
                     testID='name_account_finish_button'
                 />
-            </PWFooter>
+            </SafeAreaView>
 
             <PWLoadingOverlay
                 isVisible={isLoading}

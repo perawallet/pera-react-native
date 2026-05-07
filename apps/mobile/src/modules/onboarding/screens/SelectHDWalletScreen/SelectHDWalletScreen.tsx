@@ -19,7 +19,6 @@ import {
     PWTouchableOpacity,
     PWButton,
     PWLoadingOverlay,
-    PWFooter,
 } from '@components/core'
 import { type HDWalletGroup } from '@perawallet/wallet-core-accounts'
 import { ALGO_ASSET, ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
@@ -28,6 +27,7 @@ import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 import { Decimal } from 'decimal.js'
 import { useStyles } from './styles'
 import { useSelectHDWalletScreen } from './useSelectHDWalletScreen'
+import { SafeAreaView } from 'react-native-safe-area-context'
 
 export const SelectHDWalletScreen = () => {
     const styles = useStyles()
@@ -129,7 +129,7 @@ export const SelectHDWalletScreen = () => {
                         contentContainerStyle={styles.listContent}
                     />
                 </PWView>
-                <PWFooter style={styles.footer}>
+                <SafeAreaView edges={['bottom']} style={styles.footer}>
                     <PWButton
                         title={t(
                             'onboarding.select_hd_wallet.create_new_wallet',
@@ -140,7 +140,7 @@ export const SelectHDWalletScreen = () => {
                         icon='plus'
                         testID='select_hd_wallet_create_new'
                     />
-                </PWFooter>
+                </SafeAreaView>
             </PWView>
 
             <PWLoadingOverlay
