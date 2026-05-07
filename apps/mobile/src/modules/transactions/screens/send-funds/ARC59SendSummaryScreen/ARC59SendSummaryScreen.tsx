@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWButton, PWText, PWView } from '@components/core'
+import { PWButton, PWText, PWView, PWFooter } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { ARC59WarningBottomSheet } from '@modules/transactions/components/send-funds/ARC59WarningBottomSheet'
 import { useStyles } from './styles'
@@ -110,7 +110,7 @@ export const ARC59SendSummaryScreen = () => {
                 </PWView>
             </PWView>
 
-            <PWView style={styles.footer}>
+            <PWFooter style={styles.footer}>
                 <PWButton
                     title={t('send_funds.arc59_summary.send_button')}
                     variant='primary'
@@ -122,7 +122,7 @@ export const ARC59SendSummaryScreen = () => {
                     variant='secondary'
                     onPress={handleClose}
                 />
-            </PWView>
+            </PWFooter>
 
             <ARC59WarningBottomSheet
                 isVisible={isWarningVisible}

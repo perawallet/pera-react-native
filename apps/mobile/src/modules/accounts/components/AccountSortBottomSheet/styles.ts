@@ -38,4 +38,7 @@ export const useStyles = makeStyles(theme => ({
     dragHandle: {
         paddingLeft: theme.spacing.md,
     },
+    listContent: {
+        paddingBottom: theme.spacing.xl,
+    },
 }))

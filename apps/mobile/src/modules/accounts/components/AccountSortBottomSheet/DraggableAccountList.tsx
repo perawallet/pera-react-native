@@ -76,6 +76,7 @@ export const DraggableAccountList = ({
             keyExtractor={keyExtractor}
             onDragEnd={handleDragEnd}
             activationDistance={10}
+            contentContainerStyle={styles.listContent}
         />
     )
 }

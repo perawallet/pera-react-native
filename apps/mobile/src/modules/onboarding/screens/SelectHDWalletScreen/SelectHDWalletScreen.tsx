@@ -19,6 +19,7 @@ import {
     PWTouchableOpacity,
     PWButton,
     PWLoadingOverlay,
+    PWFooter,
 } from '@components/core'
 import { type HDWalletGroup } from '@perawallet/wallet-core-accounts'
 import { ALGO_ASSET, ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
@@ -128,7 +129,7 @@ export const SelectHDWalletScreen = () => {
                         contentContainerStyle={styles.listContent}
                     />
                 </PWView>
-                <PWView style={styles.footer}>
+                <PWFooter style={styles.footer}>
                     <PWButton
                         title={t(
                             'onboarding.select_hd_wallet.create_new_wallet',
@@ -139,7 +140,7 @@ export const SelectHDWalletScreen = () => {
                         icon='plus'
                         testID='select_hd_wallet_create_new'
                     />
-                </PWView>
+                </PWFooter>
             </PWView>
 
             <PWLoadingOverlay

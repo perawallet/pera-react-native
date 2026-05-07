@@ -13,6 +13,7 @@
 import { type ReactNode } from 'react'
 import {
     PWButton,
+    PWFooter,
     PWInput,
     PWLoadingOverlay,
     PWText,
@@ -94,15 +95,16 @@ export const NameAccountForm = ({
                 />
             </PWView>
 
-            <PWButton
-                variant='primary'
-                title={finishButtonTitle}
-                onPress={onFinish}
-                isLoading={isLoading}
-                isDisabled={isDisabled ?? isLoading}
-                style={styles.finishButton}
-                testID='name_account_finish_button'
-            />
+            <PWFooter style={styles.footer}>
+                <PWButton
+                    variant='primary'
+                    title={finishButtonTitle}
+                    onPress={onFinish}
+                    isLoading={isLoading}
+                    isDisabled={isDisabled ?? isLoading}
+                    testID='name_account_finish_button'
+                />
+            </PWFooter>
 
             <PWLoadingOverlay
                 isVisible={isLoading}
