@@ -22,5 +22,5 @@ export const AUTO_LOCK_TIMEOUT_MS = 2 * 60 * 1000
 export const PIN_RECORD_KEY_ID = 'pera.pinCode'
 export const BIOMETRIC_BLOB_KEY_ID = 'pera.biometricPinCode'
 
-export const PIN_RECORD_KEYSTORE_TYPE = 'pera.pin-record' as const
-export const BIOMETRIC_BLOB_KEYSTORE_TYPE = 'pera.biometric-blob' as const
+export const PIN_RECORD_KEYSTORE_TYPE = 'pera.pin-record'
+export const BIOMETRIC_BLOB_KEYSTORE_TYPE = 'pera.biometric-blob'
