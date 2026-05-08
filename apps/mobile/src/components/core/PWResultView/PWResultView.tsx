@@ -11,6 +11,7 @@
  */
 
 import { ReactNode } from 'react'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { PWButton } from '@components/core/PWButton'
 import { PWIcon, IconName } from '@components/core/PWIcon'
 import { PWText } from '@components/core/PWText'
@@ -88,7 +89,10 @@ export const PWResultView = ({
                 {children}
             </PWView>
             {(linkAction || primaryAction || secondaryAction) && (
-                <PWView style={styles.footer}>
+                <SafeAreaView
+                    edges={['bottom']}
+                    style={styles.footer}
+                >
                     {linkAction && (
                         <PWButton
                             variant='link'
@@ -120,7 +124,7 @@ export const PWResultView = ({
                             testID={`${testID}-secondary`}
                         />
                     )}
-                </PWView>
+                </SafeAreaView>
             )}
         </PWView>
     )

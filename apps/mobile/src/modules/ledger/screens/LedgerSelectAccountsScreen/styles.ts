@@ -88,6 +88,5 @@ export const useStyles = makeStyles(theme => ({
         borderTopWidth: theme.borders.sm,
         borderTopColor: theme.colors.layerGrayLighter,
         backgroundColor: theme.colors.background,
-        paddingBottom: theme.spacing['3xl'],
     },
 }))

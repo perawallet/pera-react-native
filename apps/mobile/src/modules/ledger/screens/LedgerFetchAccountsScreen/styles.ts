@@ -33,7 +33,4 @@ export const useStyles = makeStyles(theme => ({
         textAlign: 'center',
         marginBottom: theme.spacing.md,
     },
-    statusContainer: {
-        marginTop: theme.spacing.lg,
-    },
 }))

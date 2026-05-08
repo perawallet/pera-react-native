@@ -11,6 +11,7 @@
  */
 
 import React from 'react'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import {
     PWView,
     PWText,
@@ -160,7 +161,10 @@ export const LedgerSelectAccountsScreen = () => {
                 />
             </PWView>
 
-            <PWView style={styles.footer}>
+            <SafeAreaView
+                edges={['bottom']}
+                style={styles.footer}
+            >
                 <PWButton
                     testID='ledger_select_accounts_continue_button'
                     title={t('ledger.select_accounts.continue')}
@@ -168,7 +172,7 @@ export const LedgerSelectAccountsScreen = () => {
                     variant='primary'
                     isDisabled={!canContinue}
                 />
-            </PWView>
+            </SafeAreaView>
         </PWView>
     )
 }

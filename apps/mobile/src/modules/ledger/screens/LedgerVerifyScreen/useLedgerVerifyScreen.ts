@@ -30,7 +30,10 @@ import type { AppError, Nullable } from '@perawallet/wallet-core-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
-import { useExitAccountFlow } from '@modules/onboarding/hooks'
+import {
+    useExitAccountFlow,
+    useShouldPlayConfetti,
+} from '@modules/onboarding/hooks'
 import {
     getLedgerErrorPreset,
     type LedgerErrorPreset,
@@ -65,6 +68,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
     const { setAccounts } = useSetAccounts()
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
     const { exitAccountFlow } = useExitAccountFlow()
+    const { setShouldPlayConfetti } = useShouldPlayConfetti()
     const navigation = useAppNavigation()
 
     const [verificationState, setVerificationState] =
@@ -123,6 +127,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
             const currentAccounts = useAccountsStore.getState().accounts
             setAccounts([...currentAccounts, ...hwAccounts])
             setSelectedAccountAddress(hwAccounts[0].address)
+            setShouldPlayConfetti(true)
             exitAccountFlow()
         } catch (err) {
             const verifyError = classifyLedgerError(err)
@@ -140,6 +145,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         selectedAccounts,
         setAccounts,
         setSelectedAccountAddress,
+        setShouldPlayConfetti,
         exitAccountFlow,
     ])
 

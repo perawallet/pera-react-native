@@ -40,20 +40,4 @@ export const useStyles = makeStyles(theme => ({
     deviceName: {
         color: theme.colors.textMain,
     },
-    modelName: {
-        color: theme.colors.textGray,
-        marginTop: theme.spacing.xs,
-    },
-    transportBadge: {
-        marginRight: theme.spacing.xs,
-        paddingHorizontal: theme.spacing.xs,
-        paddingVertical: theme.spacing.xxs,
-        borderRadius: theme.borderRadius.sm,
-        backgroundColor: theme.colors.layerGrayLighter,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    transportBadgeText: {
-        color: theme.colors.textGray,
-    },
 }))

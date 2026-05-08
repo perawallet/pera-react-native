@@ -21,16 +21,6 @@ type LedgerDeviceItemProps = {
     onPress: (device: HardwareWalletDevice) => void
 }
 
-const MODEL_DISPLAY_NAMES: Record<string, string> = {
-    nanoX: 'Nano X',
-    stax: 'Stax',
-    flex: 'Flex',
-    nanoGen5: 'Nano Gen5',
-}
-
-const getModelDisplayName = (model: string): string =>
-    MODEL_DISPLAY_NAMES[model] ?? 'Ledger'
-
 export const LedgerDeviceItem = ({
     device,
     onPress,
@@ -56,24 +46,6 @@ export const LedgerDeviceItem = ({
                     style={styles.deviceName}
                 >
                     {device.name}
-                </PWText>
-                <PWText
-                    variant='caption'
-                    style={styles.modelName}
-                >
-                    {getModelDisplayName(device.model)}
-                </PWText>
-            </PWView>
-
-            <PWView
-                style={styles.transportBadge}
-                testID={`ledger_device_item_${device.id}_transport_${device.transportType}`}
-            >
-                <PWText
-                    variant='caption'
-                    style={styles.transportBadgeText}
-                >
-                    {device.transportType === 'usb' ? 'USB' : 'BLE'}
                 </PWText>
             </PWView>
 

@@ -14,7 +14,6 @@ import React from 'react'
 import { ActivityIndicator } from 'react-native'
 import { PWView, PWText, PWResultView } from '@components/core'
 
-import { LedgerStatusIndicator } from '../../components/LedgerStatusIndicator'
 import { useStyles } from './styles'
 import { useLedgerFetchAccountsScreen } from './useLedgerFetchAccountsScreen'
 
@@ -75,14 +74,10 @@ export const LedgerFetchAccountsScreen = () => {
                                 style={styles.progressText}
                             >
                                 {t('ledger.fetch_accounts.progress', {
-                                    count: progress.current,
+                                    current: progress.current,
                                 })}
                             </PWText>
                         )}
-
-                        <PWView style={styles.statusContainer}>
-                            <LedgerStatusIndicator status={connectionStatus} />
-                        </PWView>
                     </>
                 )}
             </PWView>
