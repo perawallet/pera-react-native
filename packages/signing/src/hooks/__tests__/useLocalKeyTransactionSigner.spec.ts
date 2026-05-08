@@ -26,6 +26,11 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
         withAlgo25Session: (...args: unknown[]) =>
             mockWithAlgo25Session(...args),
     }),
+    KeyType: {
+        HDWalletRootKey: 'hdwallet-root-key',
+        DeterministicP256Key: 'deterministic-p256-key',
+        Algo25Key: 'algo25-key',
+    },
 }))
 
 const mockIsHDWalletAccount = vi.fn()
