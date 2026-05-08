@@ -93,6 +93,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
         if (hasSearched.current) return
         hasSearched.current = true
 
+
         try {
             // Import mode: in-memory rootKey only, nothing persisted yet.
             // Always navigate to selection screen so the user picks the
@@ -135,52 +136,10 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                 })
 
                 if (!discoveredAccounts) return
-
-                if (discoveredAccounts.length === 1) {
-                    if (createIfEmpty) {
-                        const walletAccounts = allAccounts
-                            .filter(isHDWalletAccount)
-                            .filter(a => a.keyPairId === account.keyPairId)
-                        const nextKeyIndex =
-                            walletAccounts.length > 0
-                                ? Math.max(
-                                      ...walletAccounts.map(
-                                          a => a.hdWalletDetails.keyIndex,
-                                      ),
-                                  ) + 1
-                                : 0
-
-                        const newAccount = await createHdWalletAccount({
-                            walletId: account.keyPairId,
-                            account: 0,
-                            keyIndex: nextKeyIndex,
-                        })
-
-                        navigation.replace('NameAccount', {
-                            account: newAccount,
-                        })
-                    } else {
-                        setSelectedAccountAddress(account.address)
-
-                        const rekeyedAccounts = await discoverRekeyedAccounts({
-                            walletKeyId,
-                            derivationType,
-                            accountAddresses: [account.address],
-                        })
-
-                        if (rekeyedAccounts && rekeyedAccounts.length > 0) {
-                            navigation.replace('ImportRekeyedAddresses', {
-                                accounts: rekeyedAccounts,
-                            })
-                        } else {
-                            exitAccountFlow()
-                        }
-                    }
-                } else {
-                    navigation.replace('ImportSelectAddresses', {
-                        accounts: discoveredAccounts,
-                    })
-                }
+                
+                navigation.replace('ImportSelectAddresses', {
+                    accounts: discoveredAccounts,
+                })
             } else if (account.type === AccountTypes.algo25) {
                 const discoveredRekeyedAccounts = await discoverRekeyedAccounts(
                     {
