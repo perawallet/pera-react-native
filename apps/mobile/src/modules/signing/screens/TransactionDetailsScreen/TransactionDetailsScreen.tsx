@@ -30,6 +30,7 @@ import { GroupTransactionsPanel } from '@modules/transactions/components/transac
 import type { SigningStackParamList } from '@modules/signing/routes'
 import { useStyles } from './styles'
 import { PWScrollView } from '@components/core'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 type NavigationProp = StackNavigationProp<
     SigningStackParamList,
@@ -42,7 +43,8 @@ type TransactionDetailsRouteProp = RouteProp<
 >
 
 export const TransactionDetailsScreen = () => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles(insets)
     const navigation = useNavigation<NavigationProp>()
     const { t } = useLanguage()
     const route = useRoute<TransactionDetailsRouteProp>()

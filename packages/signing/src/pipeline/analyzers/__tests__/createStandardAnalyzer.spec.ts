@@ -12,11 +12,6 @@
 
 import { describe, test, expect, vi } from 'vitest'
 
-// `groupTransactions` is overridden per-test via `mockGroupTransactionsImpl`;
-// `Transaction` becomes a passthrough so we can construct test fixtures
-// with plain objects rather than building real algokit Transaction instances.
-let mockGroupTransactionsImpl: (txs: unknown[]) => unknown[] = txs => txs
-
 vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
     const original =
         await importOriginal<
@@ -29,20 +24,11 @@ vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
             `ENCODED_${Array.from(bytes).join('-')}`,
         encodeTransactionRaw: (tx: { _encoded?: Uint8Array }) =>
             tx._encoded ?? new Uint8Array(),
-        // Lightweight Transaction stand-in: just copy the params.
-        Transaction: function (params: Record<string, unknown>) {
-            return { ...params }
-        } as unknown as typeof original.Transaction,
-        groupTransactions: (txs: unknown[]) => mockGroupTransactionsImpl(txs),
     }
 })
 
 import { createStandardAnalyzer } from '../createStandardAnalyzer'
-import {
-    AnalysisError,
-    InvalidSignableDataError,
-    TransactionRoundTripError,
-} from '../../errors'
+import { AnalysisError, TransactionRoundTripError } from '../../errors'
 import type { AnalysisContext, SignableGroup } from '../../types'
 
 const ACCOUNT_A = 'ACCOUNT_A'
@@ -322,96 +308,5 @@ describe('createStandardAnalyzer', () => {
         await expect(
             analyzer.analyze(group, makeContext([ACCOUNT_A])),
         ).resolves.toBeDefined()
-    })
-
-    describe('transaction group integrity', () => {
-        const GROUP_ID_A = new Uint8Array([0xaa, 0xbb, 0xcc])
-        const GROUP_ID_B = new Uint8Array([0xdd, 0xee, 0xff])
-
-        // Default behaviour: pretend `groupTransactions` recomputes GROUP_ID_A
-        // for any input. Override per-test for mismatch / throw cases.
-        const setGroupTransactionsResult = (group: Uint8Array | undefined) => {
-            mockGroupTransactionsImpl = txs =>
-                txs.map(tx => ({ ...(tx as object), group }))
-        }
-
-        test('passes when no transactions declare a group', async () => {
-            const analyzer = createStandardAnalyzer()
-            const group = makeGroup([
-                makeTx({ sender: ACCOUNT_A, fee: 1000n }),
-                makeTx({ sender: ACCOUNT_A, fee: 1000n }),
-            ])
-
-            await expect(
-                analyzer.analyze(group, makeContext([ACCOUNT_A])),
-            ).resolves.toBeDefined()
-        })
-
-        test('passes when all txns share a group and the recomputed ID matches', async () => {
-            setGroupTransactionsResult(GROUP_ID_A)
-            const analyzer = createStandardAnalyzer()
-            const group = makeGroup([
-                makeTx({ sender: ACCOUNT_A, fee: 1000n, group: GROUP_ID_A }),
-                makeTx({ sender: ACCOUNT_A, fee: 1000n, group: GROUP_ID_A }),
-            ])
-
-            await expect(
-                analyzer.analyze(group, makeContext([ACCOUNT_A])),
-            ).resolves.toBeDefined()
-        })
-
-        test('rejects when only some transactions declare a group', async () => {
-            setGroupTransactionsResult(GROUP_ID_A)
-            const analyzer = createStandardAnalyzer()
-            const group = makeGroup([
-                makeTx({ sender: ACCOUNT_A, fee: 1000n, group: GROUP_ID_A }),
-                makeTx({ sender: ACCOUNT_A, fee: 1000n }),
-            ])
-
-            await expect(
-                analyzer.analyze(group, makeContext([ACCOUNT_A])),
-            ).rejects.toBeInstanceOf(InvalidSignableDataError)
-        })
-
-        test('rejects when transactions reference different group IDs', async () => {
-            setGroupTransactionsResult(GROUP_ID_A)
-            const analyzer = createStandardAnalyzer()
-            const group = makeGroup([
-                makeTx({ sender: ACCOUNT_A, fee: 1000n, group: GROUP_ID_A }),
-                makeTx({ sender: ACCOUNT_A, fee: 1000n, group: GROUP_ID_B }),
-            ])
-
-            await expect(
-                analyzer.analyze(group, makeContext([ACCOUNT_A])),
-            ).rejects.toBeInstanceOf(InvalidSignableDataError)
-        })
-
-        test('rejects when recomputed group ID does not match the claimed ID', async () => {
-            // Recompute returns GROUP_ID_B; txns claim GROUP_ID_A — mismatch.
-            setGroupTransactionsResult(GROUP_ID_B)
-            const analyzer = createStandardAnalyzer()
-            const group = makeGroup([
-                makeTx({ sender: ACCOUNT_A, fee: 1000n, group: GROUP_ID_A }),
-                makeTx({ sender: ACCOUNT_A, fee: 1000n, group: GROUP_ID_A }),
-            ])
-
-            await expect(
-                analyzer.analyze(group, makeContext([ACCOUNT_A])),
-            ).rejects.toBeInstanceOf(InvalidSignableDataError)
-        })
-
-        test('wraps groupTransactions failure as InvalidSignableDataError', async () => {
-            mockGroupTransactionsImpl = () => {
-                throw new Error('group size exceeds the max limit of 16')
-            }
-            const analyzer = createStandardAnalyzer()
-            const group = makeGroup([
-                makeTx({ sender: ACCOUNT_A, fee: 1000n, group: GROUP_ID_A }),
-            ])
-
-            await expect(
-                analyzer.analyze(group, makeContext([ACCOUNT_A])),
-            ).rejects.toBeInstanceOf(InvalidSignableDataError)
-        })
     })
 })

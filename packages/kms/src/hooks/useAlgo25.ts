@@ -21,10 +21,11 @@ import {
 } from '@algorandfoundation/algokit-utils/algo25'
 import { encodeAddress } from '@algorandfoundation/algokit-utils'
 import { useKMSService } from './useKMSServices'
-import { makeKeyPair, peraMetadataFor } from '../utils'
+import { makeKeyPair, peraMetadataFor, PeraKeyKind } from '../utils'
 import { zeroBytes } from '../crypto/secure-memory'
 import { ALGO25_KEYSTORE_TYPE } from '../constants'
 import type { KeyData, KeyId } from '@algorandfoundation/keystore'
+import { commitTypedSecret } from '../storage/typedSecret'
 
 // Algo25 sign is local: we export the seed and run tweetnacl in-process. The
 // platform keystore's default `sign` handler is HD-only (it requires a
@@ -46,7 +47,9 @@ export const useAlgo25 = () => {
     }): Promise<Algo25KeyResult> => {
         const keyId = params?.id ?? generateOrderedUniqueId()
 
-        let seed: Uint8Array
+        let seed: Uint8Array | undefined
+        let naclKeyPair: nacl.SignKeyPair | undefined
+        let committedRoot = false
 
         try {
             if (params?.mnemonic) {
@@ -54,26 +57,34 @@ export const useAlgo25 = () => {
             } else {
                 seed = nacl.randomBytes(32)
             }
-        } catch (e) {
-            logger.error('createAlgo25Key failed', { error: e })
-            throw e
-        }
 
-        // Compute keypair so we can store the public key alongside the seed.
-        const naclKeyPair = nacl.sign.keyPair.fromSeed(seed)
-        const publicKey = encodeAddress(naclKeyPair.publicKey)
+            naclKeyPair = nacl.sign.keyPair.fromSeed(seed)
+            const publicKey = encodeAddress(naclKeyPair.publicKey)
 
-        // Must await: `addKeyToKeystore` reads the `seed` buffer inside
-        // `commit({ privateKey: new Uint8Array(seed) })` *after* its dynamic
-        // imports resolve. Without await, `zeroBytes(seed, …)` below runs
-        // first and the keystore persists 32 zero bytes — every subsequent
-        // session derives the wrong (zero-seed) keypair.
-        await addKeyToKeystore(keyId, seed, naclKeyPair)
+            // Must await: `commitTypedSecret` reads the `seed` buffer inside
+            // `commit({ privateKey: new Uint8Array(seed) })` *after* its
+            // dynamic imports resolve. Without await, the `finally` zeros
+            // the bytes first and the keystore persists 32 zero bytes —
+            // every subsequent session would derive the wrong (zero-seed)
+            // keypair.
+            await commitTypedSecret({
+                id: keyId,
+                type: ALGO25_KEYSTORE_TYPE,
+                bytes: seed,
+                algorithm: 'EdDSA',
+                keyUsages: ['sign'],
+                publicKey: naclKeyPair.publicKey,
+                // Stamp the kind so wallet-domain consumers can identify
+                // this entry as an Algo25 root even when the keystore
+                // persists it with a less-specific `type` field.
+                metadata: peraMetadataFor({
+                    createdAt: new Date(),
+                    kind: PeraKeyKind.Algo25Root,
+                }),
+            })
+            committedRoot = true
 
-        // Import raw seed as a separate keystore key for mnemonic recovery
-        let seedKeyId: KeyId
-        try {
-            seedKeyId = await keyStore.import(
+            const seedKeyId = await keyStore.import(
                 {
                     id: `${keyId}-seed`,
                     type: 'hd-seed',
@@ -83,59 +94,32 @@ export const useAlgo25 = () => {
                 } as unknown as Omit<KeyData, 'id'>,
                 'raw',
             )
-        } catch (e) {
-            await keyStore.remove(keyId)
-            throw e
-        }
 
-        zeroBytes(seed, naclKeyPair.secretKey)
-
-        const keyPair = makeKeyPair({
-            id: keyId,
-            keystoreKeyId: keyId,
-            publicKey,
-            type: KeyType.Algo25Key,
-        })
-
-        return { keyPair, seedKeyId }
-    }
-
-    // First-class Algo25 type: store via `commit()` directly because the
-    // default `keyStore.import` rejects unknown types in its switch
-    // statement. Signing is local (see withAlgo25Session below) — we never
-    // route Algo25 through `keyStore.sign`, which is HD-only.
-    // The privateKey is the 32-byte seed; nacl.sign.keyPair.fromSeed
-    // reproduces the keypair on demand.
-    // Lazy imports keep the kms package importable in test environments
-    // that don't have react-native-mmkv (which
-    // @algorandfoundation/react-native-keystore pulls in transitively).
-    const addKeyToKeystore = async (
-        keyId: string,
-        seed: Uint8Array,
-        naclKeyPair: nacl.SignKeyPair,
-    ) => {
-        try {
-            const [{ commit }, { getKeystoreStore }] = await Promise.all([
-                import('@algorandfoundation/react-native-keystore'),
-                import('@perawallet/wallet-extension-provider'),
-            ])
-            await commit({
-                store: getKeystoreStore(),
-                keyData: {
-                    id: keyId,
-                    type: ALGO25_KEYSTORE_TYPE,
-                    algorithm: 'EdDSA',
-                    format: 'raw',
-                    extractable: true,
-                    keyUsages: ['sign'],
-                    publicKey: naclKeyPair.publicKey,
-                    privateKey: new Uint8Array(seed),
-                    metadata: peraMetadataFor({ createdAt: new Date() }),
-                } as unknown as KeyData,
+            const keyPair = makeKeyPair({
+                id: keyId,
+                keystoreKeyId: keyId,
+                publicKey,
+                type: KeyType.Algo25Key,
             })
+
+            return { keyPair, seedKeyId }
         } catch (e) {
-            zeroBytes(seed, naclKeyPair.secretKey)
+            // Roll back the algo25 root if we committed it but a later step
+            // failed — leaving the root orphaned without its seed-key would
+            // produce an account that can sign but can't recover its
+            // mnemonic. Best-effort: if the rollback itself throws (e.g. a
+            // keystore race), the original error wins.
+            if (committedRoot) {
+                try {
+                    await keyStore.remove(keyId)
+                } catch {
+                    /* swallow */
+                }
+            }
+            logger.error('createAlgo25Key failed', { error: e })
             throw e
+        } finally {
+            zeroBytes(seed, naclKeyPair?.secretKey)
         }
     }
 

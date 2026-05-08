@@ -20,6 +20,7 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
+import { EmptyView } from '@components/EmptyView'
 import { LoadingView } from '@components/LoadingView'
 import { useNavigation } from '@react-navigation/native'
 import { useLanguage } from '@hooks/useLanguage'
@@ -146,7 +147,16 @@ export const StakingScreen = () => {
                     </PWView>
                 )}
 
-                {!isLoading && !isError && (
+                {!isLoading && !isError && projects.length === 0 && (
+                    <EmptyView
+                        title={t('staking.empty_title')}
+                        body={t('staking.empty_body')}
+                        style={styles.emptyContainer}
+                        testID='staking-empty-view'
+                    />
+                )}
+
+                {!isLoading && !isError && projects.length > 0 && (
                     <PWFlatList
                         data={projects}
                         renderItem={renderProject}

@@ -177,9 +177,16 @@ const createFetchClient = (clients: Map<string, BackendInstances>) => {
                     data = (await response.arrayBuffer()) as unknown as TData
                     break
                 case 'json':
-                default:
-                    data = await response.json<TData>()
+                default: {
+                    // ky's response.json() pipes through JSON.parse()
+                    // unconditionally, which throws "SyntaxError: Unexpected
+                    // end of input" on 204 No Content and 200-with-empty-body
+                    // responses. Read as text and only parse when there's
+                    // real content — trim covers whitespace-only bodies too.
+                    const text = await response.text()
+                    data = (text.trim() ? JSON.parse(text) : undefined) as TData
                     break
+                }
             }
 
             return {

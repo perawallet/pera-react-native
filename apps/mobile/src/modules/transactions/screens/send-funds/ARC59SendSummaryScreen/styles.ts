@@ -70,7 +70,6 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.md,
     },
     footer: {
-        paddingBottom: theme.spacing.xl,
         gap: theme.spacing.md,
         backgroundColor: theme.colors.background,
     },

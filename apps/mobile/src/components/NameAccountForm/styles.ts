@@ -37,8 +37,8 @@ export const useStyles = makeStyles(theme => ({
     clearButton: {
         paddingRight: theme.spacing.sm,
     },
-    finishButton: {
-        marginHorizontal: theme.spacing.xl,
-        marginBottom: theme.spacing.lg,
+    footer: {
+        paddingHorizontal: theme.spacing.xl,
+        paddingTop: theme.spacing.md,
     },
 }))

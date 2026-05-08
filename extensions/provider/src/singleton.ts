@@ -13,8 +13,15 @@
 import { Store } from '@tanstack/store'
 import Hook from 'before-after-hook'
 import type { HookCollection } from 'before-after-hook'
-import type { KeyStoreState } from '@algorandfoundation/keystore'
-import { clear as clearKeystoreStore } from '@algorandfoundation/react-native-keystore'
+import type { Key, KeyData, KeyStoreState } from '@algorandfoundation/keystore'
+import { initializeKeyStore } from '@algorandfoundation/keystore'
+import {
+    clear as clearKeystoreStore,
+    decode,
+    decryptData,
+    getMasterKey,
+    storage as keystoreStorage,
+} from '@algorandfoundation/react-native-keystore'
 import { PeraProvider } from './pera-provider'
 
 const keystoreStore = new Store<KeyStoreState>({
@@ -84,6 +91,66 @@ export const initializeProvider = (provider: PeraProvider): void => {
  */
 export const clearKeystore = async (): Promise<void> => {
     await clearKeystoreStore({ store: keystoreStore })
+}
+
+/**
+ * Reads every entry out of the keystore's MMKV namespace, decrypts metadata,
+ * and seeds the reactive store with the result. Must be called once during
+ * app bootstrap — the underlying `react-native-keystore` package only mutates
+ * `state.keys` on `commit` / `removeKey`, so without this step persisted
+ * entries from previous sessions are invisible to the synchronous lookups
+ * (`hasTypedSecret`, `useKMS.getKey`, etc.) until a session-local mutation
+ * happens to add them.
+ *
+ * The reactive store holds metadata only — `privateKey` and `seed` bytes are
+ * decrypted briefly to read the rest of the record, then zeroed before any
+ * Key is pushed into `state.keys`. The master key copy is fetched once and
+ * zeroed in `finally`.
+ *
+ * Idempotent: skips if the reactive store is already populated. Safe to call
+ * even if the keystore is empty (no master key generated yet) — entries that
+ * fail to decrypt are logged and skipped rather than aborting hydration.
+ */
+export const hydrateKeystore = async (): Promise<void> => {
+    if (keystoreStore.state.keys.length > 0) return
+
+    const ids = keystoreStorage.getAllKeys()
+    if (ids.length === 0) return
+
+    let masterKey: Buffer | null = null
+    try {
+        masterKey = await getMasterKey()
+        const keys: Key[] = []
+
+        for (const id of ids) {
+            const encrypted = keystoreStorage.getString(id)
+            if (!encrypted) continue
+
+            try {
+                const decrypted = decryptData(masterKey, encrypted)
+                const data = decode(decrypted) as KeyData & {
+                    seed?: Uint8Array
+                }
+                if (data.privateKey instanceof Uint8Array) {
+                    data.privateKey.fill(0)
+                }
+                if (data.seed instanceof Uint8Array) {
+                    data.seed.fill(0)
+                }
+                const { privateKey: _pk, seed: _seed, ...meta } = data
+                keys.push(meta as Key)
+            } catch (err) {
+                console.error(
+                    `[provider] keystore hydration: failed to decode entry ${id}`,
+                    err,
+                )
+            }
+        }
+
+        initializeKeyStore({ store: keystoreStore, keys })
+    } finally {
+        if (masterKey) masterKey.fill(0)
+    }
 }
 
 /**

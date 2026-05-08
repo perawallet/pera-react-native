@@ -13,13 +13,21 @@
 import type { StakingProjectInfo } from '../models'
 import { stakingProjectsConfigSchema } from '../models/schema'
 
+/**
+ * Parse Firebase Remote Config key `staking_projects` (a JSON array of
+ * StakingProjectInfo objects).
+ *
+ * Returns an empty array when the value is absent — Firebase hasn't fetched
+ * yet, the key isn't set in the active environment, etc. — so callers render
+ * an empty state instead of crashing the screen. Throws on actual JSON parse
+ * or schema validation errors; the hook layer catches and surfaces those via
+ * its error state.
+ */
 export const parseStakingProjectsConfig = (
     raw: string,
 ): StakingProjectInfo[] => {
-    // Expected source: Firebase Remote Config key `staking_projects`.
-    // Expected value: JSON array of StakingProjectInfo objects.
     if (!raw || !raw.trim()) {
-        throw new Error('Missing staking projects remote config value')
+        return []
     }
 
     let parsedValue: unknown

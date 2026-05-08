@@ -1,0 +1,99 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { renderHook, act } from '@testing-library/react'
+
+const registerStoreMock = vi.hoisted(() => vi.fn())
+
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const original =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    return {
+        ...original,
+        registerStore: registerStoreMock,
+    }
+})
+
+vi.mock('@perawallet/wallet-core-config', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-config')>()
+    return {
+        ...actual,
+        config: { ...actual.config, defaultNetwork: 'mainnet' as const },
+    }
+})
+
+describe('services/blockchain/network-store', () => {
+    beforeEach(() => {
+        vi.resetModules()
+        registerStoreMock.mockClear()
+    })
+
+    test('initializes with config.defaultNetwork on first launch', async () => {
+        const { useNetworkStore } = await import('../network-store')
+
+        const { result } = renderHook(() => useNetworkStore())
+
+        expect(result.current.network).toBe('mainnet')
+    })
+
+    test('setNetwork updates the network', async () => {
+        const { useNetworkStore } = await import('../network-store')
+
+        const { result } = renderHook(() => useNetworkStore())
+
+        act(() => {
+            result.current.setNetwork('testnet')
+        })
+
+        expect(result.current.network).toBe('testnet')
+    })
+
+    test('resetState restores the default network', async () => {
+        const { useNetworkStore } = await import('../network-store')
+
+        const { result } = renderHook(() => useNetworkStore())
+
+        act(() => {
+            result.current.setNetwork('testnet')
+        })
+        expect(result.current.network).toBe('testnet')
+
+        act(() => {
+            result.current.resetState()
+        })
+        expect(result.current.network).toBe('mainnet')
+    })
+
+    test('registers clearStorage and resetState with the store registry', async () => {
+        const { useNetworkStore } = await import('../network-store')
+
+        const registration = registerStoreMock.mock.calls.at(-1)?.[0]
+        expect(registration?.name).toBe('network-store')
+
+        // resetState wired through the registration restores the default.
+        act(() => {
+            useNetworkStore.getState().setNetwork('testnet')
+        })
+        expect(useNetworkStore.getState().network).toBe('testnet')
+
+        act(() => registration.resetState())
+        expect(useNetworkStore.getState().network).toBe('mainnet')
+
+        // clearStorage routes through persist.clearStorage — for "delete all
+        // data" / sign-out flows. Just asserting it doesn't throw matches the
+        // pattern in the currencies and settings stores; the underlying
+        // persist storage is exercised by the resetState path above.
+        expect(() => registration.clearStorage()).not.toThrow()
+    })
+})

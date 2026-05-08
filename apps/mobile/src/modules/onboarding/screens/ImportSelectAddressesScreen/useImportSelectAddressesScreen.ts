@@ -118,19 +118,26 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
 
             try {
                 if (isImportMode && importWalletKeyId) {
-                    if (accountsToAdd.length === 0) {
-                        setIsProcessing(false)
-                        return
+                    if (accountsToAdd.length > 0) {
+                        // Commit: persists keystore root + appends selected
+                        // accounts to the accounts store. After this returns
+                        // the import session is cleared.
+                        await commitImport({
+                            walletKeyId: importWalletKeyId,
+                            selectedAccounts: accountsToAdd,
+                        })
+                        setSelectedAccountAddress(accountsToAdd[0].address)
                     }
-                    // Commit: persists keystore root + appends selected
-                    // accounts to the accounts store. After this returns the
-                    // import session is cleared.
-                    await commitImport({
-                        walletKeyId: importWalletKeyId,
-                        selectedAccounts: accountsToAdd,
-                    })
-                    markBackupComplete(accountsToAdd[0])
-                    setSelectedAccountAddress(accountsToAdd[0].address)
+                    // Re-entering the mnemonic proves possession, so mark the
+                    // wallet's keyPairId as backed up regardless of whether
+                    // any new addresses were actually added — re-imports
+                    // (every discovered address already in the store) and
+                    // accounts created before this feature shipped both rely
+                    // on this path to clear the backup banner.
+                    const accountToMark =
+                        accountsToAdd[0] ??
+                        allAccounts.find(a => a.keyPairId === importWalletKeyId)
+                    if (accountToMark) markBackupComplete(accountToMark)
                 } else if (accountsToAdd.length > 0) {
                     setAccounts([...allAccounts, ...accountsToAdd])
                     setSelectedAccountAddress(accountsToAdd[0].address)

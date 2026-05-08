@@ -101,12 +101,6 @@ export const mockNetworks = {
 
 // Mock platform service responses
 export const mockPlatformServices = {
-    secureStorage: {
-        getItem: vi.fn().mockResolvedValue(null),
-        setItem: vi.fn().mockResolvedValue(true),
-        removeItem: vi.fn().mockResolvedValue(true),
-        authenticate: vi.fn().mockResolvedValue(true),
-    },
     keyValueStorage: {
         getItem: vi.fn().mockReturnValue(null),
         setItem: vi.fn(),

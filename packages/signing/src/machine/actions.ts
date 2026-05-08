@@ -24,6 +24,7 @@ import type {
     SourceMetadata,
 } from '../pipeline/types'
 import { CannotSignError, HardwareWalletError } from '../pipeline/errors'
+import { validateTransactionGroupIntegrity } from '../utils/validateTransactionGroupIntegrity'
 import type {
     GroupSignerTypeMap,
     ResolvedSignerType,
@@ -201,6 +202,8 @@ const buildSignableGroups = (
     const source = buildSourceMetadata(request)
 
     if (isTransactionRequest(request)) {
+        validateTransactionGroupIntegrity(request.txs)
+
         const knownAddresses = new Set(allAccounts.map(a => a.address))
         const rawBytes = request.rawTransactionsBase64
 

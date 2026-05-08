@@ -13,23 +13,21 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useSecurityStore } from '../store'
 import {
-    PIN_STORAGE_KEY,
+    PIN_RECORD_KEY_ID,
+    PIN_RECORD_KEYSTORE_TYPE,
     MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT,
     INITIAL_LOCKOUT_SECONDS,
     AUTO_LOCK_TIMEOUT_MS,
 } from '../constants'
 import {
     type PinRecord,
-    constantTimeStringEqual,
     createPinRecord,
-    decodeLegacyPin,
-    isLegacyPinData,
     parsePinRecord,
     serializePinRecord,
     verifyPinAgainstRecord,
 } from '../pinRecord'
 import { useBiometrics } from './useBiometrics'
-import { getProvider } from '@perawallet/wallet-extension-provider'
+import { useKMSService } from '@perawallet/wallet-core-kms'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UsePinCodeResult = {
@@ -60,7 +58,12 @@ const calculateLockoutSeconds = (failedAttempts: number): number => {
 
 export const usePinCode = (): UsePinCodeResult => {
     const forceRefresh = useRef(0)
-    const secureStorage = getProvider().secureStorage
+    const {
+        commitTypedSecret,
+        withTypedSecret,
+        hasTypedSecret,
+        removeTypedSecret,
+    } = useKMSService()
     const failedAttempts = useSecurityStore(state => state.failedAttempts)
     const setFailedAttemptsInStore = useSecurityStore(
         state => state.setFailedAttempts,
@@ -90,19 +93,18 @@ export const usePinCode = (): UsePinCodeResult => {
         : 0
 
     const loadRecord = useCallback(async (): Promise<PinRecord | null> => {
-        const data = await secureStorage.getItem(PIN_STORAGE_KEY)
-        if (!data) return null
-        return parsePinRecord(data)
-    }, [secureStorage])
+        return withTypedSecret(PIN_RECORD_KEY_ID, parsePinRecord)
+    }, [withTypedSecret])
 
     const writeRecord = useCallback(
         async (record: PinRecord): Promise<void> => {
-            await secureStorage.setItem(
-                PIN_STORAGE_KEY,
-                serializePinRecord(record),
-            )
+            await commitTypedSecret({
+                id: PIN_RECORD_KEY_ID,
+                type: PIN_RECORD_KEYSTORE_TYPE,
+                bytes: serializePinRecord(record),
+            })
         },
-        [secureStorage],
+        [commitTypedSecret],
     )
 
     // Hydrate in-memory lockout state from the authoritative secure record.
@@ -122,9 +124,8 @@ export const usePinCode = (): UsePinCodeResult => {
     }, [loadRecord, setFailedAttemptsInStore, setLockoutEndTimeInStore])
 
     const checkPinEnabled = useCallback(async (): Promise<boolean> => {
-        const pinData = await secureStorage.getItem(PIN_STORAGE_KEY)
-        return !!pinData
-    }, [secureStorage])
+        return hasTypedSecret(PIN_RECORD_KEY_ID)
+    }, [hasTypedSecret])
 
     const getLockoutDuration = useCallback(
         () => calculateLockoutSeconds(failedAttempts),
@@ -172,7 +173,7 @@ export const usePinCode = (): UsePinCodeResult => {
                     await setBiometricsCode(encoder.encode(pin))
                 }
             } else {
-                await secureStorage.removeItem(PIN_STORAGE_KEY)
+                await removeTypedSecret(PIN_RECORD_KEY_ID)
                 setFailedAttemptsInStore(0)
                 setLockoutEndTimeInStore(null)
                 if (await checkBiometricsEnabled()) {
@@ -182,7 +183,7 @@ export const usePinCode = (): UsePinCodeResult => {
             forceRefresh.current += 1
         },
         [
-            secureStorage,
+            removeTypedSecret,
             writeRecord,
             setFailedAttemptsInStore,
             setLockoutEndTimeInStore,
@@ -194,33 +195,11 @@ export const usePinCode = (): UsePinCodeResult => {
 
     const verifyPin = useCallback(
         async (pin: string): Promise<boolean> => {
-            const data = await secureStorage.getItem(PIN_STORAGE_KEY)
-            if (!data) return false
-
-            // Legacy plaintext record: verify in constant time, then migrate
-            // by re-storing as a hashed record on success.
-            if (isLegacyPinData(data)) {
-                const storedPin = decodeLegacyPin(data)
-                const matched = constantTimeStringEqual(pin, storedPin)
-                if (matched) {
-                    const record = await createPinRecord(pin)
-                    await writeRecord(record)
-                    setFailedAttemptsInStore(0)
-                    setLockoutEndTimeInStore(null)
-                }
-                return matched
-            }
-
-            const record = parsePinRecord(data)
+            const record = await loadRecord()
             if (!record) return false
             return verifyPinAgainstRecord(pin, record)
         },
-        [
-            secureStorage,
-            writeRecord,
-            setFailedAttemptsInStore,
-            setLockoutEndTimeInStore,
-        ],
+        [loadRecord],
     )
 
     const handleFailedAttempt = useCallback(async () => {

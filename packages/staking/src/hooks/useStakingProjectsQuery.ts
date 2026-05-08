@@ -19,6 +19,7 @@ import {
     useRemoteConfig,
 } from '@perawallet/wallet-core-remote-config'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { logger } from '@perawallet/wallet-core-shared'
 import type {
     StakingProject,
     StakingProjectInfo,
@@ -66,26 +67,48 @@ const mapProjects = (
 export const useStakingProjectsQuery = (): UseStakingProjectsQueryResult => {
     const { network } = useNetwork()
     const remoteConfigService = useRemoteConfig()
-    const query = useQuery({
-        queryKey: getStakingProjectsQueryKey(network),
-        queryFn: () => fetchStakingProjectsInfo(network),
-    })
 
     const remoteProjectsConfig = remoteConfigService.getStringValue(
         RemoteConfigKeys.staking_projects,
     )
 
-    const parsedProjects = useMemo(
-        () => parseStakingProjectsConfig(remoteProjectsConfig),
-        [remoteProjectsConfig],
-    )
+    // Parser only throws on invalid JSON / schema. Catch here so a malformed
+    // remote config payload surfaces as the hook's error state instead of
+    // crashing the entire screen via React's render boundary.
+    const parsedConfig = useMemo<{
+        projects: StakingProjectInfo[]
+        error: Nullable<Error>
+    }>(() => {
+        try {
+            return {
+                projects: parseStakingProjectsConfig(remoteProjectsConfig),
+                error: null,
+            }
+        } catch (err) {
+            const error = err instanceof Error ? err : new Error(String(err))
+            logger.warn('Failed to parse staking projects remote config', {
+                source: 'useStakingProjectsQuery',
+                error,
+            })
+            return { projects: [], error }
+        }
+    }, [remoteProjectsConfig])
+
+    // Skip the TVL request when we already know the config is broken — the
+    // result would be discarded by mapProjects anyway.
+    const query = useQuery({
+        queryKey: getStakingProjectsQueryKey(network),
+        queryFn: () => fetchStakingProjectsInfo(network),
+        enabled: !parsedConfig.error,
+    })
 
     const projects = useMemo(
-        () => mapProjects(parsedProjects, query.data),
-        [parsedProjects, query.data],
+        () => mapProjects(parsedConfig.projects, query.data),
+        [parsedConfig.projects, query.data],
     )
 
-    const error = query.error instanceof Error ? query.error : null
+    const queryError = query.error instanceof Error ? query.error : null
+    const error = parsedConfig.error ?? queryError
 
     const refetch = () => {
         void query.refetch()
@@ -93,8 +116,10 @@ export const useStakingProjectsQuery = (): UseStakingProjectsQueryResult => {
 
     return {
         data: projects,
-        isLoading: query.isPending,
-        isError: query.isError,
+        // Skip the loading state once a parser error is known synchronously —
+        // otherwise the screen would render skeletons before flipping to error.
+        isLoading: query.isPending && !parsedConfig.error,
+        isError: error !== null,
         error,
         refetch,
     }

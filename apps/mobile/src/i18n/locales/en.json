@@ -21,6 +21,12 @@
         "filter": "Filter",
         "remove_assets": "Remove Assets"
     },
+    "app": {
+        "initialization_failed": {
+            "title": "App Launch Failed",
+            "body": "There was an error initializing the app.  Please try restarting the app. If the issue persists, contact support.\n\nYour funds are safe on the Algorand blockchain."
+        }
+    },
     "asset_sort": {
         "title": "Sort",
         "done": "Done",
@@ -298,6 +304,7 @@
         "remove_watch_message": "You are about to remove this watch account. This only removes it from your wallet view — the account itself is not affected.",
         "remove_confirm": "Remove",
         "remove_cancel": "Cancel",
+        "remove_account_success_message": "Account removed successfully.",
         "notifications_muted": "Notifications muted",
         "notifications_unmuted": "Notifications unmuted",
         "backup_warning_title": "Have you backed up your account?",
@@ -1334,6 +1341,18 @@
             "pending": "Pending",
             "raw_transaction": "Raw Transaction"
         },
+        "list_item": {
+            "send": "Send",
+            "receive": "Receive",
+            "swap": "Swap",
+            "opt_in": "Opt-in",
+            "opt_out": "Opt-out",
+            "asset_config": "Asset Configuration",
+            "asset_freeze": "Asset Freeze",
+            "app_call": "App Call",
+            "key_registration": "Key Registration",
+            "default": "Transaction"
+        },
         "type": {
             "pay": "Payment Transaction",
             "keyreg": "Key Registration Transaction",
@@ -1502,6 +1521,8 @@
         "error_title": "Failed to load staking projects",
         "error_description": "Please try again in a moment.",
         "retry": "Retry",
+        "empty_title": "No staking projects available",
+        "empty_body": "There are no staking projects to show right now. Please check back later.",
         "disclaimer": {
             "title": "Terms of Service",
             "intro": "Pera Wallet gives you access to third-party staking services. When you use these services, you work directly with a provider that stakes your digital assets for transaction validation on the Algorand network.",

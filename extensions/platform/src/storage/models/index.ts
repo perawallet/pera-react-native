@@ -18,11 +18,3 @@ export interface KeyValueStorageService {
     getJSON<T>(key: string): T | null
     getAllKeys(): string[]
 }
-
-export interface SecureStorageService {
-    setItem(key: string, value: Uint8Array): Promise<void>
-    getItem(key: string): Promise<Uint8Array | null>
-    removeItem(key: string): Promise<void>
-    clearAll(): Promise<void>
-    authenticate(): Promise<boolean>
-}

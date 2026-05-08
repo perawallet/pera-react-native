@@ -45,8 +45,10 @@ vi.mock('@perawallet/wallet-core-config', () => ({
 }))
 
 // Mock ky with hooks support
-const { mockKy, mockJson } = vi.hoisted(() => {
+const { mockKy, mockJson, mockText, mockStatus } = vi.hoisted(() => {
     const mockJson = vi.fn()
+    const mockText = vi.fn()
+    const mockStatus = { value: 200 }
     const capturedHooks: any = {
         beforeRequest: [],
         afterResponse: [],
@@ -74,7 +76,8 @@ const { mockKy, mockJson } = vi.hoisted(() => {
 
         const response = {
             json: mockJson,
-            status: 200,
+            text: mockText,
+            status: mockStatus.value,
             statusText: 'OK',
         }
 
@@ -111,7 +114,7 @@ const { mockKy, mockJson } = vi.hoisted(() => {
         return mockKy
     })
 
-    return { mockKy, mockJson, capturedHooks }
+    return { mockKy, mockJson, mockText, mockStatus, capturedHooks }
 })
 
 vi.mock('ky', () => ({
@@ -122,6 +125,16 @@ describe('queryClient', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         Object.values(mockLogger).forEach(mock => mock.mockClear())
+        mockStatus.value = 200
+        // The query-client reads JSON via response.text() so it can
+        // distinguish empty-body / 204 from real JSON. Mirror json → text
+        // by default so existing tests that only stub `mockJson` still work;
+        // individual tests can mockReset+mockResolvedValue on mockText to
+        // exercise empty-body / malformed cases.
+        mockText.mockImplementation(async () => {
+            const data = await mockJson()
+            return data === undefined ? '' : JSON.stringify(data)
+        })
     })
 
     it('should make a successful request to pera backend on mainnet', async () => {
@@ -342,5 +355,68 @@ describe('queryClient', () => {
         // The mock request object should have headers set by setStandardHeaders
         // This is verified by the fact that the request completes successfully
         expect(mockKy).toHaveBeenCalled()
+    })
+
+    it('returns undefined data for 200 with an empty body (no SyntaxError)', async () => {
+        const { queryClient } = await import('../query-client')
+        mockText.mockReset()
+        mockText.mockResolvedValue('')
+
+        const response = await queryClient({
+            backend: 'pera',
+            network: 'mainnet',
+            url: '/empty-success',
+            method: 'GET',
+        })
+
+        expect(response.data).toBeUndefined()
+        expect(response.status).toBe(200)
+    })
+
+    it('returns undefined data for 204 No Content', async () => {
+        const { queryClient } = await import('../query-client')
+        mockStatus.value = 204
+        mockText.mockReset()
+        mockText.mockResolvedValue('')
+
+        const response = await queryClient({
+            backend: 'pera',
+            network: 'mainnet',
+            url: '/no-content',
+            method: 'DELETE',
+        })
+
+        expect(response.data).toBeUndefined()
+        expect(response.status).toBe(204)
+    })
+
+    it('returns undefined data for whitespace-only bodies', async () => {
+        const { queryClient } = await import('../query-client')
+        mockText.mockReset()
+        mockText.mockResolvedValue('   \n\t')
+
+        const response = await queryClient({
+            backend: 'pera',
+            network: 'mainnet',
+            url: '/whitespace-body',
+            method: 'GET',
+        })
+
+        expect(response.data).toBeUndefined()
+    })
+
+    it('still surfaces malformed JSON as a parse error', async () => {
+        const { queryClient } = await import('../query-client')
+        mockText.mockReset()
+        mockText.mockResolvedValue('{not valid json')
+
+        await expect(
+            queryClient({
+                backend: 'pera',
+                network: 'mainnet',
+                url: '/broken',
+                method: 'GET',
+            }),
+        ).rejects.toThrow(SyntaxError)
     })
 })

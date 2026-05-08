@@ -25,6 +25,12 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 
 const mockNavigate = vi.fn()
 
+vi.mock('@constants/ui', () => ({
+    EXPANDABLE_PANEL_ANIMATION_DURATION: 300,
+    SHORT_PROMPT_DISPLAY_DELAY: 300,
+    LONG_PROMPT_DISPLAY_DELAY: 600,
+}))
+
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
         t: (key: string, params?: Record<string, unknown>) => {
@@ -125,10 +131,6 @@ vi.mock('react-native-reanimated', () => ({
     },
     useAnimatedStyle: (fn: () => unknown) => fn(),
     withTiming: (value: unknown) => value,
-}))
-
-vi.mock('@constants/ui', () => ({
-    EXPANDABLE_PANEL_ANIMATION_DURATION: 300,
 }))
 
 vi.mock('../AccountIcon', () => ({

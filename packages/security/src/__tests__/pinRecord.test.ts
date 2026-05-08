@@ -14,10 +14,7 @@ import { describe, test, expect } from 'vitest'
 import {
     PIN_RECORD_VERSION,
     constantTimeEqual,
-    constantTimeStringEqual,
     createPinRecord,
-    decodeLegacyPin,
-    isLegacyPinData,
     parsePinRecord,
     serializePinRecord,
     verifyPinAgainstRecord,
@@ -82,23 +79,6 @@ describe('pinRecord', () => {
         ).toBeNull()
     })
 
-    test('isLegacyPinData detects raw-PIN byte format vs JSON envelope', () => {
-        const encoder = new TextEncoder()
-        expect(isLegacyPinData(encoder.encode('123456'))).toBe(true)
-        expect(
-            isLegacyPinData(
-                encoder.encode(
-                    `{"version":${PIN_RECORD_VERSION},"salt":"","hash":"","failedAttempts":0,"lockoutEndTime":null}`,
-                ),
-            ),
-        ).toBe(false)
-    })
-
-    test('decodeLegacyPin returns the stored PIN string', () => {
-        const encoder = new TextEncoder()
-        expect(decodeLegacyPin(encoder.encode('987654'))).toBe('987654')
-    })
-
     test('constantTimeEqual returns true only for identical byte sequences', () => {
         expect(
             constantTimeEqual(
@@ -118,11 +98,5 @@ describe('pinRecord', () => {
                 new Uint8Array([1, 2, 3]),
             ),
         ).toBe(false)
-    })
-
-    test('constantTimeStringEqual returns true only for identical strings', () => {
-        expect(constantTimeStringEqual('abc', 'abc')).toBe(true)
-        expect(constantTimeStringEqual('abc', 'abd')).toBe(false)
-        expect(constantTimeStringEqual('abc', 'abcd')).toBe(false)
     })
 })

@@ -20,6 +20,7 @@
     "@babel/runtime": "catalog:",
     "@perawallet/wallet-extension-provider": "workspace:*",
     "@perawallet/wallet-extension-platform": "workspace:*",
+    "@perawallet/wallet-core-kms": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:",

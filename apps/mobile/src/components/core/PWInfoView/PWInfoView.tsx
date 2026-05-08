@@ -11,7 +11,6 @@
  */
 
 import type { ReactNode } from 'react'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWButton } from '@components/core/PWButton'
 import { PWText } from '@components/core/PWText'
 import { PWView } from '@components/core/PWView'
@@ -49,8 +48,7 @@ export const PWInfoView = ({
     secondaryAction,
     testID = 'pw-info-view',
 }: PWInfoViewProps) => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles(insets)
+    const styles = useStyles()
 
     return (
         <PWView

@@ -21,7 +21,7 @@ import {
     deleteAssetHoldings,
     useAccountBalancesInvalidator,
 } from '@perawallet/wallet-core-accounts'
-import { NonZeroBalanceError, CreatorCannotOptOutError } from '../errors'
+import { CreatorCannotOptOutError, NonZeroBalanceError } from '../errors'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type AssetOptOutParams = {
@@ -76,17 +76,18 @@ export const useAssetOptOutMutation = (): UseAssetOptOutMutationResult => {
         [network],
     )
 
-    const validateOptOut = (
+    // Hard validation only — throws on caller errors that must surface.
+    // Whether a txn is actually needed (skip when the asset is already gone
+    // on-chain) is a separate decision the caller makes via the holding
+    // lookup; mixing both into one helper produced a confusing
+    // returns-or-throws contract.
+    const assertCanOptOut = (
         params: ResolvedOptOutParams,
-        assets: Array<{ assetId: bigint; amount: bigint }>,
-    ) => {
-        // Creator cannot opt out of their own asset
+        holding: { assetId: bigint; amount: bigint } | undefined,
+    ): void => {
         if (params.sender === params.creator) {
             throw new CreatorCannotOptOutError()
         }
-
-        // Asset balance must be zero
-        const holding = assets.find(a => a.assetId === params.assetId)
         if (holding && holding.amount !== 0n) {
             throw new NonZeroBalanceError()
         }
@@ -116,29 +117,38 @@ export const useAssetOptOutMutation = (): UseAssetOptOutMutationResult => {
                     await algokit.client.algod.accountInformation(sender)
                 const assets = accountInfo.assets ?? []
 
-                for (const p of paramsList) {
-                    validateOptOut(p, assets)
-                }
-
-                const composer = algokit.newGroup()
-                for (const p of paramsList) {
-                    composer.addAssetTransfer({
-                        sender: p.sender,
-                        receiver: p.sender,
-                        assetId: p.assetId,
-                        amount: 0n,
-                        closeAssetTo: p.creator,
-                    })
-                }
-                const { transactions } = await composer.build()
-                const unsignedTxs = transactions.map(t => t.txn)
-
-                const { txIds } = await submit({
-                    unsignedTxs,
-                    source: SOURCE,
+                // Skip txn-building for assets the chain shows as already
+                // gone (a prior opt-out already settled and the local UI
+                // is stale) — submitting again would be rejected as
+                // `duplicate_txn`. We still reconcile local state below.
+                const toSubmit = paramsList.filter(p => {
+                    const holding = assets.find(a => a.assetId === p.assetId)
+                    assertCanOptOut(p, holding)
+                    return holding !== undefined
                 })
 
-                // Remove opted-out assets from local DB and refresh UI
+                let txIds: string[] = []
+                if (toSubmit.length > 0) {
+                    const composer = algokit.newGroup()
+                    for (const p of toSubmit) {
+                        composer.addAssetTransfer({
+                            sender: p.sender,
+                            receiver: p.sender,
+                            assetId: p.assetId,
+                            amount: 0n,
+                            closeAssetTo: p.creator,
+                        })
+                    }
+                    const { transactions } = await composer.build()
+                    const unsignedTxs = transactions.map(t => t.txn)
+
+                    const result = await submit({
+                        unsignedTxs,
+                        source: SOURCE,
+                    })
+                    txIds = result.txIds
+                }
+
                 await deleteAssetHoldings({
                     accountAddress: sender,
                     assetIds: paramsList.map(p => String(p.assetId)),

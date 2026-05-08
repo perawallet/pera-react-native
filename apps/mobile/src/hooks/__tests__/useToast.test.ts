@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useToast } from '../useToast'
 import { Notifier } from 'react-native-notifier'
@@ -35,9 +35,19 @@ vi.mock('@rneui/themed', () => ({
     }),
 }))
 
+vi.mock('@constants/ui', () => ({
+    SHORT_PROMPT_DISPLAY_DELAY: 300,
+    LONG_PROMPT_DISPLAY_DELAY: 600,
+}))
+
 describe('useToast', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        vi.useFakeTimers()
+    })
+
+    afterEach(() => {
+        vi.useRealTimers()
     })
 
     it('should show success toast', () => {
@@ -49,6 +59,7 @@ describe('useToast', () => {
                 body: 'Operation completed',
                 type: 'success',
             })
+            vi.runAllTimers()
         })
 
         expect(Notifier.showNotification).toHaveBeenCalledWith(
@@ -71,6 +82,7 @@ describe('useToast', () => {
                 body: 'Operation failed',
                 type: 'error',
             })
+            vi.runAllTimers()
         })
 
         expect(Notifier.showNotification).toHaveBeenCalledWith(
@@ -95,6 +107,7 @@ describe('useToast', () => {
                 body: 'Be careful',
                 type: 'warning',
             })
+            vi.runAllTimers()
         })
 
         expect(Notifier.showNotification).toHaveBeenCalledWith(
@@ -118,6 +131,7 @@ describe('useToast', () => {
                 body: 'Just so you know',
                 type: 'info',
             })
+            vi.runAllTimers()
         })
 
         expect(Notifier.showNotification).toHaveBeenCalledWith(
@@ -137,6 +151,7 @@ describe('useToast', () => {
 
         act(() => {
             result.current.infoToast('Info Title', 'Info body text')
+            vi.runAllTimers()
         })
 
         expect(Notifier.showNotification).toHaveBeenCalledWith(
@@ -158,6 +173,7 @@ describe('useToast', () => {
 
         act(() => {
             result.current.errorToast('Error Title', 'Error body text')
+            vi.runAllTimers()
         })
 
         expect(Notifier.showNotification).toHaveBeenCalledWith(
@@ -179,6 +195,7 @@ describe('useToast', () => {
 
         act(() => {
             result.current.successToast('Success Title', 'Success body text')
+            vi.runAllTimers()
         })
 
         expect(Notifier.showNotification).toHaveBeenCalledWith(

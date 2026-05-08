@@ -16,6 +16,14 @@ import { getProvider } from '@perawallet/wallet-extension-provider'
 import { AccessControlPermission, KeyPair } from '../models'
 import { KeyAccessError } from '../errors'
 import { useCallback } from 'react'
+import {
+    commitTypedSecret,
+    hasTypedSecret,
+    removeTypedSecret,
+    withTypedSecret,
+    type TypedSecret,
+} from '../storage/typedSecret'
+import { Nullable } from '@perawallet/wallet-core-shared'
 
 export const checkAccess = (key: KeyPair, domain: string): void => {
     if (key.acl?.length) {
@@ -41,6 +49,13 @@ type UseKMSServiceResult = {
     checkAccess: typeof checkAccess
     keyStore: KeyStoreAPI
     withExportedKey: WithExportedKey
+    commitTypedSecret: (blob: TypedSecret) => Promise<void>
+    withTypedSecret: <T>(
+        id: string,
+        handler: (bytes: Uint8Array) => T | Promise<T>,
+    ) => Promise<Nullable<T>>
+    hasTypedSecret: (id: string) => boolean
+    removeTypedSecret: (id: string) => Promise<void>
 }
 
 export const useKMSService = (): UseKMSServiceResult => {
@@ -70,5 +85,9 @@ export const useKMSService = (): UseKMSServiceResult => {
         checkAccess,
         keyStore,
         withExportedKey,
+        commitTypedSecret,
+        withTypedSecret,
+        hasTypedSecret,
+        removeTypedSecret,
     }
 }

@@ -17,6 +17,10 @@ import {
     NotifierRoot,
     ShowNotificationParams,
 } from 'react-native-notifier'
+import {
+    SHORT_PROMPT_DISPLAY_DELAY,
+    LONG_PROMPT_DISPLAY_DELAY,
+} from '@constants/ui'
 
 export interface ToastMessage {
     title: string
@@ -58,14 +62,22 @@ const useStyles = makeStyles(theme => {
     }
 })
 
+const DELAY_MAP = {
+    none: 0,
+    short: SHORT_PROMPT_DISPLAY_DELAY,
+    long: LONG_PROMPT_DISPLAY_DELAY,
+} as const
+
+type ToastOptions = ShowNotificationParams & {
+    notifier?: NotifierRoot
+    delayLength?: 'none' | 'short' | 'long'
+}
+
 export const useToast = () => {
     const styles = useStyles()
 
     const showToast = useCallback(
-        (
-            message: ToastMessage,
-            options?: ShowNotificationParams & { notifier?: NotifierRoot },
-        ) => {
+        (message: ToastMessage, options?: ToastOptions) => {
             let containerStyle = styles.infoStyle
             let textStyle = styles.infoStyleText
             if (message.type === 'error') {
@@ -79,17 +91,28 @@ export const useToast = () => {
                 textStyle = styles.successStyleText
             }
 
-            const notifier = options?.notifier ?? Notifier
-            notifier.showNotification({
-                title: message.title,
-                description: message.body,
-                componentProps: {
-                    containerStyle: [styles.baseStyle, containerStyle],
-                    titleStyle: textStyle,
-                    descriptionStyle: textStyle,
-                },
-                ...options,
-            })
+            const {
+                delayLength = 'none',
+                notifier: customNotifier,
+                ...notifierOptions
+            } = options ?? {}
+
+            const delay = DELAY_MAP[delayLength]
+
+            const notifier = customNotifier ?? Notifier
+
+            setTimeout(() => {
+                notifier.showNotification({
+                    title: message.title,
+                    description: message.body,
+                    componentProps: {
+                        containerStyle: [styles.baseStyle, containerStyle],
+                        titleStyle: textStyle,
+                        descriptionStyle: textStyle,
+                    },
+                    ...notifierOptions,
+                })
+            }, delay)
         },
         [styles],
     )
