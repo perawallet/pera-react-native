@@ -11,7 +11,7 @@
  */
 
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import { useKMS } from '@perawallet/wallet-core-kms'
+import { KeyType, useKMS, type KeyPair } from '@perawallet/wallet-core-kms'
 import { useCallback } from 'react'
 import {
     Address,
@@ -95,7 +95,13 @@ export const useLocalKeyTransactionSigner =
                 account: Algo25Account,
                 txns: PeraTransactionGroup,
             ): Promise<PeraSignedTransaction[]> => {
-                const key = getKeyOrThrow(account.keyPairId)
+                const key: KeyPair = {
+                    id: account.keyPairId,
+                    keystoreKeyId: account.keyPairId,
+                    publicKey: account.address,
+                    type: KeyType.Algo25Key,
+                    acl: [],
+                }
                 return await withAlgo25Session(
                     key,
                     SIGNING_KEY_DOMAIN,
