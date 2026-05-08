@@ -390,12 +390,40 @@ export default defineConfig({
         },
         globals: true,
         environment: 'jsdom',
-        setupFiles: ['./vitest.setup.ts'],
         server: {
             deps: {
                 inline: [/@react-navigation/, /react-native-ratings/],
             },
         },
+        // Two projects so unit and integration tests get different setup
+        // files. The integration project's setup unmocks the heavy
+        // @perawallet/wallet-core-* package mocks so flow tests exercise real
+        // domain code; unit tests keep the speed-oriented mocks.
+        projects: [
+            {
+                extends: true,
+                test: {
+                    name: 'unit',
+                    setupFiles: ['./vitest.setup.ts'],
+                    exclude: [
+                        '**/node_modules/**',
+                        '**/dist/**',
+                        '**/__integration__/**',
+                    ],
+                },
+            },
+            {
+                extends: true,
+                test: {
+                    name: 'integration',
+                    setupFiles: [
+                        './vitest.setup.ts',
+                        './vitest.integration-setup.ts',
+                    ],
+                    include: ['src/__integration__/**/*.{test,spec}.{ts,tsx}'],
+                },
+            },
+        ],
     },
     ...poolConfig,
 })

@@ -95,12 +95,6 @@ import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { USD_EUR_GBP } from './__fixtures__/currencies'
 
-// Opt out of the global package mocks for any package whose REAL
-// implementation you want to exercise. Without this, the global mocks in
-// `apps/mobile/vitest.setup.ts` shadow your real hooks.
-vi.unmock('@perawallet/wallet-core-currencies')
-vi.unmock('@perawallet/wallet-core-shared')
-
 describe('Flow: …', () => {
     beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
     afterEach(() => server.resetHandlers())
@@ -117,6 +111,10 @@ describe('Flow: …', () => {
     })
 })
 ```
+
+Files under `apps/mobile/src/__integration__/` are picked up by the **integration** Vitest project (configured in `apps/mobile/vitest.config.ts`). Its setup file (`vitest.integration-setup.ts`) inherits the unit setup and then `vi.unmock`s the heavy `@perawallet/wallet-core-*` package mocks so flow tests exercise real domain code. Files outside `__integration__/` belong to the **unit** project and keep the speed-oriented mocks intact.
+
+If a flow test needs the real implementation of a package not yet in the unmock list, add a single line to `apps/mobile/vitest.integration-setup.ts` rather than putting `vi.unmock` in the test file. `@perawallet/wallet-extension-*` packages stay mocked — they hit MMKV / biometrics / secure storage that only work on a real device.
 
 ### Quirks to know
 

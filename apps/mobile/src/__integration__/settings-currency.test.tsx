@@ -18,23 +18,16 @@ import {
     describe,
     expect,
     it,
-    vi,
 } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { mockListCurrencies } from '@perawallet/wallet-core-currencies/test-handlers'
-
-// Integration tests opt out of the global package mocks so they exercise the
-// real hook implementations end-to-end. RN/native runtime mocks (including
-// the navigator stubs) remain in effect — running the real native-stack
-// navigator under react-native-web + jsdom requires native-only APIs.
-vi.unmock('@perawallet/wallet-core-currencies')
-vi.unmock('@perawallet/wallet-core-assets')
-vi.unmock('@perawallet/wallet-core-shared')
-
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { SettingsCurrencyScreen } from '@modules/settings/screens/SettingsCurrencyScreen/SettingsCurrencyScreen'
 import { JPY_ONLY, USD_EUR_GBP } from './__fixtures__/currencies'
+
+// The "integration" Vitest project's setup file opts out of the global
+// @perawallet/wallet-core-* mocks — see apps/mobile/vitest.integration-setup.ts.
 
 describe('Flow: Settings → Currency selection', () => {
     beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
