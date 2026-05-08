@@ -62,6 +62,7 @@ export const ImportInfoScreen = () => {
                     variant='primary'
                     title={t('onboarding.import_info.button')}
                     onPress={handleRecoverPress}
+                    testID='import_info_recover_button'
                 />
             </PWView>
         </PWView>
