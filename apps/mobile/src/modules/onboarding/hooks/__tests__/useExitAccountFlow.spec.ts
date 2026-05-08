@@ -56,7 +56,6 @@ describe('useExitAccountFlow', () => {
         expect(mockSetIsOnboarding).not.toHaveBeenCalled()
     })
 
-
     it('sets isOnboarding to false when in onboarding flow', () => {
         mockIsOnboarding = true
 
