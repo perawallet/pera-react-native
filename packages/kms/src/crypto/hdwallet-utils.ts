@@ -11,10 +11,14 @@
  */
 
 import { pbkdf2 } from 'crypto'
-import * as bip39 from 'bip39'
-import { WORDLIST } from '../crypto/wordlist'
+import {
+    generateMnemonic,
+    mnemonicToEntropy,
+    entropyToMnemonic as entropyToMnemonicLib,
+} from '@scure/bip39'
+import { wordlist } from '@scure/bip39/wordlists/english.js'
 
-const HD_MNEMONIC_LENGTH = 256
+const HD_MNEMONIC_STRENGTH = 256
 
 // BIP39 §"From mnemonic to seed":
 // PBKDF2(NFKD(mnemonic), "mnemonic" + NFKD(passphrase), 2048, 64, SHA-512).
@@ -41,24 +45,23 @@ const deriveBip39Seed = (mnemonic: string): Promise<Buffer> => {
     })
 }
 
-export const entropyToMnemonic = (entropy: Buffer) => {
-    return bip39.entropyToMnemonic(entropy)
+export const entropyToMnemonic = (entropy: Uint8Array): string => {
+    return entropyToMnemonicLib(entropy, wordlist)
 }
 
 /**
  * Routes the BIP39 seed derivation through Node's `crypto.pbkdf2`. On React
  * Native this is rewritten by Metro to `react-native-quick-crypto`, which
  * runs PBKDF2 natively via JSI — orders of magnitude faster than the pure-JS
- * path inside `bip39.mnemonicToSeed` (HMAC-SHA512 × 2048 iterations on the JS
- * thread). Output is byte-identical to `bip39.mnemonicToSeed`; see
- * `__tests__/hdwallet-utils.test.ts` for the equivalence guard.
+ * path inside `@scure/bip39`'s `mnemonicToSeed` (HMAC-SHA512 × 2048 iterations
+ * on the JS thread). Output is byte-identical to scure's `mnemonicToSeed`;
+ * see `__tests__/hdwallet-utils.test.ts` for the equivalence guard.
  */
 export const generateHDMasterKey = async (mnemonic?: string) => {
     const storableMnemonic =
-        mnemonic ??
-        bip39.generateMnemonic(HD_MNEMONIC_LENGTH, undefined, WORDLIST)
+        mnemonic ?? generateMnemonic(wordlist, HD_MNEMONIC_STRENGTH)
     const seed = await deriveBip39Seed(storableMnemonic)
-    const entropy = bip39.mnemonicToEntropy(storableMnemonic, WORDLIST)
+    const entropy = mnemonicToEntropy(storableMnemonic, wordlist)
     return {
         seed,
         entropy,

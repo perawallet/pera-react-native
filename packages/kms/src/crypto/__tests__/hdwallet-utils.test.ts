@@ -12,15 +12,16 @@
 
 // @vitest-environment node
 import { describe, test, expect } from 'vitest'
-import * as bip39 from 'bip39'
+import { mnemonicToEntropy, mnemonicToSeed } from '@scure/bip39'
+import { wordlist } from '@scure/bip39/wordlists/english.js'
 import { generateHDMasterKey } from '../hdwallet-utils'
 
 const TEST_MNEMONIC =
     'champion say kitchen sock defense example mesh body sample artwork warfare canvas item recall cheese total floor cycle such asthma okay immense lake street'
 
 describe('generateHDMasterKey', () => {
-    test('produces a seed byte-identical to bip39.mnemonicToSeed', async () => {
-        const expected = await bip39.mnemonicToSeed(TEST_MNEMONIC)
+    test('produces a seed byte-identical to @scure/bip39 mnemonicToSeed', async () => {
+        const expected = await mnemonicToSeed(TEST_MNEMONIC)
         const { seed } = await generateHDMasterKey(TEST_MNEMONIC)
 
         expect(Buffer.from(seed).equals(expected)).toBe(true)
@@ -28,11 +29,13 @@ describe('generateHDMasterKey', () => {
     })
 
     test('returns the supplied mnemonic and a matching entropy', async () => {
-        const expectedEntropy = bip39.mnemonicToEntropy(TEST_MNEMONIC)
+        const expectedEntropy = mnemonicToEntropy(TEST_MNEMONIC, wordlist)
         const { mnemonic, entropy } = await generateHDMasterKey(TEST_MNEMONIC)
 
         expect(mnemonic).toBe(TEST_MNEMONIC)
-        expect(entropy).toBe(expectedEntropy)
+        expect(Buffer.from(entropy).equals(Buffer.from(expectedEntropy))).toBe(
+            true,
+        )
     })
 
     test('generates a fresh 24-word mnemonic when none is supplied', async () => {

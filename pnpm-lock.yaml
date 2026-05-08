@@ -24,6 +24,9 @@ catalogs:
     '@noble/hashes':
       specifier: ^1.8.0
       version: 1.8.0
+    '@scure/bip39':
+      specifier: ^2.0.1
+      version: 2.0.1
     '@tanstack/query-async-storage-persister':
       specifier: ^5.99.0
       version: 5.99.0
@@ -57,9 +60,6 @@ catalogs:
     before-after-hook:
       specifier: ^4.0.0
       version: 4.0.0
-    bip39:
-      specifier: ^3.1.0
-      version: 3.1.0
     decimal.js:
       specifier: ^10.6.0
       version: 10.6.0
@@ -372,9 +372,6 @@ importers:
       '@tanstack/react-query-persist-client':
         specifier: 'catalog:'
         version: 5.99.0(@tanstack/react-query@5.99.0(react@19.2.5))(react@19.2.5)
-      bip39:
-        specifier: 'catalog:'
-        version: 3.1.0
       decimal.js:
         specifier: ^10.6.0
         version: 10.6.0
@@ -1004,15 +1001,15 @@ importers:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
+      '@scure/bip39':
+        specifier: 'catalog:'
+        version: 2.0.1
       '@testing-library/react':
         specifier: 'catalog:'
         version: 16.3.2(@testing-library/dom@10.4.1)(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.14
-      bip39:
-        specifier: 'catalog:'
-        version: 3.1.0
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -1643,9 +1640,9 @@ importers:
       '@perawallet/wallet-extension-provider':
         specifier: workspace:*
         version: link:../../extensions/provider
-      bip39:
+      '@scure/bip39':
         specifier: 'catalog:'
-        version: 3.1.0
+        version: 2.0.1
       react:
         specifier: 'catalog:'
         version: 19.2.5
@@ -1662,6 +1659,9 @@ importers:
       '@testing-library/react':
         specifier: 'catalog:'
         version: 16.3.2(@testing-library/dom@10.4.1)(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@types/node':
+        specifier: 'catalog:'
+        version: 20.19.39
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.14
@@ -1673,13 +1673,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.0.8(@types/node@22.19.17)(esbuild@0.27.3)(jiti@2.5.1)(terser@5.46.2)(tsx@4.21.0)(yaml@2.8.3)
+        version: 8.0.8(@types/node@20.19.39)(esbuild@0.27.3)(jiti@2.5.1)(terser@5.46.2)(tsx@4.21.0)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: ^4.5.4
-        version: 4.5.4(@types/node@22.19.17)(rollup@4.59.0)(typescript@5.9.3)(vite@8.0.8(@types/node@22.19.17)(esbuild@0.27.3)(jiti@2.5.1)(terser@5.46.2)(tsx@4.21.0)(yaml@2.8.3))
+        version: 4.5.4(@types/node@20.19.39)(rollup@4.59.0)(typescript@5.9.3)(vite@8.0.8(@types/node@20.19.39)(esbuild@0.27.3)(jiti@2.5.1)(terser@5.46.2)(tsx@4.21.0)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.4(@types/node@22.19.17)(@vitest/coverage-v8@4.1.4)(jsdom@29.0.2(@noble/hashes@2.0.1))(msw@2.12.10(@types/node@22.19.17)(typescript@5.9.3))(vite@8.0.8(@types/node@22.19.17)(esbuild@0.27.3)(jiti@2.5.1)(terser@5.46.2)(tsx@4.21.0)(yaml@2.8.3))
+        version: 4.1.4(@types/node@20.19.39)(@vitest/coverage-v8@4.1.4)(jsdom@29.0.2(@noble/hashes@2.0.1))(msw@2.12.10(@types/node@20.19.39)(typescript@5.9.3))(vite@8.0.8(@types/node@20.19.39)(esbuild@0.27.3)(jiti@2.5.1)(terser@5.46.2)(tsx@4.21.0)(yaml@2.8.3))
 
   packages/ledger:
     dependencies:
@@ -2236,9 +2236,6 @@ importers:
       base64-js:
         specifier: ^1.5.1
         version: 1.5.1
-      bip39:
-        specifier: 'catalog:'
-        version: 3.1.0
       decimal.js:
         specifier: ^10.6.0
         version: 10.6.0
@@ -6149,9 +6146,6 @@ packages:
 
   bip32-path@0.4.2:
     resolution: {integrity: sha512-ZBMCELjJfcNMkz5bDuJ1WrYvjlhEF5k6mQ8vUr4N7MbVRsXei7ZOg8VhhwMfNiW68NWmLkgkc6WvTickrLGprQ==}
-
-  bip39@3.1.0:
-    resolution: {integrity: sha512-c9kiwdk45Do5GL0vJMe7tS95VjCii65mYAH7DfWl3uW8AVzXKQVUm64i3hzVybBDMp9r7j9iNxR85+ul8MdN/A==}
 
   bl@4.1.0:
     resolution: {integrity: sha512-1W07cM9gS6DcLperZfFSj+bWLtaPGSOHWhPiGzXmvVJbRLdG82sH/Kn8EtW1VqWVA54AKf2h5k5BbnIbwF3h6w==}
@@ -13864,10 +13858,6 @@ snapshots:
       file-uri-to-path: 1.0.0
 
   bip32-path@0.4.2: {}
-
-  bip39@3.1.0:
-    dependencies:
-      '@noble/hashes': 1.8.0
 
   bl@4.1.0:
     dependencies:

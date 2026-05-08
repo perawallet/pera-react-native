@@ -46,7 +46,7 @@ export type UseImportAccountOptionsScreenResult = {
 export const useImportAccountOptionsScreen =
     (): UseImportAccountOptionsScreenResult => {
         const navigation = useAppNavigation()
-        const { showToast } = useToast()
+        const { errorToast } = useToast()
         const { t } = useLanguage()
         const { parseDeeplink } = useDeepLink()
         const importAccount = useImportAccount()
@@ -99,13 +99,10 @@ export const useImportAccountOptionsScreen =
                 const parsedDeeplink = parseDeeplink(url)
 
                 if (parsedDeeplink?.type !== DeeplinkType.RECOVER_ADDRESS) {
-                    showToast({
-                        title: t(
-                            'onboarding.add_account.qr_scan_invalid_title',
-                        ),
-                        body: t('onboarding.add_account.qr_scan_invalid_body'),
-                        type: 'error',
-                    })
+                    errorToast(
+                        t('onboarding.add_account.qr_scan_invalid_title'),
+                        t('onboarding.add_account.qr_scan_invalid_body'),
+                    )
                     restartScanning?.()
                     return
                 }
@@ -114,15 +111,14 @@ export const useImportAccountOptionsScreen =
                     parsedDeeplink.mnemonic,
                 )
                 if (!resolved.success) {
-                    showToast({
-                        title: t(
+                    errorToast(
+                        t(
                             'onboarding.add_account.qr_scan_invalid_mnemonic_title',
                         ),
-                        body: t(
+                        t(
                             'onboarding.add_account.qr_scan_invalid_mnemonic_body',
                         ),
-                        type: 'error',
-                    })
+                    )
                     restartScanning?.()
                     return
                 }
@@ -149,11 +145,10 @@ export const useImportAccountOptionsScreen =
                 } catch (error) {
                     logger.error('QR import failed', { error })
                     // guardrails-ignore-next-line no-error-toast-in-catch reason: localized import_account.failed_body preserved; raw error not surfaced to user
-                    showToast({
-                        title: t('onboarding.import_account.failed_title'),
-                        body: t('onboarding.import_account.failed_body'),
-                        type: 'error',
-                    })
+                    errorToast(
+                        t('onboarding.import_account.failed_title'),
+                        t('onboarding.import_account.failed_body'),
+                    )
                     restartScanning?.()
                 } finally {
                     closeImporting()
@@ -163,7 +158,7 @@ export const useImportAccountOptionsScreen =
                 closeQRScanner,
                 parseDeeplink,
                 navigation,
-                showToast,
+                errorToast,
                 t,
                 importAccount,
                 markBackupComplete,
@@ -173,12 +168,11 @@ export const useImportAccountOptionsScreen =
         )
 
         const handleNotImplemented = useCallback(() => {
-            showToast({
-                title: t('common.not_implemented.title'),
-                body: t('common.not_implemented.body'),
-                type: 'error',
-            })
-        }, [showToast, t])
+            errorToast(
+                t('common.not_implemented.title'),
+                t('common.not_implemented.body'),
+            )
+        }, [errorToast, t])
 
         const options: AccountOption[] = useMemo(() => {
             const allOptions: AccountOption[] = [

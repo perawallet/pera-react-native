@@ -81,6 +81,49 @@ export const useDeepLink = () => {
         return `${ALGORAND_SCHEME}${account.address}`
     }
 
+    const handleRecoverAddressDeeplink = async ({
+        mnemonic,
+        source,
+        replaceCurrentScreen,
+    }: {
+        mnemonic: string
+        source: LinkSource
+        replaceCurrentScreen: boolean
+    }) => {
+        if (source !== 'qr') return
+
+        const resolved = resolveImportAccountType(mnemonic)
+        if (!resolved.success) return
+
+        try {
+            const result = await importAccount({
+                mnemonic,
+                type: resolved.accountType,
+            })
+
+            if (result.type === 'hdWallet' && 'walletKeyId' in result) {
+                navigateToScreen(replaceCurrentScreen, 'AddAccount', {
+                    screen: 'SearchAccounts',
+                    params: {
+                        mode: 'import',
+                        walletKeyId: result.walletKeyId,
+                        derivationType: result.derivationType,
+                    },
+                })
+            } else {
+                markBackupComplete(result as WalletAccount)
+                navigateToScreen(replaceCurrentScreen, 'AddAccount', {
+                    screen: 'SearchAccounts',
+                    params: {
+                        account: result as WalletAccount,
+                    },
+                })
+            }
+        } catch (error) {
+            logger.error('Deeplink import failed', { error })
+        }
+    }
+
     const buildDeeplink = (input: BuildDeeplinkInput): string => {
         switch (input.type) {
             case DeeplinkType.SHARED_ACCOUNT_IMPORT: {
@@ -170,54 +213,13 @@ export const useDeepLink = () => {
                     )
                     break
 
-                case DeeplinkType.RECOVER_ADDRESS: {
-                    if (source !== 'qr') break
-
-                    const resolved = resolveImportAccountType(
-                        parsedData.mnemonic,
-                    )
-                    if (!resolved.success) break
-
-                    try {
-                        const result = await importAccount({
-                            mnemonic: parsedData.mnemonic,
-                            type: resolved.accountType,
-                        })
-
-                        if (
-                            result.type === 'hdWallet' &&
-                            'walletKeyId' in result
-                        ) {
-                            navigateToScreen(
-                                replaceCurrentScreen,
-                                'AddAccount',
-                                {
-                                    screen: 'SearchAccounts',
-                                    params: {
-                                        mode: 'import',
-                                        walletKeyId: result.walletKeyId,
-                                        derivationType: result.derivationType,
-                                    },
-                                },
-                            )
-                        } else {
-                            markBackupComplete(result as WalletAccount)
-                            navigateToScreen(
-                                replaceCurrentScreen,
-                                'AddAccount',
-                                {
-                                    screen: 'SearchAccounts',
-                                    params: {
-                                        account: result as WalletAccount,
-                                    },
-                                },
-                            )
-                        }
-                    } catch (error) {
-                        logger.error('Deeplink import failed', { error })
-                    }
+                case DeeplinkType.RECOVER_ADDRESS:
+                    await handleRecoverAddressDeeplink({
+                        mnemonic: parsedData.mnemonic,
+                        source,
+                        replaceCurrentScreen,
+                    })
                     break
-                }
 
                 case DeeplinkType.WALLET_CONNECT:
                     connect({

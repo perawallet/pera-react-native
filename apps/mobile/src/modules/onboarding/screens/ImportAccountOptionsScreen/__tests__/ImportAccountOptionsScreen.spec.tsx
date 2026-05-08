@@ -25,10 +25,10 @@ vi.mock('@hooks/useAppNavigation', () => ({
     }),
 }))
 
-const mockShowToast = vi.fn()
+const mockErrorToast = vi.fn()
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
-        showToast: mockShowToast,
+        errorToast: mockErrorToast,
     }),
 }))
 
@@ -180,11 +180,10 @@ describe('ImportAccountOptionsScreen', () => {
         )
         fireEvent.click(peraWebButton)
 
-        expect(mockShowToast).toHaveBeenCalledWith({
-            title: 'common.not_implemented.title',
-            body: 'common.not_implemented.body',
-            type: 'error',
-        })
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            'common.not_implemented.title',
+            'common.not_implemented.body',
+        )
     })
 
     it('shows not implemented toast when ASB is pressed', () => {
@@ -195,11 +194,10 @@ describe('ImportAccountOptionsScreen', () => {
         )
         fireEvent.click(asbButton)
 
-        expect(mockShowToast).toHaveBeenCalledWith({
-            title: 'common.not_implemented.title',
-            body: 'common.not_implemented.body',
-            type: 'error',
-        })
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            'common.not_implemented.title',
+            'common.not_implemented.body',
+        )
     })
 
     it('opens import options bottom sheet when Recover Wallet is pressed', () => {

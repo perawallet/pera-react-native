@@ -31,10 +31,10 @@ vi.mock('@hooks/useAppNavigation', () => ({
     }),
 }))
 
-const mockShowToast = vi.fn()
+const mockErrorToast = vi.fn()
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
-        showToast: mockShowToast,
+        errorToast: mockErrorToast,
     }),
 }))
 
@@ -223,11 +223,10 @@ describe('useImportAccountOptionsScreen', () => {
             peraWebOption.onPress()
         })
 
-        expect(mockShowToast).toHaveBeenCalledWith({
-            title: 'common.not_implemented.title',
-            body: 'common.not_implemented.body',
-            type: 'error',
-        })
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            'common.not_implemented.title',
+            'common.not_implemented.body',
+        )
     })
 
     it('ASB option shows not implemented toast', () => {
@@ -241,11 +240,10 @@ describe('useImportAccountOptionsScreen', () => {
             asbOption.onPress()
         })
 
-        expect(mockShowToast).toHaveBeenCalledWith({
-            title: 'common.not_implemented.title',
-            body: 'common.not_implemented.body',
-            type: 'error',
-        })
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            'common.not_implemented.title',
+            'common.not_implemented.body',
+        )
     })
 
     it('handleHDWalletPress closes import options and navigates to ImportInfo', () => {
