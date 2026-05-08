@@ -22,7 +22,6 @@ import {
     useSelectedAccountAddress,
     useCreateAccount,
     useAllAccounts,
-    isHDWalletAccount,
     AccountTypes,
     DerivationTypes,
 } from '@perawallet/wallet-core-accounts'
@@ -122,7 +121,6 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                 { account: unknown }
             >
             const account = existingParams.account
-            const createIfEmpty = existingParams.createIfEmpty
             const walletKeyId = account.keyPairId
             if (!walletKeyId) return
 
