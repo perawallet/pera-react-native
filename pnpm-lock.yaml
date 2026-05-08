@@ -1336,6 +1336,9 @@ importers:
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.14
+      msw:
+        specifier: 'catalog:'
+        version: 2.12.10(@types/node@20.19.39)(typescript@5.9.3)
       typescript:
         specifier: 'catalog:'
         version: 5.9.3

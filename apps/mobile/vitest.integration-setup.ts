@@ -33,7 +33,38 @@ vi.unmock('@perawallet/wallet-core-walletconnect')
 vi.unmock('@perawallet/wallet-core-swaps')
 vi.unmock('@perawallet/wallet-core-polling')
 vi.unmock('@perawallet/wallet-core-background')
-vi.unmock('@perawallet/wallet-core-kms')
 vi.unmock('@perawallet/wallet-core-settings')
-vi.unmock('@perawallet/wallet-core-accounts')
 vi.unmock('@perawallet/wallet-core-contacts')
+
+// The provider singleton + the KMS keystore now have working in-memory test
+// implementations (apps/mobile/src/test-utils/{platform-driver-test,
+// algorand-keystore-test}.ts), aliased in vitest.config.ts. Real provider /
+// kms / accounts code can now run end-to-end against in-memory storage.
+vi.unmock('@perawallet/wallet-extension-provider')
+vi.unmock('@perawallet/wallet-core-kms')
+vi.unmock('@perawallet/wallet-core-accounts')
+vi.unmock('@perawallet/wallet-core-blockchain')
+
+// Replace the unit-test navigator stubs with a real-ish stack-based test
+// navigator (apps/mobile/src/test-utils/test-navigator.tsx). The unit mocks
+// just render the initial screen; the test navigator maintains a stack and
+// implements navigate / push / replace / goBack so flow tests can traverse
+// screens. The bottom-tabs surface is rare in flow tests; keep the stub.
+vi.mock('@react-navigation/native', async () => {
+    const nav = await import('./src/test-utils/test-navigator')
+    return nav
+})
+
+vi.mock('@react-navigation/native-stack', async () => {
+    const nav = await import('./src/test-utils/test-navigator')
+    return {
+        createNativeStackNavigator: nav.createNativeStackNavigator,
+    }
+})
+
+vi.mock('@react-navigation/stack', async () => {
+    const nav = await import('./src/test-utils/test-navigator')
+    return {
+        createStackNavigator: nav.createNativeStackNavigator,
+    }
+})

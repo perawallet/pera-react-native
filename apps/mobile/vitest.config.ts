@@ -106,10 +106,52 @@ export default defineConfig({
                 ),
             },
             {
+                // Replace the throwing production stub with an in-memory test
+                // implementation so flow tests can exercise real platform-aware
+                // code paths (key-value storage, biometrics opt-in, etc.).
+                // See apps/mobile/src/test-utils/platform-driver-test.ts.
                 find: '@perawallet/wallet-extension-platform-driver',
                 replacement: path.resolve(
                     __dirname,
-                    '../../extensions/platform-driver/src/index.ts',
+                    './src/test-utils/platform-driver-test.ts',
+                ),
+            },
+            {
+                // In-memory replacement for the MMKV+AES-GCM React-Native
+                // keystore. Lets `kms` run end-to-end (commit/remove/clear/
+                // export) without native crypto deps.
+                // See apps/mobile/src/test-utils/algorand-keystore-test.ts.
+                find: '@algorandfoundation/react-native-keystore',
+                replacement: path.resolve(
+                    __dirname,
+                    './src/test-utils/algorand-keystore-test.ts',
+                ),
+            },
+            {
+                // Ledger BLE/USB extensions transitively load native bluetooth
+                // libraries that don't parse under jsdom. Stub at the
+                // extension boundary; HW-wallet tests can override per-test.
+                find: '@perawallet/wallet-extension-ledger-react-native-usb',
+                replacement: path.resolve(
+                    __dirname,
+                    './src/test-utils/ledger-extension-stub.ts',
+                ),
+            },
+            {
+                // Platform-agnostic types/errors/constants — safe to alias
+                // straight to source. MUST come before the main package alias
+                // below so prefix matching doesn't shadow it.
+                find: '@perawallet/wallet-extension-ledger-react-native/protocol',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../extensions/ledger-react-native/src/protocol.ts',
+                ),
+            },
+            {
+                find: '@perawallet/wallet-extension-ledger-react-native',
+                replacement: path.resolve(
+                    __dirname,
+                    './src/test-utils/ledger-extension-stub.ts',
                 ),
             },
             {
@@ -159,6 +201,13 @@ export default defineConfig({
                 replacement: path.resolve(
                     __dirname,
                     '../../packages/assets/src/index.ts',
+                ),
+            },
+            {
+                find: '@perawallet/wallet-core-blockchain/test-handlers',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/blockchain/src/test-handlers.ts',
                 ),
             },
             {

@@ -68,6 +68,9 @@
       ],
       "@perawallet/wallet-core-device/test-handlers": [
         "../../packages/device/src/test-handlers.ts"
+      ],
+      "@perawallet/wallet-core-blockchain/test-handlers": [
+        "../../packages/blockchain/src/test-handlers.ts"
       ]
     },
     "lib": [
