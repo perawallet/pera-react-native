@@ -36,9 +36,9 @@ export const useExitAccountFlow = (): UseExitAccountFlowResult => {
             setIsOnboarding(false)
         } else {
             navigation.reset({
-            index: 0,
-            routes: [{ name: 'TabBar', params: { screen: 'Home' } }],
-        })
+                index: 0,
+                routes: [{ name: 'TabBar', params: { screen: 'Home' } }],
+            })
         }
     }, [isOnboarding, setIsOnboarding, navigation])
 
