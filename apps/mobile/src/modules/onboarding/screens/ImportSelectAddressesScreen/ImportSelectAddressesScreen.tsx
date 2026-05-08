@@ -155,7 +155,9 @@ export const ImportSelectAddressesScreen = () => {
             >
                 <PWButton
                     testID='import_select_addresses_continue_button'
-                    title={t('onboarding.import_select_addresses.finish_button')}
+                    title={t(
+                        'onboarding.import_select_addresses.finish_button',
+                    )}
                     onPress={handleContinue}
                     variant='primary'
                     isDisabled={!canContinue}

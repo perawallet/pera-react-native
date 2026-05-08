@@ -93,7 +93,6 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
         if (hasSearched.current) return
         hasSearched.current = true
 
-
         try {
             // Import mode: in-memory rootKey only, nothing persisted yet.
             // Always navigate to selection screen so the user picks the
@@ -136,7 +135,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                 })
 
                 if (!discoveredAccounts) return
-                
+
                 navigation.replace('ImportSelectAddresses', {
                     accounts: discoveredAccounts,
                 })
