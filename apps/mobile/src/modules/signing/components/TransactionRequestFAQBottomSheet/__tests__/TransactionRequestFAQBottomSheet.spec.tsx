@@ -142,6 +142,29 @@ describe('TransactionRequestFAQBottomSheet', () => {
         ).toBeDefined()
     })
 
+    test('does not render for multisig-cosign requests, even when preference is unset', () => {
+        vi.mocked(useSigningRequest).mockReturnValue({
+            currentRequest: {
+                id: 'req-1',
+                type: 'transactions',
+                sourceType: 'multisig-cosign',
+            },
+        } as unknown as ReturnType<typeof useSigningRequest>)
+
+        mockGetPreference.mockReturnValue(undefined)
+        vi.mocked(usePreferences).mockReturnValue({
+            getPreference: mockGetPreference,
+            setPreference: mockSetPreference,
+        } as unknown as ReturnType<typeof usePreferences>)
+
+        render(<TransactionRequestFAQBottomSheet />)
+        act(() => {
+            vi.runAllTimers()
+        })
+
+        expect(screen.queryByTestId('PWBottomSheet')).toBeNull()
+    })
+
     test('calls setPreference on Close button press', () => {
         vi.mocked(useSigningRequest).mockReturnValue({
             currentRequest: { id: 'req-1', type: 'transactions' },

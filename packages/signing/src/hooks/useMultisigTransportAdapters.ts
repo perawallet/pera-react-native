@@ -66,7 +66,7 @@ const buildResponses = (
 export const useMultisigTransportAdapters =
     (): UseMultisigTransportAdaptersResult => {
         const { network } = useNetwork()
-        const { encodeTransaction } = useTransactionEncoder()
+        const { encodeTransactionRaw } = useTransactionEncoder()
         const queryClient = useQueryClient()
 
         const proposeSignRequest = useCallback<ProposeSignRequestFn>(
@@ -89,8 +89,14 @@ export const useMultisigTransportAdapters =
                 // (a flaky cosign won't fail the whole flow — the propose has
                 // already succeeded).
                 const [proposer, ...cosigners] = signers
+                // Raw msgpack bytes WITHOUT the "TX" domain-separation prefix.
+                // The backend re-applies the prefix when verifying signatures,
+                // so the wire payload must be the unprefixed transaction.
+                // Mirrors the hardware-wallet flow in useSigningActorLifecycle
+                // (Ledger likewise gets raw bytes because it adds the prefix
+                // on-device).
                 const rawTransactionsBase64 = signedData.signed.map(stx =>
-                    encodeToBase64(encodeTransaction(stx.txn)),
+                    encodeToBase64(encodeTransactionRaw(stx.txn)),
                 )
 
                 const proposeParams: ProposeSignRequest = {
@@ -110,10 +116,10 @@ export const useMultisigTransportAdapters =
                 // Best-effort: each cosign is awaited but its failure doesn't
                 // bubble. The propose succeeded; the user's other accounts can
                 // still re-cosign later from the inbox if a transient backend
-                // error eats their signature here. We keep the latest successful
-                // status so the UI sees the most up-to-date state without an
-                // extra round-trip.
-                let latestStatus = proposeResponse.status
+                // error eats their signature here. We keep the latest
+                // successful response so the cache stays in sync with the
+                // most-up-to-date signer state without needing a GET refetch.
+                let latestResponse: typeof proposeResponse = proposeResponse
                 for (const cosigner of cosigners) {
                     try {
                         const cosignResponse = await addSignature(
@@ -121,27 +127,26 @@ export const useMultisigTransportAdapters =
                             signRequestId,
                             buildResponses([cosigner]),
                         )
-                        latestStatus = cosignResponse.status
-                    } catch (error) {
-                        console.warn(
-                            `Multisig cosign failed for ${cosigner.address}; sign request ${signRequestId} remains in propose-only state`,
-                            error,
-                        )
+                        latestResponse = cosignResponse
+                    } catch {
+                        // Best-effort: failure doesn't bubble; user can re-cosign from inbox
                     }
                 }
 
-                if (cosigners.length > 0) {
-                    await queryClient.invalidateQueries({
-                        queryKey: getSignRequestDetailQueryKey(
-                            network,
-                            signRequestId,
-                        ),
-                    })
-                }
+                // Pre-populate the detail query cache so
+                // PendingSignaturesBottomSheet renders immediately when the
+                // post-Send listener opens it. The GET `/with-signatures/`
+                // endpoint is unreliable on some environments, so an
+                // invalidation alone can leave the sheet stuck on its
+                // loading spinner.
+                queryClient.setQueryData(
+                    getSignRequestDetailQueryKey(network, signRequestId),
+                    latestResponse,
+                )
 
-                return { signRequestId, status: latestStatus }
+                return { signRequestId, status: latestResponse.status }
             },
-            [encodeTransaction, network, queryClient],
+            [encodeTransactionRaw, network, queryClient],
         )
 
         const addSignatures = useCallback<AddSignaturesFn>(
@@ -152,12 +157,19 @@ export const useMultisigTransportAdapters =
                     signRequestId,
                     responses,
                 )
-                await queryClient.invalidateQueries({
-                    queryKey: getSignRequestDetailQueryKey(
-                        network,
-                        signRequestId,
-                    ),
-                })
+                // Pre-populate the detail query cache with the cosign
+                // response so the PendingSignaturesBottomSheet renders the
+                // updated signer state immediately. The GET refetch endpoint
+                // (`/with-signatures/`) is unreliable on some environments,
+                // so relying on `invalidateQueries` alone leaves the sheet
+                // stuck on the loading spinner. Cache shape matches: both
+                // `proposeSignRequestResponseSchema` and
+                // `signRequestDetailResponseSchema` alias the same
+                // `signRequestResponseSchema`.
+                queryClient.setQueryData(
+                    getSignRequestDetailQueryKey(network, signRequestId),
+                    response,
+                )
                 return { status: response.status }
             },
             [network, queryClient],

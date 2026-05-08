@@ -22,13 +22,13 @@ const mocks = vi.hoisted(() => ({
     proposeSignRequest: vi.fn(),
     addSignature: vi.fn(),
     useNetwork: vi.fn(),
-    encodeTransaction: vi.fn(),
+    encodeTransactionRaw: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: () => mocks.useNetwork(),
     useTransactionEncoder: () => ({
-        encodeTransaction: mocks.encodeTransaction,
+        encodeTransactionRaw: mocks.encodeTransactionRaw,
     }),
 }))
 
@@ -113,7 +113,7 @@ describe('useMultisigTransportAdapters', () => {
         vi.clearAllMocks()
         mocks.useNetwork.mockReturnValue({ network: 'testnet' })
         // Encode each txn to a deterministic, distinguishable byte sequence
-        mocks.encodeTransaction.mockImplementation(
+        mocks.encodeTransactionRaw.mockImplementation(
             (txn: { tag: string }) =>
                 new Uint8Array([txn.tag === 'TXN_1' ? 0xa1 : 0xa2]),
         )
@@ -231,9 +231,6 @@ describe('useMultisigTransportAdapters', () => {
         test('cosign failure for one signer does not fail the whole flow', async () => {
             mocks.proposeSignRequest.mockResolvedValue(baseSignRequestResponse)
             mocks.addSignature.mockRejectedValue(new Error('flaky cosign'))
-            const consoleSpy = vi
-                .spyOn(console, 'warn')
-                .mockImplementation(() => {})
             const { result } = renderTransportFns()
             const { signedData, signers } = buildTxnSigningResult()
 
@@ -248,15 +245,17 @@ describe('useMultisigTransportAdapters', () => {
                 signRequestId: 'sr-1',
                 status: 'pending',
             })
-            expect(consoleSpy).toHaveBeenCalled()
-            consoleSpy.mockRestore()
         })
 
-        test('invalidates the detail query when there are cosigners', async () => {
+        test('writes the latest sign-request response into the detail query cache', async () => {
             mocks.proposeSignRequest.mockResolvedValue(baseSignRequestResponse)
-            mocks.addSignature.mockResolvedValue(baseSignRequestResponse)
+            const cosignResponse = {
+                ...baseSignRequestResponse,
+                status: 'ready' as const,
+            }
+            mocks.addSignature.mockResolvedValue(cosignResponse)
             const { result, queryClient } = renderTransportFns()
-            const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
+            const setQueryDataSpy = vi.spyOn(queryClient, 'setQueryData')
             const { signedData, signers } = buildTxnSigningResult()
 
             await result.current.proposeSignRequest({
@@ -265,13 +264,45 @@ describe('useMultisigTransportAdapters', () => {
                 signers,
             })
 
-            expect(invalidateSpy).toHaveBeenCalledWith({
-                queryKey: [
+            expect(setQueryDataSpy).toHaveBeenCalledWith(
+                [
                     'multisig',
                     'sign-request-detail',
                     { network: 'testnet', signRequestId: 'sr-1' },
                 ],
+                cosignResponse,
+            )
+        })
+
+        test('writes the propose response into the cache when there are no cosigners', async () => {
+            mocks.proposeSignRequest.mockResolvedValue(baseSignRequestResponse)
+            const { result, queryClient } = renderTransportFns()
+            const setQueryDataSpy = vi.spyOn(queryClient, 'setQueryData')
+
+            await result.current.proposeSignRequest({
+                multisigAddress: 'MSIG',
+                signedData: {
+                    type: 'transactions',
+                    signed: [
+                        {
+                            txn: { tag: 'TXN_1' } as any,
+                            sig: new Uint8Array([1]),
+                        },
+                    ],
+                },
+                signers: [
+                    { address: 'PARTICIPANT_A', signatures: ['c2lnQTA='] },
+                ],
             })
+
+            expect(setQueryDataSpy).toHaveBeenCalledWith(
+                [
+                    'multisig',
+                    'sign-request-detail',
+                    { network: 'testnet', signRequestId: 'sr-1' },
+                ],
+                baseSignRequestResponse,
+            )
         })
 
         test('throws when signedData is not transactions', async () => {
@@ -360,18 +391,18 @@ describe('useMultisigTransportAdapters', () => {
             expect(response).toEqual({ status: 'pending' })
         })
 
-        test('invalidates the sign-request detail query after success', async () => {
+        test('writes the cosign response into the sign-request detail query cache', async () => {
             mocks.addSignature.mockResolvedValue(baseSignRequestResponse)
             const { result, queryClient } = renderTransportFns()
-            const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
+            const setQueryDataSpy = vi.spyOn(queryClient, 'setQueryData')
 
             await result.current.addSignatures({
                 signRequestId: 'sr-99',
                 signers: [{ address: 'A', signatures: ['c2lnQTA='] }],
             })
 
-            expect(invalidateSpy).toHaveBeenCalledWith({
-                queryKey: [
+            expect(setQueryDataSpy).toHaveBeenCalledWith(
+                [
                     'multisig',
                     'sign-request-detail',
                     {
@@ -379,7 +410,8 @@ describe('useMultisigTransportAdapters', () => {
                         signRequestId: 'sr-99',
                     },
                 ],
-            })
+                baseSignRequestResponse,
+            )
         })
 
         test('propagates errors from the endpoint', async () => {

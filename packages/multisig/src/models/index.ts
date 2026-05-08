@@ -52,4 +52,5 @@ export interface MultisigSignRequest {
     failReasonDisplay: Nullable<string>
     multisigAccount: MultiSigAccount
     transactionLists: TransactionList[]
+    proposerAddress: Nullable<string>
 }

@@ -15,8 +15,9 @@ import type {
     MultiSigAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
+    hasSigningKeys,
+    isHardwareWalletAccount,
     isMultisigAccount,
-    canSignWithAccount,
 } from '@perawallet/wallet-core-accounts'
 
 /**
@@ -29,10 +30,16 @@ import {
  * multisig, which is undesirable. Mirrors Android's
  * `GetJointAccountProposerAddressUseCase`.
  *
+ * Multisig participant slots are validated against the participant's original
+ * pubkey at multisig creation; rekey of the participant address has no effect
+ * on its multisig slot. So the participant must hold its OWN local signing
+ * keys — rekey indirection is intentionally NOT followed here. Hardware
+ * participants are excluded (Ledger cosigning is deferred).
+ *
  * @param account - The multisig account
  * @param allAccounts - All accounts in the wallet
- * @returns Local accounts that are participants and can sign, in
- *          participant-list order
+ * @returns Local accounts that are participants and can sign with their own
+ *          keys, in participant-list order
  */
 export const getLocalParticipants = (
     account: WalletAccount,
@@ -50,9 +57,9 @@ export const getLocalParticipants = (
             a => a.address === participantAddress,
         )
         if (!localAccount) return []
-        return canSignWithAccount(localAccount, allAccounts)
-            ? [localAccount]
-            : []
+        if (!hasSigningKeys(localAccount)) return []
+        if (isHardwareWalletAccount(localAccount)) return []
+        return [localAccount]
     })
 }
 

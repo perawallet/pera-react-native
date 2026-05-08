@@ -20,6 +20,7 @@ import { getSignRequestDetailQueryKey } from './querykeys'
 
 type UseSignRequestDetailQueryParams = {
     network: Network
+    deviceId: string
     signRequestId: string
     enabled?: boolean
     pollWhilePending?: boolean
@@ -29,6 +30,7 @@ const PENDING_POLL_INTERVAL = 5000
 
 export const useSignRequestDetailQuery = ({
     network,
+    deviceId,
     signRequestId,
     enabled = true,
     pollWhilePending = false,
@@ -38,8 +40,8 @@ export const useSignRequestDetailQuery = ({
 > => {
     return useQuery({
         queryKey: getSignRequestDetailQueryKey(network, signRequestId),
-        queryFn: () => getSignRequestDetail(network, signRequestId),
-        enabled: enabled && !!signRequestId,
+        queryFn: () => getSignRequestDetail(network, deviceId, signRequestId),
+        enabled: enabled && !!signRequestId && !!deviceId,
         select: useCallback(mapSignRequest, []),
         refetchInterval: pollWhilePending
             ? data => {
