@@ -108,7 +108,10 @@ export const removeKey = async ({
     keyId: string
 }): Promise<void> => {
     keyData.delete(keyId)
-    store.setState((s: KeyStoreState) => ({ ...s, keys: s.keys.filter(k => k.id !== keyId) }))
+    store.setState((s: KeyStoreState) => ({
+        ...s,
+        keys: s.keys.filter(k => k.id !== keyId),
+    }))
 }
 
 export const clear = async ({

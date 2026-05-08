@@ -25,7 +25,8 @@ describe('algokit-utils + MSW interception', () => {
     afterEach(() => server.resetHandlers())
     afterAll(() => server.close())
 
-    const TEST_ADDR = 'CBLWUBRWCWNKZ2Y2Q5HFKN7XISNBVAN47422MZOKH5OGCZ3H5JYLTDPLOA'
+    const TEST_ADDR =
+        'CBLWUBRWCWNKZ2Y2Q5HFKN7XISNBVAN47422MZOKH5OGCZ3H5JYLTDPLOA'
 
     it('Given an MSW handler for accountInformation, when algokit fetches account info, then the response is the mocked one', async () => {
         server.use(

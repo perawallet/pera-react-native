@@ -141,7 +141,11 @@ export const mockAlgodSendRawTransaction = ({
     )
 
 export type AlgodAccountAssetInformationResponse = {
-    'asset-holding': { amount: number; 'asset-id': number; 'is-frozen': boolean }
+    'asset-holding': {
+        amount: number
+        'asset-id': number
+        'is-frozen': boolean
+    }
     round?: number
 }
 
@@ -241,8 +245,5 @@ export const mockIndexerAsset = ({
     status = 200,
 }: MockIndexerAssetParams): HttpHandler =>
     http.get(`*/v2/assets/${assetId}`, () =>
-        HttpResponse.json(
-            { 'current-round': 1, asset: response },
-            { status },
-        ),
+        HttpResponse.json({ 'current-round': 1, asset: response }, { status }),
     )

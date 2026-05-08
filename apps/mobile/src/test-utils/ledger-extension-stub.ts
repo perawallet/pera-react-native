@@ -22,6 +22,8 @@ export const WithLedgerExtension = (_provider: any): Record<string, never> => {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const WithLedgerUsbExtension = (_provider: any): Record<string, never> => {
+export const WithLedgerUsbExtension = (
+    _provider: any,
+): Record<string, never> => {
     return {}
 }

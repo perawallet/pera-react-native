@@ -127,10 +127,7 @@ const buildNavigationApi = (controller: StackController): NavigationApi => {
                 }
                 return [...trimmed.slice(0, -1), merged]
             }
-            return [
-                ...prev,
-                { name, params: params ?? {}, key: newRouteKey() },
-            ]
+            return [...prev, { name, params: params ?? {}, key: newRouteKey() }]
         })
     }
 
@@ -319,9 +316,7 @@ const collectScreens = (children: React.ReactNode): ScreenConfig[] => {
                 (props.component as React.ComponentType<
                     Record<string, unknown>
                 >) ??
-                (props.children as React.ComponentType<
-                    Record<string, unknown>
-                >)
+                (props.children as React.ComponentType<Record<string, unknown>>)
             screens.push({
                 name: props.name,
                 component,
