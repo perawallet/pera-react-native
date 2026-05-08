@@ -877,7 +877,8 @@
             "addresses_count": "{{count}} addresses",
             "select_all": "Select all",
             "already_imported": "already imported",
-            "continue": "Continue"
+            "continue": "Continue",
+            "finish_button": "Finish Account Creation"
         },
         "import_rekeyed_addresses": {
             "title": "{{count}} rekeyed accounts found",
