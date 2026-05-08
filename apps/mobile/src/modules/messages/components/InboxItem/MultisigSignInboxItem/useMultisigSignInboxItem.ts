@@ -11,6 +11,7 @@
  */
 
 import type { InboxItem as InboxItemModel } from '@perawallet/wallet-core-messages'
+import { IN_FLIGHT_SIGN_REQUEST_STATUSES } from '@perawallet/wallet-core-multisig'
 import {
     formatRelativeTime,
     formatTimeRemaining,
@@ -34,8 +35,6 @@ type UseMultisigSignInboxItemResult = {
     threshold: number
     timeRemaining: string | null
 }
-
-const WAITING_STATUSES = new Set(['pending', 'ready', 'submitting'])
 
 const STATUS_KEY_BY_STATUS: Record<
     string,
@@ -65,7 +64,7 @@ export const useMultisigSignInboxItem = (
 
     const { data, createdAt } = item
     const status = data.status
-    const isWaiting = WAITING_STATUSES.has(status)
+    const isWaiting = IN_FLIGHT_SIGN_REQUEST_STATUSES.has(status)
     const isSuccess = status === 'confirmed'
     const isFailure = !isWaiting && !isSuccess
 

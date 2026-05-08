@@ -10,11 +10,4 @@
  limitations under the License
  */
 
-import type { MultisigSignRequest } from '@perawallet/wallet-core-multisig'
-
-export const getSignedResponseCount = (
-    signRequest: Pick<MultisigSignRequest, 'transactionLists'>,
-): number => {
-    const responses = signRequest.transactionLists[0]?.responses ?? []
-    return responses.filter(r => r.response === 'signed').length
-}
+export * from './signRequestStatus'

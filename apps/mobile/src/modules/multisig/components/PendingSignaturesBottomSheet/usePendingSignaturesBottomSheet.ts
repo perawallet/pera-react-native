@@ -18,6 +18,9 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import {
+    ACTIONABLE_SIGN_REQUEST_STATUSES,
+    FAILURE_SIGN_REQUEST_STATUSES,
+    FINALIZED_SIGN_REQUEST_STATUSES,
     useSignRequestDetailQuery,
     type MultisigSignRequest,
     type SignRequestStatus,
@@ -28,10 +31,7 @@ import { useMultisigSignRequestDecline } from '../../hooks/useMultisigSignReques
 import { usePendingSignaturesSheetStore } from '../../stores/usePendingSignaturesSheetStore'
 import { buildMultisigCosignRequest } from '../../utils/buildMultisigCosignRequest'
 import { getLocalUnsignedSigners } from '../../utils/getLocalUnsignedSigners'
-import {
-    ACTIONABLE_SIGN_REQUEST_STATUSES,
-    getSignedResponseCount,
-} from '../../utils/signRequestStatus'
+import { getSignedResponseCount } from '../../utils/signRequestStatus'
 import type { SignerStatus } from '../SignerStatusListItem'
 
 export type SignerRow = {
@@ -70,15 +70,6 @@ export type UsePendingSignaturesBottomSheetResult = {
     handleConfirmCancel: () => Promise<void>
 }
 
-const FINALIZED_STATUSES: SignRequestStatus[] = [
-    'confirmed',
-    'failed',
-    'expired',
-    'declined',
-]
-
-const FAILURE_STATUSES: SignRequestStatus[] = ['failed', 'expired', 'declined']
-
 const FAILURE_BANNER_KEY_BY_STATUS: Partial<Record<SignRequestStatus, string>> =
     {
         expired: 'multisig.pending_signatures.canceled',
@@ -114,7 +105,7 @@ export const usePendingSignaturesBottomSheet =
         const bannerVariant: StatusBannerVariant = useMemo(() => {
             if (!status) return 'waiting'
             if (status === 'confirmed') return 'success'
-            if (FAILURE_STATUSES.includes(status)) return 'failure'
+            if (FAILURE_SIGN_REQUEST_STATUSES.has(status)) return 'failure'
             return 'waiting'
         }, [status])
 
@@ -127,14 +118,15 @@ export const usePendingSignaturesBottomSheet =
 
         const timeRemaining = useMemo(() => {
             if (!signRequest) return null
-            if (status && FINALIZED_STATUSES.includes(status)) return null
+            if (status && FINALIZED_SIGN_REQUEST_STATUSES.has(status))
+                return null
             return formatTimeRemaining(signRequest.expectedExpireDatetime)
         }, [signRequest, status])
 
         const signers: SignerRow[] = useMemo(() => {
             if (!signRequest) return []
             const isFinalized =
-                status !== null && FINALIZED_STATUSES.includes(status)
+                status !== null && FINALIZED_SIGN_REQUEST_STATUSES.has(status)
             const responses = signRequest.transactionLists[0]?.responses ?? []
             const responseByAddress = new Map(
                 responses.map(r => [r.address, r]),

@@ -15,6 +15,7 @@ import { useQuery, type UseQueryResult } from '@tanstack/react-query'
 import type { Network } from '@perawallet/wallet-core-shared'
 import type { MultisigSignRequest } from '../models'
 import { getSignRequestDetail } from '../api/endpoints'
+import { ACTIONABLE_SIGN_REQUEST_STATUSES } from '../constants'
 import { mapSignRequest } from '../mappers'
 import { getSignRequestDetailQueryKey } from './querykeys'
 
@@ -45,10 +46,8 @@ export const useSignRequestDetailQuery = ({
         select: useCallback(mapSignRequest, []),
         refetchInterval: pollWhilePending
             ? data => {
-                  if (
-                      data.state.data?.status === 'pending' ||
-                      data.state.data?.status === 'ready'
-                  ) {
+                  const status = data.state.data?.status
+                  if (status && ACTIONABLE_SIGN_REQUEST_STATUSES.has(status)) {
                       return PENDING_POLL_INTERVAL
                   }
                   return false

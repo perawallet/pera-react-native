@@ -702,7 +702,7 @@
                 "title": "<0>Signature request</0> to sign for {{address}}",
                 "status_pending": "Pending transaction",
                 "status_failed": "Failed transaction",
-                "status_expired": "Expired transaction",
+                "status_expired": "Canceled transaction",
                 "status_declined": "Declined transaction",
                 "status_confirmed": "Confirmed"
             },

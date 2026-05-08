@@ -13,12 +13,14 @@
 import { useCallback } from 'react'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useTransactionEncoder } from '@perawallet/wallet-core-blockchain'
-import type { MultisigSignRequest } from '@perawallet/wallet-core-multisig'
+import {
+    ACTIONABLE_SIGN_REQUEST_STATUSES,
+    type MultisigSignRequest,
+} from '@perawallet/wallet-core-multisig'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import { usePendingSignaturesSheetStore } from '../stores/usePendingSignaturesSheetStore'
 import { buildMultisigCosignRequest } from '../utils/buildMultisigCosignRequest'
 import { getLocalUnsignedSigners } from '../utils/getLocalUnsignedSigners'
-import { ACTIONABLE_SIGN_REQUEST_STATUSES } from '../utils/signRequestStatus'
 
 export type UseHandleMultisigSignTapResult = (
     signRequest: MultisigSignRequest,
