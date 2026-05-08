@@ -35,4 +35,4 @@ export {
     type MockIndexerAccountTransactionsParams,
     type MockIndexerAccountParams,
     type MockIndexerAssetParams,
-} from './handlers'
+} from './msw-handlers'

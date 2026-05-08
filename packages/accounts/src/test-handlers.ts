@@ -15,4 +15,4 @@ export {
     mockAccountAssetBalanceHistory,
     type MockAccountsBalanceHistoryParams,
     type MockAccountAssetBalanceHistoryParams,
-} from './hooks/handlers'
+} from './hooks/msw-handlers'

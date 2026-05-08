@@ -13,4 +13,4 @@
 export {
     mockAccountFastLookup,
     type MockAccountFastLookupParams,
-} from './api/handlers'
+} from './api/msw-handlers'

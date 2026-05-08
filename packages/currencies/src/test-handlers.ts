@@ -18,4 +18,4 @@ export {
     mockGetCurrency,
     type MockListCurrenciesParams,
     type MockGetCurrencyParams,
-} from './api/currencies/handlers'
+} from './api/currencies/msw-handlers'

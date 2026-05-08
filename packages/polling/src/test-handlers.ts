@@ -13,4 +13,4 @@
 export {
     mockShouldRefresh,
     type MockShouldRefreshParams,
-} from './hooks/handlers'
+} from './hooks/msw-handlers'

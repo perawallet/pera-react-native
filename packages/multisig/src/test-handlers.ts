@@ -23,4 +23,4 @@ export {
     type MockAddSignatureParams,
     type MockGetSignRequestDetailParams,
     type MockDeleteMultisigImportInboxParams,
-} from './api/handlers'
+} from './api/msw-handlers'

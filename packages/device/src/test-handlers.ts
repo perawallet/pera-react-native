@@ -19,4 +19,4 @@ export {
     type MockUpdateDeviceParams,
     type MockNullifyPushTokenParams,
     type MockDeleteDeviceParams,
-} from './hooks/handlers'
+} from './hooks/msw-handlers'

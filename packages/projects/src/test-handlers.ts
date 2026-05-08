@@ -13,6 +13,6 @@
 export {
     mockApplication,
     type MockApplicationParams,
-} from './api/applications/handlers'
+} from './api/applications/msw-handlers'
 
-export { mockProjects, type MockProjectsParams } from './api/projects/handlers'
+export { mockProjects, type MockProjectsParams } from './api/projects/msw-handlers'

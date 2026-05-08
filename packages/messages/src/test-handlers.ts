@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-export { mockInbox, type MockInboxParams } from './api/inbox/handlers'
+export { mockInbox, type MockInboxParams } from './api/inbox/msw-handlers'
 
 export {
     mockNotificationStatus,
@@ -21,4 +21,4 @@ export {
     type MockNotificationListParams,
     type MockUpdateLastSeenNotificationParams,
     type MockUpdateNotificationEnabledParams,
-} from './api/notifications/handlers'
+} from './api/notifications/msw-handlers'

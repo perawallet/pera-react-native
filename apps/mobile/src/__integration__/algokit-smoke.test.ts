@@ -11,10 +11,13 @@
  */
 
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
-import { http, HttpResponse } from 'msw'
 
 import { server } from '@test-utils/msw-server'
 import { getAlgorandClient } from '@perawallet/wallet-core-blockchain'
+import {
+    mockAlgodAccountInformation,
+    mockAlgodTransactionParams,
+} from '@perawallet/wallet-core-blockchain/test-handlers'
 
 // Smoke test answering the question: does MSW intercept the HTTP calls
 // that algokit-utils makes? If yes, integration tests can mock algod/
@@ -30,27 +33,10 @@ describe('algokit-utils + MSW interception', () => {
 
     it('Given an MSW handler for accountInformation, when algokit fetches account info, then the response is the mocked one', async () => {
         server.use(
-            http.get(`*/v2/accounts/${TEST_ADDR}`, () =>
-                HttpResponse.json({
-                    address: TEST_ADDR,
-                    amount: 12345678,
-                    'min-balance': 100000,
-                    'amount-without-pending-rewards': 12345678,
-                    'pending-rewards': 0,
-                    rewards: 0,
-                    round: 1,
-                    status: 'Offline',
-                    assets: [],
-                    'apps-local-state': [],
-                    'apps-total-schema': { 'num-byte-slice': 0, 'num-uint': 0 },
-                    'created-apps': [],
-                    'created-assets': [],
-                    'total-apps-opted-in': 0,
-                    'total-assets-opted-in': 0,
-                    'total-created-apps': 0,
-                    'total-created-assets': 0,
-                }),
-            ),
+            mockAlgodAccountInformation({
+                address: TEST_ADDR,
+                response: { amount: 12345678 },
+            }),
         )
 
         const client = getAlgorandClient('mainnet')
@@ -59,20 +45,7 @@ describe('algokit-utils + MSW interception', () => {
     })
 
     it('Given an MSW handler for transactionParams, when algokit fetches suggested params, then it returns the mocked round + fee', async () => {
-        server.use(
-            http.get('*/v2/transactions/params', () =>
-                HttpResponse.json({
-                    'consensus-version':
-                        'https://github.com/algorandfoundation/specs/tree/test',
-                    fee: 0,
-                    'min-fee': 1000,
-                    'genesis-id': 'mainnet-v1.0',
-                    'genesis-hash':
-                        'wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=',
-                    'last-round': 99999,
-                }),
-            ),
-        )
+        server.use(mockAlgodTransactionParams({ response: { fee: 0 } }))
 
         const client = getAlgorandClient('mainnet')
         const params = await client.client.algod.transactionParams()

@@ -1,15 +1,24 @@
 #!/bin/sh
 # Fails CI if test-only modules leak into the production package builds.
 #
-# Why this exists: MSW handlers and fixtures live in package source trees
-# under names like `handlers.ts` and `test-handlers.ts` so they can be
-# co-located with the API client they mock. They are NOT exported from the
-# main barrel, so the vite/Metro bundler never reaches them — but a regression
-# (e.g. someone adds `export * from './api/currencies/handlers'` to
-# `src/index.ts`) would silently bundle msw into the prod tree.
+# What this catches: a production code path inside a package's `dist/` tree
+# that ends up importing a test-only npm dependency (msw, vitest,
+# @testing-library, etc.). Those imports should never appear because no
+# production source file should reference them — if one does, the package
+# ships the test surface to downstream consumers and pulls heavy test deps
+# into the app bundle.
 #
-# This script greps every package's `dist/` tree for `msw` imports and fails
-# if any are found. Run after `pnpm build`.
+# What this does NOT catch:
+# - `dist/test-utils/**` directories — some packages (shared, database,
+#   platform) intentionally expose test helpers via a `./test-utils`
+#   sub-export. Those are public-by-design even though their consumers are
+#   only tests.
+# - Source files that have test-only suffixes but no test-only imports.
+#   `vite-plugin-dts` is configured to exclude those at build time
+#   (`**/{handlers,*-handlers}.ts`); this script is the runtime fallback
+#   for cases the dts excludes miss.
+#
+# Run after `pnpm build`.
 
 set -e
 
@@ -18,9 +27,16 @@ EXIT_CODE=0
 
 echo "Checking for test-only module leaks in package dist/ trees..."
 
-# Patterns that indicate msw or other test-only modules made it into prod.
-# Tweak when adding new test-only deps.
-PATTERNS='from .msw|require.[\"'\'']msw[\"'\'']'
+# Module imports that should never appear in a production dist:
+#   - msw / @mswjs           — REST mocking library
+#   - vitest                 — test runner (assertions, hooks, etc.)
+#   - @testing-library/*     — DOM/RN testing helpers
+#   - @vitest/*              — vitest plugins (coverage, ui, etc.)
+# Both ESM (`from 'X'`) and CJS (`require('X')`) shapes are checked. The
+# regex deliberately requires a quote boundary on the right (`'` or `"`)
+# so partial matches like `mswjs-extra` don't get falsely flagged.
+PATTERNS='from [\"'\''](msw|@mswjs/|vitest|@vitest/|@testing-library/)'\
+'|require\([\"'\''](msw|@mswjs/|vitest|@vitest/|@testing-library/)'
 
 # Search every shipped dist/ under packages and extensions.
 for dist in "$REPO_ROOT"/packages/*/dist "$REPO_ROOT"/extensions/*/dist; do

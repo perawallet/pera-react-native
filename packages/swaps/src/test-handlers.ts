@@ -17,33 +17,33 @@ export {
     type MockCalculatePeraFeeParams,
     type MockCalculateSwapAmountParams,
     type MockCreateQuotesParams,
-} from './api/quotes/handlers'
+} from './api/quotes/msw-handlers'
 
 export {
     mockSwapProviders,
     mockTopPairs,
     type MockSwapProvidersParams,
     type MockTopPairsParams,
-} from './api/providers/handlers'
+} from './api/providers/msw-handlers'
 
 export {
     mockUpdateSwapStatus,
     type MockUpdateSwapStatusParams,
-} from './api/swaps/handlers'
+} from './api/swaps/msw-handlers'
 
 export {
     mockAvailableAssets,
     type MockAvailableAssetsParams,
-} from './api/available-assets/handlers'
+} from './api/available-assets/msw-handlers'
 
 export {
     mockPrepareTransactions,
     type MockPrepareTransactionsParams,
-} from './api/transactions/handlers'
+} from './api/transactions/msw-handlers'
 
 export {
     mockSwapHistory,
     mockDistinctPairsHistory,
     type MockSwapHistoryParams,
     type MockDistinctPairsHistoryParams,
-} from './api/history/handlers'
+} from './api/history/msw-handlers'

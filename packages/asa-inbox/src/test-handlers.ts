@@ -15,4 +15,4 @@ export {
     mockArc59AssetRequests,
     type MockArc59SendSummaryParams,
     type MockArc59AssetRequestsParams,
-} from './api/handlers'
+} from './api/msw-handlers'
