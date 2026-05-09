@@ -67,8 +67,17 @@ export const localKeySignerActor = fromPromise<
                     'Account not found in allAccounts',
                 )
             }
-            const authAccount = resolveAuthAccount(signerAccount, allAccounts)
-            return strategy.sign(group, authAccount)
+            // Multisig cosign: signerAddress is the participant whose slot we
+            // are filling. The slot is keyed by the participant's ORIGINAL
+            // pubkey at multisig creation, so rekey indirection must NOT be
+            // followed — we sign with the participant's own key. For all
+            // other sources (regular local txs, walletconnect, etc.) the
+            // standard rekey rule applies: the auth account's key signs.
+            const accountForSigning =
+                group.source.type === 'multisig-cosign'
+                    ? signerAccount
+                    : resolveAuthAccount(signerAccount, allAccounts)
+            return strategy.sign(group, accountForSigning)
         }),
     )
 })

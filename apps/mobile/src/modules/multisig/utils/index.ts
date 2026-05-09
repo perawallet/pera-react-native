@@ -10,4 +10,7 @@
  limitations under the License
  */
 
+export { buildMultisigCosignRequest } from './buildMultisigCosignRequest'
+export { getLocalUnsignedSigners } from './getLocalUnsignedSigners'
 export { getNextSharedAccountName } from './getNextSharedAccountName'
+export { getSignedResponseCount } from './signRequestStatus'

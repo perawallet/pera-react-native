@@ -128,6 +128,19 @@ const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
         return { type: 'local' }
     }
 
+    if (sourceType === 'multisig-cosign') {
+        if (!request.signRequestId) {
+            throw new Error(
+                'multisig-cosign request requires signRequestId on the SignRequest',
+            )
+        }
+        return {
+            type: 'multisig-cosign',
+            signRequestId: request.signRequestId,
+            requestId: request.transportId ?? request.id,
+        }
+    }
+
     // Local+callback and external sources both deliver via callbacks.
     // Wrap the typed request callback into the generic SourceCallbacks shape.
     let approveCallback: SourceCallbacks['approve']

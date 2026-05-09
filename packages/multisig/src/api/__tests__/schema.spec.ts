@@ -16,6 +16,8 @@ import {
     proposeSignRequestSchema,
     addSignatureRequestSchema,
     declineRequestSchema,
+    signRequestResponseSchema,
+    transactionListResponseSchema,
 } from '../schema'
 
 describe('createMultisigAccountRequestSchema', () => {
@@ -126,6 +128,94 @@ describe('addSignatureRequestSchema', () => {
                 response: 'unknown',
             }),
         ).toThrow()
+    })
+})
+
+describe('transactionListResponseSchema', () => {
+    test('coerces string first_valid_block / last_valid_block to numbers (real backend shape)', () => {
+        // Backend returns block heights as strings; coerce.number() unifies them
+        // to the domain's numeric representation. Captured from a real
+        // POST /v1/inbox/{deviceID}/ response.
+        const result = transactionListResponseSchema.parse({
+            id: 12345,
+            raw_transactions: ['iaNhbXTOAAMNQ...'],
+            first_valid_block: '63113487',
+            last_valid_block: '63114487',
+            responses: [{ address: 'ADDR1', response: 'signed' }],
+            expected_expire_datetime: '2026-05-06T15:37:03+0300',
+        })
+
+        expect(result.first_valid_block).toBe(63113487)
+        expect(result.last_valid_block).toBe(63114487)
+        expect(typeof result.first_valid_block).toBe('number')
+        expect(typeof result.last_valid_block).toBe('number')
+        expect(result.id).toBe('12345')
+    })
+
+    test('still accepts numeric first_valid_block / last_valid_block', () => {
+        const result = transactionListResponseSchema.parse({
+            id: 'txlist-1',
+            raw_transactions: [],
+            first_valid_block: 1000,
+            last_valid_block: 2000,
+            responses: [],
+            expected_expire_datetime: '2025-01-01T00:00:00Z',
+        })
+
+        expect(result.first_valid_block).toBe(1000)
+        expect(result.last_valid_block).toBe(2000)
+    })
+})
+
+describe('signRequestResponseSchema', () => {
+    test('parses the real /v1/inbox/{deviceID}/ response payload', () => {
+        // Real testnet response captured 2026-05-06; this is the exact shape
+        // that was silently failing before the schema fix (block numbers as
+        // strings tripped z.number()).
+        const realPayload = {
+            id: '26cedd3b-8b85-4660-8cdd-3c60ccc335cd',
+            joint_account: {
+                custom_id: '9b190da9-d551-4e6b-8f4b-34220c4e8ffd',
+                creation_datetime: '2026-05-06T14:41:20+0300',
+                address:
+                    'FESGE7VW2XZ5AQ36UZAYK4T6OKWNKSFBCWWX3YXIDPSEDKMNREVJVCDX2Y',
+                version: 1,
+                threshold: 2,
+                participant_addresses: [
+                    'PYD62H4POQJE2VLGZ3W3RGT5CPEJCLMJTEWAXUUNMBK2QA73FA3KHKTXBQ',
+                    'U7JK4Q5DA6Q36UN6JYBZK5HZ5B2YZLDMD3TMF67OAX22TD64KNESJRATUY',
+                ],
+            },
+            type: 'async',
+            transaction_lists: [
+                {
+                    id: 12345,
+                    raw_transactions: ['iaNhbXTOAAMNQ...'],
+                    first_valid_block: '63113487',
+                    last_valid_block: '63114487',
+                    responses: [
+                        {
+                            address:
+                                'PYD62H4POQJE2VLGZ3W3RGT5CPEJCLMJTEWAXUUNMBK2QA73FA3KHKTXBQ',
+                            response: 'signed',
+                        },
+                    ],
+                    expected_expire_datetime: '2026-05-06T15:37:03+0300',
+                },
+            ],
+            expected_expire_datetime: '2026-05-06T15:37:03+0300',
+            status: 'pending',
+            creation_datetime: '2026-05-06T14:49:21+0300',
+            fail_reason_display: null,
+        }
+
+        const result = signRequestResponseSchema.parse(realPayload)
+
+        expect(result.id).toBe('26cedd3b-8b85-4660-8cdd-3c60ccc335cd')
+        expect(result.status).toBe('pending')
+        expect(result.transaction_lists[0]!.first_valid_block).toBe(63113487)
+        expect(result.transaction_lists[0]!.last_valid_block).toBe(63114487)
+        expect(result.fail_reason_display).toBeNull()
     })
 })
 

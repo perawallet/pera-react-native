@@ -10,11 +10,14 @@
  limitations under the License
  */
 
+import { Trans } from 'react-i18next'
 import type { InboxItem as InboxItemModel } from '@perawallet/wallet-core-messages'
-import { PWIcon, PWView } from '@components/core'
+import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { InboxItemShell } from '../InboxItemShell'
-import { useStyles } from '../styles'
+import { UnreadIndicator } from '../../UnreadIndicator'
+import { isPendingAction } from '../isPendingAction'
+import { useStyles } from './styles'
+import { useMultisigSignInboxItem } from './useMultisigSignInboxItem'
 
 type MultisigSignItem = Extract<InboxItemModel, { type: 'multisig_sign' }>
 
@@ -27,26 +30,109 @@ export const MultisigSignInboxItem = ({
     item,
     onPress,
 }: MultisigSignInboxItemProps) => {
-    const { t } = useLanguage()
     const styles = useStyles()
+    const { t } = useLanguage()
+    const {
+        avatarIcon,
+        truncatedAddress,
+        relativeTime,
+        isWaiting,
+        isSuccess,
+        isFailure,
+        statusKey,
+        signedCount,
+        threshold,
+        timeRemaining,
+    } = useMultisigSignInboxItem(item)
 
-    const icon = (
-        <PWView style={styles.iconContainer}>
-            <PWIcon
-                name='edit-pen'
-                variant='secondary'
-                size='lg'
-            />
-        </PWView>
-    )
+    const statusStyle = isFailure
+        ? styles.statusTextFailure
+        : isSuccess
+          ? styles.statusTextSuccess
+          : styles.statusTextWaiting
 
     return (
-        <InboxItemShell
-            item={item}
+        <PWTouchableOpacity
+            style={styles.container}
             onPress={onPress}
-            icon={icon}
-            title={t('messages.inbox.multisig_sign')}
-            subtitle={item.data.status}
-        />
+            disabled={!onPress}
+            testID='multisig_sign_inbox_item'
+        >
+            <PWView style={styles.indicatorSlot}>
+                <UnreadIndicator isUnread={isPendingAction(item)} />
+            </PWView>
+            <PWIcon
+                name={avatarIcon}
+                size='lg'
+            />
+            <PWView style={styles.content}>
+                <PWText style={styles.title}>
+                    <Trans
+                        i18nKey='messages.inbox.multisig_sign.title'
+                        values={{ address: truncatedAddress }}
+                        components={[
+                            <PWText
+                                key='bold'
+                                variant='bodySemibold'
+                            />,
+                        ]}
+                    />
+                </PWText>
+                <PWView style={styles.statusRow}>
+                    <PWText
+                        variant='caption'
+                        style={statusStyle}
+                        testID='multisig_sign_inbox_item_status'
+                    >
+                        {t(statusKey)}
+                    </PWText>
+                    <PWText
+                        variant='caption'
+                        style={styles.timestamp}
+                    >
+                        {`· ${relativeTime}`}
+                    </PWText>
+                </PWView>
+                {isWaiting && (
+                    <PWView style={styles.badgeRow}>
+                        <PWView
+                            style={styles.badge}
+                            testID='multisig_sign_inbox_item_signed_badge'
+                        >
+                            <PWIcon
+                                name='check'
+                                size='sm'
+                                variant='secondary'
+                            />
+                            <PWText
+                                variant='caption'
+                                style={styles.badgeText}
+                            >
+                                {t('multisig.pending_signatures.x_of_y', {
+                                    signed: signedCount,
+                                    total: threshold,
+                                })}
+                            </PWText>
+                        </PWView>
+                        {!!timeRemaining && (
+                            <PWView
+                                style={styles.badge}
+                                testID='multisig_sign_inbox_item_time_badge'
+                            >
+                                <PWText
+                                    variant='caption'
+                                    style={styles.badgeText}
+                                >
+                                    {t(
+                                        'multisig.pending_signatures.time_left',
+                                        { time: timeRemaining },
+                                    )}
+                                </PWText>
+                            </PWView>
+                        )}
+                    </PWView>
+                )}
+            </PWView>
+        </PWTouchableOpacity>
     )
 }
