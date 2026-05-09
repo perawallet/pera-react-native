@@ -27,6 +27,7 @@ import {
 import { useLocalKeyTransactionSigner } from './useLocalKeyTransactionSigner'
 import { useArbitraryDataSigner } from './useArbitraryDataSigner'
 import { useArc60Signer } from './useArc60Signer'
+import { useMultisigTransportAdapters } from './useMultisigTransportAdapters'
 import { useSigningStore, useHardwareSigningStore } from '../store'
 import { createSigningMachine } from '../machine/createSigningMachine'
 import { signingMachine } from '../machine/signingMachine'
@@ -161,6 +162,7 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
     const algokit = useAlgorandClient()
     const { network } = useNetwork()
     const allAccounts = useAllAccounts()
+    const { proposeSignRequest, addSignatures } = useMultisigTransportAdapters()
 
     // Stable refs so the actor subscription callback never becomes stale
     const removeSignRequestFromStoreRef = useRef(removeSignRequestFromStore)
@@ -179,6 +181,8 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                 algokit,
                 encodeSignedTransactions,
                 network,
+                proposeSignRequest,
+                addSignatures,
             }),
             network,
             // Hardware-wallet actor consumes this. Ledger adds the "TX"
@@ -199,6 +203,8 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
             encodeSignedTransactions,
             algokit,
             network,
+            proposeSignRequest,
+            addSignatures,
         ],
     )
 

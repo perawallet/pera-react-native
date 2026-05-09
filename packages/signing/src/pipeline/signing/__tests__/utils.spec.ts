@@ -15,7 +15,8 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const mocks = vi.hoisted(() => ({
     isMultisigAccount: vi.fn(),
-    canSignWithAccount: vi.fn(),
+    hasSigningKeys: vi.fn(),
+    isHardwareWalletAccount: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
@@ -26,7 +27,8 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     return {
         ...original,
         isMultisigAccount: mocks.isMultisigAccount,
-        canSignWithAccount: mocks.canSignWithAccount,
+        hasSigningKeys: mocks.hasSigningKeys,
+        isHardwareWalletAccount: mocks.isHardwareWalletAccount,
     }
 })
 
@@ -44,7 +46,11 @@ const makeMultisig = (threshold: number, addresses: string[]): WalletAccount =>
     }) as unknown as WalletAccount
 
 const makeAccount = (address: string): WalletAccount =>
-    ({ type: 'algo25', address }) as unknown as WalletAccount
+    ({
+        type: 'algo25',
+        address,
+        keyPairId: `key-${address}`,
+    }) as unknown as WalletAccount
 
 const accountA = makeAccount('A')
 const accountB = makeAccount('B')
@@ -52,7 +58,8 @@ const accountC = makeAccount('C')
 
 beforeEach(() => {
     mocks.isMultisigAccount.mockReset()
-    mocks.canSignWithAccount.mockReset()
+    mocks.hasSigningKeys.mockReset().mockReturnValue(true)
+    mocks.isHardwareWalletAccount.mockReset().mockReturnValue(false)
 })
 
 describe('getLocalParticipants', () => {
@@ -61,9 +68,8 @@ describe('getLocalParticipants', () => {
         expect(getLocalParticipants(accountA, [accountA, accountB])).toEqual([])
     })
 
-    test('returns local accounts that are participants and can sign', () => {
+    test('returns local accounts that are participants and have own signing keys', () => {
         mocks.isMultisigAccount.mockReturnValue(true)
-        mocks.canSignWithAccount.mockReturnValue(true)
         const multisig = makeMultisig(2, ['A', 'B', 'X'])
 
         const participants = getLocalParticipants(multisig, [
@@ -75,9 +81,12 @@ describe('getLocalParticipants', () => {
         expect(participants).toEqual([accountA, accountB])
     })
 
-    test('filters out participants that cannot sign', () => {
+    test('filters out participants without own signing keys (rekey indirection NOT followed)', () => {
         mocks.isMultisigAccount.mockReturnValue(true)
-        mocks.canSignWithAccount.mockImplementation(
+        // Only A has its own keys; B is e.g. a watch participant rekeyed to a
+        // local-key account — that does NOT make B able to sign for the
+        // multisig slot, because the slot is keyed by B's original pubkey.
+        mocks.hasSigningKeys.mockImplementation(
             (acc: WalletAccount) => acc.address === 'A',
         )
         const multisig = makeMultisig(2, ['A', 'B'])
@@ -89,6 +98,36 @@ describe('getLocalParticipants', () => {
 
         expect(participants).toEqual([accountA])
     })
+
+    test('filters out hardware-wallet participants (Ledger cosign deferred)', () => {
+        mocks.isMultisigAccount.mockReturnValue(true)
+        mocks.isHardwareWalletAccount.mockImplementation(
+            (acc: WalletAccount) => acc.address === 'B',
+        )
+        const multisig = makeMultisig(2, ['A', 'B'])
+
+        const participants = getLocalParticipants(multisig, [
+            accountA,
+            accountB,
+        ])
+
+        expect(participants).toEqual([accountA])
+    })
+
+    test('returns participants in participant-list order, not wallet order', () => {
+        mocks.isMultisigAccount.mockReturnValue(true)
+        // Multisig participants are [B, A]; wallet stores them as [A, B].
+        // Result must follow participant-list order so the proposer pick
+        // (signers[0]) is stable across devices regardless of wallet sort.
+        const multisig = makeMultisig(2, ['B', 'A'])
+
+        const participants = getLocalParticipants(multisig, [
+            accountA,
+            accountB,
+        ])
+
+        expect(participants).toEqual([accountB, accountA])
+    })
 })
 
 describe('canMeetThresholdLocally', () => {
@@ -99,7 +138,6 @@ describe('canMeetThresholdLocally', () => {
 
     test('returns true when local participants >= threshold', () => {
         mocks.isMultisigAccount.mockReturnValue(true)
-        mocks.canSignWithAccount.mockReturnValue(true)
         const multisig = makeMultisig(2, ['A', 'B'])
 
         expect(canMeetThresholdLocally(multisig, [accountA, accountB])).toBe(
@@ -109,7 +147,6 @@ describe('canMeetThresholdLocally', () => {
 
     test('returns false when local participants < threshold', () => {
         mocks.isMultisigAccount.mockReturnValue(true)
-        mocks.canSignWithAccount.mockReturnValue(true)
         const multisig = makeMultisig(3, ['A', 'B'])
 
         expect(canMeetThresholdLocally(multisig, [accountA, accountB])).toBe(

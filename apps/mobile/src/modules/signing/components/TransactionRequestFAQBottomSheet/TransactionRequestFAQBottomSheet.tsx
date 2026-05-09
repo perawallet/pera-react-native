@@ -28,6 +28,13 @@ export const TransactionRequestFAQBottomSheet = () => {
 
     useEffect(() => {
         if (currentRequest) {
+            // Skip the FAQ for multisig cosign requests: the user came from
+            // the inbox sign tap and already knows what they're confirming.
+            if (currentRequest.sourceType === 'multisig-cosign') {
+                setIsVisible(false)
+                return
+            }
+
             const alreadyShown = getPreference(
                 UserPreferences.transactionRequestFaqShown,
             )

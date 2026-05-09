@@ -18,6 +18,7 @@ import {
     parseRoundTime,
     toISODateString,
     getDateRangeParams,
+    formatTimeRemaining,
 } from '../dates'
 
 describe('isValidISODate', () => {
@@ -102,5 +103,42 @@ describe('getDateRangeParams', () => {
         const params = getDateRangeParams(7)
         expect(params.afterTime).toMatch(/^\d{4}-\d{2}-\d{2}T/)
         expect(params.beforeTime).toMatch(/^\d{4}-\d{2}-\d{2}T/)
+    })
+})
+
+describe('formatTimeRemaining', () => {
+    const now = new Date('2026-05-06T10:00:00Z').getTime()
+
+    it('returns null when the expiry has passed', () => {
+        expect(
+            formatTimeRemaining(new Date('2026-05-06T09:59:59Z'), now),
+        ).toBeNull()
+        expect(
+            formatTimeRemaining(new Date('2026-05-06T10:00:00Z'), now),
+        ).toBeNull()
+    })
+
+    it('returns "<1m" when less than one minute remains', () => {
+        expect(formatTimeRemaining(new Date('2026-05-06T10:00:30Z'), now)).toBe(
+            '<1m',
+        )
+    })
+
+    it('formats minutes when less than an hour remains', () => {
+        expect(formatTimeRemaining(new Date('2026-05-06T10:52:00Z'), now)).toBe(
+            '52m',
+        )
+    })
+
+    it('formats hours when less than a day remains', () => {
+        expect(formatTimeRemaining(new Date('2026-05-06T13:00:00Z'), now)).toBe(
+            '3h',
+        )
+    })
+
+    it('formats days when more than a day remains', () => {
+        expect(formatTimeRemaining(new Date('2026-05-09T10:00:00Z'), now)).toBe(
+            '3d',
+        )
     })
 })

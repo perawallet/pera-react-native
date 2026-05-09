@@ -22,7 +22,6 @@ import {
     useSelectedAccountAddress,
     useCreateAccount,
     useAllAccounts,
-    isHDWalletAccount,
     AccountTypes,
     DerivationTypes,
 } from '@perawallet/wallet-core-accounts'
@@ -122,7 +121,6 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                 { account: unknown }
             >
             const account = existingParams.account
-            const createIfEmpty = existingParams.createIfEmpty
             const walletKeyId = account.keyPairId
             if (!walletKeyId) return
 
@@ -136,51 +134,9 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
 
                 if (!discoveredAccounts) return
 
-                if (discoveredAccounts.length === 1) {
-                    if (createIfEmpty) {
-                        const walletAccounts = allAccounts
-                            .filter(isHDWalletAccount)
-                            .filter(a => a.keyPairId === account.keyPairId)
-                        const nextKeyIndex =
-                            walletAccounts.length > 0
-                                ? Math.max(
-                                      ...walletAccounts.map(
-                                          a => a.hdWalletDetails.keyIndex,
-                                      ),
-                                  ) + 1
-                                : 0
-
-                        const newAccount = await createHdWalletAccount({
-                            walletId: account.keyPairId,
-                            account: 0,
-                            keyIndex: nextKeyIndex,
-                        })
-
-                        navigation.replace('NameAccount', {
-                            account: newAccount,
-                        })
-                    } else {
-                        setSelectedAccountAddress(account.address)
-
-                        const rekeyedAccounts = await discoverRekeyedAccounts({
-                            walletKeyId,
-                            derivationType,
-                            accountAddresses: [account.address],
-                        })
-
-                        if (rekeyedAccounts && rekeyedAccounts.length > 0) {
-                            navigation.replace('ImportRekeyedAddresses', {
-                                accounts: rekeyedAccounts,
-                            })
-                        } else {
-                            exitAccountFlow()
-                        }
-                    }
-                } else {
-                    navigation.replace('ImportSelectAddresses', {
-                        accounts: discoveredAccounts,
-                    })
-                }
+                navigation.replace('ImportSelectAddresses', {
+                    accounts: discoveredAccounts,
+                })
             } else if (account.type === AccountTypes.algo25) {
                 const discoveredRekeyedAccounts = await discoverRekeyedAccounts(
                     {
