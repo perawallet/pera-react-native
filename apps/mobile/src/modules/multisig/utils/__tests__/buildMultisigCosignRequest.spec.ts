@@ -12,6 +12,10 @@
 
 import { describe, it, expect, vi } from 'vitest'
 
+vi.mock('@perawallet/wallet-core-shared', () => ({
+    decodeFromBase64: (s: string) => new Uint8Array(Buffer.from(s, 'base64')),
+}))
+
 vi.mock(import('@perawallet/wallet-core-multisig'), async importOriginal => {
     const actual = await importOriginal()
     return { ...actual }

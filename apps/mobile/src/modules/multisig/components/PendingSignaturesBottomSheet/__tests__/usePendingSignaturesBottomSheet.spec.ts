@@ -68,13 +68,21 @@ vi.mock('../../../utils/buildMultisigCosignRequest', () => ({
 }))
 
 const useSignRequestDetailQueryMock = vi.fn()
-vi.mock('@perawallet/wallet-core-multisig', () => ({
-    useSignRequestDetailQuery: (...args: unknown[]) =>
-        useSignRequestDetailQueryMock(...args),
-    useDeclineSignRequestMutation: () => ({
-        mutateAsync: vi.fn().mockResolvedValue(undefined),
-        isPending: false,
-    }),
+vi.mock(import('@perawallet/wallet-core-multisig'), async importOriginal => {
+    const actual = await importOriginal()
+    return {
+        ...actual,
+        useSignRequestDetailQuery: (...args: unknown[]) =>
+            useSignRequestDetailQueryMock(...args),
+        useDeclineSignRequestMutation: () => ({
+            mutateAsync: vi.fn().mockResolvedValue(undefined),
+            isPending: false,
+        }),
+    }
+})
+
+vi.mock('@perawallet/wallet-core-messages', () => ({
+    useInboxInvalidator: () => ({ invalidate: vi.fn() }),
 }))
 
 import { usePendingSignaturesBottomSheet } from '../usePendingSignaturesBottomSheet'

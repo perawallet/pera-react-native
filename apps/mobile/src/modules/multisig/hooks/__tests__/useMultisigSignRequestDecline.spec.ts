@@ -42,6 +42,7 @@ vi.mock('@perawallet/wallet-core-device', () => ({
 const declineMutateAsyncMock = vi.fn()
 const declineIsPendingMock = vi.fn(() => false)
 vi.mock('@perawallet/wallet-core-multisig', () => ({
+    ACTIONABLE_SIGN_REQUEST_STATUSES: new Set(['pending', 'ready']),
     useDeclineSignRequestMutation: () => ({
         mutateAsync: declineMutateAsyncMock,
         get isPending() {
