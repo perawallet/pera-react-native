@@ -64,9 +64,9 @@ describe('runGuardrails (in-process)', () => {
         expect(exitCode).toBe(1)
         expect(output).toMatch(/guardrail violation\(s\)/)
         expect(output).toContain('no-numeric-sizes')
-        expect(summary.violations.some(v => v.ruleId === 'no-numeric-sizes')).toBe(
-            true,
-        )
+        expect(
+            summary.violations.some(v => v.ruleId === 'no-numeric-sizes'),
+        ).toBe(true)
     })
 
     it('emits valid JSON with timings for every loaded check when --json is passed', async () => {
