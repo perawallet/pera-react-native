@@ -16,6 +16,7 @@ import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useInboxInvalidator } from '@perawallet/wallet-core-messages'
 import {
+    ACTIONABLE_SIGN_REQUEST_STATUSES,
     useDeclineSignRequestMutation,
     type MultisigSignRequest,
 } from '@perawallet/wallet-core-multisig'
@@ -24,7 +25,6 @@ import {
     type SignRequest,
 } from '@perawallet/wallet-core-signing'
 import { useToast } from '@hooks/useToast'
-import { ACTIONABLE_SIGN_REQUEST_STATUSES } from '../utils/signRequestStatus'
 
 export type UseMultisigSignRequestDeclineParams =
     | {

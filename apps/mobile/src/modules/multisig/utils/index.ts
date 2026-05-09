@@ -13,7 +13,4 @@
 export { buildMultisigCosignRequest } from './buildMultisigCosignRequest'
 export { getLocalUnsignedSigners } from './getLocalUnsignedSigners'
 export { getNextSharedAccountName } from './getNextSharedAccountName'
-export {
-    ACTIONABLE_SIGN_REQUEST_STATUSES,
-    getSignedResponseCount,
-} from './signRequestStatus'
+export { getSignedResponseCount } from './signRequestStatus'
