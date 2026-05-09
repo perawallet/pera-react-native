@@ -31,65 +31,77 @@ const bytesEqual = (
     return true
 }
 
+const bytesToHex = (b: Uint8Array): string =>
+    Array.from(b, x => x.toString(16).padStart(2, '0')).join('')
+
 /**
  * Verifies that any transactions claiming to be part of an atomic group
  * actually form a valid group. Catches cases where a dApp sends transactions
  * with a stale group ID — e.g. a 5-tx group with one tx removed before send,
  * which would otherwise reach the signer and only fail on submission to algod.
  *
- * Must run on the FULL set of transactions in a request — including those
- * not signed by any of the user's accounts — because the group hash is
- * computed over every transaction algod will see. Running on a per-signer
- * subset would always fail for legitimate cross-account groups (e.g. express
- * send, where the receiver signs the opt-in).
+ * Per ARC-0001, a single request may contain any combination of:
+ * - Ungrouped (independent) transactions
+ * - One or more complete atomic groups
+ * Each group is validated independently; ungrouped transactions are skipped.
+ *
+ * **Must be called over the FULL request payload from the originating
+ * source — not over the wallet's signable subset.** The group hash is
+ * computed over every transaction algod will see; recomputing over a
+ * subset (e.g. just the sender's tx in an express-send pair) would never
+ * match the claimed group ID. External sources that pre-filter
+ * (WalletConnect) must therefore preserve the original array — see
+ * {@link TransactionSignRequest.groupContext}.
  *
  * Rules:
- * - If no transaction has a group, nothing to validate.
- * - All transactions in the request must share the group (no mixed groups,
- *   and no partial groupings).
- * - The recomputed group ID over the present transactions must equal the
- *   claimed group ID.
+ * - Transactions are partitioned by their `group` field. Each partition
+ *   must form a complete, valid group: the recomputed group ID over the
+ *   members of that partition must equal the claimed group ID.
+ * - Transactions with no `group` field are independent and skipped.
  *
  * Throws `InvalidSignableDataError` (non-retryable) on any violation.
  */
 export const validateTransactionGroupIntegrity = (
     transactions: PeraTransaction[],
 ): void => {
-    const groupedTxns = transactions.filter(tx => tx.group)
-    if (groupedTxns.length === 0) return
-
-    const claimedGroup = groupedTxns[0].group!
-    for (const tx of groupedTxns) {
-        if (!bytesEqual(tx.group, claimedGroup)) {
-            throw new InvalidSignableDataError(
-                'transactions reference different group IDs',
-            )
+    // Partition by claimed group ID. Ungrouped transactions are independent
+    // — ARC-0001 allows them alongside grouped txs in the same request.
+    const partitions = new Map<
+        string,
+        { group: Uint8Array; txs: PeraTransaction[] }
+    >()
+    for (const tx of transactions) {
+        if (!tx.group) continue
+        const key = bytesToHex(tx.group)
+        const existing = partitions.get(key)
+        if (existing) {
+            existing.txs.push(tx)
+        } else {
+            partitions.set(key, { group: tx.group, txs: [tx] })
         }
     }
 
-    if (groupedTxns.length !== transactions.length) {
-        throw new InvalidSignableDataError(
-            'some transactions are not part of the declared group',
-        )
-    }
+    if (partitions.size === 0) return
 
-    let computedGroup: Uint8Array | undefined
-    try {
-        const ungrouped = transactions.map(
-            tx => new Transaction({ ...tx, group: undefined }),
-        )
-        computedGroup = groupTransactions(ungrouped)[0].group
-    } catch (e) {
-        throw new InvalidSignableDataError(
-            `failed to recompute transaction group ID: ${
-                e instanceof Error ? e.message : String(e)
-            }`,
-        )
-    }
+    for (const { group: claimed, txs } of partitions.values()) {
+        let computed: Uint8Array | undefined
+        try {
+            const ungrouped = txs.map(
+                tx => new Transaction({ ...tx, group: undefined }),
+            )
+            computed = groupTransactions(ungrouped)[0].group
+        } catch (e) {
+            throw new InvalidSignableDataError(
+                `failed to recompute transaction group ID: ${
+                    e instanceof Error ? e.message : String(e)
+                }`,
+            )
+        }
 
-    if (!bytesEqual(computedGroup, claimedGroup)) {
-        throw new InvalidSignableDataError(
-            'group ID does not match the transactions provided',
-        )
+        if (!bytesEqual(computed, claimed)) {
+            throw new InvalidSignableDataError(
+                'group ID does not match the transactions provided',
+            )
+        }
     }
 }

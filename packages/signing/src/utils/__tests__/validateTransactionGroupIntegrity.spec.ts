@@ -72,21 +72,20 @@ describe('validateTransactionGroupIntegrity', () => {
         expect(() => validateTransactionGroupIntegrity(grouped)).not.toThrow()
     })
 
-    test('rejects when only some transactions declare a group', () => {
+    test('passes when grouped and ungrouped transactions are mixed (per ARC-0001)', () => {
+        // ARC-0001 permits a request to contain a complete atomic group
+        // alongside independent ungrouped transactions. Each grouped
+        // partition is validated; ungrouped txs are independent.
         const grouped = groupTransactions([
             makePayment(senderA, 1n),
             makePayment(senderA, 2n),
         ])
-        const mixed = [grouped[0], makePayment(senderA, 3n)]
-        expect(() => validateTransactionGroupIntegrity(mixed)).toThrow(
-            InvalidSignableDataError,
-        )
-        expect(() => validateTransactionGroupIntegrity(mixed)).toThrow(
-            'some transactions are not part of the declared group',
-        )
+        const mixed = [grouped[0], grouped[1], makePayment(senderA, 3n)]
+        expect(() => validateTransactionGroupIntegrity(mixed)).not.toThrow()
     })
 
-    test('rejects when transactions reference different group IDs', () => {
+    test('passes when the request contains multiple complete atomic groups', () => {
+        // ARC-0001 permits multiple atomic groups in a single request.
         const groupA = groupTransactions([
             makePayment(senderA, 1n),
             makePayment(senderA, 2n),
@@ -95,12 +94,43 @@ describe('validateTransactionGroupIntegrity', () => {
             makePayment(senderA, 3n),
             makePayment(senderA, 4n),
         ])
-        const mixed = [groupA[0], groupB[0]]
-        expect(() => validateTransactionGroupIntegrity(mixed)).toThrow(
+        const both = [...groupA, ...groupB]
+        expect(() => validateTransactionGroupIntegrity(both)).not.toThrow()
+    })
+
+    test('rejects a partial fragment of a multi-tx group', () => {
+        // 1-tx-of-2-tx fragment: the survivor still carries the original
+        // group hash, but recompute over the survivor alone won't match.
+        const grouped = groupTransactions([
+            makePayment(senderA, 1n),
+            makePayment(senderA, 2n),
+        ])
+        const fragment = [grouped[0]]
+        expect(() => validateTransactionGroupIntegrity(fragment)).toThrow(
             InvalidSignableDataError,
         )
-        expect(() => validateTransactionGroupIntegrity(mixed)).toThrow(
-            'transactions reference different group IDs',
+        expect(() => validateTransactionGroupIntegrity(fragment)).toThrow(
+            'group ID does not match the transactions provided',
+        )
+    })
+
+    test('rejects when one of multiple groups is incomplete', () => {
+        // First group is complete and would pass; second group is a partial
+        // (1-of-2) — the whole request must fail.
+        const groupA = groupTransactions([
+            makePayment(senderA, 1n),
+            makePayment(senderA, 2n),
+        ])
+        const groupB = groupTransactions([
+            makePayment(senderA, 3n),
+            makePayment(senderA, 4n),
+        ])
+        const partialB = [...groupA, groupB[0]]
+        expect(() => validateTransactionGroupIntegrity(partialB)).toThrow(
+            InvalidSignableDataError,
+        )
+        expect(() => validateTransactionGroupIntegrity(partialB)).toThrow(
+            'group ID does not match the transactions provided',
         )
     })
 

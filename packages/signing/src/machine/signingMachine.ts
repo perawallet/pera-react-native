@@ -262,6 +262,9 @@ export const signingMachine = setup({
                     actions: 'setValidatingError',
                 },
             },
+            on: {
+                USER_REJECTED: 'rejected',
+            },
         },
 
         /**
