@@ -256,3 +256,30 @@ export const mockIndexerAsset = ({
     http.get(`*/v2/assets/${assetId}`, () =>
         HttpResponse.json({ 'current-round': 1, asset: response }, { status }),
     )
+
+// Indexer's GET /v2/accounts (no path param) is the search endpoint
+// (`searchForAccounts`). The query string carries filters like `auth-addr`,
+// which `discoverRekeyedAccounts` uses to find addresses that have rekeyed
+// to a candidate. The path glob is distinct from `*/v2/accounts/{address}`
+// — MSW does no prefix matching, so the two handlers don't collide.
+export type IndexerSearchForAccountsResponse = {
+    accounts: Array<{ address: string; [k: string]: unknown }>
+    'current-round'?: number
+    'next-token'?: string
+}
+
+export type MockIndexerSearchForAccountsParams = {
+    response?: Partial<IndexerSearchForAccountsResponse>
+    status?: number
+}
+
+export const mockIndexerSearchForAccounts = ({
+    response,
+    status = 200,
+}: MockIndexerSearchForAccountsParams = {}): HttpHandler =>
+    http.get('*/v2/accounts', () =>
+        HttpResponse.json(
+            { 'current-round': 1, accounts: [], ...response },
+            { status },
+        ),
+    )

@@ -10,12 +10,29 @@
  limitations under the License
  */
 
+/* eslint-disable @typescript-eslint/no-require-imports */
+// `vi.mock` factories are hoisted to the top of the module — top-level
+// imports aren't bound when they run. The SVG mocks below have to use
+// `require('react')` for the same reason vitest.setup.ts does.
+
 import { vi } from 'vitest'
 
 // Inherit every RN runtime, native module, navigation, and PW component mock
 // from the unit setup. Integration tests need those — running real
 // react-native, native firebase, etc. under jsdom would explode.
 import './vitest.setup'
+
+// jsdom installs its own `Uint8Array` constructor on `globalThis`. Node's
+// `Buffer` extends node's `Uint8Array`, which is a *different* constructor
+// — `buffer instanceof globalThis.Uint8Array` is false under jsdom, so any
+// crypto code that hands a Buffer to a check like `@noble/hashes`'s
+// `isBytes()` (used by `xhd-wallet-api`'s key derivation) throws
+// "expected Uint8Array, got type=object". Aliasing the global to node's
+// `Uint8Array` realigns the two so HD-wallet derivation works end-to-end
+// in flow tests. Production code never hits this — it runs on
+// react-native, where `Buffer` and `Uint8Array` already share a realm.
+;(globalThis as { Uint8Array: typeof Uint8Array }).Uint8Array =
+    Object.getPrototypeOf(Buffer.prototype).constructor as typeof Uint8Array
 
 // ...but opt OUT of the heavyweight @perawallet/wallet-core-* package mocks.
 // Integration tests exercise the real domain code end-to-end; the network
@@ -66,5 +83,41 @@ vi.mock('@react-navigation/stack', async () => {
     const nav = await import('./src/test-utils/test-navigator')
     return {
         createStackNavigator: nav.createNativeStackNavigator,
+    }
+})
+
+// SVGs used by onboarding screens. svgr emits real React SVG components,
+// but rendering them under jsdom triggers `InvalidCharacterError` on
+// attributes whose value is a long data URL (jsdom tries to use it as an
+// XML Name). vitest.setup.ts mocks the unit-tests' SVGs the same way; this
+// list extends coverage to integration flows. The factory is duplicated
+// per-call because `vi.mock` is hoisted to the top of the module — any
+// reference to a top-level binding at hoist time is undefined.
+vi.mock('@assets/images/key.svg', () => {
+    const React = require('react')
+    return {
+        default: (props: Record<string, unknown>) =>
+            React.createElement('div', { ...props, 'data-testid': 'SvgIcon' }),
+    }
+})
+vi.mock('@assets/images/key-inverted.svg', () => {
+    const React = require('react')
+    return {
+        default: (props: Record<string, unknown>) =>
+            React.createElement('div', { ...props, 'data-testid': 'SvgIcon' }),
+    }
+})
+vi.mock('@assets/images/eye.svg', () => {
+    const React = require('react')
+    return {
+        default: (props: Record<string, unknown>) =>
+            React.createElement('div', { ...props, 'data-testid': 'SvgIcon' }),
+    }
+})
+vi.mock('@assets/images/eye-inverted.svg', () => {
+    const React = require('react')
+    return {
+        default: (props: Record<string, unknown>) =>
+            React.createElement('div', { ...props, 'data-testid': 'SvgIcon' }),
     }
 })

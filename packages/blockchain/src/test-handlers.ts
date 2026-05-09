@@ -23,10 +23,12 @@ export {
     mockIndexerAccountTransactions,
     mockIndexerAccount,
     mockIndexerAsset,
+    mockIndexerSearchForAccounts,
     type AlgodAccountInformationResponse,
     type AlgodTransactionParamsResponse,
     type AlgodAccountAssetInformationResponse,
     type IndexerAccountTransactionsResponse,
+    type IndexerSearchForAccountsResponse,
     type MockAlgodAccountInformationParams,
     type MockAlgodTransactionParamsParams,
     type MockAlgodSendRawTransactionParams,
@@ -35,4 +37,5 @@ export {
     type MockIndexerAccountTransactionsParams,
     type MockIndexerAccountParams,
     type MockIndexerAssetParams,
+    type MockIndexerSearchForAccountsParams,
 } from './msw-handlers'
