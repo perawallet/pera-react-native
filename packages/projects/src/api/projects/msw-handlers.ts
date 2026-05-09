@@ -12,10 +12,7 @@
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
 import { validateMockResponse } from '@perawallet/wallet-core-shared/test-utils'
-import {
-    projectListResponseSchema,
-    type ProjectApiResponse,
-} from './schema'
+import { projectListResponseSchema, type ProjectApiResponse } from './schema'
 
 export type MockProjectsParams = {
     response: ProjectApiResponse[]
@@ -26,11 +23,7 @@ export const mockProjects = ({
     response,
     status = 200,
 }: MockProjectsParams): HttpHandler => {
-    validateMockResponse(
-        projectListResponseSchema,
-        response,
-        'mockProjects',
-    )
+    validateMockResponse(projectListResponseSchema, response, 'mockProjects')
     return http.get('*/v1/projects/', () =>
         HttpResponse.json(response, { status }),
     )

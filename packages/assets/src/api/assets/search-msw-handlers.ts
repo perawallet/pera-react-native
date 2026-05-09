@@ -26,11 +26,7 @@ export const mockAssetSearch = ({
     response,
     status = 200,
 }: MockAssetSearchParams): HttpHandler => {
-    validateMockResponse(
-        assetSearchResponseSchema,
-        response,
-        'mockAssetSearch',
-    )
+    validateMockResponse(assetSearchResponseSchema, response, 'mockAssetSearch')
     return http.get('*/v1/assets/search/', () =>
         HttpResponse.json(response, { status }),
     )

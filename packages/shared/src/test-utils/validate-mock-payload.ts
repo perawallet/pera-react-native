@@ -54,7 +54,9 @@ export const validateMockResponse = <T extends z.ZodTypeAny>(
 export const validateMockRequest = async <T extends z.ZodTypeAny>(
     schema: T | null,
     request: Request,
-): Promise<{ ok: true; data: z.infer<T> | null } | { ok: false; response: Response }> => {
+): Promise<
+    { ok: true; data: z.infer<T> | null } | { ok: false; response: Response }
+> => {
     if (!schema) return { ok: true, data: null }
     let body: unknown
     try {

@@ -41,17 +41,14 @@ export const mockCreateMultisigAccount = ({
         response,
         'mockCreateMultisigAccount',
     )
-    return http.post(
-        '*/v1/joint-accounts/accounts/',
-        async ({ request }) => {
-            const validated = await validateMockRequest(
-                createMultisigAccountRequestSchema,
-                request,
-            )
-            if (!validated.ok) return validated.response
-            return HttpResponse.json(response, { status })
-        },
-    )
+    return http.post('*/v1/joint-accounts/accounts/', async ({ request }) => {
+        const validated = await validateMockRequest(
+            createMultisigAccountRequestSchema,
+            request,
+        )
+        if (!validated.ok) return validated.response
+        return HttpResponse.json(response, { status })
+    })
 }
 
 export type MockGetMultisigAccountDetailParams = {

@@ -28,11 +28,7 @@ export const mockSwapProviders = ({
     response,
     status = 200,
 }: MockSwapProvidersParams): HttpHandler => {
-    validateMockResponse(
-        providersResponseSchema,
-        response,
-        'mockSwapProviders',
-    )
+    validateMockResponse(providersResponseSchema, response, 'mockSwapProviders')
     return http.get('*/v2/dex-swap/providers/', () =>
         HttpResponse.json(response, { status }),
     )

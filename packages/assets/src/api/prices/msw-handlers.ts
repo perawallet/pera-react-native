@@ -32,11 +32,7 @@ export const mockAssetPrices = ({
     response,
     status = 200,
 }: MockAssetPricesParams): HttpHandler => {
-    validateMockResponse(
-        assetPricesResponseSchema,
-        response,
-        'mockAssetPrices',
-    )
+    validateMockResponse(assetPricesResponseSchema, response, 'mockAssetPrices')
     return http.get('*/v1/assets/', () =>
         HttpResponse.json(response, { status }),
     )

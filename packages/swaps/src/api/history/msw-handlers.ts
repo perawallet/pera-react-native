@@ -28,11 +28,7 @@ export const mockSwapHistory = ({
     response,
     status = 200,
 }: MockSwapHistoryParams): HttpHandler => {
-    validateMockResponse(
-        swapHistoryResponseSchema,
-        response,
-        'mockSwapHistory',
-    )
+    validateMockResponse(swapHistoryResponseSchema, response, 'mockSwapHistory')
     return http.get('*/v2/dex-swap/history/', () =>
         HttpResponse.json(response, { status }),
     )

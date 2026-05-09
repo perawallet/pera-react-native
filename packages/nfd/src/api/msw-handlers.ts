@@ -53,11 +53,7 @@ export const mockNfdBulkRead = ({
     response,
     status = 200,
 }: MockNfdBulkReadParams): HttpHandler => {
-    validateMockResponse(
-        nfdBulkReadResponseSchema,
-        response,
-        'mockNfdBulkRead',
-    )
+    validateMockResponse(nfdBulkReadResponseSchema, response, 'mockNfdBulkRead')
     return http.post('*/v1/accounts/names/bulk-read/', () =>
         HttpResponse.json(response, { status }),
     )

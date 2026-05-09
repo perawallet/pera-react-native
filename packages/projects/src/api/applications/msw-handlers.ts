@@ -28,11 +28,7 @@ export const mockApplication = ({
     response,
     status = 200,
 }: MockApplicationParams): HttpHandler => {
-    validateMockResponse(
-        applicationResponseSchema,
-        response,
-        'mockApplication',
-    )
+    validateMockResponse(applicationResponseSchema, response, 'mockApplication')
     return http.get(
         `*/v1/applications/${encodeURIComponent(applicationId)}/`,
         () => HttpResponse.json(response, { status }),

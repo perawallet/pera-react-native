@@ -37,15 +37,12 @@ export const mockUpdateSwapStatus = ({
         response,
         'mockUpdateSwapStatus',
     )
-    return http.patch(
-        `*/v2/dex-swap/swaps/${swapId}/`,
-        async ({ request }) => {
-            const validated = await validateMockRequest(
-                swapStatusUpdateRequestSchema,
-                request,
-            )
-            if (!validated.ok) return validated.response
-            return HttpResponse.json(response, { status })
-        },
-    )
+    return http.patch(`*/v2/dex-swap/swaps/${swapId}/`, async ({ request }) => {
+        const validated = await validateMockRequest(
+            swapStatusUpdateRequestSchema,
+            request,
+        )
+        if (!validated.ok) return validated.response
+        return HttpResponse.json(response, { status })
+    })
 }
