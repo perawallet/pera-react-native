@@ -121,3 +121,107 @@ vi.mock('@assets/images/eye-inverted.svg', () => {
             React.createElement('div', { ...props, 'data-testid': 'SvgIcon' }),
     }
 })
+
+// `expo-modules-core` references the React-Native `__DEV__` global at
+// module-load time (in `setUpJsLogger.fx.ts`). Under jsdom this is
+// undefined, so any expo-* package that transitively imports
+// expo-modules-core crashes during import. Defining the global here
+// fixes the parse-time failure; deeper expo-modules-core surfaces
+// (e.g. `globalThis.expo.EventEmitter`) still need their consumer
+// packages (expo-video, expo-audio, ...) to be mocked individually.
+;(globalThis as { __DEV__?: boolean }).__DEV__ = false
+
+// expo-screen-capture's surface is intentionally stubbed (rather than
+// run for real) because the only mobile consumer is
+// `usePreventScreenCapture`, which has no behavior worth exercising in
+// a jsdom test.
+vi.mock('expo-screen-capture', () => ({
+    preventScreenCaptureAsync: vi.fn().mockResolvedValue(undefined),
+    allowScreenCaptureAsync: vi.fn().mockResolvedValue(undefined),
+    addScreenshotListener: vi.fn(() => ({ remove: vi.fn() })),
+    removeScreenshotListener: vi.fn(),
+}))
+
+// `lottie-react-native` ships Flow-typed source that vite's parser can't
+// read. Replace with a no-op view so screens that show animations (e.g.
+// TransactionProcessingScreen) mount cleanly under jsdom.
+vi.mock('lottie-react-native', () => {
+    const React = require('react')
+    return {
+        default: (props: Record<string, unknown>) =>
+            React.createElement('div', {
+                ...props,
+                'data-testid': 'LottieView',
+            }),
+    }
+})
+
+// expo-video / expo-audio / expo-image transitively reach
+// expo-modules-core's native `EventEmitter`/`SharedRef` surface, which
+// only resolves under a real React-Native runtime. NFT detail screens
+// use these via the MediaCarousel; replace the parts the screens read
+// with no-op stubs.
+vi.mock('expo-video', () => {
+    const React = require('react')
+    return {
+        VideoView: (props: Record<string, unknown>) =>
+            React.createElement('div', {
+                ...props,
+                'data-testid': 'VideoView',
+            }),
+        useVideoPlayer: () => ({
+            play: () => {},
+            pause: () => {},
+            replace: () => {},
+            release: () => {},
+        }),
+    }
+})
+
+vi.mock('expo-audio', () => ({
+    useAudioPlayer: () => ({
+        play: () => {},
+        pause: () => {},
+        release: () => {},
+    }),
+    AudioModule: { setAudioModeAsync: vi.fn() },
+}))
+
+vi.mock('expo-file-system', () => {
+    class File {
+        constructor(_uri: string) {}
+        async write(_data: unknown): Promise<void> {}
+        async read(): Promise<string> {
+            return ''
+        }
+    }
+    return {
+        File,
+        Paths: { document: '/test/document', cache: '/test/cache' },
+        documentDirectory: '/test/document/',
+        cacheDirectory: '/test/cache/',
+    }
+})
+
+vi.mock('expo-media-library', () => ({
+    requestPermissionsAsync: vi.fn().mockResolvedValue({ granted: true }),
+    saveToLibraryAsync: vi.fn().mockResolvedValue(undefined),
+    createAssetAsync: vi.fn().mockResolvedValue({ id: 'asset-id' }),
+}))
+
+// react-native-pager-view ships Flow-typed source the vite parser
+// rejects. NFT detail screens reach it via MediaCarousel + the
+// fullscreen viewer; replace with a passthrough container.
+vi.mock('react-native-pager-view', () => {
+    const React = require('react')
+    return {
+        default: React.forwardRef(
+            (props: Record<string, unknown>, _ref: unknown) =>
+                React.createElement(
+                    'div',
+                    { ...props, 'data-testid': 'PagerView' },
+                    (props as { children?: unknown }).children,
+                ),
+        ),
+    }
+})

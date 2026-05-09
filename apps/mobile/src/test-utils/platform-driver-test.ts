@@ -25,7 +25,6 @@
 
 import {
     MemoryKeyValueStorage,
-    MemoryDatabaseService,
     DevicePlatforms,
     type AnalyticsService,
     type BiometricsService,
@@ -39,10 +38,11 @@ import {
     type RemoteConfigService,
 } from '@perawallet/wallet-extension-platform'
 import { createHardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
+import { testDatabaseService } from './sqlite-database'
 
 const buildServices = (): PlatformServices => {
     const keyValueStorage: KeyValueStorageService = new MemoryKeyValueStorage()
-    const database: DatabaseService = new MemoryDatabaseService()
+    const database: DatabaseService = testDatabaseService
 
     const biometrics: BiometricsService = {
         async getSupportedBiometricType() {

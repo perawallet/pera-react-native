@@ -1,0 +1,244 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import {
+    afterAll,
+    afterEach,
+    beforeAll,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi,
+} from 'vitest'
+import { Decimal } from 'decimal.js'
+import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
+import { http, HttpResponse } from 'msw'
+import { Notifier } from 'react-native-notifier'
+
+import { server } from '@test-utils/msw-server'
+import { renderWithNavigation } from '@test-utils/renderWithNavigation'
+import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
+import {
+    resetTestDatabase,
+    seedAlgoAsset,
+    seedAssets,
+    setupTestDatabase,
+    teardownTestDatabase,
+} from '@test-utils/database-setup'
+import {
+    AccountTypes,
+    insertAssetHolding,
+    upsertAccountBalance,
+    useAccountsStore,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { useKMS, type Algo25KeyResult } from '@perawallet/wallet-core-kms'
+import { useSendFundsStore } from '@modules/transactions/hooks/send-funds/useSendFunds'
+import { TransactionConfirmationScreen } from '@modules/transactions/screens/send-funds/TransactionConfirmationScreen/TransactionConfirmationScreen'
+import { TransactionProcessingScreen } from '@modules/transactions/screens/send-funds/TransactionProcessingScreen/TransactionProcessingScreen'
+import { TransactionSuccessScreen } from '@modules/transactions/screens/send-funds/TransactionSuccessScreen/TransactionSuccessScreen'
+import {
+    mockAlgodAccountInformation,
+    mockAlgodSendRawTransaction,
+    mockAlgodStatus,
+    mockAlgodTransactionParams,
+    mockIndexerSearchForAccounts,
+} from '@perawallet/wallet-core-blockchain/test-handlers'
+
+import {
+    ALGO25_TEST_ADDRESS,
+    ALGO25_TEST_MNEMONIC,
+    HD_TEST_ADDRESS,
+} from './__fixtures__/onboarding'
+import { USDC_TEST_ASSET, USDC_TEST_ASSET_ID } from './__fixtures__/assets'
+
+const RECEIVER_ADDRESS = HD_TEST_ADDRESS
+const SLOW_TEST_TIMEOUT_MS = 30000
+
+// Mint a real algo25 key + register the matching account, mirroring
+// `seedAlgo25Sender` from send-algo.test.tsx. Kept in-file rather than
+// exported because the helper wants to stay aligned with whatever
+// fixture state each test scenario needs.
+const seedAlgo25Sender = async (): Promise<WalletAccount> => {
+    const { result: kms } = renderHook(() => useKMS())
+    let key: Algo25KeyResult | null = null
+    await waitFor(async () => {
+        key = await kms.current.createAlgo25Key({
+            mnemonic: ALGO25_TEST_MNEMONIC,
+        })
+        expect(key).not.toBeNull()
+    })
+    const sender: WalletAccount = {
+        id: 'sender-1',
+        type: AccountTypes.algo25,
+        address: ALGO25_TEST_ADDRESS,
+        keyPairId: key!.keyPair.id ?? '',
+        name: 'Sender',
+    }
+    useAccountsStore.getState().setAccounts([sender])
+    useAccountsStore.getState().setSelectedAccountAddress(sender.address)
+    return sender
+}
+
+const renderSendStack = () =>
+    renderWithNavigation(TransactionConfirmationScreen, 'ConfirmTransaction', {
+        additionalScreens: [
+            {
+                name: 'TransactionProcessing',
+                component: TransactionProcessingScreen,
+            },
+            {
+                name: 'TransactionSuccess',
+                component: TransactionSuccessScreen,
+            },
+        ],
+    })
+
+describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
+    beforeAll(async () => {
+        server.listen({ onUnhandledRequest: 'warn' })
+        await setupTestDatabase()
+    })
+    afterEach(() => server.resetHandlers())
+    afterAll(async () => {
+        server.close()
+        await teardownTestDatabase()
+    })
+
+    beforeEach(async () => {
+        await resetTestDatabase()
+        // Seed both ALGO and the test asset; the confirmation screen
+        // reads the selected asset's metadata via useAssetsQuery and
+        // renders unitName/decimals against it.
+        await seedAlgoAsset('mainnet')
+        await seedAssets([USDC_TEST_ASSET], 'mainnet')
+
+        resetTestKeystore()
+        useAccountsStore.getState().setAccounts([])
+        useSendFundsStore.getState().reset()
+        vi.mocked(Notifier.showNotification).mockClear()
+
+        server.use(
+            mockAlgodTransactionParams({ response: { fee: 1000 } }),
+            mockAlgodAccountInformation({
+                address: ALGO25_TEST_ADDRESS,
+                response: {
+                    amount: 5_000_000,
+                    'min-balance': 200_000,
+                    assets: [
+                        {
+                            'asset-id': Number(USDC_TEST_ASSET_ID),
+                            amount: 10_000_000, // 10 tUSD (6 decimals)
+                            'is-frozen': false,
+                        },
+                    ],
+                },
+            }),
+            mockAlgodAccountInformation({
+                address: RECEIVER_ADDRESS,
+                response: { amount: 5_000_000, 'min-balance': 100_000 },
+            }),
+            mockAlgodStatus({ response: { 'last-round': 100 } }),
+            mockAlgodSendRawTransaction(),
+            mockIndexerSearchForAccounts(),
+        )
+    })
+
+    it(
+        'Given a sender holding a USDC-like asset, when the user confirms a normal-mode send, then a signed asset-transfer is POSTed to algod and the success screen renders',
+        async () => {
+            const sender = await seedAlgo25Sender()
+
+            // The confirmation screen reads the sender's asset balance
+            // from the local DB (not algod). Seed both the holding row
+            // and the algo-balance row so the screen has data to render.
+            await insertAssetHolding({
+                accountAddress: sender.address,
+                assetId: USDC_TEST_ASSET_ID,
+                network: 'mainnet',
+                amount: '10000000',
+            })
+            await upsertAccountBalance({
+                accountAddress: sender.address,
+                network: 'mainnet',
+                algoBalance: new Decimal(5_000_000),
+                totalAssetsOptedIn: 1,
+                totalCreatedAssets: 0,
+                totalAppsOptedIn: 0,
+                minBalance: new Decimal(200_000),
+                status: 'Offline',
+                authAddress: null,
+            })
+
+            useSendFundsStore.getState().setSelectedAssetId(USDC_TEST_ASSET_ID)
+            useSendFundsStore.getState().setAmount(new Decimal('1.5'))
+            useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
+            useSendFundsStore.getState().setSendMode('normal')
+
+            // Capture the algod POST so we can inspect the encoded body
+            // and prove the right asset-transfer was built.
+            const sendSpy = vi.fn(async () =>
+                HttpResponse.json(
+                    {
+                        txId: 'ASATESTTXID000000000000000000000000000000000000000000',
+                    },
+                    { status: 200 },
+                ),
+            )
+            server.use(http.post('*/v2/transactions', sendSpy))
+
+            renderSendStack()
+
+            await waitFor(
+                () => {
+                    expect(
+                        screen.getByTestId('send_confirm_button'),
+                    ).toBeTruthy()
+                },
+                { timeout: 5000 },
+            )
+            const confirmButton = screen.getByTestId(
+                'send_confirm_button',
+            ) as HTMLButtonElement
+            await waitFor(() => {
+                expect(confirmButton.disabled).toBe(false)
+            })
+
+            fireEvent.click(confirmButton)
+
+            await waitFor(
+                () => {
+                    expect(screen.getByTestId('PWResultView')).toBeTruthy()
+                },
+                { timeout: 10000 },
+            )
+
+            // Inspect the submitted body: msgpack-encoded signed group.
+            // We don't decode here (assertion at the byte level is
+            // brittle), but we can confirm the spy received a non-empty
+            // application/x-binary payload.
+            expect(sendSpy).toHaveBeenCalled()
+            // `vi.fn(() => ...)` infers the call args as `[]`; cast
+            // the whole calls array to the MSW handler shape that the
+            // runtime actually invokes the spy with.
+            const calls = sendSpy.mock.calls as unknown as Array<
+                [{ request: Request }]
+            >
+            const body = await calls[0][0].request.arrayBuffer()
+            // A signed asset-transfer group is well over 100 bytes;
+            // empty / placeholder bodies would be tiny.
+            expect(body.byteLength).toBeGreaterThan(50)
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+})

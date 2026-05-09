@@ -50,6 +50,15 @@ export type AlgodAccountInformationResponse = {
     rewards?: number
     round?: number
     status?: 'Offline' | 'Online' | 'NotParticipating'
+    /**
+     * Chain-side rekey indicator. When present, it's the address that
+     * currently has signing authority for `address`. The wallet's
+     * `fetchAndPersistAccount` reads this and overwrites the local
+     * `account.rekeyAddress` so the wallet's rekey state stays in sync
+     * with the chain — tests covering rekeyed accounts MUST set this
+     * to the auth address or the wallet will silently un-rekey.
+     */
+    'auth-addr'?: string
     assets?: Array<{
         'asset-id': number
         amount: number

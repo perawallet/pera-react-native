@@ -109,7 +109,14 @@ export const commit = async ({
     store: Store<KeyStoreState>
     keyData: KeyData
 }): Promise<void> => {
-    keyData.set(data.id, data)
+    // Defensive clone. Production MMKV serializes on import, so the
+    // caller is free to zero the source `privateKey` / `entropy`
+    // buffers afterwards (the HD wallet path does exactly that). The
+    // in-memory map here would otherwise hold a reference to the same
+    // buffer and observe the zeroing — silently corrupting the stored
+    // entropy/seed bytes — so we deep-clone to mirror MMKV's
+    // copy-on-write semantics.
+    keyData.set(data.id, cloneKeyData(data))
     upsertReactiveKey(store, data)
 }
 

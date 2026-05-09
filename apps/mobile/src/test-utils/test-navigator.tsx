@@ -379,10 +379,20 @@ export const createNativeStackNavigator = () => {
             )
         }
 
+        // React-Navigation passes both `route` and `navigation` to the
+        // screen component as props. Many screens read via `useRoute()`
+        // (which the RouteContext above serves), but some destructure
+        // route directly from props — typed as
+        // `NativeStackScreenProps<...>` — and crash without them. Pass
+        // them through so both styles mount cleanly.
+        const navigationApi = buildNavigationApi(controller)
         return (
             <StackContext.Provider value={controller}>
                 <RouteContext.Provider value={currentRoute}>
-                    <ScreenComponent />
+                    <ScreenComponent
+                        route={currentRoute}
+                        navigation={navigationApi}
+                    />
                 </RouteContext.Provider>
             </StackContext.Provider>
         )
