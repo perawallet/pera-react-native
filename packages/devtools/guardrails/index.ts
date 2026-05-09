@@ -9,6 +9,7 @@ import { parseArgs } from './utils/args.js'
 import { discoverFilePaths, findRepoRoot } from './utils/discovery.js'
 import { formatHuman, formatJson, type RunSummary } from './utils/output.js'
 import { runChecksAgainstPaths, type ChunkResult } from './execute.js'
+export type { RunSummary } from './utils/output.js'
 import {
     IN_PROCESS_THRESHOLD,
     pickWorkerCount,
@@ -174,13 +175,27 @@ async function dispatch(
     return merged
 }
 
-async function main(): Promise<void> {
-    const args = parseArgs(process.argv.slice(2))
+export interface RunGuardrailsOptions {
+    repoRoot: string
+    args: string[]
+    checksDirUrl?: URL
+}
+
+export interface RunGuardrailsResult {
+    output: string
+    exitCode: 0 | 1
+    summary: RunSummary
+}
+
+export async function runGuardrails(
+    opts: RunGuardrailsOptions,
+): Promise<RunGuardrailsResult> {
+    const args = parseArgs(opts.args)
     const started = performance.now()
 
-    const repoRoot = findRepoRoot(import.meta.url)
-    const paths = await discoverFilePaths(repoRoot)
-    const checksDirUrl = new URL('./checks/', import.meta.url)
+    const checksDirUrl =
+        opts.checksDirUrl ?? new URL('./checks/', import.meta.url)
+    const paths = await discoverFilePaths(opts.repoRoot)
     const checks = await loadChecks(checksDirUrl)
 
     const { violations, timings, parseMs, walkMs, workers } = await dispatch(
@@ -201,9 +216,18 @@ async function main(): Promise<void> {
     }
 
     const output = args.json
-        ? formatJson(summary, repoRoot)
-        : formatHuman(summary, repoRoot)
-    const exitCode = sorted.length === 0 || args.warnOnly ? 0 : 1
+        ? formatJson(summary, opts.repoRoot)
+        : formatHuman(summary, opts.repoRoot)
+    const exitCode: 0 | 1 = sorted.length === 0 || args.warnOnly ? 0 : 1
+    return { output, exitCode, summary }
+}
+
+async function main(): Promise<void> {
+    const repoRoot = findRepoRoot(import.meta.url)
+    const { output, exitCode } = await runGuardrails({
+        repoRoot,
+        args: process.argv.slice(2),
+    })
     await writeAndExit(output, exitCode)
 }
 

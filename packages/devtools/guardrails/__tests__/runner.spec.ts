@@ -1,56 +1,81 @@
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { Worker } from 'node:worker_threads'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import {
+    afterAll,
+    afterEach,
+    beforeAll,
+    beforeEach,
+    describe,
+    expect,
+    it,
+} from 'vitest'
 import ts from 'typescript'
-import { loadChecks } from '../index.js'
+import { loadChecks, runGuardrails } from '../index.js'
 import { sharedWalk } from '../execute.js'
 import { findRepoRoot } from '../utils/discovery.js'
 import type { SourceMap, Violation } from '../types.js'
 
-const repoRoot = findRepoRoot(import.meta.url)
+const DIRTY_SOURCE = [
+    "import { makeStyles } from '@rneui/themed'",
+    'export const useStyles = makeStyles(() => ({',
+    '    box: { padding: 16 },',
+    '}))',
+    '',
+].join('\n')
 
-function runCli(extraArgs: string[] = []): {
-    status: number | null
-    stdout: string
-    stderr: string
-} {
-    const result = spawnSync(
-        'pnpm',
-        [
-            '--silent',
-            '--filter',
-            '@perawallet/wallet-core-devtools',
-            'guardrails',
-            ...extraArgs,
-        ],
-        { cwd: repoRoot, encoding: 'utf8' },
-    )
+const CLEAN_SOURCE = 'export const x = 1\n'
+
+function buildFixture(): { root: string; cleanup: () => void } {
+    const root = mkdtempSync(join(tmpdir(), 'guardrails-fixture-'))
+    mkdirSync(join(root, 'apps/mobile/src'), { recursive: true })
+    mkdirSync(join(root, 'packages/foo/src'), { recursive: true })
+    writeFileSync(join(root, 'apps/mobile/src/clean.ts'), CLEAN_SOURCE)
+    writeFileSync(join(root, 'apps/mobile/src/dirty.ts'), DIRTY_SOURCE)
+    writeFileSync(join(root, 'packages/foo/src/another.ts'), CLEAN_SOURCE)
     return {
-        status: result.status,
-        stdout: result.stdout ?? '',
-        stderr: result.stderr ?? '',
+        root,
+        cleanup: () => rmSync(root, { recursive: true, force: true }),
     }
 }
 
-describe('guardrails runner CLI', () => {
-    it('runs all loaded checks end-to-end and exits 0 or 1 with a summary line', () => {
-        const { status, stdout } = runCli()
-        expect([0, 1]).toContain(status)
-        if (status === 0) {
-            expect(stdout).toContain('no violations')
-        } else {
-            expect(stdout).toMatch(/guardrail violation\(s\)/)
-        }
-    }, 30_000)
+describe('runGuardrails (in-process)', () => {
+    let fixtureRoot: string
+    let cleanup: () => void
 
-    it('emits valid JSON with timings for every loaded check when --json is passed', () => {
-        const { status, stdout } = runCli(['--json'])
-        expect([0, 1]).toContain(status)
-        const payload = JSON.parse(stdout) as {
+    beforeAll(() => {
+        const fixture = buildFixture()
+        fixtureRoot = fixture.root
+        cleanup = fixture.cleanup
+    })
+
+    afterAll(() => {
+        cleanup()
+    })
+
+    it('reports violations and exits 1 when the fixture has a numeric size', async () => {
+        const { output, exitCode, summary } = await runGuardrails({
+            repoRoot: fixtureRoot,
+            args: [],
+        })
+        expect(exitCode).toBe(1)
+        expect(output).toMatch(/guardrail violation\(s\)/)
+        expect(output).toContain('no-numeric-sizes')
+        expect(summary.violations.some(v => v.ruleId === 'no-numeric-sizes')).toBe(
+            true,
+        )
+    })
+
+    it('emits valid JSON with timings for every loaded check when --json is passed', async () => {
+        const { output, exitCode } = await runGuardrails({
+            repoRoot: fixtureRoot,
+            args: ['--json'],
+        })
+        expect([0, 1]).toContain(exitCode)
+        const payload = JSON.parse(output) as {
             ok: boolean
             total: number
             durationMs: number
@@ -65,39 +90,89 @@ describe('guardrails runner CLI', () => {
         expect(Number.isInteger(payload.workers)).toBe(true)
         expect(Number.isFinite(payload.stageMs.parse)).toBe(true)
         expect(Number.isFinite(payload.stageMs.walk)).toBe(true)
-        const timingKeys = Object.keys(payload.timings)
-        expect(timingKeys).toEqual(
+        expect(Object.keys(payload.timings)).toEqual(
             expect.arrayContaining([
                 'no-numeric-sizes',
                 'no-typography-in-styles',
                 'no-primitive-rn-components',
             ]),
         )
-    }, 30_000)
+    })
 
-    it('exits 2 and reports unknown flag on stderr', () => {
-        const { status, stderr } = runCli(['--nope'])
-        expect(status).toBe(2)
-        expect(stderr).toContain('unknown flag "--nope"')
-    }, 30_000)
+    it('throws on unknown flag', async () => {
+        await expect(
+            runGuardrails({ repoRoot: fixtureRoot, args: ['--nope'] }),
+        ).rejects.toThrow(/unknown flag "--nope"/)
+    })
 
-    it('exits 0 with --warn-only even when violations exist', () => {
-        const { status, stdout } = runCli(['--warn-only'])
-        expect(status).toBe(0)
-        if (stdout.includes('guardrail violation(s)')) {
-            expect(stdout).toContain('warn-only, not blocking')
-        }
-    }, 30_000)
+    it('exits 0 with --warn-only even when violations exist', async () => {
+        const { output, exitCode } = await runGuardrails({
+            repoRoot: fixtureRoot,
+            args: ['--warn-only'],
+        })
+        expect(exitCode).toBe(0)
+        expect(output).toContain('guardrail violation(s)')
+        expect(output).toContain('warn-only, not blocking')
+    })
 
-    it('exposes warnOnly=true in JSON when combined with --json', () => {
-        const { status, stdout } = runCli(['--json', '--warn-only'])
-        expect(status).toBe(0)
-        const payload = JSON.parse(stdout) as {
+    it('exposes warnOnly=true in JSON when combined with --json', async () => {
+        const { output, exitCode } = await runGuardrails({
+            repoRoot: fixtureRoot,
+            args: ['--json', '--warn-only'],
+        })
+        expect(exitCode).toBe(0)
+        const payload = JSON.parse(output) as {
             ok: boolean
             total: number
             warnOnly: boolean
         }
         expect(payload.warnOnly).toBe(true)
+    })
+
+    it('engages workers when GUARDRAILS_FORCE_WORKERS=1', async () => {
+        const previous = process.env.GUARDRAILS_FORCE_WORKERS
+        process.env.GUARDRAILS_FORCE_WORKERS = '1'
+        try {
+            const { exitCode, summary } = await runGuardrails({
+                repoRoot: fixtureRoot,
+                args: ['--json'],
+            })
+            expect([0, 1]).toContain(exitCode)
+            expect(summary.workers).toBeGreaterThan(0)
+            expect(Number.isFinite(summary.parseMs)).toBe(true)
+            expect(Number.isFinite(summary.walkMs)).toBe(true)
+        } finally {
+            if (previous === undefined) {
+                delete process.env.GUARDRAILS_FORCE_WORKERS
+            } else {
+                process.env.GUARDRAILS_FORCE_WORKERS = previous
+            }
+        }
+    })
+})
+
+describe('guardrails CLI bin (subprocess smoke)', () => {
+    it('runs end-to-end via pnpm and emits a valid JSON summary', () => {
+        const repoRoot = findRepoRoot(import.meta.url)
+        const result = spawnSync(
+            'pnpm',
+            [
+                '--silent',
+                '--filter',
+                '@perawallet/wallet-core-devtools',
+                'guardrails',
+                '--json',
+            ],
+            { cwd: repoRoot, encoding: 'utf8' },
+        )
+        expect([0, 1]).toContain(result.status)
+        const payload = JSON.parse(result.stdout ?? '') as {
+            ok: boolean
+            total: number
+            timings: Record<string, number>
+        }
+        expect(typeof payload.ok).toBe('boolean')
+        expect(Object.keys(payload.timings).length).toBeGreaterThan(0)
     }, 30_000)
 })
 
@@ -226,34 +301,4 @@ describe('worker bootstrap', () => {
         expect(result.kind).toBe('ok')
         expect(Array.isArray(result.result?.violations)).toBe(true)
     }, 30_000)
-})
-
-describe('guardrails runner CLI — worker path', () => {
-    it('runs with workers when GUARDRAILS_FORCE_WORKERS=1 and reports workers > 0', () => {
-        const repoRoot = findRepoRoot(import.meta.url)
-        const result = spawnSync(
-            'pnpm',
-            [
-                '--silent',
-                '--filter',
-                '@perawallet/wallet-core-devtools',
-                'guardrails',
-                '--json',
-            ],
-            {
-                cwd: repoRoot,
-                encoding: 'utf8',
-                env: { ...process.env, GUARDRAILS_FORCE_WORKERS: '1' },
-            },
-        )
-        expect([0, 1]).toContain(result.status)
-        const payload = JSON.parse(result.stdout) as {
-            workers: number
-            total: number
-            stageMs: { parse: number; walk: number }
-        }
-        expect(payload.workers).toBeGreaterThan(0)
-        expect(Number.isInteger(payload.total)).toBe(true)
-        expect(Number.isFinite(payload.stageMs.parse)).toBe(true)
-    }, 90_000)
 })
