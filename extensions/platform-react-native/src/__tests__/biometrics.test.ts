@@ -12,13 +12,22 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 
-const isSensorAvailableMock = vi.hoisted(() => vi.fn())
-const authenticateWithOptionsMock = vi.hoisted(() => vi.fn())
+const hasHardwareAsyncMock = vi.hoisted(() => vi.fn())
+const isEnrolledAsyncMock = vi.hoisted(() => vi.fn())
+const supportedAuthenticationTypesAsyncMock = vi.hoisted(() => vi.fn())
+const authenticateAsyncMock = vi.hoisted(() => vi.fn())
 
-vi.mock('@sbaiahmed1/react-native-biometrics', () => ({
-    isSensorAvailable: isSensorAvailableMock,
-    authenticateWithOptions: authenticateWithOptionsMock,
-    BiometricStrength: { Strong: 'Strong', Weak: 'Weak' },
+// AuthenticationType numeric values match expo-local-authentication's enum.
+vi.mock('expo-local-authentication', () => ({
+    AuthenticationType: {
+        FINGERPRINT: 1,
+        FACIAL_RECOGNITION: 2,
+        IRIS: 3,
+    },
+    hasHardwareAsync: hasHardwareAsyncMock,
+    isEnrolledAsync: isEnrolledAsyncMock,
+    supportedAuthenticationTypesAsync: supportedAuthenticationTypesAsyncMock,
+    authenticateAsync: authenticateAsyncMock,
 }))
 
 import { RNBiometricsService } from '../services/biometrics'
@@ -27,63 +36,99 @@ describe('RNBiometricsService', () => {
     const service = new RNBiometricsService()
 
     beforeEach(() => {
-        isSensorAvailableMock.mockReset()
-        authenticateWithOptionsMock.mockReset()
+        hasHardwareAsyncMock.mockReset()
+        isEnrolledAsyncMock.mockReset()
+        supportedAuthenticationTypesAsyncMock.mockReset()
+        authenticateAsyncMock.mockReset()
     })
 
     describe('getSupportedBiometricType', () => {
-        test('returns null when no sensor is available', async () => {
-            isSensorAvailableMock.mockResolvedValue({ available: false })
+        test('returns null when hardware is not available', async () => {
+            hasHardwareAsyncMock.mockResolvedValue(false)
             expect(await service.getSupportedBiometricType()).toBeNull()
         })
 
-        test.each([
-            ['FaceID', 'face'],
-            ['TouchID', 'fingerprint'],
-            ['Biometrics', 'biometrics'],
-        ] as const)('maps %s to %s', async (biometryType, expected) => {
-            isSensorAvailableMock.mockResolvedValue({
-                available: true,
-                biometryType,
-            })
-            expect(await service.getSupportedBiometricType()).toBe(expected)
+        test('returns null when no biometrics are enrolled', async () => {
+            hasHardwareAsyncMock.mockResolvedValue(true)
+            isEnrolledAsyncMock.mockResolvedValue(false)
+            expect(await service.getSupportedBiometricType()).toBeNull()
         })
 
-        test('returns null for unknown biometry types', async () => {
-            isSensorAvailableMock.mockResolvedValue({
-                available: true,
-                biometryType: 'Mystery',
-            })
+        test('prefers face over fingerprint when both are supported', async () => {
+            hasHardwareAsyncMock.mockResolvedValue(true)
+            isEnrolledAsyncMock.mockResolvedValue(true)
+            // 1 = FINGERPRINT, 2 = FACIAL_RECOGNITION
+            supportedAuthenticationTypesAsyncMock.mockResolvedValue([1, 2])
+            expect(await service.getSupportedBiometricType()).toBe('face')
+        })
+
+        test('returns "fingerprint" when only fingerprint is supported', async () => {
+            hasHardwareAsyncMock.mockResolvedValue(true)
+            isEnrolledAsyncMock.mockResolvedValue(true)
+            supportedAuthenticationTypesAsyncMock.mockResolvedValue([1])
+            expect(await service.getSupportedBiometricType()).toBe(
+                'fingerprint',
+            )
+        })
+
+        test('returns "biometrics" when only iris is supported', async () => {
+            hasHardwareAsyncMock.mockResolvedValue(true)
+            isEnrolledAsyncMock.mockResolvedValue(true)
+            supportedAuthenticationTypesAsyncMock.mockResolvedValue([3])
+            expect(await service.getSupportedBiometricType()).toBe('biometrics')
+        })
+
+        test('returns null when supported list is empty', async () => {
+            hasHardwareAsyncMock.mockResolvedValue(true)
+            isEnrolledAsyncMock.mockResolvedValue(true)
+            supportedAuthenticationTypesAsyncMock.mockResolvedValue([])
             expect(await service.getSupportedBiometricType()).toBeNull()
         })
     })
 
     describe('checkBiometricsAvailable', () => {
         test('returns true when a supported type exists', async () => {
-            isSensorAvailableMock.mockResolvedValue({
-                available: true,
-                biometryType: 'FaceID',
-            })
+            hasHardwareAsyncMock.mockResolvedValue(true)
+            isEnrolledAsyncMock.mockResolvedValue(true)
+            supportedAuthenticationTypesAsyncMock.mockResolvedValue([2])
             expect(await service.checkBiometricsAvailable()).toBe(true)
         })
 
         test('returns false when no type is supported', async () => {
-            isSensorAvailableMock.mockResolvedValue({ available: false })
+            hasHardwareAsyncMock.mockResolvedValue(false)
             expect(await service.checkBiometricsAvailable()).toBe(false)
         })
     })
 
     describe('authenticate', () => {
         test('returns the native success flag', async () => {
-            authenticateWithOptionsMock.mockResolvedValue({ success: true })
+            authenticateAsyncMock.mockResolvedValue({ success: true })
             expect(await service.authenticate('t', 'd')).toBe(true)
         })
 
-        test('returns false when the native call throws', async () => {
-            authenticateWithOptionsMock.mockRejectedValue(
-                new Error('cancelled'),
-            )
+        test('returns false when the native call resolves with success: false', async () => {
+            authenticateAsyncMock.mockResolvedValue({
+                success: false,
+                error: 'user_cancel',
+            })
             expect(await service.authenticate()).toBe(false)
+        })
+
+        test('returns false when the native call throws', async () => {
+            authenticateAsyncMock.mockRejectedValue(new Error('cancelled'))
+            expect(await service.authenticate()).toBe(false)
+        })
+
+        test('disables device PIN/password fallback (biometric-only)', async () => {
+            authenticateAsyncMock.mockResolvedValue({ success: true })
+            await service.authenticate('Unlock')
+            expect(authenticateAsyncMock).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    promptMessage: 'Unlock',
+                    disableDeviceFallback: true,
+                    biometricsSecurityLevel: 'strong',
+                }),
+            )
         })
     })
 })

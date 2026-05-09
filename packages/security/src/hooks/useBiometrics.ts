@@ -25,7 +25,7 @@ type UseBiometricsResult = {
     isAvailable: boolean
     checkBiometricsEnabled: () => Promise<boolean>
     checkBiometricsAvailable: () => Promise<boolean>
-    setBiometricsCode: (code: Uint8Array) => Promise<void>
+    refreshBiometricsBinding: () => Promise<void>
     enableBiometrics: () => Promise<boolean>
     disableBiometrics: () => Promise<void>
     authenticateWithBiometrics: () => Promise<boolean>
@@ -56,7 +56,7 @@ export const useBiometrics = (): UseBiometricsResult => {
         checkBiometricsAvailable().then(setIsAvailable)
     }, [checkBiometricsEnabled, checkBiometricsAvailable])
 
-    const setBiometricsCode = useCallback(
+    const writeBiometricBlob = useCallback(
         async (code: Uint8Array): Promise<void> => {
             await commitTypedSecret({
                 id: BIOMETRIC_BLOB_KEY_ID,
@@ -88,10 +88,10 @@ export const useBiometrics = (): UseBiometricsResult => {
                             )
                         if (!authenticated) return false
 
-                        // `setBiometricsCode` copies the bytes into the keystore;
+                        // `writeBiometricBlob` copies the bytes into the keystore;
                         // the original `pinData` here is zeroed by
                         // `withTypedSecret`'s finally after this resolves.
-                        await setBiometricsCode(pinData)
+                        await writeBiometricBlob(pinData)
                         return true
                     },
                 )
@@ -100,8 +100,19 @@ export const useBiometrics = (): UseBiometricsResult => {
                 return false
             }
         },
-        [biometricsService, withTypedSecret, setBiometricsCode],
+        [biometricsService, withTypedSecret, writeBiometricBlob],
     )
+
+    // Re-bind the biometric blob to the current PIN_RECORD bytes. Called by
+    // `usePinCode.savePin` after a PIN change. No-op when biometrics aren't
+    // already enabled; never re-prompts the OS biometric sheet (we already
+    // have the user authenticated via PIN at the call site).
+    const refreshBiometricsBinding = useCallback(async (): Promise<void> => {
+        if (!hasTypedSecret(BIOMETRIC_BLOB_KEY_ID)) return
+        await withTypedSecret(PIN_RECORD_KEY_ID, async pinData => {
+            await writeBiometricBlob(pinData)
+        })
+    }, [hasTypedSecret, withTypedSecret, writeBiometricBlob])
 
     const disableBiometrics = useCallback(async () => {
         await removeTypedSecret(BIOMETRIC_BLOB_KEY_ID)
@@ -134,7 +145,7 @@ export const useBiometrics = (): UseBiometricsResult => {
         isAvailable,
         checkBiometricsEnabled,
         checkBiometricsAvailable,
-        setBiometricsCode,
+        refreshBiometricsBinding,
         enableBiometrics,
         disableBiometrics,
         authenticateWithBiometrics,

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { usePinCode, useBiometrics } from '@perawallet/wallet-core-security'
 
 type UseLockScreenParams = {
@@ -66,17 +66,37 @@ export const useLockScreen = ({
         return () => clearInterval(interval)
     }, [lockoutEndTime])
 
+    // Biometric auth must NOT bypass the PIN lockout. If we're already locked
+    // out at mount, skip the prompt; if the user later enters the lockout via
+    // failed attempts, this effect won't run again because we set the ref.
+    // After a lockout expires, we still don't auto-prompt biometrics — let
+    // the user enter their PIN explicitly.
+    const hasAttemptedBiometricsRef = useRef(false)
+
     useEffect(() => {
-        checkBiometricsEnabled().then(async enabled => {
-            if (enabled) {
-                const success = await authenticateWithBiometrics()
-                if (success) {
-                    resetFailedAttempts()
-                    onUnlock()
-                }
-            }
-        })
-    }, [])
+        if (isLockedOut || hasAttemptedBiometricsRef.current) return
+        hasAttemptedBiometricsRef.current = true
+
+        let cancelled = false
+        ;(async () => {
+            const enabled = await checkBiometricsEnabled()
+            if (cancelled || !enabled) return
+            const success = await authenticateWithBiometrics()
+            if (cancelled || !success) return
+            resetFailedAttempts()
+            onUnlock()
+        })()
+
+        return () => {
+            cancelled = true
+        }
+    }, [
+        isLockedOut,
+        checkBiometricsEnabled,
+        authenticateWithBiometrics,
+        resetFailedAttempts,
+        onUnlock,
+    ])
 
     const handlePinComplete = useCallback(
         async (pin: string) => {

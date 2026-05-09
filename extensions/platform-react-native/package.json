@@ -30,11 +30,11 @@
     "@react-native-firebase/messaging": "^24.0.0",
     "@react-native-firebase/remote-config": "^24.0.0",
     "@notifee/react-native": "^9.1.8",
-    "@sbaiahmed1/react-native-biometrics": "^0.15.0",
     "drizzle-orm": "catalog:",
     "expo-sqlite": "~14.0.0",
     "expo-application": "^55.0.14",
     "expo-device": "^55.0.14",
+    "expo-local-authentication": "^17.0.7",
     "expo-localization": "^55.0.13",
     "zustand": "catalog:"
   },
