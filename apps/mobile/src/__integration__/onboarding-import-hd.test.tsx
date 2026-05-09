@@ -34,6 +34,7 @@ import { ImportSelectAddressesScreen } from '@modules/onboarding/screens/ImportS
 import { ImportRekeyedAddressesScreen } from '@modules/onboarding/screens/ImportRekeyedAddressesScreen/ImportRekeyedAddressesScreen'
 import {
     AccountTypes,
+    DerivationTypes,
     useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
@@ -56,7 +57,9 @@ const typeWordsIndividually = (words: string[]) => {
     words.forEach((word, idx) => {
         fireEvent.change(
             screen.getByTestId(`import_account_word_input_${idx}`),
-            { target: { value: word } },
+            {
+                target: { value: word },
+            },
         )
     })
 }
@@ -286,7 +289,7 @@ describe('Flow: Onboarding → Import HD wallet', () => {
                         account: 0,
                         change: 0,
                         keyIndex: 0,
-                        derivationType: 0,
+                        derivationType: DerivationTypes.Peikert,
                     },
                 },
             ])
