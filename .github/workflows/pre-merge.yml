@@ -222,6 +222,17 @@ jobs:
           key: build-artifacts-${{ runner.os }}-${{ github.sha }}
 
       - name: Test
+        env:
+          # GitHub-hosted ubuntu-24.04 runners have 4 cores. Without these
+          # caps each of turbo's ~30 sibling vitest processes would grab
+          # cpu_count threads and over-subscribe wildly — the symptom is
+          # intermittent timeouts in CPU-heavy specs (guardrails'
+          # runner.spec.ts in particular, which `spawnSync`s pnpm and
+          # spawns its own worker_threads). 2 threads per vitest × 4
+          # turbo tasks = 8 active threads, which fits the 4 cores with
+          # headroom.
+          VITEST_MAX_THREADS: 2
+          TURBO_CONCURRENCY: 4
         run: pnpm run test:coverage
 
   gitleaks:
