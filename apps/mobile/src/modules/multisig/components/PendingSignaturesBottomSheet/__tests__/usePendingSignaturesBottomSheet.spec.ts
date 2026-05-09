@@ -68,8 +68,11 @@ vi.mock('../../../utils/buildMultisigCosignRequest', () => ({
 }))
 
 const useSignRequestDetailQueryMock = vi.fn()
-vi.mock(import('@perawallet/wallet-core-multisig'), async importOriginal => {
-    const actual = await importOriginal()
+vi.mock('@perawallet/wallet-core-multisig', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-multisig')
+        >()
     return {
         ...actual,
         useSignRequestDetailQuery: (...args: unknown[]) =>
