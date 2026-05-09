@@ -57,7 +57,7 @@ export const useImportAccount = () => {
         const isDuplicate = allAccounts.some(
             a => a.address === keyPair.publicKey,
         )
-        if (isDuplicate) {
+        if (isDuplicate && keyPair.id) {
             try {
                 await deleteKey(keyPair.id)
             } catch {
