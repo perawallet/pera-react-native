@@ -190,7 +190,6 @@ describe('useLocalKeyTransactionSigner', () => {
         // (For non-cosign flows the actor pre-resolves rekey before calling.)
         mockAccounts = [participantWithRekey, algo25Account]
         mockIsAlgo25Account.mockImplementation(acc => acc.type === 'algo25')
-        mockGetKeyOrThrow.mockReturnValue({ keyId: 'key-participant' })
         mockWithAlgo25Session.mockImplementation(async (_key, _dom, cb) =>
             cb({
                 signTransaction: vi.fn().mockResolvedValue(new Uint8Array([3])),
@@ -207,9 +206,10 @@ describe('useLocalKeyTransactionSigner', () => {
         )
 
         expect(mockWithAlgo25Session).toHaveBeenCalled()
-        // Participant's own key was loaded — NOT the rekey target's.
-        expect(mockGetKeyOrThrow).toHaveBeenCalledWith('key-participant')
-        expect(mockGetKeyOrThrow).not.toHaveBeenCalledWith('key-algo25')
+        // Participant's own keyPairId drove the session — NOT the rekey target's.
+        const sessionKey = mockWithAlgo25Session.mock.calls[0][0]
+        expect(sessionKey.id).toBe('key-participant')
+        expect(sessionKey.id).not.toBe('key-algo25')
         expect(signed).toHaveLength(1)
     })
 
