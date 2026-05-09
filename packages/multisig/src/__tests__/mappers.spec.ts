@@ -300,4 +300,39 @@ describe('mapSignRequest', () => {
             expect(result.status).toBe(status)
         })
     })
+
+    test('maps proposer_address when present', () => {
+        const response: SignRequestResponse = {
+            id: 'sr-with-proposer',
+            status: 'pending',
+            type: 'async',
+            creation_datetime: '2025-01-01T00:00:00Z',
+            expected_expire_datetime: '2025-01-02T00:00:00Z',
+            fail_reason_display: null,
+            joint_account: baseAccountResponse,
+            transaction_lists: [],
+            proposer_address: 'PROPOSER_ADDRESS',
+        }
+
+        const result = mapSignRequest(response)
+
+        expect(result.proposerAddress).toBe('PROPOSER_ADDRESS')
+    })
+
+    test('maps proposer_address to null when missing', () => {
+        const response: SignRequestResponse = {
+            id: 'sr-no-proposer',
+            status: 'pending',
+            type: 'async',
+            creation_datetime: '2025-01-01T00:00:00Z',
+            expected_expire_datetime: '2025-01-02T00:00:00Z',
+            fail_reason_display: null,
+            joint_account: baseAccountResponse,
+            transaction_lists: [],
+        }
+
+        const result = mapSignRequest(response)
+
+        expect(result.proposerAddress).toBeNull()
+    })
 })

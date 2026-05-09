@@ -40,6 +40,12 @@ type BaseSignRequest = {
     sourceType?: SourceType
     sourceMetadata?: SignRequestSource
     /**
+     * Multisig-cosign only: the existing sign-request ID being cosigned.
+     * Threaded into {@link SourceMetadata.signRequestId} so the cosign
+     * transport can target the right backend record.
+     */
+    signRequestId?: string
+    /**
      * When true, the signing pipeline skips the `awaiting_user` review state
      * and proceeds directly from `validating` to `signing`, and also
      * suppresses the post-completion notification sheet on success.

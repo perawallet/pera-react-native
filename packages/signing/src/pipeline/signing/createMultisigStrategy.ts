@@ -12,7 +12,13 @@
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { isMultisigAccount } from '@perawallet/wallet-core-accounts'
-import type { SigningStrategy, SigningResult, SignerInfo } from '../types'
+import { encodeToBase64, type Nullable } from '@perawallet/wallet-core-shared'
+import type {
+    SigningStrategy,
+    SigningResult,
+    SignerInfo,
+    SignedData,
+} from '../types'
 import { NoLocalParticipantsError, SigningError } from '../errors'
 
 export interface CreateMultisigStrategyOptions {
@@ -85,20 +91,54 @@ export const createMultisigStrategy = (
 
 /**
  * Combines signatures from multiple participants into a single result.
- * Uses the first result's signed data and flattens all signer info.
+ *
+ * Each participant's strategy produced its own signedData (single-sig
+ * transactions over the same canonical bytes). To feed the multisig
+ * propose/cosign backend, we lift each per-transaction signature into the
+ * participant's `SignerInfo.signatures` array — these are the raw Ed25519
+ * sigs the backend assembles into the composite multisig.
+ *
+ * The combined result keeps `signedData = firstResult.signedData` so any
+ * downstream code that still expects a signed group sees a valid one
+ * (the propose transport reads `signers` instead, but algod-fallback
+ * paths or callback transports may still inspect signedData).
  */
 const combineParticipantSignatures = (
     results: SigningResult[],
 ): SigningResult => {
     if (results.length === 0) {
-        throw new Error('No participant results to combine')
+        throw new SigningError('No participant results to combine')
     }
 
     const firstResult = results[0]
-    const allSigners: SignerInfo[] = results.flatMap(r => r.signers)
+    const allSigners: SignerInfo[] = results.flatMap(r =>
+        r.signers.map(signer => ({
+            ...signer,
+            signatures: extractSignatures(r.signedData),
+        })),
+    )
 
     return {
         signedData: firstResult.signedData,
         signers: allSigners,
     }
+}
+
+/**
+ * Pulls per-transaction signature bytes out of a participant's signedData.
+ * For our flow each participant signs as a single signer, so `sig` is set;
+ * if a strategy ever produces an msig-shaped result we honor the first
+ * non-null subsig as a fallback. Returns null for any txn that lacks both,
+ * matching the backend schema shape `Array<Array<string | null>>`.
+ */
+const extractSignatures = (signedData: SignedData): Nullable<string>[] => {
+    if (signedData.type !== 'transactions') {
+        return []
+    }
+    return signedData.signed.map(stx => {
+        if (stx.sig) return encodeToBase64(stx.sig)
+        const msigSig = stx.msig?.subsigs.find(s => s.sig)?.sig
+        if (msigSig) return encodeToBase64(msigSig)
+        return null
+    })
 }

@@ -13,7 +13,7 @@
 import type { KMSHDWalletSession } from '../models/session'
 import { KeyContext } from '@algorandfoundation/xhd-wallet-api'
 import { KeyPair, KeyType } from '../models'
-import { makeKeyPair, peraMetadataFor } from '../utils'
+import { makeKeyPair, peraMetadataFor, PeraKeyKind } from '../utils'
 import { KeyManagementError } from '../errors'
 import { useKMSService } from './useKMSServices'
 import { entropyToMnemonic } from '../crypto/hdwallet-utils'
@@ -58,7 +58,10 @@ export const useHDWallet = () => {
                 privateKey: rootKey,
                 metadata: {
                     name: keyId,
-                    ...peraMetadataFor({ createdAt: new Date() }),
+                    ...peraMetadataFor({
+                        createdAt: new Date(),
+                        kind: PeraKeyKind.HDWalletRoot,
+                    }),
                 },
             } as unknown as Omit<KeyData, 'id'>,
             'raw',

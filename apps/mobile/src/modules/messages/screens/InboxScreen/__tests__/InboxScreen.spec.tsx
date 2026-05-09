@@ -28,6 +28,10 @@ vi.mock(
     }),
 )
 
+vi.mock('@modules/multisig/hooks/useHandleMultisigSignTap', () => ({
+    useHandleMultisigSignTap: () => vi.fn(),
+}))
+
 vi.mock('@perawallet/wallet-core-messages', () => ({
     useInboxQuery: vi.fn(() => ({
         inboxItems: [],

@@ -26,6 +26,7 @@ import { useStyles } from './styles'
 export type PWRoundIconProps = {
     icon: IconName
     size?: PWIconSize
+    iconSize?: PWIconSize
     variant?: PWIconVariant
     style?: ViewStyle
 } & PWViewProps
@@ -55,6 +56,7 @@ export const PWRoundIcon = (props: PWRoundIconProps) => {
     const {
         icon,
         size = 'md',
+        iconSize,
         variant = 'secondary',
         style: propStyle,
         ...rest
@@ -77,7 +79,7 @@ export const PWRoundIcon = (props: PWRoundIconProps) => {
         >
             <PWIcon
                 name={icon}
-                size={ICON_SIZE_MAP[size]}
+                size={iconSize ?? ICON_SIZE_MAP[size]}
                 variant={resolvedIconVariant}
             />
         </PWView>

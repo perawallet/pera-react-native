@@ -187,6 +187,64 @@ describe('useAssetOptOutMutation', () => {
         expect(mockSubmit).not.toHaveBeenCalled()
     })
 
+    it('skips submit but still reconciles local state when the asset is already gone on-chain', async () => {
+        mockAccountInformation.mockResolvedValueOnce({
+            ...baseAccount,
+            assets: [],
+        })
+
+        const { result } = renderHook(() => useAssetOptOutMutation())
+
+        await act(async () => {
+            const res = await result.current.optOut({
+                sender: 'SENDER',
+                assetId: 12345n,
+                creator: 'CREATOR',
+            })
+            expect(res.txIds).toEqual([])
+        })
+
+        expect(mockAddAssetTransfer).not.toHaveBeenCalled()
+        expect(mockSubmit).not.toHaveBeenCalled()
+        expect(mockDeleteAssetHoldings).toHaveBeenCalledWith({
+            accountAddress: 'SENDER',
+            assetIds: ['12345'],
+            network: 'testnet',
+        })
+        expect(mockInvalidate).toHaveBeenCalledTimes(1)
+    })
+
+    it('only submits assets still held when some are already gone on-chain', async () => {
+        mockAccountInformation.mockResolvedValueOnce({
+            ...baseAccount,
+            assets: [{ assetId: 12345n, amount: 0n }],
+        })
+        mockBuild.mockResolvedValueOnce({
+            transactions: [{ txn: { sender: 'SENDER' } }],
+        })
+        mockSubmit.mockResolvedValueOnce({ txIds: ['tx1'] })
+
+        const { result } = renderHook(() => useAssetOptOutMutation())
+
+        await act(async () => {
+            const res = await result.current.optOut([
+                { sender: 'SENDER', assetId: 12345n, creator: 'C1' },
+                { sender: 'SENDER', assetId: 67890n, creator: 'C2' },
+            ])
+            expect(res.txIds).toEqual(['tx1'])
+        })
+
+        expect(mockAddAssetTransfer).toHaveBeenCalledTimes(1)
+        expect(mockAddAssetTransfer).toHaveBeenCalledWith(
+            expect.objectContaining({ assetId: 12345n }),
+        )
+        expect(mockDeleteAssetHoldings).toHaveBeenCalledWith({
+            accountAddress: 'SENDER',
+            assetIds: ['12345', '67890'],
+            network: 'testnet',
+        })
+    })
+
     it('does not call deleteAssetHoldings when submit fails', async () => {
         mockSubmit.mockRejectedValueOnce(new Error('user cancelled'))
         const { result } = renderHook(() => useAssetOptOutMutation())
