@@ -11,7 +11,13 @@
  */
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
-import type { AssetPricesResponse, AssetPriceHistoryResponse } from './schema'
+import { validateMockResponse } from '@perawallet/wallet-core-shared/test-utils'
+import {
+    assetPriceHistoryResponseSchema,
+    assetPricesResponseSchema,
+    type AssetPricesResponse,
+    type AssetPriceHistoryResponse,
+} from './schema'
 
 // Note: the asset prices endpoint shares its path with `mockAssets` (both hit
 // `/v1/assets/`). Tests that need both should register the more specific
@@ -25,8 +31,16 @@ export type MockAssetPricesParams = {
 export const mockAssetPrices = ({
     response,
     status = 200,
-}: MockAssetPricesParams): HttpHandler =>
-    http.get('*/v1/assets/', () => HttpResponse.json(response, { status }))
+}: MockAssetPricesParams): HttpHandler => {
+    validateMockResponse(
+        assetPricesResponseSchema,
+        response,
+        'mockAssetPrices',
+    )
+    return http.get('*/v1/assets/', () =>
+        HttpResponse.json(response, { status }),
+    )
+}
 
 export type MockAssetPriceHistoryParams = {
     response: AssetPriceHistoryResponse
@@ -36,7 +50,13 @@ export type MockAssetPriceHistoryParams = {
 export const mockAssetPriceHistory = ({
     response,
     status = 200,
-}: MockAssetPriceHistoryParams): HttpHandler =>
-    http.get('*/v1/assets/price-chart/', () =>
+}: MockAssetPriceHistoryParams): HttpHandler => {
+    validateMockResponse(
+        assetPriceHistoryResponseSchema,
+        response,
+        'mockAssetPriceHistory',
+    )
+    return http.get('*/v1/assets/price-chart/', () =>
         HttpResponse.json(response, { status }),
     )
+}

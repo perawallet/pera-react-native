@@ -13,10 +13,14 @@
 // Thin MSW handler factories for the NFD REST surface.
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
-import type {
-    NfdNamesListApiResponse,
-    NfdBulkReadApiResponse,
-    NfdSearchApiResponse,
+import { validateMockResponse } from '@perawallet/wallet-core-shared/test-utils'
+import {
+    nfdBulkReadResponseSchema,
+    nfdNamesListResponseSchema,
+    nfdSearchResponseSchema,
+    type NfdNamesListApiResponse,
+    type NfdBulkReadApiResponse,
+    type NfdSearchApiResponse,
 } from './schema'
 
 export type MockNfdNamesForAddressParams = {
@@ -29,10 +33,16 @@ export const mockNfdNamesForAddress = ({
     address,
     response,
     status = 200,
-}: MockNfdNamesForAddressParams): HttpHandler =>
-    http.get(`*/v1/accounts/${address}/names/`, () =>
+}: MockNfdNamesForAddressParams): HttpHandler => {
+    validateMockResponse(
+        nfdNamesListResponseSchema,
+        response,
+        'mockNfdNamesForAddress',
+    )
+    return http.get(`*/v1/accounts/${address}/names/`, () =>
         HttpResponse.json(response, { status }),
     )
+}
 
 export type MockNfdBulkReadParams = {
     response: NfdBulkReadApiResponse
@@ -42,10 +52,16 @@ export type MockNfdBulkReadParams = {
 export const mockNfdBulkRead = ({
     response,
     status = 200,
-}: MockNfdBulkReadParams): HttpHandler =>
-    http.post('*/v1/accounts/names/bulk-read/', () =>
+}: MockNfdBulkReadParams): HttpHandler => {
+    validateMockResponse(
+        nfdBulkReadResponseSchema,
+        response,
+        'mockNfdBulkRead',
+    )
+    return http.post('*/v1/accounts/names/bulk-read/', () =>
         HttpResponse.json(response, { status }),
     )
+}
 
 export type MockNfdSearchParams = {
     response: NfdSearchApiResponse
@@ -55,7 +71,9 @@ export type MockNfdSearchParams = {
 export const mockNfdSearch = ({
     response,
     status = 200,
-}: MockNfdSearchParams): HttpHandler =>
-    http.get('*/v1/name-services/search/', () =>
+}: MockNfdSearchParams): HttpHandler => {
+    validateMockResponse(nfdSearchResponseSchema, response, 'mockNfdSearch')
+    return http.get('*/v1/name-services/search/', () =>
         HttpResponse.json(response, { status }),
     )
+}

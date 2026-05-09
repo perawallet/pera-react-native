@@ -18,7 +18,12 @@
 // hosts so handlers don't need to know the network.
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
-import type { CurrencyApiResponse } from './schema'
+import { validateMockResponse } from '@perawallet/wallet-core-shared/test-utils'
+import {
+    currenciesListResponseSchema,
+    currencyResponseSchema,
+    type CurrencyApiResponse,
+} from './schema'
 
 export type MockListCurrenciesParams = {
     response: CurrencyApiResponse[]
@@ -28,8 +33,16 @@ export type MockListCurrenciesParams = {
 export const mockListCurrencies = ({
     response,
     status = 200,
-}: MockListCurrenciesParams): HttpHandler =>
-    http.get('*/v1/currencies/', () => HttpResponse.json(response, { status }))
+}: MockListCurrenciesParams): HttpHandler => {
+    validateMockResponse(
+        currenciesListResponseSchema,
+        response,
+        'mockListCurrencies',
+    )
+    return http.get('*/v1/currencies/', () =>
+        HttpResponse.json(response, { status }),
+    )
+}
 
 export type MockGetCurrencyParams = {
     id: string
@@ -41,7 +54,9 @@ export const mockGetCurrency = ({
     id,
     response,
     status = 200,
-}: MockGetCurrencyParams): HttpHandler =>
-    http.get(`*/v1/currencies/${id}`, () =>
+}: MockGetCurrencyParams): HttpHandler => {
+    validateMockResponse(currencyResponseSchema, response, 'mockGetCurrency')
+    return http.get(`*/v1/currencies/${id}`, () =>
         HttpResponse.json(response, { status }),
     )
+}

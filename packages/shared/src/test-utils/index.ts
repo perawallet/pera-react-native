@@ -11,3 +11,4 @@
  */
 
 export * from './mock-persist-storage'
+export * from './validate-mock-payload'

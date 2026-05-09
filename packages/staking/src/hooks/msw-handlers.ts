@@ -14,6 +14,8 @@
 // `endpoints.ts`. Reachable only via the test alias, never from the prod entry.
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
+import { validateMockResponse } from '@perawallet/wallet-core-shared/test-utils'
+import { stakingProjectsApiResponseSchema } from '../models/schema'
 import type { StakingProjectsApiResponse } from '../models'
 
 export type MockStakingProjectsParams = {
@@ -24,7 +26,13 @@ export type MockStakingProjectsParams = {
 export const mockStakingProjects = ({
     response,
     status = 200,
-}: MockStakingProjectsParams): HttpHandler =>
-    http.get('*/v1/staking/projects-information/', () =>
+}: MockStakingProjectsParams): HttpHandler => {
+    validateMockResponse(
+        stakingProjectsApiResponseSchema,
+        response,
+        'mockStakingProjects',
+    )
+    return http.get('*/v1/staking/projects-information/', () =>
         HttpResponse.json(response, { status }),
     )
+}

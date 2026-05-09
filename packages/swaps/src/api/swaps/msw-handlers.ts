@@ -11,7 +11,15 @@
  */
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
-import type { SwapStatusUpdateApiResponse } from './schema'
+import {
+    validateMockRequest,
+    validateMockResponse,
+} from '@perawallet/wallet-core-shared/test-utils'
+import {
+    swapStatusUpdateRequestSchema,
+    swapStatusUpdateResponseSchema,
+    type SwapStatusUpdateApiResponse,
+} from './schema'
 
 export type MockUpdateSwapStatusParams = {
     swapId: string
@@ -23,7 +31,21 @@ export const mockUpdateSwapStatus = ({
     swapId,
     response,
     status = 200,
-}: MockUpdateSwapStatusParams): HttpHandler =>
-    http.patch(`*/v2/dex-swap/swaps/${swapId}/`, () =>
-        HttpResponse.json(response, { status }),
+}: MockUpdateSwapStatusParams): HttpHandler => {
+    validateMockResponse(
+        swapStatusUpdateResponseSchema,
+        response,
+        'mockUpdateSwapStatus',
     )
+    return http.patch(
+        `*/v2/dex-swap/swaps/${swapId}/`,
+        async ({ request }) => {
+            const validated = await validateMockRequest(
+                swapStatusUpdateRequestSchema,
+                request,
+            )
+            if (!validated.ok) return validated.response
+            return HttpResponse.json(response, { status })
+        },
+    )
+}

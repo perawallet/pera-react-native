@@ -11,7 +11,8 @@
  */
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
-import type { InboxResponse } from './schema'
+import { validateMockResponse } from '@perawallet/wallet-core-shared/test-utils'
+import { inboxResponseSchema, type InboxResponse } from './schema'
 
 export type MockInboxParams = {
     deviceID: string
@@ -23,7 +24,9 @@ export const mockInbox = ({
     deviceID,
     response,
     status = 200,
-}: MockInboxParams): HttpHandler =>
-    http.post(`*/v1/inbox/${deviceID}/`, () =>
+}: MockInboxParams): HttpHandler => {
+    validateMockResponse(inboxResponseSchema, response, 'mockInbox')
+    return http.post(`*/v1/inbox/${deviceID}/`, () =>
         HttpResponse.json(response, { status }),
     )
+}

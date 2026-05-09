@@ -11,7 +11,11 @@
  */
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
-import type { AssetSearchResponse } from './search-schema'
+import { validateMockResponse } from '@perawallet/wallet-core-shared/test-utils'
+import {
+    assetSearchResponseSchema,
+    type AssetSearchResponse,
+} from './search-schema'
 
 export type MockAssetSearchParams = {
     response: AssetSearchResponse
@@ -21,7 +25,13 @@ export type MockAssetSearchParams = {
 export const mockAssetSearch = ({
     response,
     status = 200,
-}: MockAssetSearchParams): HttpHandler =>
-    http.get('*/v1/assets/search/', () =>
+}: MockAssetSearchParams): HttpHandler => {
+    validateMockResponse(
+        assetSearchResponseSchema,
+        response,
+        'mockAssetSearch',
+    )
+    return http.get('*/v1/assets/search/', () =>
         HttpResponse.json(response, { status }),
     )
+}

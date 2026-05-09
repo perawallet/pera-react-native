@@ -57,6 +57,9 @@
       "@perawallet/wallet-core-shared/test-handlers": [
         "../../packages/shared/src/test-handlers.ts"
       ],
+      "@perawallet/wallet-core-shared/test-utils": [
+        "../../packages/shared/src/test-utils/index.ts"
+      ],
       "@perawallet/wallet-core-accounts/test-handlers": [
         "../../packages/accounts/src/test-handlers.ts"
       ],

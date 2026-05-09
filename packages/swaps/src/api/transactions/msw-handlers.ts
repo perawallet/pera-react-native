@@ -11,7 +11,15 @@
  */
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
-import type { PrepareTransactionsApiResponse } from './schema'
+import {
+    validateMockRequest,
+    validateMockResponse,
+} from '@perawallet/wallet-core-shared/test-utils'
+import {
+    prepareTransactionsRequestSchema,
+    prepareTransactionsResponseSchema,
+    type PrepareTransactionsApiResponse,
+} from './schema'
 
 export type MockPrepareTransactionsParams = {
     response: PrepareTransactionsApiResponse
@@ -21,7 +29,21 @@ export type MockPrepareTransactionsParams = {
 export const mockPrepareTransactions = ({
     response,
     status = 200,
-}: MockPrepareTransactionsParams): HttpHandler =>
-    http.post('*/v2/dex-swap/prepare-transactions/', () =>
-        HttpResponse.json(response, { status }),
+}: MockPrepareTransactionsParams): HttpHandler => {
+    validateMockResponse(
+        prepareTransactionsResponseSchema,
+        response,
+        'mockPrepareTransactions',
     )
+    return http.post(
+        '*/v2/dex-swap/prepare-transactions/',
+        async ({ request }) => {
+            const validated = await validateMockRequest(
+                prepareTransactionsRequestSchema,
+                request,
+            )
+            if (!validated.ok) return validated.response
+            return HttpResponse.json(response, { status })
+        },
+    )
+}

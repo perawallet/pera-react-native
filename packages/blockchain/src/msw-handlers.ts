@@ -24,6 +24,15 @@
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
 
+// algod and indexer responses are NOT validated by zod schemas in this
+// repo — algokit-utils owns the schema layer for those (it parses every
+// response into typed model classes via `decodeJson` + per-field codecs).
+// The shapes below mirror algokit's wire-format expectations; if algokit
+// is upgraded and the response shape drifts, the typed client will refuse
+// our mocked JSON at parse time — the same failure mode the reviewer
+// flagged for our Pera REST mocks. We keep the types local so this file
+// doesn't pull algokit's internal codec types into a public surface.
+
 // ---------------------------------------------------------------------------
 // algod
 // ---------------------------------------------------------------------------

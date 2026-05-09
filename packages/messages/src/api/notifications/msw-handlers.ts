@@ -11,9 +11,12 @@
  */
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
-import type {
-    NotificationStatusResponse,
-    NotificationsListResponse,
+import { validateMockResponse } from '@perawallet/wallet-core-shared/test-utils'
+import {
+    notificationStatusResponseSchema,
+    notificationsListResponseSchema,
+    type NotificationStatusResponse,
+    type NotificationsListResponse,
 } from './schema'
 
 export type MockNotificationStatusParams = {
@@ -26,10 +29,16 @@ export const mockNotificationStatus = ({
     deviceID,
     response,
     status = 200,
-}: MockNotificationStatusParams): HttpHandler =>
-    http.get(`*/v1/devices/${deviceID}/notification-status/`, () =>
+}: MockNotificationStatusParams): HttpHandler => {
+    validateMockResponse(
+        notificationStatusResponseSchema,
+        response,
+        'mockNotificationStatus',
+    )
+    return http.get(`*/v1/devices/${deviceID}/notification-status/`, () =>
         HttpResponse.json(response, { status }),
     )
+}
 
 export type MockNotificationListParams = {
     deviceID: string
@@ -41,10 +50,16 @@ export const mockNotificationList = ({
     deviceID,
     response,
     status = 200,
-}: MockNotificationListParams): HttpHandler =>
-    http.get(`*/v2/devices/${deviceID}/notifications/`, () =>
+}: MockNotificationListParams): HttpHandler => {
+    validateMockResponse(
+        notificationsListResponseSchema,
+        response,
+        'mockNotificationList',
+    )
+    return http.get(`*/v2/devices/${deviceID}/notifications/`, () =>
         HttpResponse.json(response, { status }),
     )
+}
 
 export type MockUpdateLastSeenNotificationParams = {
     deviceID: string
@@ -72,7 +87,13 @@ export const mockUpdateNotificationEnabled = ({
     accountID,
     response,
     status = 200,
-}: MockUpdateNotificationEnabledParams): HttpHandler =>
-    http.patch(`*/v1/devices/${deviceID}/accounts/${accountID}/`, () =>
+}: MockUpdateNotificationEnabledParams): HttpHandler => {
+    validateMockResponse(
+        notificationStatusResponseSchema,
+        response,
+        'mockUpdateNotificationEnabled',
+    )
+    return http.patch(`*/v1/devices/${deviceID}/accounts/${accountID}/`, () =>
         HttpResponse.json(response, { status }),
     )
+}

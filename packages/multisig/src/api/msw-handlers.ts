@@ -11,10 +11,20 @@
  */
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
-import type {
-    CreateMultisigAccountResponse,
-    ProposeSignRequestResponse,
-    SignRequestDetailResponse,
+import {
+    validateMockRequest,
+    validateMockResponse,
+} from '@perawallet/wallet-core-shared/test-utils'
+import {
+    addSignatureRequestSchema,
+    createMultisigAccountRequestSchema,
+    createMultisigAccountResponseSchema,
+    proposeSignRequestResponseSchema,
+    proposeSignRequestSchema,
+    signRequestDetailResponseSchema,
+    type CreateMultisigAccountResponse,
+    type ProposeSignRequestResponse,
+    type SignRequestDetailResponse,
 } from './schema'
 
 export type MockCreateMultisigAccountParams = {
@@ -25,10 +35,24 @@ export type MockCreateMultisigAccountParams = {
 export const mockCreateMultisigAccount = ({
     response,
     status = 200,
-}: MockCreateMultisigAccountParams): HttpHandler =>
-    http.post('*/v1/joint-accounts/accounts/', () =>
-        HttpResponse.json(response, { status }),
+}: MockCreateMultisigAccountParams): HttpHandler => {
+    validateMockResponse(
+        createMultisigAccountResponseSchema,
+        response,
+        'mockCreateMultisigAccount',
     )
+    return http.post(
+        '*/v1/joint-accounts/accounts/',
+        async ({ request }) => {
+            const validated = await validateMockRequest(
+                createMultisigAccountRequestSchema,
+                request,
+            )
+            if (!validated.ok) return validated.response
+            return HttpResponse.json(response, { status })
+        },
+    )
+}
 
 export type MockGetMultisigAccountDetailParams = {
     address: string
@@ -40,10 +64,16 @@ export const mockGetMultisigAccountDetail = ({
     address,
     response,
     status = 200,
-}: MockGetMultisigAccountDetailParams): HttpHandler =>
-    http.get(`*/v1/joint-accounts/accounts/${address}/`, () =>
+}: MockGetMultisigAccountDetailParams): HttpHandler => {
+    validateMockResponse(
+        createMultisigAccountResponseSchema,
+        response,
+        'mockGetMultisigAccountDetail',
+    )
+    return http.get(`*/v1/joint-accounts/accounts/${address}/`, () =>
         HttpResponse.json(response, { status }),
     )
+}
 
 export type MockProposeSignRequestParams = {
     response: ProposeSignRequestResponse
@@ -53,10 +83,24 @@ export type MockProposeSignRequestParams = {
 export const mockProposeSignRequest = ({
     response,
     status = 200,
-}: MockProposeSignRequestParams): HttpHandler =>
-    http.post('*/v1/joint-accounts/sign-requests/', () =>
-        HttpResponse.json(response, { status }),
+}: MockProposeSignRequestParams): HttpHandler => {
+    validateMockResponse(
+        proposeSignRequestResponseSchema,
+        response,
+        'mockProposeSignRequest',
     )
+    return http.post(
+        '*/v1/joint-accounts/sign-requests/',
+        async ({ request }) => {
+            const validated = await validateMockRequest(
+                proposeSignRequestSchema,
+                request,
+            )
+            if (!validated.ok) return validated.response
+            return HttpResponse.json(response, { status })
+        },
+    )
+}
 
 export type MockAddSignatureParams = {
     signRequestId: string
@@ -68,11 +112,25 @@ export const mockAddSignature = ({
     signRequestId,
     response,
     status = 200,
-}: MockAddSignatureParams): HttpHandler =>
-    http.post(
-        `*/v1/joint-accounts/sign-requests/${signRequestId}/responses/`,
-        () => HttpResponse.json(response, { status }),
+}: MockAddSignatureParams): HttpHandler => {
+    validateMockResponse(
+        proposeSignRequestResponseSchema,
+        response,
+        'mockAddSignature',
     )
+    return http.post(
+        `*/v1/joint-accounts/sign-requests/${signRequestId}/responses/`,
+        async ({ request }) => {
+            // The endpoint accepts an array of signature payloads.
+            const validated = await validateMockRequest(
+                addSignatureRequestSchema.array(),
+                request,
+            )
+            if (!validated.ok) return validated.response
+            return HttpResponse.json(response, { status })
+        },
+    )
+}
 
 export type MockGetSignRequestDetailParams = {
     signRequestId: string
@@ -84,11 +142,17 @@ export const mockGetSignRequestDetail = ({
     signRequestId,
     response,
     status = 200,
-}: MockGetSignRequestDetailParams): HttpHandler =>
-    http.get(
+}: MockGetSignRequestDetailParams): HttpHandler => {
+    validateMockResponse(
+        signRequestDetailResponseSchema,
+        response,
+        'mockGetSignRequestDetail',
+    )
+    return http.get(
         `*/v1/joint-accounts/sign-requests/${signRequestId}/with-signatures/`,
         () => HttpResponse.json(response, { status }),
     )
+}
 
 export type MockDeleteMultisigImportInboxParams = {
     deviceId: string

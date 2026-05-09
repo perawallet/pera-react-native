@@ -11,8 +11,14 @@
  */
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
-
-type ToggleStatusResponse = { is_enabled: boolean }
+import { validateMockResponse } from '@perawallet/wallet-core-shared/test-utils'
+// Reuse the zod schema + inferred type from the production endpoint module.
+// If the API contract changes, the schema breaks first and these mocks
+// follow — keeps them coupled to the real surface.
+import {
+    toggleStatusResponseSchema,
+    type ToggleStatusResponse,
+} from './endpoints'
 
 export type MockToggleAssetFavoriteParams = {
     assetID: string
@@ -24,10 +30,16 @@ export const mockToggleAssetFavorite = ({
     assetID,
     response,
     status = 200,
-}: MockToggleAssetFavoriteParams): HttpHandler =>
-    http.post(`*/v2/assets/${assetID}/toggle-favorite/`, () =>
+}: MockToggleAssetFavoriteParams): HttpHandler => {
+    validateMockResponse(
+        toggleStatusResponseSchema,
+        response,
+        'mockToggleAssetFavorite',
+    )
+    return http.post(`*/v2/assets/${assetID}/toggle-favorite/`, () =>
         HttpResponse.json(response, { status }),
     )
+}
 
 export type MockToggleAssetPriceAlertParams = {
     assetID: string
@@ -39,7 +51,13 @@ export const mockToggleAssetPriceAlert = ({
     assetID,
     response,
     status = 200,
-}: MockToggleAssetPriceAlertParams): HttpHandler =>
-    http.post(`*/v2/assets/${assetID}/toggle-price-alert/`, () =>
+}: MockToggleAssetPriceAlertParams): HttpHandler => {
+    validateMockResponse(
+        toggleStatusResponseSchema,
+        response,
+        'mockToggleAssetPriceAlert',
+    )
+    return http.post(`*/v2/assets/${assetID}/toggle-price-alert/`, () =>
         HttpResponse.json(response, { status }),
     )
+}

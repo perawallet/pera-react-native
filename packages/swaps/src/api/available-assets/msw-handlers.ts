@@ -11,7 +11,11 @@
  */
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
-import type { AvailableAssetsApiResponse } from './schema'
+import { validateMockResponse } from '@perawallet/wallet-core-shared/test-utils'
+import {
+    availableAssetsResponseSchema,
+    type AvailableAssetsApiResponse,
+} from './schema'
 
 export type MockAvailableAssetsParams = {
     response: AvailableAssetsApiResponse
@@ -21,7 +25,13 @@ export type MockAvailableAssetsParams = {
 export const mockAvailableAssets = ({
     response,
     status = 200,
-}: MockAvailableAssetsParams): HttpHandler =>
-    http.get('*/v1/dex-swap/available-assets/', () =>
+}: MockAvailableAssetsParams): HttpHandler => {
+    validateMockResponse(
+        availableAssetsResponseSchema,
+        response,
+        'mockAvailableAssets',
+    )
+    return http.get('*/v1/dex-swap/available-assets/', () =>
         HttpResponse.json(response, { status }),
     )
+}

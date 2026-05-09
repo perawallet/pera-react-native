@@ -94,6 +94,9 @@ export const arc59AssetRequestsResponseSchema = z.object({
 })
 
 export type Arc59AssetRequestResponse = z.infer<typeof arc59AssetRequestSchema>
+export type Arc59AssetRequestsResponse = z.infer<
+    typeof arc59AssetRequestsResponseSchema
+>
 
 export type Arc59AssetRequest = {
     id?: string

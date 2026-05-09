@@ -92,6 +92,17 @@ export default defineConfig({
             },
             { find: '@', replacement: path.resolve(__dirname, './src') },
             {
+                // The `/test-utils` sub-export is consumed by msw-handlers
+                // files across packages (validateMockResponse / -Request).
+                // Aliased to source so changes don't require rebuilding the
+                // shared package's dist between iterations.
+                find: '@perawallet/wallet-core-shared/test-utils',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/shared/src/test-utils/index.ts',
+                ),
+            },
+            {
                 find: '@perawallet/wallet-core-shared/test-handlers',
                 replacement: path.resolve(
                     __dirname,

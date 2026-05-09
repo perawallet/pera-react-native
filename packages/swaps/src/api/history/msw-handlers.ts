@@ -11,9 +11,12 @@
  */
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
-import type {
-    SwapHistoryApiResponse,
-    SwapDistinctPairsHistoryApiResponse,
+import { validateMockResponse } from '@perawallet/wallet-core-shared/test-utils'
+import {
+    swapHistoryResponseSchema,
+    swapDistinctPairsHistoryResponseSchema,
+    type SwapHistoryApiResponse,
+    type SwapDistinctPairsHistoryApiResponse,
 } from './schema'
 
 export type MockSwapHistoryParams = {
@@ -24,10 +27,16 @@ export type MockSwapHistoryParams = {
 export const mockSwapHistory = ({
     response,
     status = 200,
-}: MockSwapHistoryParams): HttpHandler =>
-    http.get('*/v2/dex-swap/history/', () =>
+}: MockSwapHistoryParams): HttpHandler => {
+    validateMockResponse(
+        swapHistoryResponseSchema,
+        response,
+        'mockSwapHistory',
+    )
+    return http.get('*/v2/dex-swap/history/', () =>
         HttpResponse.json(response, { status }),
     )
+}
 
 export type MockDistinctPairsHistoryParams = {
     response: SwapDistinctPairsHistoryApiResponse
@@ -37,7 +46,13 @@ export type MockDistinctPairsHistoryParams = {
 export const mockDistinctPairsHistory = ({
     response,
     status = 200,
-}: MockDistinctPairsHistoryParams): HttpHandler =>
-    http.get('*/v2/dex-swap/distinct-pairs-history/', () =>
+}: MockDistinctPairsHistoryParams): HttpHandler => {
+    validateMockResponse(
+        swapDistinctPairsHistoryResponseSchema,
+        response,
+        'mockDistinctPairsHistory',
+    )
+    return http.get('*/v2/dex-swap/distinct-pairs-history/', () =>
         HttpResponse.json(response, { status }),
     )
+}

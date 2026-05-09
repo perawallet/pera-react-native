@@ -11,7 +11,13 @@
  */
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
-import type { Arc59SendSummaryResponse } from './schema'
+import { validateMockResponse } from '@perawallet/wallet-core-shared/test-utils'
+import {
+    arc59AssetRequestsResponseSchema,
+    arc59SendSummaryResponseSchema,
+    type Arc59SendSummaryResponse,
+    type Arc59AssetRequestsResponse,
+} from './schema'
 
 export type MockArc59SendSummaryParams = {
     receiverAddress: string
@@ -25,15 +31,21 @@ export const mockArc59SendSummary = ({
     assetId,
     response,
     status = 200,
-}: MockArc59SendSummaryParams): HttpHandler =>
-    http.get(
+}: MockArc59SendSummaryParams): HttpHandler => {
+    validateMockResponse(
+        arc59SendSummaryResponseSchema,
+        response,
+        'mockArc59SendSummary',
+    )
+    return http.get(
         `*/v1/asa-inboxes/summary/send-flow/${receiverAddress}/${assetId}/`,
         () => HttpResponse.json(response, { status }),
     )
+}
 
 export type MockArc59AssetRequestsParams = {
     address: string
-    response: unknown
+    response: Arc59AssetRequestsResponse
     status?: number
 }
 
@@ -41,7 +53,13 @@ export const mockArc59AssetRequests = ({
     address,
     response,
     status = 200,
-}: MockArc59AssetRequestsParams): HttpHandler =>
-    http.get(`*/v1/asa-inboxes/requests/${address}/`, () =>
+}: MockArc59AssetRequestsParams): HttpHandler => {
+    validateMockResponse(
+        arc59AssetRequestsResponseSchema,
+        response,
+        'mockArc59AssetRequests',
+    )
+    return http.get(`*/v1/asa-inboxes/requests/${address}/`, () =>
         HttpResponse.json(response, { status }),
     )
+}

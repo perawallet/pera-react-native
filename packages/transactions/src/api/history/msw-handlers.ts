@@ -11,7 +11,11 @@
  */
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
-import type { TransactionHistoryApiResponse } from './schema'
+import { validateMockResponse } from '@perawallet/wallet-core-shared/test-utils'
+import {
+    transactionHistoryResponseSchema,
+    type TransactionHistoryApiResponse,
+} from './schema'
 
 export type MockTransactionHistoryParams = {
     accountAddress: string
@@ -23,8 +27,14 @@ export const mockTransactionHistory = ({
     accountAddress,
     response,
     status = 200,
-}: MockTransactionHistoryParams): HttpHandler =>
-    http.get(
+}: MockTransactionHistoryParams): HttpHandler => {
+    validateMockResponse(
+        transactionHistoryResponseSchema,
+        response,
+        'mockTransactionHistory',
+    )
+    return http.get(
         `*/v1/accounts/${encodeURIComponent(accountAddress)}/transactions/`,
         () => HttpResponse.json(response, { status }),
     )
+}

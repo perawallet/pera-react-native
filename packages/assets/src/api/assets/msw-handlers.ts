@@ -11,11 +11,16 @@
  */
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
-import type {
-    AssetResponse,
-    AssetsResponse,
-    IndexerAssetResponse,
-    PublicAssetResponse,
+import { validateMockResponse } from '@perawallet/wallet-core-shared/test-utils'
+import {
+    assetResponseSchema,
+    assetsResponseSchema,
+    indexerAssetResponseSchema,
+    publicAssetResponseSchema,
+    type AssetResponse,
+    type AssetsResponse,
+    type IndexerAssetResponse,
+    type PublicAssetResponse,
 } from './schema'
 
 export type MockAssetsParams = {
@@ -26,8 +31,12 @@ export type MockAssetsParams = {
 export const mockAssets = ({
     response,
     status = 200,
-}: MockAssetsParams): HttpHandler =>
-    http.get('*/v1/assets/', () => HttpResponse.json(response, { status }))
+}: MockAssetsParams): HttpHandler => {
+    validateMockResponse(assetsResponseSchema, response, 'mockAssets')
+    return http.get('*/v1/assets/', () =>
+        HttpResponse.json(response, { status }),
+    )
+}
 
 export type MockAccountAssetsParams = {
     address: string
@@ -39,10 +48,16 @@ export const mockAccountAssets = ({
     address,
     response,
     status = 200,
-}: MockAccountAssetsParams): HttpHandler =>
-    http.get(`*/v2/accounts/${address}/assets/`, () =>
+}: MockAccountAssetsParams): HttpHandler => {
+    validateMockResponse(
+        assetsResponseSchema,
+        response,
+        'mockAccountAssets',
+    )
+    return http.get(`*/v2/accounts/${address}/assets/`, () =>
         HttpResponse.json(response, { status }),
     )
+}
 
 export type MockAssetDetailsParams = {
     assetID: string
@@ -54,10 +69,12 @@ export const mockAssetDetails = ({
     assetID,
     response,
     status = 200,
-}: MockAssetDetailsParams): HttpHandler =>
-    http.get(`*/v1/assets/${assetID}`, () =>
+}: MockAssetDetailsParams): HttpHandler => {
+    validateMockResponse(assetResponseSchema, response, 'mockAssetDetails')
+    return http.get(`*/v1/assets/${assetID}`, () =>
         HttpResponse.json(response, { status }),
     )
+}
 
 export type MockPublicAssetDetailsParams = {
     assetID: string
@@ -69,10 +86,16 @@ export const mockPublicAssetDetails = ({
     assetID,
     response,
     status = 200,
-}: MockPublicAssetDetailsParams): HttpHandler =>
-    http.get(`*/v1/public/assets/${assetID}`, () =>
+}: MockPublicAssetDetailsParams): HttpHandler => {
+    validateMockResponse(
+        publicAssetResponseSchema,
+        response,
+        'mockPublicAssetDetails',
+    )
+    return http.get(`*/v1/public/assets/${assetID}`, () =>
         HttpResponse.json(response, { status }),
     )
+}
 
 export type MockIndexerAssetDetailsParams = {
     assetID: string
@@ -84,7 +107,13 @@ export const mockIndexerAssetDetails = ({
     assetID,
     response,
     status = 200,
-}: MockIndexerAssetDetailsParams): HttpHandler =>
-    http.get(`*/v2/assets/${assetID}`, () =>
+}: MockIndexerAssetDetailsParams): HttpHandler => {
+    validateMockResponse(
+        indexerAssetResponseSchema,
+        response,
+        'mockIndexerAssetDetails',
+    )
+    return http.get(`*/v2/assets/${assetID}`, () =>
         HttpResponse.json(response, { status }),
     )
+}

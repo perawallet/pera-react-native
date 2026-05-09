@@ -11,17 +11,14 @@
  */
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
-
-type FastLookupResponse = {
-    algo_value?: string
-    usd_value?: string
-    calculation_type?: string
-    account_exists?: boolean
-}
+// Reuse the wire-format type from the production fetcher so this mock
+// stays coupled to the real API contract — schema drift breaks both at
+// once.
+import type { RawFastLookupResponse } from './account-fast-lookup'
 
 export type MockAccountFastLookupParams = {
     address: string
-    response: FastLookupResponse
+    response: RawFastLookupResponse
     status?: number
 }
 

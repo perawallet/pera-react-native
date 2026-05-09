@@ -11,7 +11,11 @@
  */
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
-import type { ApplicationApiResponse } from './schema'
+import { validateMockResponse } from '@perawallet/wallet-core-shared/test-utils'
+import {
+    applicationResponseSchema,
+    type ApplicationApiResponse,
+} from './schema'
 
 export type MockApplicationParams = {
     applicationId: string
@@ -23,7 +27,14 @@ export const mockApplication = ({
     applicationId,
     response,
     status = 200,
-}: MockApplicationParams): HttpHandler =>
-    http.get(`*/v1/applications/${encodeURIComponent(applicationId)}/`, () =>
-        HttpResponse.json(response, { status }),
+}: MockApplicationParams): HttpHandler => {
+    validateMockResponse(
+        applicationResponseSchema,
+        response,
+        'mockApplication',
     )
+    return http.get(
+        `*/v1/applications/${encodeURIComponent(applicationId)}/`,
+        () => HttpResponse.json(response, { status }),
+    )
+}

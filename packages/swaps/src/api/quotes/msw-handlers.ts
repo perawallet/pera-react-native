@@ -11,10 +11,20 @@
  */
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
-import type {
-    CalculatePeraFeeApiResponse,
-    CalculateSwapAmountApiResponse,
-    CreateQuotesApiResponse,
+import {
+    validateMockRequest,
+    validateMockResponse,
+} from '@perawallet/wallet-core-shared/test-utils'
+import {
+    calculatePeraFeeRequestSchema,
+    calculatePeraFeeResponseSchema,
+    calculateSwapAmountRequestSchema,
+    calculateSwapAmountResponseSchema,
+    createQuotesRequestSchema,
+    createQuotesResponseSchema,
+    type CalculatePeraFeeApiResponse,
+    type CalculateSwapAmountApiResponse,
+    type CreateQuotesApiResponse,
 } from './schema'
 
 export type MockCalculatePeraFeeParams = {
@@ -25,10 +35,24 @@ export type MockCalculatePeraFeeParams = {
 export const mockCalculatePeraFee = ({
     response,
     status = 200,
-}: MockCalculatePeraFeeParams): HttpHandler =>
-    http.post('*/v1/dex-swap/calculate-pera-fee/', () =>
-        HttpResponse.json(response, { status }),
+}: MockCalculatePeraFeeParams): HttpHandler => {
+    validateMockResponse(
+        calculatePeraFeeResponseSchema,
+        response,
+        'mockCalculatePeraFee',
     )
+    return http.post(
+        '*/v1/dex-swap/calculate-pera-fee/',
+        async ({ request }) => {
+            const validated = await validateMockRequest(
+                calculatePeraFeeRequestSchema,
+                request,
+            )
+            if (!validated.ok) return validated.response
+            return HttpResponse.json(response, { status })
+        },
+    )
+}
 
 export type MockCalculateSwapAmountParams = {
     response: CalculateSwapAmountApiResponse
@@ -38,10 +62,24 @@ export type MockCalculateSwapAmountParams = {
 export const mockCalculateSwapAmount = ({
     response,
     status = 200,
-}: MockCalculateSwapAmountParams): HttpHandler =>
-    http.post('*/v1/dex-swap/calculate-swap-amount/', () =>
-        HttpResponse.json(response, { status }),
+}: MockCalculateSwapAmountParams): HttpHandler => {
+    validateMockResponse(
+        calculateSwapAmountResponseSchema,
+        response,
+        'mockCalculateSwapAmount',
     )
+    return http.post(
+        '*/v1/dex-swap/calculate-swap-amount/',
+        async ({ request }) => {
+            const validated = await validateMockRequest(
+                calculateSwapAmountRequestSchema,
+                request,
+            )
+            if (!validated.ok) return validated.response
+            return HttpResponse.json(response, { status })
+        },
+    )
+}
 
 export type MockCreateQuotesParams = {
     response: CreateQuotesApiResponse
@@ -51,7 +89,18 @@ export type MockCreateQuotesParams = {
 export const mockCreateQuotes = ({
     response,
     status = 200,
-}: MockCreateQuotesParams): HttpHandler =>
-    http.post('*/v2/dex-swap/quotes/', () =>
-        HttpResponse.json(response, { status }),
+}: MockCreateQuotesParams): HttpHandler => {
+    validateMockResponse(
+        createQuotesResponseSchema,
+        response,
+        'mockCreateQuotes',
     )
+    return http.post('*/v2/dex-swap/quotes/', async ({ request }) => {
+        const validated = await validateMockRequest(
+            createQuotesRequestSchema,
+            request,
+        )
+        if (!validated.ok) return validated.response
+        return HttpResponse.json(response, { status })
+    })
+}

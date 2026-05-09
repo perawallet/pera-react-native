@@ -11,7 +11,13 @@
  */
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
-import type { ProvidersApiResponse, TopPairsApiResponse } from './schema'
+import { validateMockResponse } from '@perawallet/wallet-core-shared/test-utils'
+import {
+    providersResponseSchema,
+    topPairsResponseSchema,
+    type ProvidersApiResponse,
+    type TopPairsApiResponse,
+} from './schema'
 
 export type MockSwapProvidersParams = {
     response: ProvidersApiResponse
@@ -21,10 +27,16 @@ export type MockSwapProvidersParams = {
 export const mockSwapProviders = ({
     response,
     status = 200,
-}: MockSwapProvidersParams): HttpHandler =>
-    http.get('*/v2/dex-swap/providers/', () =>
+}: MockSwapProvidersParams): HttpHandler => {
+    validateMockResponse(
+        providersResponseSchema,
+        response,
+        'mockSwapProviders',
+    )
+    return http.get('*/v2/dex-swap/providers/', () =>
         HttpResponse.json(response, { status }),
     )
+}
 
 export type MockTopPairsParams = {
     response: TopPairsApiResponse
@@ -34,7 +46,9 @@ export type MockTopPairsParams = {
 export const mockTopPairs = ({
     response,
     status = 200,
-}: MockTopPairsParams): HttpHandler =>
-    http.get('*/v2/dex-swap/top-pairs/', () =>
+}: MockTopPairsParams): HttpHandler => {
+    validateMockResponse(topPairsResponseSchema, response, 'mockTopPairs')
+    return http.get('*/v2/dex-swap/top-pairs/', () =>
         HttpResponse.json(response, { status }),
     )
+}
