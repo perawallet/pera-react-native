@@ -169,13 +169,13 @@ describe('Flow: Dashboard portfolio aggregation', () => {
                 accountAddress: ACCOUNT_A.address,
                 assetId: USDC_ASSET.assetId,
                 network: NETWORK,
-                amount: new Decimal(50_000_000), // 50 USDC
+                amount: '50000000', // 50 USDC
             })
             await insertAssetHolding({
                 accountAddress: ACCOUNT_B.address,
                 assetId: USDC_ASSET.assetId,
                 network: NETWORK,
-                amount: new Decimal(20_000_000), // 20 USDC
+                amount: '20000000', // 20 USDC
             })
 
             // Prices: USDC at $1, ALGO at... whatever — the per-asset
