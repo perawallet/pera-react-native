@@ -12,6 +12,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
+import * as Clipboard from 'expo-clipboard'
 import { Notifier } from 'react-native-notifier'
 
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
@@ -23,6 +24,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useKMS, type Algo25KeyResult } from '@perawallet/wallet-core-kms'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
+import { useNotificationPreferences } from '@perawallet/wallet-core-messages'
 import { AccountMenu } from '@modules/accounts/components/AccountMenu/AccountMenu'
 import { AccountOptionsBottomSheet } from '@modules/accounts/components/AccountOptionsBottomSheet/AccountOptionsBottomSheet'
 
@@ -78,15 +80,30 @@ const tapButtonByLabel = (i18nKey: string) => {
 
 const SLOW_TEST_TIMEOUT_MS = 30000
 
+// Notification preferences are persisted via a Zustand store inside
+// `@perawallet/wallet-core-messages`; the store itself isn't re-exported
+// from the package's public entry, so we drive resets through the hook.
+const resetNotificationPreferences = () => {
+    const { result } = renderHook(() => useNotificationPreferences())
+    // Re-enable everything that any prior test disabled so subsequent
+    // tests start with a clean enabled-by-default state.
+    result.current.disabledAccounts.forEach(addr => {
+        result.current.setAccountEnabled(addr, true)
+    })
+}
+
 describe('Flow: Account management', () => {
     beforeEach(() => {
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
+        resetNotificationPreferences()
         vi.mocked(Notifier.showNotification).mockClear()
+        vi.mocked(Clipboard.setStringAsync).mockClear()
     })
 
     afterEach(() => {
         useAccountsStore.getState().setAccounts([])
+        resetNotificationPreferences()
     })
 
     it('Given two accounts with the first selected, when the user taps the second in the account menu, then the selected address switches', async () => {
@@ -247,6 +264,100 @@ describe('Flow: Account management', () => {
             const keysAfter = getKeystoreStore().state.keys.map(k => k.id)
             expect(keysAfter).not.toContain(keyPairId)
             expect(keysAfter).not.toContain(`${keyPairId}-seed`)
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given an account whose notifications are enabled, when the user taps "mute notifications" in the options sheet, then the address is added to the notification-disabled list',
+        async () => {
+            useAccountsStore.getState().setAccounts([ACCOUNT_A, ACCOUNT_B])
+            useAccountsStore
+                .getState()
+                .setSelectedAccountAddress(ACCOUNT_A.address)
+            // Sanity: notifications are enabled by default — we want to
+            // observe the toggle flipping a fresh account, not the
+            // recovery from a prior disabled state.
+            const { result: notifBefore } = renderHook(() =>
+                useNotificationPreferences(),
+            )
+            expect(notifBefore.current.disabledAccounts).toEqual([])
+
+            renderWithNavigation(
+                () => (
+                    <AccountOptionsBottomSheet
+                        isVisible
+                        onClose={() => {}}
+                        onShowAddress={() => {}}
+                        account={ACCOUNT_A}
+                    />
+                ),
+                'AccountOptionsHost',
+            )
+
+            // Initial label is the "mute" form because notifications are
+            // currently enabled. After the tap, the production hook flips
+            // the entry into `notificationDisabledAccounts` and the toast
+            // is shown via Notifier.
+            tapButtonByLabel('account_options.mute_notifications')
+
+            const { result: notifAfter } = renderHook(() =>
+                useNotificationPreferences(),
+            )
+            await waitFor(() => {
+                expect(
+                    notifAfter.current.isAccountEnabled(ACCOUNT_A.address),
+                ).toBe(false)
+            })
+            // The non-selected account is unaffected — confirms we
+            // didn't accidentally globally mute.
+            expect(notifAfter.current.isAccountEnabled(ACCOUNT_B.address)).toBe(
+                true,
+            )
+
+            // The hook also fires a toast so the user gets feedback —
+            // assert it ran with the muted-state title.
+            const toastCalls = vi.mocked(Notifier.showNotification).mock.calls
+            expect(toastCalls.length).toBeGreaterThan(0)
+            const lastCall = toastCalls[toastCalls.length - 1][0]
+            expect(lastCall.title).toBe('account_options.notifications_muted')
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given an account in the options sheet, when the user taps "Copy address", then the address is written to the clipboard',
+        async () => {
+            useAccountsStore.getState().setAccounts([ACCOUNT_A])
+            useAccountsStore
+                .getState()
+                .setSelectedAccountAddress(ACCOUNT_A.address)
+
+            renderWithNavigation(
+                () => (
+                    <AccountOptionsBottomSheet
+                        isVisible
+                        onClose={() => {}}
+                        onShowAddress={() => {}}
+                        account={ACCOUNT_A}
+                    />
+                ),
+                'AccountOptionsHost',
+            )
+
+            // The copy-address row is in the "general" section of the
+            // sheet (see AccountOptionsBottomSheet.tsx generalOptions
+            // filter). Title comes from `account_options.copy_address`.
+            tapButtonByLabel('account_options.copy_address')
+
+            // useClipboard.copyToClipboard awaits Clipboard.setStringAsync
+            // before the toast fires. Wait for the call rather than
+            // asserting synchronously.
+            await waitFor(() => {
+                expect(Clipboard.setStringAsync).toHaveBeenCalledWith(
+                    ACCOUNT_A.address,
+                )
+            })
         },
         SLOW_TEST_TIMEOUT_MS,
     )

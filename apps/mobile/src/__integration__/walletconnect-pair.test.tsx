@@ -281,6 +281,158 @@ describe('Flow: WalletConnect v1 pair → approve session', () => {
     )
 
     it(
+        'Given a session request is showing, when the user taps Cancel, then connector.rejectSession is called and the request is cleared from the store',
+        async () => {
+            render(
+                <WalletConnectProvider>
+                    <div data-testid='child' />
+                </WalletConnectProvider>,
+            )
+
+            const connector = await driveSessionRequest({
+                peerMeta: {
+                    name: 'Reject dApp',
+                    description: '',
+                    url: 'https://reject-dapp.example',
+                    icons: [],
+                },
+                permissions: ['algo_signTxn'],
+            })
+
+            // Cancel is the secondary CTA in ConnectionView. Match by the
+            // i18n key (label falls back to the key in integration setup).
+            const findCancelButton = (): HTMLButtonElement | undefined =>
+                screen
+                    .getAllByRole('button')
+                    .find(b =>
+                        (b.textContent ?? '').includes('common.cancel.label'),
+                    ) as HTMLButtonElement | undefined
+            await waitFor(() => {
+                expect(findCancelButton()).toBeTruthy()
+            })
+
+            fireEvent.click(findCancelButton()!)
+
+            // ConnectionView.handleReject calls
+            // `useWalletConnect.rejectSession(clientId)`, which forwards to
+            // `connector.rejectSession()` on the captured stub.
+            expect(connector.rejectSessionCalls).toBe(1)
+            expect(connector.approveSessionCalls).toHaveLength(0)
+
+            // The pending request is removed so the bottom sheet closes.
+            await waitFor(() => {
+                expect(
+                    useWalletConnectStore.getState().sessionRequests,
+                ).toHaveLength(0)
+            })
+            // No connection added to the wallet's session list either.
+            expect(
+                useWalletConnectStore.getState().walletConnectConnections,
+            ).toHaveLength(0)
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given an established WC session, when the user disconnects via useWalletConnect.disconnect, then connector.killSession is called and the connection is removed from the store',
+        async () => {
+            // Render the provider so `useWalletConnect` is wired into the
+            // connectors map (production path: connect → register handlers
+            // → push instance into the map keyed by clientId). renderHook
+            // separately so the test can call `disconnect()` directly.
+            render(
+                <WalletConnectProvider>
+                    <div data-testid='child' />
+                </WalletConnectProvider>,
+            )
+
+            const connector = await driveSessionRequest({
+                peerMeta: {
+                    name: 'Disconnect dApp',
+                    description: '',
+                    url: 'https://disconnect-dapp.example',
+                    icons: [],
+                },
+                permissions: ['algo_signTxn'],
+            })
+
+            // Drive through the approval UI so the production code adds
+            // the connection to `walletConnectConnections` and the stub
+            // flips `connected = true`. Without this, `disconnect` would
+            // short-circuit before calling `killSession`.
+            const findConnectButton = (): HTMLButtonElement | undefined =>
+                screen
+                    .getAllByRole('button')
+                    .find(b =>
+                        (b.textContent ?? '').includes('common.connect.label'),
+                    ) as HTMLButtonElement | undefined
+            await waitFor(() => {
+                expect(findConnectButton()).toBeTruthy()
+            })
+
+            const rowFor = (name: string): HTMLButtonElement => {
+                const matches = screen.getAllByText((_, node) =>
+                    (node?.textContent ?? '').includes(name),
+                )
+                const leaf =
+                    matches.find(el => el.children.length === 0) ?? matches[0]
+                const button = leaf.closest('button')
+                if (!button) {
+                    throw new Error(`Row not found for "${name}"`)
+                }
+                return button as HTMLButtonElement
+            }
+            fireEvent.click(rowFor(SIGNING_ACCOUNT_A.name as string))
+            await waitFor(() => {
+                expect(findConnectButton()!.disabled).toBe(false)
+            })
+            fireEvent.click(findConnectButton()!)
+
+            // Wait until the connection is recorded in the store before
+            // attempting disconnect — otherwise `disconnect` filters an
+            // empty list and `killSession` never fires.
+            await waitFor(() => {
+                expect(connector.connected).toBe(true)
+                expect(
+                    useWalletConnectStore
+                        .getState()
+                        .walletConnectConnections.some(
+                            c => c.clientId === connector.clientId,
+                        ),
+                ).toBe(true)
+            })
+
+            // Now drive disconnect (`triggerDisconnect = true` matches the
+            // settings-page "Disconnect" CTA, which is the user-initiated
+            // path).
+            const { result: wc } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
+            await act(async () => {
+                await wc.current.disconnect(connector.clientId, true)
+            })
+
+            // killSession was invoked with the production message — this
+            // is what the relay would broadcast to the dApp.
+            expect(connector.killSessionCalls).toHaveLength(1)
+            expect(connector.killSessionCalls[0].message).toBe(
+                'User disconnected',
+            )
+
+            // And the connection has been pruned from the wallet's session
+            // list so it stops showing up in settings.
+            expect(
+                useWalletConnectStore
+                    .getState()
+                    .walletConnectConnections.find(
+                        c => c.clientId === connector.clientId,
+                    ),
+            ).toBeUndefined()
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
         'Given a session_request comes in for the wrong chain (testnet while the wallet is on mainnet), when the wallet processes it, then no request reaches the user-facing store and a connection error is surfaced instead',
         async () => {
             // Wallet defaults to mainnet via the seeded store; the

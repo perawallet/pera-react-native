@@ -53,13 +53,23 @@ export const walletConnectClientStub = {
 class StubWalletConnect {
     clientId: string
     connected = false
-    session: { permissions?: string[] } = {}
+    // Mirrors the subset of WC v1's `session` object that production
+    // code reads — chainId is checked by `validateRequest` in the sign
+    // handler, accounts by signer-resolution, peerMeta surfaces dApp
+    // identity. Stays empty until approveSession populates it.
+    session: {
+        permissions?: string[]
+        chainId?: number
+        accounts?: string[]
+        peerMeta?: unknown
+    } = {}
     handlers = new Map<string, Handler>()
 
     approveSessionCalls: { chainId: number; accounts: string[] }[] = []
     rejectSessionCalls = 0
     killSessionCalls: { message?: string }[] = []
     rejectRequestCalls: { id?: number; error?: Error }[] = []
+    approveRequestCalls: { id?: number; result?: unknown }[] = []
 
     constructor() {
         this.clientId = `stub-client-${walletConnectClientStub.nextClientId++}`
@@ -91,15 +101,33 @@ class StubWalletConnect {
 
     approveSession(args: { chainId: number; accounts: string[] }): void {
         this.approveSessionCalls.push(args)
+        // Match production semantics: a successfully approved session
+        // flips the connector to `connected = true`. `useWalletConnect.disconnect`
+        // gates `killSession` on this flag, so tests that pair → disconnect
+        // need it to be true after approval.
+        this.connected = true
+        // Populate the same session fields production WC fills in after
+        // a successful relay handshake. Sign-flow tests (`wc-sign.test.tsx`)
+        // depend on `session.chainId` being set so `validateRequest` in
+        // the sign handler doesn't reject with InvalidNetworkError.
+        this.session = {
+            ...this.session,
+            chainId: args.chainId,
+            accounts: args.accounts,
+        }
     }
     rejectSession(): void {
         this.rejectSessionCalls += 1
     }
     async killSession(args?: { message?: string }): Promise<void> {
         this.killSessionCalls.push(args ?? {})
+        this.connected = false
     }
     rejectRequest(args: { id?: number; error?: Error }): void {
         this.rejectRequestCalls.push(args)
+    }
+    approveRequest(args: { id?: number; result?: unknown }): void {
+        this.approveRequestCalls.push(args)
     }
 }
 
