@@ -10,30 +10,52 @@
  limitations under the License
  */
 
-import React from 'react'
-import { ActivityIndicator } from 'react-native'
-import { PWView, PWText, PWFlatList, PWButton } from '@components/core'
+import { useLayoutEffect } from 'react'
+import {
+    PWView,
+    PWText,
+    PWFlatList,
+    PWButton,
+    PWIcon,
+    PWTouchableOpacity,
+} from '@components/core'
+import { useNavigation } from '@react-navigation/native'
 import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wallet'
 
 import { LedgerDeviceItem } from '../../components/LedgerDeviceItem'
-import { LedgerPairingInstructionsBottomSheet } from '../../components/LedgerPairingInstructionsBottomSheet'
+import { LedgerCompositeIcon } from '../../components/LedgerCompositeIcon'
+import { LedgerConnectingBottomSheet } from '../../components/LedgerConnectingBottomSheet'
 import { useStyles } from './styles'
 import { useLedgerScanScreen } from './useLedgerScanScreen'
 
 export const LedgerScanScreen = () => {
     const styles = useStyles()
+    const navigation = useNavigation()
     const {
         devices,
-        isScanning,
+        isScanning: _isScanning,
         error,
-        pendingPairingDevice,
+        connectingDevice,
         handleDevicePress,
-        handleConfirmPairing,
-        handleCancelPairing,
+        handleCancelConnecting,
         handleRetry,
         handleTroubleshoot,
         t,
     } = useLedgerScanScreen()
+
+    useLayoutEffect(() => {
+        navigation.setOptions({
+            headerRight: () => (
+                <PWTouchableOpacity
+                    onPress={handleTroubleshoot}
+                    testID='ledger_scan_help_button'
+                    accessibilityLabel={t('ledger.scan_header.having_issues')}
+                >
+                    <PWIcon name='question-mark' />
+                </PWTouchableOpacity>
+            ),
+        })
+    }, [navigation, handleTroubleshoot, t])
 
     const renderItem = ({ item }: { item: HardwareWalletDevice }) => (
         <LedgerDeviceItem
@@ -42,48 +64,34 @@ export const LedgerScanScreen = () => {
         />
     )
 
-    const renderEmptyState = () => (
-        <PWView style={styles.emptyContainer}>
-            {isScanning ? (
-                <>
-                    <ActivityIndicator size='large' />
-                    <PWText
-                        variant='body'
-                        style={styles.emptyText}
-                    >
-                        {t('ledger.scan.searching')}
-                    </PWText>
-                </>
-            ) : (
-                <>
-                    <PWText
-                        variant='body'
-                        style={styles.emptyText}
-                    >
-                        {error
-                            ? t('ledger.scan.error')
-                            : t('ledger.scan.no_devices')}
-                    </PWText>
-                    <PWButton
-                        testID='ledger_scan_retry_button'
-                        title={t('ledger.scan.retry')}
-                        onPress={handleRetry}
-                        variant='secondary'
-                    />
-                    <PWButton
-                        testID='ledger_scan_troubleshoot_button'
-                        title={t('ledger.scan_header.having_issues')}
-                        onPress={handleTroubleshoot}
-                        variant='link'
-                    />
-                </>
-            )}
-        </PWView>
-    )
+    const renderEmptyState = () => {
+        if (!error) {
+            return null
+        }
+        return (
+            <PWView style={styles.errorContainer}>
+                <PWText
+                    variant='body'
+                    style={styles.errorText}
+                >
+                    {t('ledger.scan.error')}
+                </PWText>
+                <PWButton
+                    testID='ledger_scan_retry_button'
+                    title={t('ledger.scan.retry')}
+                    onPress={handleRetry}
+                    variant='link'
+                />
+            </PWView>
+        )
+    }
 
     return (
         <PWView style={styles.container}>
             <PWView style={styles.header}>
+                <PWView style={styles.icon}>
+                    <LedgerCompositeIcon state='idle' />
+                </PWView>
                 <PWText
                     variant='h1'
                     style={styles.title}
@@ -96,18 +104,6 @@ export const LedgerScanScreen = () => {
                 >
                     {t('ledger.scan.description')}
                 </PWText>
-
-                {isScanning && devices.length > 0 && (
-                    <PWView style={styles.scanningRow}>
-                        <ActivityIndicator size='small' />
-                        <PWText
-                            variant='caption'
-                            style={styles.scanningText}
-                        >
-                            {t('ledger.scan.scanning')}
-                        </PWText>
-                    </PWView>
-                )}
             </PWView>
 
             <PWFlatList
@@ -119,10 +115,9 @@ export const LedgerScanScreen = () => {
                 showsVerticalScrollIndicator={false}
             />
 
-            <LedgerPairingInstructionsBottomSheet
-                isVisible={pendingPairingDevice !== null}
-                onContinue={handleConfirmPairing}
-                onCancel={handleCancelPairing}
+            <LedgerConnectingBottomSheet
+                isVisible={connectingDevice !== null}
+                onCancel={handleCancelConnecting}
             />
         </PWView>
     )

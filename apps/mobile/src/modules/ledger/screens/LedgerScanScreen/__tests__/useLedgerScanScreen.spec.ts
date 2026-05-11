@@ -12,11 +12,12 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wallet'
 
-const mockNavigate = vi.fn()
-const mockStartScan = vi.fn()
-const mockStopScan = vi.fn()
+const { mockNavigate, mockStartScan, mockStopScan } = vi.hoisted(() => ({
+    mockNavigate: vi.fn(),
+    mockStartScan: vi.fn(),
+    mockStopScan: vi.fn(),
+}))
 
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({ navigate: mockNavigate }),
@@ -29,108 +30,90 @@ vi.mock('@hooks/useLanguage', () => ({
 vi.mock('../../../hooks', () => ({
     useLedgerConnection: () => ({
         devices: [],
-        isScanning: false,
+        isScanning: true,
         startScan: mockStartScan,
         stopScan: mockStopScan,
         error: null,
     }),
 }))
 
-const memoryStorage = new Map<string, string>()
-vi.mock('@perawallet/wallet-extension-provider', () => ({
-    getProvider: () => ({
-        keyValueStorage: {
-            getItem: (key: string) => memoryStorage.get(key) ?? null,
-            setItem: (key: string, value: string) => {
-                memoryStorage.set(key, value)
-            },
-            removeItem: (key: string) => {
-                memoryStorage.delete(key)
-            },
-        },
-    }),
-}))
+import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wallet'
 
-import { useLedgerPairingStore } from '@perawallet/wallet-core-ledger'
 import { useLedgerScanScreen } from '../useLedgerScanScreen'
 
-const makeDevice = (id: string): HardwareWalletDevice =>
-    ({
-        id,
-        name: 'Fred Nano X',
-        model: 'nanoX',
-        rssi: -50,
-        manufacturer: 'ledger',
-        transportType: 'ble',
-    }) as HardwareWalletDevice
+const DEVICE: HardwareWalletDevice = {
+    id: 'ble-1234',
+    name: 'AE72',
+    transportType: 'ble',
+    manufacturer: 'ledger',
+    model: 'nanoX',
+    rssi: -50,
+}
 
 describe('useLedgerScanScreen', () => {
     beforeEach(() => {
-        useLedgerPairingStore.getState().resetState()
-        mockNavigate.mockReset()
-        mockStartScan.mockReset()
-        mockStopScan.mockReset()
-    })
-
-    it('navigates straight to fetch-accounts when device was previously paired', () => {
-        useLedgerPairingStore.getState().markPaired('device-known')
-
-        const { result } = renderHook(() => useLedgerScanScreen())
-        act(() => {
-            result.current.handleDevicePress(makeDevice('device-known'))
-        })
-
-        expect(mockNavigate).toHaveBeenCalledWith('LedgerFetchAccounts', {
-            deviceId: 'device-known',
-            deviceName: 'Fred Nano X',
-            transportType: 'ble',
-        })
-        expect(result.current.pendingPairingDevice).toBeNull()
-    })
-
-    it('shows pairing instructions for a never-seen device instead of navigating', () => {
-        const { result } = renderHook(() => useLedgerScanScreen())
-        act(() => {
-            result.current.handleDevicePress(makeDevice('device-new'))
-        })
-
-        expect(mockNavigate).not.toHaveBeenCalled()
-        expect(result.current.pendingPairingDevice?.id).toBe('device-new')
-    })
-
-    it('marks the device as paired and navigates on confirm', () => {
-        const { result } = renderHook(() => useLedgerScanScreen())
-        act(() => {
-            result.current.handleDevicePress(makeDevice('device-new'))
-        })
-        act(() => {
-            result.current.handleConfirmPairing()
-        })
-
-        expect(useLedgerPairingStore.getState().isPaired('device-new')).toBe(
-            true,
+        vi.clearAllMocks()
+        vi.useFakeTimers()
+        vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) =>
+            setTimeout(cb, 0),
         )
-        expect(mockNavigate).toHaveBeenCalledWith('LedgerFetchAccounts', {
-            deviceId: 'device-new',
-            deviceName: 'Fred Nano X',
-            transportType: 'ble',
-        })
-        expect(result.current.pendingPairingDevice).toBeNull()
     })
 
-    it('dismisses the sheet without marking paired or navigating on cancel', () => {
+    it('starts scanning on mount and stops on unmount', () => {
+        const { unmount } = renderHook(() => useLedgerScanScreen())
+
+        expect(mockStartScan).toHaveBeenCalled()
+
+        unmount()
+
+        expect(mockStopScan).toHaveBeenCalled()
+    })
+
+    it('sets connectingDevice and navigates when a device is tapped', () => {
         const { result } = renderHook(() => useLedgerScanScreen())
+
         act(() => {
-            result.current.handleDevicePress(makeDevice('device-new'))
-        })
-        act(() => {
-            result.current.handleCancelPairing()
+            result.current.handleDevicePress(DEVICE)
         })
 
-        expect(useLedgerPairingStore.getState().isPaired('device-new')).toBe(
-            false,
-        )
+        expect(result.current.connectingDevice).toEqual(DEVICE)
+
+        act(() => {
+            vi.runOnlyPendingTimers()
+        })
+
+        expect(mockStopScan).toHaveBeenCalled()
+        expect(mockNavigate).toHaveBeenCalledWith('LedgerFetchAccounts', {
+            deviceId: DEVICE.id,
+            deviceName: DEVICE.name,
+            transportType: DEVICE.transportType,
+        })
+    })
+
+    it('aborts navigation when cancel is pressed before the rAF fires', () => {
+        const { result } = renderHook(() => useLedgerScanScreen())
+
+        act(() => {
+            result.current.handleDevicePress(DEVICE)
+        })
+        act(() => {
+            result.current.handleCancelConnecting()
+        })
+        act(() => {
+            vi.runOnlyPendingTimers()
+        })
+
+        expect(result.current.connectingDevice).toBeNull()
         expect(mockNavigate).not.toHaveBeenCalled()
-        expect(result.current.pendingPairingDevice).toBeNull()
+    })
+
+    it('navigates to troubleshooting on handleTroubleshoot', () => {
+        const { result } = renderHook(() => useLedgerScanScreen())
+
+        act(() => {
+            result.current.handleTroubleshoot()
+        })
+
+        expect(mockNavigate).toHaveBeenCalledWith('LedgerTroubleshooting')
     })
 })

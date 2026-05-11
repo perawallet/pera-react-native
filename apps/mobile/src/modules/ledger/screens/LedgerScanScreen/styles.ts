@@ -19,38 +19,30 @@ export const useStyles = makeStyles(theme => ({
     },
     header: {
         paddingHorizontal: theme.spacing.xl,
+        paddingTop: theme.spacing.lg,
         paddingBottom: theme.spacing.lg,
+    },
+    icon: {
+        marginBottom: theme.spacing.lg,
     },
     title: {
         marginBottom: theme.spacing.sm,
-        marginTop: theme.spacing.sm,
     },
     description: {
         color: theme.colors.textGray,
-        marginBottom: theme.spacing.md,
-    },
-    scanningRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginTop: theme.spacing.sm,
-    },
-    scanningText: {
-        color: theme.colors.textGray,
-        marginLeft: theme.spacing.sm,
     },
     listContent: {
-        flexGrow: 1,
+        paddingTop: theme.spacing.md,
+        paddingBottom: theme.spacing.xl,
     },
-    emptyContainer: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
+    errorContainer: {
         paddingHorizontal: theme.spacing.xl,
-        paddingTop: theme.spacing.xxl,
+        paddingTop: theme.spacing.xl,
+        alignItems: 'center',
+        gap: theme.spacing.md,
     },
-    emptyText: {
+    errorText: {
         color: theme.colors.textGray,
         textAlign: 'center',
-        marginVertical: theme.spacing.lg,
     },
 }))
