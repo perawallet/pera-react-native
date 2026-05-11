@@ -111,6 +111,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
             hdWalletGroups: mockHDWalletGroups,
             hasMultipleHDWallets: true,
         }),
+        useAllAccounts: () => [],
         useCreateAccount: () => ({
             createHdWalletAccount: mockCreateHdWalletAccount,
         }),
@@ -157,15 +158,18 @@ describe('useSelectHDWalletScreen', () => {
         expect(result.current.isCreatingWallet).toBe(false)
     })
 
-    it('navigates to SearchAccounts when selecting a wallet', () => {
+    it('navigates to SearchAccounts when selecting a wallet', async () => {
+        const mockNewAccount = { id: 'hd-new', address: 'HD_NEW', type: 'hdWallet' as const }
+        mockCreateHdWalletAccount.mockResolvedValue(mockNewAccount)
+
         const { result } = renderHook(() => useSelectHDWalletScreen())
 
-        act(() => {
+        await act(async () => {
             result.current.handleSelectWallet(mockHDWalletGroups[0])
         })
 
         expect(mockReplace).toHaveBeenCalledWith('NameAccount', {
-            account: mockHDWalletGroups[0].firstAccount,
+            account: mockNewAccount,
         })
     })
 
