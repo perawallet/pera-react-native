@@ -38,7 +38,7 @@
     "msw": "catalog:",
     "oxfmt": "catalog:",
     "oxlint": "^1.59.0",
-    "oxlint-tsgolint": "^0.20.0",
+    "oxlint-tsgolint": "^0.22.1",
     "turbo": "^2.7.2",
     "util": "catalog:",
     "vitest": "catalog:"

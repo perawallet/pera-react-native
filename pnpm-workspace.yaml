@@ -33,14 +33,15 @@ catalog:
   globals: 17.6.0
   oxfmt: ^0.45.0
   react: 19.2.5
-  react-dom: 19.2.5
+  react-dom: 19.2.6
   tsx: ^4.19.2
   typescript: ^5.9.3
-  typescript-eslint: 8.59.1
+  typescript-eslint: 8.59.2
   util: ^0.12.5
   uuid: 14.0.0
   msw: ^2.12.4
   vite: ^8.0.8
+  vite-plugin-dts: ^5.0.0
   vitest: ^4.1.4
   xstate: ^5.28.0
   zod: ^4.3.6
@@ -85,8 +86,8 @@ overrides:
   picomatch@3: 3.0.1
   picomatch@4: 4.0.4
   protobufjs@7: 7.5.5
-  react-dom: 19.2.5
-  react-native: 0.83.4
+  react-dom: 19.2.6
+  react-native: 0.83.9
   react-native-nitro-modules: 0.35.0
   react-native-quick-crypto: ^1.0.17
   react-native-quick-base64: ^2.2.2
