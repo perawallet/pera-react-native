@@ -16,11 +16,13 @@ import { SelectHDWalletScreen } from '../SelectHDWalletScreen'
 import type { HDWalletGroup } from '@perawallet/wallet-core-accounts'
 
 const mockPush = vi.fn()
+const mockReplace = vi.fn()
 const mockGoBack = vi.fn()
 
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({
         push: mockPush,
+        replace: mockReplace,
         goBack: mockGoBack,
     }),
 }))
@@ -176,7 +178,7 @@ describe('SelectHDWalletScreen', () => {
 
         fireEvent.click(screen.getByTestId('select_hd_wallet_item_0'))
 
-        expect(mockPush).toHaveBeenCalledWith('SearchAccounts', {
+        expect(mockReplace).toHaveBeenCalledWith('SearchAccounts', {
             account: mockHDWalletGroups[0].firstAccount,
             createIfEmpty: true,
         })
@@ -187,7 +189,7 @@ describe('SelectHDWalletScreen', () => {
 
         fireEvent.click(screen.getByTestId('select_hd_wallet_item_1'))
 
-        expect(mockPush).toHaveBeenCalledWith('SearchAccounts', {
+        expect(mockReplace).toHaveBeenCalledWith('SearchAccounts', {
             account: mockHDWalletGroups[1].firstAccount,
             createIfEmpty: true,
         })
