@@ -173,25 +173,23 @@ describe('SelectHDWalletScreen', () => {
         ).toHaveLength(2)
     })
 
-    it('navigates to SearchAccounts with first account when wallet is tapped', () => {
+    it('navigates to NameAccount with first account when wallet is tapped', () => {
         render(<SelectHDWalletScreen />)
 
         fireEvent.click(screen.getByTestId('select_hd_wallet_item_0'))
 
-        expect(mockReplace).toHaveBeenCalledWith('SearchAccounts', {
+        expect(mockReplace).toHaveBeenCalledWith('NameAccount', {
             account: mockHDWalletGroups[0].firstAccount,
-            createIfEmpty: true,
         })
     })
 
-    it('navigates to SearchAccounts with correct wallet when second wallet is tapped', () => {
+    it('navigates to NameAccount with correct wallet when second wallet is tapped', () => {
         render(<SelectHDWalletScreen />)
 
         fireEvent.click(screen.getByTestId('select_hd_wallet_item_1'))
 
-        expect(mockReplace).toHaveBeenCalledWith('SearchAccounts', {
+        expect(mockReplace).toHaveBeenCalledWith('NameAccount', {
             account: mockHDWalletGroups[1].firstAccount,
-            createIfEmpty: true,
         })
     })
 

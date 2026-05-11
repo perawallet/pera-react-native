@@ -164,9 +164,8 @@ describe('useSelectHDWalletScreen', () => {
             result.current.handleSelectWallet(mockHDWalletGroups[0])
         })
 
-        expect(mockReplace).toHaveBeenCalledWith('SearchAccounts', {
+        expect(mockReplace).toHaveBeenCalledWith('NameAccount', {
             account: mockHDWalletGroups[0].firstAccount,
-            createIfEmpty: true,
         })
     })
 
