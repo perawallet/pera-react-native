@@ -19,7 +19,6 @@ export const useStyles = makeStyles(theme => ({
         paddingBottom: theme.spacing.xl,
         gap: theme.spacing.lg,
     },
-    title: {},
     address: {
         color: theme.colors.textMain,
     },
