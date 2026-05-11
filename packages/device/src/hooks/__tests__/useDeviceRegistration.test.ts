@@ -1,0 +1,100 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { renderHook, waitFor } from '@testing-library/react'
+
+const mockRegisterDevice = vi.fn()
+const mockClearDevicePushToken = vi.fn()
+const mockUseNetwork = vi.fn()
+
+vi.mock('../useDevice', () => ({
+    useDevice: () => ({
+        registerDevice: mockRegisterDevice,
+        clearDevicePushToken: mockClearDevicePushToken,
+        deviceIDs: undefined,
+        setDeviceID: vi.fn(),
+    }),
+}))
+
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useNetwork: () => mockUseNetwork(),
+}))
+
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const original =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    return {
+        ...original,
+        logger: { warn: vi.fn() },
+    }
+})
+
+describe('useDeviceRegistration', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        mockRegisterDevice.mockResolvedValue(undefined)
+        mockClearDevicePushToken.mockResolvedValue(undefined)
+        mockUseNetwork.mockReturnValue({ network: 'mainnet' })
+    })
+
+    test('registers device on mount without clearing push token (no prior network)', async () => {
+        const { useDeviceRegistration } =
+            await import('../useDeviceRegistration')
+
+        const addresses = ['acct-1']
+        renderHook(() => useDeviceRegistration(addresses))
+
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledWith(addresses)
+        })
+        expect(mockClearDevicePushToken).not.toHaveBeenCalled()
+    })
+
+    test('clears previous network push token before re-registering on network switch', async () => {
+        const { useDeviceRegistration } =
+            await import('../useDeviceRegistration')
+
+        const addresses = ['acct-1']
+        const { rerender } = renderHook(() => useDeviceRegistration(addresses))
+
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
+        })
+
+        mockUseNetwork.mockReturnValue({ network: 'testnet' })
+        rerender()
+
+        await waitFor(() => {
+            expect(mockClearDevicePushToken).toHaveBeenCalledWith('mainnet')
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(2)
+        })
+    })
+
+    test('swallows registration failures (best-effort)', async () => {
+        mockRegisterDevice.mockRejectedValueOnce(new Error('boom'))
+
+        const { useDeviceRegistration } =
+            await import('../useDeviceRegistration')
+
+        const addresses = ['acct-1']
+        const result = renderHook(() => useDeviceRegistration(addresses))
+
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalled()
+        })
+
+        // Hook never re-throws; the unhandled rejection guard would fire
+        // otherwise. The render stays clean.
+        expect(result.result.current).toBeUndefined()
+    })
+})

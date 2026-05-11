@@ -698,7 +698,14 @@
             "asa_requests_one": "1 incoming asset",
             "asa_requests_other": "{{count}} incoming assets",
             "multisig_import": "Shared Account Import Request",
-            "multisig_sign": "Shared Account Sign Request",
+            "multisig_sign": {
+                "title": "<0>Signature request</0> to sign for {{address}}",
+                "status_pending": "Pending transaction",
+                "status_failed": "Failed transaction",
+                "status_expired": "Canceled transaction",
+                "status_declined": "Declined transaction",
+                "status_confirmed": "Confirmed"
+            },
             "invitation_title": "<0>You've been invited</0> to join a shared account {{address}}",
             "view_invitation_details": "View invitation details"
         },
@@ -812,6 +819,45 @@
                 "finish_button": "Finish",
                 "saving": "Saving shared account..."
             }
+        },
+        "pending_signatures": {
+            "title": "Pending signatures",
+            "x_of_y": "{{signed}} of {{total}} signed",
+            "time_left": "≈ {{time}} left",
+            "accounts_heading": "Accounts",
+            "accounts_subtitle_one": "You need at least 1 account to sign",
+            "accounts_subtitle_other": "You need at least {{count}} accounts to sign",
+            "confirmed": "Transaction successfully completed",
+            "failed_default": "Transaction failed",
+            "canceled": "Transaction canceled.",
+            "declined": "Transaction declined.",
+            "close": "Close",
+            "close_for_now": "Close for now",
+            "sign": "Sign"
+        },
+        "sign_sheet": {
+            "decline": "Decline"
+        },
+        "decline": {
+            "confirm_title": "Decline transaction?",
+            "confirm_body": "If you decline, this transaction cannot be signed by you again.",
+            "confirm_action": "Decline",
+            "keep_signing": "Keep Signing",
+            "error": {
+                "title": "Could not decline",
+                "body": "We couldn't decline this transaction. Please try again."
+            }
+        },
+        "cancel_transaction": {
+            "button": "Cancel",
+            "confirm_title": "Cancel Transaction Request",
+            "confirm_body": "The transaction request will be cancelled. Are you sure?",
+            "confirm_action": "Yes, Cancel",
+            "keep_waiting": "Keep Waiting",
+            "error": {
+                "title": "Could not cancel",
+                "body": "We couldn't cancel this transaction. Please try again."
+            }
         }
     },
     "onboarding": {
@@ -881,7 +927,8 @@
             "addresses_count": "{{count}} addresses",
             "select_all": "Select all",
             "already_imported": "already imported",
-            "continue": "Continue"
+            "continue": "Continue",
+            "finish_button": "Finish Account Creation"
         },
         "import_rekeyed_addresses": {
             "title": "{{count}} rekeyed accounts found",
@@ -1344,6 +1391,18 @@
             "failed": "Failed",
             "pending": "Pending",
             "raw_transaction": "Raw Transaction"
+        },
+        "list_item": {
+            "send": "Send",
+            "receive": "Receive",
+            "swap": "Swap",
+            "opt_in": "Opt-in",
+            "opt_out": "Opt-out",
+            "asset_config": "Asset Configuration",
+            "asset_freeze": "Asset Freeze",
+            "app_call": "App Call",
+            "key_registration": "Key Registration",
+            "default": "Transaction"
         },
         "type": {
             "pay": "Payment Transaction",

@@ -40,6 +40,12 @@ type BaseSignRequest = {
     sourceType?: SourceType
     sourceMetadata?: SignRequestSource
     /**
+     * Multisig-cosign only: the existing sign-request ID being cosigned.
+     * Threaded into {@link SourceMetadata.signRequestId} so the cosign
+     * transport can target the right backend record.
+     */
+    signRequestId?: string
+    /**
      * When true, the signing pipeline skips the `awaiting_user` review state
      * and proceeds directly from `validating` to `signing`, and also
      * suppresses the post-completion notification sheet on success.
@@ -65,6 +71,16 @@ type BaseSignRequest = {
 
 export type TransactionSignRequest = {
     txs: PeraTransaction[]
+    /**
+     * The full atomic transaction group from the originating source, used
+     * for ARC-0001 group-integrity validation. External sources that filter
+     * `txs` down to the wallet's signable subset (e.g. WalletConnect)
+     * **must** populate this with the original pre-filter array so the
+     * signing pipeline can recompute the group hash. Sources where `txs`
+     * already is the full group should leave this unset; the pipeline
+     * falls back to `txs` for validation in that case.
+     */
+    groupContext?: PeraTransaction[]
     /**
      * Per-transaction signer address overrides (index in `txs` → address).
      * When present, the signing pipeline uses this address instead of

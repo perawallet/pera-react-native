@@ -21,7 +21,7 @@ import {
 } from '@algorandfoundation/algokit-utils/algo25'
 import { encodeAddress } from '@algorandfoundation/algokit-utils'
 import { useKMSService } from './useKMSServices'
-import { makeKeyPair, peraMetadataFor } from '../utils'
+import { makeKeyPair, peraMetadataFor, PeraKeyKind } from '../utils'
 import { zeroBytes } from '../crypto/secure-memory'
 import { ALGO25_KEYSTORE_TYPE } from '../constants'
 import type { KeyData, KeyId } from '@algorandfoundation/keystore'
@@ -74,7 +74,13 @@ export const useAlgo25 = () => {
                 algorithm: 'EdDSA',
                 keyUsages: ['sign'],
                 publicKey: naclKeyPair.publicKey,
-                metadata: peraMetadataFor({ createdAt: new Date() }),
+                // Stamp the kind so wallet-domain consumers can identify
+                // this entry as an Algo25 root even when the keystore
+                // persists it with a less-specific `type` field.
+                metadata: peraMetadataFor({
+                    createdAt: new Date(),
+                    kind: PeraKeyKind.Algo25Root,
+                }),
             })
             committedRoot = true
 

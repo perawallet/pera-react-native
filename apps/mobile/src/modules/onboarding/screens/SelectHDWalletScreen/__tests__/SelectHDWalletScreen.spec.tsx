@@ -16,11 +16,13 @@ import { SelectHDWalletScreen } from '../SelectHDWalletScreen'
 import type { HDWalletGroup } from '@perawallet/wallet-core-accounts'
 
 const mockPush = vi.fn()
+const mockReplace = vi.fn()
 const mockGoBack = vi.fn()
 
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({
         push: mockPush,
+        replace: mockReplace,
         goBack: mockGoBack,
     }),
 }))
@@ -72,6 +74,19 @@ const mockHDWalletGroups: HDWalletGroup[] = [
     },
 ]
 
+const mockNewAccount = {
+    id: 'hd-new',
+    address: 'HD_NEW',
+    type: 'hdWallet' as const,
+    hdWalletDetails: {
+        account: 0,
+        change: 0,
+        keyIndex: 1,
+        derivationType: 9 as const,
+    },
+    keyPairId: 'wallet-1',
+}
+
 vi.mock('@perawallet/wallet-core-accounts', async () => {
     const actual = await vi.importActual<object>(
         '@perawallet/wallet-core-accounts',
@@ -82,6 +97,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
             hdWalletGroups: mockHDWalletGroups,
             hasMultipleHDWallets: true,
         }),
+        useAllAccounts: () => [], // <-- adicionar isto
         useCreateAccount: () => ({
             createHdWalletAccount: mockCreateHdWalletAccount,
         }),
@@ -171,25 +187,29 @@ describe('SelectHDWalletScreen', () => {
         ).toHaveLength(2)
     })
 
-    it('navigates to SearchAccounts with first account when wallet is tapped', () => {
+    it('navigates to NameAccount with first account when wallet is tapped', async () => {
+        mockCreateHdWalletAccount.mockResolvedValue(mockNewAccount)
         render(<SelectHDWalletScreen />)
 
         fireEvent.click(screen.getByTestId('select_hd_wallet_item_0'))
 
-        expect(mockPush).toHaveBeenCalledWith('SearchAccounts', {
-            account: mockHDWalletGroups[0].firstAccount,
-            createIfEmpty: true,
+        await vi.waitFor(() => {
+            expect(mockReplace).toHaveBeenCalledWith('NameAccount', {
+                account: mockNewAccount,
+            })
         })
     })
 
-    it('navigates to SearchAccounts with correct wallet when second wallet is tapped', () => {
+    it('navigates to NameAccount with correct wallet when second wallet is tapped', async () => {
+        mockCreateHdWalletAccount.mockResolvedValue(mockNewAccount)
         render(<SelectHDWalletScreen />)
 
         fireEvent.click(screen.getByTestId('select_hd_wallet_item_1'))
 
-        expect(mockPush).toHaveBeenCalledWith('SearchAccounts', {
-            account: mockHDWalletGroups[1].firstAccount,
-            createIfEmpty: true,
+        await vi.waitFor(() => {
+            expect(mockReplace).toHaveBeenCalledWith('NameAccount', {
+                account: mockNewAccount,
+            })
         })
     })
 

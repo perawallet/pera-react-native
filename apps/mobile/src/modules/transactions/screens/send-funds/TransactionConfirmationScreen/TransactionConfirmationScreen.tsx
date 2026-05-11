@@ -192,6 +192,7 @@ export const TransactionConfirmationScreen = () => {
             <AddNotePanel
                 isVisible={noteOpen}
                 onClose={closeNote}
+                onDismiss={closeNote}
             />
         </PWView>
     )

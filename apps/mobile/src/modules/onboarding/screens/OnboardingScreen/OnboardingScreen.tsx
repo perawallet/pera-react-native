@@ -20,20 +20,14 @@ import welcomeBackground from '@assets/images/welcome-background.webp'
 import { useLanguage } from '@hooks/useLanguage'
 import { Trans } from 'react-i18next'
 
-import { ImportOptionsBottomSheet } from '../../components/ImportOptionsBottomSheet'
-
 export const OnboardingScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const {
-        isImportOptionsVisible,
         handleTermsPress,
         handlePrivacyPress,
         handleCreateAccount,
         handleImportAccount,
-        handleCloseImportOptions,
-        handleHDWalletPress,
-        handleAlgo25Press,
         isCreatingAccount,
     } = useOnboardingScreen()
 
@@ -105,13 +99,6 @@ export const OnboardingScreen = () => {
                     </PWText>
                 </PWView>
             </PWView>
-
-            <ImportOptionsBottomSheet
-                isVisible={isImportOptionsVisible}
-                onClose={handleCloseImportOptions}
-                onHDWalletPress={handleHDWalletPress}
-                onAlgo25Press={handleAlgo25Press}
-            />
 
             <PWLoadingOverlay
                 isVisible={isCreatingAccount}

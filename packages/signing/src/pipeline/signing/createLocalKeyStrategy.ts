@@ -17,6 +17,7 @@ import {
     isHDWalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
+import { encodeToBase64, toError } from '@perawallet/wallet-core-shared'
 import type {
     SigningStrategy,
     AnalyzedSignableGroup,
@@ -29,11 +30,21 @@ import type {
 import { CannotSignError, SigningError } from '../errors'
 
 /**
- * Signing function type that matches useLocalKeyTransactionSigner's signTransactions
+ * Signing function type that matches useLocalKeyTransactionSigner's signTransactions.
+ *
+ * `account` is the canonical signer for this group, already resolved by the
+ * actor: for regular signing flows that's the auth account (rekey followed);
+ * for multisig cosign that's the participant itself (rekey NOT followed,
+ * because the participant slot is keyed by its original pubkey). The function
+ * MUST sign with this account regardless of `txn.sender`, otherwise cosign
+ * flows (multisig participant signs a txn whose sender is the multisig
+ * address, not the participant) and ARC-0001 explicit-`signers` flows will
+ * pick the wrong key.
  */
 export type LocalSigningFunction = (
     txnGroup: PeraSignedTransaction['txn'][],
     indexesToSign: number[],
+    account: WalletAccount,
 ) => Promise<PeraSignedTransaction[]>
 
 /**
@@ -102,6 +113,7 @@ export const createLocalKeyStrategy = (
                         const signed = await signTransactions(
                             transactions,
                             indicesToSign,
+                            account,
                         )
 
                         callbacks?.onProgress?.(
@@ -110,8 +122,19 @@ export const createLocalKeyStrategy = (
                         )
                         callbacks?.onSigningComplete?.()
 
+                        // Surface per-transaction base64 signatures on the
+                        // signer so the multisig cosign transport can post
+                        // them to the backend's `responses[].signatures`
+                        // (mirrors createMultisigStrategy.extractSignatures).
+                        // For non-multisig flows the algod / callback
+                        // transports ignore this field — they read
+                        // `signedData.signed` directly — so populating it
+                        // unconditionally is safe.
                         const signerInfo: SignerInfo = {
                             address: account.address,
+                            signatures: signed.map(stx =>
+                                stx.sig ? encodeToBase64(stx.sig) : null,
+                            ),
                         }
                         return {
                             signedData: { type: 'transactions', signed },
@@ -119,11 +142,10 @@ export const createLocalKeyStrategy = (
                             originalIndices: group.originalIndices,
                         }
                     } catch (error) {
+                        const cause = toError(error)
                         const signingError = new SigningError(
-                            error instanceof Error
-                                ? error.message
-                                : String(error),
-                            error instanceof Error ? error : undefined,
+                            cause.message,
+                            cause,
                         )
                         callbacks?.onError?.(signingError)
                         throw signingError
@@ -149,11 +171,10 @@ export const createLocalKeyStrategy = (
                             originalIndices: group.originalIndices,
                         }
                     } catch (error) {
+                        const cause = toError(error)
                         const signingError = new SigningError(
-                            error instanceof Error
-                                ? error.message
-                                : String(error),
-                            error instanceof Error ? error : undefined,
+                            cause.message,
+                            cause,
                         )
                         callbacks?.onError?.(signingError)
                         throw signingError
@@ -176,11 +197,10 @@ export const createLocalKeyStrategy = (
                             originalIndices: group.originalIndices,
                         }
                     } catch (error) {
+                        const cause = toError(error)
                         const signingError = new SigningError(
-                            error instanceof Error
-                                ? error.message
-                                : String(error),
-                            error instanceof Error ? error : undefined,
+                            cause.message,
+                            cause,
                         )
                         callbacks?.onError?.(signingError)
                         throw signingError

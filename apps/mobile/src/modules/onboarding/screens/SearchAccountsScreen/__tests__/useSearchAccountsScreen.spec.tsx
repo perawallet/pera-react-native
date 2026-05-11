@@ -189,15 +189,10 @@ describe('useSearchAccountsScreen', () => {
         renderHook(() => useSearchAccountsScreen())
 
         await waitFor(() => {
-            expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith(
-                'MOCK_ADDRESS',
-            )
-            expect(mockDiscoverRekeyedAccounts).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    accountAddresses: ['MOCK_ADDRESS'],
-                }),
-            )
-            expect(mockExitAccountFlow).toHaveBeenCalled()
+            expect(mockReplace).toHaveBeenCalledWith('ImportSelectAddresses', {
+                accounts: [singleAccount],
+            })
+            expect(mockExitAccountFlow).not.toHaveBeenCalled()
         })
     })
 
@@ -221,123 +216,9 @@ describe('useSearchAccountsScreen', () => {
         renderHook(() => useSearchAccountsScreen())
 
         await waitFor(() => {
-            expect(mockReplace).toHaveBeenCalledWith('ImportRekeyedAddresses', {
-                accounts: rekeyedAccounts,
+            expect(mockReplace).toHaveBeenCalledWith('ImportSelectAddresses', {
+                accounts: [singleAccount],
             })
-            expect(mockExitAccountFlow).not.toHaveBeenCalled()
-        })
-    })
-
-    it('creates next derivation and navigates to NameAccount when createIfEmpty without scanning for rekeys', async () => {
-        mockRouteParams.current = {
-            account: {
-                id: '1',
-                address: 'MOCK_ADDRESS',
-                type: 'hdWallet' as const,
-                keyPairId: 'wallet-1',
-                hdWalletDetails: {
-                    account: 0,
-                    change: 0,
-                    keyIndex: 0,
-                    derivationType: 9,
-                },
-            },
-            createIfEmpty: true,
-        } as SearchAccountsParams
-        mockAllAccounts.current = [
-            {
-                id: '1',
-                address: 'MOCK_ADDRESS',
-                type: 'hdWallet' as const,
-                keyPairId: 'wallet-1',
-                hdWalletDetails: {
-                    account: 0,
-                    change: 0,
-                    keyIndex: 0,
-                    derivationType: 9,
-                },
-            },
-        ]
-
-        const singleAccount = {
-            id: '1',
-            address: 'MOCK_ADDRESS',
-            type: AccountTypes.hdWallet,
-        }
-        mockDiscoverAccounts.mockResolvedValue([singleAccount])
-
-        const newAccount = {
-            id: 'new-id',
-            address: 'NEW_ADDRESS',
-            type: 'hdWallet' as const,
-        }
-        mockCreateHdWalletAccount.mockResolvedValue(newAccount)
-
-        renderHook(() => useSearchAccountsScreen())
-
-        await waitFor(() => {
-            expect(mockCreateHdWalletAccount).toHaveBeenCalledWith({
-                walletId: 'wallet-1',
-                account: 0,
-                keyIndex: 1,
-            })
-            expect(mockDiscoverRekeyedAccounts).not.toHaveBeenCalled()
-            expect(mockReplace).toHaveBeenCalledWith('NameAccount', {
-                account: newAccount,
-            })
-        })
-
-        expect(mockExitAccountFlow).not.toHaveBeenCalled()
-    })
-
-    it('shows error toast and goes back when createIfEmpty account creation fails', async () => {
-        mockRouteParams.current = {
-            account: {
-                id: '1',
-                address: 'MOCK_ADDRESS',
-                type: 'hdWallet' as const,
-                keyPairId: 'wallet-1',
-                hdWalletDetails: {
-                    account: 0,
-                    change: 0,
-                    keyIndex: 0,
-                    derivationType: 9,
-                },
-            },
-            createIfEmpty: true,
-        } as SearchAccountsParams
-        mockAllAccounts.current = [
-            {
-                id: '1',
-                address: 'MOCK_ADDRESS',
-                type: 'hdWallet' as const,
-                keyPairId: 'wallet-1',
-                hdWalletDetails: {
-                    account: 0,
-                    change: 0,
-                    keyIndex: 0,
-                    derivationType: 9,
-                },
-            },
-        ]
-
-        const singleAccount = {
-            id: '1',
-            address: 'MOCK_ADDRESS',
-            type: AccountTypes.hdWallet,
-        }
-        mockDiscoverAccounts.mockResolvedValue([singleAccount])
-        mockCreateHdWalletAccount.mockRejectedValue(
-            new Error('Creation failed'),
-        )
-
-        renderHook(() => useSearchAccountsScreen())
-
-        await waitFor(() => {
-            expect(mockShowToast).toHaveBeenCalledWith(
-                expect.objectContaining({ type: 'error' }),
-            )
-            expect(mockGoBack).toHaveBeenCalled()
         })
     })
 

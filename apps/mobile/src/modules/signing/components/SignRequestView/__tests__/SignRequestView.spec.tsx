@@ -145,4 +145,30 @@ describe('SigningView', () => {
         expect(mockClearLastFailedRequest).toHaveBeenCalled()
         expect(mockRemoveSignRequest).toHaveBeenCalledWith(request)
     })
+
+    it('renders a top-right close X for multisig-cosign requests that dismisses without backend call', () => {
+        const request = {
+            id: 'tx-1',
+            type: 'transactions',
+            sourceType: 'multisig-cosign',
+            signRequestId: 'sr-1',
+            txs: [],
+        } as unknown as SignRequest
+
+        const { getByTestId } = render(<SignRequestView request={request} />)
+        fireEvent.click(getByTestId('multisig_cosign_close_button'))
+
+        expect(mockRemoveSignRequest).toHaveBeenCalledWith(request)
+    })
+
+    it('does not render the close X for non-multisig-cosign requests', () => {
+        const request = {
+            id: 'tx-1',
+            type: 'transactions',
+            txs: [],
+        } as unknown as SignRequest
+
+        const { queryByTestId } = render(<SignRequestView request={request} />)
+        expect(queryByTestId('multisig_cosign_close_button')).toBeNull()
+    })
 })

@@ -59,7 +59,6 @@ export default defineConfig({
                 '@perawallet/wallet-core-kms',
                 '@algorandfoundation/xhd-wallet-api',
                 'uuid',
-                'bip39',
                 'decimal.js',
                 '@perawallet/wallet-extension-provider',
             ],

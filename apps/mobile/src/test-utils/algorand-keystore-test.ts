@@ -32,6 +32,7 @@ type Store<T> = {
     subscribe: (listener: () => void) => { unsubscribe: () => void }
 }
 type Key = { id: string; type: string; [k: string]: unknown }
+
 type KeyData = Key & {
     privateKey?: Uint8Array
     publicKey?: Uint8Array
@@ -109,14 +110,7 @@ export const commit = async ({
     store: Store<KeyStoreState>
     keyData: KeyData
 }): Promise<void> => {
-    // Defensive clone. Production MMKV serializes on import, so the
-    // caller is free to zero the source `privateKey` / `entropy`
-    // buffers afterwards (the HD wallet path does exactly that). The
-    // in-memory map here would otherwise hold a reference to the same
-    // buffer and observe the zeroing — silently corrupting the stored
-    // entropy/seed bytes — so we deep-clone to mirror MMKV's
-    // copy-on-write semantics.
-    keyData.set(data.id, cloneKeyData(data))
+    keyData.set(data.id, data)
     upsertReactiveKey(store, data)
 }
 
@@ -164,6 +158,7 @@ const exportKey = async (id: string): Promise<KeyData> => {
 export const WithKeyStore = (_provider: any, options: any) => {
     const reactiveStore: Store<KeyStoreState> | undefined =
         options?.keystore?.store
+
     if (reactiveStore) reactiveStoreRef = reactiveStore
     const hooks = options?.keystore?.hooks
 

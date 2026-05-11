@@ -162,6 +162,36 @@ describe('useImportSelectAddressesScreen — import mode', () => {
         expect(result.current.canContinue).toBe(false)
     })
 
+    test('re-importing a wallet whose addresses are all known still marks backup', async () => {
+        // Every discovered address is already in the account store, so
+        // there is nothing new to commit — but re-entering the mnemonic
+        // proved possession, so the wallet should still be flagged as
+        // backed up. Without this, accounts created before the auto-mark
+        // feature shipped would be stuck showing the banner forever.
+        const existingSibling = { ...sampleDiscovered[0] }
+        mockAllAccounts.current = [
+            existingSibling as WalletAccount,
+            sampleDiscovered[1] as WalletAccount,
+        ]
+        mockRouteParams.current = {
+            mode: 'import',
+            walletKeyId: 'w-1',
+            accounts: sampleDiscovered,
+        }
+
+        const { result } = renderHook(() => useImportSelectAddressesScreen())
+
+        expect(result.current.areAllImported).toBe(true)
+        expect(result.current.canContinue).toBe(true)
+
+        await act(async () => {
+            await result.current.handleContinue()
+        })
+
+        expect(mockCommitImport).not.toHaveBeenCalled()
+        expect(mockMarkBackupComplete).toHaveBeenCalledWith(existingSibling)
+    })
+
     test('cancelImport runs when navigation beforeRemove fires (back/swipe)', async () => {
         let beforeRemoveCallback: (() => void) | undefined
         const addListenerSpy = vi.fn((eventName: string, cb: () => void) => {

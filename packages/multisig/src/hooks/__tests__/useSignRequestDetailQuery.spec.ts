@@ -92,6 +92,7 @@ describe('useSignRequestDetailQuery', () => {
             () =>
                 useSignRequestDetailQuery({
                     network: 'mainnet',
+                    deviceId: 'device-1',
                     signRequestId: 'sr-123',
                 }),
             { wrapper },
@@ -116,6 +117,7 @@ describe('useSignRequestDetailQuery', () => {
             () =>
                 useSignRequestDetailQuery({
                     network: 'mainnet',
+                    deviceId: 'device-1',
                     signRequestId: 'sr-123',
                 }),
             { wrapper },
@@ -142,6 +144,7 @@ describe('useSignRequestDetailQuery', () => {
             () =>
                 useSignRequestDetailQuery({
                     network: 'mainnet',
+                    deviceId: 'device-1',
                     signRequestId: 'sr-123',
                 }),
             { wrapper },
@@ -164,7 +167,7 @@ describe('useSignRequestDetailQuery', () => {
         ).toBeInstanceOf(Date)
     })
 
-    test('calls endpoint with correct network and signRequestId', async () => {
+    test('calls endpoint with correct network, deviceId and signRequestId', async () => {
         mocks.getSignRequestDetail.mockResolvedValue(
             createSignRequestResponse('pending'),
         )
@@ -173,6 +176,7 @@ describe('useSignRequestDetailQuery', () => {
             () =>
                 useSignRequestDetailQuery({
                     network: 'testnet',
+                    deviceId: 'device-9',
                     signRequestId: 'sr-456',
                 }),
             { wrapper },
@@ -181,9 +185,29 @@ describe('useSignRequestDetailQuery', () => {
         await waitFor(() =>
             expect(mocks.getSignRequestDetail).toHaveBeenCalledWith(
                 'testnet',
+                'device-9',
                 'sr-456',
             ),
         )
+    })
+
+    test('does not fetch when deviceId is empty', () => {
+        mocks.getSignRequestDetail.mockResolvedValue(
+            createSignRequestResponse('pending'),
+        )
+
+        const { result } = renderHook(
+            () =>
+                useSignRequestDetailQuery({
+                    network: 'mainnet',
+                    deviceId: '',
+                    signRequestId: 'sr-123',
+                }),
+            { wrapper },
+        )
+
+        expect(result.current.fetchStatus).toBe('idle')
+        expect(mocks.getSignRequestDetail).not.toHaveBeenCalled()
     })
 
     test('returns error state when request fails', async () => {
@@ -195,6 +219,7 @@ describe('useSignRequestDetailQuery', () => {
             () =>
                 useSignRequestDetailQuery({
                     network: 'mainnet',
+                    deviceId: 'device-1',
                     signRequestId: 'sr-123',
                 }),
             { wrapper },
@@ -214,6 +239,7 @@ describe('useSignRequestDetailQuery', () => {
             () =>
                 useSignRequestDetailQuery({
                     network: 'mainnet',
+                    deviceId: 'device-1',
                     signRequestId: 'sr-123',
                     enabled: false,
                 }),
@@ -234,6 +260,7 @@ describe('useSignRequestDetailQuery', () => {
             () =>
                 useSignRequestDetailQuery({
                     network: 'mainnet',
+                    deviceId: 'device-1',
                     signRequestId: '',
                 }),
             { wrapper },
@@ -252,6 +279,7 @@ describe('useSignRequestDetailQuery', () => {
             () =>
                 useSignRequestDetailQuery({
                     network: 'mainnet',
+                    deviceId: 'device-1',
                     signRequestId: 'sr-123',
                     pollWhilePending: false,
                 }),
@@ -280,6 +308,7 @@ describe('useSignRequestDetailQuery', () => {
                 () =>
                     useSignRequestDetailQuery({
                         network: 'mainnet',
+                        deviceId: 'device-1',
                         signRequestId: 'sr-123',
                         pollWhilePending: true,
                     }),
@@ -323,6 +352,7 @@ describe('useSignRequestDetailQuery', () => {
             () =>
                 useSignRequestDetailQuery({
                     network: 'mainnet',
+                    deviceId: 'device-1',
                     signRequestId: 'sr-123',
                 }),
             { wrapper },
@@ -344,6 +374,7 @@ describe('useSignRequestDetailQuery', () => {
             () =>
                 useSignRequestDetailQuery({
                     network: 'mainnet',
+                    deviceId: 'device-1',
                     signRequestId: 'sr-123',
                 }),
             { wrapper },
@@ -365,6 +396,7 @@ describe('useSignRequestDetailQuery', () => {
             () =>
                 useSignRequestDetailQuery({
                     network: 'mainnet',
+                    deviceId: 'device-1',
                     signRequestId: 'sr-123',
                 }),
             { wrapper },

@@ -27,6 +27,7 @@ import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { OnboardingScreen } from '@modules/onboarding/screens/OnboardingScreen/OnboardingScreen'
+import { ImportAccountOptionsScreen } from '@modules/onboarding/screens/ImportAccountOptionsScreen/ImportAccountOptionsScreen'
 import { ImportInfoScreen } from '@modules/onboarding/screens/ImportInfoScreen/ImportInfoScreen'
 import { ImportAccountScreen } from '@modules/onboarding/screens/ImportAccountScreen/ImportAccountScreen'
 import { SearchAccountsScreen } from '@modules/onboarding/screens/SearchAccountsScreen/SearchAccountsScreen'
@@ -76,6 +77,10 @@ const advanceThroughImportInfo = async () => {
 const renderHDImportFromOnboarding = () =>
     renderWithNavigation(OnboardingScreen, 'Onboarding', {
         additionalScreens: [
+            {
+                name: 'ImportAccountOptions',
+                component: ImportAccountOptionsScreen,
+            },
             { name: 'ImportInfo', component: ImportInfoScreen },
             { name: 'ImportAccount', component: ImportAccountScreen },
             { name: 'SearchAccounts', component: SearchAccountsScreen },
@@ -89,6 +94,19 @@ const renderHDImportFromOnboarding = () =>
             },
         ],
     })
+
+// Drives the user from the Onboarding screen into the import-options bottom
+// sheet. The intermediate ImportAccountOptions screen was introduced in
+// PERA-3268 — tapping "Import account" no longer opens the sheet directly.
+const openImportOptionsSheet = async () => {
+    fireEvent.click(screen.getByTestId('onboarding_import_account_button'))
+    await waitFor(() =>
+        screen.getByTestId('import_account_options_recover_wallet_button'),
+    )
+    fireEvent.click(
+        screen.getByTestId('import_account_options_recover_wallet_button'),
+    )
+}
 
 const waitForImportButtonEnabled = async () => {
     await waitFor(() => {
@@ -104,7 +122,7 @@ const waitForImportButtonEnabled = async () => {
 
 const startHDImportThroughMnemonic = async (words: string[]) => {
     renderHDImportFromOnboarding()
-    fireEvent.click(screen.getByTestId('onboarding_import_account_button'))
+    await openImportOptionsSheet()
     await waitFor(() => screen.getByTestId('import_options_hd_wallet_button'))
     fireEvent.click(screen.getByTestId('import_options_hd_wallet_button'))
     await advanceThroughImportInfo()
@@ -156,9 +174,7 @@ describe('Flow: Onboarding → Import HD wallet', () => {
             renderHDImportFromOnboarding()
 
             // Open the import options sheet.
-            fireEvent.click(
-                screen.getByTestId('onboarding_import_account_button'),
-            )
+            await openImportOptionsSheet()
             await waitFor(() =>
                 screen.getByTestId('import_options_hd_wallet_button'),
             )
@@ -228,9 +244,7 @@ describe('Flow: Onboarding → Import HD wallet', () => {
         async () => {
             renderHDImportFromOnboarding()
 
-            fireEvent.click(
-                screen.getByTestId('onboarding_import_account_button'),
-            )
+            await openImportOptionsSheet()
             await waitFor(() =>
                 screen.getByTestId('import_options_hd_wallet_button'),
             )
@@ -296,9 +310,7 @@ describe('Flow: Onboarding → Import HD wallet', () => {
 
             renderHDImportFromOnboarding()
 
-            fireEvent.click(
-                screen.getByTestId('onboarding_import_account_button'),
-            )
+            await openImportOptionsSheet()
             await waitFor(() =>
                 screen.getByTestId('import_options_hd_wallet_button'),
             )

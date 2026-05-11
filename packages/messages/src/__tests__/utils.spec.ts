@@ -41,6 +41,7 @@ const createSignRequest = (
     createdAt: new Date('2025-01-20T00:00:00Z'),
     expectedExpireDatetime: new Date('2025-01-21T00:00:00Z'),
     failReasonDisplay: null,
+    proposerAddress: null,
     multisigAccount: createMultiSigAccount(),
     transactionLists: [],
     ...overrides,

@@ -63,12 +63,12 @@ export const deriveTestHDAddress = async (
     keyIndex: number,
 ): Promise<string> => {
     const [bip39, xhd, algokit] = await Promise.all([
-        import('bip39'),
+        import('@scure/bip39'),
         import('@algorandfoundation/xhd-wallet-api'),
         import('@algorandfoundation/algokit-utils'),
     ])
     const seed = await bip39.mnemonicToSeed(HD_TEST_MNEMONIC_24)
-    const rootKey = xhd.fromSeed(seed)
+    const rootKey = xhd.fromSeed(Buffer.from(seed))
     const api = new xhd.XHDWalletAPI()
     const publicKey = await api.keyGen(
         rootKey,

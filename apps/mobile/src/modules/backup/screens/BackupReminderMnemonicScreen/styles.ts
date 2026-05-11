@@ -11,19 +11,20 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { EdgeInsets } from 'react-native-safe-area-context'
 import { getTypography } from '@theme/typography'
 
-export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
+export const useStyles = makeStyles(theme => ({
     root: {
         flex: 1,
         backgroundColor: theme.colors.background,
-        marginBottom: insets.bottom,
     },
-    content: {
+    scroll: {
         flex: 1,
+    },
+    scrollContent: {
         paddingHorizontal: theme.spacing.xl,
         paddingTop: theme.spacing.xl,
+        paddingBottom: theme.spacing.xl,
         gap: theme.spacing.lg,
     },
     title: {

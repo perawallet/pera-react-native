@@ -42,10 +42,10 @@
     "@perawallet/wallet-core-devtools": "workspace:*",
     "@testing-library/react": "catalog:",
     "@types/react": "catalog:",
-    "bip39": "catalog:",
+    "@scure/bip39": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vite-plugin-dts": "^4.5.4",
+    "vite-plugin-dts": "catalog:",
     "vitest": "catalog:",
     "msw": "catalog:"
   }

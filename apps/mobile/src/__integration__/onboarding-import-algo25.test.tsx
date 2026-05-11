@@ -27,6 +27,7 @@ import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { OnboardingScreen } from '@modules/onboarding/screens/OnboardingScreen/OnboardingScreen'
+import { ImportAccountOptionsScreen } from '@modules/onboarding/screens/ImportAccountOptionsScreen/ImportAccountOptionsScreen'
 import { ImportInfoScreen } from '@modules/onboarding/screens/ImportInfoScreen/ImportInfoScreen'
 import { ImportAccountScreen } from '@modules/onboarding/screens/ImportAccountScreen/ImportAccountScreen'
 import { SearchAccountsScreen } from '@modules/onboarding/screens/SearchAccountsScreen/SearchAccountsScreen'
@@ -62,6 +63,10 @@ const advanceThroughImportInfo = async () => {
 const renderAlgo25ImportFromOnboarding = () =>
     renderWithNavigation(OnboardingScreen, 'Onboarding', {
         additionalScreens: [
+            {
+                name: 'ImportAccountOptions',
+                component: ImportAccountOptionsScreen,
+            },
             { name: 'ImportInfo', component: ImportInfoScreen },
             { name: 'ImportAccount', component: ImportAccountScreen },
             { name: 'SearchAccounts', component: SearchAccountsScreen },
@@ -71,6 +76,19 @@ const renderAlgo25ImportFromOnboarding = () =>
             },
         ],
     })
+
+// Drives the user from the Onboarding screen into the import-options bottom
+// sheet. The intermediate ImportAccountOptions screen was introduced in
+// PERA-3268 — tapping "Import account" no longer opens the sheet directly.
+const openImportOptionsSheet = async () => {
+    fireEvent.click(screen.getByTestId('onboarding_import_account_button'))
+    await waitFor(() =>
+        screen.getByTestId('import_account_options_recover_wallet_button'),
+    )
+    fireEvent.click(
+        screen.getByTestId('import_account_options_recover_wallet_button'),
+    )
+}
 
 const waitForImportButtonEnabled = async () => {
     await waitFor(() => {
@@ -86,7 +104,7 @@ const waitForImportButtonEnabled = async () => {
 
 const startAlgo25ImportThroughMnemonic = async (words: string[]) => {
     renderAlgo25ImportFromOnboarding()
-    fireEvent.click(screen.getByTestId('onboarding_import_account_button'))
+    await openImportOptionsSheet()
     await waitFor(() => screen.getByTestId('import_options_algo25_button'))
     fireEvent.click(screen.getByTestId('import_options_algo25_button'))
     await advanceThroughImportInfo()
@@ -122,9 +140,7 @@ describe('Flow: Onboarding → Import Algo25 (legacy)', () => {
         async () => {
             renderAlgo25ImportFromOnboarding()
 
-            fireEvent.click(
-                screen.getByTestId('onboarding_import_account_button'),
-            )
+            await openImportOptionsSheet()
             await waitFor(() =>
                 screen.getByTestId('import_options_algo25_button'),
             )
@@ -180,9 +196,7 @@ describe('Flow: Onboarding → Import Algo25 (legacy)', () => {
         async () => {
             renderAlgo25ImportFromOnboarding()
 
-            fireEvent.click(
-                screen.getByTestId('onboarding_import_account_button'),
-            )
+            await openImportOptionsSheet()
             await waitFor(() =>
                 screen.getByTestId('import_options_algo25_button'),
             )
