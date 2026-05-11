@@ -50,7 +50,7 @@
     "@vitejs/plugin-react": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "jsdom": "^27.1.0",
-    "msw": "^2.12.1",
+    "msw": "catalog:",
     "oxfmt": "catalog:",
     "react-dom": "catalog:",
     "typescript": "catalog:",

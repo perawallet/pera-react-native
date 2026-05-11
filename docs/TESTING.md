@@ -12,7 +12,8 @@ We test to ensure code works correctly and stays working as changes are made.
 ## Running Tests
 
 ```sh
-pnpm test                    # Run all tests
+pnpm test                    # All tests (unit + integration)
+pnpm test:integration        # Only integration tests (recursive)
 pnpm --filter mobile test    # Mobile app tests only
 ```
 
@@ -82,6 +83,108 @@ it('submits form when save is pressed', () => {
 
 Ask: "What should happen when the user does X?" rather than "Does internal method Y get called?"
 
-## Learn More
+## Integration Tests (User-Facing Flows)
 
-For detailed test patterns and examples, see the development workflows.
+Flow tests live in `apps/mobile/src/__integration__/<flow>.test.tsx` and exercise real React Query, real Zustand stores, real domain hooks, and the real KMS keystore — only the network is mocked (via MSW) and the platform's native services are swapped for in-memory test implementations.
+
+The integration harness wires three test-only swaps via `vitest.config.ts` aliases:
+
+- **`@perawallet/wallet-extension-platform-driver`** → `apps/mobile/src/test-utils/platform-driver-test.ts` — real-ish in-memory implementations of `keyValueStorage` (Map-backed), `biometrics` (always succeeds), `database` (no-op stub), `deviceInfo` (fixed test values), `analytics`/`crashReporting`/`pushNotification`/`remoteConfig` (no-ops with the right shapes).
+- **`@algorandfoundation/react-native-keystore`** → `apps/mobile/src/test-utils/algorand-keystore-test.ts` — in-memory key store. `commit`/`removeKey`/`clear` mutate a Map AND the reactive TanStack store; `WithKeyStore` provides a `key.store.export(id)` surface so `useKMS()` can read private-key bytes.
+- **`@perawallet/wallet-extension-ledger-react-native(-usb)`** → `apps/mobile/src/test-utils/ledger-extension-stub.ts` — empty extension stub. The real Ledger packages drag in `react-native-ble-plx` (Flow-typed) which doesn't parse under jsdom. The platform-agnostic `/protocol` deep-import is aliased separately to its real source so consumers (`packages/ledger`) still get types and constants.
+
+Plus a stack-based **test navigator** (`apps/mobile/src/test-utils/test-navigator.tsx`) wired into the integration project via `vi.mock` calls in `vitest.integration-setup.ts`. It re-implements the `@react-navigation/native` + `native-stack` surface in pure React state — `navigate` / `push` / `replace` / `goBack` / `pop` / `popToTop` actually mutate a stack and re-render, so flow tests can traverse screens and assert on what's rendered after each transition. `useRoute().params` returns the params passed to the most recent navigation. Unit tests keep the simpler global stub from `vitest.setup.ts` that just renders the initial screen.
+
+**algod / indexer via algokit-utils**: `algokit-utils` makes its REST calls through `fetch`, which MSW intercepts cleanly (verified in `apps/mobile/src/__integration__/algokit-smoke.test.ts`). Handler factories for the common algod and indexer endpoints live in `packages/blockchain/src/handlers.ts` and are re-exported via `@perawallet/wallet-core-blockchain/test-handlers`:
+
+```typescript
+import {
+    mockAlgodAccountInformation,
+    mockAlgodTransactionParams,
+    mockAlgodSendRawTransaction,
+    mockIndexerAccountTransactions,
+} from '@perawallet/wallet-core-blockchain/test-handlers'
+
+server.use(
+    mockAlgodAccountInformation({
+        address: TEST_ADDR,
+        response: { amount: 5_000_000 },
+    }),
+    mockAlgodTransactionParams(),
+)
+```
+
+Defaults cover the boring fields (empty account, `fee: 0`, `min-fee: 1000`, `last-round: 1`) so most tests only override the value they're asserting on. Path globs match both algonode hosts.
+
+The integration setup file (`apps/mobile/vitest.integration-setup.ts`) then `vi.unmock`s `@perawallet/wallet-extension-provider`, `@perawallet/wallet-core-kms`, `@perawallet/wallet-core-accounts`, and `@perawallet/wallet-core-blockchain` on top of the unit setup, so account creation, key management, provider-singleton code, and algokit clients all run end-to-end against the in-memory implementations and MSW.
+
+### Writing a flow test
+
+```typescript
+import { mockListCurrencies } from '@perawallet/wallet-core-currencies/test-handlers'
+import { server } from '@test-utils/msw-server'
+import { renderWithNavigation } from '@test-utils/renderWithNavigation'
+import { USD_EUR_GBP } from './__fixtures__/currencies'
+
+describe('Flow: …', () => {
+    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
+    afterEach(() => server.resetHandlers())
+    afterAll(() => server.close())
+
+    it('Given …, when …, then …', async () => {
+        server.use(mockListCurrencies({ response: USD_EUR_GBP }))
+        renderWithNavigation(SettingsCurrencyScreen, 'SettingsCurrency')
+        await waitFor(() =>
+            expect(
+                screen.getByTestId('settings_currency_item_usd'),
+            ).toBeTruthy(),
+        )
+    })
+})
+```
+
+Files under `apps/mobile/src/__integration__/` are picked up by the **integration** Vitest project (configured in `apps/mobile/vitest.config.ts`). Its setup file (`vitest.integration-setup.ts`) inherits the unit setup and then `vi.unmock`s the heavy `@perawallet/wallet-core-*` package mocks so flow tests exercise real domain code. Files outside `__integration__/` belong to the **unit** project and keep the speed-oriented mocks intact.
+
+If a flow test needs the real implementation of a package not yet in the unmock list, add a single line to `apps/mobile/vitest.integration-setup.ts` rather than putting `vi.unmock` in the test file. `@perawallet/wallet-extension-*` packages stay mocked — they hit MMKV / biometrics / secure storage that only work on a real device.
+
+### Quirks to know
+
+- **Assert with `getByTestId`**, not `getByText`. The global PW component mocks pass `title` etc. as DOM attributes, not text content.
+- **For text inputs use `fireEvent.change(input, { target: { value: '…' } })`**. `fireEvent.changeText` is `@testing-library/react-native`-only and doesn't exist on the DOM testing library this project uses via react-native-web.
+- **`@react-navigation/*` is auto-replaced** for integration tests with the in-memory test navigator. `navigation.navigate(name, params)` and `navigation.goBack()` actually work — register additional screens via `renderWithNavigation(Screen, 'Name', { additionalScreens: [{ name: 'B', component: ScreenB }, ...] })` and assert on the screen that renders after a transition.
+
+### MSW handler factories
+
+Each domain package owns thin MSW handler factories co-located with its endpoint definitions:
+
+```
+packages/<domain>/
+├── src/
+│   ├── api/<resource>/
+│   │   ├── endpoints.ts          # production REST client
+│   │   └── handlers.ts           # MSW factories (test-only)
+│   └── test-handlers.ts          # barrel — never imported by prod code
+```
+
+Factories take `{ response, status?, …path-params }` and return an `HttpHandler`. **No defaults** — callers (tests or `__fixtures__/`) supply the data:
+
+```typescript
+export const mockListCurrencies = ({ response, status = 200 }: …): HttpHandler =>
+    http.get('*/v1/currencies/', () => HttpResponse.json(response, { status }))
+```
+
+Tests import via the test-only sub-export `@perawallet/wallet-core-<domain>/test-handlers`, wired through `apps/mobile/vitest.config.ts` aliases and `apps/mobile/tsconfig.json` paths. The sub-export does NOT exist in `package.json#exports` — that's intentional, so production code can't reach it.
+
+### Adding a new handler factory
+
+1. Write `packages/<domain>/src/api/<resource>/handlers.ts` next to `endpoints.ts`.
+2. Re-export from `packages/<domain>/src/test-handlers.ts`.
+3. If the package has no other handlers yet:
+    - Add `"msw": "catalog:"` to its `devDependencies`.
+    - Confirm its `vite.config.ts` dts plugin excludes `**/{handlers,*-handlers}.ts` (this is the standard pattern across the repo).
+4. For mobile imports: add a deep alias `@perawallet/wallet-core-<domain>/test-handlers` in `apps/mobile/vitest.config.ts` **before** the package's main alias, plus a matching entry in `apps/mobile/tsconfig.json` `paths`.
+5. Run `pnpm build && pnpm lint:bundle` — the leak guard greps every `dist/` for msw imports and fails CI if a handler accidentally enters the prod bundle.
+
+### Fixtures
+
+Fixture data (named scenarios like `USD_EUR_GBP`, `JPY_ONLY`) lives in `apps/mobile/src/__integration__/__fixtures__/<domain>.ts`. Name fixtures after the shape they describe, not the test that uses them — the same fixture should be reusable across tests.

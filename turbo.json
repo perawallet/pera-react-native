@@ -35,9 +35,6 @@
     },
     "lint": {},
     "test": {
-      "dependsOn": [
-        "^build"
-      ],
       "outputs": [
         "coverage/**"
       ],
@@ -45,7 +42,9 @@
         "src/**/*.ts",
         "src/**/*.tsx",
         "src/**/*.test.ts",
-        "src/**/*.test.tsx"
+        "src/**/*.test.tsx",
+        "vitest.config.ts",
+        "vitest.setup.ts"
       ]
     },
     "test:watch": {

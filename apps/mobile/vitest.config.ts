@@ -12,6 +12,7 @@
 
 import { defineConfig } from 'vitest/config'
 import { coverageConfig } from '@perawallet/wallet-core-devtools/vitest/coverage'
+import { poolConfig } from '@perawallet/wallet-core-devtools/vitest/pool'
 import react from '@vitejs/plugin-react'
 import svgr from 'vite-plugin-svgr'
 import path from 'path'
@@ -91,6 +92,24 @@ export default defineConfig({
             },
             { find: '@', replacement: path.resolve(__dirname, './src') },
             {
+                // The `/test-utils` sub-export is consumed by msw-handlers
+                // files across packages (validateMockResponse / -Request).
+                // Aliased to source so changes don't require rebuilding the
+                // shared package's dist between iterations.
+                find: '@perawallet/wallet-core-shared/test-utils',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/shared/src/test-utils/index.ts',
+                ),
+            },
+            {
+                find: '@perawallet/wallet-core-shared/test-handlers',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/shared/src/test-handlers.ts',
+                ),
+            },
+            {
                 find: '@perawallet/wallet-core-shared',
                 replacement: path.resolve(
                     __dirname,
@@ -98,10 +117,52 @@ export default defineConfig({
                 ),
             },
             {
+                // Replace the throwing production stub with an in-memory test
+                // implementation so flow tests can exercise real platform-aware
+                // code paths (key-value storage, biometrics opt-in, etc.).
+                // See apps/mobile/src/test-utils/platform-driver-test.ts.
                 find: '@perawallet/wallet-extension-platform-driver',
                 replacement: path.resolve(
                     __dirname,
-                    '../../extensions/platform-driver/src/index.ts',
+                    './src/test-utils/platform-driver-test.ts',
+                ),
+            },
+            {
+                // In-memory replacement for the MMKV+AES-GCM React-Native
+                // keystore. Lets `kms` run end-to-end (commit/remove/clear/
+                // export) without native crypto deps.
+                // See apps/mobile/src/test-utils/algorand-keystore-test.ts.
+                find: '@algorandfoundation/react-native-keystore',
+                replacement: path.resolve(
+                    __dirname,
+                    './src/test-utils/algorand-keystore-test.ts',
+                ),
+            },
+            {
+                // Ledger BLE/USB extensions transitively load native bluetooth
+                // libraries that don't parse under jsdom. Stub at the
+                // extension boundary; HW-wallet tests can override per-test.
+                find: '@perawallet/wallet-extension-ledger-react-native-usb',
+                replacement: path.resolve(
+                    __dirname,
+                    './src/test-utils/ledger-extension-stub.ts',
+                ),
+            },
+            {
+                // Platform-agnostic types/errors/constants — safe to alias
+                // straight to source. MUST come before the main package alias
+                // below so prefix matching doesn't shadow it.
+                find: '@perawallet/wallet-extension-ledger-react-native/protocol',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../extensions/ledger-react-native/src/protocol.ts',
+                ),
+            },
+            {
+                find: '@perawallet/wallet-extension-ledger-react-native',
+                replacement: path.resolve(
+                    __dirname,
+                    './src/test-utils/ledger-extension-stub.ts',
                 ),
             },
             {
@@ -119,6 +180,13 @@ export default defineConfig({
                 ),
             },
             {
+                find: '@perawallet/wallet-core-accounts/test-handlers',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/accounts/src/test-handlers.ts',
+                ),
+            },
+            {
                 find: '@perawallet/wallet-core-accounts',
                 replacement: path.resolve(
                     __dirname,
@@ -133,10 +201,24 @@ export default defineConfig({
                 ),
             },
             {
+                find: '@perawallet/wallet-core-assets/test-handlers',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/assets/src/test-handlers.ts',
+                ),
+            },
+            {
                 find: '@perawallet/wallet-core-assets',
                 replacement: path.resolve(
                     __dirname,
                     '../../packages/assets/src/index.ts',
+                ),
+            },
+            {
+                find: '@perawallet/wallet-core-blockchain/test-handlers',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/blockchain/src/test-handlers.ts',
                 ),
             },
             {
@@ -151,6 +233,15 @@ export default defineConfig({
                 replacement: path.resolve(
                     __dirname,
                     '../../packages/config/src/index.ts',
+                ),
+            },
+            {
+                // More specific deep-import alias must come BEFORE the
+                // package's main alias so prefix matching doesn't shadow it.
+                find: '@perawallet/wallet-core-currencies/test-handlers',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/currencies/src/test-handlers.ts',
                 ),
             },
             {
@@ -189,6 +280,13 @@ export default defineConfig({
                 ),
             },
             {
+                find: '@perawallet/wallet-core-transactions/test-handlers',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/transactions/src/test-handlers.ts',
+                ),
+            },
+            {
                 find: '@perawallet/wallet-core-transactions',
                 replacement: path.resolve(
                     __dirname,
@@ -196,10 +294,24 @@ export default defineConfig({
                 ),
             },
             {
+                find: '@perawallet/wallet-core-swaps/test-handlers',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/swaps/src/test-handlers.ts',
+                ),
+            },
+            {
                 find: '@perawallet/wallet-core-swaps',
                 replacement: path.resolve(
                     __dirname,
                     '../../packages/swaps/src/index.ts',
+                ),
+            },
+            {
+                find: '@perawallet/wallet-core-polling/test-handlers',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/polling/src/test-handlers.ts',
                 ),
             },
             {
@@ -238,10 +350,24 @@ export default defineConfig({
                 ),
             },
             {
+                find: '@perawallet/wallet-core-messages/test-handlers',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/messages/src/test-handlers.ts',
+                ),
+            },
+            {
                 find: '@perawallet/wallet-core-messages',
                 replacement: path.resolve(
                     __dirname,
                     '../../packages/messages/src/index.ts',
+                ),
+            },
+            {
+                find: '@perawallet/wallet-core-device/test-handlers',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/device/src/test-handlers.ts',
                 ),
             },
             {
@@ -256,6 +382,13 @@ export default defineConfig({
                 replacement: path.resolve(
                     __dirname,
                     '../../packages/remote-config/src/index.ts',
+                ),
+            },
+            {
+                find: '@perawallet/wallet-core-staking/test-handlers',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/staking/src/test-handlers.ts',
                 ),
             },
             {
@@ -317,13 +450,40 @@ export default defineConfig({
         },
         globals: true,
         environment: 'jsdom',
-        pool: 'threads',
-        fileParallelism: false,
-        setupFiles: ['./vitest.setup.ts'],
         server: {
             deps: {
                 inline: [/@react-navigation/, /react-native-ratings/],
             },
         },
+        // Two projects so unit and integration tests get different setup
+        // files. The integration project's setup unmocks the heavy
+        // @perawallet/wallet-core-* package mocks so flow tests exercise real
+        // domain code; unit tests keep the speed-oriented mocks.
+        projects: [
+            {
+                extends: true,
+                test: {
+                    name: 'unit',
+                    setupFiles: ['./vitest.setup.ts'],
+                    exclude: [
+                        '**/node_modules/**',
+                        '**/dist/**',
+                        '**/__integration__/**',
+                    ],
+                },
+            },
+            {
+                extends: true,
+                test: {
+                    name: 'integration',
+                    setupFiles: [
+                        './vitest.setup.ts',
+                        './vitest.integration-setup.ts',
+                    ],
+                    include: ['src/__integration__/**/*.{test,spec}.{ts,tsx}'],
+                },
+            },
+        ],
     },
+    ...poolConfig,
 })
