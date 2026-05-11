@@ -22,6 +22,6 @@
     "@perawallet/wallet-core-devtools": "workspace:*",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vite-plugin-dts": "^4.5.4"
+    "vite-plugin-dts": "^5.0.0"
   }
 }

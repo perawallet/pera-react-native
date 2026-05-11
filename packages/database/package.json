@@ -33,7 +33,7 @@
     "drizzle-kit": "^0.31.10",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vite-plugin-dts": "^4.5.4",
+    "vite-plugin-dts": "^5.0.0",
     "vitest": "catalog:",
     "@perawallet/wallet-core-devtools": "workspace:*"
   }
