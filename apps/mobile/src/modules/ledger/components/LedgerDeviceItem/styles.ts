@@ -12,6 +12,8 @@
 
 import { makeStyles } from '@rneui/themed'
 
+import { palette } from '@theme/colors'
+
 const ICON_CONTAINER_SIZE = 40
 
 export const useStyles = makeStyles(theme => ({
@@ -24,7 +26,7 @@ export const useStyles = makeStyles(theme => ({
         borderRadius: theme.borderRadius.md,
         marginHorizontal: theme.spacing.xl,
         marginBottom: theme.spacing.md,
-        shadowColor: '#000',
+        shadowColor: palette.black,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.08,
         shadowRadius: 4,
