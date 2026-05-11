@@ -189,9 +189,7 @@ describe('useImportAccountOptionsScreen', () => {
             ledgerOption.onPress()
         })
 
-        expect(mockPush).toHaveBeenCalledWith('LedgerInstructions', {
-            transportType: 'ble',
-        })
+        expect(mockPush).toHaveBeenCalledWith('LedgerPair')
     })
 
     it('Ledger USB option navigates to LedgerInstructions with usb transportType on Android', () => {

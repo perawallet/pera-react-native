@@ -130,9 +130,7 @@ describe('ImportAccountOptionsScreen', () => {
         )
         fireEvent.click(ledgerButton)
 
-        expect(mockPush).toHaveBeenCalledWith('LedgerInstructions', {
-            transportType: 'ble',
-        })
+        expect(mockPush).toHaveBeenCalledWith('LedgerPair')
     })
 
     it('does not render the USB option on iOS', () => {
