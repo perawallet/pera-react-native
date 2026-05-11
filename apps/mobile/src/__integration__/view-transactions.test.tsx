@@ -202,14 +202,20 @@ describe('Flow: View transactions → tap into details', () => {
             // The TransactionListItem renders its title via
             // `getTitle()` which keys off direction relative to the
             // selected account. Our seeded `TX_PAYMENT` has the
-            // selected account as sender → 'Send'. The asset-transfer
-            // tx has the selected account as receiver → 'Receive'.
+            // selected account as sender → 'send'. The asset-transfer
+            // tx has the selected account as receiver → 'receive'.
             // Both rows should mount once the DB read settles.
+            // i18n isn't initialized under the integration setup, so
+            // `t()` falls through to the raw key — assert against the
+            // key, matching the convention used by the other flow tests.
+            const SEND_LABEL = 'transactions.list_item.send'
+            const RECEIVE_LABEL = 'transactions.list_item.receive'
             await waitFor(
                 () => {
                     expect(
                         screen.queryAllByText(
-                            (_, node) => (node?.textContent ?? '') === 'Send',
+                            (_, node) =>
+                                (node?.textContent ?? '') === SEND_LABEL,
                         ).length,
                     ).toBeGreaterThan(0)
                 },
@@ -217,15 +223,15 @@ describe('Flow: View transactions → tap into details', () => {
             )
             expect(
                 screen.queryAllByText(
-                    (_, node) => (node?.textContent ?? '') === 'Receive',
+                    (_, node) => (node?.textContent ?? '') === RECEIVE_LABEL,
                 ).length,
             ).toBeGreaterThan(0)
 
-            // Tap the 'Send' row (the payment) — walk to its wrapping
+            // Tap the send row (the payment) — walk to its wrapping
             // button. Multiple matches by text walker because
             // ancestors also satisfy the substring; we need the leaf.
             const matches = screen.queryAllByText(
-                (_, node) => (node?.textContent ?? '') === 'Send',
+                (_, node) => (node?.textContent ?? '') === SEND_LABEL,
             )
             const leaf =
                 matches.find(el => el.children.length === 0) ?? matches[0]

@@ -35,8 +35,9 @@ import {
     screen,
     waitFor,
 } from '@testing-library/react'
+import { QueryClientProvider } from '@tanstack/react-query'
 
-import { render } from '@test-utils/render'
+import { createTestQueryClient, render } from '@test-utils/render'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { walletConnectClientStub } from '@test-utils/walletconnect-client-stub'
 import {
@@ -72,6 +73,17 @@ const SIGNING_ACCOUNT_B: WalletAccount = {
 
 const SLOW_TEST_TIMEOUT_MS = 30000
 
+// `useWalletConnect` mounts the signing pipeline, which now reads from
+// React-Query via `useMultisigTransportAdapters`. `renderHook` creates a
+// fresh React tree separate from the one set up by `render()`, so it
+// needs its own QueryClientProvider.
+const hookQueryClient = createTestQueryClient()
+const HookWrapper = ({ children }: { children: React.ReactNode }) => (
+    <QueryClientProvider client={hookQueryClient}>
+        {children}
+    </QueryClientProvider>
+)
+
 // Drive a fake dApp `session_request`. Returns the connector the
 // wallet's `connect()` call instantiated, so callers can assert on
 // `approveSession` / `rejectSession` afterwards. `chainId` is omitted
@@ -84,7 +96,10 @@ const driveSessionRequest = async (
 ) => {
     // Fire the public connect API. This is what the deep-link / QR
     // scan paths call once the URI is parsed.
-    const { result: wc } = renderHook(() => useWalletConnect(Networks.mainnet))
+    const { result: wc } = renderHook(
+        () => useWalletConnect(Networks.mainnet),
+        { wrapper: HookWrapper },
+    )
     await act(async () => {
         await wc.current.connect({
             connection: {
@@ -405,8 +420,9 @@ describe('Flow: WalletConnect v1 pair → approve session', () => {
             // Now drive disconnect (`triggerDisconnect = true` matches the
             // settings-page "Disconnect" CTA, which is the user-initiated
             // path).
-            const { result: wc } = renderHook(() =>
-                useWalletConnect(Networks.mainnet),
+            const { result: wc } = renderHook(
+                () => useWalletConnect(Networks.mainnet),
+                { wrapper: HookWrapper },
             )
             await act(async () => {
                 await wc.current.disconnect(connector.clientId, true)
