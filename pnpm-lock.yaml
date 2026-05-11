@@ -369,6 +369,9 @@ importers:
       '@sbaiahmed1/react-native-biometrics':
         specifier: ^0.15.0
         version: 0.15.0(react-native@0.83.4(@babel/core@7.29.0)(@react-native/metro-config@0.85.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.5))(react@19.2.5)
+      '@scure/bip39':
+        specifier: 'catalog:'
+        version: 2.0.1
       '@tanstack/query-async-storage-persister':
         specifier: 'catalog:'
         version: 5.99.0
