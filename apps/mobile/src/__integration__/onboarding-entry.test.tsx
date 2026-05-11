@@ -55,9 +55,7 @@ describe('Flow: Onboarding entry', () => {
         // Tapping "Import account" pushes the ImportAccountOptions screen,
         // where the user picks "Recover Wallet" to open the HD/Algo25 sheet.
         await waitFor(() =>
-            screen.getByTestId(
-                'import_account_options_recover_wallet_button',
-            ),
+            screen.getByTestId('import_account_options_recover_wallet_button'),
         )
 
         fireEvent.click(
