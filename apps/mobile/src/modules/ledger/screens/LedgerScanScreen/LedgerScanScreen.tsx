@@ -33,7 +33,6 @@ export const LedgerScanScreen = () => {
     const navigation = useNavigation()
     const {
         devices,
-        isScanning: _isScanning,
         error,
         connectingDevice,
         handleDevicePress,
@@ -90,7 +89,7 @@ export const LedgerScanScreen = () => {
         <PWView style={styles.container}>
             <PWView style={styles.header}>
                 <PWView style={styles.icon}>
-                    <LedgerCompositeIcon state='idle' />
+                    <LedgerCompositeIcon />
                 </PWView>
                 <PWText
                     variant='h1'

@@ -20,7 +20,6 @@ import { useLedgerConnection } from '../../hooks'
 
 type UseLedgerScanScreenResult = {
     devices: HardwareWalletDevice[]
-    isScanning: boolean
     error: Nullable<Error>
     connectingDevice: Nullable<HardwareWalletDevice>
     handleDevicePress: (device: HardwareWalletDevice) => void
@@ -33,8 +32,7 @@ type UseLedgerScanScreenResult = {
 export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
     const { t } = useLanguage()
     const navigation = useAppNavigation()
-    const { devices, isScanning, startScan, stopScan, error } =
-        useLedgerConnection()
+    const { devices, startScan, stopScan, error } = useLedgerConnection()
     const [connectingDevice, setConnectingDevice] =
         useState<Nullable<HardwareWalletDevice>>(null)
     const cancelledRef = useRef(false)
@@ -82,7 +80,6 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
 
     return {
         devices,
-        isScanning,
         error,
         connectingDevice,
         handleDevicePress,

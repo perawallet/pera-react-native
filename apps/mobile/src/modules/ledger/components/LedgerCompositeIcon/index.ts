@@ -11,7 +11,4 @@
  */
 
 export { LedgerCompositeIcon } from './LedgerCompositeIcon'
-export type {
-    LedgerCompositeIconProps,
-    LedgerCompositeIconState,
-} from './LedgerCompositeIcon'
+export type { LedgerCompositeIconProps } from './LedgerCompositeIcon'

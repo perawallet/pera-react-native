@@ -22,15 +22,4 @@ describe('LedgerCompositeIcon', () => {
         expect(screen.getByTestId('composite-dots')).toBeTruthy()
         expect(screen.getByTestId('composite-ledger')).toBeTruthy()
     })
-
-    it('accepts a state prop without crashing', () => {
-        render(
-            <LedgerCompositeIcon
-                state='connecting'
-                testID='composite'
-            />,
-        )
-
-        expect(screen.getByTestId('composite-phone')).toBeTruthy()
-    })
 })

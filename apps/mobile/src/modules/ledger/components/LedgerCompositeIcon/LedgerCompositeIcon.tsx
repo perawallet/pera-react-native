@@ -13,17 +13,13 @@
 import { PWView, PWIcon } from '@components/core'
 import { useStyles } from './styles'
 
-export type LedgerCompositeIconState = 'idle' | 'connecting'
-
 export type LedgerCompositeIconProps = {
-    state?: LedgerCompositeIconState
     testID?: string
 }
 
 const DOT_COUNT = 4
 
 export const LedgerCompositeIcon = ({
-    state: _state = 'idle',
     testID,
 }: LedgerCompositeIconProps) => {
     const styles = useStyles()

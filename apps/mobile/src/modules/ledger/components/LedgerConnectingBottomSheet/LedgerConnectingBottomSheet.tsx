@@ -35,7 +35,7 @@ export const LedgerConnectingBottomSheet = ({
             enableCloseOnBackdropPress={false}
         >
             <PWView style={styles.container}>
-                <LedgerCompositeIcon state='connecting' />
+                <LedgerCompositeIcon />
                 <PWText
                     variant='h3'
                     style={styles.title}
