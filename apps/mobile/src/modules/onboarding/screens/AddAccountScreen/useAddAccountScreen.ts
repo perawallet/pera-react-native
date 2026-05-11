@@ -12,6 +12,7 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useIsMounted } from '@hooks/useIsMounted'
 import {
     useCreateAccount,
     useCreateNextHDAccount,
@@ -29,6 +30,7 @@ import { type AccountOption } from '@modules/onboarding/types'
 
 export const useAddAccountScreen = () => {
     const navigation = useAppNavigation()
+    const isMounted = useIsMounted()
     const { createHdWalletAccount, createAlgo25WalletAccount } =
         useCreateAccount()
     const { createNextHDAccount, hasHDWallet } = useCreateNextHDAccount()
@@ -65,10 +67,12 @@ export const useAddAccountScreen = () => {
         deferToNextCycle(async () => {
             try {
                 const newAccount = await createNextHDAccount()
+                if (!isMounted()) return
                 if (newAccount) {
                     navigation.push('NameAccount', { account: newAccount })
                 }
             } catch (error) {
+                if (!isMounted()) return
                 // guardrails-ignore-next-line no-error-toast-in-catch reason: localized create_account.error_message wraps the raw error; preserved verbatim
                 showToast({
                     title: t('onboarding.create_account.error_title'),
@@ -78,10 +82,11 @@ export const useAddAccountScreen = () => {
                     type: 'error',
                 })
             } finally {
-                closeCreatingAccount()
+                if (isMounted()) closeCreatingAccount()
             }
         })
     }, [
+        isMounted,
         hasHDWallet,
         hasMultipleHDWallets,
         createNextHDAccount,
@@ -129,8 +134,10 @@ export const useAddAccountScreen = () => {
                     account: 0,
                     keyIndex: 0,
                 })
+                if (!isMounted()) return
                 navigation.push('NameAccount', { account: newAccount })
             } catch (error) {
+                if (!isMounted()) return
                 // guardrails-ignore-next-line no-error-toast-in-catch reason: localized create_account.error_message wraps the raw error; preserved verbatim
                 showToast({
                     title: t('onboarding.create_account.error_title'),
@@ -140,10 +147,11 @@ export const useAddAccountScreen = () => {
                     type: 'error',
                 })
             } finally {
-                closeCreatingAccount()
+                if (isMounted()) closeCreatingAccount()
             }
         })
     }, [
+        isMounted,
         openCreatingAccount,
         closeCreatingAccount,
         createHdWalletAccount,
@@ -157,8 +165,10 @@ export const useAddAccountScreen = () => {
         deferToNextCycle(async () => {
             try {
                 const newAccount = await createAlgo25WalletAccount({})
+                if (!isMounted()) return
                 navigation.push('NameAccount', { account: newAccount })
             } catch (error) {
+                if (!isMounted()) return
                 // guardrails-ignore-next-line no-error-toast-in-catch reason: localized create_account.error_message wraps the raw error; preserved verbatim
                 showToast({
                     title: t('onboarding.create_account.error_title'),
@@ -168,10 +178,11 @@ export const useAddAccountScreen = () => {
                     type: 'error',
                 })
             } finally {
-                closeCreatingAccount()
+                if (isMounted()) closeCreatingAccount()
             }
         })
     }, [
+        isMounted,
         openCreatingAccount,
         closeCreatingAccount,
         createAlgo25WalletAccount,

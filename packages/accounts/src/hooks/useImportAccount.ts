@@ -14,7 +14,9 @@ import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useCreateAccount } from './useCreateAccount'
 import { useHDImportSession } from './useHDImportSession'
+import { useAllAccounts } from './useAllAccounts'
 import { ImportAccountType, WalletAccount } from '../models'
+import { DuplicateAccountError } from '../errors'
 
 export type ImportHDPendingResult = {
     type: 'hdWallet'
@@ -25,9 +27,10 @@ export type ImportHDPendingResult = {
 export type ImportAccountResult = WalletAccount | ImportHDPendingResult
 
 export const useImportAccount = () => {
-    const { createAlgo25Key } = useKMS()
+    const { createAlgo25Key, deleteKey } = useKMS()
     const { createAlgo25WalletAccount } = useCreateAccount()
     const { prepareImport } = useHDImportSession()
+    const allAccounts = useAllAccounts()
 
     return async ({
         mnemonic,
@@ -42,7 +45,27 @@ export const useImportAccount = () => {
             })
             return { type: 'hdWallet', walletKeyId, derivationType }
         }
+        // Algo25: derive the key, then check whether the wallet already holds
+        // this address before persisting the account. If it does, roll back
+        // the keystore key we just minted so the keystore doesn't accumulate
+        // orphan entries on repeated re-import attempts.
+        //
+        // HD imports get the same protection at the selection screen — see
+        // useImportSelectAddressesScreen, which filters already-imported
+        // addresses out of the selectable set.
         const { keyPair } = await createAlgo25Key({ mnemonic })
+        const isDuplicate = allAccounts.some(
+            a => a.address === keyPair.publicKey,
+        )
+        if (isDuplicate && keyPair.id) {
+            try {
+                await deleteKey(keyPair.id)
+            } catch {
+                // Best-effort cleanup; don't shadow the duplicate error
+                // with a keystore-removal failure.
+            }
+            throw new DuplicateAccountError(keyPair.publicKey)
+        }
         return await createAlgo25WalletAccount({ keyPair })
     }
 }

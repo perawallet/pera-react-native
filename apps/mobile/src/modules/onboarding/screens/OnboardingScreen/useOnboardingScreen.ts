@@ -12,6 +12,7 @@
 
 import { useCallback } from 'react'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useIsMounted } from '@hooks/useIsMounted'
 import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
 import { useModalState } from '@hooks/useModalState'
@@ -21,14 +22,18 @@ import { deferToNextCycle } from '@perawallet/wallet-core-shared'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 
-export const useOnboardingScreen = () => {
+type UseOnboardingScreenResult = {
+    handleTermsPress: () => void
+    handlePrivacyPress: () => void
+    handleCreateAccount: () => void
+    handleImportAccount: () => void
+    isCreatingAccount: boolean
+}
+
+export const useOnboardingScreen = (): UseOnboardingScreenResult => {
     const navigation = useAppNavigation()
+    const isMounted = useIsMounted()
     const { pushWebView } = useWebView()
-    const {
-        isOpen: isImportOptionsVisible,
-        open: openImportOptions,
-        close: closeImportOptions,
-    } = useModalState()
     const {
         isOpen: isCreatingAccount,
         open: openCreatingAccount,
@@ -62,8 +67,10 @@ export const useOnboardingScreen = () => {
                     account: 0,
                     keyIndex: 0,
                 })
+                if (!isMounted()) return
                 navigation.push('NameAccount', { account: newAccount })
             } catch (error) {
+                if (!isMounted()) return
                 // guardrails-ignore-next-line no-error-toast-in-catch reason: localized create_account.error_message wraps the raw error; preserved verbatim
                 showToast({
                     title: t('onboarding.create_account.error_title'),
@@ -74,10 +81,11 @@ export const useOnboardingScreen = () => {
                 })
                 setIsOnboarding(false)
             } finally {
-                closeCreatingAccount()
+                if (isMounted()) closeCreatingAccount()
             }
         })
     }, [
+        isMounted,
         setIsOnboarding,
         openCreatingAccount,
         closeCreatingAccount,
@@ -87,27 +95,16 @@ export const useOnboardingScreen = () => {
         t,
     ])
 
-    const handleHDWalletPress = useCallback(() => {
-        closeImportOptions()
+    const handleImportAccount = useCallback(() => {
         setIsOnboarding(true)
-        navigation.push('ImportInfo', { accountType: 'hdWallet' })
-    }, [closeImportOptions, navigation, setIsOnboarding])
-
-    const handleAlgo25Press = useCallback(() => {
-        closeImportOptions()
-        setIsOnboarding(true)
-        navigation.push('ImportInfo', { accountType: 'algo25' })
-    }, [closeImportOptions, navigation, setIsOnboarding])
+        navigation.push('ImportAccountOptions')
+    }, [navigation, setIsOnboarding])
 
     return {
-        isImportOptionsVisible,
         handleTermsPress,
         handlePrivacyPress,
         handleCreateAccount,
-        handleImportAccount: openImportOptions,
-        handleCloseImportOptions: closeImportOptions,
-        handleHDWalletPress,
-        handleAlgo25Press,
+        handleImportAccount,
         isCreatingAccount,
     }
 }

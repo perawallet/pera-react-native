@@ -54,4 +54,5 @@ export const mapSignRequest = (
     failReasonDisplay: response.fail_reason_display,
     multisigAccount: mapMultiSigAccount(response.joint_account),
     transactionLists: response.transaction_lists.map(mapTransactionList),
+    proposerAddress: response.proposer_address ?? null,
 })

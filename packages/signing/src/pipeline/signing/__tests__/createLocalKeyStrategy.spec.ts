@@ -153,9 +153,10 @@ describe('createLocalKeyStrategy', () => {
                 onSigningComplete: vi.fn(),
                 onProgress: vi.fn(),
             }
+            const group = makeTransactionGroup()
 
             const result = await makeStrategy().sign(
-                makeTransactionGroup(),
+                group,
                 algo25Account,
                 callbacks,
             )
@@ -165,8 +166,51 @@ describe('createLocalKeyStrategy', () => {
             expect(callbacks.onProgress).toHaveBeenCalledWith(2, 2)
             expect(callbacks.onSigningComplete).toHaveBeenCalled()
             expect(result.signedData.type).toBe('transactions')
-            expect(result.signers).toEqual([{ address: 'ADDR' }])
+            // signatures are derived from each signed txn's `sig` field; the
+            // mock returns objects without `sig` so signatures are null.
+            // The cosign-signature population path is verified in its own
+            // test below.
+            expect(result.signers).toEqual([
+                { address: 'ADDR', signatures: [null, null] },
+            ])
             expect(result.originalIndices).toEqual([3, 4])
+            // The strategy must plumb the resolved auth account through to
+            // the local signer — without this, signing falls back to
+            // tx.sender lookup and breaks multisig cosign.
+            expect(signTransactions).toHaveBeenCalledWith(
+                group.data.type === 'transactions'
+                    ? group.data.transactions
+                    : undefined,
+                group.data.type === 'transactions'
+                    ? group.data.indicesToSign
+                    : undefined,
+                algo25Account,
+            )
+        })
+
+        test('populates signers[].signatures with base64-encoded sig bytes (multisig cosign feeds the backend from this)', async () => {
+            // Real KMS hooks return PeraSignedTransaction with `sig` set —
+            // the multisig cosign transport reads `signers[].signatures`
+            // (NOT `signedData`) when posting to /joint-accounts/.../responses.
+            // Without this, the request body is `signatures: [[]]` and the
+            // backend rejects with "Lengths of transaction list and
+            // signature list should be equal."
+            signTransactions.mockResolvedValue([
+                { txn: {}, sig: new Uint8Array([1, 2, 3]) },
+                { txn: {}, sig: new Uint8Array([4, 5, 6]) },
+            ])
+
+            const result = await makeStrategy().sign(
+                makeTransactionGroup(),
+                algo25Account,
+            )
+
+            expect(result.signers).toHaveLength(1)
+            expect(result.signers[0].address).toBe('ADDR')
+            expect(result.signers[0].signatures).toEqual([
+                Buffer.from([1, 2, 3]).toString('base64'),
+                Buffer.from([4, 5, 6]).toString('base64'),
+            ])
         })
 
         test('forwards error and wraps in SigningError', async () => {

@@ -488,6 +488,12 @@ export const useWalletConnectHandlers = () => {
                 sourceType: 'walletconnect',
                 transportId: connector.clientId,
                 txs: signableTxns,
+                // Carry the full pre-filter payload so the signing pipeline
+                // can validate atomic-group integrity. `txs` only holds this
+                // wallet's signable subset and can't recompute the group
+                // hash on its own (e.g. express-send shape: each side sees
+                // only half the group).
+                groupContext: allTxnObjects,
                 rawTransactionsBase64: signableRawTxns,
                 signerOverrides:
                     signerOverrides.size > 0 ? signerOverrides : undefined,

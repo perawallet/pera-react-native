@@ -20,7 +20,12 @@ export default defineConfig({
         react(),
         dts({
             include: ['src'],
-            exclude: ['**/__tests__/**', '**/*.test.ts', '**/*.test.tsx'],
+            exclude: [
+                '**/__tests__/**',
+                '**/*.test.ts',
+                '**/*.test.tsx',
+                '**/{handlers,*-handlers}.ts',
+            ],
             afterDiagnostic: diagnostics => {
                 if (diagnostics.length > 0) {
                     throw new Error(
@@ -53,7 +58,6 @@ export default defineConfig({
                 '@algorandfoundation/xhd-wallet-api',
                 'base32-encode',
                 'base64-js',
-                'bip39',
                 'decimal.js',
                 'ky',
                 'react-native-quick-base64',

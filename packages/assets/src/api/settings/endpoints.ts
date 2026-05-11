@@ -13,7 +13,7 @@
 import { queryClient, type Network } from '@perawallet/wallet-core-shared'
 import { z } from 'zod'
 
-const toggleStatusResponseSchema = z.object({
+export const toggleStatusResponseSchema = z.object({
     is_enabled: z.boolean(),
 })
 

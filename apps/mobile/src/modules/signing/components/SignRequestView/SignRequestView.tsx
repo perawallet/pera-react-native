@@ -18,7 +18,7 @@ import {
     NavigationContainer,
     NavigationIndependentTree,
 } from '@react-navigation/native'
-import { PWButton, PWView } from '@components/core'
+import { PWButton, PWTouchableIcon, PWView } from '@components/core'
 import { BaseErrorBoundary } from '@components/BaseErrorBoundary'
 import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
@@ -113,6 +113,11 @@ export const SignRequestView = ({ request }: SignRequestViewProps) => {
         )
     }
 
+    const isMultisigCosign = request.sourceType === 'multisig-cosign'
+    const handleClose = () => {
+        removeSignRequest(request)
+    }
+
     return (
         <BaseErrorBoundary
             t={t}
@@ -130,6 +135,16 @@ export const SignRequestView = ({ request }: SignRequestViewProps) => {
                         <SigningRoutes request={request} />
                     </NavigationContainer>
                 </NavigationIndependentTree>
+                {isMultisigCosign && (
+                    <PWTouchableIcon
+                        name='cross'
+                        size='md'
+                        variant='primary'
+                        onPress={handleClose}
+                        containerStyle={styles.closeButton}
+                        testID='multisig_cosign_close_button'
+                    />
+                )}
             </PWView>
         </BaseErrorBoundary>
     )

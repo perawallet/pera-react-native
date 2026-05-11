@@ -21,6 +21,7 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
         (addr: string) => `${addr.slice(0, 5)}...${addr.slice(-5)}`,
     ),
     formatRelativeTime: vi.fn(() => 'just now'),
+    formatTimeRemaining: vi.fn(() => '52m'),
 }))
 
 vi.mock('react-i18next', () => ({
@@ -128,6 +129,7 @@ describe('InboxItem', () => {
                 createdAt: new Date('2025-01-20T00:00:00Z'),
                 expectedExpireDatetime: new Date('2025-01-21T00:00:00Z'),
                 failReasonDisplay: null,
+                proposerAddress: null,
                 multisigAccount: {
                     customId: 'msig-1',
                     createdAt: new Date('2025-01-10T00:00:00Z'),
@@ -141,9 +143,9 @@ describe('InboxItem', () => {
             createdAt: new Date('2025-01-20T00:00:00Z'),
         }
 
-        const { getByText, getByTestId } = render(<InboxItem item={item} />)
-        expect(getByText('messages.inbox.multisig_sign')).toBeTruthy()
-        expect(getByText('pending')).toBeTruthy()
+        const { getByTestId } = render(<InboxItem item={item} />)
+        expect(getByTestId('multisig_sign_inbox_item')).toBeTruthy()
+        expect(getByTestId('multisig_sign_inbox_item_status')).toBeTruthy()
         expect(getByTestId('unread_indicator_dot')).toBeTruthy()
     })
 
@@ -157,6 +159,7 @@ describe('InboxItem', () => {
                 createdAt: new Date('2025-01-20T00:00:00Z'),
                 expectedExpireDatetime: new Date('2025-01-21T00:00:00Z'),
                 failReasonDisplay: null,
+                proposerAddress: null,
                 multisigAccount: {
                     customId: 'msig-1',
                     createdAt: new Date('2025-01-10T00:00:00Z'),
@@ -207,7 +210,7 @@ describe('InboxItem', () => {
         expect(getByTestId('icon-accounts/light/multisig-account')).toBeTruthy()
     })
 
-    it('renders edit-pen icon for sign requests', () => {
+    it('renders multisig-account avatar for sign requests', () => {
         const signItem: InboxItemModel = {
             type: 'multisig_sign',
             data: {
@@ -217,6 +220,7 @@ describe('InboxItem', () => {
                 createdAt: new Date('2025-01-20T00:00:00Z'),
                 expectedExpireDatetime: new Date('2025-01-21T00:00:00Z'),
                 failReasonDisplay: null,
+                proposerAddress: null,
                 multisigAccount: {
                     customId: 'msig-1',
                     createdAt: new Date('2025-01-10T00:00:00Z'),
@@ -231,6 +235,6 @@ describe('InboxItem', () => {
         }
 
         const { getByTestId } = render(<InboxItem item={signItem} />)
-        expect(getByTestId('icon-edit-pen')).toBeTruthy()
+        expect(getByTestId('icon-accounts/light/multisig-account')).toBeTruthy()
     })
 })

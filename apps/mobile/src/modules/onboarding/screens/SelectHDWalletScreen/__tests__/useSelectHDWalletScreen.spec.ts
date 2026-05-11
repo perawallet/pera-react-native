@@ -16,11 +16,13 @@ import { useSelectHDWalletScreen } from '../useSelectHDWalletScreen'
 import type { HDWalletGroup } from '@perawallet/wallet-core-accounts'
 
 const mockPush = vi.fn()
+const mockReplace = vi.fn()
 const mockGoBack = vi.fn()
 
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({
         push: mockPush,
+        replace: mockReplace,
         goBack: mockGoBack,
     }),
 }))
@@ -109,6 +111,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
             hdWalletGroups: mockHDWalletGroups,
             hasMultipleHDWallets: true,
         }),
+        useAllAccounts: () => [],
         useCreateAccount: () => ({
             createHdWalletAccount: mockCreateHdWalletAccount,
         }),
@@ -155,16 +158,22 @@ describe('useSelectHDWalletScreen', () => {
         expect(result.current.isCreatingWallet).toBe(false)
     })
 
-    it('navigates to SearchAccounts when selecting a wallet', () => {
+    it('navigates to SearchAccounts when selecting a wallet', async () => {
+        const mockNewAccount = {
+            id: 'hd-new',
+            address: 'HD_NEW',
+            type: 'hdWallet' as const,
+        }
+        mockCreateHdWalletAccount.mockResolvedValue(mockNewAccount)
+
         const { result } = renderHook(() => useSelectHDWalletScreen())
 
-        act(() => {
+        await act(async () => {
             result.current.handleSelectWallet(mockHDWalletGroups[0])
         })
 
-        expect(mockPush).toHaveBeenCalledWith('SearchAccounts', {
-            account: mockHDWalletGroups[0].firstAccount,
-            createIfEmpty: true,
+        expect(mockReplace).toHaveBeenCalledWith('NameAccount', {
+            account: mockNewAccount,
         })
     })
 

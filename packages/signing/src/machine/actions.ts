@@ -128,6 +128,19 @@ const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
         return { type: 'local' }
     }
 
+    if (sourceType === 'multisig-cosign') {
+        if (!request.signRequestId) {
+            throw new Error(
+                'multisig-cosign request requires signRequestId on the SignRequest',
+            )
+        }
+        return {
+            type: 'multisig-cosign',
+            signRequestId: request.signRequestId,
+            requestId: request.transportId ?? request.id,
+        }
+    }
+
     // Local+callback and external sources both deliver via callbacks.
     // Wrap the typed request callback into the generic SourceCallbacks shape.
     let approveCallback: SourceCallbacks['approve']
@@ -202,7 +215,12 @@ const buildSignableGroups = (
     const source = buildSourceMetadata(request)
 
     if (isTransactionRequest(request)) {
-        validateTransactionGroupIntegrity(request.txs)
+        // Validate atomic-group integrity over the full payload. External
+        // sources that filter `txs` down to the wallet's signable subset
+        // (WalletConnect) supply the original array via `groupContext`.
+        // Internal sources where `txs` is already the full group leave
+        // `groupContext` unset and we fall back to `txs`.
+        validateTransactionGroupIntegrity(request.groupContext ?? request.txs)
 
         const knownAddresses = new Set(allAccounts.map(a => a.address))
         const rawBytes = request.rawTransactionsBase64

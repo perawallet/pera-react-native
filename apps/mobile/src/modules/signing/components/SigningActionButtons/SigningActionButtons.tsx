@@ -12,6 +12,7 @@
 
 import { PWButton, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import { MultisigDeclineButton } from '@modules/multisig/components/MultisigDeclineButton'
 import { useStyles } from './styles'
 import { useSigningActionButtons } from './useSigningActionButtons'
 import { SecurityGuardBottomSheet } from '../SecurityGuardBottomSheet'
@@ -29,18 +30,30 @@ export const SigningActionButtons = () => {
         handleSecurityGuardConfirm,
         handleSecurityGuardGoToSettings,
         closeSecurityGuard,
+        currentRequest,
+        isMultisigCosign,
+        cosignSignerAddress,
     } = useSigningActionButtons()
 
     return (
         <PWView style={styles.container}>
             <PWView style={styles.buttonContainer}>
-                <PWButton
-                    title={t('common.cancel.label')}
-                    variant='secondary'
-                    onPress={handleReject}
-                    isDisabled={isLoading}
-                    style={styles.button}
-                />
+                {isMultisigCosign && currentRequest && cosignSignerAddress ? (
+                    <MultisigDeclineButton
+                        request={currentRequest}
+                        signerAddress={cosignSignerAddress}
+                        isDisabled={isLoading}
+                        style={styles.button}
+                    />
+                ) : (
+                    <PWButton
+                        title={t('common.cancel.label')}
+                        variant='secondary'
+                        onPress={handleReject}
+                        isDisabled={isLoading}
+                        style={styles.button}
+                    />
+                )}
                 <PWButton
                     title={
                         hasMultipleTransactions

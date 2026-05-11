@@ -26,7 +26,13 @@ export type AccountFastLookupResponse = AccountFastLookup[]
 export const getAccountFastLookupEndpointPath = (address: string) =>
     `/v1/accounts/fast-lookup/${address}/`
 
-type RawFastLookupResponse = {
+/**
+ * Raw wire-format response for `/v1/accounts/fast-lookup/{address}/`.
+ * Exported so MSW handler factories in `msw-handlers.ts` stay coupled to
+ * the real shape — if the API contract drifts, this type changes and both
+ * the production fetcher and the mock break together.
+ */
+export type RawFastLookupResponse = {
     algo_value?: string
     usd_value?: string
     calculation_type?: string

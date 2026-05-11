@@ -17,87 +17,27 @@ import {
     NativeStackHeaderProps,
 } from '@react-navigation/native-stack'
 import { AddAccountScreen } from '@modules/onboarding/screens/AddAccountScreen'
-import { ImportAccountOptionsScreen } from '@modules/onboarding/screens/ImportAccountOptionsScreen'
 import { WatchInfoScreen } from '@modules/onboarding/screens/WatchInfoScreen'
 import { WatchAccountScreen } from '@modules/onboarding/screens/WatchAccountScreen'
-import { NameAccountScreen } from '@modules/onboarding/screens/NameAccountScreen'
-import { ImportAccountScreen } from '@modules/onboarding/screens/ImportAccountScreen'
-import { ImportInfoScreen } from '@modules/onboarding/screens/ImportInfoScreen'
-import { ImportSelectAddressesScreen } from '@modules/onboarding/screens/ImportSelectAddressesScreen'
-import { ImportRekeyedAddressesScreen } from '@modules/onboarding/screens/ImportRekeyedAddressesScreen'
-import { SearchAccountsScreen } from '@modules/onboarding/screens/SearchAccountsScreen'
 import { SelectHDWalletScreen } from '@modules/onboarding/screens/SelectHDWalletScreen'
-import {
-    LedgerInstructionsScreen,
-    LedgerScanScreen,
-    LedgerFetchAccountsScreen,
-    LedgerSelectAccountsScreen,
-    LedgerVerifyScreen,
-    LedgerTroubleshootingScreen,
-} from '@modules/ledger'
-import { AccountErrorBoundary } from '@modules/accounts/components/AccountErrorBoundary/AccountErrorBoundary'
-import { useLanguage } from '@hooks/useLanguage'
 import { screenListeners } from '@routes/listeners'
 import { fullScreenLayout } from '@layouts/index'
-import type React from 'react'
 
 import { AddAccountStackParamList } from './types'
-
-// Wrap screens with AccountErrorBoundary to catch account-related errors
-const withAccountErrorBoundary = <P extends object>(
-    WrappedComponent: React.ComponentType<P>,
-): React.ComponentType<P> => {
-    return (props: P) => {
-        const { t } = useLanguage()
-        return (
-            <AccountErrorBoundary t={t}>
-                <WrappedComponent {...props} />
-            </AccountErrorBoundary>
-        )
-    }
-}
+import {
+    renderImportFlowScreens,
+    withAccountErrorBoundary,
+    type ImportFlowStack,
+} from './shared-screens'
 
 const AddAccountScreenWithErrorBoundary =
     withAccountErrorBoundary(AddAccountScreen)
-const ImportAccountOptionsScreenWithErrorBoundary = withAccountErrorBoundary(
-    ImportAccountOptionsScreen,
-)
+const SelectHDWalletScreenWithErrorBoundary =
+    withAccountErrorBoundary(SelectHDWalletScreen)
 const WatchInfoScreenWithErrorBoundary =
     withAccountErrorBoundary(WatchInfoScreen)
 const WatchAccountScreenWithErrorBoundary =
     withAccountErrorBoundary(WatchAccountScreen)
-const NameAccountScreenWithErrorBoundary =
-    withAccountErrorBoundary(NameAccountScreen)
-const ImportAccountScreenWithErrorBoundary =
-    withAccountErrorBoundary(ImportAccountScreen)
-const ImportInfoScreenWithErrorBoundary =
-    withAccountErrorBoundary(ImportInfoScreen)
-const SearchAccountsScreenWithErrorBoundary =
-    withAccountErrorBoundary(SearchAccountsScreen)
-const ImportSelectAddressesScreenWithErrorBoundary = withAccountErrorBoundary(
-    ImportSelectAddressesScreen,
-)
-const ImportRekeyedAddressesScreenWithErrorBoundary = withAccountErrorBoundary(
-    ImportRekeyedAddressesScreen,
-)
-const SelectHDWalletScreenWithErrorBoundary =
-    withAccountErrorBoundary(SelectHDWalletScreen)
-const LedgerInstructionsScreenWithErrorBoundary = withAccountErrorBoundary(
-    LedgerInstructionsScreen,
-)
-const LedgerScanScreenWithErrorBoundary =
-    withAccountErrorBoundary(LedgerScanScreen)
-const LedgerFetchAccountsScreenWithErrorBoundary = withAccountErrorBoundary(
-    LedgerFetchAccountsScreen,
-)
-const LedgerSelectAccountsScreenWithErrorBoundary = withAccountErrorBoundary(
-    LedgerSelectAccountsScreen,
-)
-const LedgerVerifyScreenWithErrorBoundary =
-    withAccountErrorBoundary(LedgerVerifyScreen)
-const LedgerTroubleshootingScreenWithErrorBoundary = withAccountErrorBoundary(
-    LedgerTroubleshootingScreen,
-)
 
 const AddAccountStack = createNativeStackNavigator<AddAccountStackParamList>()
 
@@ -121,118 +61,23 @@ export const AddAccountStackNavigator = () => {
                 component={AddAccountScreenWithErrorBoundary}
             />
             <AddAccountStack.Screen
-                name='ImportAccountOptions'
-                options={{ title: '' }}
-                component={ImportAccountOptionsScreenWithErrorBoundary}
-            />
-            <AddAccountStack.Screen
                 name='SelectHDWallet'
-                options={{
-                    title: '',
-                }}
+                options={{ title: '' }}
                 component={SelectHDWalletScreenWithErrorBoundary}
             />
             <AddAccountStack.Screen
                 name='WatchInfo'
-                options={{
-                    title: '',
-                }}
+                options={{ title: '' }}
                 component={WatchInfoScreenWithErrorBoundary}
             />
             <AddAccountStack.Screen
                 name='WatchAccount'
-                options={{
-                    title: '',
-                }}
+                options={{ title: '' }}
                 component={WatchAccountScreenWithErrorBoundary}
             />
-            <AddAccountStack.Screen
-                name='NameAccount'
-                options={{
-                    title: '',
-                }}
-                component={NameAccountScreenWithErrorBoundary}
-            />
-            <AddAccountStack.Screen
-                name='ImportInfo'
-                options={{
-                    title: '',
-                }}
-                component={ImportInfoScreenWithErrorBoundary}
-            />
-            <AddAccountStack.Screen
-                name='ImportAccount'
-                options={{
-                    title: '',
-                }}
-                component={ImportAccountScreenWithErrorBoundary}
-            />
-            <AddAccountStack.Screen
-                name='SearchAccounts'
-                options={{
-                    headerShown: false,
-                }}
-                layout={fullScreenLayout}
-                component={SearchAccountsScreenWithErrorBoundary}
-            />
-            <AddAccountStack.Screen
-                name='ImportSelectAddresses'
-                options={{
-                    title: '',
-                }}
-                component={ImportSelectAddressesScreenWithErrorBoundary}
-            />
-            <AddAccountStack.Screen
-                name='ImportRekeyedAddresses'
-                options={{
-                    title: '',
-                }}
-                component={ImportRekeyedAddressesScreenWithErrorBoundary}
-            />
-            <AddAccountStack.Screen
-                name='LedgerInstructions'
-                options={{
-                    title: '',
-                }}
-                component={LedgerInstructionsScreenWithErrorBoundary}
-            />
-            <AddAccountStack.Screen
-                name='LedgerScan'
-                options={{
-                    title: '',
-                }}
-                component={LedgerScanScreenWithErrorBoundary}
-            />
-            <AddAccountStack.Screen
-                name='LedgerFetchAccounts'
-                options={{
-                    headerShown: false,
-                }}
-                layout={fullScreenLayout}
-                component={LedgerFetchAccountsScreenWithErrorBoundary}
-            />
-            <AddAccountStack.Screen
-                name='LedgerSelectAccounts'
-                options={{
-                    title: '',
-                }}
-                component={LedgerSelectAccountsScreenWithErrorBoundary}
-            />
-            <AddAccountStack.Screen
-                name='LedgerVerify'
-                options={{
-                    headerShown: false,
-                }}
-                layout={fullScreenLayout}
-                component={LedgerVerifyScreenWithErrorBoundary}
-            />
-            <AddAccountStack.Screen
-                name='LedgerTroubleshooting'
-                options={{
-                    title: '',
-                }}
-                component={LedgerTroubleshootingScreenWithErrorBoundary}
-            />
+            {renderImportFlowScreens(
+                AddAccountStack as unknown as ImportFlowStack,
+            )}
         </AddAccountStack.Navigator>
     )
 }

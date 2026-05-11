@@ -180,7 +180,49 @@ describe('OnboardingScreen', () => {
         })
     })
 
-    it('opens ImportOptionsBottomSheet and navigates to ImportInfo when an option is selected', () => {
+    it('does not navigate to NameAccount if the screen unmounts during account creation', async () => {
+        const mockAccount = {
+            id: 'test-id',
+            address: 'TEST_ADDRESS',
+            type: 'hdWallet' as const,
+            keyPairId: 'test-wallet-id',
+            hdWalletDetails: {
+                account: 0,
+                change: 0,
+                keyIndex: 0,
+                derivationType: 9,
+            },
+        }
+
+        let resolveCreate: (value: typeof mockAccount) => void = () => {}
+        mockCreateHdWalletAccount.mockImplementation(
+            () =>
+                new Promise<typeof mockAccount>(resolve => {
+                    resolveCreate = resolve
+                }),
+        )
+
+        const { unmount } = render(<OnboardingScreen />)
+
+        const createButton = screen.getByText(
+            'onboarding.main_screen.create_wallet',
+        )
+        fireEvent.click(createButton)
+
+        unmount()
+        resolveCreate(mockAccount)
+
+        await vi.waitFor(() => {
+            expect(mockCreateHdWalletAccount).toHaveBeenCalled()
+        })
+
+        expect(mockPush).not.toHaveBeenCalledWith(
+            'NameAccount',
+            expect.anything(),
+        )
+    })
+
+    it('navigates to ImportAccountOptions when Import Account is pressed', () => {
         render(<OnboardingScreen />)
 
         const importButton = screen.getByText(
@@ -188,18 +230,8 @@ describe('OnboardingScreen', () => {
         )
         fireEvent.click(importButton)
 
-        // Bottom sheet should be visible now
-        expect(screen.getByText('onboarding.import_options.title')).toBeTruthy()
-
-        // Click one of the options
-        const universalWalletOption = screen.getByText(
-            'onboarding.import_options.hd_wallet.title',
-        )
-        fireEvent.click(universalWalletOption)
-
-        expect(mockPush).toHaveBeenCalledWith('ImportInfo', {
-            accountType: 'hdWallet',
-        })
+        expect(mockPush).toHaveBeenCalledWith('ImportAccountOptions')
+        expect(useOnboardingStore.getState().isOnboarding).toBe(true)
     })
 
     it('does not render close button during first-time onboarding', () => {
@@ -247,7 +279,7 @@ describe('OnboardingScreen', () => {
             })
         })
 
-        it('opens ImportOptionsBottomSheet when Import Account is pressed', () => {
+        it('navigates to ImportAccountOptions when Import Account is pressed', () => {
             render(<OnboardingScreen />)
 
             const importButton = screen.getByText(
@@ -255,9 +287,7 @@ describe('OnboardingScreen', () => {
             )
             fireEvent.click(importButton)
 
-            expect(
-                screen.getByText('onboarding.import_options.title'),
-            ).toBeTruthy()
+            expect(mockPush).toHaveBeenCalledWith('ImportAccountOptions')
         })
     })
 })

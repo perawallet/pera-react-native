@@ -36,6 +36,7 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plugin-dts": "^4.5.4",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "msw": "catalog:"
   }
 }

@@ -17,12 +17,15 @@ import {
     useAllAccounts,
     useSigningAccounts,
 } from '@perawallet/wallet-core-accounts'
+import { IN_FLIGHT_SIGN_REQUEST_STATUSES } from '@perawallet/wallet-core-multisig'
 import { useQuery, UseQueryResult } from '@tanstack/react-query'
 import { fetchInbox, type InboxResponse } from '../api/inbox'
 import type { InboxItem } from '../models'
 import { getInboxQueryKey } from './querykeys'
 import { mapInboxResponse } from './mappers'
 import { sortInboxItems } from '../utils'
+
+const INBOX_IN_FLIGHT_POLL_INTERVAL_MS = 10_000
 
 export const useInboxQuery = (): UseQueryResult<InboxItem[], Error> => {
     const { network } = useNetwork()
@@ -43,6 +46,18 @@ export const useInboxQuery = (): UseQueryResult<InboxItem[], Error> => {
         queryKey: getInboxQueryKey(network, deviceID ?? '', addresses),
         queryFn: () => fetchInbox(network, deviceID ?? '', addresses),
         enabled: !!deviceID?.length && !!addresses.length,
+        // Self-heal stale rows after a multisig sign action: poll only while
+        // the cached response still contains a non-terminal sign request,
+        // and stop automatically once everything settles. Operates on raw
+        // `InboxResponse` — `select` does not run for this callback.
+        refetchInterval: query => {
+            const data = query.state.data
+            if (!data) return false
+            const hasInFlight = data.joint_account_sign_requests.some(r =>
+                IN_FLIGHT_SIGN_REQUEST_STATUSES.has(r.status),
+            )
+            return hasInFlight ? INBOX_IN_FLIGHT_POLL_INTERVAL_MS : false
+        },
         select: useCallback(
             (data: InboxResponse) =>
                 mapInboxResponse(data)

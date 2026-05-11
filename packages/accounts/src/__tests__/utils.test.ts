@@ -25,11 +25,6 @@ import {
     resolveImportAccountType,
 } from '../utils'
 
-vi.mock('bip39', () => ({
-    mnemonicToSeed: vi.fn(async () => Buffer.from(new Uint8Array(64).fill(2))),
-    mnemonicToEntropy: vi.fn(async () => 'test-entropy'),
-}))
-
 vi.mock('tweetnacl', () => ({
     default: {
         sign: {

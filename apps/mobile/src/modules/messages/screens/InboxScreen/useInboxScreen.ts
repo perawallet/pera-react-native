@@ -20,6 +20,7 @@ import {
 import type { MultiSigAccount } from '@perawallet/wallet-core-multisig'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
+import { useHandleMultisigSignTap } from '@modules/multisig/hooks/useHandleMultisigSignTap'
 import type { MultisigInvitationParam } from '../../routes/types'
 
 const toInvitationParam = (
@@ -65,6 +66,7 @@ export const useInboxScreen = (): UseInboxScreenResult => {
     useCleanupDuplicateMultisigInvitations()
     const { push } = useAppNavigation()
     const { errorToast } = useToast()
+    const handleMultisigSignTap = useHandleMultisigSignTap()
 
     const [selectedInvitation, setSelectedInvitation] =
         useState<MultisigInvitationParam | null>(null)
@@ -88,6 +90,10 @@ export const useInboxScreen = (): UseInboxScreenResult => {
                     setSelectedInvitation(toInvitationParam(item.data))
                     return
                 }
+                case 'multisig_sign': {
+                    handleMultisigSignTap(item.data)
+                    return
+                }
                 default:
                     errorToast(
                         'common.not_implemented.title',
@@ -95,7 +101,7 @@ export const useInboxScreen = (): UseInboxScreenResult => {
                     )
             }
         },
-        [push, errorToast],
+        [push, errorToast, handleMultisigSignTap],
     )
 
     return {

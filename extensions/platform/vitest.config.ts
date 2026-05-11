@@ -12,6 +12,7 @@
 
 import { defineConfig } from 'vitest/config'
 import { coverageConfig } from '@perawallet/wallet-core-devtools/vitest/coverage'
+import { poolConfig } from '@perawallet/wallet-core-devtools/vitest/pool'
 
 export default defineConfig({
     test: {
@@ -24,4 +25,5 @@ export default defineConfig({
     resolve: {
         conditions: ['default'],
     },
+    ...poolConfig,
 })

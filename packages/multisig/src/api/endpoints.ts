@@ -17,12 +17,14 @@ import {
 } from '@perawallet/wallet-core-shared'
 import {
     createMultisigAccountResponseSchema,
+    searchSignRequestsResponseSchema,
     signRequestDetailResponseSchema,
     type CreateMultisigAccountRequest,
     type CreateMultisigAccountResponse,
     type ProposeSignRequest,
-    type ProposeSignRequestResponse,
     type AddSignatureRequest,
+    type SearchSignRequestsRequest,
+    type SearchSignRequestsResponse,
     type SignRequestDetailResponse,
 } from './schema'
 
@@ -73,8 +75,8 @@ export const checkIsMultisigAddress = async (
 export const proposeSignRequest = async (
     network: Network,
     params: ProposeSignRequest,
-): Promise<ProposeSignRequestResponse> => {
-    const response = await queryClient<ProposeSignRequestResponse>({
+): Promise<SignRequestDetailResponse> => {
+    const response = await queryClient<SignRequestDetailResponse>({
         backend: 'pera',
         network,
         method: 'POST',
@@ -89,8 +91,8 @@ export const addSignature = async (
     network: Network,
     signRequestId: string,
     params: AddSignatureRequest[],
-): Promise<ProposeSignRequestResponse> => {
-    const response = await queryClient<ProposeSignRequestResponse>({
+): Promise<SignRequestDetailResponse> => {
+    const response = await queryClient<SignRequestDetailResponse>({
         backend: 'pera',
         network,
         method: 'POST',
@@ -101,18 +103,37 @@ export const addSignature = async (
     return signRequestDetailResponseSchema.parse(response.data)
 }
 
-export const getSignRequestDetail = async (
+export const searchSignRequests = async (
     network: Network,
-    signRequestId: string,
-): Promise<SignRequestDetailResponse> => {
-    const response = await queryClient<SignRequestDetailResponse>({
+    params: SearchSignRequestsRequest,
+): Promise<SearchSignRequestsResponse> => {
+    const response = await queryClient<SearchSignRequestsResponse>({
         backend: 'pera',
         network,
-        method: 'GET',
-        url: `/v1/joint-accounts/sign-requests/${signRequestId}/with-signatures/`,
+        method: 'POST',
+        url: '/v1/joint-accounts/sign-requests/search/',
+        data: params,
     })
 
-    return signRequestDetailResponseSchema.parse(response.data)
+    return searchSignRequestsResponseSchema.parse(response.data)
+}
+
+export const getSignRequestDetail = async (
+    network: Network,
+    deviceId: string,
+    signRequestId: string,
+): Promise<SignRequestDetailResponse> => {
+    const searchResponse = await searchSignRequests(network, {
+        device_id: deviceId,
+        sign_request_id: signRequestId,
+    })
+    const match = searchResponse.results?.find(r => r.id === signRequestId)
+    if (!match) {
+        throw new Error(
+            `Sign request not found in search results: ${signRequestId}`,
+        )
+    }
+    return signRequestDetailResponseSchema.parse(match)
 }
 
 export const deleteImportInbox = async (
