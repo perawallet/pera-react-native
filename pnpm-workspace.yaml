@@ -33,7 +33,7 @@ catalog:
   globals: 17.6.0
   oxfmt: ^0.45.0
   react: 19.2.5
-  react-dom: 19.2.5
+  react-dom: 19.2.6
   tsx: ^4.19.2
   typescript: ^5.9.3
   typescript-eslint: 8.59.1
@@ -85,7 +85,7 @@ overrides:
   picomatch@3: 3.0.1
   picomatch@4: 4.0.4
   protobufjs@7: 7.5.5
-  react-dom: 19.2.5
+  react-dom: 19.2.6
   react-native: 0.83.4
   react-native-nitro-modules: 0.35.0
   react-native-quick-crypto: ^1.0.17
