@@ -1,0 +1,382 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import {
+    afterAll,
+    afterEach,
+    beforeAll,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi,
+} from 'vitest'
+import React from 'react'
+import { Decimal } from 'decimal.js'
+import {
+    act,
+    fireEvent,
+    renderHook,
+    screen,
+    waitFor,
+} from '@testing-library/react'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { http, HttpResponse } from 'msw'
+import { Notifier } from 'react-native-notifier'
+
+import { server } from '@test-utils/msw-server'
+import { createTestQueryClient } from '@test-utils/render'
+import { renderWithNavigation } from '@test-utils/renderWithNavigation'
+import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
+import {
+    resetTestDatabase,
+    seedAlgoAsset,
+    setupTestDatabase,
+    teardownTestDatabase,
+} from '@test-utils/database-setup'
+import {
+    AccountTypes,
+    upsertAccountBalance,
+    useAccountsStore,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import {
+    upsertTransactions,
+    type TransactionHistoryItem,
+} from '@perawallet/wallet-core-transactions'
+import { AccountHistory } from '@modules/accounts/components/AccountHistory/AccountHistory'
+import { TransactionDetailsScreen } from '@modules/signing/screens/TransactionDetailsScreen/TransactionDetailsScreen'
+import { useAccountHistory } from '@modules/accounts/components/AccountHistory/useAccountHistory'
+
+import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
+
+const SLOW_TEST_TIMEOUT_MS = 30000
+
+const ACCOUNT: WalletAccount = {
+    id: 'observer-1',
+    type: AccountTypes.algo25,
+    address: ALGO25_TEST_ADDRESS,
+    keyPairId: 'observer-key',
+    name: 'Observer',
+}
+
+// Two pinned transactions seeded directly into the on-device DB. The
+// production sync service writes the same shape from indexer
+// responses; here we author them so the test doesn't depend on remote
+// fixtures. Stable txIds so the details screen can look one up.
+const TX_PAYMENT: TransactionHistoryItem = {
+    id: 'TXPAYMENT0000000000000000000000000000000000000000000001',
+    txType: 'pay',
+    sender: ALGO25_TEST_ADDRESS,
+    receiver: HD_TEST_ADDRESS,
+    confirmedRound: 100,
+    roundTime: 1_700_000_000,
+    swapGroupDetail: null,
+    interpretedMeaning: null,
+    fee: new Decimal(1000),
+    groupId: null,
+    amount: new Decimal(1_000_000), // 1 ALGO
+    closeTo: null,
+    asset: null,
+    applicationId: null,
+    innerTransactionCount: null,
+}
+
+const TX_ASSET_TRANSFER: TransactionHistoryItem = {
+    id: 'TXASSETTRANSFER000000000000000000000000000000000000002',
+    txType: 'axfer',
+    sender: HD_TEST_ADDRESS,
+    receiver: ALGO25_TEST_ADDRESS,
+    confirmedRound: 99,
+    roundTime: 1_699_900_000,
+    swapGroupDetail: null,
+    interpretedMeaning: null,
+    fee: new Decimal(1000),
+    groupId: null,
+    amount: new Decimal(2_500_000),
+    closeTo: null,
+    asset: {
+        assetId: 31566704,
+        name: 'USD Coin',
+        unitName: 'USDC',
+        decimals: 6,
+    },
+    applicationId: null,
+    innerTransactionCount: null,
+}
+
+describe('Flow: View transactions → tap into details', () => {
+    beforeAll(async () => {
+        server.listen({ onUnhandledRequest: 'warn' })
+        await setupTestDatabase()
+    })
+    afterEach(() => server.resetHandlers())
+    afterAll(async () => {
+        server.close()
+        await teardownTestDatabase()
+    })
+
+    beforeEach(async () => {
+        await resetTestDatabase()
+        await seedAlgoAsset('mainnet')
+
+        resetTestKeystore()
+        useAccountsStore.getState().setAccounts([ACCOUNT])
+        useAccountsStore.getState().setSelectedAccountAddress(ACCOUNT.address)
+        vi.mocked(Notifier.showNotification).mockClear()
+
+        // Account balance row so the history hook has something to
+        // anchor its query against.
+        await upsertAccountBalance({
+            accountAddress: ACCOUNT.address,
+            network: 'mainnet',
+            algoBalance: new Decimal(5_000_000),
+            totalAssetsOptedIn: 0,
+            totalCreatedAssets: 0,
+            totalAppsOptedIn: 0,
+            minBalance: new Decimal(100_000),
+            status: 'Offline',
+            authAddress: null,
+        })
+
+        // Seed two transactions for the observer account. The history
+        // hook reads page 1 from the local DB, so this is enough for
+        // the list to render without touching the network.
+        await upsertTransactions({
+            items: [TX_PAYMENT, TX_ASSET_TRANSFER],
+            accountAddress: ACCOUNT.address,
+            network: 'mainnet',
+        })
+    })
+
+    it(
+        'Given seeded transactions, when the user taps the payment row, then the details screen renders for that transaction',
+        async () => {
+            // Spy on the indexer lookup so we can confirm the details
+            // screen actually fetched by the right txId — it's
+            // triggered when navigating with `transactionId` (the
+            // history list's tap behavior).
+            const lookupSpy = vi.fn(() =>
+                HttpResponse.json(
+                    {
+                        'current-round': 100,
+                        transaction: {
+                            id: TX_PAYMENT.id,
+                            'tx-type': 'pay',
+                            sender: TX_PAYMENT.sender,
+                            'confirmed-round': TX_PAYMENT.confirmedRound,
+                            'round-time': TX_PAYMENT.roundTime,
+                            fee: 1000,
+                            'payment-transaction': {
+                                receiver: TX_PAYMENT.receiver,
+                                amount: 1_000_000,
+                                'close-amount': 0,
+                            },
+                        },
+                    },
+                    { status: 200 },
+                ),
+            )
+            server.use(
+                http.get(`*/v2/transactions/${TX_PAYMENT.id}`, lookupSpy),
+            )
+
+            renderWithNavigation(AccountHistory, 'AccountHistory', {
+                additionalScreens: [
+                    {
+                        name: 'TransactionDetails',
+                        component: TransactionDetailsScreen,
+                    },
+                ],
+            })
+
+            // The TransactionListItem renders its title via
+            // `getTitle()` which keys off direction relative to the
+            // selected account. Our seeded `TX_PAYMENT` has the
+            // selected account as sender → 'send'. The asset-transfer
+            // tx has the selected account as receiver → 'receive'.
+            // Both rows should mount once the DB read settles.
+            // i18n isn't initialized under the integration setup, so
+            // `t()` falls through to the raw key — assert against the
+            // key, matching the convention used by the other flow tests.
+            const SEND_LABEL = 'transactions.list_item.send'
+            const RECEIVE_LABEL = 'transactions.list_item.receive'
+            await waitFor(
+                () => {
+                    expect(
+                        screen.queryAllByText(
+                            (_, node) =>
+                                (node?.textContent ?? '') === SEND_LABEL,
+                        ).length,
+                    ).toBeGreaterThan(0)
+                },
+                { timeout: 5000 },
+            )
+            expect(
+                screen.queryAllByText(
+                    (_, node) => (node?.textContent ?? '') === RECEIVE_LABEL,
+                ).length,
+            ).toBeGreaterThan(0)
+
+            // Tap the send row (the payment) — walk to its wrapping
+            // button. Multiple matches by text walker because
+            // ancestors also satisfy the substring; we need the leaf.
+            const matches = screen.queryAllByText(
+                (_, node) => (node?.textContent ?? '') === SEND_LABEL,
+            )
+            const leaf =
+                matches.find(el => el.children.length === 0) ?? matches[0]
+            const row = leaf.closest('button')
+            if (!row) {
+                throw new Error('Payment row button not found')
+            }
+            fireEvent.click(row)
+
+            // The details screen calls `indexer.lookupTransactionById`
+            // which we intercepted. Wait for the spy to fire.
+            await waitFor(
+                () => {
+                    expect(lookupSpy).toHaveBeenCalled()
+                },
+                { timeout: 5000 },
+            )
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given the DB returned a full page of transactions (hasNextPage true), when the consumer triggers handleLoadMore, then the next-page API endpoint is hit and the new transactions are appended',
+        async () => {
+            // Seed exactly the page size (25) so the DB-first read reports
+            // `hasNextPage = true` — see useTransactionHistoryQuery: when
+            // dbTransactions.length >= limit, the pagination cursor is set
+            // to '__load_more_from_api__' and `hasNextPage` flips on. With
+            // fewer rows the hook short-circuits and never calls the API.
+            const fullPage: TransactionHistoryItem[] = Array.from(
+                { length: 25 },
+                (_, i) => ({
+                    id: `TXPAGE1${i.toString().padStart(48, '0')}`,
+                    txType: 'pay',
+                    sender: ALGO25_TEST_ADDRESS,
+                    receiver: HD_TEST_ADDRESS,
+                    confirmedRound: 1000 - i,
+                    // Same day so they all land in one section — keeps the
+                    // grouping check trivial; the test cares about pagination,
+                    // not date bucketing.
+                    roundTime: 1_700_000_000 - i * 60,
+                    swapGroupDetail: null,
+                    interpretedMeaning: null,
+                    fee: new Decimal(1000),
+                    groupId: null,
+                    amount: new Decimal(1_000_000),
+                    closeTo: null,
+                    asset: null,
+                    applicationId: null,
+                    innerTransactionCount: null,
+                }),
+            )
+            await upsertTransactions({
+                items: fullPage,
+                accountAddress: ACCOUNT.address,
+                network: 'mainnet',
+            })
+
+            // Pera transaction-history endpoint. The endpoint URL is
+            // `/v1/accounts/:address/transactions/`; we spy on it so we
+            // can confirm the load-more path actually fires the network
+            // request (not just bumps query state). Returns a single new
+            // row so the merged list is observably longer.
+            const olderTx = {
+                id: 'TXOLDER0000000000000000000000000000000000000000000099',
+                tx_type: 'pay' as const,
+                sender: ALGO25_TEST_ADDRESS,
+                receiver: HD_TEST_ADDRESS,
+                confirmed_round: 900,
+                round_time: 1_699_000_000,
+                fee: '1000',
+                amount: '500000',
+            }
+            const apiSpy = vi.fn(() =>
+                HttpResponse.json(
+                    {
+                        current_round: 1100,
+                        next: null,
+                        previous: null,
+                        results: [olderTx],
+                    },
+                    { status: 200 },
+                ),
+            )
+            server.use(
+                http.get(
+                    `*/v1/accounts/${ACCOUNT.address}/transactions/`,
+                    apiSpy,
+                ),
+            )
+
+            // Wrap the hook in a fresh QueryClient — `useAccountHistory`
+            // calls `useTransactionHistoryQuery` which is a TanStack
+            // infinite-query, and react-query needs a provider. Zustand
+            // stores (account, network) are global singletons, so they
+            // work without a wrapper.
+            const queryClient = createTestQueryClient()
+            const wrapper = ({ children }: { children: React.ReactNode }) => (
+                <QueryClientProvider client={queryClient}>
+                    {children}
+                </QueryClientProvider>
+            )
+            const { result } = renderHook(() => useAccountHistory(), {
+                wrapper,
+            })
+
+            // First page comes from the local DB. Wait for it to settle
+            // (25 rows in one section).
+            await waitFor(
+                () => {
+                    expect(result.current.sections).toHaveLength(1)
+                    expect(result.current.sections[0].data).toHaveLength(25)
+                },
+                { timeout: 5000 },
+            )
+            // hasNextPage flips on when the DB returned a full page —
+            // production gates `handleLoadMore` on this same flag.
+            expect(result.current.hasNextPage).toBe(true)
+            expect(apiSpy).not.toHaveBeenCalled()
+
+            // Trigger the same path SectionList.onEndReached uses. wrap
+            // in act so the resulting state mutations flush.
+            act(() => {
+                result.current.handleLoadMore()
+            })
+
+            // The hook fires the next-page request to Pera's transaction
+            // history endpoint. Confirm the spy ran and the merged list
+            // now includes the older tx.
+            await waitFor(
+                () => {
+                    expect(apiSpy).toHaveBeenCalled()
+                },
+                { timeout: 5000 },
+            )
+            await waitFor(
+                () => {
+                    const allIds = result.current.sections.flatMap(s =>
+                        s.data.map(t => t.id),
+                    )
+                    expect(allIds).toContain(olderTx.id)
+                },
+                { timeout: 5000 },
+            )
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+})

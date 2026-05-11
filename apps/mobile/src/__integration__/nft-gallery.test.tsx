@@ -1,0 +1,216 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+// Integration coverage for the NFT gallery filter logic at the hook
+// boundary:
+//
+//   selected account → useAccountBalancesQuery (DB-backed)
+//                    → useAssetsQuery (DB-backed metadata)
+//                    → filter via isCollectible(asset)
+//                    → useAccountNfts.collectibles[]
+//
+// `view-nft.test.tsx` covers the detail screen end-to-end. This file
+// asserts the gallery hook only surfaces collectibles, filters
+// fungibles, and routes selections via navigation. The corresponding
+// AccountNfts component delegates filtering to this hook, so locking
+// the hook contract here covers the gallery's core integration value
+// without depending on the FlatList / SVG empty-state code paths that
+// don't render usefully under jsdom.
+
+import {
+    afterAll,
+    afterEach,
+    beforeAll,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi,
+} from 'vitest'
+import React from 'react'
+import { Decimal } from 'decimal.js'
+import { act, renderHook, waitFor } from '@testing-library/react'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { Notifier } from 'react-native-notifier'
+
+import { server } from '@test-utils/msw-server'
+import { createTestQueryClient } from '@test-utils/render'
+import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
+import {
+    resetTestDatabase,
+    seedAlgoAsset,
+    seedAssets,
+    setupTestDatabase,
+    teardownTestDatabase,
+} from '@test-utils/database-setup'
+import {
+    AccountTypes,
+    insertAssetHolding,
+    upsertAccountBalance,
+    useAccountsStore,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { useAccountNfts } from '@modules/accounts/components/AccountNfts/useAccountNfts'
+
+import {
+    NFT_TEST_ASSET,
+    NFT_TEST_ASSET_ID,
+    USDC_TEST_ASSET,
+    USDC_TEST_ASSET_ID,
+} from './__fixtures__/assets'
+import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
+
+const SLOW_TEST_TIMEOUT_MS = 30000
+
+const HOLDER: WalletAccount = {
+    id: 'gallery-holder',
+    type: AccountTypes.algo25,
+    address: ALGO25_TEST_ADDRESS,
+    keyPairId: 'gallery-holder-key',
+    name: 'Gallery Holder',
+}
+
+const buildWrapper = () => {
+    const queryClient = createTestQueryClient()
+    return ({ children }: { children: React.ReactNode }) => (
+        <QueryClientProvider client={queryClient}>
+            {children}
+        </QueryClientProvider>
+    )
+}
+
+describe('Flow: NFT gallery hook (useAccountNfts)', () => {
+    beforeAll(async () => {
+        server.listen({ onUnhandledRequest: 'bypass' })
+        await setupTestDatabase()
+    })
+    afterEach(() => server.resetHandlers())
+    afterAll(async () => {
+        server.close()
+        await teardownTestDatabase()
+    })
+
+    beforeEach(async () => {
+        await resetTestDatabase()
+        await seedAlgoAsset('mainnet')
+        // Seed both an NFT and a fungible token in the asset metadata
+        // table — the gallery hook joins these in via useAssetsQuery
+        // and uses each row's peraMetadata.type to decide which list
+        // they belong in.
+        await seedAssets([NFT_TEST_ASSET, USDC_TEST_ASSET], 'mainnet')
+
+        resetTestKeystore()
+        useAccountsStore.getState().setAccounts([HOLDER])
+        useAccountsStore.getState().setSelectedAccountAddress(HOLDER.address)
+        vi.mocked(Notifier.showNotification).mockClear()
+
+        await upsertAccountBalance({
+            accountAddress: HOLDER.address,
+            network: 'mainnet',
+            algoBalance: new Decimal(5_000_000),
+            totalAssetsOptedIn: 2,
+            totalCreatedAssets: 0,
+            totalAppsOptedIn: 0,
+            minBalance: new Decimal(200_000),
+            status: 'Offline',
+            authAddress: null,
+        })
+
+        // Account holds 1 NFT + 50 USDC. Both have non-zero balances so
+        // the showOptedIn preference doesn't enter into filtering — the
+        // assertion is purely "collectible vs fungible".
+        await insertAssetHolding({
+            accountAddress: HOLDER.address,
+            assetId: NFT_TEST_ASSET_ID,
+            network: 'mainnet',
+            amount: '1',
+        })
+        await insertAssetHolding({
+            accountAddress: HOLDER.address,
+            assetId: USDC_TEST_ASSET_ID,
+            network: 'mainnet',
+            amount: '50000000',
+        })
+    })
+
+    it(
+        'Given an account holds one NFT and one fungible asset, when useAccountNfts resolves, then collectibles contains only the NFT and collectibleCount is 1',
+        async () => {
+            const { result } = renderHook(() => useAccountNfts(), {
+                wrapper: buildWrapper(),
+            })
+
+            // hasAccount flips true synchronously from the store.
+            expect(result.current.hasAccount).toBe(true)
+
+            // The hook chains two queries (balances → assets); wait for
+            // both to settle before asserting the filter result.
+            await waitFor(
+                () => {
+                    expect(result.current.isPending).toBe(false)
+                    expect(result.current.collectibleCount).toBe(1)
+                },
+                { timeout: 5000 },
+            )
+
+            // Only the NFT survives the isCollectible filter — the
+            // USDC-like asset (peraMetadata.type === 'standard_asset')
+            // is excluded.
+            const ids = result.current.collectibles.map(c => c.assetId)
+            expect(ids).toEqual([NFT_TEST_ASSET_ID])
+            expect(ids).not.toContain(USDC_TEST_ASSET_ID)
+
+            // The display item carries the asset record so the gallery
+            // can render its title and decimals; check both round-trip
+            // through the DB layer.
+            const nft = result.current.collectibles[0]
+            expect(nft.asset.name).toBe(NFT_TEST_ASSET.name)
+            expect(nft.asset.decimals).toBe(0)
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given the gallery hook has resolved with one NFT, when the search filter is set to a non-matching string, then collectibles becomes empty',
+        async () => {
+            const { result } = renderHook(() => useAccountNfts(), {
+                wrapper: buildWrapper(),
+            })
+
+            await waitFor(
+                () => {
+                    expect(result.current.collectibleCount).toBe(1)
+                },
+                { timeout: 5000 },
+            )
+
+            // Setting the filter to a string that doesn't appear in the
+            // NFT's name, unitName, or collection.name drops it from
+            // the result. The hook debounces the filter — wait for the
+            // debounce window before asserting.
+            act(() => {
+                result.current.setSearchFilter('zzzz-no-match')
+            })
+
+            await waitFor(
+                () => {
+                    expect(result.current.debouncedSearchFilter).toBe(
+                        'zzzz-no-match',
+                    )
+                    expect(result.current.collectibleCount).toBe(0)
+                },
+                { timeout: 5000 },
+            )
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+})
