@@ -27,20 +27,10 @@ describe('LedgerHowItWorksBottomSheet', () => {
             />,
         )
 
-        expect(
-            screen.getByText('ledger.how_does_it_work.title'),
-        ).toBeTruthy()
-        expect(
-            screen.getByText('ledger.how_does_it_work.step_1'),
-        ).toBeTruthy()
-        expect(
-            screen.getByText('ledger.how_does_it_work.step_2'),
-        ).toBeTruthy()
-        expect(
-            screen.getByText('ledger.how_does_it_work.step_3'),
-        ).toBeTruthy()
-        expect(
-            screen.getByText('ledger.how_does_it_work.step_4'),
-        ).toBeTruthy()
+        expect(screen.getByText('ledger.how_does_it_work.title')).toBeTruthy()
+        expect(screen.getByText('ledger.how_does_it_work.step_1')).toBeTruthy()
+        expect(screen.getByText('ledger.how_does_it_work.step_2')).toBeTruthy()
+        expect(screen.getByText('ledger.how_does_it_work.step_3')).toBeTruthy()
+        expect(screen.getByText('ledger.how_does_it_work.step_4')).toBeTruthy()
     })
 })
