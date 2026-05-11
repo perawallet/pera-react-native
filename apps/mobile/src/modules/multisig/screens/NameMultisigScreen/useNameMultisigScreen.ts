@@ -103,6 +103,17 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
                 return
             }
 
+            const alreadyExists = accounts.some(
+                a => a.address === multisigAddress,
+            )
+            if (alreadyExists) {
+                errorToast(
+                    t('multisig.name.duplicate_account_title'),
+                    t('multisig.name.duplicate_account_body'),
+                )
+                return
+            }
+
             await createMultisigMutation.mutateAsync({
                 version: 1,
                 threshold,

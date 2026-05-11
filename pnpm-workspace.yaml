@@ -106,7 +106,10 @@ minimumReleaseAge: 10080
 # protobufjs 7.5.5 is the only patched release for GHSA-xq3m-2v4x-88gg.
 # @xmldom/xmldom 0.8.13 patches GHSA-2v35-w6hq-6mfw, -f6ww-3ggp-fr8h, -x6wf-f3px-wcqx, -j759-j44w-7fr8.
 # uuid 14.0.0 patches GHSA-w5hq-g745-h8pq.
-# fast-uri 3.1.2 patches GHSA-q3j6-qgpj-74h6 and GHSA-v39h-62p7-jpjc.
+# fast-uri 3.1.2 patches GHSA-q3j6-qgpj-74h6 (path traversal, <=3.1.0) and
+# GHSA-v39h-62p7-jpjc (host confusion, <=3.1.1). Both fixes shipped in the
+# same week so neither has aged into the 7-day window yet; skip the gate
+# rather than ship a vulnerable transitive (only path: ajv → fast-uri).
 minimumReleaseAgeExclude:
   - protobufjs
   - "@xmldom/xmldom"

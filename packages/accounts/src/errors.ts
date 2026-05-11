@@ -79,3 +79,21 @@ export class HDImportSessionNotFoundError extends AccountError {
         )
     }
 }
+
+/**
+ * The address derived from the import flow already exists in the wallet.
+ *
+ * Surfaced from the algo25 import path so the UI can show a specific
+ * "already imported" toast instead of the generic failure message. HD
+ * imports get the same protection at the selection screen (already-
+ * imported addresses render a chip rather than a checkbox).
+ */
+export class DuplicateAccountError extends AccountError {
+    constructor(address: string) {
+        super(
+            `Account with address ${address} is already in the wallet`,
+            undefined,
+            { params: { address } },
+        )
+    }
+}

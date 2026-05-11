@@ -20,6 +20,8 @@
 //
 // Aliased into the test build via apps/mobile/vitest.config.ts.
 
+import { KeyContext, XHDWalletAPI } from '@algorandfoundation/xhd-wallet-api'
+
 // Types come from `@tanstack/store` and `@algorandfoundation/keystore`,
 // which are transitive deps not listed in apps/mobile's package.json. tsc
 // would refuse those imports here, so we declare loose local shapes — the
@@ -30,7 +32,19 @@ type Store<T> = {
     subscribe: (listener: () => void) => { unsubscribe: () => void }
 }
 type Key = { id: string; type: string; [k: string]: unknown }
-type KeyData = Key & { privateKey?: Uint8Array; seed?: Uint8Array }
+
+type KeyData = Key & {
+    privateKey?: Uint8Array
+    publicKey?: Uint8Array
+    seed?: Uint8Array
+    params?: {
+        parentKeyId?: string
+        account?: number
+        index?: number
+        context?: number
+        derivation?: number
+    }
+}
 type KeyStoreState = { keys: Key[]; status: string }
 
 // Module-level in-memory key map. Mirrors what production stores in MMKV
@@ -144,13 +158,81 @@ const exportKey = async (id: string): Promise<KeyData> => {
 export const WithKeyStore = (_provider: any, options: any) => {
     const reactiveStore: Store<KeyStoreState> | undefined =
         options?.keystore?.store
+
+    if (reactiveStore) reactiveStoreRef = reactiveStore
     const hooks = options?.keystore?.hooks
 
+    const xhdApi = new XHDWalletAPI()
+    let derivedSeq = 0
+    const newDerivedKeyId = (): string =>
+        `test-derived-${Date.now().toString(36)}-${++derivedSeq}`
+
     const api = {
-        async generate(_options: unknown): Promise<string> {
-            throw new Error(
-                'Test keystore: generate() not implemented — use commit() with pre-built KeyData',
+        // Mirrors the production keystore's `generate` for the
+        // `hd-derived-ed25519` type that `useHDWallet.generateDerivedKey`
+        // uses. Resolves the parent root key bytes, derives the public key
+        // via the same `XHDWalletAPI.keyGen` call as the real keystore, then
+        // commits a KeyData entry so `export(id)` later returns the public
+        // key. Other generate types throw — flow tests should opt in.
+        async generate(options: {
+            type?: string
+            extractable?: boolean
+            keyUsages?: string[]
+            algorithm?: string
+            params?: {
+                parentKeyId?: string
+                account?: number
+                index?: number
+                context?: number
+                derivation?: number
+            }
+        }): Promise<string> {
+            if (options?.type !== 'hd-derived-ed25519') {
+                throw new Error(
+                    `Test keystore: generate() supports 'hd-derived-ed25519' only, got: ${String(
+                        options?.type,
+                    )}`,
+                )
+            }
+            const params = options.params ?? {}
+            const parentKeyId = params.parentKeyId
+            if (!parentKeyId) {
+                throw new Error(
+                    'Test keystore: generate() requires params.parentKeyId',
+                )
+            }
+            const parent = keyData.get(parentKeyId)
+            if (!parent || !parent.privateKey) {
+                throw new Error(
+                    `Test keystore: parent key not found or missing privateKey: ${parentKeyId}`,
+                )
+            }
+            const account = params.account ?? 0
+            const index = params.index ?? 0
+            const context = (params.context ?? KeyContext.Address) as KeyContext
+            const derivation = params.derivation ?? 0
+            const publicKey = await xhdApi.keyGen(
+                parent.privateKey,
+                context,
+                account,
+                index,
+                derivation,
             )
+
+            if (!reactiveStore) throw new Error('Keystore store missing')
+
+            const id = newDerivedKeyId()
+            const derived: KeyData = {
+                id,
+                type: 'hd-derived-ed25519',
+                publicKey,
+                params: { parentKeyId, account, index, context, derivation },
+            }
+            await commit({
+                store: reactiveStore,
+                keyData: derived,
+            })
+            return id
         },
         async import(data: KeyData): Promise<string> {
             if (!reactiveStore) throw new Error('Keystore store missing')
@@ -226,7 +308,15 @@ const cloneKeyData = (data: KeyData): KeyData => {
     return cloned
 }
 
-// Test helper: clear all stored keys. Call from `afterEach` for isolation.
+// Test helper: clear all stored keys, including the reactive store's
+// snapshot. Call from `afterEach` for isolation between tests sharing the
+// provider singleton.
 export const resetTestKeystore = (): void => {
     keyData.clear()
+    reactiveStoreRef?.setState((s: KeyStoreState) => ({ ...s, keys: [] }))
 }
+
+// Tracked separately because `WithKeyStore` is the only place we have
+// access to the reactive store; capture it on first init so the reset
+// helper above can wipe it without a Provider re-bootstrap.
+let reactiveStoreRef: Store<KeyStoreState> | undefined
