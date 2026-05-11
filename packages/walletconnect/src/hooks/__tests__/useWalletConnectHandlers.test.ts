@@ -776,6 +776,7 @@ describe('useWalletConnectHandlers', () => {
                         fee: 1000n,
                     }),
                 ],
+                groupContext: expect.any(Array),
                 rawTransactionsBase64: expect.any(Array),
                 sourceMetadata: undefined,
                 approve: expect.any(Function),
@@ -1296,6 +1297,49 @@ describe('useWalletConnectHandlers', () => {
                 id: 1,
                 result: [null],
             })
+        })
+
+        it('forwards the full pre-filter payload as groupContext so the pipeline can validate atomic-group integrity', () => {
+            // Regression: the signing pipeline validates atomic-group
+            // integrity by recomputing the group hash. `txs` only carries
+            // this wallet's signable subset, so the request must also
+            // expose the original payload via `groupContext` — otherwise
+            // legitimate cross-account groups (express-send shape, where
+            // each side only signs half the group) would fail validation.
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            const connector = {
+                clientId: 'test-client-id',
+                accounts: ['addr1'],
+                approveRequest: vi.fn(),
+                rejectRequest: vi.fn(),
+            }
+            const payload = {
+                params: [
+                    [
+                        // Tx 0: signed by user
+                        { message: 'user', txn: 'encodedTxn0' },
+                        // Tx 1: dApp-signed (signers: []) — excluded from
+                        // `txs` but must still appear in `groupContext`
+                        // so the validator can recompute the group hash.
+                        { message: 'dapp', txn: 'encodedTxn1', signers: [] },
+                    ],
+                ],
+                method: 'algo_signTxn' as const,
+                jsonrpc: '2.0',
+                id: 1,
+            }
+
+            result.current.handleSignTransaction(
+                connector as any,
+                Networks.mainnet,
+                null,
+                payload,
+            )
+
+            expect(mockAddSignRequest).toHaveBeenCalledTimes(1)
+            const sentRequest = mockAddSignRequest.mock.calls[0][0]
+            expect(sentRequest.txs).toHaveLength(1)
+            expect(sentRequest.groupContext).toHaveLength(2)
         })
 
         it('should propagate error when addSignRequest throws for over-limit transactions', () => {
