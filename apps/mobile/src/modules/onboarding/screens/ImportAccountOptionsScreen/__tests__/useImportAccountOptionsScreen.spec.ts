@@ -178,7 +178,7 @@ describe('useImportAccountOptionsScreen', () => {
         expect(result.current.isQRScannerVisible).toBe(true)
     })
 
-    it('Ledger BLE option navigates to LedgerInstructions with ble transportType', () => {
+    it('Ledger BLE option navigates to LedgerPair', () => {
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
         const ledgerOption = result.current.options.find(

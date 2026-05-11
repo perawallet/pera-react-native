@@ -122,7 +122,7 @@ describe('ImportAccountOptionsScreen', () => {
         ).toBeTruthy()
     })
 
-    it('navigates to LedgerInstructions with ble transportType when Pair Ledger is pressed', () => {
+    it('navigates to LedgerPair when Pair Ledger is pressed', () => {
         render(<ImportAccountOptionsScreen />)
 
         const ledgerButton = screen.getByText(
