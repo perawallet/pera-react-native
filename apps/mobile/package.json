@@ -116,7 +116,7 @@
     "react": "catalog:",
     "react-hook-form": "^7.66.0",
     "react-i18next": "^17.0.4",
-    "react-native": "0.83.4",
+    "react-native": "0.83.9",
     "react-native-advanced-input-mask": "^1.4.6",
     "react-native-ble-plx": "^3.2.1",
     "react-native-draggable-flatlist": "^4.0.3",
