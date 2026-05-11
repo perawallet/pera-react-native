@@ -159,7 +159,11 @@ describe('useSelectHDWalletScreen', () => {
     })
 
     it('navigates to SearchAccounts when selecting a wallet', async () => {
-        const mockNewAccount = { id: 'hd-new', address: 'HD_NEW', type: 'hdWallet' as const }
+        const mockNewAccount = {
+            id: 'hd-new',
+            address: 'HD_NEW',
+            type: 'hdWallet' as const,
+        }
         mockCreateHdWalletAccount.mockResolvedValue(mockNewAccount)
 
         const { result } = renderHook(() => useSelectHDWalletScreen())

@@ -78,19 +78,26 @@ const mockNewAccount = {
     id: 'hd-new',
     address: 'HD_NEW',
     type: 'hdWallet' as const,
-    hdWalletDetails: { account: 0, change: 0, keyIndex: 1, derivationType: 9 as const },
+    hdWalletDetails: {
+        account: 0,
+        change: 0,
+        keyIndex: 1,
+        derivationType: 9 as const,
+    },
     keyPairId: 'wallet-1',
 }
 
 vi.mock('@perawallet/wallet-core-accounts', async () => {
-    const actual = await vi.importActual<object>('@perawallet/wallet-core-accounts')
+    const actual = await vi.importActual<object>(
+        '@perawallet/wallet-core-accounts',
+    )
     return {
         ...actual,
         useHDWalletGroups: () => ({
             hdWalletGroups: mockHDWalletGroups,
             hasMultipleHDWallets: true,
         }),
-        useAllAccounts: () => [],  // <-- adicionar isto
+        useAllAccounts: () => [], // <-- adicionar isto
         useCreateAccount: () => ({
             createHdWalletAccount: mockCreateHdWalletAccount,
         }),
