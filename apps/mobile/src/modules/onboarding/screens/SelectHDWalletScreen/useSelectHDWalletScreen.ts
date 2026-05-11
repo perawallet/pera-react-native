@@ -18,6 +18,8 @@ import {
     useHDWalletGroups,
     useCreateAccount,
     useAccountBalancesQuery,
+    useAllAccounts,
+    AccountTypes,
     type HDWalletGroup,
     type AccountBalances,
 } from '@perawallet/wallet-core-accounts'
@@ -39,6 +41,7 @@ export const useSelectHDWalletScreen = (): UseSelectHDWalletScreenResult => {
     const { showToast } = useToast()
     const { hdWalletGroups } = useHDWalletGroups()
     const { createHdWalletAccount } = useCreateAccount()
+    const allAccounts = useAllAccounts()
     const [isCreatingWallet, setIsCreatingWallet] = useState(false)
 
     const allGroupAccounts = useMemo(
@@ -49,13 +52,25 @@ export const useSelectHDWalletScreen = (): UseSelectHDWalletScreenResult => {
     const { accountBalances } = useAccountBalancesQuery(allGroupAccounts, true)
 
     const handleSelectWallet = useCallback(
-        (group: HDWalletGroup) => {
-            navigation.push('SearchAccounts', {
-                account: group.firstAccount,
-                createIfEmpty: true,
+        async (group: HDWalletGroup) => {
+            const account = group.firstAccount
+            const walletAccounts = allAccounts
+                .filter(a => a.type === AccountTypes.hdWallet)
+                .filter(a => a.keyPairId === account.keyPairId)
+            const nextKeyIndex =
+                walletAccounts.length > 0
+                    ? Math.max(
+                        ...walletAccounts.map(a => a.hdWalletDetails.keyIndex),
+                    ) + 1
+                    : 0
+            const newAccount = await createHdWalletAccount({
+                walletId: account.keyPairId,
+                account: 0,
+                keyIndex: nextKeyIndex,
             })
+            navigation.replace('NameAccount', { account: newAccount })
         },
-        [navigation],
+        [allAccounts, createHdWalletAccount, navigation],
     )
 
     const handleCreateNewWallet = useCallback(() => {

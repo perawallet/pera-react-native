@@ -71,6 +71,7 @@ export const SwapConfirmationBottomSheet = ({
         <PWBottomSheet
             isVisible={isVisible}
             onBackdropPress={isProcessing ? undefined : onClose}
+            onDismiss={isProcessing ? undefined : onClose}
             size='auto'
         >
             <PWView style={styles.container}>
