@@ -12,7 +12,7 @@
 
 // @vitest-environment node
 import { describe, test, expect } from 'vitest'
-import * as bip39 from 'bip39'
+import { mnemonicToSeed } from '@scure/bip39'
 import {
     BIP32DerivationType,
     fromSeed,
@@ -31,7 +31,7 @@ const EXPECTED_MASTER_ADDRESS =
 
 describe('HD wallet derivation ground truth (account-discovery test vector)', () => {
     test('derives the funded address at account=1 keyIndex=0 (Peikert)', async () => {
-        const seed = await bip39.mnemonicToSeed(USER_MNEMONIC)
+        const seed = await mnemonicToSeed(USER_MNEMONIC)
         const rootKey = fromSeed(seed)
         const api = new XHDWalletAPI()
 
@@ -46,7 +46,7 @@ describe('HD wallet derivation ground truth (account-discovery test vector)', ()
     })
 
     test('derives the empty master at account=0 keyIndex=0 (Peikert)', async () => {
-        const seed = await bip39.mnemonicToSeed(USER_MNEMONIC)
+        const seed = await mnemonicToSeed(USER_MNEMONIC)
         const rootKey = fromSeed(seed)
         const api = new XHDWalletAPI()
 

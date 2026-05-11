@@ -15,6 +15,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react'
 
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { OnboardingScreen } from '@modules/onboarding/screens/OnboardingScreen/OnboardingScreen'
+import { ImportAccountOptionsScreen } from '@modules/onboarding/screens/ImportAccountOptionsScreen/ImportAccountOptionsScreen'
 
 // Verifies the test platform driver + test keystore unblock the onboarding
 // hook chain. The screen mounts under the real `useOnboardingScreen` →
@@ -35,14 +36,31 @@ describe('Flow: Onboarding entry', () => {
         ).toBeTruthy()
     })
 
-    it('Given the onboarding screen, when the user taps "Import account", then the import options sheet opens', async () => {
-        renderWithNavigation(OnboardingScreen, 'Onboarding')
+    it('Given the onboarding screen, when the user taps "Import account" and then "Recover Wallet", then the import options sheet opens', async () => {
+        renderWithNavigation(OnboardingScreen, 'Onboarding', {
+            additionalScreens: [
+                {
+                    name: 'ImportAccountOptions',
+                    component: ImportAccountOptionsScreen,
+                },
+            ],
+        })
 
         await waitFor(() =>
             screen.getByTestId('onboarding_import_account_button'),
         )
 
         fireEvent.click(screen.getByTestId('onboarding_import_account_button'))
+
+        // Tapping "Import account" pushes the ImportAccountOptions screen,
+        // where the user picks "Recover Wallet" to open the HD/Algo25 sheet.
+        await waitFor(() =>
+            screen.getByTestId('import_account_options_recover_wallet_button'),
+        )
+
+        fireEvent.click(
+            screen.getByTestId('import_account_options_recover_wallet_button'),
+        )
 
         // The bottom sheet renders its content when isVisible flips true.
         await waitFor(() => {

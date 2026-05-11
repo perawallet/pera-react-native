@@ -87,7 +87,6 @@
     "@tanstack/query-async-storage-persister": "catalog:",
     "@tanstack/react-query": "catalog:",
     "@tanstack/react-query-persist-client": "catalog:",
-    "bip39": "catalog:",
     "decimal.js": "^10.6.0",
     "expo": "^55.0.14",
     "expo-application": "^55.0.14",

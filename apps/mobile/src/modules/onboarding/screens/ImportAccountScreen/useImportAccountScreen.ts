@@ -45,7 +45,7 @@ const MAX_SUGGESTIONS = 4
 
 export function useImportAccountScreen(): UseImportAccountScreenResult {
     const {
-        params: { accountType, mnemonic: initialMnemonic },
+        params: { accountType },
     } = useRoute<RouteProp<OnboardingStackParamList, 'ImportAccount'>>()
     const navigation = useAppNavigation()
     const importAccount = useImportAccount()
@@ -93,13 +93,6 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
 
     const focusInput = useCallback((index: number) => {
         inputRefs.current[index]?.focus()
-    }, [])
-
-    useEffect(() => {
-        if (initialMnemonic) {
-            updateWord(initialMnemonic, 0)
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     useEffect(() => {

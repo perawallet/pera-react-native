@@ -12,7 +12,7 @@
 
 // @vitest-environment node
 import { describe, test, expect } from 'vitest'
-import * as bip39 from 'bip39'
+import { mnemonicToSeed } from '@scure/bip39'
 import {
     BIP32DerivationType,
     fromSeed,
@@ -37,7 +37,7 @@ const EXPECTED_ADDRESS =
 
 describe('HD wallet integration', () => {
     test('derives the expected address from a known 24-word mnemonic', async () => {
-        const seed = await bip39.mnemonicToSeed(TEST_MNEMONIC)
+        const seed = await mnemonicToSeed(TEST_MNEMONIC)
         const rootKey = fromSeed(seed)
         const api = new XHDWalletAPI()
         const publicKey = await api.keyGen(
@@ -55,7 +55,7 @@ describe('HD wallet integration', () => {
     test('round-trips: mnemonic → address produces a deterministic result', async () => {
         const api = new XHDWalletAPI()
 
-        const seed1 = await bip39.mnemonicToSeed(TEST_MNEMONIC)
+        const seed1 = await mnemonicToSeed(TEST_MNEMONIC)
         const rootKey1 = fromSeed(seed1)
         const publicKey1 = await api.keyGen(
             rootKey1,
@@ -66,7 +66,7 @@ describe('HD wallet integration', () => {
         )
         const address1 = encodeAddress(publicKey1)
 
-        const seed2 = await bip39.mnemonicToSeed(TEST_MNEMONIC)
+        const seed2 = await mnemonicToSeed(TEST_MNEMONIC)
         const rootKey2 = fromSeed(seed2)
         const publicKey2 = await api.keyGen(
             rootKey2,

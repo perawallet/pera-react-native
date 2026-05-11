@@ -25,10 +25,10 @@ vi.mock('@hooks/useAppNavigation', () => ({
     }),
 }))
 
-const mockShowToast = vi.fn()
+const mockErrorToast = vi.fn()
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
-        showToast: mockShowToast,
+        errorToast: mockErrorToast,
     }),
 }))
 
@@ -56,6 +56,9 @@ vi.mock('@hooks/useDeepLink', () => ({
     }),
 }))
 
+const mockImportAccount = vi.fn()
+const mockMarkBackupComplete = vi.fn()
+
 vi.mock('@perawallet/wallet-core-accounts', async () => {
     const actual = await vi.importActual<object>(
         '@perawallet/wallet-core-accounts',
@@ -63,8 +66,13 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     return {
         ...actual,
         resolveImportAccountType: vi.fn(),
+        useImportAccount: () => mockImportAccount,
     }
 })
+
+vi.mock('@perawallet/wallet-core-backup', () => ({
+    useMarkMnemonicBackupComplete: () => mockMarkBackupComplete,
+}))
 
 describe('ImportAccountOptionsScreen', () => {
     const originalOS = Platform.OS
@@ -172,11 +180,10 @@ describe('ImportAccountOptionsScreen', () => {
         )
         fireEvent.click(peraWebButton)
 
-        expect(mockShowToast).toHaveBeenCalledWith({
-            title: 'common.not_implemented.title',
-            body: 'common.not_implemented.body',
-            type: 'error',
-        })
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            'common.not_implemented.title',
+            'common.not_implemented.body',
+        )
     })
 
     it('shows not implemented toast when ASB is pressed', () => {
@@ -187,11 +194,10 @@ describe('ImportAccountOptionsScreen', () => {
         )
         fireEvent.click(asbButton)
 
-        expect(mockShowToast).toHaveBeenCalledWith({
-            title: 'common.not_implemented.title',
-            body: 'common.not_implemented.body',
-            type: 'error',
-        })
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            'common.not_implemented.title',
+            'common.not_implemented.body',
+        )
     })
 
     it('opens import options bottom sheet when Recover Wallet is pressed', () => {
