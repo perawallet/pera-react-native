@@ -40,10 +40,13 @@ type UseLedgerSelectAccountsScreenResult = {
     canContinue: boolean
     alreadyImportedAddresses: Set<string>
     isFetchingMore: boolean
+    infoAddress: Nullable<string>
     toggleSelection: (address: string) => void
     toggleSelectAll: () => void
     handleContinue: () => void
     handleFindAnother: () => Promise<void>
+    handleOpenInfo: (address: string) => void
+    handleCloseInfo: () => void
     t: (key: string, options?: Record<string, unknown>) => string
 }
 
@@ -67,6 +70,8 @@ export const useLedgerSelectAccountsScreen =
         const [selectedAddresses, setSelectedAddresses] = useState<Set<string>>(
             () => new Set(),
         )
+        const [infoAddress, setInfoAddress] =
+            useState<Nullable<string>>(null)
 
         const transportRef = useRef<Nullable<HardwareWalletTransport>>(null)
         const inFlightRef = useRef(false)
@@ -131,6 +136,14 @@ export const useLedgerSelectAccountsScreen =
                 )
             }
         }, [isAllSelected, newAccounts])
+
+        const handleOpenInfo = useCallback((address: string) => {
+            setInfoAddress(address)
+        }, [])
+
+        const handleCloseInfo = useCallback(() => {
+            setInfoAddress(null)
+        }, [])
 
         const handleContinue = useCallback(() => {
             const selectedAccounts = accounts.filter(acc =>
@@ -212,10 +225,13 @@ export const useLedgerSelectAccountsScreen =
             canContinue,
             alreadyImportedAddresses,
             isFetchingMore,
+            infoAddress,
             toggleSelection,
             toggleSelectAll,
             handleContinue,
             handleFindAnother,
+            handleOpenInfo,
+            handleCloseInfo,
             t,
         }
     }

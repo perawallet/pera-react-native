@@ -21,33 +21,29 @@ export const useStyles = makeStyles(theme => ({
         flex: 1,
         paddingHorizontal: theme.spacing.xl,
     },
+    heroIcon: {
+        marginTop: theme.spacing.lg,
+        marginBottom: theme.spacing.lg,
+    },
     title: {
         marginBottom: theme.spacing.sm,
-        marginTop: theme.spacing.sm,
     },
     description: {
         marginBottom: theme.spacing.xl,
         color: theme.colors.textGray,
     },
-    headerRow: {
+    selectAllRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
+        justifyContent: 'flex-end',
         alignItems: 'center',
-        paddingVertical: theme.spacing.md,
-        marginBottom: theme.spacing.lg,
-        borderBottomWidth: theme.borders.sm,
-        borderBottomColor: theme.colors.layerGrayLighter,
-    },
-    headerCount: {
-        color: theme.colors.textGray,
-    },
-    selectAllContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
+        marginBottom: theme.spacing.md,
+        gap: theme.spacing.sm,
     },
     selectAllText: {
         color: theme.colors.linkPrimary,
-        marginRight: theme.spacing.xs,
+    },
+    listContent: {
+        paddingBottom: theme.spacing.xl,
     },
     checkboxContainer: {
         padding: 0,
@@ -56,37 +52,8 @@ export const useStyles = makeStyles(theme => ({
         marginRight: 0,
         backgroundColor: 'transparent',
     },
-    listContent: {
-        paddingBottom: theme.spacing.xl,
-    },
-    itemContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingVertical: theme.spacing.md,
-        borderBottomWidth: theme.borders.sm,
-        borderBottomColor: theme.colors.layerGrayLighter,
-    },
-    selectedItem: {
-        borderWidth: theme.borders.md,
-        borderColor: theme.colors.positive,
-        borderRadius: theme.borderRadius.md,
-    },
-    itemTextContainer: {
-        flex: 1,
-        paddingRight: theme.spacing.md,
-    },
-    itemTitle: {
-        color: theme.colors.textMain,
-        marginBottom: theme.spacing.xxs,
-    },
-    itemSubtitle: {
-        color: theme.colors.textGray,
-    },
     footer: {
         padding: theme.spacing.xl,
-        borderTopWidth: theme.borders.sm,
-        borderTopColor: theme.colors.layerGrayLighter,
         backgroundColor: theme.colors.background,
     },
 }))
