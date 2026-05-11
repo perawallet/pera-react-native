@@ -19,9 +19,7 @@ export type LedgerCompositeIconProps = {
 
 const DOT_COUNT = 4
 
-export const LedgerCompositeIcon = ({
-    testID,
-}: LedgerCompositeIconProps) => {
+export const LedgerCompositeIcon = ({ testID }: LedgerCompositeIconProps) => {
     const styles = useStyles()
 
     return (
