@@ -32,6 +32,7 @@ type Store<T> = {
     subscribe: (listener: () => void) => { unsubscribe: () => void }
 }
 type Key = { id: string; type: string; [k: string]: unknown }
+
 type KeyData = Key & {
     privateKey?: Uint8Array
     publicKey?: Uint8Array
@@ -157,6 +158,7 @@ const exportKey = async (id: string): Promise<KeyData> => {
 export const WithKeyStore = (_provider: any, options: any) => {
     const reactiveStore: Store<KeyStoreState> | undefined =
         options?.keystore?.store
+
     if (reactiveStore) reactiveStoreRef = reactiveStore
     const hooks = options?.keystore?.hooks
 

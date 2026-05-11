@@ -41,6 +41,11 @@ vi.mock('@perawallet/wallet-core-messages', () => ({
     useCleanupDuplicateMultisigInvitations: vi.fn(),
 }))
 
+const mockHandleMultisigSignTap = vi.fn()
+vi.mock('@modules/multisig/hooks/useHandleMultisigSignTap', () => ({
+    useHandleMultisigSignTap: () => mockHandleMultisigSignTap,
+}))
+
 describe('useInboxScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -137,7 +142,7 @@ describe('useInboxScreen', () => {
         expect(result.current.selectedInvitation).toBeNull()
     })
 
-    it('handleInboxItemPress shows not-implemented toast for multisig_sign', () => {
+    it('handleInboxItemPress delegates multisig_sign to the multisig sign-tap handler', () => {
         const signItem = {
             type: 'multisig_sign' as const,
             data: { id: 'sign-1' },
@@ -154,10 +159,8 @@ describe('useInboxScreen', () => {
             )
         })
 
-        expect(mockErrorToast).toHaveBeenCalledWith(
-            'common.not_implemented.title',
-            'common.not_implemented.body',
-        )
+        expect(mockHandleMultisigSignTap).toHaveBeenCalledWith(signItem.data)
+        expect(mockErrorToast).not.toHaveBeenCalled()
         expect(mockPush).not.toHaveBeenCalled()
     })
 })

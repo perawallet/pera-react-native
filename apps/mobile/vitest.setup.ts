@@ -1863,6 +1863,7 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     Networks: { mainnet: 'mainnet', testnet: 'testnet' },
     formatDatetime: vi.fn(d => String(d)),
     formatRelativeTime: vi.fn(d => String(d)),
+    formatTimeRemaining: vi.fn(() => '52m'),
     formatCurrency: vi.fn(
         (value, _decimals, currency) => `${currency || '$'}${value}`,
     ),

@@ -22,7 +22,10 @@ export const SearchAccountsScreen = () => {
     return (
         <PWView style={styles.container}>
             <PWView style={styles.topRow}>
-                <PWRoundIcon icon='globe' />
+                <PWRoundIcon
+                    icon='globe'
+                    iconSize='lg'
+                />
 
                 <PWView style={styles.dotsContainer}>
                     <Animated.View
@@ -55,7 +58,10 @@ export const SearchAccountsScreen = () => {
                     />
                 </PWView>
 
-                <PWRoundIcon icon='phone' />
+                <PWRoundIcon
+                    icon='phone'
+                    iconSize='lg'
+                />
             </PWView>
 
             <PWText

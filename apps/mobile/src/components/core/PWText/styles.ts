@@ -11,6 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { Platform } from 'react-native'
 import { getTypography, TypographyVariant } from '@theme/typography'
 
 type PWTextStyleProps = {
@@ -18,5 +19,12 @@ type PWTextStyleProps = {
 }
 
 export const useStyles = makeStyles((theme, { variant }: PWTextStyleProps) => ({
-    text: getTypography(theme, variant),
+    text: {
+        ...getTypography(theme, variant),
+        ...Platform.select({
+            android: {
+                includeFontPadding: false,
+            },
+        }),
+    },
 }))

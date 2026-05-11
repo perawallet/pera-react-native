@@ -29,8 +29,8 @@ export const signResponseSchema = z.object({
 export const transactionListResponseSchema = z.object({
     id: z.coerce.string(),
     raw_transactions: z.array(z.string()),
-    first_valid_block: z.number(),
-    last_valid_block: z.number(),
+    first_valid_block: z.coerce.number(),
+    last_valid_block: z.coerce.number(),
     expected_expire_datetime: z.string(),
     responses: z.array(signResponseSchema),
 })
@@ -52,6 +52,7 @@ export const signRequestResponseSchema = z.object({
     fail_reason_display: z.string().nullable(),
     joint_account: multiSigAccountResponseSchema,
     transaction_lists: z.array(transactionListResponseSchema),
+    proposer_address: z.string().nullable().optional(),
 })
 
 export const createMultisigAccountRequestSchema = z.object({
@@ -94,6 +95,21 @@ export const declineRequestSchema = z.object({
 
 export const signRequestDetailResponseSchema = signRequestResponseSchema
 
+export const searchSignRequestsRequestSchema = z.object({
+    device_id: z.string(),
+    sign_request_id: z.string().nullable().optional(),
+    participant_addresses: z.array(z.string()).nullable().optional(),
+    statuses: z.array(z.string()).nullable().optional(),
+    joint_account_address: z.array(z.string()).nullable().optional(),
+})
+
+export const searchSignRequestsResponseSchema = z.object({
+    count: z.number().nullable().optional(),
+    next: z.string().nullable().optional(),
+    previous: z.string().nullable().optional(),
+    results: z.array(signRequestResponseSchema).nullable().optional(),
+})
+
 export const deleteImportInboxResponseSchema = z.void()
 
 export type MultiSigAccountResponse = z.infer<
@@ -118,4 +134,10 @@ export type AddSignatureRequest = z.infer<typeof addSignatureRequestSchema>
 export type DeclineRequest = z.infer<typeof declineRequestSchema>
 export type SignRequestDetailResponse = z.infer<
     typeof signRequestDetailResponseSchema
+>
+export type SearchSignRequestsRequest = z.infer<
+    typeof searchSignRequestsRequestSchema
+>
+export type SearchSignRequestsResponse = z.infer<
+    typeof searchSignRequestsResponseSchema
 >

@@ -32,13 +32,37 @@ export const makeKeyPair = (source: Partial<KeyPair>): KeyPair => {
 // keystore-defined fields like `parentKeyId`, `path`, `account`, `index`.
 const PERA_META_KEY = 'pera'
 
+/**
+ * Wallet-domain discriminator stamped into `pera.kind` on every wallet-root
+ * keystore entry. This is the canonical source of truth for what kind of
+ * key an entry represents — the keystore's own `type` field can be
+ * ambiguous (Algo25 roots sometimes persist as `hd-seed`), so we don't
+ * trust it for classification.
+ */
+export const PeraKeyKind = {
+    HDWalletRoot: 'hd-wallet-root',
+    Algo25Root: 'algo25-root',
+    DeterministicP256Root: 'deterministic-p256-root',
+} as const
+
+export type PeraKeyKind = (typeof PeraKeyKind)[keyof typeof PeraKeyKind]
+
 type PeraMetadata = {
     acl?: AccessControl[]
     createdAt?: string // ISO 8601 — Dates aren't JSON-safe
     expiresAt?: string
+    kind?: PeraKeyKind
 }
 
-const keystoreTypeToWalletType: Record<string, KeyType> = {
+const peraKindToWalletType: Record<PeraKeyKind, KeyType> = {
+    [PeraKeyKind.HDWalletRoot]: KeyType.HDWalletRootKey,
+    [PeraKeyKind.Algo25Root]: KeyType.Algo25Key,
+    [PeraKeyKind.DeterministicP256Root]: KeyType.DeterministicP256Key,
+}
+
+// Legacy fallback for entries committed before `pera.kind` was introduced.
+// Once those entries are gone (or migrated), this map can be deleted.
+const legacyKeystoreTypeToWalletType: Record<string, KeyType> = {
     'hd-root-key': KeyType.HDWalletRootKey,
     [ALGO25_KEYSTORE_TYPE]: KeyType.Algo25Key,
     'hd-derived-p256': KeyType.DeterministicP256Key,
@@ -48,12 +72,18 @@ const keystoreTypeToWalletType: Record<string, KeyType> = {
  * Maps a keystore Key into our wallet-domain KeyPair shape. Returns null for
  * keystore entries that aren't wallet-roots (HD-derived children of an HD
  * root, raw entropy/seed entries, etc.).
+ *
+ * Resolution prefers `pera.kind` (the canonical wallet-domain discriminator
+ * stamped at commit time) and only falls back to the keystore `type` field
+ * for legacy entries written before the kind tag was introduced.
  */
 export const keystoreKeyToKeyPair = (key: Key): KeyPair | null => {
-    const walletType = keystoreTypeToWalletType[key.type]
+    const pera = (key.metadata?.[PERA_META_KEY] ?? {}) as PeraMetadata
+    const walletType = pera.kind
+        ? peraKindToWalletType[pera.kind]
+        : legacyKeystoreTypeToWalletType[key.type]
     if (!walletType) return null
 
-    const pera = (key.metadata?.[PERA_META_KEY] ?? {}) as PeraMetadata
     const publicKey =
         walletType === KeyType.Algo25Key && key.publicKey
             ? encodeAddress(new Uint8Array(key.publicKey))
@@ -76,11 +106,14 @@ export const keystoreKeyToKeyPair = (key: Key): KeyPair | null => {
  * into the `metadata` argument alongside any keystore-defined fields.
  */
 export const peraMetadataFor = (
-    keyPair: Pick<KeyPair, 'acl' | 'createdAt' | 'expiresAt'>,
+    keyPair: Pick<KeyPair, 'acl' | 'createdAt' | 'expiresAt'> & {
+        kind?: PeraKeyKind
+    },
 ): { [PERA_META_KEY]: PeraMetadata } => ({
     [PERA_META_KEY]: {
         acl: keyPair.acl,
         createdAt: (keyPair.createdAt ?? new Date()).toISOString(),
         expiresAt: keyPair.expiresAt?.toISOString(),
+        ...(keyPair.kind ? { kind: keyPair.kind } : {}),
     },
 })

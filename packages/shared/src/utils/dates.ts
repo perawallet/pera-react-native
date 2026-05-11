@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { ONE_DAY, ONE_HOUR, ONE_MINUTE } from '@perawallet/wallet-core-config'
+
 /**
  * Validates that a string is in the correct ISO 8601 date format (YYYY-MM-DD).
  * Also validates that the date is a real calendar date (e.g., rejects 2024-02-30).
@@ -80,10 +82,27 @@ export const getDateRangeParams = (
     days: number,
 ): { afterTime: string; beforeTime: string } => {
     const now = new Date()
-    const pastDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000)
+    const pastDate = new Date(now.getTime() - days * ONE_DAY)
 
     return {
         afterTime: pastDate.toISOString(),
         beforeTime: now.toISOString(),
     }
+}
+
+/**
+ * Formats the duration between `now` and `expiresAt` as a short,
+ * human-readable "time left" string. Returns `null` when `expiresAt` is
+ * in the past, so the caller can hide the badge entirely.
+ */
+export const formatTimeRemaining = (
+    expiresAt: Date,
+    now: number = Date.now(),
+): string | null => {
+    const remaining = expiresAt.getTime() - now
+    if (remaining <= 0) return null
+    if (remaining < ONE_MINUTE) return '<1m'
+    if (remaining < ONE_HOUR) return `${Math.round(remaining / ONE_MINUTE)}m`
+    if (remaining < ONE_DAY) return `${Math.round(remaining / ONE_HOUR)}h`
+    return `${Math.round(remaining / ONE_DAY)}d`
 }

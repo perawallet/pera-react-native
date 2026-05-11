@@ -430,9 +430,22 @@ export interface SignaturesAddedTransportResult {
 }
 
 /**
- * Sign request status from backend
+ * Sign request status reported by the multisig backend. Mirrors the
+ * server-side state machine: a propose / cosign call may resolve to any of
+ * these depending on whether threshold was met, whether submission to algod
+ * has started/finished, or whether the request was declined or expired.
+ *
+ * Source of truth: `signRequestResponseSchema` in
+ * `packages/multisig/src/api/schema.ts`.
  */
-export type SignRequestStatus = 'pending' | 'ready' | 'submitted' | 'failed'
+export type SignRequestStatus =
+    | 'pending'
+    | 'ready'
+    | 'submitting'
+    | 'confirmed'
+    | 'failed'
+    | 'expired'
+    | 'declined'
 
 /**
  * Union of all transport results

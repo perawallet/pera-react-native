@@ -35,6 +35,7 @@ export type UseAppNavigation = {
     replace: NavigationMethod
     goBack: () => void
     canGoBack: () => boolean
+    reset: (state: Parameters<AppNavigationProp['reset']>[0]) => void
 }
 
 export function useAppNavigation(): UseAppNavigation {
@@ -46,5 +47,6 @@ export function useAppNavigation(): UseAppNavigation {
         replace: navigation.replace as NavigationMethod,
         goBack: navigation.goBack,
         canGoBack: navigation.canGoBack,
+        reset: navigation.reset,
     }
 }

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { toError } from '@perawallet/wallet-core-shared'
 import type {
     DataTransport,
     SigningResult,
@@ -53,15 +54,13 @@ export const createMultisigCosignTransport = (
                     signRequestId: source.signRequestId,
                     signers: result.signers,
                 })
-
                 return {
                     type: 'signatures-added',
                     signRequestId: source.signRequestId,
                     status: response.status,
                 }
             } catch (error) {
-                const err =
-                    error instanceof Error ? error : new Error(String(error))
+                const err = toError(error)
                 throw new TransportError(err.message, err)
             }
         },

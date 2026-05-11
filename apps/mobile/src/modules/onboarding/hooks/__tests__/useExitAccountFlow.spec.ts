@@ -15,10 +15,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useExitAccountFlow } from '../useExitAccountFlow'
 
 const mockNavigate = vi.fn()
+const mockReset = vi.fn()
 
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({
         navigate: mockNavigate,
+        reset: mockReset,
     }),
 }))
 
@@ -47,7 +49,10 @@ describe('useExitAccountFlow', () => {
             result.current.exitAccountFlow()
         })
 
-        expect(mockNavigate).toHaveBeenCalledWith('TabBar', { screen: 'Home' })
+        expect(mockReset).toHaveBeenCalledWith({
+            index: 0,
+            routes: [{ name: 'TabBar', params: { screen: 'Home' } }],
+        })
         expect(mockSetIsOnboarding).not.toHaveBeenCalled()
     })
 
@@ -62,5 +67,6 @@ describe('useExitAccountFlow', () => {
 
         expect(mockSetIsOnboarding).toHaveBeenCalledWith(false)
         expect(mockNavigate).not.toHaveBeenCalled()
+        expect(mockReset).not.toHaveBeenCalled()
     })
 })
