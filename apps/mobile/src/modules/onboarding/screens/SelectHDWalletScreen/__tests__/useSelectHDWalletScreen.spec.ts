@@ -16,7 +16,7 @@ import { useSelectHDWalletScreen } from '../useSelectHDWalletScreen'
 import type { HDWalletGroup } from '@perawallet/wallet-core-accounts'
 
 const mockPush = vi.fn()
-const mockReplace = vi.fn()
+const mockReplace = vi.fn() 
 const mockGoBack = vi.fn()
 
 vi.mock('@hooks/useAppNavigation', () => ({
@@ -164,7 +164,7 @@ describe('useSelectHDWalletScreen', () => {
             result.current.handleSelectWallet(mockHDWalletGroups[0])
         })
 
-        expect(mockPush).toHaveBeenCalledWith('SearchAccounts', {
+        expect(mockReplace).toHaveBeenCalledWith('SearchAccounts', {
             account: mockHDWalletGroups[0].firstAccount,
             createIfEmpty: true,
         })
