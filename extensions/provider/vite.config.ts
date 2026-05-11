@@ -71,7 +71,6 @@ export default defineConfig({
                 '@perawallet/wallet-core-walletconnect',
                 '@algorandfoundation/xhd-wallet-api',
                 'uuid',
-                'bip39',
                 'decimal.js',
             ],
         },

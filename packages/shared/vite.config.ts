@@ -58,7 +58,6 @@ export default defineConfig({
                 '@algorandfoundation/xhd-wallet-api',
                 'base32-encode',
                 'base64-js',
-                'bip39',
                 'decimal.js',
                 'ky',
                 'react-native-quick-base64',

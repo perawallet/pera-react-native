@@ -17,56 +17,24 @@ import {
     NativeStackHeaderProps,
 } from '@react-navigation/native-stack'
 import { OnboardingScreen } from '@modules/onboarding/screens/OnboardingScreen'
-import { NameAccountScreen } from '@modules/onboarding/screens/NameAccountScreen'
-import { ImportAccountScreen } from '@modules/onboarding/screens/ImportAccountScreen'
-import { ImportInfoScreen } from '@modules/onboarding/screens/ImportInfoScreen'
-import { ImportSelectAddressesScreen } from '@modules/onboarding/screens/ImportSelectAddressesScreen'
-import { ImportRekeyedAddressesScreen } from '@modules/onboarding/screens/ImportRekeyedAddressesScreen'
-import { AccountErrorBoundary } from '@modules/accounts/components/AccountErrorBoundary/AccountErrorBoundary'
-import { useLanguage } from '@hooks/useLanguage'
 import { screenListeners } from '@routes/listeners'
-import { fullScreenLayout, safeAreaLayout } from '@layouts/index'
-import type React from 'react'
-
-import { SearchAccountsScreen } from '@modules/onboarding/screens/SearchAccountsScreen'
-
-// Wrap screens with AccountErrorBoundary to catch account-related errors
-const withAccountErrorBoundary = <P extends object>(
-    WrappedComponent: React.ComponentType<P>,
-): React.ComponentType<P> => {
-    return (props: P) => {
-        const { t } = useLanguage()
-        return (
-            <AccountErrorBoundary t={t}>
-                <WrappedComponent {...props} />
-            </AccountErrorBoundary>
-        )
-    }
-}
-
-const OnboardingScreenWithErrorBoundary =
-    withAccountErrorBoundary(OnboardingScreen)
-const NameAccountScreenWithErrorBoundary =
-    withAccountErrorBoundary(NameAccountScreen)
-const ImportAccountScreenWithErrorBoundary =
-    withAccountErrorBoundary(ImportAccountScreen)
-const ImportInfoScreenWithErrorBoundary =
-    withAccountErrorBoundary(ImportInfoScreen)
-const SearchAccountsScreenWithErrorBoundary =
-    withAccountErrorBoundary(SearchAccountsScreen)
-const ImportSelectAddressesScreenWithErrorBoundary = withAccountErrorBoundary(
-    ImportSelectAddressesScreen,
-)
-const ImportRekeyedAddressesScreenWithErrorBoundary = withAccountErrorBoundary(
-    ImportRekeyedAddressesScreen,
-)
+import { fullScreenLayout } from '@layouts/index'
 
 import { OnboardingStackParamList } from './types'
+import {
+    renderImportFlowScreens,
+    withAccountErrorBoundary,
+    type ImportFlowStack,
+} from './shared-screens'
+
 export type {
     OnboardingStackParamList,
     AddAccountStackParamList,
 } from './types'
 export { AddAccountStackNavigator } from './add-account'
+
+const OnboardingScreenWithErrorBoundary =
+    withAccountErrorBoundary(OnboardingScreen)
 
 const OnboardingStack = createNativeStackNavigator<OnboardingStackParamList>()
 
@@ -77,14 +45,10 @@ export const OnboardingStackNavigator = () => {
             screenOptions={{
                 headerShown: true,
                 header: (props: NativeStackHeaderProps) => (
-                    <NavigationHeader
-                        {...props}
-                        safeArea={false}
-                    />
+                    <NavigationHeader {...props} />
                 ),
                 ...SCREEN_ANIMATION_CONFIG,
             }}
-            layout={safeAreaLayout}
             screenListeners={screenListeners}
         >
             <OnboardingStack.Screen
@@ -93,38 +57,9 @@ export const OnboardingStackNavigator = () => {
                 layout={fullScreenLayout}
                 component={OnboardingScreenWithErrorBoundary}
             />
-            <OnboardingStack.Screen
-                name='ImportInfo'
-                options={{
-                    title: '',
-                }}
-                component={ImportInfoScreenWithErrorBoundary}
-            />
-            <OnboardingStack.Screen
-                name='NameAccount'
-                options={{
-                    title: '',
-                }}
-                component={NameAccountScreenWithErrorBoundary}
-            />
-            <OnboardingStack.Screen
-                name='ImportAccount'
-                component={ImportAccountScreenWithErrorBoundary}
-            />
-            <OnboardingStack.Screen
-                name='SearchAccounts'
-                options={{ headerShown: false }}
-                layout={fullScreenLayout}
-                component={SearchAccountsScreenWithErrorBoundary}
-            />
-            <OnboardingStack.Screen
-                name='ImportSelectAddresses'
-                component={ImportSelectAddressesScreenWithErrorBoundary}
-            />
-            <OnboardingStack.Screen
-                name='ImportRekeyedAddresses'
-                component={ImportRekeyedAddressesScreenWithErrorBoundary}
-            />
+            {renderImportFlowScreens(
+                OnboardingStack as unknown as ImportFlowStack,
+            )}
         </OnboardingStack.Navigator>
     )
 }

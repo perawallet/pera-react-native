@@ -108,7 +108,7 @@ describe('useHDWallet', () => {
             mockGenerateHDMasterKey.mockResolvedValue({
                 mnemonic: 'generated mnemonic',
                 seed: Buffer.from('seed-data'),
-                entropy: 'abcdef01',
+                entropy: new Uint8Array([0xab, 0xcd, 0xef, 0x01]),
             })
             mockFromSeed.mockReturnValue(mockRootKey)
             mockKeyStoreImport
@@ -196,7 +196,7 @@ describe('useHDWallet', () => {
             mockGenerateHDMasterKey.mockResolvedValue({
                 mnemonic: 'test mnemonic',
                 seed: fakeSeed,
-                entropy: 'abcdef01',
+                entropy: new Uint8Array([0xab, 0xcd, 0xef, 0x01]),
             })
             mockFromSeed.mockReturnValue(fakeRootKey)
 
