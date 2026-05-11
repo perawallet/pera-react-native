@@ -503,6 +503,7 @@
         "done": "Done",
         "save": "Save",
         "copy": "Copy",
+        "copy_address": "Copy address",
         "send": "Send"
     },
     "contacts": {
