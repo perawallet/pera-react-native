@@ -372,6 +372,9 @@ importers:
       '@sbaiahmed1/react-native-biometrics':
         specifier: ^0.15.0
         version: 0.15.0(react-native@0.83.4(@babel/core@7.29.0)(@react-native/metro-config@0.85.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.5))(react@19.2.5)
+      '@scure/bip39':
+        specifier: 'catalog:'
+        version: 2.0.1
       '@tanstack/query-async-storage-persister':
         specifier: 'catalog:'
         version: 5.99.0
@@ -1706,7 +1709,7 @@ importers:
         version: 8.0.8(@types/node@20.19.39)(esbuild@0.27.3)(jiti@2.5.1)(terser@5.46.2)(tsx@4.21.0)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.0(@microsoft/api-extractor@7.57.7(@types/node@22.19.17))(esbuild@0.27.3)(rollup@4.59.0)(typescript@5.9.3)(vite@8.0.8(@types/node@22.19.17)(esbuild@0.27.3)(jiti@2.5.1)(terser@5.46.2)(tsx@4.21.0)(yaml@2.8.3))
+        version: 5.0.0(@microsoft/api-extractor@7.57.7(@types/node@20.19.39))(esbuild@0.27.3)(rollup@4.59.0)(typescript@5.9.3)(vite@8.0.8(@types/node@20.19.39)(esbuild@0.27.3)(jiti@2.5.1)(terser@5.46.2)(tsx@4.21.0)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
         version: 4.1.4(@types/node@20.19.39)(@vitest/coverage-v8@4.1.4)(happy-dom@20.9.0)(jsdom@29.0.2(@noble/hashes@2.0.1))(msw@2.12.10(@types/node@20.19.39)(typescript@5.9.3))(vite@8.0.8(@types/node@20.19.39)(esbuild@0.27.3)(jiti@2.5.1)(terser@5.46.2)(tsx@4.21.0)(yaml@2.8.3))
@@ -13361,7 +13364,7 @@ snapshots:
       obug: 2.1.1
       std-env: 4.0.0
       tinyrainbow: 3.1.0
-      vitest: 4.1.4(@types/node@22.19.17)(@vitest/coverage-v8@4.1.4)(happy-dom@20.9.0)(jsdom@29.0.2(@noble/hashes@2.0.1))(msw@2.12.10(@types/node@22.19.17)(typescript@5.9.3))(vite@8.0.8(@types/node@22.19.17)(esbuild@0.27.3)(jiti@2.5.1)(terser@5.46.2)(tsx@4.21.0)(yaml@2.8.3))
+      vitest: 4.1.4(@types/node@22.19.17)(@vitest/coverage-v8@4.1.4)(happy-dom@20.9.0)(jsdom@27.4.0(@noble/hashes@2.0.1))(msw@2.12.10(@types/node@22.19.17)(typescript@5.9.3))(vite@8.0.8(@types/node@22.19.17)(esbuild@0.27.3)(jiti@2.5.1)(terser@5.46.2)(tsx@4.21.0)(yaml@2.8.3))
 
   '@vitest/coverage-v8@4.1.5(vitest@4.1.5)':
     dependencies:
