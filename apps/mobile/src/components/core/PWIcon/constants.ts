@@ -75,6 +75,8 @@ import QuestionMarkIcon from '@assets/icons/question-mark.svg'
 import RekeyIcon from '@assets/icons/rekey.svg'
 import ReloadIcon from '@assets/icons/reload.svg'
 import PhoneIcon from '@assets/icons/phone.svg'
+import PhoneBluetoothIcon from '@assets/icons/phone-bluetooth.svg'
+import PairWithLedgerIcon from '@assets/icons/pair-with-ledger.svg'
 import SaveIcon from '@assets/icons/save.svg'
 import ShareIcon from '@assets/icons/share.svg'
 import ShieldCheckIcon from '@assets/icons/shield-check.svg'
@@ -211,6 +213,8 @@ export const ICON_LIBRARY = {
     rekey: RekeyIcon,
     reload: ReloadIcon,
     phone: PhoneIcon,
+    'phone-bluetooth': PhoneBluetoothIcon,
+    'pair-with-ledger': PairWithLedgerIcon,
     save: SaveIcon,
     share: ShareIcon,
     'shield-check': ShieldCheckIcon,
