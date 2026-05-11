@@ -66,7 +66,7 @@ describe('LedgerVerifyScreen', () => {
 
     it('renders the title and description', () => {
         render(<LedgerVerifyScreen />)
-        expect(screen.getByText('ledger.verify.title_redesigned')).toBeTruthy()
+        expect(screen.getByText('ledger.verify.title')).toBeTruthy()
         expect(screen.getByText('ledger.verify.description')).toBeTruthy()
     })
 

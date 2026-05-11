@@ -1751,10 +1751,6 @@
         "scan": {
             "title": "Looking for Devices",
             "description": "Select a Ledger device to connect to.",
-            "scanning": "Scanning for Ledger devices...",
-            "searching": "Searching for nearby devices...",
-            "no_devices": "No devices found",
-            "no_devices_description": "Make sure your Ledger device is turned on and nearby.",
             "retry": "Scan Again",
             "error": "Scan failed. Make sure Bluetooth is enabled and try again.",
             "timeout": "Scan timed out. Make sure your device is on and nearby."
@@ -1769,40 +1765,28 @@
             "retry": "Try Again"
         },
         "select_accounts": {
-            "title": "Select Accounts",
-            "description": "We found {{count}} accounts on your Ledger device",
-            "accounts_count": "{{count}} accounts",
-            "account_label": "Account #{{index}}",
-            "select_all": "Select all",
-            "already_imported": "Already imported",
-            "continue": "Continue",
-            "no_new_accounts": "All accounts on this device are already imported.",
-            "find_another_wallet": "Find another wallet",
             "title_one": "{{count}} account found",
             "title_other": "{{count}} accounts found",
-            "title_redesigned_description": "This Ledger device can sign transactions for the following accounts. Select the accounts to add to your Pera Wallet.",
+            "description": "This Ledger device can sign transactions for the following accounts. Select the accounts to add to your Pera Wallet.",
             "account_subtitle": "Ledger Account",
+            "select_all": "Select all",
+            "already_imported": "Already imported",
             "cta_one": "Verify selected account",
             "cta_other": "Verify selected accounts",
-            "address_sheet_title": "Account address"
+            "address_sheet_title": "Account address",
+            "no_new_accounts": "All accounts on this device are already imported.",
+            "find_another_wallet": "Find another wallet"
         },
         "verify": {
-            "title": "Verify on Ledger",
-            "connecting": "Connecting to your Ledger device...",
-            "verify_on_device": "Please verify each address on your Ledger device.",
-            "progress": "Verifying account {{current}} of {{total}}...",
-            "confirm_instruction": "Confirm the address shown on your Ledger device matches.",
-            "complete": "All accounts verified successfully!",
-            "error_title": "Verification Failed",
-            "rejected": "Address verification was rejected on the device.",
-            "retry": "Try Again",
-            "saving": "Saving accounts...",
-            "title_redesigned": "Verify Account Addresses via Ledger",
+            "title": "Verify Account Addresses via Ledger",
             "description": "The following account addresses will display on your Ledger device. Please carefully compare and verify each address in order to finalize device pairing.",
             "awaiting": "Awaiting Verification",
             "verified": "Account Verified",
             "add_accounts_one": "Add Verified Account",
-            "add_accounts_other": "Add Verified Accounts"
+            "add_accounts_other": "Add Verified Accounts",
+            "error_title": "Verification Failed",
+            "rejected": "Address verification was rejected on the device.",
+            "retry": "Try Again"
         },
         "signing": {
             "title": "Approve on Ledger",
@@ -1843,15 +1827,6 @@
             "issue_permissions": "Bluetooth scan permission needs to be granted in order to search for nearby Ledgers.",
             "issue_unsupported": "Pera supports Ledger Nano X, Stax, Flex, and Nano Gen5.",
             "done": "Got it"
-        },
-        "pairing_instructions": {
-            "title": "Pairing Ledger with Your Device",
-            "subtitle": "Is your Ledger paired with this device? If not, please follow these steps:",
-            "step_1": "Open your Ledger device.",
-            "step_2": "Close the Algorand app on the Ledger device.",
-            "step_3": "On the Ledger home screen, confirm pairing.",
-            "step_4": "Once pairing is confirmed on both Ledger and this device, open the Algorand Ledger app.",
-            "continue": "Continue"
         },
         "scan_header": {
             "having_issues": "Having issues?"

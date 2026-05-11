@@ -70,7 +70,7 @@ export const LedgerVerifyScreen = () => {
                     variant='h2'
                     style={styles.title}
                 >
-                    {t('ledger.verify.title_redesigned')}
+                    {t('ledger.verify.title')}
                 </PWText>
                 <PWText
                     variant='body'

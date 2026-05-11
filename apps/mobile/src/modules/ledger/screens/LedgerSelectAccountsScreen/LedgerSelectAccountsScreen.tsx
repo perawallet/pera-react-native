@@ -96,7 +96,7 @@ export const LedgerSelectAccountsScreen = () => {
                     variant='h4'
                     style={styles.description}
                 >
-                    {t('ledger.select_accounts.title_redesigned_description')}
+                    {t('ledger.select_accounts.description')}
                 </PWText>
 
                 {showSelectAll && (
