@@ -16,12 +16,13 @@ import { navigationRef } from '@routes/navigationRef'
 import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
 import { parseDeeplink } from './deeplink/parser'
 import { DeeplinkType } from './deeplink/types'
-import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import {
     resolveImportAccountType,
+    useAccountsStore,
     useSelectedAccountAddress,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { useWebView } from '@modules/webview/hooks/useWebViewStore'
 import {
     isSafeBrowserUrl,
@@ -44,12 +45,12 @@ export type BuildDeeplinkInput = {
 
 export const useDeepLink = () => {
     const { showToast, errorToast, infoToast } = useToast()
-    const { addSignRequest } = useSigningRequest()
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
     const { pushWebView } = useWebView()
     const { network } = useNetwork()
     const { t } = useLanguage()
     const { connect } = useWalletConnect(network)
+    const { requestByType } = useBottomSheetStore()
 
     const isValidDeepLink = (url: string): boolean => {
         if (isValidAlgorandAddress(url)) {
@@ -190,16 +191,26 @@ export const useDeepLink = () => {
                     })
                     break
 
-                case DeeplinkType.ASSET_OPT_IN:
-                    // TODO: We need to use a proper transaction construction method here and
-                    //navigate somewhere other than the qr code scanner.
-                    addSignRequest({
-                        id: generateOrderedUniqueId(),
-                        type: 'transactions',
-                        transport: 'algod',
-                        txs: [],
+                case DeeplinkType.ASSET_OPT_IN: {
+                    // Prefer the address explicitly carried by the deep link;
+                    // fall back to the currently selected account so a bare
+                    // `assetId` link still has somewhere to opt in.
+                    const accountAddress =
+                        parsedData.address ??
+                        useAccountsStore.getState().selectedAccountAddress
+                    if (!accountAddress) {
+                        errorToast(
+                            t('errors.deeplink.title'),
+                            t('errors.deeplink.no_account'),
+                        )
+                        break
+                    }
+                    requestByType('asset-opt-in', {
+                        assetId: parsedData.assetId,
+                        accountAddress,
                     })
                     break
+                }
 
                 case DeeplinkType.ASSET_DETAIL:
                 case DeeplinkType.ASSET_TRANSACTIONS:

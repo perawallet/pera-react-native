@@ -102,6 +102,16 @@ vi.mock('@constants/ui', () => ({
     LONG_PROMPT_DISPLAY_DELAY: 600,
 }))
 
+const { mockRequestByType } = vi.hoisted(() => ({
+    mockRequestByType: vi.fn(),
+}))
+
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({
+        requestByType: mockRequestByType,
+    }),
+}))
+
 describe('useAddAssetView', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -110,16 +120,12 @@ describe('useAddAssetView', () => {
 
     it('does not show an error toast when user cancels the signing overlay', async () => {
         mockOptIn.mockRejectedValueOnce(new UserRejectedSigningError())
+        mockRequestByType.mockResolvedValueOnce('confirm')
 
         const { result } = renderHook(() => useAddAssetView())
 
-        // Request and confirm opt-in for an asset
-        act(() => {
-            result.current.handleRequestAdd('999')
-        })
-
         await act(async () => {
-            await result.current.handleConfirmAdd()
+            await result.current.handleRequestAdd('999')
         })
 
         expect(mockShowError).not.toHaveBeenCalled()
@@ -131,20 +137,29 @@ describe('useAddAssetView', () => {
     it('shows an error toast when opt-in fails with a non-cancel error', async () => {
         const optInError = new Error('Network error')
         mockOptIn.mockRejectedValueOnce(optInError)
+        mockRequestByType.mockResolvedValueOnce('confirm')
 
         const { result } = renderHook(() => useAddAssetView())
 
-        act(() => {
-            result.current.handleRequestAdd('999')
-        })
-
         await act(async () => {
-            await result.current.handleConfirmAdd()
+            await result.current.handleRequestAdd('999')
         })
 
         expect(mockShowError).toHaveBeenCalledWith(
             optInError,
             'add_asset.opt_in.failed_title',
         )
+    })
+
+    it('does not call optIn when user dismisses the confirmation sheet', async () => {
+        mockRequestByType.mockResolvedValueOnce(undefined)
+
+        const { result } = renderHook(() => useAddAssetView())
+
+        await act(async () => {
+            await result.current.handleRequestAdd('999')
+        })
+
+        expect(mockOptIn).not.toHaveBeenCalled()
     })
 })

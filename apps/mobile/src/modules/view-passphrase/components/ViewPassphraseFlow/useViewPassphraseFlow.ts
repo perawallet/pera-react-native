@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { usePinCode } from '@perawallet/wallet-core-security'
 
 export type ViewPassphraseFlowStep = 'pin' | 'acknowledge' | 'display' | null
@@ -23,26 +23,16 @@ export type UseViewPassphraseFlowParams = {
 export type UseViewPassphraseFlowResult = {
     step: ViewPassphraseFlowStep
     handlePinSuccess: () => void
-    handleAcknowledgeConfirm: () => void
-    handleAcknowledgeClose: () => void
+    advanceToDisplay: () => void
 }
 
 export const useViewPassphraseFlow = ({
     isVisible,
-    onClose,
+    onClose: _onClose,
 }: UseViewPassphraseFlowParams): UseViewPassphraseFlowResult => {
     const { checkPinEnabled } = usePinCode()
     const [step, setStep] = useState<ViewPassphraseFlowStep>(null)
-    // Each PWBottomSheet fires its onBackdropPress handler whenever it
-    // dismisses for any reason — including the programmatic dismiss that
-    // happens when we hand off to the next step. Mark a transition before
-    // changing the step so the outgoing sheet's dismiss callback knows to
-    // ignore it.
-    const skipNextAcknowledgeCloseRef = useRef(false)
 
-    // When the parent opens the flow, decide the entry step based on whether a
-    // PIN is set. When the parent closes it, drop back to null so the next
-    // open re-runs the gate.
     useEffect(() => {
         if (!isVisible) {
             setStep(null)
@@ -63,23 +53,13 @@ export const useViewPassphraseFlow = ({
         setStep('acknowledge')
     }, [])
 
-    const handleAcknowledgeConfirm = useCallback(() => {
-        skipNextAcknowledgeCloseRef.current = true
+    const advanceToDisplay = useCallback(() => {
         setStep('display')
     }, [])
-
-    const handleAcknowledgeClose = useCallback(() => {
-        if (skipNextAcknowledgeCloseRef.current) {
-            skipNextAcknowledgeCloseRef.current = false
-            return
-        }
-        onClose()
-    }, [onClose])
 
     return {
         step,
         handlePinSuccess,
-        handleAcknowledgeConfirm,
-        handleAcknowledgeClose,
+        advanceToDisplay,
     }
 }

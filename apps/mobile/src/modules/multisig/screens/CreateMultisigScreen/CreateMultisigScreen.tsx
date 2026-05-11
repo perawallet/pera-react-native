@@ -13,7 +13,6 @@
 import { PWButton, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { ParticipantListItem } from '../../components/ParticipantListItem'
-import { AddParticipantBottomSheet } from '../../components/AddParticipantBottomSheet'
 import { useCreateMultisigScreen } from './useCreateMultisigScreen'
 import { useStyles } from './styles'
 
@@ -22,70 +21,57 @@ export const CreateMultisigScreen = () => {
     const { t } = useLanguage()
     const {
         participants,
-        isAddParticipantVisible,
         canContinue,
         handleOpenAddParticipant,
-        handleCloseAddParticipant,
-        handleAddAddress,
         handleEditParticipant,
         handleContinue,
     } = useCreateMultisigScreen()
 
     return (
-        <>
-            <PWView style={styles.container}>
-                <PWView style={styles.content}>
-                    <PWView style={styles.headerContainer}>
-                        <PWText variant='h1'>
-                            {t('multisig.create.title')}
-                        </PWText>
-                        <PWText style={styles.description}>
-                            {t('multisig.create.description')}
-                        </PWText>
-                    </PWView>
-
-                    <PWText variant='h4'>
-                        {t('multisig.create.accounts_section')}
-                    </PWText>
+        <PWView style={styles.container}>
+            <PWView style={styles.content}>
+                <PWView style={styles.headerContainer}>
+                    <PWText variant='h1'>{t('multisig.create.title')}</PWText>
                     <PWText style={styles.description}>
-                        {t('multisig.create.accounts_subtitle')}
+                        {t('multisig.create.description')}
                     </PWText>
+                </PWView>
 
-                    <PWView style={styles.spacer}>
-                        {participants.map(participant => (
-                            <ParticipantListItem
-                                key={participant.address}
-                                participant={participant}
-                                onEdit={handleEditParticipant}
-                            />
-                        ))}
-                        <PWButton
-                            variant='linkPositive'
-                            icon='plus'
-                            title={t('multisig.create.add_account')}
-                            onPress={handleOpenAddParticipant}
-                            testID='add_participant_button'
-                            paddingStyle='none'
-                            style={styles.addButton}
+                <PWText variant='h4'>
+                    {t('multisig.create.accounts_section')}
+                </PWText>
+                <PWText style={styles.description}>
+                    {t('multisig.create.accounts_subtitle')}
+                </PWText>
+
+                <PWView style={styles.spacer}>
+                    {participants.map(participant => (
+                        <ParticipantListItem
+                            key={participant.address}
+                            participant={participant}
+                            onEdit={handleEditParticipant}
                         />
-                    </PWView>
-
+                    ))}
                     <PWButton
-                        variant='primary'
-                        title={t('common.continue.label')}
-                        onPress={handleContinue}
-                        isDisabled={!canContinue}
-                        style={styles.continueButton}
-                        testID='create_multisig_continue_button'
+                        variant='linkPositive'
+                        icon='plus'
+                        title={t('multisig.create.add_account')}
+                        onPress={handleOpenAddParticipant}
+                        testID='add_participant_button'
+                        paddingStyle='none'
+                        style={styles.addButton}
                     />
                 </PWView>
-            </PWView>
 
-            <AddParticipantBottomSheet
-                isVisible={isAddParticipantVisible}
-                onClose={handleCloseAddParticipant}
-                onAddAddress={handleAddAddress}
-            />
-        </>
+                <PWButton
+                    variant='primary'
+                    title={t('common.continue.label')}
+                    onPress={handleContinue}
+                    isDisabled={!canContinue}
+                    style={styles.continueButton}
+                    testID='create_multisig_continue_button'
+                />
+            </PWView>
+        </PWView>
     )
 }

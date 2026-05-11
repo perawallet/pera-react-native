@@ -14,11 +14,12 @@ import { useCallback } from 'react'
 import { Keyboard, KeyboardAvoidingView, Platform } from 'react-native'
 
 import { PWButton, PWView } from '@components/core'
-import { ConfirmActionBottomSheet } from '@components/ConfirmActionBottomSheet'
+import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { ContactForm } from '@components/ContactForm'
 import { PhotoPermissionDeniedSheet } from '@components/PhotoPermissionDeniedSheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
+import { useBottomSheet } from '@modules/bottom-sheet'
 import { useEditContactForm } from '@modules/contacts/hooks'
 import { useStyles } from './styles'
 
@@ -34,13 +35,13 @@ export const EditContactScreen = () => {
         rawAddressInput,
         imageUri,
         nfd,
-        confirmDelete,
         onAddressInputChange,
         onPickImage,
         permissionDenied,
         save,
         removeContact,
     } = useEditContactForm()
+    const { request: requestBottomSheet } = useBottomSheet()
 
     useNavigationHeader({
         enabled: true,
@@ -55,10 +56,23 @@ export const EditContactScreen = () => {
         ),
     })
 
-    const openDeleteConfirm = useCallback(() => {
+    const openDeleteConfirm = useCallback(async () => {
         Keyboard.dismiss()
-        confirmDelete.open()
-    }, [confirmDelete])
+        const confirmed = await requestBottomSheet<boolean>({
+            contents: (
+                <ConfirmActionContent
+                    icon='trash'
+                    iconVariant='error'
+                    title={t('contacts.edit_contact.remove_title')}
+                    message={t('contacts.edit_contact.remove_message')}
+                    confirmLabel={t('contacts.edit_contact.remove_confirm')}
+                    cancelLabel={t('contacts.edit_contact.remove_cancel')}
+                />
+            ),
+            options: { size: 'auto', enablePanDownToClose: true },
+        })
+        if (confirmed) removeContact()
+    }, [requestBottomSheet, t, removeContact])
 
     return (
         <KeyboardAvoidingView
@@ -93,17 +107,6 @@ export const EditContactScreen = () => {
                     />
                 </PWView>
             </ContactForm>
-            <ConfirmActionBottomSheet
-                isVisible={confirmDelete.isOpen}
-                onClose={confirmDelete.close}
-                onConfirm={removeContact}
-                icon='trash'
-                iconVariant='error'
-                title={t('contacts.edit_contact.remove_title')}
-                message={t('contacts.edit_contact.remove_message')}
-                confirmLabel={t('contacts.edit_contact.remove_confirm')}
-                cancelLabel={t('contacts.edit_contact.remove_cancel')}
-            />
             <PhotoPermissionDeniedSheet
                 isVisible={permissionDenied.isVisible}
                 onClose={permissionDenied.close}

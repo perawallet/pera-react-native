@@ -16,7 +16,6 @@ import { PWView, PWText, PWFlatList, PWButton } from '@components/core'
 import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wallet'
 
 import { LedgerDeviceItem } from '../../components/LedgerDeviceItem'
-import { LedgerPairingInstructionsBottomSheet } from '../../components/LedgerPairingInstructionsBottomSheet'
 import { useStyles } from './styles'
 import { useLedgerScanScreen } from './useLedgerScanScreen'
 
@@ -26,10 +25,7 @@ export const LedgerScanScreen = () => {
         devices,
         isScanning,
         error,
-        pendingPairingDevice,
         handleDevicePress,
-        handleConfirmPairing,
-        handleCancelPairing,
         handleRetry,
         handleTroubleshoot,
         t,
@@ -117,12 +113,6 @@ export const LedgerScanScreen = () => {
                 ListEmptyComponent={renderEmptyState}
                 contentContainerStyle={styles.listContent}
                 showsVerticalScrollIndicator={false}
-            />
-
-            <LedgerPairingInstructionsBottomSheet
-                isVisible={pendingPairingDevice !== null}
-                onContinue={handleConfirmPairing}
-                onCancel={handleCancelPairing}
             />
         </PWView>
     )

@@ -1,0 +1,478 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
+import { Keyboard } from 'react-native'
+import { Decimal } from 'decimal.js'
+import {
+    useAccountAssetBalanceQuery,
+    useAccountBalancesInvalidator,
+    useSelectedAccount,
+} from '@perawallet/wallet-core-accounts'
+import { useAssetsQuery } from '@perawallet/wallet-core-assets'
+import {
+    baseUnitsToDisplayUnits,
+    displayUnitsToBaseUnits,
+    useNetwork,
+} from '@perawallet/wallet-core-blockchain'
+import {
+    percentToApiSlippage,
+    useCalculateSwapAmountMutation,
+    useCreateQuotesMutation,
+    usePrefetchProviders,
+    useSwaps,
+    type SwapQuote,
+    type SwapConfigurationResult,
+} from '@perawallet/wallet-core-swaps'
+import { useDeviceID } from '@perawallet/wallet-core-device'
+import { useCurrency } from '@perawallet/wallet-core-currencies'
+import {
+    isDecimalEqual,
+    useDebouncedValue,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
+import { useBottomSheet } from '@modules/bottom-sheet'
+import { useToast } from '@hooks/useToast'
+import { useLanguage } from '@hooks/useLanguage'
+import { pickBestByAmountOut } from '../../hooks/swapQuoteHelpers'
+import { SwapAssetSelectionContent } from '../SwapAssetSelectionContent'
+import { SwapConfigurationContent } from '../SwapConfigurationContent'
+import {
+    SwapConfirmationContent,
+    type SwapConfirmationResult,
+} from '../SwapConfirmationContent'
+import {
+    SwapProviderContent,
+    type SwapProviderResult,
+} from '../SwapProviderContent'
+
+type UseSwapFormResult = {
+    payAssetId: string
+    receiveAssetId: string
+    payAmount: Nullable<Decimal>
+    receiveAmount: Nullable<Decimal>
+    payBalance: Nullable<Decimal>
+    receiveBalance: Nullable<Decimal>
+    isQuoteFetching: boolean
+    isQuoteError: boolean
+    selectedQuote: Nullable<SwapQuote>
+    providerSelectionMode: 'auto' | 'manual'
+    canSwap: boolean
+    handlePayAmountChange: (amount: Nullable<Decimal>) => void
+    handleSwapDirection: () => void
+    handleMaxPress: () => void
+    handleOpenPayAssetSelection: () => void
+    handleOpenReceiveAssetSelection: () => void
+    handleOpenConfig: () => void
+    handleOpenProvider: () => void
+    handleOpenConfirm: () => void
+}
+
+const QUOTE_DEBOUNCE_MS = 500
+
+export const useSwapForm = (): UseSwapFormResult => {
+    const {
+        fromAsset,
+        toAsset,
+        slippage,
+        setFromAsset,
+        setToAsset,
+        setSlippage,
+    } = useSwaps()
+    const { network } = useNetwork()
+    const { preferredCurrency, setPreferredCurrency, fallbackCurrency } =
+        useCurrency()
+    const [payAmount, setPayAmount] = useState<Nullable<Decimal>>(null)
+    const [receiveAmount, setReceiveAmount] = useState<Nullable<Decimal>>(null)
+    const [allQuotes, setAllQuotes] = useState<SwapQuote[]>([])
+    const [quotedAmount, setQuotedAmount] = useState<Nullable<Decimal>>(null)
+    const [selectedProviderName, setSelectedProviderName] =
+        useState<Nullable<string>>(null)
+    const { request: requestBottomSheet } = useBottomSheet()
+    const selectedAccount = useSelectedAccount()
+    const deviceId = useDeviceID(network)
+    const prefetchProviders = usePrefetchProviders()
+
+    useEffect(() => {
+        prefetchProviders()
+    }, [prefetchProviders])
+
+    const { mutateAsync: calculateSwapAmount } =
+        useCalculateSwapAmountMutation()
+    const calculateSwapAmountRef = useRef(calculateSwapAmount)
+    calculateSwapAmountRef.current = calculateSwapAmount
+
+    const {
+        mutateAsync: createQuotes,
+        isPending: isQuoteLoading,
+        isError: isQuoteError,
+        reset: resetQuoteMutation,
+    } = useCreateQuotesMutation()
+    const createQuotesRef = useRef(createQuotes)
+    createQuotesRef.current = createQuotes
+
+    const { invalidate: invalidateAccountBalances } =
+        useAccountBalancesInvalidator()
+    const { successToast } = useToast()
+    const { t } = useLanguage()
+
+    const { data: payAssets } = useAssetsQuery([fromAsset])
+    const payAsset = payAssets?.get(fromAsset)
+
+    const { data: payAssetBalance } = useAccountAssetBalanceQuery(
+        selectedAccount ?? undefined,
+        fromAsset,
+    )
+    const { data: receiveAssetBalance } = useAccountAssetBalanceQuery(
+        selectedAccount ?? undefined,
+        toAsset,
+    )
+
+    const debouncedPayAmount = useDebouncedValue(
+        payAmount,
+        QUOTE_DEBOUNCE_MS,
+        isDecimalEqual,
+    )
+
+    const isDebouncing = !isDecimalEqual(payAmount, debouncedPayAmount)
+    const hasUnresolvedQuote =
+        payAmount !== null &&
+        !payAmount.isZero() &&
+        !payAmount.isNeg() &&
+        !isDecimalEqual(payAmount, quotedAmount) &&
+        !isQuoteError
+    const isQuoteFetching = isQuoteLoading || isDebouncing || hasUnresolvedQuote
+
+    const payAssetDecimals = payAsset?.decimals
+
+    useEffect(() => {
+        if (
+            !selectedAccount ||
+            !debouncedPayAmount ||
+            debouncedPayAmount.isZero() ||
+            debouncedPayAmount.isNeg() ||
+            payAssetDecimals === undefined
+        ) {
+            setAllQuotes([])
+            setQuotedAmount(null)
+            return
+        }
+
+        const amountInBaseUnits = displayUnitsToBaseUnits(
+            debouncedPayAmount,
+            payAssetDecimals,
+        )
+
+        let cancelled = false
+
+        const fetchQuotes = async () => {
+            try {
+                const result = await createQuotesRef.current({
+                    swapper_address: selectedAccount.address,
+                    swap_type: 'fixed-input',
+                    asset_in_id: Number(fromAsset),
+                    asset_out_id: Number(toAsset),
+                    amount: amountInBaseUnits.toFixed(0),
+                    slippage:
+                        slippage !== null
+                            ? percentToApiSlippage(slippage)
+                            : undefined,
+                    device: deviceId ?? null,
+                })
+
+                if (cancelled) return
+
+                setAllQuotes(result)
+                setQuotedAmount(debouncedPayAmount)
+                Keyboard.dismiss()
+            } catch {
+                if (cancelled) return
+                setAllQuotes([])
+                setQuotedAmount(null)
+            }
+        }
+
+        void fetchQuotes()
+
+        return () => {
+            cancelled = true
+        }
+    }, [
+        debouncedPayAmount,
+        slippage,
+        selectedAccount,
+        deviceId,
+        fromAsset,
+        toAsset,
+        payAssetDecimals,
+    ])
+
+    const bestQuote = useMemo(() => pickBestByAmountOut(allQuotes), [allQuotes])
+
+    // When a manually selected provider drops from the latest quote set, fall
+    // back to the best quote for display and reset selection state to null so
+    // providerSelectionMode reports 'auto'.
+    const selectedQuote = useMemo<Nullable<SwapQuote>>(() => {
+        if (selectedProviderName === null) return bestQuote
+        const match = allQuotes.find(
+            quote => quote.provider === selectedProviderName,
+        )
+        return match ?? bestQuote
+    }, [allQuotes, selectedProviderName, bestQuote])
+
+    const providerSelectionMode: 'auto' | 'manual' = useMemo(() => {
+        if (selectedProviderName === null) return 'auto'
+        const matchExists = allQuotes.some(
+            quote => quote.provider === selectedProviderName,
+        )
+        return matchExists ? 'manual' : 'auto'
+    }, [allQuotes, selectedProviderName])
+
+    useEffect(() => {
+        if (selectedProviderName === null) return
+        const matchExists = allQuotes.some(
+            quote => quote.provider === selectedProviderName,
+        )
+        if (!matchExists) setSelectedProviderName(null)
+    }, [allQuotes, selectedProviderName])
+
+    useEffect(() => {
+        if (!selectedQuote?.amountOut) {
+            setReceiveAmount(null)
+            return
+        }
+        const receiveDecimals = selectedQuote.assetOut.decimals ?? 0
+        setReceiveAmount(
+            baseUnitsToDisplayUnits(selectedQuote.amountOut, receiveDecimals),
+        )
+    }, [selectedQuote])
+
+    const canSwap = useMemo(
+        () =>
+            selectedQuote !== null &&
+            payAmount !== null &&
+            payAmount.greaterThan(0) &&
+            !isQuoteFetching,
+        [selectedQuote, payAmount, isQuoteFetching],
+    )
+
+    const handlePayAmountChange = useCallback(
+        (amount: Nullable<Decimal>) => {
+            setPayAmount(amount)
+            if (!isDecimalEqual(amount, quotedAmount)) {
+                setAllQuotes([])
+                setQuotedAmount(null)
+                setReceiveAmount(null)
+            }
+        },
+        [quotedAmount],
+    )
+
+    const handleSwapDirection = useCallback(() => {
+        setFromAsset(toAsset)
+        setToAsset(fromAsset)
+        setPayAmount(receiveAmount)
+        setReceiveAmount(payAmount)
+        setAllQuotes([])
+        setSelectedProviderName(null)
+        resetQuoteMutation()
+    }, [
+        fromAsset,
+        toAsset,
+        payAmount,
+        receiveAmount,
+        setFromAsset,
+        setToAsset,
+        resetQuoteMutation,
+    ])
+
+    const applyPercentageAmount = useCallback(
+        async (percentage: number) => {
+            if (!selectedAccount) return
+            if (!payAssetBalance?.amount || payAssetBalance.amount.isZero())
+                return
+            try {
+                const result = await calculateSwapAmountRef.current!({
+                    address: selectedAccount.address,
+                    asset_in_id: Number(fromAsset),
+                    asset_out_id: Number(toAsset),
+                    percentage: String(percentage / 100),
+                })
+                if (result.amount) {
+                    const displayAmount = baseUnitsToDisplayUnits(
+                        result.amount,
+                        payAsset?.decimals ?? 0,
+                    )
+                    setPayAmount(displayAmount)
+                }
+            } catch {
+                // API error is already logged by the query client
+            }
+        },
+        [selectedAccount, fromAsset, toAsset, payAsset, payAssetBalance],
+    )
+
+    const handleMaxPress = useCallback(() => {
+        void applyPercentageAmount(100)
+    }, [applyPercentageAmount])
+
+    const handleOpenPayAssetSelection = useCallback(async () => {
+        const assetId = await requestBottomSheet<string>({
+            contents: (
+                <SwapAssetSelectionContent
+                    variant='from'
+                    excludeAssetId={toAsset}
+                />
+            ),
+            options: {
+                size: 'lg',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
+        })
+        if (!assetId) return
+        setFromAsset(assetId)
+        setReceiveAmount(null)
+        setAllQuotes([])
+        setQuotedAmount(null)
+        setSelectedProviderName(null)
+        resetQuoteMutation()
+    }, [requestBottomSheet, toAsset, setFromAsset, resetQuoteMutation])
+
+    const handleOpenReceiveAssetSelection = useCallback(async () => {
+        const assetId = await requestBottomSheet<string>({
+            contents: (
+                <SwapAssetSelectionContent
+                    variant='to'
+                    fromAssetId={fromAsset}
+                    excludeAssetId={fromAsset}
+                />
+            ),
+            options: {
+                size: 'lg',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
+        })
+        if (!assetId) return
+        setToAsset(assetId)
+        setReceiveAmount(null)
+        setAllQuotes([])
+        setQuotedAmount(null)
+        setSelectedProviderName(null)
+        resetQuoteMutation()
+    }, [requestBottomSheet, fromAsset, setToAsset, resetQuoteMutation])
+
+    const handleOpenProvider = useCallback(async () => {
+        const result = await requestBottomSheet<SwapProviderResult>({
+            contents: (
+                <SwapProviderContent
+                    quotes={allQuotes}
+                    selectedProviderName={selectedProviderName}
+                />
+            ),
+            options: { size: 'auto', enablePanDownToClose: true },
+        })
+        // undefined means the sheet was dismissed; null means Auto was applied.
+        if (result === undefined) return
+        setSelectedProviderName(result)
+    }, [requestBottomSheet, allQuotes, selectedProviderName])
+
+    const handleOpenConfirm = useCallback(async () => {
+        if (!selectedQuote) return
+
+        const result = await requestBottomSheet<SwapConfirmationResult>({
+            contents: <SwapConfirmationContent quote={selectedQuote} />,
+            options: { size: 'auto', enablePanDownToClose: true },
+        })
+        if (result !== 'confirm') return
+
+        invalidateAccountBalances()
+
+        const fromUnit = selectedQuote.assetIn.unitName ?? ''
+        const toUnit = selectedQuote.assetOut.unitName ?? ''
+
+        successToast(
+            t('swap.execution.success_title'),
+            t('swap.execution.success_body', {
+                fromAsset: fromUnit,
+                toAsset: toUnit,
+            }),
+        )
+        setPayAmount(null)
+        setReceiveAmount(null)
+        setAllQuotes([])
+        setSelectedProviderName(null)
+        resetQuoteMutation()
+    }, [
+        selectedQuote,
+        requestBottomSheet,
+        invalidateAccountBalances,
+        successToast,
+        t,
+        resetQuoteMutation,
+    ])
+
+    const handleOpenConfig = useCallback(async () => {
+        const result = await requestBottomSheet<SwapConfigurationResult>({
+            contents: <SwapConfigurationContent />,
+            options: {
+                size: 'lg',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
+        })
+        if (!result) return
+
+        setSlippage(result.slippageTolerance)
+
+        const isAlgoPreferred = preferredCurrency === 'ALGO'
+        if (result.useLocalCurrency && isAlgoPreferred) {
+            setPreferredCurrency(fallbackCurrency)
+        } else if (!result.useLocalCurrency && !isAlgoPreferred) {
+            setPreferredCurrency('ALGO')
+        }
+
+        if (result.balancePercentage !== null) {
+            void applyPercentageAmount(result.balancePercentage)
+        }
+    }, [
+        requestBottomSheet,
+        setSlippage,
+        preferredCurrency,
+        setPreferredCurrency,
+        fallbackCurrency,
+        applyPercentageAmount,
+    ])
+
+    return {
+        payAssetId: fromAsset,
+        receiveAssetId: toAsset,
+        payAmount,
+        receiveAmount,
+        payBalance: payAssetBalance?.amount ?? null,
+        receiveBalance: receiveAssetBalance?.amount ?? null,
+        isQuoteFetching,
+        isQuoteError,
+        selectedQuote,
+        providerSelectionMode,
+        canSwap,
+        handlePayAmountChange,
+        handleSwapDirection,
+        handleMaxPress,
+        handleOpenPayAssetSelection,
+        handleOpenReceiveAssetSelection,
+        handleOpenConfig,
+        handleOpenProvider,
+        handleOpenConfirm,
+    }
+}

@@ -15,16 +15,15 @@ import { Platform, ActivityIndicator, KeyboardAvoidingView } from 'react-native'
 import { PWFlatList, PWIcon, PWText, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { AssetSearchItem } from '@modules/assets/components/AssetSearchItem'
-import { OptInConfirmationBottomSheet } from '@modules/assets/components/OptInConfirmationBottomSheet'
 import type { AssetSearchItem as AssetSearchItemType } from '@perawallet/wallet-core-assets'
-import type { AddAssetBottomSheetVariant } from '@modules/assets/components/AddAssetBottomSheet'
+import type { AddAssetContentVariant } from '@modules/assets/components/AddAssetContent'
 import { useAddAssetView } from './useAddAssetView'
 import { useStyles } from './styles'
 import { LoadingView } from '@components/LoadingView'
 import { SearchInput } from '@components/SearchInput'
 
 type AddAssetScreenProps = {
-    variant?: AddAssetBottomSheetVariant
+    variant?: AddAssetContentVariant
 }
 
 export const AddAssetView = ({ variant = 'asset' }: AddAssetScreenProps) => {
@@ -41,11 +40,6 @@ export const AddAssetView = ({ variant = 'asset' }: AddAssetScreenProps) => {
         optedInAssetIds,
         optingInAssetIds,
         handleRequestAdd,
-        handleConfirmAdd,
-        handleCancelAdd,
-        pendingAssetId,
-        selectedAccountAddress,
-        selectedAccountName,
         t,
     } = useAddAssetView({ variant })
 
@@ -139,18 +133,6 @@ export const AddAssetView = ({ variant = 'asset' }: AddAssetScreenProps) => {
                     />
                 )}
             </PWView>
-            <OptInConfirmationBottomSheet
-                isVisible={pendingAssetId !== null}
-                onClose={handleCancelAdd}
-                onConfirmOptIn={handleConfirmAdd}
-                assetId={pendingAssetId}
-                accountAddress={selectedAccountAddress ?? ''}
-                accountName={selectedAccountName}
-                isLoading={
-                    pendingAssetId !== null &&
-                    optingInAssetIds.has(pendingAssetId)
-                }
-            />
         </KeyboardAvoidingView>
     )
 }

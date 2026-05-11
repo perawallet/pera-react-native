@@ -95,26 +95,21 @@ vi.mock('../../PassphraseAcknowledgeBottomSheet', () => ({
     },
 }))
 
-vi.mock('../../ViewPassphraseBottomSheet', () => ({
-    ViewPassphraseBottomSheet: ({
-        isVisible,
-        onClose,
-    }: {
-        isVisible: boolean
-        onClose: () => void
-    }) => {
-        useDismissCallbackOnHide(isVisible, onClose)
-        return isVisible
-            ? React.createElement(
-                  'div',
-                  { 'data-testid': 'display_sheet' },
-                  React.createElement('button', {
-                      'data-testid': 'display_close',
-                      onClick: onClose,
-                  }),
-              )
-            : null
-    },
+const { mockRequestBottomSheet } = vi.hoisted(() => ({
+    mockRequestBottomSheet: vi.fn(),
+}))
+
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({
+        request: mockRequestBottomSheet,
+        requestByType: vi.fn(),
+        dismiss: vi.fn(),
+        dismissAll: vi.fn(),
+    }),
+}))
+
+vi.mock('../../ViewPassphraseContent', () => ({
+    ViewPassphraseContent: () => null,
 }))
 
 import { ViewPassphraseFlow } from '../ViewPassphraseFlow'
@@ -124,6 +119,7 @@ describe('ViewPassphraseFlow', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        mockRequestBottomSheet.mockResolvedValue(undefined)
     })
 
     it('renders nothing when isVisible is false', async () => {
@@ -137,7 +133,7 @@ describe('ViewPassphraseFlow', () => {
         )
         expect(screen.queryByTestId('pin_modal')).toBeNull()
         expect(screen.queryByTestId('acknowledge_sheet')).toBeNull()
-        expect(screen.queryByTestId('display_sheet')).toBeNull()
+        expect(mockRequestBottomSheet).not.toHaveBeenCalled()
     })
 
     it('opens the acknowledge sheet directly when no PIN is set', async () => {
@@ -157,6 +153,8 @@ describe('ViewPassphraseFlow', () => {
 
     it('chains PIN → acknowledge → display when a PIN is set', async () => {
         mockCheckPinEnabled.mockResolvedValue(true)
+        // Hold the display sheet open during the test
+        mockRequestBottomSheet.mockReturnValue(new Promise(() => {}))
         render(
             <ViewPassphraseFlow
                 isVisible={true}
@@ -172,42 +170,9 @@ describe('ViewPassphraseFlow', () => {
         fireEvent.click(screen.getByTestId('acknowledge_confirm'))
 
         await waitFor(() => {
-            expect(screen.getByTestId('display_sheet')).toBeTruthy()
+            expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
         })
-        // The acknowledge sheet's programmatic dismissal must NOT bubble out
-        // to the flow's onClose, otherwise the display sheet would be torn
-        // down before the user could read the passphrase.
         expect(onClose).not.toHaveBeenCalled()
-    })
-
-    it("does not tear the display sheet down when the parent's onClose is bound to isVisible", async () => {
-        // Realistic host: parent state is bound to isVisible so an unintended
-        // onClose during acknowledge → display would actually close the flow.
-        // Regression test for the case where the dismissal of the outgoing
-        // acknowledge sheet leaks out as a parent-level close.
-        mockCheckPinEnabled.mockResolvedValue(false)
-        const Host = () => {
-            const [isVisible, setIsVisible] = React.useState(true)
-            return (
-                <ViewPassphraseFlow
-                    isVisible={isVisible}
-                    address='ADDR'
-                    onClose={() => setIsVisible(false)}
-                />
-            )
-        }
-        render(<Host />)
-
-        await waitFor(() => screen.getByTestId('acknowledge_sheet'))
-        fireEvent.click(screen.getByTestId('acknowledge_confirm'))
-
-        await waitFor(() => {
-            expect(screen.getByTestId('display_sheet')).toBeTruthy()
-        })
-        // After a tick, ensure the display sheet hasn't been torn down by a
-        // delayed dismissal callback.
-        await new Promise(resolve => setTimeout(resolve, 0))
-        expect(screen.getByTestId('display_sheet')).toBeTruthy()
     })
 
     it('calls parent onClose when the PIN sheet is dismissed', async () => {
@@ -238,8 +203,9 @@ describe('ViewPassphraseFlow', () => {
         expect(onClose).toHaveBeenCalled()
     })
 
-    it('calls parent onClose when the display sheet is dismissed', async () => {
+    it('calls parent onClose when the display sheet resolves', async () => {
         mockCheckPinEnabled.mockResolvedValue(false)
+        mockRequestBottomSheet.mockResolvedValueOnce(undefined)
         render(
             <ViewPassphraseFlow
                 isVisible={true}
@@ -249,8 +215,8 @@ describe('ViewPassphraseFlow', () => {
         )
         await waitFor(() => screen.getByTestId('acknowledge_confirm'))
         fireEvent.click(screen.getByTestId('acknowledge_confirm'))
-        await waitFor(() => screen.getByTestId('display_close'))
-        fireEvent.click(screen.getByTestId('display_close'))
-        expect(onClose).toHaveBeenCalled()
+        await waitFor(() => {
+            expect(onClose).toHaveBeenCalled()
+        })
     })
 })

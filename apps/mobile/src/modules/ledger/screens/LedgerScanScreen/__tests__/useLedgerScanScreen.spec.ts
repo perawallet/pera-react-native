@@ -17,6 +17,7 @@ import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wall
 const mockNavigate = vi.fn()
 const mockStartScan = vi.fn()
 const mockStopScan = vi.fn()
+const mockRequestBottomSheet = vi.fn()
 
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({ navigate: mockNavigate }),
@@ -33,6 +34,15 @@ vi.mock('../../../hooks', () => ({
         startScan: mockStartScan,
         stopScan: mockStopScan,
         error: null,
+    }),
+}))
+
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({
+        request: mockRequestBottomSheet,
+        requestByType: vi.fn(),
+        dismiss: vi.fn(),
+        dismissAll: vi.fn(),
     }),
 }))
 
@@ -70,14 +80,15 @@ describe('useLedgerScanScreen', () => {
         mockNavigate.mockReset()
         mockStartScan.mockReset()
         mockStopScan.mockReset()
+        mockRequestBottomSheet.mockReset()
     })
 
-    it('navigates straight to fetch-accounts when device was previously paired', () => {
+    it('navigates straight to fetch-accounts when device was previously paired (no sheet shown)', async () => {
         useLedgerPairingStore.getState().markPaired('device-known')
 
         const { result } = renderHook(() => useLedgerScanScreen())
-        act(() => {
-            result.current.handleDevicePress(makeDevice('device-known'))
+        await act(async () => {
+            await result.current.handleDevicePress(makeDevice('device-known'))
         })
 
         expect(mockNavigate).toHaveBeenCalledWith('LedgerFetchAccounts', {
@@ -85,26 +96,28 @@ describe('useLedgerScanScreen', () => {
             deviceName: 'Fred Nano X',
             transportType: 'ble',
         })
-        expect(result.current.pendingPairingDevice).toBeNull()
+        expect(mockRequestBottomSheet).not.toHaveBeenCalled()
     })
 
-    it('shows pairing instructions for a never-seen device instead of navigating', () => {
+    it('shows pairing instructions for a never-seen device', async () => {
+        // Resolve as cancel — the device shouldn't pair or navigate.
+        mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+
         const { result } = renderHook(() => useLedgerScanScreen())
-        act(() => {
-            result.current.handleDevicePress(makeDevice('device-new'))
+        await act(async () => {
+            await result.current.handleDevicePress(makeDevice('device-new'))
         })
 
+        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
         expect(mockNavigate).not.toHaveBeenCalled()
-        expect(result.current.pendingPairingDevice?.id).toBe('device-new')
     })
 
-    it('marks the device as paired and navigates on confirm', () => {
+    it('marks the device as paired and navigates when the sheet confirms', async () => {
+        mockRequestBottomSheet.mockResolvedValueOnce(true)
+
         const { result } = renderHook(() => useLedgerScanScreen())
-        act(() => {
-            result.current.handleDevicePress(makeDevice('device-new'))
-        })
-        act(() => {
-            result.current.handleConfirmPairing()
+        await act(async () => {
+            await result.current.handleDevicePress(makeDevice('device-new'))
         })
 
         expect(useLedgerPairingStore.getState().isPaired('device-new')).toBe(
@@ -115,22 +128,20 @@ describe('useLedgerScanScreen', () => {
             deviceName: 'Fred Nano X',
             transportType: 'ble',
         })
-        expect(result.current.pendingPairingDevice).toBeNull()
     })
 
-    it('dismisses the sheet without marking paired or navigating on cancel', () => {
+    it('clears pending without marking paired or navigating when the sheet is dismissed', async () => {
+        mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+
         const { result } = renderHook(() => useLedgerScanScreen())
-        act(() => {
-            result.current.handleDevicePress(makeDevice('device-new'))
-        })
-        act(() => {
-            result.current.handleCancelPairing()
+        await act(async () => {
+            await result.current.handleDevicePress(makeDevice('device-new'))
         })
 
         expect(useLedgerPairingStore.getState().isPaired('device-new')).toBe(
             false,
         )
         expect(mockNavigate).not.toHaveBeenCalled()
-        expect(result.current.pendingPairingDevice).toBeNull()
+        expect(useLedgerPairingStore.getState().pendingPairingDevice).toBeNull()
     })
 })

@@ -66,12 +66,26 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     }
 })
 
+const { mockRequestBottomSheet } = vi.hoisted(() => ({
+    mockRequestBottomSheet: vi.fn(),
+}))
+
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({
+        request: mockRequestBottomSheet,
+        requestByType: vi.fn(),
+        dismiss: vi.fn(),
+        dismissAll: vi.fn(),
+    }),
+}))
+
 describe('ImportAccountOptionsScreen', () => {
     const originalOS = Platform.OS
 
     beforeEach(() => {
         vi.clearAllMocks()
         Platform.OS = 'ios'
+        mockRequestBottomSheet.mockResolvedValue(undefined)
     })
 
     afterEach(() => {
@@ -194,7 +208,7 @@ describe('ImportAccountOptionsScreen', () => {
         })
     })
 
-    it('opens import options bottom sheet when Recover Wallet is pressed', () => {
+    it('requests import options bottom sheet when Recover Wallet is pressed', () => {
         render(<ImportAccountOptionsScreen />)
 
         const recoverButton = screen.getByText(
@@ -202,7 +216,22 @@ describe('ImportAccountOptionsScreen', () => {
         )
         fireEvent.click(recoverButton)
 
-        // The ImportOptionsBottomSheet should become visible
-        // This is tested via the hook test more thoroughly
+        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+    })
+
+    it('navigates to ImportInfo with the selected option when bottom sheet resolves', async () => {
+        mockRequestBottomSheet.mockResolvedValueOnce('hdWallet')
+        render(<ImportAccountOptionsScreen />)
+
+        const recoverButton = screen.getByText(
+            'onboarding.import_account_options.recover_wallet_title',
+        )
+        fireEvent.click(recoverButton)
+
+        await vi.waitFor(() => {
+            expect(mockPush).toHaveBeenCalledWith('ImportInfo', {
+                accountType: 'hdWallet',
+            })
+        })
     })
 })

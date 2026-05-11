@@ -11,6 +11,7 @@
  */
 
 import { NavigationContainer } from '@react-navigation/native'
+import { BottomSheetManager } from '@modules/bottom-sheet'
 import {
     createNativeStackNavigator,
     NativeStackHeaderProps,
@@ -57,6 +58,7 @@ export const MainRoutes = () => {
             ref={navigationRef}
             theme={navTheme}
         >
+            <BottomSheetManager />
             {
                 <RootStack.Navigator
                     screenOptions={{

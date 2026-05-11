@@ -23,7 +23,6 @@ import { CopyableText } from '@components/CopyableText'
 import { AssetNameBadge } from '@modules/assets/components'
 import { useLanguage } from '@hooks/useLanguage'
 import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
-import { RejectConfirmBottomSheet } from '@modules/transactions/components/claim-assets/RejectConfirmBottomSheet'
 import { useStyles } from './styles'
 import { useAssetClaimDetailScreen } from './useAssetClaimDetailScreen'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
@@ -42,11 +41,8 @@ export const AssetClaimDetailScreen = () => {
         request,
         amount,
         receiverAccount,
-        isRejectSheetOpen,
         handleClaim,
         handleRejectPress,
-        handleRejectConfirm,
-        handleRejectClose,
         handleCopyAssetId,
     } = useAssetClaimDetailScreen()
 
@@ -195,13 +191,6 @@ export const AssetClaimDetailScreen = () => {
                     />
                 </PWView>
             </PWView>
-
-            <RejectConfirmBottomSheet
-                isOpen={isRejectSheetOpen}
-                onClose={handleRejectClose}
-                onConfirm={handleRejectConfirm}
-                microAlgoRefundAmount={request.microAlgoGainOnReject}
-            />
         </PWView>
     )
 }

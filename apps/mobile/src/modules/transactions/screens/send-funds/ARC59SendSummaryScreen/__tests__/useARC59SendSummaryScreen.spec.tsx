@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { renderHook, waitFor } from '@test-utils/render'
+import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 import { useARC59SendSummaryScreen } from '../useARC59SendSummaryScreen'
 import { useSendFunds } from '@modules/transactions/hooks'
@@ -19,6 +19,26 @@ const mockNavigate = vi.fn()
 const mockGoBack = vi.fn()
 const mockReplace = vi.fn()
 const mockSetArc59Summary = vi.fn()
+
+const { mockRequestBottomSheet } = vi.hoisted(() => ({
+    mockRequestBottomSheet: vi.fn(),
+}))
+
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({
+        request: mockRequestBottomSheet,
+        requestByType: vi.fn(),
+        dismiss: vi.fn(),
+        dismissAll: vi.fn(),
+    }),
+}))
+
+vi.mock(
+    '@modules/transactions/components/send-funds/ARC59WarningContent',
+    () => ({
+        ARC59WarningContent: () => null,
+    }),
+)
 
 vi.mock('@react-navigation/native', () => ({
     useNavigation: () => ({
@@ -107,6 +127,7 @@ const mockSummary = {
 describe('useARC59SendSummaryScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockRequestBottomSheet.mockResolvedValue(undefined)
         ;(useSendFunds as Mock).mockReturnValue({
             selectedAssetId: '123',
             destination: 'RECEIVERADDR',
@@ -121,32 +142,42 @@ describe('useARC59SendSummaryScreen', () => {
         expect(result.current.isLoading).toBe(true)
     })
 
-    it('shows warning on handleSend', async () => {
+    it('requests the warning bottom sheet on handleSend', async () => {
         const { result } = renderHook(() => useARC59SendSummaryScreen())
 
-        result.current.handleSend()
+        await act(async () => {
+            result.current.handleSend()
+        })
 
-        await waitFor(() => {
-            expect(result.current.isWarningVisible).toBe(true)
+        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+        const arg = mockRequestBottomSheet.mock.calls[0]?.[0]
+        expect(arg?.options).toEqual({
+            size: 'auto',
+            enablePanDownToClose: true,
         })
         expect(mockNavigate).not.toHaveBeenCalled()
     })
 
-    it('navigates to TransactionProcessing on handleWarningConfirm', async () => {
+    it("navigates to TransactionProcessing when warning resolves with 'confirm'", async () => {
+        mockRequestBottomSheet.mockResolvedValueOnce('confirm')
         const { result } = renderHook(() => useARC59SendSummaryScreen())
 
-        result.current.handleSend()
-
-        await waitFor(() => {
-            expect(result.current.isWarningVisible).toBe(true)
+        await act(async () => {
+            result.current.handleSend()
         })
-
-        result.current.handleWarningConfirm()
 
         expect(mockNavigate).toHaveBeenCalledWith('TransactionProcessing')
-        await waitFor(() => {
-            expect(result.current.isWarningVisible).toBe(false)
+    })
+
+    it('does not navigate when warning is dismissed', async () => {
+        mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+        const { result } = renderHook(() => useARC59SendSummaryScreen())
+
+        await act(async () => {
+            result.current.handleSend()
         })
+
+        expect(mockNavigate).not.toHaveBeenCalled()
     })
 
     it('goes back on handleClose', () => {
@@ -157,31 +188,14 @@ describe('useARC59SendSummaryScreen', () => {
         expect(mockGoBack).toHaveBeenCalled()
     })
 
-    it('shows warning on handleReadMore', async () => {
+    it('requests the warning bottom sheet on handleReadMore', async () => {
         const { result } = renderHook(() => useARC59SendSummaryScreen())
 
-        result.current.handleReadMore()
-
-        await waitFor(() => {
-            expect(result.current.isWarningVisible).toBe(true)
-        })
-    })
-
-    it('hides warning on handleWarningClose without navigating', async () => {
-        const { result } = renderHook(() => useARC59SendSummaryScreen())
-
-        result.current.handleSend()
-
-        await waitFor(() => {
-            expect(result.current.isWarningVisible).toBe(true)
+        await act(async () => {
+            result.current.handleReadMore()
         })
 
-        result.current.handleWarningClose()
-
-        await waitFor(() => {
-            expect(result.current.isWarningVisible).toBe(false)
-        })
-        expect(mockNavigate).not.toHaveBeenCalled()
+        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
     })
 
     it('computes fee from summary', async () => {

@@ -591,7 +591,9 @@
         },
         "deeplink": {
             "invalid_url_title": "Invalid Link",
-            "invalid_url_body": "The detected link does not appear to be valid. Please check the link and try again."
+            "invalid_url_body": "The detected link does not appear to be valid. Please check the link and try again.",
+            "title": "Could not open link",
+            "no_account": "No account is selected. Choose an account first, then try the link again."
         },
         "general": {
             "title": "An error occurred",

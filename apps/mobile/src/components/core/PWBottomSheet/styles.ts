@@ -32,7 +32,7 @@ export const useStyles = makeStyles(
             paddingTop: isFull ? insets.top : 0,
         },
         innerContainer: {
-            flex: 1,
+            flexGrow: 1,
             paddingBottom: insets.bottom + theme.spacing.md,
         },
         hidden: {

@@ -10,10 +10,12 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import { type StyleProp, type ViewStyle } from 'react-native'
 import { type SignRequest } from '@perawallet/wallet-core-signing'
 import { PWButton } from '@components/core'
-import { ConfirmActionBottomSheet } from '@components/ConfirmActionBottomSheet'
+import { ConfirmActionContent } from '@components/ConfirmActionContent'
+import { useBottomSheet } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useMultisigSignRequestDecline } from '@modules/multisig/hooks/useMultisigSignRequestDecline'
 
@@ -31,41 +33,41 @@ export const MultisigDeclineButton = ({
     style,
 }: MultisigDeclineButtonProps) => {
     const { t } = useLanguage()
-    const {
-        isPending: isDeclining,
-        isConfirmOpen,
-        openConfirm,
-        closeConfirm,
-        handleConfirm: handleConfirmDecline,
-    } = useMultisigSignRequestDecline({
-        mode: 'decline',
-        request,
-        signerAddress,
-    })
+    const { request: requestBottomSheet } = useBottomSheet()
+    const { isPending: isDeclining, handleConfirm: handleConfirmDecline } =
+        useMultisigSignRequestDecline({
+            mode: 'decline',
+            request,
+            signerAddress,
+        })
+
+    const handlePress = useCallback(async () => {
+        const confirmed = await requestBottomSheet<boolean>({
+            contents: (
+                <ConfirmActionContent
+                    icon='warning'
+                    iconVariant='error'
+                    title={t('multisig.decline.confirm_title')}
+                    message={t('multisig.decline.confirm_body')}
+                    confirmLabel={t('multisig.decline.confirm_action')}
+                    cancelLabel={t('multisig.decline.keep_signing')}
+                    confirmVariant='primary'
+                    testID='multisig_decline_confirm_sheet'
+                />
+            ),
+            options: { size: 'auto', enablePanDownToClose: true },
+        })
+        if (confirmed) await handleConfirmDecline()
+    }, [requestBottomSheet, t, handleConfirmDecline])
 
     return (
-        <>
-            <PWButton
-                title={t('multisig.sign_sheet.decline')}
-                variant='secondary'
-                onPress={openConfirm}
-                isDisabled={isDisabled || isDeclining}
-                isLoading={isDeclining}
-                style={style}
-            />
-            <ConfirmActionBottomSheet
-                isVisible={isConfirmOpen}
-                onClose={closeConfirm}
-                onConfirm={handleConfirmDecline}
-                icon='warning'
-                iconVariant='error'
-                title={t('multisig.decline.confirm_title')}
-                message={t('multisig.decline.confirm_body')}
-                confirmLabel={t('multisig.decline.confirm_action')}
-                cancelLabel={t('multisig.decline.keep_signing')}
-                confirmVariant='primary'
-                testID='multisig_decline_confirm_sheet'
-            />
-        </>
+        <PWButton
+            title={t('multisig.sign_sheet.decline')}
+            variant='secondary'
+            onPress={handlePress}
+            isDisabled={isDisabled || isDeclining}
+            isLoading={isDeclining}
+            style={style}
+        />
     )
 }

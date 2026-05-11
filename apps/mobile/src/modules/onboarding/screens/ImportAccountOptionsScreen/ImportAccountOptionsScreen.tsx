@@ -14,7 +14,6 @@ import React from 'react'
 import { PWScrollView, PWText, PWView } from '@components/core'
 import { PanelButton } from '@components/PanelButton'
 import { QRScannerView } from '@components/QRScannerView'
-import { ImportOptionsBottomSheet } from '../../components/ImportOptionsBottomSheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useImportAccountOptionsScreen } from './useImportAccountOptionsScreen'
 import { useStyles } from './styles'
@@ -24,10 +23,6 @@ export const ImportAccountOptionsScreen = () => {
     const { t } = useLanguage()
     const {
         options,
-        isImportOptionsVisible,
-        handleCloseImportOptions,
-        handleHDWalletPress,
-        handleAlgo25Press,
         isQRScannerVisible,
         handleCloseQRScanner,
         handleQRScannerSuccess,
@@ -61,13 +56,6 @@ export const ImportAccountOptionsScreen = () => {
                     </PWView>
                 </PWScrollView>
             </PWView>
-
-            <ImportOptionsBottomSheet
-                isVisible={isImportOptionsVisible}
-                onClose={handleCloseImportOptions}
-                onHDWalletPress={handleHDWalletPress}
-                onAlgo25Press={handleAlgo25Press}
-            />
 
             <QRScannerView
                 isVisible={isQRScannerVisible}

@@ -16,6 +16,19 @@ import { OnboardingScreen } from '../OnboardingScreen'
 import { config } from '@perawallet/wallet-core-config'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
 
+const { mockRequestBottomSheet } = vi.hoisted(() => ({
+    mockRequestBottomSheet: vi.fn(),
+}))
+
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({
+        request: mockRequestBottomSheet,
+        requestByType: vi.fn(),
+        dismiss: vi.fn(),
+        dismissAll: vi.fn(),
+    }),
+}))
+
 // Mock navigation
 const mockNavigate = vi.fn()
 const mockPush = vi.fn()
@@ -100,6 +113,7 @@ describe('OnboardingScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockUseHasAccounts.mockReturnValue(false)
+        mockRequestBottomSheet.mockResolvedValue(undefined)
         useOnboardingStore.getState().reset()
     })
 
@@ -180,7 +194,8 @@ describe('OnboardingScreen', () => {
         })
     })
 
-    it('opens ImportOptionsBottomSheet and navigates to ImportInfo when an option is selected', () => {
+    it('requests the import options sheet and navigates to ImportInfo with the selected option', async () => {
+        mockRequestBottomSheet.mockResolvedValueOnce('hdWallet')
         render(<OnboardingScreen />)
 
         const importButton = screen.getByText(
@@ -188,17 +203,11 @@ describe('OnboardingScreen', () => {
         )
         fireEvent.click(importButton)
 
-        // Bottom sheet should be visible now
-        expect(screen.getByText('onboarding.import_options.title')).toBeTruthy()
-
-        // Click one of the options
-        const universalWalletOption = screen.getByText(
-            'onboarding.import_options.hd_wallet.title',
-        )
-        fireEvent.click(universalWalletOption)
-
-        expect(mockPush).toHaveBeenCalledWith('ImportInfo', {
-            accountType: 'hdWallet',
+        await vi.waitFor(() => {
+            expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+            expect(mockPush).toHaveBeenCalledWith('ImportInfo', {
+                accountType: 'hdWallet',
+            })
         })
     })
 
@@ -247,7 +256,8 @@ describe('OnboardingScreen', () => {
             })
         })
 
-        it('opens ImportOptionsBottomSheet when Import Account is pressed', () => {
+        it('requests the import options sheet when Import Account is pressed', () => {
+            mockRequestBottomSheet.mockResolvedValueOnce(undefined)
             render(<OnboardingScreen />)
 
             const importButton = screen.getByText(
@@ -255,9 +265,7 @@ describe('OnboardingScreen', () => {
             )
             fireEvent.click(importButton)
 
-            expect(
-                screen.getByText('onboarding.import_options.title'),
-            ).toBeTruthy()
+            expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
         })
     })
 })

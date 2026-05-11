@@ -16,16 +16,21 @@ import { useCreateMultisigScreen } from '../useCreateMultisigScreen'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useMultisigCreationStore } from '../../../hooks/useMultisigCreation'
 
+const { mockRequestBottomSheet } = vi.hoisted(() => ({
+    mockRequestBottomSheet: vi.fn(),
+}))
+
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: vi.fn(),
 }))
 
-vi.mock('@hooks/useModalState', () => ({
-    useModalState: vi.fn(() => ({
-        isOpen: false,
-        open: vi.fn(),
-        close: vi.fn(),
-    })),
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({
+        request: mockRequestBottomSheet,
+        requestByType: vi.fn(),
+        dismiss: vi.fn(),
+        dismissAll: vi.fn(),
+    }),
 }))
 
 describe('useCreateMultisigScreen', () => {
@@ -46,44 +51,79 @@ describe('useCreateMultisigScreen', () => {
         expect(result.current.canContinue).toBe(false)
     })
 
-    it('adds an address as participant', () => {
+    it('adds a participant when the add-participant sheet resolves with an address', async () => {
+        mockRequestBottomSheet.mockResolvedValueOnce('ADDR1')
         const { result } = renderHook(() => useCreateMultisigScreen())
 
-        act(() => {
-            result.current.handleAddAddress('ADDR1')
+        await act(async () => {
+            await result.current.handleOpenAddParticipant()
         })
 
         expect(result.current.participants).toHaveLength(1)
+        expect(result.current.participants[0]?.address).toBe('ADDR1')
         expect(result.current.canContinue).toBe(false)
     })
 
-    it('enables continue with 2 or more participants', () => {
+    it('enables continue with 2 or more participants', async () => {
+        mockRequestBottomSheet
+            .mockResolvedValueOnce('ADDR1')
+            .mockResolvedValueOnce('ADDR2')
         const { result } = renderHook(() => useCreateMultisigScreen())
 
-        act(() => {
-            result.current.handleAddAddress('ADDR1')
+        await act(async () => {
+            await result.current.handleOpenAddParticipant()
         })
 
-        act(() => {
-            result.current.handleAddAddress('ADDR2')
+        await act(async () => {
+            await result.current.handleOpenAddParticipant()
         })
 
         expect(result.current.participants).toHaveLength(2)
         expect(result.current.canContinue).toBe(true)
     })
 
-    it('ignores duplicate addresses', () => {
+    it('ignores duplicate addresses', async () => {
+        mockRequestBottomSheet
+            .mockResolvedValueOnce('ADDR1')
+            .mockResolvedValueOnce('ADDR1')
         const { result } = renderHook(() => useCreateMultisigScreen())
 
-        act(() => {
-            result.current.handleAddAddress('ADDR1')
+        await act(async () => {
+            await result.current.handleOpenAddParticipant()
         })
 
-        act(() => {
-            result.current.handleAddAddress('ADDR1')
+        await act(async () => {
+            await result.current.handleOpenAddParticipant()
         })
 
         expect(result.current.participants).toHaveLength(1)
+    })
+
+    it('skips adding when the sheet is dismissed (resolves undefined)', async () => {
+        mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+        const { result } = renderHook(() => useCreateMultisigScreen())
+
+        await act(async () => {
+            await result.current.handleOpenAddParticipant()
+        })
+
+        expect(result.current.participants).toHaveLength(0)
+    })
+
+    it('requests the add-participant sheet with size=lg', async () => {
+        mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+        const { result } = renderHook(() => useCreateMultisigScreen())
+
+        await act(async () => {
+            await result.current.handleOpenAddParticipant()
+        })
+
+        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+        const arg = mockRequestBottomSheet.mock.calls[0][0]
+        expect(arg.options).toEqual({
+            size: 'lg',
+            enablePanDownToClose: true,
+        })
     })
 
     it('navigates to EditParticipant on edit', () => {

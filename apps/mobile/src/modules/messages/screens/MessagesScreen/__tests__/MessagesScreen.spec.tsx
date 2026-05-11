@@ -79,17 +79,17 @@ vi.mock('@modules/messages/screens/InboxScreen', () => ({
     InboxScreen: () => <span data-testid='InboxScreen' />,
 }))
 
-vi.mock('@modules/messages/components/NotificationSettingsBottomSheet', () => ({
-    NotificationSettingsBottomSheet: ({
-        isVisible,
-    }: {
-        isVisible: boolean
-    }) => (
-        <span
-            data-testid='NotificationSettingsBottomSheet'
-            data-visible={isVisible}
-        />
-    ),
+vi.mock('@modules/messages/components/NotificationSettingsContent', () => ({
+    NotificationSettingsContent: () => null,
+}))
+
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({
+        request: vi.fn(),
+        requestByType: vi.fn(),
+        dismiss: vi.fn(),
+        dismissAll: vi.fn(),
+    }),
 }))
 
 describe('MessagesScreen', () => {
@@ -110,12 +110,5 @@ describe('MessagesScreen', () => {
         expect(
             screen.getByTestId('tab-navigator').getAttribute('data-initial'),
         ).toBe('Notifications')
-    })
-
-    it('renders notification settings bottom sheet', () => {
-        render(<MessagesScreen />)
-        expect(
-            screen.getByTestId('NotificationSettingsBottomSheet'),
-        ).toBeTruthy()
     })
 })

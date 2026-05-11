@@ -10,14 +10,15 @@
  limitations under the License
  */
 
-import React, { PropsWithChildren } from 'react'
+import React, { PropsWithChildren, useEffect, useRef } from 'react'
 import { PWBottomSheet } from '@components/core'
 import { ConnectionView } from '@modules/walletconnect/components/ConnectionView/ConnectionView'
 
 import { WalletConnectErrorBoundary } from '@modules/walletconnect/components/BaseErrorBoundary/WalletConnectErrorBoundary'
+import { useBottomSheet } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
-import { ConnectionSuccessBottomSheet } from '../components/ConnectionSuccessBottomSheet/ConnectionSuccessBottomSheet'
-import { WalletConnectErrorBottomSheet } from '../components/WalletConnectErrorBottomSheet/WalletConnectErrorBottomSheet'
+import { ConnectionSuccessContent } from '../components/ConnectionSuccessContent'
+import { WalletConnectErrorContent } from '../components/WalletConnectErrorContent'
 import { useWalletConnectProvider } from './useWalletConnectProvider'
 
 export type WalletConnectProviderProps = {} & PropsWithChildren
@@ -36,6 +37,46 @@ export function WalletConnectProvider({
         clearConnectionError,
     } = useWalletConnectProvider()
 
+    const { request: requestBottomSheet } = useBottomSheet()
+    const successOpenRef = useRef(false)
+    const errorOpenRef = useRef(false)
+
+    useEffect(() => {
+        if (!successRequest || successOpenRef.current) return
+        successOpenRef.current = true
+        let cancelled = false
+        void (async () => {
+            await requestBottomSheet<void>({
+                contents: <ConnectionSuccessContent request={successRequest} />,
+                options: { size: 'auto', enablePanDownToClose: true },
+            })
+            if (cancelled) return
+            successOpenRef.current = false
+            clearSuccessRequest()
+        })()
+        return () => {
+            cancelled = true
+        }
+    }, [successRequest, requestBottomSheet, clearSuccessRequest])
+
+    useEffect(() => {
+        if (!connectionError || errorOpenRef.current) return
+        errorOpenRef.current = true
+        let cancelled = false
+        void (async () => {
+            await requestBottomSheet<void>({
+                contents: <WalletConnectErrorContent error={connectionError} />,
+                options: { size: 'auto', enablePanDownToClose: true },
+            })
+            if (cancelled) return
+            errorOpenRef.current = false
+            clearConnectionError()
+        })()
+        return () => {
+            cancelled = true
+        }
+    }, [connectionError, requestBottomSheet, clearConnectionError])
+
     return (
         <WalletConnectErrorBoundary t={t}>
             {children}
@@ -52,17 +93,6 @@ export function WalletConnectProvider({
                     />
                 )}
             </PWBottomSheet>
-
-            <ConnectionSuccessBottomSheet
-                onClose={clearSuccessRequest}
-                request={successRequest}
-            />
-
-            <WalletConnectErrorBottomSheet
-                isVisible={!!connectionError}
-                error={connectionError}
-                onClose={clearConnectionError}
-            />
         </WalletConnectErrorBoundary>
     )
 }

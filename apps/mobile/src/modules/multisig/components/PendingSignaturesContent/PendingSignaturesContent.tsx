@@ -1,0 +1,219 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { ActivityIndicator } from 'react-native'
+import { useTheme } from '@rneui/themed'
+import { PWButton, PWIcon, PWText, PWView } from '@components/core'
+import { useLanguage } from '@hooks/useLanguage'
+import { SignerStatusListItem } from '../SignerStatusListItem'
+import { usePendingSignaturesContent } from './usePendingSignaturesContent'
+import { useStyles } from './styles'
+
+export type PendingSignaturesContentProps = Record<string, never>
+
+export const PendingSignaturesContent = () => {
+    const styles = useStyles()
+    const { theme } = useTheme()
+    const { t } = useLanguage()
+    const {
+        signRequest,
+        bannerVariant,
+        failureBannerKey,
+        signedCount,
+        threshold,
+        timeRemaining,
+        failReason,
+        signers,
+        handleClose,
+        canSign,
+        handleSign,
+        canCancel,
+        isCancelling,
+        handleCancel,
+    } = usePendingSignaturesContent()
+
+    return (
+        <>
+            <PWView style={styles.scrollContent}>
+                <PWText
+                    variant='h4'
+                    style={styles.title}
+                >
+                    {t('multisig.pending_signatures.title')}
+                </PWText>
+
+                {bannerVariant === 'failure' && (
+                    <PWView
+                        style={styles.failureBanner}
+                        testID='pending_signatures_failure_banner'
+                    >
+                        <PWIcon
+                            name='cross'
+                            size='sm'
+                            variant='error'
+                        />
+                        <PWText
+                            variant='caption'
+                            style={styles.failureBannerText}
+                        >
+                            {failReason ?? t(failureBannerKey)}
+                        </PWText>
+                    </PWView>
+                )}
+
+                {bannerVariant === 'success' && (
+                    <PWView
+                        style={styles.successBanner}
+                        testID='pending_signatures_success_banner'
+                    >
+                        <PWIcon
+                            name='check'
+                            size='sm'
+                            variant='positive'
+                        />
+                        <PWText
+                            variant='caption'
+                            style={styles.successBannerText}
+                        >
+                            {t('multisig.pending_signatures.confirmed')}
+                        </PWText>
+                    </PWView>
+                )}
+
+                {!signRequest && (
+                    <PWView
+                        style={styles.loadingContainer}
+                        testID='pending_signatures_loading_indicator'
+                    >
+                        <ActivityIndicator
+                            size='large'
+                            color={theme.colors.textGray}
+                        />
+                    </PWView>
+                )}
+
+                {bannerVariant === 'waiting' && !!signRequest && (
+                    <PWView style={styles.badgesRow}>
+                        <PWView
+                            style={styles.badge}
+                            testID='pending_signatures_signed_count_badge'
+                        >
+                            <PWIcon
+                                name='check'
+                                size='sm'
+                                variant='secondary'
+                            />
+                            <PWText
+                                variant='caption'
+                                style={styles.badgeText}
+                            >
+                                {t('multisig.pending_signatures.x_of_y', {
+                                    signed: signedCount,
+                                    total: threshold,
+                                })}
+                            </PWText>
+                        </PWView>
+                        {!!timeRemaining && (
+                            <PWView
+                                style={styles.badge}
+                                testID='pending_signatures_time_remaining_badge'
+                            >
+                                <PWText
+                                    variant='caption'
+                                    style={styles.badgeText}
+                                >
+                                    {t(
+                                        'multisig.pending_signatures.time_left',
+                                        { time: timeRemaining },
+                                    )}
+                                </PWText>
+                            </PWView>
+                        )}
+                    </PWView>
+                )}
+
+                {!!signRequest && (
+                    <PWView style={styles.accountsHeader}>
+                        <PWText variant='h4'>
+                            {t('multisig.pending_signatures.accounts_heading')}
+                        </PWText>
+                        <PWText
+                            variant='caption'
+                            style={styles.accountsHelpText}
+                        >
+                            {t(
+                                'multisig.pending_signatures.accounts_subtitle',
+                                {
+                                    count: threshold,
+                                },
+                            )}
+                        </PWText>
+                    </PWView>
+                )}
+
+                {!!signRequest && (
+                    <PWView style={styles.signersList}>
+                        {signers.map(signer => (
+                            <SignerStatusListItem
+                                key={signer.address}
+                                address={signer.address}
+                                status={signer.status}
+                            />
+                        ))}
+                    </PWView>
+                )}
+
+                {canSign || canCancel ? (
+                    <PWView style={styles.actionsRow}>
+                        {canSign && (
+                            <PWButton
+                                variant='primary'
+                                title={t('multisig.pending_signatures.sign')}
+                                onPress={handleSign}
+                                style={styles.actionButton}
+                                testID='pending_signatures_sign_button'
+                            />
+                        )}
+                        {canCancel && (
+                            <PWButton
+                                variant='secondary'
+                                title={t('multisig.cancel_transaction.button')}
+                                onPress={handleCancel}
+                                isDisabled={isCancelling}
+                                isLoading={isCancelling}
+                                style={styles.actionButton}
+                                testID='pending_signatures_cancel_button'
+                            />
+                        )}
+                        <PWButton
+                            variant='secondary'
+                            title={t(
+                                'multisig.pending_signatures.close_for_now',
+                            )}
+                            onPress={handleClose}
+                            style={styles.actionButton}
+                            testID='pending_signatures_close_for_now_button'
+                        />
+                    </PWView>
+                ) : (
+                    <PWButton
+                        variant='secondary'
+                        title={t('multisig.pending_signatures.close')}
+                        onPress={handleClose}
+                        style={styles.closeButton}
+                        testID='pending_signatures_close_button'
+                    />
+                )}
+            </PWView>
+        </>
+    )
+}

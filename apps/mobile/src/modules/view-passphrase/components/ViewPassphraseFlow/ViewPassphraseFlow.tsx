@@ -10,9 +10,14 @@
  limitations under the License
  */
 
+import { useEffect } from 'react'
 import { PinEditView } from '@modules/security/components/PinEditView'
-import { PassphraseAcknowledgeBottomSheet } from '../PassphraseAcknowledgeBottomSheet'
-import { ViewPassphraseBottomSheet } from '../ViewPassphraseBottomSheet'
+import { useBottomSheet } from '@modules/bottom-sheet'
+import {
+    PassphraseAcknowledgeContent,
+    type PassphraseAcknowledgeContentResult,
+} from '../PassphraseAcknowledgeContent'
+import { ViewPassphraseContent } from '../ViewPassphraseContent'
 import { useViewPassphraseFlow } from './useViewPassphraseFlow'
 
 export type ViewPassphraseFlowProps = {
@@ -26,30 +31,50 @@ export const ViewPassphraseFlow = ({
     address,
     onClose,
 }: ViewPassphraseFlowProps) => {
-    const {
-        step,
-        handlePinSuccess,
-        handleAcknowledgeConfirm,
-        handleAcknowledgeClose,
-    } = useViewPassphraseFlow({ isVisible, onClose })
+    const { step, handlePinSuccess, advanceToDisplay } = useViewPassphraseFlow({
+        isVisible,
+        onClose,
+    })
+    const { request: requestBottomSheet } = useBottomSheet()
+
+    useEffect(() => {
+        if (step !== 'acknowledge') return
+        let cancelled = false
+        requestBottomSheet<PassphraseAcknowledgeContentResult>({
+            contents: <PassphraseAcknowledgeContent />,
+            options: { size: 'auto', enablePanDownToClose: true },
+        }).then(result => {
+            if (cancelled) return
+            if (result === 'confirm') {
+                advanceToDisplay()
+            } else {
+                onClose()
+            }
+        })
+        return () => {
+            cancelled = true
+        }
+    }, [step, requestBottomSheet, advanceToDisplay, onClose])
+
+    useEffect(() => {
+        if (step !== 'display') return
+        let cancelled = false
+        requestBottomSheet<void>({
+            contents: <ViewPassphraseContent address={address} />,
+            options: { size: 'lg', enablePanDownToClose: true },
+        }).finally(() => {
+            if (!cancelled) onClose()
+        })
+        return () => {
+            cancelled = true
+        }
+    }, [step, requestBottomSheet, address, onClose])
 
     return (
-        <>
-            <PinEditView
-                mode={step === 'pin' ? 'verify' : null}
-                onSuccess={handlePinSuccess}
-                onClose={onClose}
-            />
-            <PassphraseAcknowledgeBottomSheet
-                isVisible={step === 'acknowledge'}
-                onClose={handleAcknowledgeClose}
-                onConfirm={handleAcknowledgeConfirm}
-            />
-            <ViewPassphraseBottomSheet
-                isVisible={step === 'display'}
-                address={address}
-                onClose={onClose}
-            />
-        </>
+        <PinEditView
+            mode={step === 'pin' ? 'verify' : null}
+            onSuccess={handlePinSuccess}
+            onClose={onClose}
+        />
     )
 }

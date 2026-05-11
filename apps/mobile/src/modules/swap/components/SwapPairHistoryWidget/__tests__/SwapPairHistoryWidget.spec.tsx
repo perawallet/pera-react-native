@@ -17,7 +17,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const mockSetFromAsset = vi.fn()
 const mockSetToAsset = vi.fn()
 const mockUseDistinctPairsHistoryQuery = vi.fn()
-const mockSwapHistoryBottomSheet = vi.fn()
+
+const { mockRequestBottomSheet } = vi.hoisted(() => ({
+    mockRequestBottomSheet: vi.fn(),
+}))
 
 vi.mock('@perawallet/wallet-core-swaps', () => ({
     useDistinctPairsHistoryQuery: (...args: unknown[]) =>
@@ -36,26 +39,23 @@ vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
 }))
 
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({
+        request: mockRequestBottomSheet,
+        requestByType: vi.fn(),
+        dismiss: vi.fn(),
+        dismissAll: vi.fn(),
+    }),
+}))
+
 vi.mock('@modules/assets/components/AssetIcon', () => ({
     AssetIcon: ({ asset }: { asset: { assetId: string } }) => (
         <span data-testid={`asset-icon-${asset.assetId}`} />
     ),
 }))
 
-vi.mock('@modules/swap/components/SwapHistoryBottomSheet', () => ({
-    SwapHistoryBottomSheet: (props: {
-        isVisible: boolean
-        address: string
-        onClose: () => void
-    }) => {
-        mockSwapHistoryBottomSheet(props)
-        return props.isVisible ? (
-            <span
-                data-testid='swap-history-bottom-sheet'
-                data-address={props.address}
-            />
-        ) : null
-    },
+vi.mock('@modules/swap/components/SwapHistoryContent', () => ({
+    SwapHistoryContent: () => null,
 }))
 
 import { SwapPairHistoryWidget } from '../SwapPairHistoryWidget'
@@ -87,7 +87,7 @@ describe('SwapPairHistoryWidget', () => {
         mockSetFromAsset.mockReset()
         mockSetToAsset.mockReset()
         mockUseDistinctPairsHistoryQuery.mockReset()
-        mockSwapHistoryBottomSheet.mockReset()
+        mockRequestBottomSheet.mockReset()
     })
 
     it('renders nothing when pairs are empty and not loading', () => {
@@ -102,7 +102,7 @@ describe('SwapPairHistoryWidget', () => {
         expect(screen.queryByTestId('swap-pair-history-widget')).toBeNull()
     })
 
-    it('opens the history bottom sheet when "See all" is tapped', () => {
+    it('requests the history bottom sheet when "See all" is tapped', () => {
         mockUseDistinctPairsHistoryQuery.mockReturnValue({
             data: [makePair('0', '31566704', 'ALGO', 'USDC')],
             isLoading: false,
@@ -113,12 +113,15 @@ describe('SwapPairHistoryWidget', () => {
 
         expect(screen.getByText('swap.history.widget.title')).toBeDefined()
         expect(screen.getByText('ALGO to USDC')).toBeDefined()
-        expect(screen.queryByTestId('swap-history-bottom-sheet')).toBeNull()
 
         fireEvent.click(screen.getByTestId('swap-pair-history-see-all'))
 
-        const sheet = screen.getByTestId('swap-history-bottom-sheet')
-        expect(sheet.getAttribute('data-address')).toBe('ADDRESS')
+        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+        const arg = mockRequestBottomSheet.mock.calls[0][0]
+        expect(arg.options).toEqual({
+            size: 'lg',
+            enablePanDownToClose: true,
+        })
     })
 
     it('prefills the form when a chip is tapped', () => {

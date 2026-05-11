@@ -19,7 +19,7 @@ import {
 import { usePendingSignaturesSheetStore } from '../stores/usePendingSignaturesSheetStore'
 
 /**
- * Opens the `PendingSignaturesBottomSheet` whenever a multisig signing event
+ * Opens the `PendingSignaturesContent` whenever a multisig signing event
  * resolves with a non-confirmed status. Covers both the proposer's first
  * send (`type: 'proposed'`) and a participant's cosign
  * (`type: 'signatures-added'`), so the user sees live signing status without

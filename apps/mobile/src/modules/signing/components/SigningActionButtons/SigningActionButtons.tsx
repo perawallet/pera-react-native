@@ -15,7 +15,6 @@ import { useLanguage } from '@hooks/useLanguage'
 import { MultisigDeclineButton } from '@modules/multisig/components/MultisigDeclineButton'
 import { useStyles } from './styles'
 import { useSigningActionButtons } from './useSigningActionButtons'
-import { SecurityGuardBottomSheet } from '../SecurityGuardBottomSheet'
 
 export const SigningActionButtons = () => {
     const styles = useStyles()
@@ -25,11 +24,6 @@ export const SigningActionButtons = () => {
         handleSignAndSend,
         isLoading,
         hasMultipleTransactions,
-        guardedWarningType,
-        isSecurityGuardOpen,
-        handleSecurityGuardConfirm,
-        handleSecurityGuardGoToSettings,
-        closeSecurityGuard,
         currentRequest,
         isMultisigCosign,
         cosignSignerAddress,
@@ -66,15 +60,6 @@ export const SigningActionButtons = () => {
                     style={styles.button}
                 />
             </PWView>
-            {guardedWarningType && (
-                <SecurityGuardBottomSheet
-                    isOpen={isSecurityGuardOpen}
-                    warningType={guardedWarningType}
-                    onClose={closeSecurityGuard}
-                    onConfirm={handleSecurityGuardConfirm}
-                    onGoToSettings={handleSecurityGuardGoToSettings}
-                />
-            )}
         </PWView>
     )
 }

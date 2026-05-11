@@ -24,12 +24,21 @@ const mockOpenURL = vi.fn()
 const mockOptOut = vi.fn()
 const mockGoBack = vi.fn()
 const mockCanGoBack = vi.fn(() => true)
+const mockRequestBottomSheet = vi.fn()
+
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({ request: mockRequestBottomSheet }),
+}))
 
 vi.mock('@react-navigation/native', () => ({
     useNavigation: () => ({
         goBack: mockGoBack,
         canGoBack: mockCanGoBack,
     }),
+    createNavigationContainerRef: vi.fn(() => ({})),
+    NavigationContainer: ({ children }: { children: unknown }) => children,
+    NavigationIndependentTree: ({ children }: { children: unknown }) =>
+        children,
 }))
 
 vi.mock('@perawallet/wallet-core-transactions', () => ({
@@ -253,11 +262,12 @@ describe('useCollectibleDetail', () => {
         mockUseAccountAssetBalanceQuery.mockReturnValue({
             data: { amount: new Decimal(0), algoValue: new Decimal(0) },
         })
+        mockRequestBottomSheet.mockResolvedValueOnce('confirm')
         mockOptOut.mockResolvedValueOnce({ txIds: ['TX1'] })
 
         const { result } = renderHook(() => useCollectibleDetail('12345'))
 
-        await result.current.handleConfirmOptOut()
+        await result.current.handleOptOutPressed()
 
         expect(mockOptOut).toHaveBeenCalledWith({
             sender: 'ACCOUNT_ADDRESS',
@@ -274,12 +284,13 @@ describe('useCollectibleDetail', () => {
         mockUseAccountAssetBalanceQuery.mockReturnValue({
             data: { amount: new Decimal(0), algoValue: new Decimal(0) },
         })
+        mockRequestBottomSheet.mockResolvedValueOnce('confirm')
         const optOutError = new Error('signing rejected')
         mockOptOut.mockRejectedValueOnce(optOutError)
 
         const { result } = renderHook(() => useCollectibleDetail('12345'))
 
-        await result.current.handleConfirmOptOut()
+        await result.current.handleOptOutPressed()
 
         expect(mockShowError).toHaveBeenCalledWith(
             optOutError,
@@ -292,11 +303,12 @@ describe('useCollectibleDetail', () => {
         mockUseAccountAssetBalanceQuery.mockReturnValue({
             data: { amount: new Decimal(0), algoValue: new Decimal(0) },
         })
+        mockRequestBottomSheet.mockResolvedValueOnce('confirm')
         mockOptOut.mockRejectedValueOnce(new UserRejectedSigningError())
 
         const { result } = renderHook(() => useCollectibleDetail('12345'))
 
-        await result.current.handleConfirmOptOut()
+        await result.current.handleOptOutPressed()
 
         expect(mockShowError).not.toHaveBeenCalled()
         expect(mockGoBack).not.toHaveBeenCalled()

@@ -19,7 +19,6 @@ import { RefreshControl } from 'react-native-gesture-handler'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { InboxItem } from '@modules/messages/components/InboxItem/InboxItem'
-import { MultisigInvitationDetailBottomSheet } from '@modules/messages/components/MultisigInvitationDetailBottomSheet'
 import { useStyles } from './styles'
 import { useInboxScreen } from './useInboxScreen'
 
@@ -38,8 +37,6 @@ export const InboxScreen = () => {
         refetch,
         keyExtractor,
         handleInboxItemPress,
-        selectedInvitation,
-        closeInvitation,
     } = useInboxScreen()
 
     const renderItem = useCallback(
@@ -81,10 +78,6 @@ export const InboxScreen = () => {
                         progressBackgroundColor={theme.colors.background}
                     />
                 }
-            />
-            <MultisigInvitationDetailBottomSheet
-                invitation={selectedInvitation}
-                onClose={closeInvitation}
             />
         </PWView>
     )

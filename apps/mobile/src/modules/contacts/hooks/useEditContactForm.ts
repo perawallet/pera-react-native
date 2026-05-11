@@ -19,7 +19,6 @@ import {
 } from '@perawallet/wallet-core-contacts'
 
 import { useLanguage } from '@hooks/useLanguage'
-import { useModalState } from '@hooks/useModalState'
 import { useContactForm } from './useContactForm'
 
 import type { ParamListBase } from '@react-navigation/native'
@@ -31,11 +30,6 @@ export type UseEditContactFormResult = UseContactFormResult & {
     selectedContact: Contact | null
     save: (data: Contact) => void
     removeContact: () => void
-    confirmDelete: {
-        isOpen: boolean
-        open: () => void
-        close: () => void
-    }
 }
 
 export const useEditContactForm = (): UseEditContactFormResult => {
@@ -43,7 +37,6 @@ export const useEditContactForm = (): UseEditContactFormResult => {
         useContacts()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { t } = useLanguage()
-    const confirmDelete = useModalState()
     const form = useContactForm(selectedContact)
 
     const save = useCallback(
@@ -95,8 +88,7 @@ export const useEditContactForm = (): UseEditContactFormResult => {
             selectedContact,
             save,
             removeContact,
-            confirmDelete,
         }),
-        [form, selectedContact, save, removeContact, confirmDelete],
+        [form, selectedContact, save, removeContact],
     )
 }

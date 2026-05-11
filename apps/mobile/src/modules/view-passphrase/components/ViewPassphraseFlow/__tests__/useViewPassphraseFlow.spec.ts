@@ -64,46 +64,16 @@ describe('useViewPassphraseFlow', () => {
         expect(result.current.step).toBe('acknowledge')
     })
 
-    it("advances to 'display' on acknowledge confirmation", async () => {
+    it("advances to 'display' when advanceToDisplay is called", async () => {
         mockCheckPinEnabled.mockResolvedValue(false)
         const { result } = renderHook(() =>
             useViewPassphraseFlow({ isVisible: true, onClose: vi.fn() }),
         )
         await waitFor(() => expect(result.current.step).toBe('acknowledge'))
 
-        act(() => result.current.handleAcknowledgeConfirm())
+        act(() => result.current.advanceToDisplay())
 
         expect(result.current.step).toBe('display')
-    })
-
-    it('swallows the dismissal that fires when transitioning acknowledge → display', async () => {
-        mockCheckPinEnabled.mockResolvedValue(false)
-        const onClose = vi.fn()
-        const { result } = renderHook(() =>
-            useViewPassphraseFlow({ isVisible: true, onClose }),
-        )
-        await waitFor(() => expect(result.current.step).toBe('acknowledge'))
-
-        act(() => result.current.handleAcknowledgeConfirm())
-        // The outgoing acknowledge sheet's dismiss callback fires after the
-        // step has already advanced — it must not bubble out as onClose.
-        act(() => result.current.handleAcknowledgeClose())
-
-        expect(onClose).not.toHaveBeenCalled()
-        expect(result.current.step).toBe('display')
-    })
-
-    it('calls onClose when acknowledge is closed by the user (not via confirmation)', async () => {
-        mockCheckPinEnabled.mockResolvedValue(false)
-        const onClose = vi.fn()
-        const { result } = renderHook(() =>
-            useViewPassphraseFlow({ isVisible: true, onClose }),
-        )
-        await waitFor(() => expect(result.current.step).toBe('acknowledge'))
-
-        act(() => result.current.handleAcknowledgeClose())
-
-        expect(onClose).toHaveBeenCalledTimes(1)
     })
 
     it('resets the step to null when isVisible flips to false', async () => {
@@ -118,21 +88,5 @@ describe('useViewPassphraseFlow', () => {
         rerender({ isVisible: false })
 
         expect(result.current.step).toBeNull()
-    })
-
-    it('only consumes the skip flag once — a later acknowledge close still calls onClose', async () => {
-        mockCheckPinEnabled.mockResolvedValue(false)
-        const onClose = vi.fn()
-        const { result } = renderHook(() =>
-            useViewPassphraseFlow({ isVisible: true, onClose }),
-        )
-        await waitFor(() => expect(result.current.step).toBe('acknowledge'))
-
-        act(() => result.current.handleAcknowledgeConfirm())
-        act(() => result.current.handleAcknowledgeClose())
-        expect(onClose).not.toHaveBeenCalled()
-
-        act(() => result.current.handleAcknowledgeClose())
-        expect(onClose).toHaveBeenCalledTimes(1)
     })
 })
