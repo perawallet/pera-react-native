@@ -69,6 +69,10 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
         fail: mockFail,
         retry: vi.fn(),
     })),
+    useSigningRequest: vi.fn(() => ({
+        currentRequest: null,
+    })),
+    isTransactionRequest: vi.fn(() => false),
 }))
 
 vi.mock('@perawallet/wallet-core-nfd', () => ({

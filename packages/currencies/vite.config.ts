@@ -18,7 +18,16 @@ export default defineConfig({
     plugins: [
         dts({
             include: ['src'],
-            exclude: ['**/__tests__/**', '**/*.test.ts', '**/*.test.tsx'],
+            exclude: [
+                '**/__tests__/**',
+                '**/*.test.ts',
+                '**/*.test.tsx',
+                // Test-only MSW handler factories — co-located with the API
+                // they mock but never reachable from the production entry.
+                // Excluding them from dts keeps msw out of the published
+                // type surface and keeps `lint:bundle` happy.
+                '**/{handlers,*-handlers}.ts',
+            ],
             afterDiagnostic: diagnostics => {
                 if (diagnostics.length > 0) {
                     throw new Error(

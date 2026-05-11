@@ -59,20 +59,19 @@ const testTheme = createTheme({
 ;(testTheme.darkColors as any).buttonPrimaryBg = '#0A84FF'
 ;(testTheme.darkColors as any).buttonPrimaryText = '#FFFFFF'
 
-// Create a test query client with default settings
-const createTestQueryClient = () => {
-    return new QueryClient({
-        defaultOptions: {
-            queries: {
-                retry: false,
-                gcTime: 0,
-            },
-            mutations: {
-                retry: false,
-            },
-        },
-    })
+const SAFE_AREA_METRICS = {
+    frame: { x: 0, y: 0, width: 375, height: 812 },
+    insets: { top: 44, left: 0, right: 0, bottom: 34 },
 }
+
+const QUERY_CLIENT_DEFAULTS = {
+    defaultOptions: {
+        queries: { retry: false as const, gcTime: 0 },
+        mutations: { retry: false as const },
+    },
+}
+
+const createTestQueryClient = () => new QueryClient(QUERY_CLIENT_DEFAULTS)
 
 export interface TestProvidersProps {
     children: React.ReactNode
@@ -90,12 +89,7 @@ const TestProviders = ({
     const client = queryClient || createTestQueryClient()
 
     return (
-        <SafeAreaProvider
-            initialMetrics={{
-                frame: { x: 0, y: 0, width: 375, height: 812 },
-                insets: { top: 44, left: 0, right: 0, bottom: 34 },
-            }}
-        >
+        <SafeAreaProvider initialMetrics={SAFE_AREA_METRICS}>
             <PeraWalletProvider>
                 <ThemeProvider theme={theme}>
                     <QueryClientProvider client={client}>
@@ -109,10 +103,14 @@ const TestProviders = ({
     )
 }
 
-interface CustomRenderOptions extends Omit<RenderOptions, 'wrapper'> {
+export interface CustomRenderOptions extends Omit<RenderOptions, 'wrapper'> {
     queryClient?: QueryClient
     theme?: typeof testTheme
     navigationProps?: any
+    // Skip the full provider tree. For pure-component / pure-hook tests that
+    // don't touch navigation, theme, query, or wallet context, this halves the
+    // setup cost per render.
+    bare?: boolean
 }
 
 const customRender = (
@@ -121,9 +119,12 @@ const customRender = (
         queryClient,
         theme,
         navigationProps,
+        bare,
         ...renderOptions
     }: CustomRenderOptions = {},
 ): RenderResult => {
+    if (bare) return render(ui, renderOptions)
+
     const Wrapper = ({ children }: { children: React.ReactNode }) => (
         <TestProviders
             queryClient={queryClient}

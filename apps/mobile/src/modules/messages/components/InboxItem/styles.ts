@@ -12,38 +12,25 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => {
-    const imageSize = theme.spacing.xxl
-    return {
-        container: {
-            flexDirection: 'row',
-            gap: theme.spacing.md,
-            alignItems: 'center',
-            justifyContent: 'flex-start',
-        },
-        iconContainer: {
-            width: imageSize,
-            height: imageSize,
-            borderRadius: theme.spacing.xl,
-            borderWidth: theme.borders.sm,
-            borderColor: theme.colors.layerGrayLighter,
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginTop: theme.spacing.xs,
-        },
-        messageBox: {
-            flex: 1,
-            overflow: 'hidden',
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-        },
-        titleText: {
-            flexShrink: 1,
-            flexWrap: 'wrap',
-        },
-        subtitleText: {
-            color: theme.colors.textGray,
-        },
-    }
-})
+export const useStyles = makeStyles(theme => ({
+    container: {
+        flexDirection: 'row',
+        gap: theme.spacing.md,
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+    },
+    messageBox: {
+        flex: 1,
+        overflow: 'hidden',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    titleText: {
+        flexShrink: 1,
+        flexWrap: 'wrap',
+    },
+    subtitleText: {
+        color: theme.colors.textGray,
+    },
+}))

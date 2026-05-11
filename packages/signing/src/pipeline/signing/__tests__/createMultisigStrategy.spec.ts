@@ -46,6 +46,17 @@ const makeSigningResult = (address: string): SigningResult => ({
     signers: [{ address }],
 })
 
+const makeSigningResultWithSigs = (
+    address: string,
+    sigs: Uint8Array[],
+): SigningResult => ({
+    signedData: {
+        type: 'transactions',
+        signed: sigs.map(sig => ({ sig }) as any),
+    },
+    signers: [{ address }],
+})
+
 const makeAnalyzedGroup = (): AnalyzedSignableGroup =>
     ({
         source: { type: 'walletConnect' },
@@ -144,6 +155,115 @@ describe('createMultisigStrategy', () => {
                 participantA,
                 callbacks,
             )
+        })
+
+        test('lifts each participant per-txn sig into SignerInfo.signatures (base64)', async () => {
+            const sigsA = [new Uint8Array([1, 2, 3]), new Uint8Array([4, 5, 6])]
+            const sigsB = [new Uint8Array([7, 8, 9]), new Uint8Array([10])]
+
+            const mockParticipantStrategy: SigningStrategy = {
+                canSign: () => true,
+                sign: vi.fn((_group, account) => {
+                    const sigs =
+                        account.address === 'PARTICIPANT_A' ? sigsA : sigsB
+                    return Promise.resolve(
+                        makeSigningResultWithSigs(account.address, sigs),
+                    )
+                }),
+            }
+
+            const strategy = createMultisigStrategy({
+                getLocalParticipants: () => [participantA, participantB],
+                getStrategyForParticipant: () => mockParticipantStrategy,
+                getAllAccounts: () => allAccounts,
+            })
+
+            const result = await strategy.sign(
+                makeAnalyzedGroup(),
+                makeMultisigAccount('MSIG'),
+            )
+
+            expect(result.signers).toHaveLength(2)
+            expect(result.signers[0]).toEqual({
+                address: 'PARTICIPANT_A',
+                signatures: ['AQID', 'BAUG'],
+            })
+            expect(result.signers[1]).toEqual({
+                address: 'PARTICIPANT_B',
+                signatures: ['BwgJ', 'Cg=='],
+            })
+        })
+
+        test('signatures entry is null for txns the participant did not sign', async () => {
+            const partial: SigningResult = {
+                signedData: {
+                    type: 'transactions',
+                    signed: [
+                        { sig: new Uint8Array([1]) } as any,
+                        {} as any, // no sig, no msig
+                    ],
+                },
+                signers: [{ address: 'PARTICIPANT_A' }],
+            }
+            const mockParticipantStrategy: SigningStrategy = {
+                canSign: () => true,
+                sign: vi.fn(() => Promise.resolve(partial)),
+            }
+
+            const strategy = createMultisigStrategy({
+                getLocalParticipants: () => [participantA],
+                getStrategyForParticipant: () => mockParticipantStrategy,
+                getAllAccounts: () => allAccounts,
+            })
+
+            const result = await strategy.sign(
+                makeAnalyzedGroup(),
+                makeMultisigAccount('MSIG'),
+            )
+
+            expect(result.signers[0].signatures).toEqual(['AQ==', null])
+        })
+
+        test('falls back to msig.subsig sig when sig is absent', async () => {
+            const subsigSig = new Uint8Array([42, 43, 44])
+            const msigShaped: SigningResult = {
+                signedData: {
+                    type: 'transactions',
+                    signed: [
+                        {
+                            msig: {
+                                version: 1,
+                                threshold: 2,
+                                subsigs: [
+                                    { publicKey: new Uint8Array([0]) },
+                                    {
+                                        publicKey: new Uint8Array([1]),
+                                        sig: subsigSig,
+                                    },
+                                ],
+                            },
+                        } as any,
+                    ],
+                },
+                signers: [{ address: 'PARTICIPANT_A' }],
+            }
+            const mockParticipantStrategy: SigningStrategy = {
+                canSign: () => true,
+                sign: vi.fn(() => Promise.resolve(msigShaped)),
+            }
+
+            const strategy = createMultisigStrategy({
+                getLocalParticipants: () => [participantA],
+                getStrategyForParticipant: () => mockParticipantStrategy,
+                getAllAccounts: () => allAccounts,
+            })
+
+            const result = await strategy.sign(
+                makeAnalyzedGroup(),
+                makeMultisigAccount('MSIG'),
+            )
+
+            expect(result.signers[0].signatures).toEqual(['Kiss'])
         })
     })
 })

@@ -32,6 +32,7 @@ import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletCo
 import { useTokenListener } from '@modules/token'
 import { AutoLockGuard } from '@modules/security/components/AutoLockGuard/AutoLockGuard'
 import { SigningOverlays } from '@modules/signing/components/SigningOverlays'
+import { MultisigOverlays } from '@modules/multisig/components/MultisigOverlays'
 import {
     getAppStatePlatform,
     getPollingTransitionAction,
@@ -173,6 +174,7 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
                     <RootContentContainer fcmToken={fcmToken} />
                 </WalletConnectProvider>
                 <SigningOverlays />
+                <MultisigOverlays />
             </AutoLockGuard>
         </BottomSheetModalProvider>
     )

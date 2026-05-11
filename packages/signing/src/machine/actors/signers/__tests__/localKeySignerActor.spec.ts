@@ -47,14 +47,21 @@ const mockGroup: AnalyzedSignableGroup = {
 
 const mockSignedTxn = { txn: {}, sig: new Uint8Array([1, 2, 3]) } as never
 
+const buildInput = (
+    overrides: Partial<LocalKeySignerActorInput> = {},
+): LocalKeySignerActorInput => ({
+    groups: [mockGroup],
+    allAccounts: [mockAlgo25Account],
+    signTransactions: vi.fn().mockResolvedValue([mockSignedTxn]),
+    signArbitraryData: vi.fn(),
+    signArc60: vi.fn(),
+    ...overrides,
+})
+
 describe('localKeySignerActor', () => {
     it('returns a SigningResult per group with signed transactions', async () => {
         const signTransactions = vi.fn().mockResolvedValue([mockSignedTxn])
-        const input: LocalKeySignerActorInput = {
-            groups: [mockGroup],
-            allAccounts: [mockAlgo25Account],
-            signTransactions,
-        }
+        const input = buildInput({ signTransactions })
 
         const actor = createActor(localKeySignerActor, { input })
         actor.start()
@@ -72,6 +79,7 @@ describe('localKeySignerActor', () => {
             expect(signTransactions).toHaveBeenCalledWith(
                 mockGroup.data.transactions,
                 mockGroup.data.indicesToSign,
+                mockAlgo25Account,
             )
         }
     })
@@ -80,11 +88,7 @@ describe('localKeySignerActor', () => {
         const signTransactions = vi
             .fn()
             .mockRejectedValue(new Error('KMS error'))
-        const input: LocalKeySignerActorInput = {
-            groups: [mockGroup],
-            allAccounts: [mockAlgo25Account],
-            signTransactions,
-        }
+        const input = buildInput({ signTransactions })
 
         const actor = createActor(localKeySignerActor, { input })
         actor.start()
@@ -106,11 +110,11 @@ describe('localKeySignerActor', () => {
         }
 
         const signTransactions = vi.fn()
-        const input: LocalKeySignerActorInput = {
+        const input = buildInput({
             groups: [groupForMultisig],
             allAccounts: [accountWithoutKeys],
             signTransactions,
-        }
+        })
 
         const actor = createActor(localKeySignerActor, { input })
         actor.start()
@@ -121,16 +125,86 @@ describe('localKeySignerActor', () => {
 
     it('rejects when group signerAddress is not in allAccounts', async () => {
         const signTransactions = vi.fn()
-        const input: LocalKeySignerActorInput = {
-            groups: [mockGroup],
+        const input = buildInput({
             allAccounts: [], // no matching account
             signTransactions,
-        }
+        })
 
         const actor = createActor(localKeySignerActor, { input })
         actor.start()
 
         await expect(toPromise(actor)).rejects.toThrow()
         expect(signTransactions).not.toHaveBeenCalled()
+    })
+
+    describe('rekeyed signer accounts', () => {
+        const PARTICIPANT =
+            'PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP'
+        const AUTH =
+            'UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU'
+
+        const participantAccount: WalletAccount = {
+            type: 'algo25',
+            address: PARTICIPANT,
+            keyPairId: 'key-participant',
+            rekeyAddress: AUTH,
+        } as unknown as WalletAccount
+
+        const authAccount: WalletAccount = {
+            type: 'algo25',
+            address: AUTH,
+            keyPairId: 'key-auth',
+        } as unknown as WalletAccount
+
+        const buildGroup = (
+            sourceType: 'local' | 'multisig-cosign',
+        ): AnalyzedSignableGroup => ({
+            ...mockGroup,
+            signerAddress: PARTICIPANT,
+            source:
+                sourceType === 'multisig-cosign'
+                    ? {
+                          type: 'multisig-cosign',
+                          signRequestId: 'sr-1',
+                          requestId: 'req-1',
+                      }
+                    : { type: 'local' },
+        })
+
+        it("uses participant's own key for multisig-cosign even when rekeyed (rekey is irrelevant for multisig participation)", async () => {
+            const signTransactions = vi.fn().mockResolvedValue([mockSignedTxn])
+            const input = buildInput({
+                groups: [buildGroup('multisig-cosign')],
+                allAccounts: [participantAccount, authAccount],
+                signTransactions,
+            })
+
+            const actor = createActor(localKeySignerActor, { input })
+            actor.start()
+            const results = await toPromise(actor)
+
+            expect(signTransactions).toHaveBeenCalledTimes(1)
+            const [, , accountUsed] = signTransactions.mock.calls[0]
+            expect(accountUsed.address).toBe(PARTICIPANT)
+            expect(results[0].signers[0].address).toBe(PARTICIPANT)
+        })
+
+        it('follows rekey for non-cosign sources (regular tx with rekeyed sender → auth account signs)', async () => {
+            const signTransactions = vi.fn().mockResolvedValue([mockSignedTxn])
+            const input = buildInput({
+                groups: [buildGroup('local')],
+                allAccounts: [participantAccount, authAccount],
+                signTransactions,
+            })
+
+            const actor = createActor(localKeySignerActor, { input })
+            actor.start()
+            const results = await toPromise(actor)
+
+            expect(signTransactions).toHaveBeenCalledTimes(1)
+            const [, , accountUsed] = signTransactions.mock.calls[0]
+            expect(accountUsed.address).toBe(AUTH)
+            expect(results[0].signers[0].address).toBe(AUTH)
+        })
     })
 })

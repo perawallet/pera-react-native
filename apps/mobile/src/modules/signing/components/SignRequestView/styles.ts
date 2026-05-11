@@ -24,4 +24,10 @@ export const useStyles = makeStyles(theme => ({
         justifyContent: 'center',
         padding: theme.spacing.xl,
     },
+    closeButton: {
+        position: 'absolute',
+        top: theme.spacing.md,
+        right: theme.spacing.xl,
+        zIndex: 1,
+    },
 }))

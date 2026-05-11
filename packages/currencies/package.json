@@ -35,6 +35,7 @@
     "vite": "catalog:",
     "vite-plugin-dts": "^4.5.4",
     "vitest": "catalog:",
+    "msw": "catalog:",
     "@types/react": "catalog:",
     "@testing-library/react": "catalog:",
     "@perawallet/wallet-core-devtools": "workspace:*"

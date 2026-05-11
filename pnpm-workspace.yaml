@@ -4,26 +4,26 @@ packages:
   - extensions/*
 
 catalog:
-  '@algorandfoundation/algokit-transact': ^10.0.0-beta.1
-  '@algorandfoundation/algokit-utils': ^10.0.0-beta.1
-  '@algorandfoundation/keystore': 1.0.0-canary.12
-  '@algorandfoundation/react-native-keystore': 1.0.0-canary.6
-  '@algorandfoundation/wallet-provider': 1.0.0-canary.5
-  '@algorandfoundation/xhd-wallet-api': ^2.0.0-canary.1
-  '@babel/runtime': ^7.29.2
-  '@noble/hashes': ^1.8.0
-  '@tanstack/query-async-storage-persister': ^5.99.0
-  '@tanstack/query-sync-storage-persister': ^5.99.0
-  '@tanstack/react-query': ^5.99.0
-  '@tanstack/react-query-persist-client': ^5.99.0
-  '@tanstack/store': ^0.11.0
-  '@testing-library/react': 16.3.2
-  '@types/node': ^20.19.39
-  '@types/react': ~19.2.14
-  '@vitejs/plugin-react': 6.0.1
-  '@vitest/coverage-v8': ^4.1.4
-  '@xstate/react': ^6.1.0
-  '@scure/bip39': ^2.0.1
+  "@algorandfoundation/algokit-transact": ^10.0.0-beta.1
+  "@algorandfoundation/algokit-utils": ^10.0.0-beta.1
+  "@algorandfoundation/keystore": 1.0.0-canary.12
+  "@algorandfoundation/react-native-keystore": 1.0.0-canary.6
+  "@algorandfoundation/wallet-provider": 1.0.0-canary.5
+  "@algorandfoundation/xhd-wallet-api": ^2.0.0-canary.1
+  "@babel/runtime": ^7.29.2
+  "@noble/hashes": ^1.8.0
+  "@scure/bip39": ^2.0.1
+  "@tanstack/query-async-storage-persister": ^5.99.0
+  "@tanstack/query-sync-storage-persister": ^5.99.0
+  "@tanstack/react-query": ^5.99.0
+  "@tanstack/react-query-persist-client": ^5.99.0
+  "@tanstack/store": ^0.11.0
+  "@testing-library/react": 16.3.2
+  "@types/node": ^20.19.39
+  "@types/react": ~19.2.14
+  "@vitejs/plugin-react": 6.0.1
+  "@vitest/coverage-v8": ^4.1.4
+  "@xstate/react": ^6.1.0
   before-after-hook: ^4.0.0
   decimal.js: ^10.6.0
   drizzle-orm: ^0.45.2
@@ -39,6 +39,7 @@ catalog:
   typescript-eslint: 8.59.1
   util: ^0.12.5
   uuid: 14.0.0
+  msw: ^2.12.4
   vite: ^8.0.8
   vitest: ^4.1.4
   xstate: ^5.28.0
@@ -46,8 +47,8 @@ catalog:
   zustand: ^5.0.12
 
 onlyBuiltDependencies:
-  - '@firebase/util'
-  - '@tailwindcss/oxide'
+  - "@firebase/util"
+  - "@tailwindcss/oxide"
   - better-sqlite3
   - electron
   - electron-winstaller
@@ -60,25 +61,25 @@ onlyBuiltDependencies:
   - simple-git-hooks
 
 overrides:
-  '@algorandfoundation/keystore': 1.0.0-canary.12
-  '@expo/dom-webview': ^55.0.5
-  '@xmldom/xmldom': 0.8.13
+  "@algorandfoundation/keystore": 1.0.0-canary.12
+  "@expo/dom-webview": ^55.0.5
+  "@xmldom/xmldom": 0.8.13
   bn.js@4: 4.12.3
   brace-expansion@1: 1.1.13
   brace-expansion@2: 2.0.3
   brace-expansion@3: 3.0.2
   brace-expansion@4: 5.0.5
   brace-expansion@5: 5.0.5
-  esbuild@<0.25.0: '>=0.25.0'
+  esbuild@<0.25.0: ">=0.25.0"
   flatted@3: 3.4.2
-  glob@>=10.2.0 <10.5.0: '>=10.5.0'
-  happy-dom@<20.0.0: '>=20.0.0'
-  happy-dom@>=19.0.0 <20.0.2: '>=20.0.2'
-  js-yaml@<3.14.2: '>=3.14.2'
-  js-yaml@>=4.0.0 <4.1.1: '>=4.1.1'
+  glob@>=10.2.0 <10.5.0: ">=10.5.0"
+  happy-dom@<20.0.0: ">=20.0.0"
+  happy-dom@>=19.0.0 <20.0.2: ">=20.0.2"
+  js-yaml@<3.14.2: ">=3.14.2"
+  js-yaml@>=4.0.0 <4.1.1: ">=4.1.1"
   lodash@4: 4.18.1
-  nanoid@<3.3.8: '>=3.3.8'
-  node-fetch@<2.6.7: '>=2.6.7'
+  nanoid@<3.3.8: ">=3.3.8"
+  node-fetch@<2.6.7: ">=2.6.7"
   node-forge@1: 1.4.0
   picomatch@2: 2.3.2
   picomatch@3: 3.0.1
@@ -105,7 +106,9 @@ minimumReleaseAge: 10080
 # protobufjs 7.5.5 is the only patched release for GHSA-xq3m-2v4x-88gg.
 # @xmldom/xmldom 0.8.13 patches GHSA-2v35-w6hq-6mfw, -f6ww-3ggp-fr8h, -x6wf-f3px-wcqx, -j759-j44w-7fr8.
 # uuid 14.0.0 patches GHSA-w5hq-g745-h8pq.
+# fast-uri 3.1.2 patches GHSA-q3j6-qgpj-74h6 and GHSA-v39h-62p7-jpjc.
 minimumReleaseAgeExclude:
   - protobufjs
-  - '@xmldom/xmldom'
+  - "@xmldom/xmldom"
   - uuid
+  - fast-uri

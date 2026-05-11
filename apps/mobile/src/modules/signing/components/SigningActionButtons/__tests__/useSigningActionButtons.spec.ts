@@ -15,6 +15,7 @@ import { renderHook, act } from '@testing-library/react'
 import { useSigningActionButtons } from '../useSigningActionButtons'
 import {
     useSigningPipeline,
+    useSigningRequest,
     type TransactionWarning,
 } from '@perawallet/wallet-core-signing'
 import { usePreferences } from '@perawallet/wallet-core-settings'
@@ -22,6 +23,8 @@ import { useNavigation } from '@react-navigation/native'
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningPipeline: vi.fn(),
+    useSigningRequest: vi.fn(),
+    isTransactionRequest: vi.fn(() => false),
 }))
 
 vi.mock('@perawallet/wallet-core-settings', () => ({
@@ -65,6 +68,9 @@ describe('useSigningActionButtons', () => {
         vi.clearAllMocks()
         mockGetPreference.mockReturnValue(undefined)
         setupPipeline()
+        ;(useSigningRequest as Mock).mockReturnValue({
+            currentRequest: undefined,
+        })
         ;(usePreferences as Mock).mockReturnValue({
             getPreference: mockGetPreference,
         })
