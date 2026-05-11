@@ -60,8 +60,10 @@ export const useSelectHDWalletScreen = (): UseSelectHDWalletScreenResult => {
             const nextKeyIndex =
                 walletAccounts.length > 0
                     ? Math.max(
-                        ...walletAccounts.map(a => a.hdWalletDetails.keyIndex),
-                    ) + 1
+                          ...walletAccounts.map(
+                              a => a.hdWalletDetails.keyIndex,
+                          ),
+                      ) + 1
                     : 0
             const newAccount = await createHdWalletAccount({
                 walletId: account.keyPairId,
