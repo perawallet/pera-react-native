@@ -1720,14 +1720,14 @@
         },
         "how_does_it_work": {
             "title": "Pair with Ledger",
-            "step_1": "Make sure that your ledger device is on and has Bluetooth enabled.",
+            "step_1": "Make sure that your Ledger device is on and has Bluetooth enabled.",
             "step_2": "Install the Algorand app (version 1.2.9 or later) onto your Ledger.",
             "step_3": "After confirming pairing on your Ledger device, open the Algorand app.",
             "step_4": "Make sure Bluetooth is enabled on your smartphone."
         },
         "connecting": {
             "title": "Ledger Connection",
-            "subtitle": "Waiting for ledger to connect.",
+            "subtitle": "Waiting for Ledger to connect.",
             "cancel": "Cancel"
         },
         "instructions": {
@@ -1779,7 +1779,7 @@
             "find_another_wallet": "Find another wallet",
             "title_one": "{{count}} account found",
             "title_other": "{{count}} accounts found",
-            "title_redesigned_description": "This ledger device can sign transactions for the following accounts. Select the accounts to add to your Pera Wallet.",
+            "title_redesigned_description": "This Ledger device can sign transactions for the following accounts. Select the accounts to add to your Pera Wallet.",
             "account_subtitle": "Ledger Account",
             "cta_one": "Verify selected account",
             "cta_other": "Verify selected accounts",
