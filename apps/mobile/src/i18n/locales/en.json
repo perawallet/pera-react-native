@@ -1711,6 +1711,25 @@
         }
     },
     "ledger": {
+        "pair": {
+            "title": "Pair with Ledger",
+            "description": "Please make sure your Ledger is unlocked with Bluetooth enabled",
+            "cta": "Pair with Ledger",
+            "how_does_it_work": "How does it work?",
+            "support_url": "https://support.perawallet.app/en/article/pairing-your-ledger-device-nano-x-stax-and-flex-1lxp9qm/"
+        },
+        "how_does_it_work": {
+            "title": "Pair with Ledger",
+            "step_1": "Make sure that your ledger device is on and has Bluetooth enabled.",
+            "step_2": "Install the Algorand app (version 1.2.9 or later) onto your Ledger.",
+            "step_3": "After confirming pairing on your Ledger device, open the Algorand app.",
+            "step_4": "Make sure Bluetooth is enabled on your smartphone."
+        },
+        "connecting": {
+            "title": "Ledger Connection",
+            "subtitle": "Waiting for ledger to connect.",
+            "cancel": "Cancel"
+        },
         "instructions": {
             "title": "Pair Ledger Device",
             "description": "Follow these steps to connect your Ledger device:",
@@ -1757,7 +1776,14 @@
             "already_imported": "Already imported",
             "continue": "Continue",
             "no_new_accounts": "All accounts on this device are already imported.",
-            "find_another_wallet": "Find another wallet"
+            "find_another_wallet": "Find another wallet",
+            "title_one": "{{count}} account found",
+            "title_other": "{{count}} accounts found",
+            "title_redesigned_description": "This ledger device can sign transactions for the following accounts. Select the accounts to add to your Pera Wallet.",
+            "account_subtitle": "Ledger Account",
+            "cta_one": "Verify selected account",
+            "cta_other": "Verify selected accounts",
+            "address_sheet_title": "Account address"
         },
         "verify": {
             "title": "Verify on Ledger",
@@ -1769,7 +1795,13 @@
             "error_title": "Verification Failed",
             "rejected": "Address verification was rejected on the device.",
             "retry": "Try Again",
-            "saving": "Saving accounts..."
+            "saving": "Saving accounts...",
+            "title_redesigned": "Verify Account Addresses via Ledger",
+            "description": "The following account addresses will display on your Ledger device. Please carefully compare and verify each address in order to finalize device pairing.",
+            "awaiting": "Awaiting Verification",
+            "verified": "Account Verified",
+            "add_accounts_one": "Add Verified Account",
+            "add_accounts_other": "Add Verified Accounts"
         },
         "signing": {
             "title": "Approve on Ledger",
