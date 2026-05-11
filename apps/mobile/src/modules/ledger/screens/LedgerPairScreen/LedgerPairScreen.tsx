@@ -10,11 +10,10 @@
  limitations under the License
  */
 
-export { LedgerInstructionsScreen } from './screens/LedgerInstructionsScreen'
-export { LedgerPairScreen } from './screens/LedgerPairScreen'
-export { LedgerScanScreen } from './screens/LedgerScanScreen'
-export { LedgerFetchAccountsScreen } from './screens/LedgerFetchAccountsScreen'
-export { LedgerSelectAccountsScreen } from './screens/LedgerSelectAccountsScreen'
-export { LedgerVerifyScreen } from './screens/LedgerVerifyScreen'
-export { LedgerTroubleshootingScreen } from './screens/LedgerTroubleshootingScreen'
-export * from './utils'
+import { PWView, PWText } from '@components/core'
+
+export const LedgerPairScreen = () => (
+    <PWView>
+        <PWText variant='body'>LedgerPairScreen (stub)</PWText>
+    </PWView>
+)
