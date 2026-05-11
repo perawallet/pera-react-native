@@ -10,22 +10,28 @@
  limitations under the License
  */
 
-import React from 'react'
-import { ActivityIndicator } from 'react-native'
-import { PWView, PWText, PWIcon, PWResultView } from '@components/core'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import {
+    PWView,
+    PWText,
+    PWIcon,
+    PWButton,
+    PWScrollView,
+    PWResultView,
+} from '@components/core'
 
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import { useLedgerVerifyScreen } from './useLedgerVerifyScreen'
+import { LedgerVerificationCard } from './LedgerVerificationCard'
 
 export const LedgerVerifyScreen = () => {
     const styles = useStyles()
     const {
-        verificationState,
-        currentIndex,
-        totalAccounts,
-        currentAddress,
+        selectedAccounts,
+        verifiedIndices,
+        areAllVerified,
         errorPreset,
+        handleAdd,
         handleRetry,
         handleTroubleshoot,
         t,
@@ -50,74 +56,57 @@ export const LedgerVerifyScreen = () => {
         )
     }
 
-    const isLoading =
-        verificationState === 'connecting' || verificationState === 'verifying'
-
     return (
         <PWView style={styles.container}>
-            <PWView style={styles.content}>
-                {isLoading && (
-                    <>
-                        <ActivityIndicator size='large' />
-                        <PWText
-                            variant='h2'
-                            style={styles.title}
-                        >
-                            {verificationState === 'connecting'
-                                ? t('ledger.verify.connecting')
-                                : t('ledger.verify.verify_on_device')}
-                        </PWText>
+            <PWScrollView contentContainerStyle={styles.scrollContent}>
+                <PWView style={styles.heroIcon}>
+                    <PWIcon
+                        name='ledger'
+                        size='xl'
+                    />
+                </PWView>
 
-                        {verificationState === 'verifying' && (
-                            <>
-                                <PWText
-                                    variant='body'
-                                    style={styles.progressText}
-                                >
-                                    {t('ledger.verify.progress', {
-                                        current: currentIndex + 1,
-                                        total: totalAccounts,
-                                    })}
-                                </PWText>
+                <PWText
+                    variant='h2'
+                    style={styles.title}
+                >
+                    {t('ledger.verify.title_redesigned')}
+                </PWText>
+                <PWText
+                    variant='body'
+                    style={styles.description}
+                >
+                    {t('ledger.verify.description')}
+                </PWText>
 
-                                {currentAddress !== null && (
-                                    <PWText
-                                        variant='caption'
-                                        style={styles.addressText}
-                                    >
-                                        {truncateAlgorandAddress(
-                                            currentAddress,
-                                            13,
-                                        )}
-                                    </PWText>
-                                )}
-
-                                <PWText
-                                    variant='body'
-                                    style={styles.instructionText}
-                                >
-                                    {t('ledger.verify.confirm_instruction')}
-                                </PWText>
-                            </>
-                        )}
-                    </>
-                )}
-
-                {verificationState === 'complete' && (
-                    <>
-                        <PWIcon
-                            name='check'
-                            size='xxl'
+                <PWView style={styles.cardList}>
+                    {selectedAccounts.map((acc, i) => (
+                        <LedgerVerificationCard
+                            key={acc.address}
+                            address={acc.address}
+                            status={
+                                verifiedIndices.has(i) ? 'verified' : 'awaiting'
+                            }
+                            testID={`ledger_verify_card_${i}`}
                         />
-                        <PWText
-                            variant='h2'
-                            style={styles.title}
-                        >
-                            {t('ledger.verify.complete')}
-                        </PWText>
-                    </>
-                )}
-            </PWView>
+                    ))}
+                </PWView>
+            </PWScrollView>
+
+            <SafeAreaView
+                edges={['bottom']}
+                style={styles.footer}
+            >
+                <PWButton
+                    testID='ledger_verify_add_accounts_button'
+                    title={t('ledger.verify.add_accounts', {
+                        count: selectedAccounts.length,
+                    })}
+                    onPress={handleAdd}
+                    variant='primary'
+                    isDisabled={!areAllVerified}
+                />
+            </SafeAreaView>
         </PWView>
     )
 }

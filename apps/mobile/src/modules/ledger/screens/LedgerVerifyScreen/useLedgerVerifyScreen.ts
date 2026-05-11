@@ -41,19 +41,18 @@ import {
 
 type LedgerVerifyRouteProp = RouteProp<AddAccountStackParamList, 'LedgerVerify'>
 
-type VerificationState = 'connecting' | 'verifying' | 'complete' | 'error'
-
 type UseLedgerVerifyScreenResult = {
-    verificationState: VerificationState
-    currentIndex: number
-    totalAccounts: number
-    currentAddress: Nullable<string>
-    error: Nullable<AppError>
+    selectedAccounts: ReadonlyArray<LedgerAccount>
+    verifiedIndices: ReadonlySet<number>
+    areAllVerified: boolean
     errorPreset: Nullable<LedgerErrorPreset>
+    handleAdd: () => void
     handleRetry: () => void
     handleTroubleshoot: () => void
     t: (key: string, options?: Record<string, unknown>) => string
 }
+
+type VerificationState = 'connecting' | 'verifying' | 'complete' | 'error'
 
 export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
     const {
@@ -73,21 +72,18 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
 
     const [verificationState, setVerificationState] =
         useState<VerificationState>('connecting')
-    const [currentIndex, setCurrentIndex] = useState(0)
+    const [verifiedIndices, setVerifiedIndices] = useState<ReadonlySet<number>>(
+        () => new Set(),
+    )
     const [error, setError] = useState<Nullable<AppError>>(null)
-
     const hasStartedRef = useRef(false)
 
-    const currentAddress =
-        currentIndex < selectedAccounts.length
-            ? selectedAccounts[currentIndex].address
-            : null
-
-    const verifyAndSave = useCallback(async () => {
+    const verify = useCallback(async () => {
         let transport: Nullable<HardwareWalletTransport> = null
         try {
             setVerificationState('connecting')
             setError(null)
+            setVerifiedIndices(new Set())
 
             const provider = getProvider().hardwareWalletRegistry.getProvider(
                 'ledger',
@@ -103,32 +99,18 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
             setVerificationState('verifying')
 
             for (let i = 0; i < selectedAccounts.length; i++) {
-                setCurrentIndex(i)
                 await verifyLedgerAddress(
                     transport,
                     selectedAccounts[i].accountIndex,
                 )
+                setVerifiedIndices(prev => {
+                    const next = new Set(prev)
+                    next.add(i)
+                    return next
+                })
             }
 
             setVerificationState('complete')
-
-            const hwAccounts = selectedAccounts.map((acc: LedgerAccount) => ({
-                type: AccountTypes.hardware,
-                address: acc.address,
-                hardwareDetails: {
-                    manufacturer: 'ledger' as const,
-                    deviceId,
-                    deviceName,
-                    accountIndex: acc.accountIndex,
-                    transportType,
-                },
-            }))
-
-            const currentAccounts = useAccountsStore.getState().accounts
-            setAccounts([...currentAccounts, ...hwAccounts])
-            setSelectedAccountAddress(hwAccounts[0].address)
-            setShouldPlayConfetti(true)
-            exitAccountFlow()
         } catch (err) {
             const verifyError = classifyLedgerError(err)
             setError(verifyError)
@@ -138,6 +120,32 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                 await transport.disconnect().catch(() => {})
             }
         }
+    }, [deviceId, transportType, selectedAccounts])
+
+    useEffect(() => {
+        if (hasStartedRef.current) return
+        hasStartedRef.current = true
+        verify()
+    }, [verify])
+
+    const handleAdd = useCallback(() => {
+        const hwAccounts = selectedAccounts.map((acc: LedgerAccount) => ({
+            type: AccountTypes.hardware,
+            address: acc.address,
+            hardwareDetails: {
+                manufacturer: 'ledger' as const,
+                deviceId,
+                deviceName,
+                accountIndex: acc.accountIndex,
+                transportType,
+            },
+        }))
+
+        const currentAccounts = useAccountsStore.getState().accounts
+        setAccounts([...currentAccounts, ...hwAccounts])
+        setSelectedAccountAddress(hwAccounts[0].address)
+        setShouldPlayConfetti(true)
+        exitAccountFlow()
     }, [
         deviceId,
         deviceName,
@@ -149,17 +157,9 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         exitAccountFlow,
     ])
 
-    useEffect(() => {
-        if (hasStartedRef.current) return
-        hasStartedRef.current = true
-
-        verifyAndSave()
-    }, [verifyAndSave])
-
     const handleRetry = useCallback(() => {
-        setCurrentIndex(0)
-        verifyAndSave()
-    }, [verifyAndSave])
+        verify()
+    }, [verify])
 
     const handleTroubleshoot = useCallback(() => {
         navigation.navigate('LedgerTroubleshooting')
@@ -173,13 +173,14 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         [error, verificationState, t],
     )
 
+    const areAllVerified = verifiedIndices.size === selectedAccounts.length
+
     return {
-        verificationState,
-        currentIndex,
-        totalAccounts: selectedAccounts.length,
-        currentAddress,
-        error,
+        selectedAccounts,
+        verifiedIndices,
+        areAllVerified,
         errorPreset,
+        handleAdd,
         handleRetry,
         handleTroubleshoot,
         t,
