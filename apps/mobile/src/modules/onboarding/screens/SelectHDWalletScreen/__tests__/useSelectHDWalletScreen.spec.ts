@@ -16,11 +16,13 @@ import { useSelectHDWalletScreen } from '../useSelectHDWalletScreen'
 import type { HDWalletGroup } from '@perawallet/wallet-core-accounts'
 
 const mockPush = vi.fn()
+const mockReplace = vi.fn() 
 const mockGoBack = vi.fn()
 
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({
         push: mockPush,
+        replace: mockReplace,
         goBack: mockGoBack,
     }),
 }))
