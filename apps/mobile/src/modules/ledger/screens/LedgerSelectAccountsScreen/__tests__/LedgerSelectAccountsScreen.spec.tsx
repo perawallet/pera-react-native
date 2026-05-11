@@ -20,7 +20,14 @@ const ACCOUNTS = [
     },
 ]
 
-const { mockToggleSelection, mockToggleSelectAll, mockHandleContinue, mockHandleFindAnother, mockHandleOpenInfo, mockHandleCloseInfo } = vi.hoisted(() => ({
+const {
+    mockToggleSelection,
+    mockToggleSelectAll,
+    mockHandleContinue,
+    mockHandleFindAnother,
+    mockHandleOpenInfo,
+    mockHandleCloseInfo,
+} = vi.hoisted(() => ({
     mockToggleSelection: vi.fn(),
     mockToggleSelectAll: vi.fn(),
     mockHandleContinue: vi.fn(),
@@ -88,7 +95,9 @@ describe('LedgerSelectAccountsScreen', () => {
     it('calls handleOpenInfo when the row info button is pressed', () => {
         render(<LedgerSelectAccountsScreen />)
         fireEvent.click(
-            screen.getByTestId(`ledger_select_row_${ACCOUNTS[0].address}-info-button`),
+            screen.getByTestId(
+                `ledger_select_row_${ACCOUNTS[0].address}-info-button`,
+            ),
         )
         expect(mockHandleOpenInfo).toHaveBeenCalledWith(ACCOUNTS[0].address)
     })

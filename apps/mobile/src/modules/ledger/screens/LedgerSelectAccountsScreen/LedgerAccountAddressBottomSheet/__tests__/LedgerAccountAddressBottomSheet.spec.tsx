@@ -27,8 +27,7 @@ vi.mock('@hooks/useLanguage', () => ({
 
 import { LedgerAccountAddressBottomSheet } from '../LedgerAccountAddressBottomSheet'
 
-const ADDRESS =
-    '4WU2BYFAVWV33766FLYBEBVMDSCBYB2I5U257SGGHJ6FHFB3ZVDIVSHXLI'
+const ADDRESS = '4WU2BYFAVWV33766FLYBEBVMDSCBYB2I5U257SGGHJ6FHFB3ZVDIVSHXLI'
 
 describe('LedgerAccountAddressBottomSheet', () => {
     beforeEach(() => {

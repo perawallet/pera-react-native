@@ -70,8 +70,7 @@ export const useLedgerSelectAccountsScreen =
         const [selectedAddresses, setSelectedAddresses] = useState<Set<string>>(
             () => new Set(),
         )
-        const [infoAddress, setInfoAddress] =
-            useState<Nullable<string>>(null)
+        const [infoAddress, setInfoAddress] = useState<Nullable<string>>(null)
 
         const transportRef = useRef<Nullable<HardwareWalletTransport>>(null)
         const inFlightRef = useRef(false)
