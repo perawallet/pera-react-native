@@ -23,7 +23,7 @@
     "@perawallet/wallet-core-hardware-wallet": "workspace:*",
     "@perawallet/wallet-core-config": "workspace:*",
     "react": "catalog:",
-    "react-native": "0.81.5",
+    "react-native": "0.83.9",
     "react-native-mmkv": "^4.2.0",
     "@react-native-firebase/analytics": "^24.0.0",
     "@react-native-firebase/crashlytics": "^24.0.0",
