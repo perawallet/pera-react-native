@@ -1753,7 +1753,8 @@
             "description": "Select a Ledger device to connect to.",
             "retry": "Scan Again",
             "error": "Scan failed. Make sure Bluetooth is enabled and try again.",
-            "timeout": "Scan timed out. Make sure your device is on and nearby."
+            "timeout": "Scan timed out. Make sure your device is on and nearby.",
+            "grant_permission": "Grant Permission"
         },
         "fetch_accounts": {
             "title": "Searching Accounts",

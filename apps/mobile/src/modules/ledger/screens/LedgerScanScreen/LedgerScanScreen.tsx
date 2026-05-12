@@ -33,8 +33,10 @@ export const LedgerScanScreen = () => {
     const {
         devices,
         error,
+        isPermissionDenied,
         handleDevicePress,
         handleRetry,
+        handleRequestPermissions,
         handleTroubleshoot,
         t,
     } = useLedgerScanScreen()
@@ -105,14 +107,34 @@ export const LedgerScanScreen = () => {
                 </PWText>
             </PWView>
 
-            <PWFlatList
-                data={devices}
-                renderItem={renderItem}
-                keyExtractor={item => item.id}
-                ListEmptyComponent={renderEmptyState}
-                contentContainerStyle={styles.listContent}
-                showsVerticalScrollIndicator={false}
-            />
+            {isPermissionDenied ? (
+                <PWView
+                    style={styles.errorContainer}
+                    testID='ledger_scan_permission_denied'
+                >
+                    <PWText
+                        variant='body'
+                        style={styles.errorText}
+                    >
+                        {t('ledger.instructions.permission_required_message')}
+                    </PWText>
+                    <PWButton
+                        testID='ledger_scan_grant_permission_button'
+                        title={t('ledger.scan.grant_permission')}
+                        onPress={handleRequestPermissions}
+                        variant='link'
+                    />
+                </PWView>
+            ) : (
+                <PWFlatList
+                    data={devices}
+                    renderItem={renderItem}
+                    keyExtractor={item => item.id}
+                    ListEmptyComponent={renderEmptyState}
+                    contentContainerStyle={styles.listContent}
+                    showsVerticalScrollIndicator={false}
+                />
+            )}
         </PWView>
     )
 }

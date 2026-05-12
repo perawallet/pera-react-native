@@ -14,13 +14,24 @@ import React from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@test-utils/render'
 
-const { mockNavigate, mockSetOptions, mockStartScan, mockStopScan } =
-    vi.hoisted(() => ({
-        mockNavigate: vi.fn(),
-        mockSetOptions: vi.fn(),
-        mockStartScan: vi.fn(),
-        mockStopScan: vi.fn(),
-    }))
+const {
+    mockNavigate,
+    mockSetOptions,
+    mockStartScan,
+    mockStopScan,
+    mockRequestPermissions,
+    blePermissionsState,
+} = vi.hoisted(() => ({
+    mockNavigate: vi.fn(),
+    mockSetOptions: vi.fn(),
+    mockStartScan: vi.fn(),
+    mockStopScan: vi.fn(),
+    mockRequestPermissions: vi.fn(),
+    blePermissionsState: {
+        hasPermissions: true,
+        isChecking: false,
+    },
+}))
 
 const DEVICE = {
     id: 'ble-1234',
@@ -53,6 +64,11 @@ vi.mock('../../../hooks', () => ({
         stopScan: mockStopScan,
         error: null,
     }),
+    useBlePermissions: () => ({
+        hasPermissions: blePermissionsState.hasPermissions,
+        isChecking: blePermissionsState.isChecking,
+        requestPermissions: mockRequestPermissions,
+    }),
 }))
 
 import { LedgerScanScreen } from '../LedgerScanScreen'
@@ -60,6 +76,9 @@ import { LedgerScanScreen } from '../LedgerScanScreen'
 describe('LedgerScanScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        blePermissionsState.hasPermissions = true
+        blePermissionsState.isChecking = false
+        mockRequestPermissions.mockResolvedValue(true)
     })
 
     it('renders the title and description', () => {
@@ -84,5 +103,22 @@ describe('LedgerScanScreen', () => {
         fireEvent.click(screen.getByTestId('ledger_scan_help_button'))
 
         expect(mockNavigate).toHaveBeenCalledWith('LedgerTroubleshooting')
+    })
+
+    it('renders a permission-denied state and re-requests on tap when BLE permission is missing', () => {
+        blePermissionsState.hasPermissions = false
+        blePermissionsState.isChecking = false
+
+        render(<LedgerScanScreen />)
+
+        expect(screen.getByTestId('ledger_scan_permission_denied')).toBeTruthy()
+        // First request fires on mount; we want to assert the retry click also fires one.
+        mockRequestPermissions.mockClear()
+
+        fireEvent.click(
+            screen.getByTestId('ledger_scan_grant_permission_button'),
+        )
+
+        expect(mockRequestPermissions).toHaveBeenCalledTimes(1)
     })
 })

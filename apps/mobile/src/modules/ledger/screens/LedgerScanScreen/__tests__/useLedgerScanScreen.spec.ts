@@ -13,10 +13,21 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 
-const { mockNavigate, mockStartScan, mockStopScan } = vi.hoisted(() => ({
+const {
+    mockNavigate,
+    mockStartScan,
+    mockStopScan,
+    mockRequestPermissions,
+    blePermissionsState,
+} = vi.hoisted(() => ({
     mockNavigate: vi.fn(),
     mockStartScan: vi.fn(),
     mockStopScan: vi.fn(),
+    mockRequestPermissions: vi.fn(),
+    blePermissionsState: {
+        hasPermissions: true,
+        isChecking: false,
+    },
 }))
 
 vi.mock('@hooks/useAppNavigation', () => ({
@@ -34,6 +45,11 @@ vi.mock('../../../hooks', () => ({
         startScan: mockStartScan,
         stopScan: mockStopScan,
         error: null,
+    }),
+    useBlePermissions: () => ({
+        hasPermissions: blePermissionsState.hasPermissions,
+        isChecking: blePermissionsState.isChecking,
+        requestPermissions: mockRequestPermissions,
     }),
 }))
 
@@ -53,13 +69,12 @@ const DEVICE: HardwareWalletDevice = {
 describe('useLedgerScanScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        vi.useFakeTimers()
-        vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) =>
-            setTimeout(cb, 0),
-        )
+        blePermissionsState.hasPermissions = true
+        blePermissionsState.isChecking = false
+        mockRequestPermissions.mockResolvedValue(true)
     })
 
-    it('starts scanning on mount and stops on unmount', () => {
+    it('starts scanning on mount and stops on unmount when permissions are granted', () => {
         const { unmount } = renderHook(() => useLedgerScanScreen())
 
         expect(mockStartScan).toHaveBeenCalled()
@@ -67,6 +82,58 @@ describe('useLedgerScanScreen', () => {
         unmount()
 
         expect(mockStopScan).toHaveBeenCalled()
+    })
+
+    it('does not start scanning while the permission check is in flight', () => {
+        blePermissionsState.hasPermissions = false
+        blePermissionsState.isChecking = true
+
+        renderHook(() => useLedgerScanScreen())
+
+        expect(mockStartScan).not.toHaveBeenCalled()
+        expect(mockRequestPermissions).not.toHaveBeenCalled()
+    })
+
+    it('requests permissions on mount when missing and does not start scanning', () => {
+        blePermissionsState.hasPermissions = false
+        blePermissionsState.isChecking = false
+
+        renderHook(() => useLedgerScanScreen())
+
+        expect(mockRequestPermissions).toHaveBeenCalledTimes(1)
+        expect(mockStartScan).not.toHaveBeenCalled()
+    })
+
+    it('surfaces isPermissionDenied once a request has been made and permission is still missing', () => {
+        blePermissionsState.hasPermissions = false
+        blePermissionsState.isChecking = false
+
+        const { result } = renderHook(() => useLedgerScanScreen())
+
+        expect(result.current.isPermissionDenied).toBe(true)
+    })
+
+    it('does not surface isPermissionDenied while the check is in flight', () => {
+        blePermissionsState.hasPermissions = false
+        blePermissionsState.isChecking = true
+
+        const { result } = renderHook(() => useLedgerScanScreen())
+
+        expect(result.current.isPermissionDenied).toBe(false)
+    })
+
+    it('lets the user retry the permission request via handleRequestPermissions', () => {
+        blePermissionsState.hasPermissions = false
+        blePermissionsState.isChecking = false
+
+        const { result } = renderHook(() => useLedgerScanScreen())
+        mockRequestPermissions.mockClear()
+
+        act(() => {
+            result.current.handleRequestPermissions()
+        })
+
+        expect(mockRequestPermissions).toHaveBeenCalledTimes(1)
     })
 
     it('stops scanning and navigates when a device is tapped', () => {
@@ -89,7 +156,7 @@ describe('useLedgerScanScreen', () => {
         const hostileDevice: HardwareWalletDevice = {
             ...DEVICE,
             // RLO override + leading control char — must not reach the nav header.
-            name: 'Ledger ‮X9F2A',
+            name: 'Ledger ‮X9F2A',
         }
 
         act(() => {
