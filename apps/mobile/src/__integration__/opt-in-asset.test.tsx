@@ -47,11 +47,7 @@ import {
 } from '@perawallet/wallet-core-transactions'
 import { OptInConfirmationContent } from '@modules/assets/components/OptInConfirmationContent'
 import { OptOutConfirmationContent } from '@modules/accounts/components/AccountAssetList/OptOutConfirmationContent'
-import {
-    BottomSheetManager,
-    useBottomSheet,
-    useBottomSheetStore,
-} from '@modules/bottom-sheet'
+import { useBottomSheet } from '@modules/bottom-sheet'
 import {
     getAccountHoldings,
     insertAssetHolding,
@@ -111,7 +107,7 @@ const OptInHost = ({
         })
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
-    return <BottomSheetManager />
+    return null
 }
 
 // Same shape as `OptInHost` but for the opt-out path. Wires the
@@ -158,7 +154,7 @@ const OptOutHost = ({
         })
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
-    return <BottomSheetManager />
+    return null
 }
 
 describe('Flow: Opt into an asset', () => {
@@ -181,7 +177,6 @@ describe('Flow: Opt into an asset', () => {
 
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
-        useBottomSheetStore.getState().resetState()
         vi.mocked(Notifier.showNotification).mockClear()
 
         // Mint a real algo25 key so the signing pipeline has something
@@ -350,7 +345,6 @@ describe('Flow: Opt out of an asset', () => {
 
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
-        useBottomSheetStore.getState().resetState()
         vi.mocked(Notifier.showNotification).mockClear()
 
         // Same signing-capable sender as the opt-in suite.

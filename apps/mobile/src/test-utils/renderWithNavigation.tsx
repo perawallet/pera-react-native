@@ -12,6 +12,7 @@
 
 import React from 'react'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
+import { BottomSheetManager } from '@modules/bottom-sheet'
 import { render, type CustomRenderOptions } from './render'
 
 type ScreenComponent = React.ComponentType<any>
@@ -60,24 +61,33 @@ export const renderWithNavigation = (
     }: RenderWithNavigationOptions = {},
 ) => {
     const App = () => (
-        <Stack.Navigator
-            initialRouteName={initialRouteName ?? primaryName}
-            screenOptions={{ headerShown: false }}
-        >
-            <Stack.Screen
-                name={primaryName}
-                component={PrimaryScreen}
-                initialParams={initialParams}
-            />
-            {additionalScreens.map(s => (
+        <>
+            {/* Mirror production: BottomSheetManager mounts next to the
+                root navigator inside NavigationContainer so request-based
+                bottom sheets (useBottomSheet().request) render under
+                integration tests. The unit `render()` doesn't include this
+                so hook-only specs aren't pulled into the bottom-sheet
+                import chain at module-load time. */}
+            <BottomSheetManager />
+            <Stack.Navigator
+                initialRouteName={initialRouteName ?? primaryName}
+                screenOptions={{ headerShown: false }}
+            >
                 <Stack.Screen
-                    key={s.name}
-                    name={s.name}
-                    component={s.component}
-                    initialParams={s.params}
+                    name={primaryName}
+                    component={PrimaryScreen}
+                    initialParams={initialParams}
                 />
-            ))}
-        </Stack.Navigator>
+                {additionalScreens.map(s => (
+                    <Stack.Screen
+                        key={s.name}
+                        name={s.name}
+                        component={s.component}
+                        initialParams={s.params}
+                    />
+                ))}
+            </Stack.Navigator>
+        </>
     )
 
     return render(<App />, renderOptions)

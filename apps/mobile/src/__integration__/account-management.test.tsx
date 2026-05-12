@@ -28,17 +28,15 @@ import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import { useNotificationPreferences } from '@perawallet/wallet-core-messages'
 import { AccountMenu } from '@modules/accounts/components/AccountMenu/AccountMenu'
 import { AccountOptionsContent } from '@modules/accounts/components/AccountOptionsContent'
-import {
-    BottomSheetManager,
-    useBottomSheet,
-    useBottomSheetStore,
-} from '@modules/bottom-sheet'
+import { useBottomSheet } from '@modules/bottom-sheet'
 
 // Production opens the account-options sheet through `requestBottomSheet`
 // (see useAccountOverview.openAccountOptions). Mirror that here so the
 // content mounts inside a real BottomSheetHost — the content reads
 // `useBottomSheetResult` from the host's context, so an inline render
-// would throw.
+// would throw. The BottomSheetManager itself is provided by TestProviders
+// (apps/mobile/src/test-utils/render.tsx), mirroring production's
+// app-root wiring.
 const AccountOptionsHost = ({ account }: { account: WalletAccount }) => {
     const { request } = useBottomSheet()
     useEffect(() => {
@@ -53,7 +51,7 @@ const AccountOptionsHost = ({ account }: { account: WalletAccount }) => {
         })
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
-    return <BottomSheetManager />
+    return null
 }
 
 import {
@@ -124,7 +122,6 @@ describe('Flow: Account management', () => {
     beforeEach(() => {
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
-        useBottomSheetStore.getState().resetState()
         resetNotificationPreferences()
         vi.mocked(Notifier.showNotification).mockClear()
         vi.mocked(Clipboard.setStringAsync).mockClear()
@@ -132,7 +129,6 @@ describe('Flow: Account management', () => {
 
     afterEach(() => {
         useAccountsStore.getState().setAccounts([])
-        useBottomSheetStore.getState().resetState()
         resetNotificationPreferences()
     })
 
@@ -176,9 +172,7 @@ describe('Flow: Account management', () => {
                 .setSelectedAccountAddress(ACCOUNT_B.address)
 
             renderWithNavigation(
-                () => (
-                    <AccountOptionsHost account={ACCOUNT_B} />
-                ),
+                () => <AccountOptionsHost account={ACCOUNT_B} />,
                 'AccountOptionsHost',
             )
 
@@ -244,9 +238,7 @@ describe('Flow: Account management', () => {
                 .setSelectedAccountAddress(algo25Account.address)
 
             renderWithNavigation(
-                () => (
-                    <AccountOptionsHost account={algo25Account} />
-                ),
+                () => <AccountOptionsHost account={algo25Account} />,
                 'AccountOptionsHost',
             )
 
@@ -304,9 +296,7 @@ describe('Flow: Account management', () => {
             expect(notifBefore.current.disabledAccounts).toEqual([])
 
             renderWithNavigation(
-                () => (
-                    <AccountOptionsHost account={ACCOUNT_A} />
-                ),
+                () => <AccountOptionsHost account={ACCOUNT_A} />,
                 'AccountOptionsHost',
             )
 
@@ -349,9 +339,7 @@ describe('Flow: Account management', () => {
                 .setSelectedAccountAddress(ACCOUNT_A.address)
 
             renderWithNavigation(
-                () => (
-                    <AccountOptionsHost account={ACCOUNT_A} />
-                ),
+                () => <AccountOptionsHost account={ACCOUNT_A} />,
                 'AccountOptionsHost',
             )
 
@@ -381,9 +369,7 @@ describe('Flow: Account management', () => {
                 .setSelectedAccountAddress(ACCOUNT_A.address)
 
             renderWithNavigation(
-                () => (
-                    <AccountOptionsHost account={ACCOUNT_A} />
-                ),
+                () => <AccountOptionsHost account={ACCOUNT_A} />,
                 'AccountOptionsHost',
             )
 

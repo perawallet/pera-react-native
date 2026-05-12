@@ -260,6 +260,15 @@ export const createNavigationContainerRef = () => ({
     current: null,
 })
 
+// Bottom-sheet hosts wrap their portal children with
+// `<NavigationContainerRefContext.Provider value={navigationRef}>` (see
+// apps/mobile/src/modules/bottom-sheet/components/BottomSheetHost/BottomSheetHost.tsx)
+// so navigation hooks keep working across the portal. The integration mock
+// replaces `@react-navigation/native` wholesale with this module, so we need
+// to export the context — without it, the import is `undefined` and rendering
+// the bottom-sheet host throws.
+export const NavigationContainerRefContext = createContext<unknown>(null)
+
 export const StackActions = {
     replace: (name: string, params?: Record<string, unknown>) => ({
         type: 'REPLACE' as const,

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import React, { useCallback } from 'react'
+import { useCallback } from 'react'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsMounted } from '@hooks/useIsMounted'
 import { useWebView } from '@modules/webview'
@@ -21,11 +21,8 @@ import { useCreateAccount } from '@perawallet/wallet-core-accounts'
 import { deferToNextCycle } from '@perawallet/wallet-core-shared'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
-import { useBottomSheet } from '@modules/bottom-sheet'
-import {
-    ImportOptionsContent,
-    type ImportOptionsContentResult,
-} from '../../components/ImportOptionsContent'
+
+
 
 type UseOnboardingScreenResult = {
     handleTermsPress: () => void
@@ -48,7 +45,6 @@ export const useOnboardingScreen = (): UseOnboardingScreenResult => {
     const { createHdWalletAccount } = useCreateAccount()
     const { showToast } = useToast()
     const { t } = useLanguage()
-    const { request: requestBottomSheet } = useBottomSheet()
 
     const handleTermsPress = useCallback(() => {
         pushWebView({

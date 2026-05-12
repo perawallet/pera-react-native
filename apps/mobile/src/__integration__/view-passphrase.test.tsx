@@ -51,6 +51,7 @@ import {
 } from '@perawallet/wallet-core-kms'
 import { usePinCode } from '@perawallet/wallet-core-security'
 import { ViewPassphraseFlow } from '@modules/view-passphrase'
+import { BottomSheetManager } from '@modules/bottom-sheet'
 
 import {
     ALGO25_TEST_ADDRESS,
@@ -79,6 +80,12 @@ const ViewPassphraseHost = ({
     const [isVisible, setIsVisible] = useState(false)
     return (
         <>
+            {/* ViewPassphraseFlow now opens its acknowledge / display
+                steps via `useBottomSheet().request(...)` — the test
+                harness uses `render()` directly (not
+                `renderWithNavigation`), so we need to mount the manager
+                here ourselves. */}
+            <BottomSheetManager />
             <button
                 data-testid='open_view_passphrase'
                 onClick={() => setIsVisible(true)}
