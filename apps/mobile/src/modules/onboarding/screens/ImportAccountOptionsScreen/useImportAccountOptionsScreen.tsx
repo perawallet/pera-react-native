@@ -78,8 +78,7 @@ export const useImportAccountOptionsScreen =
         }, [requestBottomSheet, navigation])
 
         const handlePairLedgerBle = useCallback(
-            () =>
-                navigation.push('LedgerInstructions', { transportType: 'ble' }),
+            () => navigation.push('LedgerPair'),
             [navigation],
         )
 

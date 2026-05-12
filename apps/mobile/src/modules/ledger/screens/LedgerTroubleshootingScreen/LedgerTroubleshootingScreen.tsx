@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { PWButton, PWScrollView, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
 import { useLedgerTroubleshootingScreen } from './useLedgerTroubleshootingScreen'
@@ -89,14 +90,17 @@ export const LedgerTroubleshootingScreen = () => {
                 </PWView>
             </PWScrollView>
 
-            <PWView style={styles.footer}>
+            <SafeAreaView
+                edges={['bottom']}
+                style={styles.footer}
+            >
                 <PWButton
                     testID='ledger_troubleshooting_done_button'
                     title={t('ledger.troubleshooting.done')}
                     onPress={handleDone}
                     variant='primary'
                 />
-            </PWView>
+            </SafeAreaView>
         </PWView>
     )
 }

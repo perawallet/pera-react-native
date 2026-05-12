@@ -40,28 +40,6 @@ describe('LedgerDeviceItem', () => {
         expect(screen.getByText('Fred Nano X')).toBeTruthy()
     })
 
-    it('renders the model display name for known models', () => {
-        render(
-            <LedgerDeviceItem
-                device={makeDevice({ model: 'flex' })}
-                onPress={vi.fn()}
-            />,
-        )
-
-        expect(screen.getByText('Flex')).toBeTruthy()
-    })
-
-    it('falls back to "Ledger" for unknown models', () => {
-        render(
-            <LedgerDeviceItem
-                device={makeDevice({ model: 'something-new' })}
-                onPress={vi.fn()}
-            />,
-        )
-
-        expect(screen.getByText('Ledger')).toBeTruthy()
-    })
-
     it('calls onPress with the device when tapped', () => {
         const onPress = vi.fn()
         const device = makeDevice()
@@ -77,43 +55,36 @@ describe('LedgerDeviceItem', () => {
         expect(onPress).toHaveBeenCalledWith(device)
     })
 
-    it('renders a USB badge for USB-discovered devices', () => {
+    it('does not render a transport badge for BLE devices', () => {
         render(
             <LedgerDeviceItem
-                device={{
-                    id: 'usb-1',
-                    name: 'Nano S Plus',
-                    manufacturer: 'ledger',
-                    transportType: 'usb',
-                    model: 'nanoSPlus',
-                    rssi: null,
-                }}
-                onPress={() => {}}
+                device={makeDevice({ transportType: 'ble' })}
+                onPress={vi.fn()}
             />,
         )
 
-        expect(
-            screen.getByTestId('ledger_device_item_usb-1_transport_usb'),
-        ).toBeTruthy()
+        expect(screen.queryByText('BLE')).toBeNull()
     })
 
-    it('renders a BLE badge for BLE-discovered devices', () => {
+    it('does not render a transport badge for USB devices', () => {
         render(
             <LedgerDeviceItem
-                device={{
-                    id: 'ble-1',
-                    name: 'Nano X',
-                    manufacturer: 'ledger',
-                    transportType: 'ble',
-                    model: 'nanoX',
-                    rssi: -50,
-                }}
-                onPress={() => {}}
+                device={makeDevice({ transportType: 'usb' })}
+                onPress={vi.fn()}
             />,
         )
 
-        expect(
-            screen.getByTestId('ledger_device_item_ble-1_transport_ble'),
-        ).toBeTruthy()
+        expect(screen.queryByText('USB')).toBeNull()
+    })
+
+    it('does not render the device model as a subtitle', () => {
+        render(
+            <LedgerDeviceItem
+                device={makeDevice({ model: 'flex' })}
+                onPress={vi.fn()}
+            />,
+        )
+
+        expect(screen.queryByText('Flex')).toBeNull()
     })
 })

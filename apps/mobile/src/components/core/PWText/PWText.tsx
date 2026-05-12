@@ -24,6 +24,7 @@ export type PWTextProps = {
     ellipsizeMode?: TextProps['ellipsizeMode']
     adjustsFontSizeToFit?: TextProps['adjustsFontSizeToFit']
     minimumFontScale?: TextProps['minimumFontScale']
+    selectable?: TextProps['selectable']
     testID?: string
     onPress?: () => void
 }
@@ -36,6 +37,7 @@ export const PWText = ({
     ellipsizeMode,
     adjustsFontSizeToFit,
     minimumFontScale,
+    selectable,
     onPress,
     ...props
 }: PWTextProps) => {
@@ -52,6 +54,7 @@ export const PWText = ({
             ellipsizeMode={ellipsizeMode}
             adjustsFontSizeToFit={adjustsFontSizeToFit}
             minimumFontScale={resolvedMinimumFontScale}
+            selectable={selectable}
             onPress={onPress}
             {...props}
         >

@@ -10,76 +10,90 @@
  limitations under the License
  */
 
-import React from 'react'
-import { ActivityIndicator } from 'react-native'
-import { PWView, PWText, PWFlatList, PWButton } from '@components/core'
+import { useCallback, useLayoutEffect } from 'react'
+import {
+    PWView,
+    PWText,
+    PWFlatList,
+    PWButton,
+    PWIcon,
+    PWTouchableOpacity,
+} from '@components/core'
+import { useNavigation } from '@react-navigation/native'
 import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wallet'
 
 import { LedgerDeviceItem } from '../../components/LedgerDeviceItem'
+import { LedgerCompositeIcon } from '../../components/LedgerCompositeIcon'
 import { useStyles } from './styles'
 import { useLedgerScanScreen } from './useLedgerScanScreen'
 
 export const LedgerScanScreen = () => {
     const styles = useStyles()
+    const navigation = useNavigation()
     const {
         devices,
-        isScanning,
         error,
+        isPermissionDenied,
+        isPermissionBlocked,
         handleDevicePress,
         handleRetry,
+        handleRequestPermissions,
         handleTroubleshoot,
         t,
     } = useLedgerScanScreen()
 
-    const renderItem = ({ item }: { item: HardwareWalletDevice }) => (
-        <LedgerDeviceItem
-            device={item}
-            onPress={handleDevicePress}
-        />
+    useLayoutEffect(() => {
+        navigation.setOptions({
+            headerRight: () => (
+                <PWTouchableOpacity
+                    onPress={handleTroubleshoot}
+                    testID='ledger_scan_help_button'
+                    accessibilityLabel={t('ledger.scan_header.having_issues')}
+                >
+                    <PWIcon name='question-mark' />
+                </PWTouchableOpacity>
+            ),
+        })
+    }, [navigation, handleTroubleshoot, t])
+
+    const renderItem = useCallback(
+        ({ item }: { item: HardwareWalletDevice }) => (
+            <LedgerDeviceItem
+                device={item}
+                onPress={handleDevicePress}
+            />
+        ),
+        [handleDevicePress],
     )
 
-    const renderEmptyState = () => (
-        <PWView style={styles.emptyContainer}>
-            {isScanning ? (
-                <>
-                    <ActivityIndicator size='large' />
-                    <PWText
-                        variant='body'
-                        style={styles.emptyText}
-                    >
-                        {t('ledger.scan.searching')}
-                    </PWText>
-                </>
-            ) : (
-                <>
-                    <PWText
-                        variant='body'
-                        style={styles.emptyText}
-                    >
-                        {error
-                            ? t('ledger.scan.error')
-                            : t('ledger.scan.no_devices')}
-                    </PWText>
-                    <PWButton
-                        testID='ledger_scan_retry_button'
-                        title={t('ledger.scan.retry')}
-                        onPress={handleRetry}
-                        variant='secondary'
-                    />
-                    <PWButton
-                        testID='ledger_scan_troubleshoot_button'
-                        title={t('ledger.scan_header.having_issues')}
-                        onPress={handleTroubleshoot}
-                        variant='link'
-                    />
-                </>
-            )}
-        </PWView>
-    )
+    const renderEmptyState = () => {
+        if (!error) {
+            return null
+        }
+        return (
+            <PWView style={styles.errorContainer}>
+                <PWText
+                    variant='body'
+                    style={styles.errorText}
+                >
+                    {t('ledger.scan.error')}
+                </PWText>
+                <PWButton
+                    testID='ledger_scan_retry_button'
+                    title={t('ledger.scan.retry')}
+                    onPress={handleRetry}
+                    variant='link'
+                />
+            </PWView>
+        )
+    }
 
     return (
         <PWView style={styles.container}>
             <PWView style={styles.header}>
+                <PWView style={styles.icon}>
+                    <LedgerCompositeIcon />
+                </PWView>
                 <PWText
                     variant='h1'
                     style={styles.title}
@@ -92,28 +106,40 @@ export const LedgerScanScreen = () => {
                 >
                     {t('ledger.scan.description')}
                 </PWText>
-
-                {isScanning && devices.length > 0 && (
-                    <PWView style={styles.scanningRow}>
-                        <ActivityIndicator size='small' />
-                        <PWText
-                            variant='caption'
-                            style={styles.scanningText}
-                        >
-                            {t('ledger.scan.scanning')}
-                        </PWText>
-                    </PWView>
-                )}
             </PWView>
 
-            <PWFlatList
-                data={devices}
-                renderItem={renderItem}
-                keyExtractor={item => item.id}
-                ListEmptyComponent={renderEmptyState}
-                contentContainerStyle={styles.listContent}
-                showsVerticalScrollIndicator={false}
-            />
+            {isPermissionDenied ? (
+                <PWView
+                    style={styles.errorContainer}
+                    testID='ledger_scan_permission_denied'
+                >
+                    <PWText
+                        variant='body'
+                        style={styles.errorText}
+                    >
+                        {t('ledger.instructions.permission_required_message')}
+                    </PWText>
+                    <PWButton
+                        testID='ledger_scan_grant_permission_button'
+                        title={t(
+                            isPermissionBlocked
+                                ? 'ledger.scan.open_settings'
+                                : 'ledger.scan.grant_permission',
+                        )}
+                        onPress={handleRequestPermissions}
+                        variant='link'
+                    />
+                </PWView>
+            ) : (
+                <PWFlatList
+                    data={devices}
+                    renderItem={renderItem}
+                    keyExtractor={item => item.id}
+                    ListEmptyComponent={renderEmptyState}
+                    contentContainerStyle={styles.listContent}
+                    showsVerticalScrollIndicator={false}
+                />
+            )}
         </PWView>
     )
 }

@@ -11,6 +11,7 @@
  */
 
 import React from 'react'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { PWView, PWText, PWButton, PWIcon } from '@components/core'
 
 import { useStyles } from './styles'
@@ -88,7 +89,10 @@ export const LedgerInstructionsScreen = () => {
                 </PWView>
             </PWView>
 
-            <PWView style={styles.footer}>
+            <SafeAreaView
+                edges={['bottom']}
+                style={styles.footer}
+            >
                 <PWButton
                     testID='ledger_instructions_continue_button'
                     title={t('ledger.instructions.continue')}
@@ -96,7 +100,7 @@ export const LedgerInstructionsScreen = () => {
                     variant='primary'
                     isDisabled={isChecking}
                 />
-            </PWView>
+            </SafeAreaView>
         </PWView>
     )
 }

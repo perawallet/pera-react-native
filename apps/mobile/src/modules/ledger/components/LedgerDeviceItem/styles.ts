@@ -20,10 +20,16 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         paddingVertical: theme.spacing.md,
         paddingHorizontal: theme.spacing.lg,
-        borderWidth: theme.borders.sm,
-        borderColor: theme.colors.layerGrayLighter,
+        backgroundColor: theme.colors.background,
         borderRadius: theme.borderRadius.md,
-        marginBottom: theme.spacing.sm,
+        marginHorizontal: theme.spacing.xl,
+        marginBottom: theme.spacing.md,
+        // Card elevation sits between theme.shadows.sm and .md. Reuse sm's
+        // color/offset/radius and bump opacity/elevation to match design.
+        // Promote to a `card` shadow token if a third instance shows up.
+        ...theme.shadows.sm,
+        shadowOpacity: 0.08,
+        elevation: 3,
     },
     iconContainer: {
         width: ICON_CONTAINER_SIZE,
@@ -39,21 +45,5 @@ export const useStyles = makeStyles(theme => ({
     },
     deviceName: {
         color: theme.colors.textMain,
-    },
-    modelName: {
-        color: theme.colors.textGray,
-        marginTop: theme.spacing.xs,
-    },
-    transportBadge: {
-        marginRight: theme.spacing.xs,
-        paddingHorizontal: theme.spacing.xs,
-        paddingVertical: theme.spacing.xxs,
-        borderRadius: theme.borderRadius.sm,
-        backgroundColor: theme.colors.layerGrayLighter,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    transportBadgeText: {
-        color: theme.colors.textGray,
     },
 }))

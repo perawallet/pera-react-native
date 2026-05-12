@@ -136,7 +136,7 @@ describe('ImportAccountOptionsScreen', () => {
         ).toBeTruthy()
     })
 
-    it('navigates to LedgerInstructions with ble transportType when Pair Ledger is pressed', () => {
+    it('navigates to LedgerPair when Pair Ledger is pressed', () => {
         render(<ImportAccountOptionsScreen />)
 
         const ledgerButton = screen.getByText(
@@ -144,9 +144,7 @@ describe('ImportAccountOptionsScreen', () => {
         )
         fireEvent.click(ledgerButton)
 
-        expect(mockPush).toHaveBeenCalledWith('LedgerInstructions', {
-            transportType: 'ble',
-        })
+        expect(mockPush).toHaveBeenCalledWith('LedgerPair')
     })
 
     it('does not render the USB option on iOS', () => {

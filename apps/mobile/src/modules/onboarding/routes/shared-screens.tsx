@@ -26,6 +26,7 @@ import { ImportRekeyedAddressesScreen } from '@modules/onboarding/screens/Import
 import { SearchAccountsScreen } from '@modules/onboarding/screens/SearchAccountsScreen'
 import {
     LedgerInstructionsScreen,
+    LedgerPairScreen,
     LedgerScanScreen,
     LedgerFetchAccountsScreen,
     LedgerSelectAccountsScreen,
@@ -68,6 +69,8 @@ const ImportRekeyedAddressesScreenWithErrorBoundary = withAccountErrorBoundary(
 const LedgerInstructionsScreenWithErrorBoundary = withAccountErrorBoundary(
     LedgerInstructionsScreen,
 )
+const LedgerPairScreenWithErrorBoundary =
+    withAccountErrorBoundary(LedgerPairScreen)
 const LedgerScanScreenWithErrorBoundary =
     withAccountErrorBoundary(LedgerScanScreen)
 const LedgerFetchAccountsScreenWithErrorBoundary = withAccountErrorBoundary(
@@ -94,6 +97,7 @@ export const IMPORT_FLOW_SCREEN_NAMES = [
     'SearchAccounts',
     'ImportSelectAddresses',
     'ImportRekeyedAddresses',
+    'LedgerPair',
     'LedgerInstructions',
     'LedgerScan',
     'LedgerFetchAccounts',
@@ -156,6 +160,11 @@ export const renderImportFlowScreens = (
             component={ImportRekeyedAddressesScreenWithErrorBoundary}
         />
         <Stack.Screen
+            name='LedgerPair'
+            options={{ title: '' }}
+            component={LedgerPairScreenWithErrorBoundary}
+        />
+        <Stack.Screen
             name='LedgerInstructions'
             options={{ title: '' }}
             component={LedgerInstructionsScreenWithErrorBoundary}
@@ -173,13 +182,12 @@ export const renderImportFlowScreens = (
         />
         <Stack.Screen
             name='LedgerSelectAccounts'
-            options={{ title: '' }}
+            options={({ route }) => ({ title: route.params.deviceName })}
             component={LedgerSelectAccountsScreenWithErrorBoundary}
         />
         <Stack.Screen
             name='LedgerVerify'
-            options={{ headerShown: false }}
-            layout={fullScreenLayout}
+            options={{ title: '' }}
             component={LedgerVerifyScreenWithErrorBoundary}
         />
         <Stack.Screen

@@ -17,30 +17,30 @@ export const useStyles = makeStyles(theme => ({
         flex: 1,
         backgroundColor: theme.colors.background,
     },
-    content: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
+    scrollContent: {
+        flexGrow: 1,
         paddingHorizontal: theme.spacing.xl,
+    },
+    heroIcon: {
+        alignItems: 'center',
+        marginTop: theme.spacing.lg,
+        marginBottom: theme.spacing.lg,
     },
     title: {
         textAlign: 'center',
-        marginTop: theme.spacing.xl,
-        marginBottom: theme.spacing.sm,
-    },
-    progressText: {
-        color: theme.colors.textGray,
-        textAlign: 'center',
         marginBottom: theme.spacing.md,
     },
-    addressText: {
+    description: {
+        textAlign: 'center',
         color: theme.colors.textGray,
-        textAlign: 'center',
-        marginBottom: theme.spacing.lg,
+        marginBottom: theme.spacing.xl,
     },
-    instructionText: {
-        color: theme.colors.textMain,
-        textAlign: 'center',
-        marginTop: theme.spacing.lg,
+    cardList: {
+        gap: theme.spacing.md,
+    },
+    footer: {
+        paddingHorizontal: theme.spacing.xl,
+        paddingBottom: theme.spacing.lg,
+        backgroundColor: theme.colors.background,
     },
 }))

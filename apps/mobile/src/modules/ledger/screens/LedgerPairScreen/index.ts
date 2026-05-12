@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { LedgerPairingInstructionsContent } from './LedgerPairingInstructionsContent'
+export { LedgerPairScreen } from './LedgerPairScreen'

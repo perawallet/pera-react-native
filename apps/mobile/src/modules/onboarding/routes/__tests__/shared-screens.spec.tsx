@@ -23,7 +23,12 @@ import type { ImportFlowParamList } from '../types'
 type ScreenChild = {
     props: {
         name: string
-        options?: { title?: string; headerShown?: boolean }
+        options?:
+            | { title?: string; headerShown?: boolean }
+            | ((arg: { route: { params: Record<string, unknown> } }) => {
+                  title?: string
+                  headerShown?: boolean
+              })
     }
 }
 
@@ -51,18 +56,21 @@ describe('renderImportFlowScreens', () => {
         expect([...names].sort()).toEqual([...IMPORT_FLOW_SCREEN_NAMES].sort())
     })
 
-    it('every screen has either title="" or headerShown:false', () => {
+    it('every screen has either title="" or headerShown:false or a dynamic title', () => {
         const Stack = createNativeStackNavigator<ImportFlowParamList>()
 
         const screens = collectScreenChildren(renderImportFlowScreens(Stack))
 
         for (const screen of screens) {
-            const options = screen.props.options ?? {}
-            const isTitleEmpty = options.title === ''
-            const isHeaderHidden = options.headerShown === false
+            const options = screen.props.options
+            const isDynamic = typeof options === 'function'
+            const staticOptions =
+                typeof options === 'object' && options !== null ? options : {}
+            const isTitleEmpty = staticOptions.title === ''
+            const isHeaderHidden = staticOptions.headerShown === false
             expect(
-                isTitleEmpty || isHeaderHidden,
-                `Screen "${screen.props.name}" must set options.title="" or options.headerShown=false`,
+                isDynamic || isTitleEmpty || isHeaderHidden,
+                `Screen "${screen.props.name}" must set options.title="" or options.headerShown=false or use a dynamic options function`,
             ).toBe(true)
         }
     })
