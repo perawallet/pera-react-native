@@ -59,9 +59,7 @@ export const BottomSheetHost = ({ request }: BottomSheetHostProps) => {
         >
             <BottomSheetIdContext.Provider value={request.id}>
                 {/* we need to remount the navigation container since we're in a bottom sheet portal here */}
-                <NavigationContainerRefContext.Provider
-                    value={navigationRef}
-                >
+                <NavigationContainerRefContext.Provider value={navigationRef}>
                     {request.contents}
                 </NavigationContainerRefContext.Provider>
             </BottomSheetIdContext.Provider>

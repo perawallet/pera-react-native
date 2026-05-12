@@ -117,8 +117,9 @@ describe('ViewPassphraseFlow', () => {
         mockCheckPinEnabled.mockResolvedValue(true)
         // First call (acknowledge) resolves with 'confirm', second call
         // (display) stays pending so we can assert it was requested.
-        let resolveAcknowledge: (value: 'confirm' | undefined) => void =
-            () => {}
+        let resolveAcknowledge: (
+            value: 'confirm' | undefined,
+        ) => void = () => {}
         mockRequestBottomSheet.mockImplementationOnce(
             () =>
                 new Promise<'confirm' | undefined>(resolve => {
