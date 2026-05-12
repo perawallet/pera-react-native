@@ -22,8 +22,6 @@ import { deferToNextCycle } from '@perawallet/wallet-core-shared'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 
-
-
 type UseOnboardingScreenResult = {
     handleTermsPress: () => void
     handlePrivacyPress: () => void
