@@ -72,8 +72,6 @@ const typeWordsIndividually = (words: string[]) => {
 const advanceThroughImportInfo = async () => {
     await waitFor(() => screen.getByTestId('import_info_recover_button'))
     fireEvent.click(screen.getByTestId('import_info_recover_button'))
-    // Debug: Check what's on screen after clicking recover button
-    console.log('Screen after clicking recover:', screen.debug())
 }
 
 const renderHDImportFromOnboarding = () =>
