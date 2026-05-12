@@ -12,11 +12,26 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wallet'
 
-const mockNavigate = vi.fn()
-const mockStartScan = vi.fn()
-const mockStopScan = vi.fn()
+const {
+    mockNavigate,
+    mockStartScan,
+    mockStopScan,
+    mockRequestPermissions,
+    mockOpenSettings,
+    blePermissionsState,
+} = vi.hoisted(() => ({
+    mockNavigate: vi.fn(),
+    mockStartScan: vi.fn(),
+    mockStopScan: vi.fn(),
+    mockRequestPermissions: vi.fn(),
+    mockOpenSettings: vi.fn(),
+    blePermissionsState: {
+        hasPermissions: true,
+        isChecking: false,
+        isBlocked: false,
+    },
+}))
 
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({ navigate: mockNavigate }),
@@ -29,108 +44,163 @@ vi.mock('@hooks/useLanguage', () => ({
 vi.mock('../../../hooks', () => ({
     useLedgerConnection: () => ({
         devices: [],
-        isScanning: false,
+        isScanning: true,
         startScan: mockStartScan,
         stopScan: mockStopScan,
         error: null,
     }),
-}))
-
-const memoryStorage = new Map<string, string>()
-vi.mock('@perawallet/wallet-extension-provider', () => ({
-    getProvider: () => ({
-        keyValueStorage: {
-            getItem: (key: string) => memoryStorage.get(key) ?? null,
-            setItem: (key: string, value: string) => {
-                memoryStorage.set(key, value)
-            },
-            removeItem: (key: string) => {
-                memoryStorage.delete(key)
-            },
-        },
+    useBlePermissions: () => ({
+        hasPermissions: blePermissionsState.hasPermissions,
+        isChecking: blePermissionsState.isChecking,
+        isBlocked: blePermissionsState.isBlocked,
+        requestPermissions: mockRequestPermissions,
+        openSettings: mockOpenSettings,
     }),
 }))
 
-import { useLedgerPairingStore } from '@perawallet/wallet-core-ledger'
+import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wallet'
+
 import { useLedgerScanScreen } from '../useLedgerScanScreen'
 
-const makeDevice = (id: string): HardwareWalletDevice =>
-    ({
-        id,
-        name: 'Fred Nano X',
-        model: 'nanoX',
-        rssi: -50,
-        manufacturer: 'ledger',
-        transportType: 'ble',
-    }) as HardwareWalletDevice
+const DEVICE: HardwareWalletDevice = {
+    id: 'ble-1234',
+    name: 'AE72',
+    transportType: 'ble',
+    manufacturer: 'ledger',
+    model: 'nanoX',
+    rssi: -50,
+}
 
 describe('useLedgerScanScreen', () => {
     beforeEach(() => {
-        useLedgerPairingStore.getState().resetState()
-        mockNavigate.mockReset()
-        mockStartScan.mockReset()
-        mockStopScan.mockReset()
+        vi.clearAllMocks()
+        blePermissionsState.hasPermissions = true
+        blePermissionsState.isChecking = false
+        blePermissionsState.isBlocked = false
+        mockRequestPermissions.mockResolvedValue(true)
     })
 
-    it('navigates straight to fetch-accounts when device was previously paired', () => {
-        useLedgerPairingStore.getState().markPaired('device-known')
+    it('starts scanning on mount and stops on unmount when permissions are granted', () => {
+        const { unmount } = renderHook(() => useLedgerScanScreen())
+
+        expect(mockStartScan).toHaveBeenCalled()
+
+        unmount()
+
+        expect(mockStopScan).toHaveBeenCalled()
+    })
+
+    it('does not start scanning while the permission check is in flight', () => {
+        blePermissionsState.hasPermissions = false
+        blePermissionsState.isChecking = true
+
+        renderHook(() => useLedgerScanScreen())
+
+        expect(mockStartScan).not.toHaveBeenCalled()
+        expect(mockRequestPermissions).not.toHaveBeenCalled()
+    })
+
+    it('requests permissions on mount when missing and does not start scanning', () => {
+        blePermissionsState.hasPermissions = false
+        blePermissionsState.isChecking = false
+
+        renderHook(() => useLedgerScanScreen())
+
+        expect(mockRequestPermissions).toHaveBeenCalledTimes(1)
+        expect(mockStartScan).not.toHaveBeenCalled()
+    })
+
+    it('surfaces isPermissionDenied once a request has been made and permission is still missing', () => {
+        blePermissionsState.hasPermissions = false
+        blePermissionsState.isChecking = false
 
         const { result } = renderHook(() => useLedgerScanScreen())
+
+        expect(result.current.isPermissionDenied).toBe(true)
+    })
+
+    it('does not surface isPermissionDenied while the check is in flight', () => {
+        blePermissionsState.hasPermissions = false
+        blePermissionsState.isChecking = true
+
+        const { result } = renderHook(() => useLedgerScanScreen())
+
+        expect(result.current.isPermissionDenied).toBe(false)
+    })
+
+    it('lets the user retry the permission request via handleRequestPermissions', () => {
+        blePermissionsState.hasPermissions = false
+        blePermissionsState.isChecking = false
+
+        const { result } = renderHook(() => useLedgerScanScreen())
+        mockRequestPermissions.mockClear()
+
         act(() => {
-            result.current.handleDevicePress(makeDevice('device-known'))
+            result.current.handleRequestPermissions()
+        })
+
+        expect(mockRequestPermissions).toHaveBeenCalledTimes(1)
+        expect(mockOpenSettings).not.toHaveBeenCalled()
+    })
+
+    it('hands the user off to Settings when permission is OS-blocked', () => {
+        blePermissionsState.hasPermissions = false
+        blePermissionsState.isChecking = false
+        blePermissionsState.isBlocked = true
+
+        const { result } = renderHook(() => useLedgerScanScreen())
+        mockRequestPermissions.mockClear()
+
+        act(() => {
+            result.current.handleRequestPermissions()
+        })
+
+        expect(mockOpenSettings).toHaveBeenCalledTimes(1)
+        expect(mockRequestPermissions).not.toHaveBeenCalled()
+        expect(result.current.isPermissionBlocked).toBe(true)
+    })
+
+    it('stops scanning and navigates when a device is tapped', () => {
+        const { result } = renderHook(() => useLedgerScanScreen())
+
+        act(() => {
+            result.current.handleDevicePress(DEVICE)
+        })
+
+        expect(mockStopScan).toHaveBeenCalled()
+        expect(mockNavigate).toHaveBeenCalledWith('LedgerFetchAccounts', {
+            deviceId: DEVICE.id,
+            deviceName: DEVICE.name,
+            transportType: DEVICE.transportType,
+        })
+    })
+
+    it('sanitizes the device name before forwarding to navigation params', () => {
+        const { result } = renderHook(() => useLedgerScanScreen())
+        const hostileDevice: HardwareWalletDevice = {
+            ...DEVICE,
+            // RLO override + leading control char — must not reach the nav header.
+            name: 'Ledger ‮X9F2A',
+        }
+
+        act(() => {
+            result.current.handleDevicePress(hostileDevice)
         })
 
         expect(mockNavigate).toHaveBeenCalledWith('LedgerFetchAccounts', {
-            deviceId: 'device-known',
-            deviceName: 'Fred Nano X',
-            transportType: 'ble',
+            deviceId: hostileDevice.id,
+            deviceName: 'Ledger X9F2A',
+            transportType: hostileDevice.transportType,
         })
-        expect(result.current.pendingPairingDevice).toBeNull()
     })
 
-    it('shows pairing instructions for a never-seen device instead of navigating', () => {
+    it('navigates to troubleshooting on handleTroubleshoot', () => {
         const { result } = renderHook(() => useLedgerScanScreen())
+
         act(() => {
-            result.current.handleDevicePress(makeDevice('device-new'))
+            result.current.handleTroubleshoot()
         })
 
-        expect(mockNavigate).not.toHaveBeenCalled()
-        expect(result.current.pendingPairingDevice?.id).toBe('device-new')
-    })
-
-    it('marks the device as paired and navigates on confirm', () => {
-        const { result } = renderHook(() => useLedgerScanScreen())
-        act(() => {
-            result.current.handleDevicePress(makeDevice('device-new'))
-        })
-        act(() => {
-            result.current.handleConfirmPairing()
-        })
-
-        expect(useLedgerPairingStore.getState().isPaired('device-new')).toBe(
-            true,
-        )
-        expect(mockNavigate).toHaveBeenCalledWith('LedgerFetchAccounts', {
-            deviceId: 'device-new',
-            deviceName: 'Fred Nano X',
-            transportType: 'ble',
-        })
-        expect(result.current.pendingPairingDevice).toBeNull()
-    })
-
-    it('dismisses the sheet without marking paired or navigating on cancel', () => {
-        const { result } = renderHook(() => useLedgerScanScreen())
-        act(() => {
-            result.current.handleDevicePress(makeDevice('device-new'))
-        })
-        act(() => {
-            result.current.handleCancelPairing()
-        })
-
-        expect(useLedgerPairingStore.getState().isPaired('device-new')).toBe(
-            false,
-        )
-        expect(mockNavigate).not.toHaveBeenCalled()
-        expect(result.current.pendingPairingDevice).toBeNull()
+        expect(mockNavigate).toHaveBeenCalledWith('LedgerTroubleshooting')
     })
 })

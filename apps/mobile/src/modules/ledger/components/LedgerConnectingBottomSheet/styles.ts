@@ -15,35 +15,21 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     container: {
         paddingHorizontal: theme.spacing.xl,
-        paddingTop: theme.spacing.lg,
+        paddingTop: theme.spacing.xl,
         paddingBottom: theme.spacing.xl,
+        alignItems: 'center',
+        gap: theme.spacing.md,
     },
     title: {
-        marginBottom: theme.spacing.sm,
+        textAlign: 'center',
+        marginTop: theme.spacing.lg,
     },
     subtitle: {
+        textAlign: 'center',
         color: theme.colors.textGray,
-        marginBottom: theme.spacing.xl,
+        marginBottom: theme.spacing.lg,
     },
-    list: {
-        gap: theme.spacing.md,
-        marginBottom: theme.spacing.xl,
-    },
-    listItem: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-    },
-    stepCircle: {
-        width: theme.spacing.xxl,
-        height: theme.spacing.xxl,
-        borderRadius: theme.spacing.xxl / 2,
-        backgroundColor: theme.colors.layerGrayLighter,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: theme.spacing.md,
-    },
-    listItemText: {
-        flex: 1,
-        color: theme.colors.textMain,
+    button: {
+        width: '100%',
     },
 }))

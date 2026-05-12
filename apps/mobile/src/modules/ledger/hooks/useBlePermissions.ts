@@ -10,13 +10,21 @@
  limitations under the License
  */
 
-import { useCallback, useState, useEffect } from 'react'
-import { Platform, PermissionsAndroid } from 'react-native'
+import { useCallback, useEffect, useState } from 'react'
+import { AppState, Linking, PermissionsAndroid, Platform } from 'react-native'
 
 type UseBlePermissionsResult = {
     hasPermissions: boolean
     isChecking: boolean
+    /**
+     * True after a request resolves with `NEVER_ASK_AGAIN` for any of the
+     * required permissions. In this state the system will not show another
+     * permission dialog — the user must change the setting from the OS
+     * settings screen.
+     */
+    isBlocked: boolean
     requestPermissions: () => Promise<boolean>
+    openSettings: () => Promise<void>
 }
 
 /**
@@ -29,6 +37,7 @@ type UseBlePermissionsResult = {
 export const useBlePermissions = (): UseBlePermissionsResult => {
     const [hasPermissions, setHasPermissions] = useState(Platform.OS === 'ios')
     const [isChecking, setIsChecking] = useState(Platform.OS !== 'ios')
+    const [isBlocked, setIsBlocked] = useState(false)
 
     const checkAndroidPermissions = useCallback(async (): Promise<boolean> => {
         if (Platform.OS !== 'android') return true
@@ -50,18 +59,31 @@ export const useBlePermissions = (): UseBlePermissionsResult => {
         )
     }, [])
 
+    const refresh = useCallback(async () => {
+        if (Platform.OS === 'ios') return
+        try {
+            const granted = await checkAndroidPermissions()
+            setHasPermissions(granted)
+            if (granted) setIsBlocked(false)
+        } finally {
+            setIsChecking(false)
+        }
+    }, [checkAndroidPermissions])
+
+    useEffect(() => {
+        refresh()
+    }, [refresh])
+
+    // Re-check when the app comes back to the foreground so that a user who
+    // changed the setting from system Settings sees the permission state
+    // update automatically instead of having to tap a retry button first.
     useEffect(() => {
         if (Platform.OS === 'ios') return
-
-        checkAndroidPermissions()
-            .then(granted => {
-                setHasPermissions(granted)
-                setIsChecking(false)
-            })
-            .catch(() => {
-                setIsChecking(false)
-            })
-    }, [checkAndroidPermissions])
+        const subscription = AppState.addEventListener('change', state => {
+            if (state === 'active') refresh()
+        })
+        return () => subscription.remove()
+    }, [refresh])
 
     const requestPermissions = useCallback(async (): Promise<boolean> => {
         if (Platform.OS === 'ios') return true
@@ -69,18 +91,26 @@ export const useBlePermissions = (): UseBlePermissionsResult => {
         const apiLevel = Number(Platform.Version)
 
         if (apiLevel >= 31) {
-            const results = await PermissionsAndroid.requestMultiple([
+            const requiredPermissions = [
                 PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
                 PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
-            ])
+            ]
+            const results =
+                await PermissionsAndroid.requestMultiple(requiredPermissions)
 
-            const granted =
-                results[PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN] ===
-                    PermissionsAndroid.RESULTS.GRANTED &&
-                results[PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT] ===
-                    PermissionsAndroid.RESULTS.GRANTED
+            const granted = requiredPermissions.every(
+                p => results[p] === PermissionsAndroid.RESULTS.GRANTED,
+            )
+            const blocked =
+                !granted &&
+                requiredPermissions.some(
+                    p =>
+                        results[p] ===
+                        PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN,
+                )
 
             setHasPermissions(granted)
+            setIsBlocked(blocked)
             return granted
         }
 
@@ -88,13 +118,22 @@ export const useBlePermissions = (): UseBlePermissionsResult => {
             PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
         )
         const granted = result === PermissionsAndroid.RESULTS.GRANTED
+        const blocked =
+            !granted && result === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN
         setHasPermissions(granted)
+        setIsBlocked(blocked)
         return granted
+    }, [])
+
+    const openSettings = useCallback(async () => {
+        await Linking.openSettings()
     }, [])
 
     return {
         hasPermissions,
         isChecking,
+        isBlocked,
         requestPermissions,
+        openSettings,
     }
 }

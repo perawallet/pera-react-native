@@ -10,78 +10,65 @@
  limitations under the License
  */
 
-import React from 'react'
-import { PWBottomSheet, PWButton, PWText, PWView } from '@components/core'
+import { PWBottomSheet, PWView, PWText, PWIcon } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
-type LedgerPairingInstructionsBottomSheetProps = {
+export type LedgerHowItWorksBottomSheetProps = {
     isVisible: boolean
-    onContinue: () => void
-    onCancel: () => void
+    onDismiss: () => void
 }
 
 const STEP_KEYS = [
-    'ledger.pairing_instructions.step_1',
-    'ledger.pairing_instructions.step_2',
-    'ledger.pairing_instructions.step_3',
-    'ledger.pairing_instructions.step_4',
+    'ledger.how_does_it_work.step_1',
+    'ledger.how_does_it_work.step_2',
+    'ledger.how_does_it_work.step_3',
+    'ledger.how_does_it_work.step_4',
 ] as const
 
-export const LedgerPairingInstructionsBottomSheet = ({
+export const LedgerHowItWorksBottomSheet = ({
     isVisible,
-    onContinue,
-    onCancel,
-}: LedgerPairingInstructionsBottomSheetProps) => {
+    onDismiss,
+}: LedgerHowItWorksBottomSheetProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
 
     return (
         <PWBottomSheet
             isVisible={isVisible}
-            onDismiss={onCancel}
+            onDismiss={onDismiss}
+            enablePanDownToClose={true}
         >
             <PWView style={styles.container}>
                 <PWText
                     variant='h3'
                     style={styles.title}
                 >
-                    {t('ledger.pairing_instructions.title')}
-                </PWText>
-                <PWText
-                    variant='body'
-                    style={styles.subtitle}
-                >
-                    {t('ledger.pairing_instructions.subtitle')}
+                    {t('ledger.how_does_it_work.title')}
                 </PWText>
 
                 <PWView style={styles.list}>
-                    {STEP_KEYS.map((key, index) => (
+                    {STEP_KEYS.map(key => (
                         <PWView
                             key={key}
-                            style={styles.listItem}
+                            style={styles.item}
                         >
-                            <PWView style={styles.stepCircle}>
-                                <PWText variant='bodySemibold'>
-                                    {String(index + 1)}
-                                </PWText>
+                            <PWView style={styles.bullet}>
+                                <PWIcon
+                                    name='check'
+                                    size='xs'
+                                    variant='positive'
+                                />
                             </PWView>
                             <PWText
                                 variant='body'
-                                style={styles.listItemText}
+                                style={styles.itemText}
                             >
                                 {t(key)}
                             </PWText>
                         </PWView>
                     ))}
                 </PWView>
-
-                <PWButton
-                    variant='secondary'
-                    title={t('ledger.pairing_instructions.continue')}
-                    onPress={onContinue}
-                    testID='ledger_pairing_instructions_continue_button'
-                />
             </PWView>
         </PWBottomSheet>
     )

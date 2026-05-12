@@ -10,8 +10,7 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     useLedgerConnection as useLedgerConnectionCore,
@@ -24,13 +23,18 @@ type UseLedgerConnectionWrapperResult = UseLedgerConnectionResult & {
     isReady: boolean
 }
 
-const ledgerSupportedProvidersQueryKey = ['ledger', 'supported-providers']
-
 /**
  * App-level wrapper around the core useLedgerConnection hook.
  * Resolves all Ledger transport providers from the registry, filters
  * to the ones supported on this platform (BLE on iOS+Android, USB on
  * Android only), and passes them to the core hook.
+ *
+ * The supported-providers list is computed with local state instead of
+ * React Query. The provider objects expose methods (`scan`, `connect`,
+ * `isSupported`) and the `PersistQueryClientProvider` wired up at the
+ * root of the app would serialize a query result via `JSON.stringify`,
+ * silently stripping those methods and leaving consumers with plain
+ * `{ manufacturer, transportType }` shells that throw at call time.
  */
 export const useLedgerConnection = (): UseLedgerConnectionWrapperResult => {
     const allLedgerProviders = useMemo<HardwareWalletTransportProvider[]>(
@@ -41,9 +45,14 @@ export const useLedgerConnection = (): UseLedgerConnectionWrapperResult => {
         [],
     )
 
-    const { data: supportedProviders = [], isSuccess } = useQuery({
-        queryKey: ledgerSupportedProvidersQueryKey,
-        queryFn: async () => {
+    const [supportedProviders, setSupportedProviders] = useState<
+        HardwareWalletTransportProvider[]
+    >([])
+    const [isReady, setIsReady] = useState(false)
+
+    useEffect(() => {
+        let cancelled = false
+        ;(async () => {
             const results = await Promise.all(
                 allLedgerProviders.map(async provider => {
                     try {
@@ -60,22 +69,30 @@ export const useLedgerConnection = (): UseLedgerConnectionWrapperResult => {
                     }
                 }),
             )
-            return results.filter(r => r.supported).map(r => r.provider)
-        },
-        staleTime: Infinity,
-        gcTime: Infinity,
-        retry: false,
-    })
+            if (cancelled) return
+            setSupportedProviders(
+                results.filter(r => r.supported).map(r => r.provider),
+            )
+            setIsReady(true)
+        })()
+        return () => {
+            cancelled = true
+        }
+    }, [allLedgerProviders])
 
     const core = useLedgerConnectionCore(supportedProviders)
 
+    // Stable no-op so consumers that put `startScan` in an effect dep array
+    // don't re-run their effects on every render of this hook.
+    const noopStartScan = useCallback(() => {}, [])
+
     return {
         ...core,
-        // Suppress scanning until the support query has resolved. Without
+        // Suppress scanning until the support check has resolved. Without
         // this guard, the very first `startScan()` runs against an empty
         // provider list, briefly transitioning the UI through 'scanning'
         // → 'disconnected' → 'scanning' as the query resolves.
-        startScan: isSuccess ? core.startScan : () => {},
-        isReady: isSuccess,
+        startScan: isReady ? core.startScan : noopStartScan,
+        isReady,
     }
 }

@@ -11,6 +11,7 @@
  */
 
 export { LedgerInstructionsScreen } from './screens/LedgerInstructionsScreen'
+export { LedgerPairScreen } from './screens/LedgerPairScreen'
 export { LedgerScanScreen } from './screens/LedgerScanScreen'
 export { LedgerFetchAccountsScreen } from './screens/LedgerFetchAccountsScreen'
 export { LedgerSelectAccountsScreen } from './screens/LedgerSelectAccountsScreen'

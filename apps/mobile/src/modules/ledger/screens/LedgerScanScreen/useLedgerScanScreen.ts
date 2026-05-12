@@ -10,27 +10,25 @@
  limitations under the License
  */
 
-import { useEffect, useCallback } from 'react'
+import { useEffect, useCallback, useState } from 'react'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wallet'
-import { useLedgerPairing } from '@perawallet/wallet-core-ledger'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
-import { useLedgerConnection } from '../../hooks'
+import { useBlePermissions, useLedgerConnection } from '../../hooks'
+import { sanitizeDeviceName } from '../../utils'
 
 type UseLedgerScanScreenResult = {
     devices: HardwareWalletDevice[]
-    isScanning: boolean
     error: Nullable<Error>
-    /** Device awaiting pairing-instructions confirmation, if any. */
-    pendingPairingDevice: Nullable<HardwareWalletDevice>
+    isCheckingPermissions: boolean
+    hasPermissions: boolean
+    isPermissionDenied: boolean
+    isPermissionBlocked: boolean
     handleDevicePress: (device: HardwareWalletDevice) => void
-    /** Confirm the pairing instructions and proceed with the connection. */
-    handleConfirmPairing: () => void
-    /** Dismiss the pairing instructions without connecting. */
-    handleCancelPairing: () => void
     handleRetry: () => void
+    handleRequestPermissions: () => void
     handleTroubleshoot: () => void
     t: (key: string, options?: Record<string, unknown>) => string
 }
@@ -38,67 +36,86 @@ type UseLedgerScanScreenResult = {
 export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
     const { t } = useLanguage()
     const navigation = useAppNavigation()
-    const { devices, isScanning, startScan, stopScan, error } =
-        useLedgerConnection()
+    const { devices, startScan, stopScan, error } = useLedgerConnection()
     const {
-        pendingPairingDevice,
-        requestPairing,
-        confirmPairing,
-        cancelPairing,
-    } = useLedgerPairing()
+        hasPermissions,
+        isChecking: isCheckingPermissions,
+        isBlocked: isPermissionBlocked,
+        requestPermissions,
+        openSettings,
+    } = useBlePermissions()
+    const [hasRequestedPermissions, setHasRequestedPermissions] =
+        useState(false)
 
+    // Gate the scan on Bluetooth permission. On Android, request once when
+    // missing; on grant the effect re-runs and starts scanning. On denial,
+    // surface an actionable state via `isPermissionDenied` instead of
+    // silently rendering an empty device list.
     useEffect(() => {
-        startScan()
+        if (isCheckingPermissions) return
 
-        return () => {
-            stopScan()
+        if (hasPermissions) {
+            startScan()
+            return () => {
+                stopScan()
+            }
         }
-    }, [startScan, stopScan])
 
-    const proceedWithDevice = useCallback(
+        if (hasRequestedPermissions) return
+        setHasRequestedPermissions(true)
+        requestPermissions()
+    }, [
+        isCheckingPermissions,
+        hasPermissions,
+        hasRequestedPermissions,
+        requestPermissions,
+        startScan,
+        stopScan,
+    ])
+
+    const handleDevicePress = useCallback(
         (device: HardwareWalletDevice) => {
             stopScan()
             navigation.navigate('LedgerFetchAccounts', {
                 deviceId: device.id,
-                deviceName: device.name,
+                deviceName: sanitizeDeviceName(device.name),
                 transportType: device.transportType,
             })
         },
-        [stopScan, navigation],
+        [navigation, stopScan],
     )
-
-    const handleDevicePress = useCallback(
-        (device: HardwareWalletDevice) => {
-            requestPairing(device, proceedWithDevice)
-        },
-        [requestPairing, proceedWithDevice],
-    )
-
-    const handleConfirmPairing = useCallback(() => {
-        confirmPairing(proceedWithDevice)
-    }, [confirmPairing, proceedWithDevice])
-
-    const handleCancelPairing = useCallback(() => {
-        cancelPairing()
-    }, [cancelPairing])
 
     const handleRetry = useCallback(() => {
         startScan()
     }, [startScan])
 
+    const handleRequestPermissions = useCallback(() => {
+        // After the OS marks the permission as NEVER_ASK_AGAIN the system
+        // dialog won't reopen — hand the user off to Settings instead.
+        if (isPermissionBlocked) {
+            openSettings()
+            return
+        }
+        requestPermissions()
+    }, [isPermissionBlocked, openSettings, requestPermissions])
+
     const handleTroubleshoot = useCallback(() => {
         navigation.navigate('LedgerTroubleshooting')
     }, [navigation])
 
+    const isPermissionDenied =
+        !isCheckingPermissions && !hasPermissions && hasRequestedPermissions
+
     return {
         devices,
-        isScanning,
         error,
-        pendingPairingDevice,
+        isCheckingPermissions,
+        hasPermissions,
+        isPermissionDenied,
+        isPermissionBlocked,
         handleDevicePress,
-        handleConfirmPairing,
-        handleCancelPairing,
         handleRetry,
+        handleRequestPermissions,
         handleTroubleshoot,
         t,
     }
