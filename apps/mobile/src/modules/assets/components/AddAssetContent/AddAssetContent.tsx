@@ -52,7 +52,7 @@ export const AddAssetContent = ({
                 >
                     <PWIcon
                         name='cross'
-                        size='sm'
+                        size='md'
                     />
                 </PWTouchableOpacity>
                 <PWText

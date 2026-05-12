@@ -39,7 +39,7 @@ export const ViewPassphraseContent = ({
     usePreventScreenCapture(SCREEN_CAPTURE_TAG, true)
 
     return (
-        <>
+        <PWView style={styles.container}>
             <PWHeader
                 leftIcon='cross'
                 onLeftPress={dismiss}
@@ -116,6 +116,6 @@ export const ViewPassphraseContent = ({
                     </PWView>
                 )}
             </PWView>
-        </>
+        </PWView>
     )
 }

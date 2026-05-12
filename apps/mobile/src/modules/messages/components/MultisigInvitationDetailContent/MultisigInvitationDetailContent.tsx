@@ -22,7 +22,6 @@ import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useLanguage } from '@hooks/useLanguage'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { MultisigInvitationParam } from '../../routes/types'
 import { InvitationInfoCard } from './components/InvitationInfoCard'
 import { useMultisigInvitationDetailContent } from './useMultisigInvitationDetailContent'
@@ -37,8 +36,7 @@ export type MultisigInvitationDetailContentProps = {
 export const MultisigInvitationDetailContent = ({
     invitation,
 }: MultisigInvitationDetailContentProps) => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles(insets)
+    const styles = useStyles()
     const { t } = useLanguage()
     const isDarkMode = useIsDarkMode()
     const { resolve } =

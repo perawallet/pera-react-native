@@ -1237,6 +1237,10 @@ vi.mock('@react-navigation/native', () => ({
         isReady: vi.fn(() => true),
         current: null,
     }),
+    NavigationContainerRefContext: (() => {
+        const React = require('react')
+        return React.createContext(undefined)
+    })(),
 }))
 
 vi.mock('@react-navigation/bottom-tabs', () => ({

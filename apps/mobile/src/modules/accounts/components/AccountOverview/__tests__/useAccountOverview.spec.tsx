@@ -102,6 +102,7 @@ describe('useAccountOverview', () => {
         expect(arg?.options).toEqual({
             size: 'lg',
             enablePanDownToClose: true,
+            autoCreateContainer: false,
         })
     })
 
@@ -121,6 +122,7 @@ describe('useAccountOverview', () => {
         expect(arg?.options).toEqual({
             size: 'lg',
             enablePanDownToClose: true,
+            autoCreateContainer: false,
         })
     })
 
@@ -136,6 +138,7 @@ describe('useAccountOverview', () => {
         expect(arg?.options).toEqual({
             size: 'lg',
             enablePanDownToClose: true,
+            autoCreateContainer: false,
         })
     })
 

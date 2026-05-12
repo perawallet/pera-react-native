@@ -11,9 +11,8 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import type { EdgeInsets } from 'react-native-safe-area-context'
 
-export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
+export const useStyles = makeStyles(theme => ({
     scrollView: {
         flex: 1,
     },
@@ -54,7 +53,7 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
         gap: theme.spacing.md,
         paddingHorizontal: theme.spacing.md,
         paddingTop: theme.spacing.md,
-        paddingBottom: theme.spacing.md + insets.bottom,
+        paddingBottom: theme.spacing.md,
     },
     bottomButton: {
         flex: 1,

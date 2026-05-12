@@ -52,51 +52,12 @@ vi.mock('@modules/security/components/PinEditView', () => ({
             : null,
 }))
 
-// Mimic PWBottomSheet's behavior of firing onBackdropPress (wired to onClose
-// in the real components) whenever the sheet dismisses — including the
-// programmatic dismiss that happens when isVisible flips false during a
-// transition. Without this, the test would not catch the regression where a
-// transition leaks into a parent-level close.
-const useDismissCallbackOnHide = (isVisible: boolean, onClose: () => void) => {
-    const wasVisibleRef = React.useRef(false)
-    React.useEffect(() => {
-        if (wasVisibleRef.current && !isVisible) {
-            onClose()
-        }
-        wasVisibleRef.current = isVisible
-    }, [isVisible, onClose])
-}
-
-vi.mock('../../PassphraseAcknowledgeBottomSheet', () => ({
-    PassphraseAcknowledgeBottomSheet: ({
-        isVisible,
-        onConfirm,
-        onClose,
-    }: {
-        isVisible: boolean
-        onConfirm: () => void
-        onClose: () => void
-    }) => {
-        useDismissCallbackOnHide(isVisible, onClose)
-        return isVisible
-            ? React.createElement(
-                  'div',
-                  { 'data-testid': 'acknowledge_sheet' },
-                  React.createElement('button', {
-                      'data-testid': 'acknowledge_confirm',
-                      onClick: onConfirm,
-                  }),
-                  React.createElement('button', {
-                      'data-testid': 'acknowledge_close',
-                      onClick: onClose,
-                  }),
-              )
-            : null
-    },
-}))
-
 const { mockRequestBottomSheet } = vi.hoisted(() => ({
     mockRequestBottomSheet: vi.fn(),
+}))
+
+vi.mock('../../PassphraseAcknowledgeContent', () => ({
+    PassphraseAcknowledgeContent: () => null,
 }))
 
 vi.mock('@modules/bottom-sheet', () => ({
@@ -132,12 +93,13 @@ describe('ViewPassphraseFlow', () => {
             />,
         )
         expect(screen.queryByTestId('pin_modal')).toBeNull()
-        expect(screen.queryByTestId('acknowledge_sheet')).toBeNull()
         expect(mockRequestBottomSheet).not.toHaveBeenCalled()
     })
 
-    it('opens the acknowledge sheet directly when no PIN is set', async () => {
+    it('requests the acknowledge sheet directly when no PIN is set', async () => {
         mockCheckPinEnabled.mockResolvedValue(false)
+        // Hold the acknowledge sheet open during the test
+        mockRequestBottomSheet.mockReturnValue(new Promise(() => {}))
         render(
             <ViewPassphraseFlow
                 isVisible={true}
@@ -146,15 +108,25 @@ describe('ViewPassphraseFlow', () => {
             />,
         )
         await waitFor(() => {
-            expect(screen.getByTestId('acknowledge_sheet')).toBeTruthy()
+            expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
         })
         expect(screen.queryByTestId('pin_modal')).toBeNull()
     })
 
     it('chains PIN → acknowledge → display when a PIN is set', async () => {
         mockCheckPinEnabled.mockResolvedValue(true)
-        // Hold the display sheet open during the test
-        mockRequestBottomSheet.mockReturnValue(new Promise(() => {}))
+        // First call (acknowledge) resolves with 'confirm', second call
+        // (display) stays pending so we can assert it was requested.
+        let resolveAcknowledge: (value: 'confirm' | undefined) => void =
+            () => {}
+        mockRequestBottomSheet.mockImplementationOnce(
+            () =>
+                new Promise<'confirm' | undefined>(resolve => {
+                    resolveAcknowledge = resolve
+                }),
+        )
+        mockRequestBottomSheet.mockReturnValueOnce(new Promise(() => {}))
+
         render(
             <ViewPassphraseFlow
                 isVisible={true}
@@ -166,11 +138,13 @@ describe('ViewPassphraseFlow', () => {
         await waitFor(() => screen.getByTestId('pin_modal'))
         fireEvent.click(screen.getByTestId('pin_success'))
 
-        await waitFor(() => screen.getByTestId('acknowledge_sheet'))
-        fireEvent.click(screen.getByTestId('acknowledge_confirm'))
-
         await waitFor(() => {
             expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+        })
+        resolveAcknowledge('confirm')
+
+        await waitFor(() => {
+            expect(mockRequestBottomSheet).toHaveBeenCalledTimes(2)
         })
         expect(onClose).not.toHaveBeenCalled()
     })
@@ -189,21 +163,7 @@ describe('ViewPassphraseFlow', () => {
         expect(onClose).toHaveBeenCalled()
     })
 
-    it('calls parent onClose when the acknowledge sheet is cancelled', async () => {
-        mockCheckPinEnabled.mockResolvedValue(false)
-        render(
-            <ViewPassphraseFlow
-                isVisible={true}
-                address='ADDR'
-                onClose={onClose}
-            />,
-        )
-        await waitFor(() => screen.getByTestId('acknowledge_close'))
-        fireEvent.click(screen.getByTestId('acknowledge_close'))
-        expect(onClose).toHaveBeenCalled()
-    })
-
-    it('calls parent onClose when the display sheet resolves', async () => {
+    it('calls parent onClose when the acknowledge sheet resolves without confirm', async () => {
         mockCheckPinEnabled.mockResolvedValue(false)
         mockRequestBottomSheet.mockResolvedValueOnce(undefined)
         render(
@@ -213,8 +173,23 @@ describe('ViewPassphraseFlow', () => {
                 onClose={onClose}
             />,
         )
-        await waitFor(() => screen.getByTestId('acknowledge_confirm'))
-        fireEvent.click(screen.getByTestId('acknowledge_confirm'))
+        await waitFor(() => {
+            expect(onClose).toHaveBeenCalled()
+        })
+    })
+
+    it('calls parent onClose when the display sheet resolves', async () => {
+        mockCheckPinEnabled.mockResolvedValue(false)
+        // Acknowledge resolves with 'confirm' so the flow moves to display.
+        mockRequestBottomSheet.mockResolvedValueOnce('confirm')
+        mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+        render(
+            <ViewPassphraseFlow
+                isVisible={true}
+                address='ADDR'
+                onClose={onClose}
+            />,
+        )
         await waitFor(() => {
             expect(onClose).toHaveBeenCalled()
         })

@@ -35,11 +35,12 @@ const { resolve, dismiss } = useBottomSheetResult<'confirm' | 'cancel'>()
     Live data is read inside the sheet via hooks (Zustand stores / TanStack
     Query). Props captured at `request()` time never update.
 
-2. **Do not add bottom safe-area padding.** `PWBottomSheet` already applies
-   `insets.bottom + theme.spacing.md` to the inner container. Sheet
-   contents should never call `useSafeAreaInsets()` for the bottom inset
-   and should never stack extra `paddingBottom` on top of the host's
-   value. Use `theme.spacing.*` for content gaps only.
+2. **Do not add bottom safe-area padding.** `PWBottomSheet` passes
+   `bottomInset={insets.bottom}` straight through to the underlying
+   gorhom modal, so the sheet itself sits above the home-indicator area.
+   Sheet contents should never call `useSafeAreaInsets()` for the bottom
+   inset and should never stack extra `paddingBottom` on top of the
+   host's value. Use `theme.spacing.*` for content gaps only.
 
 3. **Use named exports** and **`makeStyles` from `@rneui/themed`** as per
    the project-wide convention.

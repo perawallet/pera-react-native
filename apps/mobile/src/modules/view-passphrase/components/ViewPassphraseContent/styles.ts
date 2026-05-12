@@ -14,11 +14,13 @@ import { makeStyles } from '@rneui/themed'
 import { getTypography } from '@theme/typography'
 
 export const useStyles = makeStyles(theme => ({
-    body: {
-        paddingTop: theme.spacing.lg,
+    container: {
         paddingHorizontal: theme.spacing.xl,
-        paddingBottom: theme.spacing.xl,
+    },
+    body: {
         gap: theme.spacing.lg,
+        paddingTop: theme.spacing.lg,
+        paddingBottom: theme.spacing.xl,
     },
     title: {
         textAlign: 'left',

@@ -18,6 +18,13 @@ const mockUseContacts = vi.fn()
 const mockUseNfdForAddress = vi.fn()
 const mockNavigate = vi.fn()
 const mockShareText = vi.fn()
+const mockRequestBottomSheet = vi.fn()
+
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({
+        request: mockRequestBottomSheet,
+    }),
+}))
 
 vi.mock('@perawallet/wallet-core-contacts', () => ({
     useContacts: (...args: Parameters<typeof mockUseContacts>) =>
@@ -61,6 +68,7 @@ describe('ViewContactScreen', () => {
         mockUseNfdForAddress.mockReset()
         mockNavigate.mockReset()
         mockShareText.mockReset()
+        mockRequestBottomSheet.mockReset()
         capturedHeaderRight = null
 
         mockUseContacts.mockReturnValue({ selectedContact: CONTACT })
@@ -107,11 +115,15 @@ describe('ViewContactScreen', () => {
         render(<ViewContactScreen />)
         const qrIcon = screen.getByTestId('touchable-icon-qr')
         fireEvent.click(qrIcon)
-        // Contact is now passed into the QR sheet; the sheet renders the
-        // contact name inside itself.
-        const nameMatches = screen.getAllByText(CONTACT.name)
-        // One in the header, one in the QR sheet once open.
-        expect(nameMatches.length).toBeGreaterThanOrEqual(2)
+        // The QR sheet is requested via the bottom-sheet manager; assert that
+        // the request was issued with a ContactQRContent element bound to this
+        // contact rather than reaching into the sheet's rendered output.
+        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+        const arg = mockRequestBottomSheet.mock.calls[0][0]
+        const contents = arg.contents as React.ReactElement<{
+            contact: typeof CONTACT
+        }>
+        expect(contents.props.contact).toBe(CONTACT)
     })
 
     it('navigates to the EditContact screen when the header edit icon is pressed', () => {

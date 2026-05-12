@@ -55,7 +55,10 @@ describe('ContactQRContent', () => {
     it('renders the contact name and address', () => {
         renderWithId()
         expect(screen.getByText('Alice')).toBeTruthy()
-        expect(screen.getByText('ABC123')).toBeTruthy()
+        // Address is rendered twice (truncated + full). With the identity
+        // mock on truncateAlgorandAddress both copies read the same string,
+        // so assert presence rather than uniqueness.
+        expect(screen.getAllByText('ABC123').length).toBeGreaterThan(0)
     })
 
     it('renders copy and share actions', () => {

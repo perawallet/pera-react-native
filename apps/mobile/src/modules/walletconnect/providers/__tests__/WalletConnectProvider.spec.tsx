@@ -11,7 +11,8 @@
  */
 
 import { describe, test, expect, beforeEach, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react'
+import type { ReactElement } from 'react'
 import { WalletConnectProvider } from '../WalletConnectProvider'
 import type { WalletConnectSessionRequest } from '@perawallet/wallet-core-walletconnect'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -122,45 +123,27 @@ vi.mock('../../components/ConnectionView/ConnectionView', () => ({
     ),
 }))
 
-vi.mock(
-    '../../components/ConnectionSuccessBottomSheet/ConnectionSuccessBottomSheet',
-    () => ({
-        ConnectionSuccessBottomSheet: ({
-            onClose,
-            request,
-        }: {
-            onClose: () => void
-            request: Nullable<WalletConnectSessionRequest>
-        }) =>
-            request ? (
-                <div data-testid='SuccessSheet'>
-                    <span>{request.peerMeta.name}</span>
-                    <button onClick={onClose}>mock-close</button>
-                </div>
-            ) : null,
-    }),
-)
+vi.mock('../../components/ConnectionSuccessContent', () => ({
+    ConnectionSuccessContent: ({
+        request,
+    }: {
+        request: Nullable<WalletConnectSessionRequest>
+    }) => <div data-testid='SuccessSheetContent'>{request?.peerMeta.name}</div>,
+}))
 
-vi.mock(
-    '../../components/WalletConnectErrorBottomSheet/WalletConnectErrorBottomSheet',
-    () => ({
-        WalletConnectErrorBottomSheet: ({
-            isVisible,
-            error,
-            onClose,
-        }: {
-            isVisible: boolean
-            error: Nullable<Error>
-            onClose: () => void
-        }) =>
-            isVisible ? (
-                <div data-testid='ErrorSheet'>
-                    <span>{error?.message}</span>
-                    <button onClick={onClose}>mock-error-close</button>
-                </div>
-            ) : null,
+vi.mock('../../components/WalletConnectErrorContent', () => ({
+    WalletConnectErrorContent: ({ error }: { error: Nullable<Error> }) => (
+        <div data-testid='ErrorSheetContent'>{error?.message}</div>
+    ),
+}))
+
+const mockRequestBottomSheet = vi.fn()
+
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({
+        request: mockRequestBottomSheet,
     }),
-)
+}))
 
 vi.mock('@components/core', () => ({
     PWBottomSheet: ({
@@ -182,6 +165,7 @@ describe('WalletConnectProvider', () => {
         vi.clearAllMocks()
         mockSessionRequests = []
         mockConnectionError = null
+        mockRequestBottomSheet.mockReturnValue(new Promise(() => {}))
     })
 
     test('renders children', () => {
@@ -237,7 +221,7 @@ describe('WalletConnectProvider', () => {
         expect(screen.queryByTestId('PWBottomSheet')).toBeNull()
     })
 
-    test('shows success sheet after connection approval', () => {
+    test('requests the success sheet after connection approval', async () => {
         mockSessionRequests = [mockRequest]
 
         render(
@@ -248,7 +232,18 @@ describe('WalletConnectProvider', () => {
 
         fireEvent.click(screen.getByText('mock-connect'))
 
-        expect(screen.getByTestId('SuccessSheet')).toBeDefined()
+        await waitFor(() => {
+            expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+        })
+        const arg = mockRequestBottomSheet.mock.calls[0][0]
+        const contents = arg.contents as ReactElement<{
+            request: WalletConnectSessionRequest
+        }>
+        expect(contents.props.request).toBe(mockRequest)
+        expect(arg.options).toEqual({
+            size: 'auto',
+            enablePanDownToClose: true,
+        })
     })
 
     test('hides connection view while success sheet is shown', () => {
@@ -266,8 +261,14 @@ describe('WalletConnectProvider', () => {
         expect(screen.queryByTestId('ConnectionView')).toBeNull()
     })
 
-    test('clears success sheet on close', () => {
+    test('clears success request after the success sheet resolves', async () => {
         mockSessionRequests = [mockRequest]
+        let resolveRequest: (value?: unknown) => void = () => {}
+        mockRequestBottomSheet.mockReturnValue(
+            new Promise(resolve => {
+                resolveRequest = resolve
+            }),
+        )
 
         render(
             <WalletConnectProvider>
@@ -276,10 +277,23 @@ describe('WalletConnectProvider', () => {
         )
 
         fireEvent.click(screen.getByText('mock-connect'))
-        expect(screen.getByTestId('SuccessSheet')).toBeDefined()
+        await waitFor(() => {
+            expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+        })
 
-        fireEvent.click(screen.getByText('mock-close'))
-        expect(screen.queryByTestId('SuccessSheet')).toBeNull()
+        // ConnectionView remains hidden while the success sheet is pending.
+        expect(screen.queryByTestId('ConnectionView')).toBeNull()
+
+        await act(async () => {
+            resolveRequest()
+            await Promise.resolve()
+        })
+
+        // Once the host resolves, ConnectionView becomes visible again because
+        // successRequest cleared back to null.
+        await waitFor(() => {
+            expect(screen.getByTestId('ConnectionView')).toBeDefined()
+        })
     })
 
     test('writes connection error to store and removes request when ConnectionView fails', () => {
@@ -299,7 +313,7 @@ describe('WalletConnectProvider', () => {
         expect(mockRemoveSessionRequest).toHaveBeenCalledWith(mockRequest)
     })
 
-    test('renders error bottom sheet when connectionError is set in the store', () => {
+    test('requests the error sheet when connectionError is set in the store', async () => {
         mockConnectionError = new Error('Sign request failed')
 
         render(
@@ -308,8 +322,16 @@ describe('WalletConnectProvider', () => {
             </WalletConnectProvider>,
         )
 
-        expect(screen.getByTestId('ErrorSheet')).toBeDefined()
-        expect(screen.getByText('Sign request failed')).toBeDefined()
+        await waitFor(() => {
+            expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+        })
+        const arg = mockRequestBottomSheet.mock.calls[0][0]
+        const contents = arg.contents as ReactElement<{ error: Error }>
+        expect(contents.props.error).toBe(mockConnectionError)
+        expect(arg.options).toEqual({
+            size: 'auto',
+            enablePanDownToClose: true,
+        })
     })
 
     test('hides connection view when error bottom sheet is shown', () => {
@@ -325,9 +347,15 @@ describe('WalletConnectProvider', () => {
         expect(screen.queryByTestId('ConnectionView')).toBeNull()
     })
 
-    test('clears error and removes session request when error sheet closes', () => {
+    test('clears error and removes session request after the error sheet resolves', async () => {
         mockSessionRequests = [mockRequest]
         mockConnectionError = new Error('Sign request failed')
+        let resolveRequest: (value?: unknown) => void = () => {}
+        mockRequestBottomSheet.mockReturnValue(
+            new Promise(resolve => {
+                resolveRequest = resolve
+            }),
+        )
 
         render(
             <WalletConnectProvider>
@@ -335,9 +363,18 @@ describe('WalletConnectProvider', () => {
             </WalletConnectProvider>,
         )
 
-        fireEvent.click(screen.getByText('mock-error-close'))
+        await waitFor(() => {
+            expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+        })
 
-        expect(mockSetConnectionError).toHaveBeenCalledWith(null)
+        await act(async () => {
+            resolveRequest()
+            await Promise.resolve()
+        })
+
+        await waitFor(() => {
+            expect(mockSetConnectionError).toHaveBeenCalledWith(null)
+        })
         expect(mockRemoveSessionRequest).toHaveBeenCalledWith(mockRequest)
     })
 })

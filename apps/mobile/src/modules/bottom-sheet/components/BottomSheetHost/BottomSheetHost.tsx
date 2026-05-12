@@ -11,7 +11,9 @@
  */
 
 import { useCallback } from 'react'
+import { NavigationContainerRefContext } from '@react-navigation/native'
 import { PWBottomSheet } from '@components/core'
+import { navigationRef } from '@routes/navigationRef'
 
 import { useBottomSheetStore } from '../../store/bottomSheetStore'
 import type { InternalRequest } from '../../types'
@@ -56,7 +58,12 @@ export const BottomSheetHost = ({ request }: BottomSheetHostProps) => {
             onDismiss={handleDismiss}
         >
             <BottomSheetIdContext.Provider value={request.id}>
-                {request.contents}
+                {/* we need to remount the navigation container since we're in a bottom sheet portal here */}
+                <NavigationContainerRefContext.Provider
+                    value={navigationRef}
+                >
+                    {request.contents}
+                </NavigationContainerRefContext.Provider>
             </BottomSheetIdContext.Provider>
         </PWBottomSheet>
     )

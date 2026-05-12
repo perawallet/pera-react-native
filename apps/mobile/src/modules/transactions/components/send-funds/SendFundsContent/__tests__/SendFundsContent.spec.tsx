@@ -35,6 +35,15 @@ vi.mock('@react-navigation/native', () => ({
     NavigationContainer: ({ children }: any) => <div>{children}</div>,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     NavigationIndependentTree: ({ children }: any) => <div>{children}</div>,
+    createNavigationContainerRef: () => ({
+        navigate: vi.fn(),
+        dispatch: vi.fn(),
+        reset: vi.fn(),
+        goBack: vi.fn(),
+        isReady: () => true,
+        current: null,
+    }),
+    NavigationContainerRefContext: React.createContext(undefined),
 }))
 
 vi.mock('../../../../routes/send-funds', () => ({
