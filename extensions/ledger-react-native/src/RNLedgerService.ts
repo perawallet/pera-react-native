@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { Platform, PermissionsAndroid } from 'react-native'
 import type { HardwareWalletService } from '@perawallet/wallet-extension-platform'
 import {
     hexToBytes,
@@ -24,9 +25,43 @@ import type {
     LedgerDevice,
     LedgerAccount,
 } from './types'
-import { classifyLedgerError } from './errors'
+import {
+    classifyLedgerError,
+    LedgerBluetoothDisabledError,
+    LedgerPermissionDeniedError,
+} from './errors'
 import { resolveDeviceModel, buildLedgerAccountPath } from './constants'
 import { extractLedgerSignature } from './signature'
+
+/**
+ * Pre-flight check that BLE scan permissions are granted at sign time.
+ * Mirrors the gate in `useBlePermissions` but is callable from the
+ * non-React transport layer. iOS handles permission prompting at the
+ * system level when scanning begins, so it's a no-op here.
+ *
+ * This only CHECKS — it does not prompt. The pairing flow already
+ * prompts for these permissions; if they're revoked at sign time we
+ * surface a typed error and the UI handles the recovery.
+ */
+const hasBlePermissions = async (): Promise<boolean> => {
+    if (Platform.OS !== 'android') return true
+
+    const apiLevel = Number(Platform.Version)
+
+    if (apiLevel >= 31) {
+        const scanGranted = await PermissionsAndroid.check(
+            PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+        )
+        const connectGranted = await PermissionsAndroid.check(
+            PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+        )
+        return scanGranted && connectGranted
+    }
+
+    return PermissionsAndroid.check(
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+    )
+}
 
 /**
  * Wraps a connected Ledger BLE transport + Algorand app instance
@@ -130,6 +165,29 @@ export class RNLedgerService implements HardwareWalletService {
             },
 
             async connect(deviceId: string): Promise<LedgerTransport> {
+                // Pre-flight: is BLE turned on at the OS level?
+                // TransportBLE.isSupported returns false when the platform
+                // refuses to initialize the BLE module (typically because
+                // Bluetooth is disabled). Throwing a typed error here lets
+                // the overlay render the matching "enable Bluetooth" copy
+                // instead of a generic connection failure.
+                const bleSupported = await TransportBLE.isSupported().catch(
+                    () => false,
+                )
+                if (!bleSupported) {
+                    throw new LedgerBluetoothDisabledError()
+                }
+
+                // Pre-flight: are scan permissions granted? The pairing
+                // flow already prompts for these — at sign time we only
+                // check. If perms were revoked (or for some reason never
+                // granted), throw so the overlay surfaces the "permission
+                // required" preset with the troubleshooting link.
+                const permitted = await hasBlePermissions()
+                if (!permitted) {
+                    throw new LedgerPermissionDeniedError()
+                }
+
                 // The pairing/bonding pre-check happens in the business
                 // logic layer (`useLedgerPairing` + `useLedgerPairingStore`
                 // in `@perawallet/wallet-core-ledger`). iOS doesn't expose
