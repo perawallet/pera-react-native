@@ -10,8 +10,11 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@test-utils/render'
+import React from 'react'
+import { describe, it, expect, vi } from 'vitest'
+import { render, screen } from '@test-utils/render'
+import { useLedgerSigningOverlay } from '../useLedgerSigningOverlay'
+import type { UseLedgerSigningOverlayResult } from '../useLedgerSigningOverlay'
 import { LedgerSigningOverlay } from '../LedgerSigningOverlay'
 
 vi.mock('@hooks/useLanguage', () => ({
@@ -21,210 +24,150 @@ vi.mock('@hooks/useLanguage', () => ({
     }),
 }))
 
-const mockUseIsDarkMode = vi.fn<() => boolean>(() => false)
 vi.mock('@hooks/useIsDarkMode', () => ({
-    useIsDarkMode: () => mockUseIsDarkMode(),
+    useIsDarkMode: () => false,
 }))
 
 vi.mock('lottie-react-native', () => ({
-    default: ({
-        testID,
-        source,
-    }: {
-        testID?: string
-        source?: { __variant?: string }
-    }) => (
-        <div
-            data-testid={testID ?? 'lottie-view'}
-            data-variant={source?.__variant ?? ''}
-        />
+    default: ({ testID }: { testID?: string }) => (
+        <div data-testid={testID ?? 'lottie-view'} />
     ),
 }))
 
-vi.mock('@assets/animations/ledger-bluetooth.json', () => ({
+vi.mock('@assets/animations/ledger-signing.json', () => ({
     default: { __variant: 'light' },
 }))
 
-vi.mock('@assets/animations/ledger-bluetooth.dark.json', () => ({
+vi.mock('@assets/animations/ledger-signing.dark.json', () => ({
     default: { __variant: 'dark' },
 }))
 
-describe('LedgerSigningOverlay', () => {
-    const defaultProps = {
-        isVisible: true,
-        status: 'connecting' as const,
-        onCancel: vi.fn(),
-        onRetry: vi.fn(),
-    }
+vi.mock('@components/core', () => ({
+    PWBottomSheet: ({
+        children,
+        isVisible,
+    }: {
+        children: React.ReactNode
+        isVisible: boolean
+    }) => (isVisible ? <>{children}</> : null),
+    PWView: ({ children }: { children: React.ReactNode }) => (
+        <div>{children}</div>
+    ),
+    PWText: ({ children }: { children: React.ReactNode }) => (
+        <span>{children}</span>
+    ),
+    PWButton: ({
+        title,
+        onPress,
+        testID,
+    }: {
+        title: string
+        onPress: () => void
+        testID?: string
+    }) => (
+        <button
+            data-testid={testID}
+            onClick={onPress}
+        >
+            {title}
+        </button>
+    ),
+    PWTouchableOpacity: ({
+        children,
+        onPress,
+        testID,
+    }: {
+        children: React.ReactNode
+        onPress: () => void
+        testID?: string
+    }) => (
+        <button
+            data-testid={testID}
+            onClick={onPress}
+        >
+            {children}
+        </button>
+    ),
+}))
 
-    beforeEach(() => {
-        vi.clearAllMocks()
-        mockUseIsDarkMode.mockReturnValue(false)
+vi.mock('../useLedgerSigningOverlay')
+
+const base: UseLedgerSigningOverlayResult = {
+    isVisible: true,
+    status: 'awaitingApproval',
+    deviceName: 'Nano X',
+    currentTx: null,
+    totalTxs: null,
+    error: null,
+    onCancel: vi.fn(),
+    onRetry: vi.fn(),
+    isTroubleshootingVisible: false,
+    onOpenTroubleshooting: vi.fn(),
+    onCloseTroubleshooting: vi.fn(),
+}
+
+describe('LedgerSigningOverlay router', () => {
+    it('renders nothing actionable when isVisible is false', () => {
+        vi.mocked(useLedgerSigningOverlay).mockReturnValue({
+            ...base,
+            isVisible: false,
+            status: 'idle',
+        })
+        render(<LedgerSigningOverlay />)
+        expect(screen.queryByTestId('ledger-signing-cancel')).toBeNull()
+        expect(screen.queryByTestId('ledger-error-close')).toBeNull()
     })
 
-    it('renders the connecting message when status is connecting', () => {
-        render(
-            <LedgerSigningOverlay
-                {...defaultProps}
-                status='connecting'
-            />,
-        )
-
-        expect(screen.getByText('ledger.signing.connect')).toBeTruthy()
+    it('renders LedgerAwaitingApprovalContent for awaitingApproval', () => {
+        vi.mocked(useLedgerSigningOverlay).mockReturnValue({
+            ...base,
+            status: 'awaitingApproval',
+        })
+        render(<LedgerSigningOverlay />)
+        expect(screen.queryByTestId('ledger-signing-cancel')).toBeTruthy()
     })
 
-    it('renders the confirming message when status is confirming', () => {
-        render(
-            <LedgerSigningOverlay
-                {...defaultProps}
-                status='confirming'
-            />,
-        )
-
-        expect(screen.getByText('ledger.signing.confirm')).toBeTruthy()
+    it('renders LedgerAwaitingApprovalContent for signing status too', () => {
+        vi.mocked(useLedgerSigningOverlay).mockReturnValue({
+            ...base,
+            status: 'signing',
+        })
+        render(<LedgerSigningOverlay />)
+        expect(screen.queryByTestId('ledger-signing-cancel')).toBeTruthy()
     })
 
-    it('shows progress text when signing multiple transactions', () => {
-        render(
-            <LedgerSigningOverlay
-                {...defaultProps}
-                status='confirming'
-                currentTx={2}
-                totalTxs={3}
-            />,
-        )
+    it('renders LedgerErrorContent for error status', () => {
+        vi.mocked(useLedgerSigningOverlay).mockReturnValue({
+            ...base,
+            status: 'error',
+            error: {
+                kind: 'connection_failed',
+                title: 't',
+                body: 'b',
+                isTroubleshootable: true,
+                isRetryable: true,
+            },
+        })
+        render(<LedgerSigningOverlay />)
+        expect(screen.queryByTestId('ledger-error-close')).toBeTruthy()
+    })
 
+    it('mounts the troubleshooting sheet when isTroubleshootingVisible=true', () => {
+        vi.mocked(useLedgerSigningOverlay).mockReturnValue({
+            ...base,
+            status: 'error',
+            error: {
+                kind: 'connection_failed',
+                title: 't',
+                body: 'b',
+                isTroubleshootable: true,
+                isRetryable: true,
+            },
+            isTroubleshootingVisible: true,
+        })
+        render(<LedgerSigningOverlay />)
         expect(
-            screen.getByText('ledger.signing.progress|{"current":2,"total":3}'),
+            screen.queryByTestId('ledger-troubleshooting-close'),
         ).toBeTruthy()
-    })
-
-    it('hides progress text for a single transaction', () => {
-        render(
-            <LedgerSigningOverlay
-                {...defaultProps}
-                status='confirming'
-                currentTx={1}
-                totalTxs={1}
-            />,
-        )
-
-        expect(screen.queryByText(/ledger.signing.progress/)).toBeNull()
-    })
-
-    it('shows the retry button when status is error', () => {
-        render(
-            <LedgerSigningOverlay
-                {...defaultProps}
-                status='error'
-            />,
-        )
-
-        expect(screen.getByText('ledger.fetch_accounts.retry')).toBeTruthy()
-    })
-
-    it('shows the retry button when status is timeout', () => {
-        render(
-            <LedgerSigningOverlay
-                {...defaultProps}
-                status='timeout'
-            />,
-        )
-
-        expect(screen.getByText('ledger.fetch_accounts.retry')).toBeTruthy()
-    })
-
-    it('renders the bluetooth Lottie animation while connecting', () => {
-        render(
-            <LedgerSigningOverlay
-                {...defaultProps}
-                status='connecting'
-            />,
-        )
-
-        expect(screen.getByTestId('ledger-signing-overlay-lottie')).toBeTruthy()
-    })
-
-    it('uses the light Lottie variant when not in dark mode', () => {
-        mockUseIsDarkMode.mockReturnValue(false)
-        render(
-            <LedgerSigningOverlay
-                {...defaultProps}
-                status='connecting'
-            />,
-        )
-
-        expect(
-            screen
-                .getByTestId('ledger-signing-overlay-lottie')
-                .getAttribute('data-variant'),
-        ).toBe('light')
-    })
-
-    it('uses the dark Lottie variant in dark mode', () => {
-        mockUseIsDarkMode.mockReturnValue(true)
-        render(
-            <LedgerSigningOverlay
-                {...defaultProps}
-                status='connecting'
-            />,
-        )
-
-        expect(
-            screen
-                .getByTestId('ledger-signing-overlay-lottie')
-                .getAttribute('data-variant'),
-        ).toBe('dark')
-    })
-
-    it('hides the Lottie animation in error state (replaced by retry UI)', () => {
-        render(
-            <LedgerSigningOverlay
-                {...defaultProps}
-                status='error'
-            />,
-        )
-
-        expect(screen.queryByTestId('ledger-signing-overlay-lottie')).toBeNull()
-    })
-
-    it('hides the retry button while connecting', () => {
-        render(
-            <LedgerSigningOverlay
-                {...defaultProps}
-                status='connecting'
-            />,
-        )
-
-        expect(screen.queryByText('ledger.fetch_accounts.retry')).toBeNull()
-    })
-
-    it('calls onCancel when the cancel button is pressed', () => {
-        const onCancel = vi.fn()
-        render(
-            <LedgerSigningOverlay
-                {...defaultProps}
-                onCancel={onCancel}
-            />,
-        )
-
-        fireEvent.click(screen.getByText('ledger.signing.cancel'))
-
-        expect(onCancel).toHaveBeenCalledTimes(1)
-    })
-
-    it('calls onRetry when retry is pressed in error state', () => {
-        const onRetry = vi.fn()
-        render(
-            <LedgerSigningOverlay
-                {...defaultProps}
-                status='error'
-                onRetry={onRetry}
-            />,
-        )
-
-        fireEvent.click(screen.getByText('ledger.fetch_accounts.retry'))
-
-        expect(onRetry).toHaveBeenCalledTimes(1)
     })
 })

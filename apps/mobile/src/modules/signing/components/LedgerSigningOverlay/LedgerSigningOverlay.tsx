@@ -11,103 +11,62 @@
  */
 
 import React from 'react'
-import LottieView from 'lottie-react-native'
-import { PWBottomSheet, PWButton, PWText, PWView } from '@components/core'
-import { useLanguage } from '@hooks/useLanguage'
-import { useIsDarkMode } from '@hooks/useIsDarkMode'
-import bluetoothAnimationLight from '@assets/animations/ledger-bluetooth.json'
-import bluetoothAnimationDark from '@assets/animations/ledger-bluetooth.dark.json'
-import { useStyles } from './styles'
+import { PWBottomSheet } from '@components/core'
+import { LedgerAwaitingApprovalContent } from '../LedgerAwaitingApprovalContent'
+import { LedgerConnectionIssueSheet } from '../LedgerConnectionIssueSheet'
+import { LedgerErrorContent } from '../LedgerErrorContent'
+import { useLedgerSigningOverlay } from './useLedgerSigningOverlay'
 
-type LedgerSigningOverlayProps = {
-    isVisible: boolean
-    status: 'connecting' | 'confirming' | 'error' | 'timeout'
-    currentTx?: number
-    totalTxs?: number
-    onCancel: () => void
-    onRetry?: () => void
-}
-
-const STATUS_MESSAGE_KEYS: Record<LedgerSigningOverlayProps['status'], string> =
-    {
-        connecting: 'ledger.signing.connect',
-        confirming: 'ledger.signing.confirm',
-        timeout: 'ledger.signing.timeout',
-        error: 'ledger.errors.connection_failed',
-    }
-
-export const LedgerSigningOverlay = ({
-    isVisible,
-    status,
-    currentTx,
-    totalTxs,
-    onCancel,
-    onRetry,
-}: LedgerSigningOverlayProps) => {
-    const styles = useStyles()
-    const { t } = useLanguage()
-    const isDarkMode = useIsDarkMode()
-    const animationSource = isDarkMode
-        ? bluetoothAnimationDark
-        : bluetoothAnimationLight
-
-    const showRetry = status === 'error' || status === 'timeout'
-    const showProgress =
-        status === 'confirming' &&
-        typeof currentTx === 'number' &&
-        typeof totalTxs === 'number' &&
-        totalTxs > 1
+/**
+ * Thin router for the hardware-wallet signing UI. Reads the adapter hook
+ * and dispatches to the correct phase-specific content based on the
+ * current signing status. The troubleshooting sheet is mounted as a peer
+ * so it can sit on top of either phase.
+ */
+export const LedgerSigningOverlay = () => {
+    const {
+        isVisible,
+        status,
+        deviceName,
+        currentTx,
+        totalTxs,
+        error,
+        onCancel,
+        onRetry,
+        isTroubleshootingVisible,
+        onOpenTroubleshooting,
+        onCloseTroubleshooting,
+    } = useLedgerSigningOverlay()
 
     return (
-        <PWBottomSheet
-            isVisible={isVisible}
-            enablePanDownToClose={false}
-            enableCloseOnBackdropPress={false}
-        >
-            <PWView style={styles.container}>
-                <PWText style={styles.title}>
-                    {t('ledger.signing.title')}
-                </PWText>
-
-                {!showRetry && (
-                    <LottieView
-                        autoPlay
-                        loop
-                        source={animationSource}
-                        style={styles.lottie}
-                        testID='ledger-signing-overlay-lottie'
+        <>
+            <PWBottomSheet
+                isVisible={isVisible}
+                enablePanDownToClose={false}
+                enableCloseOnBackdropPress={false}
+            >
+                {(status === 'awaitingApproval' || status === 'signing') && (
+                    <LedgerAwaitingApprovalContent
+                        deviceName={deviceName}
+                        currentTx={currentTx}
+                        totalTxs={totalTxs}
+                        onCancel={onCancel}
                     />
                 )}
-
-                <PWText style={styles.message}>
-                    {t(STATUS_MESSAGE_KEYS[status])}
-                </PWText>
-
-                {showProgress && (
-                    <PWText style={styles.progress}>
-                        {t('ledger.signing.progress', {
-                            current: currentTx,
-                            total: totalTxs,
-                        })}
-                    </PWText>
-                )}
-
-                <PWView style={styles.actions}>
-                    {showRetry && onRetry && (
-                        <PWButton
-                            variant='primary'
-                            title={t('ledger.fetch_accounts.retry')}
-                            onPress={onRetry}
-                            style={styles.retryButton}
-                        />
-                    )}
-                    <PWButton
-                        variant='secondary'
-                        title={t('ledger.signing.cancel')}
-                        onPress={onCancel}
+                {status === 'error' && error && (
+                    <LedgerErrorContent
+                        error={error}
+                        onRetry={onRetry}
+                        onClose={onCancel}
+                        onOpenTroubleshooting={onOpenTroubleshooting}
                     />
-                </PWView>
-            </PWView>
-        </PWBottomSheet>
+                )}
+            </PWBottomSheet>
+
+            <LedgerConnectionIssueSheet
+                isVisible={isTroubleshootingVisible}
+                onClose={onCloseTroubleshooting}
+            />
+        </>
     )
 }
