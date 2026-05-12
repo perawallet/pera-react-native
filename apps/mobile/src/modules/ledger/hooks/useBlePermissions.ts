@@ -94,7 +94,7 @@ export const useBlePermissions = (): UseBlePermissionsResult => {
             const requiredPermissions = [
                 PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
                 PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
-            ] as const
+            ]
             const results =
                 await PermissionsAndroid.requestMultiple(requiredPermissions)
 
