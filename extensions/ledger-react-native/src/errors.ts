@@ -339,6 +339,10 @@ const getStatusCode = (error: unknown): Nullable<number> => {
  * to typed Ledger error classes. Pass-through for already-classified
  * AppError instances so re-classification at catch sites preserves the
  * specific error type.
+ *
+ * Errors that this codebase throws directly (bluetooth disabled, scan
+ * timeout, transmission, etc.) are AppError subclasses already, so they
+ * fall through the AppError short-circuit without needing a mapping rule.
  */
 export const classifyLedgerError = (error: unknown): AppError => {
     if (error instanceof AppError) return error
