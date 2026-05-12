@@ -101,6 +101,13 @@ vi.mock('expo-haptics', () => ({
     NotificationFeedbackType: { Success: 'success' },
 }))
 
+// lottie-react-native ships .tsx source under lib/commonjs that vitest can't
+// parse as JS. We never actually render the bottom sheet's processing screen
+// in this test, so a noop stub is sufficient.
+vi.mock('lottie-react-native', () => ({
+    default: () => null,
+}))
+
 const mockUseSingleAssetDetailsQuery = vi.fn()
 const mockUseSelectedAccount = vi.fn()
 const mockUseAllAccounts = vi.fn()
@@ -108,8 +115,7 @@ const mockUseAccountAssetBalanceQuery = vi.fn()
 const mockUseAccountLogicalType = vi.fn(() => 'Algo25')
 
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
-    const actual =
-        await importOriginal<typeof import('@perawallet/wallet-core-assets')>()
+    const actual = (await importOriginal()) as Record<string, unknown>
     return {
         ...actual,
         useSingleAssetDetailsQuery: (...args: unknown[]) =>
@@ -118,10 +124,7 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
 })
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
-    const actual =
-        await importOriginal<
-            typeof import('@perawallet/wallet-core-accounts')
-        >()
+    const actual = (await importOriginal()) as Record<string, unknown>
     return {
         ...actual,
         useSelectedAccount: (...args: unknown[]) =>
@@ -135,8 +138,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 })
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
-    const actual =
-        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    const actual = (await importOriginal()) as Record<string, unknown>
     return {
         ...actual,
         truncateAlgorandAddress: (address: string) =>
