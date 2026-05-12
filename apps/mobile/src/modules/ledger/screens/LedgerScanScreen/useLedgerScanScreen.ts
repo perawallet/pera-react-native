@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useEffect, useCallback, useRef, useState } from 'react'
+import { useEffect, useCallback } from 'react'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wallet'
@@ -21,9 +21,7 @@ import { useLedgerConnection } from '../../hooks'
 type UseLedgerScanScreenResult = {
     devices: HardwareWalletDevice[]
     error: Nullable<Error>
-    connectingDevice: Nullable<HardwareWalletDevice>
     handleDevicePress: (device: HardwareWalletDevice) => void
-    handleCancelConnecting: () => void
     handleRetry: () => void
     handleTroubleshoot: () => void
     t: (key: string, options?: Record<string, unknown>) => string
@@ -33,9 +31,6 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
     const { t } = useLanguage()
     const navigation = useAppNavigation()
     const { devices, startScan, stopScan, error } = useLedgerConnection()
-    const [connectingDevice, setConnectingDevice] =
-        useState<Nullable<HardwareWalletDevice>>(null)
-    const cancelledRef = useRef(false)
 
     useEffect(() => {
         startScan()
@@ -47,28 +42,15 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
 
     const handleDevicePress = useCallback(
         (device: HardwareWalletDevice) => {
-            cancelledRef.current = false
-            setConnectingDevice(device)
-
-            requestAnimationFrame(() => {
-                if (cancelledRef.current) {
-                    return
-                }
-                stopScan()
-                navigation.navigate('LedgerFetchAccounts', {
-                    deviceId: device.id,
-                    deviceName: device.name,
-                    transportType: device.transportType,
-                })
+            stopScan()
+            navigation.navigate('LedgerFetchAccounts', {
+                deviceId: device.id,
+                deviceName: device.name,
+                transportType: device.transportType,
             })
         },
         [navigation, stopScan],
     )
-
-    const handleCancelConnecting = useCallback(() => {
-        cancelledRef.current = true
-        setConnectingDevice(null)
-    }, [])
 
     const handleRetry = useCallback(() => {
         startScan()
@@ -81,9 +63,7 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
     return {
         devices,
         error,
-        connectingDevice,
         handleDevicePress,
-        handleCancelConnecting,
         handleRetry,
         handleTroubleshoot,
         t,

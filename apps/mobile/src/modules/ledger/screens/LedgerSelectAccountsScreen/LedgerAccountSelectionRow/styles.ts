@@ -13,42 +13,37 @@
 import { makeStyles } from '@rneui/themed'
 
 type StyleProps = {
-    isSelected: boolean
     isImported: boolean
 }
 
-export const useStyles = makeStyles(
-    (theme, { isSelected, isImported }: StyleProps) => ({
-        container: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            paddingVertical: theme.spacing.md,
-            paddingHorizontal: theme.spacing.md,
-            backgroundColor: theme.colors.background,
-            borderRadius: theme.borderRadius.md,
-            borderWidth: theme.borders.md,
-            borderColor: isSelected
-                ? theme.colors.linkPrimary
-                : theme.colors.layerGrayLighter,
-            opacity: isImported ? 0.6 : 1,
-            marginBottom: theme.spacing.md,
-            gap: theme.spacing.md,
-        },
-        checkbox: {
-            margin: 0,
-            padding: 0,
-        },
-        textContainer: {
-            flex: 1,
-        },
-        title: {
-            color: theme.colors.textMain,
-        },
-        subtitle: {
-            color: theme.colors.textGray,
-        },
-        infoButton: {
-            padding: theme.spacing.xs,
-        },
-    }),
-)
+export const useStyles = makeStyles((theme, { isImported }: StyleProps) => ({
+    container: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: theme.spacing.md,
+        paddingHorizontal: theme.spacing.md,
+        backgroundColor: theme.colors.background,
+        borderRadius: theme.borderRadius.md,
+        borderWidth: theme.borders.md,
+        borderColor: theme.colors.layerGrayLighter,
+        opacity: isImported ? 0.6 : 1,
+        marginBottom: theme.spacing.md,
+        gap: theme.spacing.md,
+    },
+    checkbox: {
+        margin: 0,
+        padding: 0,
+    },
+    textContainer: {
+        flex: 1,
+    },
+    title: {
+        color: theme.colors.textMain,
+    },
+    subtitle: {
+        color: theme.colors.textGray,
+    },
+    infoButton: {
+        padding: theme.spacing.xs,
+    },
+}))

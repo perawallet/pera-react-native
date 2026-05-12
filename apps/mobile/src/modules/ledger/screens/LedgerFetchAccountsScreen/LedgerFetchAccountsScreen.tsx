@@ -13,12 +13,15 @@
 import React from 'react'
 import { ActivityIndicator } from 'react-native'
 import { PWView, PWText, PWResultView } from '@components/core'
+import { useAppNavigation } from '@hooks/useAppNavigation'
 
+import { LedgerConnectingBottomSheet } from '../../components/LedgerConnectingBottomSheet'
 import { useStyles } from './styles'
 import { useLedgerFetchAccountsScreen } from './useLedgerFetchAccountsScreen'
 
 export const LedgerFetchAccountsScreen = () => {
     const styles = useStyles()
+    const navigation = useAppNavigation()
     const {
         connectionStatus,
         isDiscovering,
@@ -81,6 +84,11 @@ export const LedgerFetchAccountsScreen = () => {
                     </>
                 )}
             </PWView>
+
+            <LedgerConnectingBottomSheet
+                isVisible={isLoading}
+                onCancel={navigation.goBack}
+            />
         </PWView>
     )
 }

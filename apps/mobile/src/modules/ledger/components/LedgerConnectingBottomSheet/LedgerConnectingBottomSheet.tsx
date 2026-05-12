@@ -30,7 +30,6 @@ export const LedgerConnectingBottomSheet = ({
     return (
         <PWBottomSheet
             isVisible={isVisible}
-            onDismiss={onCancel}
             enablePanDownToClose={false}
             enableCloseOnBackdropPress={false}
         >

@@ -69,17 +69,11 @@ describe('useLedgerScanScreen', () => {
         expect(mockStopScan).toHaveBeenCalled()
     })
 
-    it('sets connectingDevice and navigates when a device is tapped', () => {
+    it('stops scanning and navigates when a device is tapped', () => {
         const { result } = renderHook(() => useLedgerScanScreen())
 
         act(() => {
             result.current.handleDevicePress(DEVICE)
-        })
-
-        expect(result.current.connectingDevice).toEqual(DEVICE)
-
-        act(() => {
-            vi.runOnlyPendingTimers()
         })
 
         expect(mockStopScan).toHaveBeenCalled()
@@ -88,23 +82,6 @@ describe('useLedgerScanScreen', () => {
             deviceName: DEVICE.name,
             transportType: DEVICE.transportType,
         })
-    })
-
-    it('aborts navigation when cancel is pressed before the rAF fires', () => {
-        const { result } = renderHook(() => useLedgerScanScreen())
-
-        act(() => {
-            result.current.handleDevicePress(DEVICE)
-        })
-        act(() => {
-            result.current.handleCancelConnecting()
-        })
-        act(() => {
-            vi.runOnlyPendingTimers()
-        })
-
-        expect(result.current.connectingDevice).toBeNull()
-        expect(mockNavigate).not.toHaveBeenCalled()
     })
 
     it('navigates to troubleshooting on handleTroubleshoot', () => {

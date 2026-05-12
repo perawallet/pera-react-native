@@ -40,7 +40,7 @@ export const LedgerAccountSelectionRow = ({
     onInfoPress,
     testID,
 }: LedgerAccountSelectionRowProps) => {
-    const styles = useStyles({ isSelected, isImported })
+    const styles = useStyles({ isImported })
     const { t } = useLanguage()
 
     return (

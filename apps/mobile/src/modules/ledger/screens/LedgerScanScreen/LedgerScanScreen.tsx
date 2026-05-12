@@ -24,7 +24,6 @@ import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wall
 
 import { LedgerDeviceItem } from '../../components/LedgerDeviceItem'
 import { LedgerCompositeIcon } from '../../components/LedgerCompositeIcon'
-import { LedgerConnectingBottomSheet } from '../../components/LedgerConnectingBottomSheet'
 import { useStyles } from './styles'
 import { useLedgerScanScreen } from './useLedgerScanScreen'
 
@@ -34,9 +33,7 @@ export const LedgerScanScreen = () => {
     const {
         devices,
         error,
-        connectingDevice,
         handleDevicePress,
-        handleCancelConnecting,
         handleRetry,
         handleTroubleshoot,
         t,
@@ -112,11 +109,6 @@ export const LedgerScanScreen = () => {
                 ListEmptyComponent={renderEmptyState}
                 contentContainerStyle={styles.listContent}
                 showsVerticalScrollIndicator={false}
-            />
-
-            <LedgerConnectingBottomSheet
-                isVisible={connectingDevice !== null}
-                onCancel={handleCancelConnecting}
             />
         </PWView>
     )
