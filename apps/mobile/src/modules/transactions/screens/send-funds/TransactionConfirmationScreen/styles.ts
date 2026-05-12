@@ -16,17 +16,13 @@ export const useStyles = makeStyles(theme => {
     return {
         container: {
             paddingHorizontal: theme.spacing.md,
-            gap: theme.spacing.xl,
             flex: 1,
-            paddingTop: theme.spacing.lg,
         },
         secondaryAmount: {
             color: theme.colors.textGray,
         },
         buttonContainer: {
-            flexGrow: 1,
-            justifyContent: 'flex-end',
-            paddingBottom: theme.spacing.xl,
+            paddingTop: theme.spacing.md,
         },
         linkContainer: {
             flexDirection: 'row',
@@ -37,22 +33,9 @@ export const useStyles = makeStyles(theme => {
         link: {
             color: theme.colors.linkPrimary,
         },
-        recipientMbrContainer: {
-            flexDirection: 'row' as const,
-            alignItems: 'flex-start' as const,
-            gap: theme.spacing.lg,
-            marginVertical: theme.spacing.xl,
-            backgroundColor: theme.colors.suspiciousBannerBg,
-            padding: theme.spacing.lg,
-            borderRadius: theme.spacing.sm,
-        },
-        recipientMbrMessageContainer: {
-            flexShrink: 1,
-            gap: theme.spacing.xs,
-        },
-        recipientMbrMessage: {
-            flexShrink: 1,
-            color: theme.colors.suspiciousBannerContent,
+        scrollContent: {
+            gap: theme.spacing.xl,
+            paddingTop: theme.spacing.lg,
         },
     }
 })
