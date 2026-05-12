@@ -33,7 +33,8 @@ import { useLanguage } from '@hooks/useLanguage'
 import { LoadingView } from '@components/LoadingView'
 import { useTransactionConfirmationScreen } from './useTransactionConfirmationScreen'
 import { CloseAccountWarning } from './CloseAccountWarning'
-import { RecipientBelowMbrWarning } from './RecipientBelowMbrWarning'
+import { RecipientBelowMbrWarning } from '../RecipientBelowMbrWarning/RecipientBelowMbrWarning'
+import { ScrollView } from 'react-native'
 
 export const TransactionConfirmationScreen = () => {
     const styles = useStyles()
@@ -67,6 +68,7 @@ export const TransactionConfirmationScreen = () => {
 
     return (
         <PWView style={styles.container}>
+            <ScrollView contentContainerStyle={styles.scrollContent}>
             <KeyValueRow title={t('send_funds.confirmation.amount')}>
                 <CurrencyDisplay
                     variant='h3'
@@ -172,6 +174,7 @@ export const TransactionConfirmationScreen = () => {
                     </PWTouchableOpacity>
                 )}
             </KeyValueRow>
+            
             <PWView style={styles.buttonContainer}>
                 {isCloseAccount && <CloseAccountWarning />}
                 {isRecipientBelowMbr && (
@@ -194,6 +197,7 @@ export const TransactionConfirmationScreen = () => {
                 onClose={closeNote}
                 onDismiss={closeNote}
             />
+            </ScrollView>
         </PWView>
     )
 }
