@@ -25,6 +25,7 @@ type UseLedgerScanScreenResult = {
     isCheckingPermissions: boolean
     hasPermissions: boolean
     isPermissionDenied: boolean
+    isPermissionBlocked: boolean
     handleDevicePress: (device: HardwareWalletDevice) => void
     handleRetry: () => void
     handleRequestPermissions: () => void
@@ -39,7 +40,9 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
     const {
         hasPermissions,
         isChecking: isCheckingPermissions,
+        isBlocked: isPermissionBlocked,
         requestPermissions,
+        openSettings,
     } = useBlePermissions()
     const [hasRequestedPermissions, setHasRequestedPermissions] =
         useState(false)
@@ -87,8 +90,14 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
     }, [startScan])
 
     const handleRequestPermissions = useCallback(() => {
+        // After the OS marks the permission as NEVER_ASK_AGAIN the system
+        // dialog won't reopen — hand the user off to Settings instead.
+        if (isPermissionBlocked) {
+            openSettings()
+            return
+        }
         requestPermissions()
-    }, [requestPermissions])
+    }, [isPermissionBlocked, openSettings, requestPermissions])
 
     const handleTroubleshoot = useCallback(() => {
         navigation.navigate('LedgerTroubleshooting')
@@ -103,6 +112,7 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
         isCheckingPermissions,
         hasPermissions,
         isPermissionDenied,
+        isPermissionBlocked,
         handleDevicePress,
         handleRetry,
         handleRequestPermissions,

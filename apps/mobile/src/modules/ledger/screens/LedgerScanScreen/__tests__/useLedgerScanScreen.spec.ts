@@ -18,15 +18,18 @@ const {
     mockStartScan,
     mockStopScan,
     mockRequestPermissions,
+    mockOpenSettings,
     blePermissionsState,
 } = vi.hoisted(() => ({
     mockNavigate: vi.fn(),
     mockStartScan: vi.fn(),
     mockStopScan: vi.fn(),
     mockRequestPermissions: vi.fn(),
+    mockOpenSettings: vi.fn(),
     blePermissionsState: {
         hasPermissions: true,
         isChecking: false,
+        isBlocked: false,
     },
 }))
 
@@ -49,7 +52,9 @@ vi.mock('../../../hooks', () => ({
     useBlePermissions: () => ({
         hasPermissions: blePermissionsState.hasPermissions,
         isChecking: blePermissionsState.isChecking,
+        isBlocked: blePermissionsState.isBlocked,
         requestPermissions: mockRequestPermissions,
+        openSettings: mockOpenSettings,
     }),
 }))
 
@@ -71,6 +76,7 @@ describe('useLedgerScanScreen', () => {
         vi.clearAllMocks()
         blePermissionsState.hasPermissions = true
         blePermissionsState.isChecking = false
+        blePermissionsState.isBlocked = false
         mockRequestPermissions.mockResolvedValue(true)
     })
 
@@ -134,6 +140,24 @@ describe('useLedgerScanScreen', () => {
         })
 
         expect(mockRequestPermissions).toHaveBeenCalledTimes(1)
+        expect(mockOpenSettings).not.toHaveBeenCalled()
+    })
+
+    it('hands the user off to Settings when permission is OS-blocked', () => {
+        blePermissionsState.hasPermissions = false
+        blePermissionsState.isChecking = false
+        blePermissionsState.isBlocked = true
+
+        const { result } = renderHook(() => useLedgerScanScreen())
+        mockRequestPermissions.mockClear()
+
+        act(() => {
+            result.current.handleRequestPermissions()
+        })
+
+        expect(mockOpenSettings).toHaveBeenCalledTimes(1)
+        expect(mockRequestPermissions).not.toHaveBeenCalled()
+        expect(result.current.isPermissionBlocked).toBe(true)
     })
 
     it('stops scanning and navigates when a device is tapped', () => {

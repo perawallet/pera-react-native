@@ -20,6 +20,7 @@ const {
     mockStartScan,
     mockStopScan,
     mockRequestPermissions,
+    mockOpenSettings,
     blePermissionsState,
 } = vi.hoisted(() => ({
     mockNavigate: vi.fn(),
@@ -27,9 +28,11 @@ const {
     mockStartScan: vi.fn(),
     mockStopScan: vi.fn(),
     mockRequestPermissions: vi.fn(),
+    mockOpenSettings: vi.fn(),
     blePermissionsState: {
         hasPermissions: true,
         isChecking: false,
+        isBlocked: false,
     },
 }))
 
@@ -67,7 +70,9 @@ vi.mock('../../../hooks', () => ({
     useBlePermissions: () => ({
         hasPermissions: blePermissionsState.hasPermissions,
         isChecking: blePermissionsState.isChecking,
+        isBlocked: blePermissionsState.isBlocked,
         requestPermissions: mockRequestPermissions,
+        openSettings: mockOpenSettings,
     }),
 }))
 
@@ -78,6 +83,7 @@ describe('LedgerScanScreen', () => {
         vi.clearAllMocks()
         blePermissionsState.hasPermissions = true
         blePermissionsState.isChecking = false
+        blePermissionsState.isBlocked = false
         mockRequestPermissions.mockResolvedValue(true)
     })
 
@@ -112,6 +118,7 @@ describe('LedgerScanScreen', () => {
         render(<LedgerScanScreen />)
 
         expect(screen.getByTestId('ledger_scan_permission_denied')).toBeTruthy()
+        expect(screen.getByText('ledger.scan.grant_permission')).toBeTruthy()
         // First request fires on mount; we want to assert the retry click also fires one.
         mockRequestPermissions.mockClear()
 
@@ -120,5 +127,24 @@ describe('LedgerScanScreen', () => {
         )
 
         expect(mockRequestPermissions).toHaveBeenCalledTimes(1)
+    })
+
+    it('renders Open Settings and opens settings on tap when permission is OS-blocked', () => {
+        blePermissionsState.hasPermissions = false
+        blePermissionsState.isChecking = false
+        blePermissionsState.isBlocked = true
+
+        render(<LedgerScanScreen />)
+
+        expect(screen.getByText('ledger.scan.open_settings')).toBeTruthy()
+        // requestPermissions fires on mount; clear so the tap-only assertion is meaningful.
+        mockRequestPermissions.mockClear()
+
+        fireEvent.click(
+            screen.getByTestId('ledger_scan_grant_permission_button'),
+        )
+
+        expect(mockOpenSettings).toHaveBeenCalledTimes(1)
+        expect(mockRequestPermissions).not.toHaveBeenCalled()
     })
 })

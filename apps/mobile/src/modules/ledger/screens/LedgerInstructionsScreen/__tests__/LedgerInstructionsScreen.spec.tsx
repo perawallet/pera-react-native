@@ -16,6 +16,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const mockNavigate = vi.fn()
 const mockErrorToast = vi.fn()
 const mockRequestPermissions = vi.fn()
+const mockOpenSettings = vi.fn()
 
 const mockRouteParams: { transportType?: 'ble' | 'usb' } = {}
 
@@ -44,7 +45,9 @@ vi.mock('../../../hooks', () => ({
     useBlePermissions: () => ({
         hasPermissions: true,
         isChecking: false,
+        isBlocked: false,
         requestPermissions: mockRequestPermissions,
+        openSettings: mockOpenSettings,
     }),
 }))
 

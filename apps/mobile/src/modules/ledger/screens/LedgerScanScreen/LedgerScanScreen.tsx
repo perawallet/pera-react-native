@@ -34,6 +34,7 @@ export const LedgerScanScreen = () => {
         devices,
         error,
         isPermissionDenied,
+        isPermissionBlocked,
         handleDevicePress,
         handleRetry,
         handleRequestPermissions,
@@ -120,7 +121,11 @@ export const LedgerScanScreen = () => {
                     </PWText>
                     <PWButton
                         testID='ledger_scan_grant_permission_button'
-                        title={t('ledger.scan.grant_permission')}
+                        title={t(
+                            isPermissionBlocked
+                                ? 'ledger.scan.open_settings'
+                                : 'ledger.scan.grant_permission',
+                        )}
                         onPress={handleRequestPermissions}
                         variant='link'
                     />
