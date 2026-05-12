@@ -10,16 +10,17 @@
  limitations under the License
  */
 
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 import { Linking } from 'react-native'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
+import { useBottomSheet } from '@modules/bottom-sheet'
+
+import { LedgerHowItWorksContent } from '../../components/LedgerHowItWorksContent'
 
 type UseLedgerPairScreenResult = {
-    isHowDoesItWorkVisible: boolean
     handlePair: () => void
     handleOpenHowDoesItWork: () => void
-    handleCloseHowDoesItWork: () => void
     handleOpenSupport: () => void
     t: (key: string, options?: Record<string, unknown>) => string
 }
@@ -27,19 +28,18 @@ type UseLedgerPairScreenResult = {
 export const useLedgerPairScreen = (): UseLedgerPairScreenResult => {
     const { t } = useLanguage()
     const navigation = useAppNavigation()
-    const [isHowDoesItWorkVisible, setHowDoesItWorkVisible] = useState(false)
+    const { request: requestBottomSheet } = useBottomSheet()
 
     const handlePair = useCallback(() => {
         navigation.navigate('LedgerScan')
     }, [navigation])
 
     const handleOpenHowDoesItWork = useCallback(() => {
-        setHowDoesItWorkVisible(true)
-    }, [])
-
-    const handleCloseHowDoesItWork = useCallback(() => {
-        setHowDoesItWorkVisible(false)
-    }, [])
+        void requestBottomSheet({
+            contents: <LedgerHowItWorksContent />,
+            options: { size: 'auto', enablePanDownToClose: true },
+        })
+    }, [requestBottomSheet])
 
     const handleOpenSupport = useCallback(() => {
         Linking.openURL(t('ledger.pair.support_url')).catch(() => {
@@ -49,10 +49,8 @@ export const useLedgerPairScreen = (): UseLedgerPairScreenResult => {
     }, [t])
 
     return {
-        isHowDoesItWorkVisible,
         handlePair,
         handleOpenHowDoesItWork,
-        handleCloseHowDoesItWork,
         handleOpenSupport,
         t,
     }

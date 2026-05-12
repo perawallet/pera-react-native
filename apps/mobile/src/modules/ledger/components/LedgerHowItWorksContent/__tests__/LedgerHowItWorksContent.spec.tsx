@@ -12,20 +12,15 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@test-utils/render'
-import { LedgerHowItWorksBottomSheet } from '../LedgerHowItWorksBottomSheet'
+import { LedgerHowItWorksContent } from '../LedgerHowItWorksContent'
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
 }))
 
-describe('LedgerHowItWorksBottomSheet', () => {
-    it('renders all four step strings when visible', () => {
-        render(
-            <LedgerHowItWorksBottomSheet
-                isVisible={true}
-                onDismiss={vi.fn()}
-            />,
-        )
+describe('LedgerHowItWorksContent', () => {
+    it('renders the title and all four step strings', () => {
+        render(<LedgerHowItWorksContent />)
 
         expect(screen.getByText('ledger.how_does_it_work.title')).toBeTruthy()
         expect(screen.getByText('ledger.how_does_it_work.step_1')).toBeTruthy()

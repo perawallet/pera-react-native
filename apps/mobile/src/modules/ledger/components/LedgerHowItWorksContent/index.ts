@@ -10,5 +10,4 @@
  limitations under the License
  */
 
-export { LedgerHowItWorksBottomSheet } from './LedgerHowItWorksBottomSheet'
-export type { LedgerHowItWorksBottomSheetProps } from './LedgerHowItWorksBottomSheet'
+export { LedgerHowItWorksContent } from './LedgerHowItWorksContent'
