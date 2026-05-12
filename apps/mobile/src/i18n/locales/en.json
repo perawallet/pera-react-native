@@ -773,7 +773,9 @@
             "creating": "Creating shared account...",
             "error_title": "Failed to create account",
             "error_message": "Something went wrong while creating the shared account: {{error}}",
-            "error_name_taken": "An account with this name already exists."
+            "error_name_taken": "An account with this name already exists.",
+            "duplicate_account_title": "Account already added",
+            "duplicate_account_body": "A shared account with these participants and threshold is already in your wallet."
         },
         "edit_participant": {
             "title": "Edit address",
@@ -886,6 +888,8 @@
             "button": "Recover",
             "failed_title": "Import failed",
             "failed_body": "There was an error trying to import your wallet",
+            "duplicate_account_title": "Account already added",
+            "duplicate_account_body": "This account is already in your wallet.",
             "invalid_mnemonic_title": "Invalid Passphrase",
             "invalid_mnemonic_body": "The passphrase you pasted contains too many words.",
             "insufficient_slots_title": "Invalid Passphrase",

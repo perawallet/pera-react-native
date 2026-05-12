@@ -247,6 +247,62 @@ vi.mock('@components/core', () => {
             )
 
     return {
+        // Production exports a `createRef` consumed by code that surfaces
+        // toasts inside open bottom sheets. It's null in tests because no
+        // PWBottomSheet host mounts it; consumers fall back to the global
+        // Notifier when `.current` is null.
+        bottomSheetNotifier: { current: null },
+        // Result screen wrapper used by success/error views; renders
+        // title + body + action buttons we care about asserting on.
+        PWResultView: ({
+            title,
+            body,
+            primaryAction,
+            secondaryAction,
+            linkAction,
+            testID = 'PWResultView',
+        }: any) =>
+            React.createElement(
+                'div',
+                { 'data-testid': testID },
+                title && React.createElement('h1', { key: 'title' }, title),
+                body && React.createElement('p', { key: 'body' }, body),
+                primaryAction &&
+                    React.createElement(
+                        'button',
+                        {
+                            key: 'primary',
+                            onClick: primaryAction.onPress,
+                            disabled: primaryAction.isDisabled,
+                            'data-testid':
+                                primaryAction.testID ?? `${testID}-primary`,
+                        },
+                        primaryAction.label,
+                    ),
+                secondaryAction &&
+                    React.createElement(
+                        'button',
+                        {
+                            key: 'secondary',
+                            onClick: secondaryAction.onPress,
+                            disabled: secondaryAction.isDisabled,
+                            'data-testid':
+                                secondaryAction.testID ?? `${testID}-secondary`,
+                        },
+                        secondaryAction.label,
+                    ),
+                linkAction &&
+                    React.createElement(
+                        'a',
+                        {
+                            key: 'link',
+                            onClick: linkAction.onPress,
+                            'data-testid':
+                                linkAction.testID ?? `${testID}-link`,
+                        },
+                        linkAction.label,
+                    ),
+            ),
         PWBadge: ({ value, label, children, testID, ...props }: any) =>
             React.createElement(
                 'span',
@@ -737,6 +793,11 @@ vi.mock('react-native', () => {
         Alert: {
             alert: vi.fn(),
         },
+        BackHandler: {
+            addEventListener: vi.fn(() => ({ remove: vi.fn() })),
+            removeEventListener: vi.fn(),
+            exitApp: vi.fn(),
+        },
         StyleSheet: {
             create: vi.fn(styles => styles),
             flatten: vi.fn(styles =>
@@ -1115,8 +1176,15 @@ vi.mock('react-native', () => {
 })
 
 vi.mock('react-native-safe-area-context', () => {
+    const React = require('react')
     const inset = { top: 0, right: 0, bottom: 0, left: 0 }
     const frame = { x: 0, y: 0, width: 375, height: 812 }
+    // SafeAreaInsetsContext is consumed by @react-navigation/elements and
+    // other libraries that opt into the real React Context API rather than
+    // calling useSafeAreaInsets(). Provide a real Context so those callers
+    // resolve cleanly.
+    const SafeAreaInsetsContext = React.createContext(inset)
+    const SafeAreaFrameContext = React.createContext(frame)
     return {
         SafeAreaProvider: vi
             .fn()
@@ -1127,6 +1195,8 @@ vi.mock('react-native-safe-area-context', () => {
         SafeAreaView: vi.fn().mockImplementation(({ children }) => children),
         useSafeAreaInsets: vi.fn().mockImplementation(() => inset),
         useSafeAreaFrame: vi.fn().mockImplementation(() => frame),
+        SafeAreaInsetsContext,
+        SafeAreaFrameContext,
         initialWindowMetrics: { insets: inset, frame },
     }
 })

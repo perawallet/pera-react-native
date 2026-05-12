@@ -12,6 +12,7 @@
 
 import { defineConfig } from 'vitest/config'
 import { coverageConfig } from '@perawallet/wallet-core-devtools/vitest/coverage'
+import { poolConfig } from '@perawallet/wallet-core-devtools/vitest/pool'
 import path from 'path'
 
 export default defineConfig({
@@ -30,4 +31,5 @@ export default defineConfig({
         },
         conditions: ['default'],
     },
+    ...poolConfig,
 })

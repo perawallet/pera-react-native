@@ -38,6 +38,42 @@
       ],
       "@utils/*": [
         "./src/utils/*"
+      ],
+      "@perawallet/wallet-core-currencies/test-handlers": [
+        "../../packages/currencies/src/test-handlers.ts"
+      ],
+      "@perawallet/wallet-core-assets/test-handlers": [
+        "../../packages/assets/src/test-handlers.ts"
+      ],
+      "@perawallet/wallet-core-swaps/test-handlers": [
+        "../../packages/swaps/src/test-handlers.ts"
+      ],
+      "@perawallet/wallet-core-messages/test-handlers": [
+        "../../packages/messages/src/test-handlers.ts"
+      ],
+      "@perawallet/wallet-core-staking/test-handlers": [
+        "../../packages/staking/src/test-handlers.ts"
+      ],
+      "@perawallet/wallet-core-shared/test-handlers": [
+        "../../packages/shared/src/test-handlers.ts"
+      ],
+      "@perawallet/wallet-core-shared/test-utils": [
+        "../../packages/shared/src/test-utils/index.ts"
+      ],
+      "@perawallet/wallet-core-accounts/test-handlers": [
+        "../../packages/accounts/src/test-handlers.ts"
+      ],
+      "@perawallet/wallet-core-transactions/test-handlers": [
+        "../../packages/transactions/src/test-handlers.ts"
+      ],
+      "@perawallet/wallet-core-polling/test-handlers": [
+        "../../packages/polling/src/test-handlers.ts"
+      ],
+      "@perawallet/wallet-core-device/test-handlers": [
+        "../../packages/device/src/test-handlers.ts"
+      ],
+      "@perawallet/wallet-core-blockchain/test-handlers": [
+        "../../packages/blockchain/src/test-handlers.ts"
       ]
     },
     "lib": [

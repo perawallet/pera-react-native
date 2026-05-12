@@ -13,6 +13,12 @@
 import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { Platform } from 'react-native'
+import {
+    resolveImportAccountType,
+    useImportAccount,
+} from '@perawallet/wallet-core-accounts'
+import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
+import { DeeplinkType } from '@hooks/deeplink/types'
 import { useImportAccountOptionsScreen } from '../useImportAccountOptionsScreen'
 
 const mockPush = vi.fn()
@@ -25,10 +31,10 @@ vi.mock('@hooks/useAppNavigation', () => ({
     }),
 }))
 
-const mockShowToast = vi.fn()
+const mockErrorToast = vi.fn()
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
-        showToast: mockShowToast,
+        errorToast: mockErrorToast,
     }),
 }))
 
@@ -56,6 +62,9 @@ vi.mock('@hooks/useDeepLink', () => ({
     }),
 }))
 
+const mockImportAccount = vi.fn()
+const mockMarkBackupComplete = vi.fn()
+
 vi.mock('@perawallet/wallet-core-accounts', async () => {
     const actual = await vi.importActual<object>(
         '@perawallet/wallet-core-accounts',
@@ -63,6 +72,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     return {
         ...actual,
         resolveImportAccountType: vi.fn(),
+        useImportAccount: vi.fn(),
     }
 })
 
@@ -79,6 +89,10 @@ vi.mock('@modules/bottom-sheet', () => ({
     }),
 }))
 
+vi.mock('@perawallet/wallet-core-backup', () => ({
+    useMarkMnemonicBackupComplete: vi.fn(),
+}))
+
 describe('useImportAccountOptionsScreen', () => {
     const originalOS = Platform.OS
 
@@ -86,6 +100,10 @@ describe('useImportAccountOptionsScreen', () => {
         vi.clearAllMocks()
         Platform.OS = 'ios'
         mockRequestBottomSheet.mockResolvedValue(undefined)
+        vi.mocked(useImportAccount).mockReturnValue(mockImportAccount)
+        vi.mocked(useMarkMnemonicBackupComplete).mockReturnValue(
+            mockMarkBackupComplete,
+        )
     })
 
     afterEach(() => {
@@ -234,11 +252,10 @@ describe('useImportAccountOptionsScreen', () => {
             peraWebOption.onPress()
         })
 
-        expect(mockShowToast).toHaveBeenCalledWith({
-            title: 'common.not_implemented.title',
-            body: 'common.not_implemented.body',
-            type: 'error',
-        })
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            'common.not_implemented.title',
+            'common.not_implemented.body',
+        )
     })
 
     it('ASB option shows not implemented toast', () => {
@@ -252,11 +269,10 @@ describe('useImportAccountOptionsScreen', () => {
             asbOption.onPress()
         })
 
-        expect(mockShowToast).toHaveBeenCalledWith({
-            title: 'common.not_implemented.title',
-            body: 'common.not_implemented.body',
-            type: 'error',
-        })
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            'common.not_implemented.title',
+            'common.not_implemented.body',
+        )
     })
 
     it('handleCloseQRScanner closes the QR scanner', () => {
@@ -278,5 +294,77 @@ describe('useImportAccountOptionsScreen', () => {
         })
 
         expect(result.current.isQRScannerVisible).toBe(false)
+    })
+
+    it('handleQRScannerSuccess imports the mnemonic and pushes SearchAccounts (HD path)', async () => {
+        const mnemonic = new Array(24).fill('word').join(' ')
+        mockParseDeeplink.mockReturnValue({
+            type: DeeplinkType.RECOVER_ADDRESS,
+            mnemonic,
+        })
+        vi.mocked(resolveImportAccountType).mockReturnValue({
+            success: true,
+            accountType: 'hdWallet',
+        })
+        mockImportAccount.mockResolvedValue({
+            type: 'hdWallet',
+            walletKeyId: 'test-wallet-key-id',
+            derivationType: 9,
+        })
+
+        const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+        await act(async () => {
+            await result.current.handleQRScannerSuccess(
+                'perawallet://recover/...',
+            )
+        })
+
+        expect(mockImportAccount).toHaveBeenCalledWith({
+            mnemonic,
+            type: 'hdWallet',
+        })
+        expect(mockPush).toHaveBeenCalledWith('SearchAccounts', {
+            mode: 'import',
+            walletKeyId: 'test-wallet-key-id',
+            derivationType: 9,
+        })
+        expect(mockMarkBackupComplete).not.toHaveBeenCalled()
+    })
+
+    it('handleQRScannerSuccess imports the mnemonic and pushes SearchAccounts (Algo25 path)', async () => {
+        const mnemonic = new Array(25).fill('word').join(' ')
+        const algo25Account = {
+            id: 'algo25-id',
+            address: 'TEST_ADDRESS',
+            type: 'algo25' as const,
+            keyPairId: 'algo25-keypair-id',
+        }
+        mockParseDeeplink.mockReturnValue({
+            type: DeeplinkType.RECOVER_ADDRESS,
+            mnemonic,
+        })
+        vi.mocked(resolveImportAccountType).mockReturnValue({
+            success: true,
+            accountType: 'algo25',
+        })
+        mockImportAccount.mockResolvedValue(algo25Account)
+
+        const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+        await act(async () => {
+            await result.current.handleQRScannerSuccess(
+                'perawallet://recover/...',
+            )
+        })
+
+        expect(mockImportAccount).toHaveBeenCalledWith({
+            mnemonic,
+            type: 'algo25',
+        })
+        expect(mockMarkBackupComplete).toHaveBeenCalledWith(algo25Account)
+        expect(mockPush).toHaveBeenCalledWith('SearchAccounts', {
+            account: algo25Account,
+        })
     })
 })

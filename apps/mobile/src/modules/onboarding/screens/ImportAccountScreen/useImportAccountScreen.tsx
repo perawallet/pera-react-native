@@ -17,6 +17,7 @@ import * as Clipboard from 'expo-clipboard'
 import { RouteProp, useRoute } from '@react-navigation/native'
 import { OnboardingStackParamList } from '../../routes/types'
 import {
+    DuplicateAccountError,
     MNEMONIC_WORD_COUNT,
     useImportAccount,
     type WalletAccount,
@@ -49,7 +50,7 @@ const MAX_SUGGESTIONS = 4
 
 export function useImportAccountScreen(): UseImportAccountScreenResult {
     const {
-        params: { accountType, mnemonic: initialMnemonic },
+        params: { accountType },
     } = useRoute<RouteProp<OnboardingStackParamList, 'ImportAccount'>>()
     const navigation = useAppNavigation()
     const importAccount = useImportAccount()
@@ -93,13 +94,6 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
 
     const focusInput = useCallback((index: number) => {
         inputRefs.current[index]?.focus()
-    }, [])
-
-    useEffect(() => {
-        if (initialMnemonic) {
-            updateWord(initialMnemonic, 0)
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     useEffect(() => {
@@ -278,10 +272,22 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
                 }
             } catch (e) {
                 logger.error('Import account failed', { error: e })
-                // guardrails-ignore-next-line no-error-toast-in-catch reason: localized import_account.failed_body preserved; raw error not surfaced to user
+                // Duplicate-account attempts get a tailored toast so the
+                // user understands the import was a no-op rather than a
+                // generic failure.
+                const isDuplicate = e instanceof DuplicateAccountError
+                // guardrails-ignore-next-line no-error-toast-in-catch reason: localized import_account.{failed,duplicate_account}_body preserved; raw error not surfaced to user
                 showToast({
-                    title: t('onboarding.import_account.failed_title'),
-                    body: t('onboarding.import_account.failed_body'),
+                    title: t(
+                        isDuplicate
+                            ? 'onboarding.import_account.duplicate_account_title'
+                            : 'onboarding.import_account.failed_title',
+                    ),
+                    body: t(
+                        isDuplicate
+                            ? 'onboarding.import_account.duplicate_account_body'
+                            : 'onboarding.import_account.failed_body',
+                    ),
                     type: 'error',
                 })
             } finally {

@@ -12,6 +12,7 @@
 
 import React, { useCallback } from 'react'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useIsMounted } from '@hooks/useIsMounted'
 import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
 import { useModalState } from '@hooks/useModalState'
@@ -26,8 +27,17 @@ import {
     type ImportOptionsContentResult,
 } from '../../components/ImportOptionsContent'
 
-export const useOnboardingScreen = () => {
+type UseOnboardingScreenResult = {
+    handleTermsPress: () => void
+    handlePrivacyPress: () => void
+    handleCreateAccount: () => void
+    handleImportAccount: () => void
+    isCreatingAccount: boolean
+}
+
+export const useOnboardingScreen = (): UseOnboardingScreenResult => {
     const navigation = useAppNavigation()
+    const isMounted = useIsMounted()
     const { pushWebView } = useWebView()
     const {
         isOpen: isCreatingAccount,
@@ -63,8 +73,10 @@ export const useOnboardingScreen = () => {
                     account: 0,
                     keyIndex: 0,
                 })
+                if (!isMounted()) return
                 navigation.push('NameAccount', { account: newAccount })
             } catch (error) {
+                if (!isMounted()) return
                 // guardrails-ignore-next-line no-error-toast-in-catch reason: localized create_account.error_message wraps the raw error; preserved verbatim
                 showToast({
                     title: t('onboarding.create_account.error_title'),
@@ -75,10 +87,11 @@ export const useOnboardingScreen = () => {
                 })
                 setIsOnboarding(false)
             } finally {
-                closeCreatingAccount()
+                if (isMounted()) closeCreatingAccount()
             }
         })
     }, [
+        isMounted,
         setIsOnboarding,
         openCreatingAccount,
         closeCreatingAccount,
@@ -88,15 +101,10 @@ export const useOnboardingScreen = () => {
         t,
     ])
 
-    const handleImportAccount = useCallback(async () => {
-        const result = await requestBottomSheet<ImportOptionsContentResult>({
-            contents: <ImportOptionsContent />,
-            options: { size: 'auto', enablePanDownToClose: true },
-        })
-        if (!result) return
+    const handleImportAccount = useCallback(() => {
         setIsOnboarding(true)
-        navigation.push('ImportInfo', { accountType: result })
-    }, [requestBottomSheet, navigation, setIsOnboarding])
+        navigation.push('ImportAccountOptions')
+    }, [navigation, setIsOnboarding])
 
     return {
         handleTermsPress,

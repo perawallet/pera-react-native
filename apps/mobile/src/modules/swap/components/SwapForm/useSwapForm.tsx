@@ -392,7 +392,11 @@ export const useSwapForm = (): UseSwapFormResult => {
 
         const result = await requestBottomSheet<SwapConfirmationResult>({
             contents: <SwapConfirmationContent quote={selectedQuote} />,
-            options: { size: 'auto', enablePanDownToClose: true },
+            options: {
+                size: 'auto',
+                enablePanDownToClose: false,
+                enableCloseOnBackdropPress: false,
+            },
         })
         if (result !== 'confirm') return
 

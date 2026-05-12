@@ -34,7 +34,8 @@
     "@types/react": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vite-plugin-dts": "^4.5.4",
-    "vitest": "catalog:"
+    "vite-plugin-dts": "catalog:",
+    "vitest": "catalog:",
+    "msw": "catalog:"
   }
 }

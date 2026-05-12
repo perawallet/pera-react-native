@@ -194,8 +194,49 @@ describe('OnboardingScreen', () => {
         })
     })
 
-    it('requests the import options sheet and navigates to ImportInfo with the selected option', async () => {
-        mockRequestBottomSheet.mockResolvedValueOnce('hdWallet')
+    it('does not navigate to NameAccount if the screen unmounts during account creation', async () => {
+        const mockAccount = {
+            id: 'test-id',
+            address: 'TEST_ADDRESS',
+            type: 'hdWallet' as const,
+            keyPairId: 'test-wallet-id',
+            hdWalletDetails: {
+                account: 0,
+                change: 0,
+                keyIndex: 0,
+                derivationType: 9,
+            },
+        }
+
+        let resolveCreate: (value: typeof mockAccount) => void = () => {}
+        mockCreateHdWalletAccount.mockImplementation(
+            () =>
+                new Promise<typeof mockAccount>(resolve => {
+                    resolveCreate = resolve
+                }),
+        )
+
+        const { unmount } = render(<OnboardingScreen />)
+
+        const createButton = screen.getByText(
+            'onboarding.main_screen.create_wallet',
+        )
+        fireEvent.click(createButton)
+
+        unmount()
+        resolveCreate(mockAccount)
+
+        await vi.waitFor(() => {
+            expect(mockCreateHdWalletAccount).toHaveBeenCalled()
+        })
+
+        expect(mockPush).not.toHaveBeenCalledWith(
+            'NameAccount',
+            expect.anything(),
+        )
+    })
+
+    it('navigates to ImportAccountOptions when Import Account is pressed', () => {
         render(<OnboardingScreen />)
 
         const importButton = screen.getByText(
@@ -203,12 +244,8 @@ describe('OnboardingScreen', () => {
         )
         fireEvent.click(importButton)
 
-        await vi.waitFor(() => {
-            expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
-            expect(mockPush).toHaveBeenCalledWith('ImportInfo', {
-                accountType: 'hdWallet',
-            })
-        })
+        expect(mockPush).toHaveBeenCalledWith('ImportAccountOptions')
+        expect(useOnboardingStore.getState().isOnboarding).toBe(true)
     })
 
     it('does not render close button during first-time onboarding', () => {
@@ -256,8 +293,7 @@ describe('OnboardingScreen', () => {
             })
         })
 
-        it('requests the import options sheet when Import Account is pressed', () => {
-            mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+        it('navigates to ImportAccountOptions when Import Account is pressed', () => {
             render(<OnboardingScreen />)
 
             const importButton = screen.getByText(
@@ -265,7 +301,7 @@ describe('OnboardingScreen', () => {
             )
             fireEvent.click(importButton)
 
-            expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+            expect(mockPush).toHaveBeenCalledWith('ImportAccountOptions')
         })
     })
 })

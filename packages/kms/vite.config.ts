@@ -18,7 +18,12 @@ export default defineConfig({
     plugins: [
         dts({
             include: ['src'],
-            exclude: ['**/__tests__/**', '**/*.test.ts', '**/*.test.tsx'],
+            exclude: [
+                '**/__tests__/**',
+                '**/*.test.ts',
+                '**/*.test.tsx',
+                '**/{handlers,*-handlers}.ts',
+            ],
             afterDiagnostic: diagnostics => {
                 if (diagnostics.length > 0) {
                     throw new Error(
@@ -46,7 +51,8 @@ export default defineConfig({
                 '@algorandfoundation/xhd-wallet-api',
                 '@algorandfoundation/algokit-utils',
                 '@algorandfoundation/algokit-utils/algo25',
-                'bip39',
+                '@scure/bip39',
+                '@scure/bip39/wordlists/english',
                 'tweetnacl',
                 'uuid',
                 '@perawallet/wallet-extension-provider',

@@ -18,7 +18,12 @@ export default defineConfig({
     plugins: [
         dts({
             include: ['src'],
-            exclude: ['**/__tests__/**', '**/*.test.ts', '**/*.spec.ts'],
+            exclude: [
+                '**/__tests__/**',
+                '**/*.test.ts',
+                '**/*.spec.ts',
+                '**/{handlers,*-handlers}.ts',
+            ],
             afterDiagnostic: diagnostics => {
                 if (diagnostics.length > 0) {
                     throw new Error(

@@ -24,7 +24,7 @@
     "@babel/runtime": "catalog:",
     "@perawallet/wallet-extension-provider": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
-    "bip39": "catalog:",
+    "@scure/bip39": "catalog:",
     "react": "catalog:",
     "tweetnacl": "^1.0.3",
     "zustand": "catalog:"
@@ -32,11 +32,12 @@
   "devDependencies": {
     "@perawallet/wallet-core-devtools": "workspace:*",
     "@testing-library/react": "catalog:",
+    "@types/node": "catalog:",
     "@types/react": "catalog:",
     "react-dom": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vite-plugin-dts": "^4.5.4",
+    "vite-plugin-dts": "catalog:",
     "vitest": "catalog:"
   }
 }

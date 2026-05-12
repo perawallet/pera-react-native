@@ -20,7 +20,7 @@ export const AlgorandChainId = {
     testnet: 416002,
     betanet: 416003,
     all: 4160,
-}
+} as const
 
 export const AlgorandChain = {
     416001: 'mainnet',
