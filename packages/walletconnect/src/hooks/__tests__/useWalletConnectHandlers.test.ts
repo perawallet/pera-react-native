@@ -205,6 +205,7 @@ describe('useWalletConnectHandlers', () => {
                 type: 'arbitrary-data',
                 transport: 'callback',
                 sourceType: 'walletconnect',
+                interactive: true,
                 transportId: 'test-client-id',
                 data: [
                     {
@@ -770,6 +771,7 @@ describe('useWalletConnectHandlers', () => {
                 type: 'transactions',
                 transport: 'callback',
                 sourceType: 'walletconnect',
+                interactive: true,
                 transportId: 'test-client-id',
                 txs: [
                     expect.objectContaining({

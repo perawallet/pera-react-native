@@ -57,6 +57,9 @@ export const buildMultisigCosignRequest = ({
         type: 'transactions',
         transport: 'callback',
         sourceType: 'multisig-cosign',
+        // Cosign always shows the review sheet so the local signer can see
+        // the proposed transactions before adding their signature.
+        interactive: true,
         signRequestId: signRequest.id,
         txs,
         rawTransactionsBase64,

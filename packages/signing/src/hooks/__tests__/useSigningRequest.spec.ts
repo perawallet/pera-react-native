@@ -132,6 +132,9 @@ const makeTxRequest = (
     id: 'tx-1',
     type: 'transactions',
     transport: 'algod',
+    // Default fixture exercises the interactive path; headless behavior is
+    // covered by a dedicated test below that overrides this back to false.
+    interactive: true,
     txs: [{ sender: { toString: () => 'ADDR1' } } as any],
     ...overrides,
 })
@@ -142,6 +145,7 @@ const makeArbRequest = (
     id: 'arb-1',
     type: 'arbitrary-data',
     transport: 'callback',
+    interactive: true,
     data: [{ signer: 'ADDR1', data: 'hello', chainId: 4160 }],
     ...overrides,
 })
@@ -436,14 +440,14 @@ describe('useSigningRequest', () => {
             expect(result.current.lastCompletedRequest?.id).toBe('tx-1')
         })
 
-        test('does not set lastCompletedRequest for headless requests', () => {
+        test('does not set lastCompletedRequest for headless requests (interactive omitted)', () => {
             const actor = makeMockActor('tx-1')
             vi.mocked(createSigningMachine).mockReturnValue(actor as any)
 
             const { result } = renderHook(() => useSigningRequest())
             const request = makeTxRequest({
                 transport: 'callback',
-                headless: true,
+                interactive: undefined,
             })
 
             act(() => {

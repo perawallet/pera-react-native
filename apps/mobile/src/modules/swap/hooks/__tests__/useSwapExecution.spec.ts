@@ -244,7 +244,9 @@ describe('useSwapExecution', () => {
         expect(request.type).toBe('transactions')
         expect(request.transport).toBe('callback')
         expect(request.sourceType).toBe('local')
-        expect(request.headless).toBe(true)
+        // Swap is a headless-by-default flow: it renders its own review and
+        // success UI, so `interactive` must remain unset.
+        expect(request.interactive).toBeUndefined()
         expect(request.txs).toHaveLength(2)
 
         expect(mockSendRawTransaction).toHaveBeenCalled()

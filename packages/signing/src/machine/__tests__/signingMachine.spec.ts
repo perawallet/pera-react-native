@@ -45,6 +45,9 @@ const mockRequest: TransactionSignRequest = {
     id: 'req-1',
     type: 'transactions',
     transport: 'algod',
+    // Default fixture exercises the interactive path so tests that await
+    // `awaiting_user` keep working after headless became the pipeline default.
+    interactive: true,
     txs: [mockTx],
 }
 
@@ -141,12 +144,13 @@ describe('signingMachine', () => {
         expect(state.context.error).toBeNull()
     })
 
-    it('skips awaiting_user for headless requests and reaches completed', async () => {
+    it('skips awaiting_user when interactive is not set and reaches completed', async () => {
         const headlessRequest: TransactionSignRequest = {
             ...mockRequest,
             id: 'req-headless',
             transport: 'callback',
-            headless: true,
+            // Omitting `interactive` is the headless default after PERA-XXXX.
+            interactive: undefined,
             approve: vi.fn().mockResolvedValue(undefined),
         }
 
@@ -378,6 +382,7 @@ describe('signingMachine', () => {
             id: 'req-override',
             type: 'transactions',
             transport: 'callback',
+            interactive: true,
             txs: [contractTx],
             signerOverrides: new Map([[0, MOCK_ADDRESS]]),
         }
@@ -416,6 +421,7 @@ describe('signingMachine', () => {
             type: 'transactions',
             transport: 'callback',
             sourceType: 'webview',
+            interactive: true,
             txs: [mockTx, contractTx, mockTx],
         }
 
@@ -511,6 +517,7 @@ describe('signingMachine', () => {
             id: 'req-mixed',
             type: 'transactions',
             transport: 'algod',
+            interactive: true,
             txs: [mockTx, mockTxFromMultisig],
         }
 

@@ -23,11 +23,12 @@ import { SigningCompletedContent } from '../SigningCompletedContent'
 import { TransactionRequestFAQContent } from '../TransactionRequestFAQContent'
 
 /**
- * Watches the signing queue for the next non-headless sign request and
+ * Watches the signing queue for the next interactive sign request and
  * shows the request sheet via the centralized bottom sheet manager.
  *
- * Headless requests run signing in the background (e.g. swap drives its
- * own confirmation UI) so they're skipped here. When the queue advances
+ * Headless requests (the default — `interactive` omitted or false) run
+ * signing in the background and the originating screen drives its own
+ * confirmation UI, so they're skipped here. When the queue advances
  * to a different request id while a sheet is already open, the previous
  * sheet is dismissed via the manager so the new one opens cleanly — this
  * preserves the visual cue the old `deferToNextCycle` close-and-reopen
@@ -41,12 +42,12 @@ const useSignRequestDriver = () => {
     const { request: requestBottomSheet, dismiss } = useBottomSheet()
     const openIdRef = useRef<string | null>(null)
 
-    const nextRequest = pendingSignRequests.find(r => !r.headless)
+    const nextRequest = pendingSignRequests.find(r => r.interactive === true)
 
     useEffect(() => {
         const sheetId = nextRequest ? nextRequest.id : null
 
-        // No pending non-headless request — dismiss any open sheet so the
+        // No pending interactive request — dismiss any open sheet so the
         // user isn't left looking at stale request data after the queue
         // drains (e.g. WC tx signing completes).
         if (!sheetId) {
@@ -149,7 +150,7 @@ const useTransactionRequestFAQDriver = () => {
     useEffect(() => {
         const next = pendingSignRequests.find(
             r =>
-                !r.headless &&
+                r.interactive === true &&
                 r.type === 'transactions' &&
                 r.sourceType !== 'multisig-cosign',
         )

@@ -103,17 +103,17 @@ const isNonRetryableFailure = (
 }
 
 /**
- * Headless callers (e.g. internal send/swap flows) have no retry UI, so a
- * `failed` state is terminal for them regardless of the error's retryable
- * flag — otherwise the actor and request both leak, blocking every
- * subsequent request because the single-flight queue guard sees a running
- * actor.
+ * Headless callers (e.g. internal send/swap flows — anything that did not
+ * set `interactive: true`) have no retry UI, so a `failed` state is terminal
+ * for them regardless of the error's retryable flag — otherwise the actor
+ * and request both leak, blocking every subsequent request because the
+ * single-flight queue guard sees a running actor.
  */
 const isHeadlessFailure = (
     snapshot: SnapshotFrom<typeof signingMachine>,
 ): boolean => {
     if (!snapshot.matches('failed')) return false
-    return snapshot.context.request.headless === true
+    return snapshot.context.request.interactive !== true
 }
 
 // =============================================================================
@@ -235,12 +235,12 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                 if (!isTerminal) return
 
                 const req = snapshot.context.request
-                // Non-headless failures stay in the queue so the signing sheet
+                // Interactive failures stay in the queue so the signing sheet
                 // keeps rendering; the inline error view (driven by
                 // lastFailedRequest in the store) takes over the sheet
                 // content until the user dismisses via removeSignRequest.
                 const keepForInlineError =
-                    snapshot.matches('failed') && !req.headless
+                    snapshot.matches('failed') && req.interactive === true
 
                 // Tear down the hardware overlay on any terminal transition
                 // for the matching request — success, rejection, or
@@ -251,7 +251,7 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                 }
 
                 if (snapshot.matches('completed')) {
-                    // Publish the transport result regardless of `headless`.
+                    // Publish the transport result regardless of `interactive`.
                     // Headless flows that don't surface completion UI still
                     // need a reliable hook for store-driven listeners (e.g.
                     // PendingSignatures auto-open, send-funds exit on
@@ -266,8 +266,8 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                     // approve callback (with the actual signed data) — see
                     // createCallbackTransport / createWalletConnectTransport.
                     // Headless callers own the completion UI, same as the
-                    // pre-sign review UI (see SignRequest.headless).
-                    if (!req.headless) {
+                    // pre-sign review UI (see SignRequest.interactive).
+                    if (req.interactive) {
                         setLastCompletedRequestRef.current(req)
                     }
                 } else if (snapshot.matches('failed')) {
@@ -284,7 +284,7 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                     // maps (not shared state), so the store is the only
                     // mechanism that reliably re-renders all subscribers.
                     // Headless callers drive their own error UI.
-                    if (!req.headless) {
+                    if (req.interactive) {
                         setLastFailedRequestRef.current({
                             request: req,
                             error: normalizedError,

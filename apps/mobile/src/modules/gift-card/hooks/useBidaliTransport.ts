@@ -258,6 +258,7 @@ export const useBidaliTransport = (
                     id: generateOrderedUniqueId(),
                     type: 'transactions',
                     transport: 'algod',
+                    interactive: true,
                     txs: built.transactions,
                     sourceMetadata: {
                         name: t('giftCard.signing.source_name'),

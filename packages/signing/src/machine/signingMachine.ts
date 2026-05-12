@@ -97,7 +97,7 @@ export const signingMachine = setup({
     },
     guards: {
         hasError: ({ context }) => context.error !== null,
-        isHeadless: ({ context }) => context.request.headless === true,
+        isInteractive: ({ context }) => context.request.interactive === true,
         allGroupsSigned: ({ context }) =>
             getNextPendingSignerType(context) === undefined &&
             context.groupSignerTypes !== null,
@@ -258,12 +258,12 @@ export const signingMachine = setup({
                 }),
                 onDone: [
                     {
-                        guard: 'isHeadless',
-                        target: 'signing',
+                        guard: 'isInteractive',
+                        target: 'awaiting_user',
                         actions: 'storeAnalyses',
                     },
                     {
-                        target: 'awaiting_user',
+                        target: 'signing',
                         actions: 'storeAnalyses',
                     },
                 ],
