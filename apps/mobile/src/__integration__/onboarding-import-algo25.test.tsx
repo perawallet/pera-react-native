@@ -56,8 +56,8 @@ const typeWordsIndividually = (words: string[]) => {
 }
 
 const advanceThroughImportInfo = async () => {
-    await waitFor(() => screen.getByTestId('PWButton'))
-    fireEvent.click(screen.getByTestId('PWButton'))
+    await waitFor(() => screen.getByTestId('import_info_recover_button'))
+    fireEvent.click(screen.getByTestId('import_info_recover_button'))
 }
 
 const renderAlgo25ImportFromOnboarding = () =>

@@ -70,8 +70,8 @@ const typeWordsIndividually = (words: string[]) => {
 // production source doesn't pass an explicit one. This helper waits for it
 // to mount, then advances to ImportAccount.
 const advanceThroughImportInfo = async () => {
-    await waitFor(() => screen.getByTestId('PWButton'))
-    fireEvent.click(screen.getByTestId('PWButton'))
+    await waitFor(() => screen.getByTestId('import_info_recover_button'))
+    fireEvent.click(screen.getByTestId('import_info_recover_button'))
 }
 
 const renderHDImportFromOnboarding = () =>
