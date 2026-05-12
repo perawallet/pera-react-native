@@ -10,11 +10,11 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useEffect, useRef } from 'react'
 import { useInboxInvalidator } from '@perawallet/wallet-core-messages'
 import {
-    useSigningPipeline,
-    type SigningPipelineEvent,
+    useLastTransportResult,
+    type TransportResult,
 } from '@perawallet/wallet-core-signing'
 import { usePendingSignaturesSheetStore } from '../stores/usePendingSignaturesSheetStore'
 
@@ -24,27 +24,34 @@ import { usePendingSignaturesSheetStore } from '../stores/usePendingSignaturesSh
  * send (`type: 'proposed'`) and a participant's cosign
  * (`type: 'signatures-added'`), so the user sees live signing status without
  * having to navigate to the inbox.
+ *
+ * Reads `lastTransportResult` from the signing store (set unconditionally by
+ * the actor lifecycle on every completed transition) rather than subscribing
+ * via `useSigningPipeline({ onEvent })`. The pipeline subscription doesn't
+ * reliably establish in time for headless propose requests — see the
+ * lifecycle hook's `setLastTransportResultRef.current` call.
+ *
+ * Dedupes via a ref so the effect skips the value already in the store at
+ * mount time (e.g. a stale result from a prior in-session propose).
  */
 export const useMultisigProposeListener = () => {
     const openSheet = usePendingSignaturesSheetStore(state => state.openSheet)
     const { invalidate: invalidateInbox } = useInboxInvalidator()
+    const lastTransportResult = useLastTransportResult()
+    const seenRef = useRef<TransportResult | null>(lastTransportResult ?? null)
 
-    const handleEvent = useCallback(
-        (event: SigningPipelineEvent) => {
-            if (event.type !== 'signing_completed') return
-            const result = event.transportResult
-            if (
-                result.type !== 'proposed' &&
-                result.type !== 'signatures-added'
-            ) {
-                return
-            }
-            invalidateInbox()
-            if (result.status === 'confirmed') return
-            openSheet(result.signRequestId)
-        },
-        [openSheet, invalidateInbox],
-    )
-
-    useSigningPipeline({ onEvent: handleEvent })
+    useEffect(() => {
+        if (lastTransportResult === seenRef.current) return
+        seenRef.current = lastTransportResult ?? null
+        if (!lastTransportResult) return
+        if (
+            lastTransportResult.type !== 'proposed' &&
+            lastTransportResult.type !== 'signatures-added'
+        ) {
+            return
+        }
+        invalidateInbox()
+        if (lastTransportResult.status === 'confirmed') return
+        openSheet(lastTransportResult.signRequestId)
+    }, [lastTransportResult, invalidateInbox, openSheet])
 }

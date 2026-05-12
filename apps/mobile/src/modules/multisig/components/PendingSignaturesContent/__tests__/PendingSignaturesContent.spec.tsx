@@ -93,12 +93,23 @@ const buildHookResult = (
     timeRemaining: null,
     failReason: null,
     signers: [
-        { address: ADDRESS_A, status: 'signed' },
-        { address: ADDRESS_B, status: 'unsigned' },
+        {
+            address: ADDRESS_A,
+            status: 'signed',
+            canSignAsHardware: false,
+            isSigning: false,
+        },
+        {
+            address: ADDRESS_B,
+            status: 'unsigned',
+            canSignAsHardware: false,
+            isSigning: false,
+        },
     ],
     handleClose: vi.fn(),
     canSign: false,
     handleSign: vi.fn(),
+    handleSignParticipant: vi.fn(),
     canCancel: false,
     isCancelling: false,
     handleCancel: vi.fn().mockResolvedValue(undefined),
@@ -147,8 +158,18 @@ describe('PendingSignaturesContent', () => {
                 bannerVariant: 'waiting',
                 timeRemaining: '52m',
                 signers: [
-                    { address: ADDRESS_A, status: 'signed' },
-                    { address: ADDRESS_B, status: 'pending' },
+                    {
+                        address: ADDRESS_A,
+                        status: 'signed',
+                        canSignAsHardware: false,
+                        isSigning: false,
+                    },
+                    {
+                        address: ADDRESS_B,
+                        status: 'pending',
+                        canSignAsHardware: false,
+                        isSigning: false,
+                    },
                 ],
             }),
         )
@@ -176,8 +197,18 @@ describe('PendingSignaturesContent', () => {
                 status: 'confirmed',
                 bannerVariant: 'success',
                 signers: [
-                    { address: ADDRESS_A, status: 'signed' },
-                    { address: ADDRESS_B, status: 'signed' },
+                    {
+                        address: ADDRESS_A,
+                        status: 'signed',
+                        canSignAsHardware: false,
+                        isSigning: false,
+                    },
+                    {
+                        address: ADDRESS_B,
+                        status: 'signed',
+                        canSignAsHardware: false,
+                        isSigning: false,
+                    },
                 ],
             }),
         )
@@ -376,6 +407,87 @@ describe('PendingSignaturesContent', () => {
         fireEvent.click(screen.getByTestId('pending_signatures_sign_button'))
 
         expect(handleSign).toHaveBeenCalledTimes(1)
+    })
+
+    it('renders a per-row Sign action when a participant row reports canSignAsHardware', () => {
+        usePendingSignaturesContentMock.mockReturnValue(
+            buildHookResult({
+                status: 'pending',
+                bannerVariant: 'waiting',
+                signers: [
+                    {
+                        address: ADDRESS_A,
+                        status: 'signed',
+                        canSignAsHardware: false,
+                        isSigning: false,
+                    },
+                    {
+                        address: ADDRESS_B,
+                        status: 'pending',
+                        canSignAsHardware: true,
+                        isSigning: false,
+                    },
+                ],
+            }),
+        )
+
+        renderWithId()
+
+        expect(
+            screen.getByTestId(`signer_status_action_${ADDRESS_B}`),
+        ).toBeTruthy()
+        // The signed row should not have a per-row action.
+        expect(
+            screen.queryByTestId(`signer_status_action_${ADDRESS_A}`),
+        ).toBeNull()
+    })
+
+    it('renders the per-row action in a loading state while the row reports isSigning', () => {
+        usePendingSignaturesContentMock.mockReturnValue(
+            buildHookResult({
+                status: 'pending',
+                bannerVariant: 'waiting',
+                signers: [
+                    {
+                        address: ADDRESS_B,
+                        status: 'pending',
+                        canSignAsHardware: false,
+                        isSigning: true,
+                    },
+                ],
+            }),
+        )
+
+        renderWithId()
+
+        expect(
+            screen.getByTestId(`signer_status_action_${ADDRESS_B}`),
+        ).toBeTruthy()
+    })
+
+    it('invokes handleSignParticipant with the row address when the per-row Sign is pressed', () => {
+        const handleSignParticipant = vi.fn()
+        usePendingSignaturesContentMock.mockReturnValue(
+            buildHookResult({
+                status: 'pending',
+                bannerVariant: 'waiting',
+                handleSignParticipant,
+                signers: [
+                    {
+                        address: ADDRESS_B,
+                        status: 'pending',
+                        canSignAsHardware: true,
+                        isSigning: false,
+                    },
+                ],
+            }),
+        )
+
+        renderWithId()
+        fireEvent.click(screen.getByTestId(`signer_status_action_${ADDRESS_B}`))
+
+        expect(handleSignParticipant).toHaveBeenCalledTimes(1)
+        expect(handleSignParticipant).toHaveBeenCalledWith(ADDRESS_B)
     })
 
     it('invokes handleCancel when the Cancel button is pressed', () => {

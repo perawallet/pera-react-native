@@ -1,0 +1,205 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { describe, it, expect } from 'vitest'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { SignableGroup } from '../../pipeline/types'
+import { buildGroupSignerTypeMap } from '../actions'
+
+const PARTICIPANT = 'PARTICIPANT'
+const AUTH = 'AUTH'
+
+const algo25 = (address: string, rekeyAddress?: string): WalletAccount =>
+    ({
+        type: 'algo25',
+        address,
+        keyPairId: `kp-${address}`,
+        rekeyAddress,
+    }) as unknown as WalletAccount
+
+const hardware = (address: string, rekeyAddress?: string): WalletAccount =>
+    ({
+        type: 'hardware',
+        address,
+        rekeyAddress,
+        hardwareDetails: {
+            manufacturer: 'ledger',
+            deviceId: 'dev-1',
+            deviceName: 'Ledger Nano X',
+            accountIndex: 0,
+            transportType: 'ble',
+        },
+    }) as unknown as WalletAccount
+
+const watch = (address: string, rekeyAddress?: string): WalletAccount =>
+    ({
+        type: 'watch',
+        address,
+        rekeyAddress,
+    }) as unknown as WalletAccount
+
+const buildGroup = (
+    overrides: Partial<SignableGroup> & Pick<SignableGroup, 'source'>,
+): SignableGroup => ({
+    data: {
+        type: 'transactions',
+        transactions: [],
+        indicesToSign: [],
+    },
+    signerAddress: PARTICIPANT,
+    ...overrides,
+})
+
+describe('buildGroupSignerTypeMap', () => {
+    describe('multisig-cosign groups (rekey MUST be bypassed)', () => {
+        it('classifies a local-key participant rekeyed to hardware as localKey (uses participant own type)', () => {
+            const participant = algo25(PARTICIPANT, AUTH)
+            const auth = hardware(AUTH)
+            const group = buildGroup({
+                source: {
+                    type: 'multisig-cosign',
+                    signRequestId: 'sr-1',
+                },
+            })
+
+            const map = buildGroupSignerTypeMap([group], [participant, auth])
+
+            expect(map.get(PARTICIPANT)).toBe('localKey')
+        })
+
+        it('classifies a hardware participant rekeyed to local-key as hardware (uses participant own type)', () => {
+            const participant = hardware(PARTICIPANT, AUTH)
+            const auth = algo25(AUTH)
+            const group = buildGroup({
+                source: {
+                    type: 'multisig-cosign',
+                    signRequestId: 'sr-1',
+                },
+            })
+
+            const map = buildGroupSignerTypeMap([group], [participant, auth])
+
+            expect(map.get(PARTICIPANT)).toBe('hardware')
+        })
+
+        it('classifies a non-rekeyed local-key participant as localKey', () => {
+            const participant = algo25(PARTICIPANT)
+            const group = buildGroup({
+                source: {
+                    type: 'multisig-cosign',
+                    signRequestId: 'sr-1',
+                },
+            })
+
+            const map = buildGroupSignerTypeMap([group], [participant])
+
+            expect(map.get(PARTICIPANT)).toBe('localKey')
+        })
+
+        it('classifies a non-rekeyed hardware participant as hardware', () => {
+            const participant = hardware(PARTICIPANT)
+            const group = buildGroup({
+                source: {
+                    type: 'multisig-cosign',
+                    signRequestId: 'sr-1',
+                },
+            })
+
+            const map = buildGroupSignerTypeMap([group], [participant])
+
+            expect(map.get(PARTICIPANT)).toBe('hardware')
+        })
+
+        it('throws when a watch-account participant has no own signing capability (rekey is not consulted)', () => {
+            const participant = watch(PARTICIPANT, AUTH)
+            const auth = algo25(AUTH)
+            const group = buildGroup({
+                source: {
+                    type: 'multisig-cosign',
+                    signRequestId: 'sr-1',
+                },
+            })
+
+            expect(() =>
+                buildGroupSignerTypeMap([group], [participant, auth]),
+            ).toThrow(/No signing capability/)
+        })
+    })
+
+    describe('non-cosign groups (rekey rule still applies)', () => {
+        it('classifies a local-key sender rekeyed to hardware as hardware (auth-account rule)', () => {
+            const sender = algo25(PARTICIPANT, AUTH)
+            const auth = hardware(AUTH)
+            const group = buildGroup({ source: { type: 'local' } })
+
+            const map = buildGroupSignerTypeMap([group], [sender, auth])
+
+            expect(map.get(PARTICIPANT)).toBe('hardware')
+        })
+
+        it('classifies a hardware sender rekeyed to local-key as localKey (auth-account rule)', () => {
+            const sender = hardware(PARTICIPANT, AUTH)
+            const auth = algo25(AUTH)
+            const group = buildGroup({ source: { type: 'local' } })
+
+            const map = buildGroupSignerTypeMap([group], [sender, auth])
+
+            expect(map.get(PARTICIPANT)).toBe('localKey')
+        })
+    })
+
+    describe('mixed batches', () => {
+        it('classifies cosign and non-cosign groups independently in one call', () => {
+            const cosignParticipant = algo25('A', 'A_AUTH')
+            const cosignAuth = hardware('A_AUTH')
+            const localSender = algo25('B', 'B_AUTH')
+            const localAuth = hardware('B_AUTH')
+
+            const cosignGroup = buildGroup({
+                signerAddress: 'A',
+                source: {
+                    type: 'multisig-cosign',
+                    signRequestId: 'sr-1',
+                },
+            })
+            const localGroup = buildGroup({
+                signerAddress: 'B',
+                source: { type: 'local' },
+            })
+
+            const map = buildGroupSignerTypeMap(
+                [cosignGroup, localGroup],
+                [cosignParticipant, cosignAuth, localSender, localAuth],
+            )
+
+            // Same underlying account type, different sources → different
+            // classification.
+            expect(map.get('A')).toBe('localKey') // participant own type
+            expect(map.get('B')).toBe('hardware') // auth account's type
+        })
+
+        it('does not duplicate classification work when multiple groups share a signerAddress', () => {
+            const participant = algo25(PARTICIPANT)
+            const groupA = buildGroup({
+                source: { type: 'multisig-cosign', signRequestId: 'sr-1' },
+            })
+            const groupB = buildGroup({
+                source: { type: 'multisig-cosign', signRequestId: 'sr-1' },
+            })
+
+            const map = buildGroupSignerTypeMap([groupA, groupB], [participant])
+
+            expect(map.size).toBe(1)
+            expect(map.get(PARTICIPANT)).toBe('localKey')
+        })
+    })
+})

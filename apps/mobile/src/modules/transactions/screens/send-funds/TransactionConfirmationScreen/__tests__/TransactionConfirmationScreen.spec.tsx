@@ -52,6 +52,12 @@ vi.mock('@components/core', () => ({
     PWDivider: () => <hr data-testid='divider' />,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     PWIcon: ({ name }: any) => <div data-testid={`icon-${name}`} />,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    PWScrollView: ({ children, contentContainerStyle }: any) => (
+        <div style={contentContainerStyle}>{children}</div>
+    ),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    PWRoundIcon: ({ icon }: any) => <div data-testid={`round-icon-${icon}`} />,
 }))
 
 vi.mock('@components/KeyValueRow', () => ({
@@ -154,13 +160,6 @@ vi.mock('../styles', () => ({
 
 vi.mock('../useTransactionConfirmationScreen', () => ({
     useTransactionConfirmationScreen: vi.fn(),
-}))
-
-vi.mock('../RecipientBelowMbrWarning', () => ({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    RecipientBelowMbrWarning: ({ minBalance }: any) => (
-        <div data-testid='recipient-below-mbr-warning'>{minBalance}</div>
-    ),
 }))
 
 vi.mock('../CloseAccountWarning', () => ({
@@ -432,7 +431,7 @@ describe('TransactionConfirmationScreen', () => {
 
         const { getByTestId } = render(<TransactionConfirmationScreen />)
 
-        expect(getByTestId('recipient-below-mbr-warning')).toBeTruthy()
+        expect(getByTestId('round-icon-info')).toBeTruthy()
     })
 
     it('does not render RecipientBelowMbrWarning when isRecipientBelowMbr is false', () => {
@@ -444,7 +443,7 @@ describe('TransactionConfirmationScreen', () => {
 
         const { queryByTestId } = render(<TransactionConfirmationScreen />)
 
-        expect(queryByTestId('recipient-below-mbr-warning')).toBeNull()
+        expect(queryByTestId('round-icon-info')).toBeNull()
     })
 
     it('renders fiat values for amount and current balance for non-collectibles', () => {

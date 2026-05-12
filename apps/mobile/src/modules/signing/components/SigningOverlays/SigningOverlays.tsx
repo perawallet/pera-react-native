@@ -101,6 +101,15 @@ const useSigningCompletedDriver = () => {
 
     useEffect(() => {
         if (!lastCompletedRequest) return
+        // Multisig cosign completions are surfaced by PendingSignaturesContent
+        // (live signer status + threshold progress). The generic "Transaction
+        // Processing" copy here is misleading for a cosign (the user added a
+        // signature; they didn't send a transaction), so suppress it and
+        // clear the success state so the next request can render.
+        if (lastCompletedRequest.sourceType === 'multisig-cosign') {
+            clearLastCompletedRequest()
+            return
+        }
         if (openIdRef.current === lastCompletedRequest.id) return
         openIdRef.current = lastCompletedRequest.id
         const isTransaction = lastCompletedRequest.type === 'transactions'

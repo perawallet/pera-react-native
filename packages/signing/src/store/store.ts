@@ -14,6 +14,7 @@ import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { PersistStorage } from 'zustand/middleware'
 import type { FailedSignRequest, SigningStore, SignRequest } from '../models'
+import type { TransportResult } from '../pipeline/types'
 import {
     generateOrderedUniqueId,
     registerStore,
@@ -57,6 +58,7 @@ const initialState = {
     pendingSignRequests: [] as SignRequest[],
     lastCompletedRequest: null as Nullable<SignRequest>,
     lastFailedRequest: null as Nullable<FailedSignRequest>,
+    lastTransportResult: null as Nullable<TransportResult>,
 }
 
 export const useSigningStore: UseBoundStore<
@@ -92,6 +94,9 @@ export const useSigningStore: UseBoundStore<
             setLastFailedRequest: (failed: FailedSignRequest | null) => {
                 set({ lastFailedRequest: failed })
             },
+            setLastTransportResult: (result: Nullable<TransportResult>) => {
+                set({ lastTransportResult: result })
+            },
             resetState: () => set(initialState),
         }),
         {
@@ -105,6 +110,18 @@ export const useSigningStore: UseBoundStore<
                     r => r.transport !== 'callback',
                 ),
             }),
+            // Belt-and-suspenders: these fields aren't in `partialize`, but a
+            // prior store version (or a future migration regression) could
+            // still leave them in storage. Always boot with a clean
+            // last-completed/last-failed slate so a stale id doesn't ghost
+            // the next request through SignRequestView's id-equality guard.
+            onRehydrateStorage: () => state => {
+                if (state) {
+                    state.lastCompletedRequest = null
+                    state.lastFailedRequest = null
+                    state.lastTransportResult = null
+                }
+            },
         },
     ),
 )

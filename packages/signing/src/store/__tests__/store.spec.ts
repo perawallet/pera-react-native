@@ -246,4 +246,45 @@ describe('SigningStore', () => {
 
         expect(result.current.lastCompletedRequest).toBeNull()
     })
+
+    test('should store and clear lastTransportResult', () => {
+        const { result } = renderHook(() => useSigningStore())
+        const transportResult = {
+            type: 'proposed' as const,
+            signRequestId: 'sr-1',
+            status: 'pending' as const,
+        }
+
+        act(() => {
+            result.current.setLastTransportResult(transportResult)
+        })
+
+        expect(result.current.lastTransportResult).toEqual(transportResult)
+
+        act(() => {
+            result.current.setLastTransportResult(null)
+        })
+
+        expect(result.current.lastTransportResult).toBeNull()
+    })
+
+    test('should clear lastTransportResult on resetState', () => {
+        const { result } = renderHook(() => useSigningStore())
+
+        act(() => {
+            result.current.setLastTransportResult({
+                type: 'proposed',
+                signRequestId: 'sr-1',
+                status: 'pending',
+            })
+        })
+
+        expect(result.current.lastTransportResult).not.toBeNull()
+
+        act(() => {
+            result.current.resetState()
+        })
+
+        expect(result.current.lastTransportResult).toBeNull()
+    })
 })

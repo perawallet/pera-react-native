@@ -14,7 +14,11 @@ import { ActivityIndicator } from 'react-native'
 import { useTheme } from '@rneui/themed'
 import { PWButton, PWIcon, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { SignerStatusListItem } from '../SignerStatusListItem'
+import { type SignerRow } from '../../utils/buildSignerRows'
+import {
+    SignerStatusListItem,
+    type SignerAction,
+} from '../SignerStatusListItem'
 import { usePendingSignaturesContent } from './usePendingSignaturesContent'
 import { useStyles } from './styles'
 
@@ -36,10 +40,20 @@ export const PendingSignaturesContent = () => {
         handleClose,
         canSign,
         handleSign,
+        handleSignParticipant,
         canCancel,
         isCancelling,
         handleCancel,
     } = usePendingSignaturesContent()
+
+    const getSignerAction = (signer: SignerRow): SignerAction | undefined => {
+        if (!signer.canSignAsHardware && !signer.isSigning) return undefined
+        return {
+            label: t('multisig.pending_signatures.sign'),
+            onPress: () => handleSignParticipant(signer.address),
+            isLoading: signer.isSigning,
+        }
+    }
 
     return (
         <>
@@ -167,6 +181,7 @@ export const PendingSignaturesContent = () => {
                                 key={signer.address}
                                 address={signer.address}
                                 status={signer.status}
+                                action={getSignerAction(signer)}
                             />
                         ))}
                     </PWView>

@@ -28,11 +28,11 @@ export interface CreateMultisigStrategyOptions {
         allAccounts: WalletAccount[],
     ) => WalletAccount[]
 
-    /** Get signing strategy for an individual participant */
-    getStrategyForParticipant: (
-        participant: WalletAccount,
-        allAccounts: WalletAccount[],
-    ) => SigningStrategy
+    /** Get signing strategy for an individual participant.
+     *  Multisig participant slots are bound to the participant's own pubkey
+     *  at multisig creation, so rekey indirection is intentionally NOT
+     *  followed here — that's why no `allAccounts` is threaded through. */
+    getStrategyForParticipant: (participant: WalletAccount) => SigningStrategy
 
     /** Get all user accounts */
     getAllAccounts: () => WalletAccount[]
@@ -76,10 +76,7 @@ export const createMultisigStrategy = (
             // Sign with each local participant in parallel
             const participantResults = await Promise.all(
                 localParticipants.map(async participant => {
-                    const strategy = getStrategyForParticipant(
-                        participant,
-                        allAccounts,
-                    )
+                    const strategy = getStrategyForParticipant(participant)
                     return strategy.sign(group, participant, callbacks)
                 }),
             )

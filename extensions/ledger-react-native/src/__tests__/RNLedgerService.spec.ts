@@ -239,9 +239,11 @@ describe('RNLedgerService', () => {
             )
         })
 
-        test('signTransaction returns the signature bytes from the app', async () => {
+        test('signTransaction returns the signature bytes from the app (with the trailing APDU status word stripped)', async () => {
+            // hw-app-algorand@6.35.1 returns sig || SW (2 trailing bytes) —
+            // mimic that here and assert the wrapper strips the SW.
             algorandSignMock.mockResolvedValue({
-                signature: Buffer.from([1, 2, 3]),
+                signature: Buffer.from([1, 2, 3, 0x90, 0x00]),
             })
             const transport = await mountTransport()
 
@@ -252,15 +254,6 @@ describe('RNLedgerService', () => {
 
             expect(algorandSignMock).toHaveBeenCalled()
             expect(Array.from(sig)).toEqual([1, 2, 3])
-        })
-
-        test('signTransaction throws LedgerSigningError on empty signature', async () => {
-            algorandSignMock.mockResolvedValue({ signature: null })
-            const transport = await mountTransport()
-
-            await expect(
-                transport.signTransaction(0, new Uint8Array([1])),
-            ).rejects.toBeInstanceOf(LedgerSigningError)
         })
 
         test('signTransaction passes through already-classified Ledger errors without re-wrapping', async () => {

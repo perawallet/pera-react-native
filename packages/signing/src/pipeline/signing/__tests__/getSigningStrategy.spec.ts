@@ -110,4 +110,104 @@ describe('createSigningStrategySelector', () => {
             CannotSignError,
         )
     })
+
+    describe('multisig participant strategy (rekey MUST be bypassed)', () => {
+        // The multisig participant slot on chain is bound to the participant's
+        // ORIGINAL pubkey at multisig creation, so the participant signs with
+        // its own keys regardless of any rekey indirection. The selector
+        // returned to multisigStrategy.getStrategyForParticipant must therefore
+        // NOT consult resolveAuthAccount for participants.
+        const buildSign = (
+            participants: WalletAccount[],
+            signTransactions = vi.fn().mockResolvedValue([]),
+        ) => {
+            mocks.isMultisigAccount.mockImplementation(
+                a => a.type === 'multisig',
+            )
+            mocks.isHardwareWalletAccount.mockImplementation(
+                a => a.type === 'hardware',
+            )
+            mocks.hasSigningKeys.mockImplementation(a => a.type === 'algo25')
+            // Configure resolveAuthAccount to return a DIFFERENT-typed
+            // account if it is consulted — so any unintended call would
+            // pick the wrong strategy and fail the assertion.
+            mocks.resolveAuthAccount.mockImplementation(
+                (account: WalletAccount) => {
+                    if (account.type === 'algo25') {
+                        return {
+                            type: 'hardware',
+                            address: `${account.address}_AUTH`,
+                        } as unknown as WalletAccount
+                    }
+                    if (account.type === 'hardware') {
+                        return {
+                            type: 'algo25',
+                            address: `${account.address}_AUTH`,
+                        } as unknown as WalletAccount
+                    }
+                    return account
+                },
+            )
+
+            const select = createSigningStrategySelector({
+                signTransactions,
+                signArbitraryData: vi.fn(),
+                signArc60: vi.fn(),
+                getLocalParticipants: vi.fn(() => participants),
+                getAllAccounts: vi.fn(() => participants),
+                encodeTransaction: vi.fn(),
+            })
+            return { select, signTransactions }
+        }
+
+        const fakeGroup = {
+            data: { type: 'transactions', transactions: [], indicesToSign: [] },
+            source: { type: 'multisig-cosign', signRequestId: 'sr-1' },
+            signerAddress: 'M',
+            analysis: {
+                totalFees: 0n,
+                transactionSummaries: [],
+                warnings: [],
+                signableAddresses: [],
+                riskLevel: 'low',
+            },
+        } as never
+
+        test('picks the local strategy for a local-key participant even when its rekey target is hardware', async () => {
+            const participant = algo25Account
+            const { select, signTransactions } = buildSign([participant])
+
+            const strategy = select(multisigAccount, [participant])
+            await strategy.sign(fakeGroup, multisigAccount)
+
+            // The participant's local-key signing function must be invoked,
+            // proving the local strategy was picked (NOT the hardware
+            // strategy that the participant's rekey target would select).
+            expect(signTransactions).toHaveBeenCalledTimes(1)
+            // resolveAuthAccount must NOT have been consulted for the
+            // participant address — multisig slots ignore rekey.
+            for (const call of mocks.resolveAuthAccount.mock.calls) {
+                expect((call[0] as WalletAccount).address).not.toBe(
+                    participant.address,
+                )
+            }
+        })
+
+        test('throws CannotSignError when participant has no own signing capability (rekey is not consulted as a fallback)', async () => {
+            const orphan = {
+                type: 'watch',
+                address: 'WATCH',
+            } as unknown as WalletAccount
+            const { select } = buildSign([orphan])
+
+            const strategy = select(multisigAccount, [orphan])
+
+            await expect(
+                strategy.sign(fakeGroup, multisigAccount),
+            ).rejects.toThrow(CannotSignError)
+            for (const call of mocks.resolveAuthAccount.mock.calls) {
+                expect((call[0] as WalletAccount).address).not.toBe('WATCH')
+            }
+        })
+    })
 })

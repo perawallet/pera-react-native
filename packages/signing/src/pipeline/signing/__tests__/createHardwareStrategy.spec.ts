@@ -187,7 +187,69 @@ describe('createHardwareStrategy', () => {
                 expect(result.signedData.signed[0].sig).toEqual(MOCK_SIGNATURE)
                 expect(result.signedData.signed[1].sig).toEqual(MOCK_SIGNATURE)
             }
-            expect(result.signers).toEqual([{ address: SIGNER_ADDRESS }])
+            // signers[].signatures is populated from each signed txn's `sig`
+            // field so the multisig cosign transport can post them to the
+            // backend's `responses[].signatures`. The cosign-specific path is
+            // verified in its own test below.
+            const expectedSig = Buffer.from(MOCK_SIGNATURE).toString('base64')
+            expect(result.signers).toEqual([
+                {
+                    address: SIGNER_ADDRESS,
+                    signatures: [expectedSig, expectedSig],
+                },
+            ])
+        })
+
+        it('populates signers[].signatures with base64-encoded sig bytes (multisig cosign feeds the backend from this)', async () => {
+            // Regression: Ledger cosign of a multisig request used to produce
+            // an empty `signatures: [[]]` body because this strategy never
+            // surfaced the on-device signatures into SignerInfo. The backend
+            // then rejected with "Lengths of transaction list and signature
+            // list should be equal."
+            const strategy = createHardwareStrategy({
+                hardwareWalletRegistry: mockRegistry,
+                encodeTransaction,
+            })
+            const txns = [mockTransaction(), mockTransaction()]
+            const group = makeGroup(txns, [0, 1])
+            const account = makeLedgerAccount()
+
+            const result = await strategy.sign(group, account)
+
+            expect(result.signers).toHaveLength(1)
+            expect(result.signers[0].address).toBe(SIGNER_ADDRESS)
+            const expectedSig = Buffer.from(MOCK_SIGNATURE).toString('base64')
+            expect(result.signers[0].signatures).toEqual([
+                expectedSig,
+                expectedSig,
+            ])
+        })
+
+        it('emits null entries in signatures for indices the Ledger did not sign', async () => {
+            // Mirrors createLocalKeyStrategy: unsigned slots in the group are
+            // represented as `null` in signers[].signatures so the array
+            // length matches `signedData.signed` and the backend's
+            // "lengths must be equal" check is satisfied.
+            const strategy = createHardwareStrategy({
+                hardwareWalletRegistry: mockRegistry,
+                encodeTransaction,
+            })
+            const txns = [
+                mockTransaction(),
+                mockTransaction(),
+                mockTransaction(),
+            ]
+            const group = makeGroup(txns, [1]) // only sign index 1
+            const account = makeLedgerAccount()
+
+            const result = await strategy.sign(group, account)
+
+            const expectedSig = Buffer.from(MOCK_SIGNATURE).toString('base64')
+            expect(result.signers[0].signatures).toEqual([
+                null,
+                expectedSig,
+                null,
+            ])
         })
 
         it('signs transactions in sequential order (not concurrent)', async () => {

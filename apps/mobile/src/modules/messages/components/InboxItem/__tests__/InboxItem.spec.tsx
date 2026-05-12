@@ -16,13 +16,18 @@ import { InboxItem } from '../InboxItem'
 import type { InboxItem as InboxItemModel } from '@perawallet/wallet-core-messages'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
-    truncateAlgorandAddress: vi.fn(
-        (addr: string) => `${addr.slice(0, 5)}...${addr.slice(-5)}`,
-    ),
-    formatRelativeTime: vi.fn(() => 'just now'),
-    formatTimeRemaining: vi.fn(() => '52m'),
-}))
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    return {
+        ...actual,
+        truncateAlgorandAddress: vi.fn(
+            (addr: string) => `${addr.slice(0, 5)}...${addr.slice(-5)}`,
+        ),
+        formatRelativeTime: vi.fn(() => 'just now'),
+        formatTimeRemaining: vi.fn(() => '52m'),
+    }
+})
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
