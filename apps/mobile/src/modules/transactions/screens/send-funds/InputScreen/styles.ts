@@ -80,9 +80,6 @@ export const useStyles = makeStyles(theme => {
             gap: theme.spacing.sm,
             alignItems: 'center',
         },
-        accountDisplaySubHeading: {
-            marginTop: theme.spacing.xxs,
-        },
         headerTitleContainer: {
             alignItems: 'center',
         },
