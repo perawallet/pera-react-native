@@ -23,7 +23,6 @@ export const PWView = ({ children, style, testID, ...props }: PWViewProps) => {
             style={style}
             {...getTestProps(testID)}
             {...props}
-            collapsable={false}
         >
             {children}
         </View>
