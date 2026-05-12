@@ -76,7 +76,10 @@ export const useSettingsSecurityScreen =
         const handleBiometricToggle = useCallback(
             async (value: boolean): Promise<boolean> => {
                 if (value) {
-                    const success = await enableBiometrics()
+                    const success = await enableBiometrics({
+                        title: t('security.biometric.enable_prompt_title'),
+                        cancelLabel: t('security.biometric.cancel_label'),
+                    })
 
                     if (!success) {
                         showToast({

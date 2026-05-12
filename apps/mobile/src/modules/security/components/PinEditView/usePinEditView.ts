@@ -95,7 +95,10 @@ export const usePinEditView = ({
             ;(async () => {
                 const enabled = await checkBiometricsEnabled()
                 if (cancelled || !enabled) return
-                const success = await authenticateWithBiometrics()
+                const success = await authenticateWithBiometrics({
+                    title: t('security.biometric.unlock_prompt_title'),
+                    cancelLabel: t('security.biometric.cancel_label'),
+                })
                 if (cancelled || !success) return
                 resetFailedAttempts()
                 setHasError(false)

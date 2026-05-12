@@ -1094,6 +1094,11 @@
             "subtitle": "Too many incorrect PIN attempts",
             "tryagain_in": "Try again in",
             "reset_button": "Reset All Data"
+        },
+        "biometric": {
+            "enable_prompt_title": "Enable biometric login",
+            "unlock_prompt_title": "Unlock Pera Wallet",
+            "cancel_label": "Cancel"
         }
     },
     "send_funds": {

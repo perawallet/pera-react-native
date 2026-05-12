@@ -75,6 +75,35 @@ describe('useLockScreen', () => {
         })
     })
 
+    it('does NOT attempt biometric auth when the user is locked out', async () => {
+        // Simulate the user mounting the lock screen mid-lockout. The PIN
+        // exponential backoff is meaningless if biometric auth still bypasses
+        // it — so the effect must short-circuit on isLockedOut.
+        const lockoutEndTime = Date.now() + 60_000
+        ;(usePinCode as Mock).mockReturnValue({
+            verifyPin: mockVerifyPin,
+            handleFailedAttempt: mockHandleFailedAttempt,
+            resetFailedAttempts: mockResetFailedAttempts,
+            isLockedOut: true,
+            lockoutEndTime,
+            setLockoutEndTime: mockSetLockoutEndTime,
+        })
+        mockCheckBiometricsEnabled.mockResolvedValue(true)
+        mockAuthenticateWithBiometrics.mockResolvedValue(true)
+
+        renderHook(() => useLockScreen({ onUnlock: mockOnUnlock }))
+
+        // Flush microtasks; if the effect was going to call biometrics it
+        // would have queued the work by now.
+        await act(async () => {
+            await Promise.resolve()
+        })
+
+        expect(mockCheckBiometricsEnabled).not.toHaveBeenCalled()
+        expect(mockAuthenticateWithBiometrics).not.toHaveBeenCalled()
+        expect(mockOnUnlock).not.toHaveBeenCalled()
+    })
+
     describe('handlePinComplete', () => {
         it('should call onUnlock when PIN is valid', async () => {
             mockVerifyPin.mockResolvedValue(true)

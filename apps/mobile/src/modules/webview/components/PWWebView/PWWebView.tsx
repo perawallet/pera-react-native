@@ -100,13 +100,18 @@ export const PWWebView = (props: PWWebViewProps) => {
         enablePeraConnect ? contextFingerprints : undefined,
     )
 
+    // Re-evaluated on every navigation event below — the bridge must downgrade
+    // to untrusted as soon as the WebView leaves the trusted base origin
+    // (redirect, link click, JS-driven navigation, opened iframe top-nav).
+    const [currentUrl, setCurrentUrl] = useState(url)
+
     const isSecure = useMemo(
         () =>
-            isTrustedWebviewOrigin(url, [
+            isTrustedWebviewOrigin(currentUrl, [
                 config.onrampBaseUrl,
                 config.discoverBaseUrl,
             ]),
-        [url],
+        [currentUrl],
     )
 
     const provider = usePeraProvider()
@@ -127,7 +132,7 @@ export const PWWebView = (props: PWWebViewProps) => {
     const mobileInterface = usePeraWebviewInterface(
         webview.current,
         isSecure,
-        url,
+        currentUrl,
         onCloseRequested,
         onBack,
     )
@@ -169,6 +174,13 @@ export const PWWebView = (props: PWWebViewProps) => {
         (navState: WebViewNativeEvent) => {
             logger.debug('WebView: Navigation state change', { navState })
             setNavigationState(navState)
+            // navState.url reflects the page the WebView is actually showing
+            // (after redirects, link clicks, JS-driven nav). Drive isSecure
+            // off of that so a navigation away from a trusted origin
+            // immediately downgrades the bridge to untrusted.
+            if (navState.url) {
+                setCurrentUrl(navState.url)
+            }
         },
         [],
     )
