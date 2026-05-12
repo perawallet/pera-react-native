@@ -17,6 +17,7 @@ import {
     PWText,
     PWTouchableOpacity,
     PWView,
+    PWScrollView,
 } from '@components/core'
 import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 
@@ -34,7 +35,6 @@ import { LoadingView } from '@components/LoadingView'
 import { useTransactionConfirmationScreen } from './useTransactionConfirmationScreen'
 import { CloseAccountWarning } from './CloseAccountWarning'
 import { RecipientBelowMbrWarning } from '../RecipientBelowMbrWarning/RecipientBelowMbrWarning'
-import { ScrollView } from 'react-native'
 
 export const TransactionConfirmationScreen = () => {
     const styles = useStyles()
@@ -68,7 +68,7 @@ export const TransactionConfirmationScreen = () => {
 
     return (
         <PWView style={styles.container}>
-            <ScrollView contentContainerStyle={styles.scrollContent}>
+            <PWScrollView contentContainerStyle={styles.scrollContent}>
                 <KeyValueRow title={t('send_funds.confirmation.amount')}>
                     <CurrencyDisplay
                         variant='h3'
@@ -199,7 +199,7 @@ export const TransactionConfirmationScreen = () => {
                     onClose={closeNote}
                     onDismiss={closeNote}
                 />
-            </ScrollView>
+            </PWScrollView>
         </PWView>
     )
 }
