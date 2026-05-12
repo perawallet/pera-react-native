@@ -14,28 +14,32 @@ import { useCallback } from 'react'
 import {
     useHardwareSigningStore,
     type HardwareSigningStatus,
+    type LedgerSigningErrorPayload,
 } from '../store/hardwareSigningStore'
 import type { SignRequest } from '../models'
 
 export type UseHardwareSigningResult = {
-    /** True while a hardware-wallet signing session is in progress. */
-    isActive: boolean
     /**
-     * Current phase of the hardware signing session.
-     * `idle` is returned while `isActive` is false.
+     * True while a hardware-wallet signing session has a visible UI.
+     * Excludes the silent BLE-scan phase ('searching'), so the overlay
+     * stays hidden until the device responds — matching native Android.
      */
+    isActive: boolean
+    /** Current phase of the hardware signing session. */
     status: HardwareSigningStatus
+    /** User-visible device name captured at session start, if any. */
+    deviceName: string | null
     /** 1-based index of the transaction currently being signed, if any. */
-    currentTx: number | undefined
+    currentTx: number | null
     /** Total number of transactions in the active signing session, if any. */
-    totalTxs: number | undefined
+    totalTxs: number | null
     /** Id of the sign request the overlay is currently bound to, if any. */
-    requestId: string | undefined
+    requestId: string | null
+    /** Typed error payload when status is 'error'. Null otherwise. */
+    error: LedgerSigningErrorPayload | null
     /**
      * Resolve the active sign request from the caller's queue. Returns
-     * `undefined` when the overlay has drifted ahead of the queue (for
-     * instance, on a terminal transition where the queue has already
-     * popped the request).
+     * `undefined` when the overlay has drifted ahead of the queue.
      */
     resolveActiveRequest: (
         pendingSignRequests: SignRequest[],
@@ -45,15 +49,14 @@ export type UseHardwareSigningResult = {
 }
 
 /**
- * Business-logic hook over the hardware-wallet signing UI state. Returns
- * the active status, progress, and the id of the request that is driving
- * the overlay, plus helpers for resolving/dismissing the overlay.
+ * Business-logic hook over the hardware-wallet signing UI state. Surfaces
+ * everything the overlay's adapter hook needs to render or hide the sheet
+ * and to wire cancel/retry to the signing machine.
  *
  * Cancel/retry are intentionally NOT exposed here — those map to the
- * signing machine via `useSigningRequest`, which the UI layer already
- * holds. Keeping this hook free of that dependency means it only touches
- * `useHardwareSigningStore`, so it stays cheap to mock and doesn't pull
- * the full signing-actor lifecycle into every overlay test.
+ * signing machine via `useSigningRequest`, held by the UI layer. Keeping
+ * this hook free of that dependency means it only touches
+ * `useHardwareSigningStore`, so it stays cheap to mock.
  *
  * Today the only hardware-wallet path is Ledger (transaction signing).
  * ARC-60 and arbitrary-data requests are rejected by the hardware
@@ -62,26 +65,28 @@ export type UseHardwareSigningResult = {
  */
 export const useHardwareSigning = (): UseHardwareSigningResult => {
     const status = useHardwareSigningStore(state => state.status)
+    const deviceName = useHardwareSigningStore(state => state.deviceName)
     const currentTx = useHardwareSigningStore(state => state.currentTx)
     const totalTxs = useHardwareSigningStore(state => state.totalTxs)
     const requestId = useHardwareSigningStore(state => state.requestId)
+    const error = useHardwareSigningStore(state => state.error)
     const reset = useHardwareSigningStore(state => state.reset)
 
     const resolveActiveRequest = useCallback(
         (pendingSignRequests: SignRequest[]) =>
-            // Resolve by id rather than assuming pendingSignRequests[0] —
-            // the queue can advance to the next request before the UI
-            // has dismissed the overlay.
             pendingSignRequests.find(r => r.id === requestId),
         [requestId],
     )
 
     return {
-        isActive: status !== 'idle',
+        // 'searching' is the silent BLE-scan phase; the overlay stays hidden.
+        isActive: status !== 'idle' && status !== 'searching',
         status,
-        currentTx: currentTx ?? undefined,
-        totalTxs: totalTxs ?? undefined,
-        requestId: requestId ?? undefined,
+        deviceName,
+        currentTx,
+        totalTxs,
+        requestId,
+        error,
         resolveActiveRequest,
         dismiss: reset,
     }
