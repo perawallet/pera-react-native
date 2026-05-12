@@ -18,8 +18,19 @@ import {
     LedgerTimeoutError,
     LedgerUserRejectedError,
     LedgerAddressMismatchError,
+    LedgerBluetoothDisabledError,
+    LedgerPermissionDeniedError,
+    LedgerScanTimeoutError,
+    LedgerSigningFailedError,
+    LedgerTransmissionError,
+    LedgerPublicKeyReadError,
+    LedgerNetworkError,
+    LedgerUnsupportedDeviceError,
 } from '@perawallet/wallet-core-ledger'
-import { getLedgerErrorPreset } from '../ledgerErrorPresets'
+import {
+    getLedgerErrorPreset,
+    type LedgerErrorPresetKind,
+} from '../ledgerErrorPresets'
 
 const t = (key: string) => key
 
@@ -41,12 +52,12 @@ describe('getLedgerErrorPreset', () => {
         expect(preset.kind).toBe('connection_lost')
     })
 
-    it('maps LedgerTimeoutError to timeout preset', () => {
+    it('maps LedgerTimeoutError to scan_timeout preset (generic timeout collapses for UX)', () => {
         const preset = getLedgerErrorPreset(
             new LedgerTimeoutError('discovery'),
             t,
         )
-        expect(preset.kind).toBe('timeout')
+        expect(preset.kind).toBe('scan_timeout')
     })
 
     it('maps LedgerConnectionError to connection_failed preset', () => {
@@ -100,5 +111,74 @@ describe('LedgerErrorPreset flags', () => {
             t,
         )
         expect(preset.isRetryable).toBe(false)
+    })
+})
+
+describe('LedgerErrorPreset 13-kind taxonomy', () => {
+    type Translate = (key: string, options?: Record<string, unknown>) => string
+    const t: Translate = key => key
+
+    const cases: Array<
+        [Error, LedgerErrorPresetKind, { trbl: boolean; retry: boolean }]
+    > = [
+        [
+            new LedgerBluetoothDisabledError(),
+            'bluetooth_disabled',
+            { trbl: true, retry: true },
+        ],
+        [
+            new LedgerPermissionDeniedError(),
+            'bluetooth_permission',
+            { trbl: true, retry: true },
+        ],
+        [
+            new LedgerScanTimeoutError('x'),
+            'scan_timeout',
+            { trbl: true, retry: true },
+        ],
+        [
+            new LedgerSigningFailedError('x'),
+            'signing_failed',
+            { trbl: false, retry: true },
+        ],
+        [
+            new LedgerTransmissionError('x'),
+            'transmission_error',
+            { trbl: false, retry: true },
+        ],
+        [
+            new LedgerPublicKeyReadError(),
+            'public_key_read_failed',
+            { trbl: false, retry: true },
+        ],
+        [
+            new LedgerNetworkError(),
+            'network_error',
+            { trbl: false, retry: true },
+        ],
+        [
+            new LedgerUnsupportedDeviceError(),
+            'unsupported_device',
+            { trbl: false, retry: false },
+        ],
+    ]
+
+    it.each(cases)(
+        '%s → kind=%s, flags as expected',
+        (error, expectedKind, flags) => {
+            const preset = getLedgerErrorPreset(error, t)
+            expect(preset.kind).toBe(expectedKind)
+            expect(preset.isTroubleshootable).toBe(flags.trbl)
+            expect(preset.isRetryable).toBe(flags.retry)
+        },
+    )
+
+    it('LedgerScanTimeoutError beats LedgerTimeoutError because subclass matches first', () => {
+        // LedgerScanTimeoutError does NOT extend LedgerTimeoutError, but the
+        // KIND_BY_ERROR priority list must put scan_timeout before timeout
+        // matchers so that future subclass relationships do not silently
+        // reclassify it.
+        const preset = getLedgerErrorPreset(new LedgerScanTimeoutError('x'), t)
+        expect(preset.kind).toBe('scan_timeout')
     })
 })

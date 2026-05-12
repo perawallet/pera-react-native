@@ -12,20 +12,35 @@
 
 import {
     LedgerAppNotOpenError,
+    LedgerAddressMismatchError,
+    LedgerBluetoothDisabledError,
     LedgerConnectionError,
     LedgerDisconnectedError,
+    LedgerNetworkError,
+    LedgerPermissionDeniedError,
+    LedgerPublicKeyReadError,
+    LedgerScanTimeoutError,
+    LedgerSigningFailedError,
     LedgerTimeoutError,
+    LedgerTransmissionError,
+    LedgerUnsupportedDeviceError,
     LedgerUserRejectedError,
-    LedgerAddressMismatchError,
 } from '@perawallet/wallet-core-ledger'
 
 export type LedgerErrorPresetKind =
-    | 'app_not_open'
-    | 'user_rejected'
-    | 'connection_lost'
-    | 'timeout'
+    | 'bluetooth_disabled'
+    | 'bluetooth_permission'
+    | 'scan_timeout'
     | 'connection_failed'
+    | 'connection_lost'
+    | 'user_rejected'
+    | 'signing_failed'
+    | 'transmission_error'
+    | 'public_key_read_failed'
+    | 'app_not_open'
     | 'address_mismatch'
+    | 'network_error'
+    | 'unsupported_device'
 
 export type LedgerErrorPreset = {
     kind: LedgerErrorPresetKind
@@ -38,18 +53,35 @@ export type LedgerErrorPreset = {
 type Translate = (key: string, options?: Record<string, unknown>) => string
 
 const TROUBLESHOOTABLE_KINDS: ReadonlySet<LedgerErrorPresetKind> = new Set([
+    'bluetooth_disabled',
+    'bluetooth_permission',
+    'scan_timeout',
     'connection_failed',
     'connection_lost',
 ])
 
 const NON_RETRYABLE_KINDS: ReadonlySet<LedgerErrorPresetKind> = new Set([
     'address_mismatch',
+    'unsupported_device',
 ])
 
 const KIND_BY_ERROR: Array<{
     match: (error: Error) => boolean
     kind: LedgerErrorPresetKind
 }> = [
+    // Order: subclasses / specific cases first, generic cases last.
+    {
+        match: error => error instanceof LedgerBluetoothDisabledError,
+        kind: 'bluetooth_disabled',
+    },
+    {
+        match: error => error instanceof LedgerPermissionDeniedError,
+        kind: 'bluetooth_permission',
+    },
+    {
+        match: error => error instanceof LedgerScanTimeoutError,
+        kind: 'scan_timeout',
+    },
     {
         match: error => error instanceof LedgerUserRejectedError,
         kind: 'user_rejected',
@@ -59,16 +91,37 @@ const KIND_BY_ERROR: Array<{
         kind: 'app_not_open',
     },
     {
+        match: error => error instanceof LedgerAddressMismatchError,
+        kind: 'address_mismatch',
+    },
+    {
+        match: error => error instanceof LedgerSigningFailedError,
+        kind: 'signing_failed',
+    },
+    {
+        match: error => error instanceof LedgerTransmissionError,
+        kind: 'transmission_error',
+    },
+    {
+        match: error => error instanceof LedgerPublicKeyReadError,
+        kind: 'public_key_read_failed',
+    },
+    {
+        match: error => error instanceof LedgerNetworkError,
+        kind: 'network_error',
+    },
+    {
+        match: error => error instanceof LedgerUnsupportedDeviceError,
+        kind: 'unsupported_device',
+    },
+    {
         match: error => error instanceof LedgerDisconnectedError,
         kind: 'connection_lost',
     },
+    // Generic timeout collapses into scan_timeout for the UX.
     {
         match: error => error instanceof LedgerTimeoutError,
-        kind: 'timeout',
-    },
-    {
-        match: error => error instanceof LedgerAddressMismatchError,
-        kind: 'address_mismatch',
+        kind: 'scan_timeout',
     },
     {
         match: error => error instanceof LedgerConnectionError,
