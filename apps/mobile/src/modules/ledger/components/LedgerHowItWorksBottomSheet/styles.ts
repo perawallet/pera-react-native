@@ -12,8 +12,6 @@
 
 import { makeStyles } from '@rneui/themed'
 
-const BULLET_SIZE = 24
-
 export const useStyles = makeStyles(theme => ({
     container: {
         paddingHorizontal: theme.spacing.xl,
@@ -32,9 +30,9 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.md,
     },
     bullet: {
-        width: BULLET_SIZE,
-        height: BULLET_SIZE,
-        borderRadius: BULLET_SIZE / 2,
+        width: theme.spacing.xl,
+        height: theme.spacing.xl,
+        borderRadius: theme.spacing.xl / 2,
         backgroundColor: theme.colors.positiveLighter,
         alignItems: 'center',
         justifyContent: 'center',

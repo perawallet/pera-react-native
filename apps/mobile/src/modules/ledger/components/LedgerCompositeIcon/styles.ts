@@ -12,7 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 
-const DOT_SIZE = 4
+// 6px sits between theme.spacing.xs (4) and sm (8) — no token matches.
 const DOT_GAP = 6
 
 export const useStyles = makeStyles(theme => ({
@@ -27,9 +27,9 @@ export const useStyles = makeStyles(theme => ({
         gap: DOT_GAP,
     },
     dot: {
-        width: DOT_SIZE,
-        height: DOT_SIZE,
-        borderRadius: DOT_SIZE / 2,
+        width: theme.spacing.xs,
+        height: theme.spacing.xs,
+        borderRadius: theme.spacing.xs / 2,
         backgroundColor: theme.colors.textMain,
     },
 }))

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useLayoutEffect } from 'react'
+import { useCallback, useLayoutEffect } from 'react'
 import {
     PWView,
     PWText,
@@ -53,11 +53,14 @@ export const LedgerScanScreen = () => {
         })
     }, [navigation, handleTroubleshoot, t])
 
-    const renderItem = ({ item }: { item: HardwareWalletDevice }) => (
-        <LedgerDeviceItem
-            device={item}
-            onPress={handleDevicePress}
-        />
+    const renderItem = useCallback(
+        ({ item }: { item: HardwareWalletDevice }) => (
+            <LedgerDeviceItem
+                device={item}
+                onPress={handleDevicePress}
+            />
+        ),
+        [handleDevicePress],
     )
 
     const renderEmptyState = () => {

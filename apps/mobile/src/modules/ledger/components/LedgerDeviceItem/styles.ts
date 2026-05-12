@@ -12,8 +12,6 @@
 
 import { makeStyles } from '@rneui/themed'
 
-import { palette } from '@theme/colors'
-
 const ICON_CONTAINER_SIZE = 40
 
 export const useStyles = makeStyles(theme => ({
@@ -26,10 +24,11 @@ export const useStyles = makeStyles(theme => ({
         borderRadius: theme.borderRadius.md,
         marginHorizontal: theme.spacing.xl,
         marginBottom: theme.spacing.md,
-        shadowColor: palette.black,
-        shadowOffset: { width: 0, height: 2 },
+        // Card elevation sits between theme.shadows.sm and .md. Reuse sm's
+        // color/offset/radius and bump opacity/elevation to match design.
+        // Promote to a `card` shadow token if a third instance shows up.
+        ...theme.shadows.sm,
         shadowOpacity: 0.08,
-        shadowRadius: 4,
         elevation: 3,
     },
     iconContainer: {

@@ -122,11 +122,16 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         }
     }, [deviceId, transportType, selectedAccounts])
 
+    // Run verify once on mount. The ref guards against React StrictMode's
+    // dev-only double-invoke (a second call would race the first against a
+    // different transport instance). Route params are stable for the screen's
+    // lifetime, so an empty dep array is intentional.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         if (hasStartedRef.current) return
         hasStartedRef.current = true
         verify()
-    }, [verify])
+    }, [])
 
     const handleAdd = useCallback(() => {
         const hwAccounts = selectedAccounts.map((acc: LedgerAccount) => ({
