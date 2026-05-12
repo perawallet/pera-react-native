@@ -26,21 +26,9 @@ import {
     LedgerUnsupportedDeviceError,
     LedgerUserRejectedError,
 } from '@perawallet/wallet-core-ledger'
+import type { LedgerErrorPresetKind } from '@perawallet/wallet-core-signing'
 
-export type LedgerErrorPresetKind =
-    | 'bluetooth_disabled'
-    | 'bluetooth_permission'
-    | 'scan_timeout'
-    | 'connection_failed'
-    | 'connection_lost'
-    | 'user_rejected'
-    | 'signing_failed'
-    | 'transmission_error'
-    | 'public_key_read_failed'
-    | 'app_not_open'
-    | 'address_mismatch'
-    | 'network_error'
-    | 'unsupported_device'
+export type { LedgerErrorPresetKind }
 
 export type LedgerErrorPreset = {
     kind: LedgerErrorPresetKind

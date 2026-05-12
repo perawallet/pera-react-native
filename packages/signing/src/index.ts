@@ -21,4 +21,7 @@ export * from './pipeline'
 export {
     useHardwareSigningStore,
     type HardwareSigningStatus,
+    type LedgerSigningErrorPayload,
 } from './store/hardwareSigningStore'
+
+export type { LedgerErrorPresetKind } from './types/ledgerErrorPresetKind'
