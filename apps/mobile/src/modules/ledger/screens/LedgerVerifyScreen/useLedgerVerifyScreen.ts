@@ -173,7 +173,9 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         [error, verificationState, t],
     )
 
-    const areAllVerified = verifiedIndices.size === selectedAccounts.length
+    const areAllVerified =
+        selectedAccounts.length > 0 &&
+        verifiedIndices.size === selectedAccounts.length
 
     return {
         selectedAccounts,

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     useLedgerConnection as useLedgerConnectionCore,
@@ -82,13 +82,17 @@ export const useLedgerConnection = (): UseLedgerConnectionWrapperResult => {
 
     const core = useLedgerConnectionCore(supportedProviders)
 
+    // Stable no-op so consumers that put `startScan` in an effect dep array
+    // don't re-run their effects on every render of this hook.
+    const noopStartScan = useCallback(() => {}, [])
+
     return {
         ...core,
         // Suppress scanning until the support check has resolved. Without
         // this guard, the very first `startScan()` runs against an empty
         // provider list, briefly transitioning the UI through 'scanning'
         // → 'disconnected' → 'scanning' as the query resolves.
-        startScan: isReady ? core.startScan : () => {},
+        startScan: isReady ? core.startScan : noopStartScan,
         isReady,
     }
 }

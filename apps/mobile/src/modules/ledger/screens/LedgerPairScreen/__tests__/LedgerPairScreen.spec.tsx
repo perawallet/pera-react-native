@@ -16,7 +16,9 @@ import { render, screen, fireEvent } from '@test-utils/render'
 
 const { mockNavigate, mockOpenURL, mockSetOptions } = vi.hoisted(() => ({
     mockNavigate: vi.fn(),
-    mockOpenURL: vi.fn(),
+    // The real Linking.openURL returns a Promise; match that so the
+    // hook's `.catch` handler can attach.
+    mockOpenURL: vi.fn(() => Promise.resolve()),
     mockSetOptions: vi.fn(),
 }))
 

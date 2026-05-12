@@ -42,7 +42,10 @@ export const useLedgerPairScreen = (): UseLedgerPairScreenResult => {
     }, [])
 
     const handleOpenSupport = useCallback(() => {
-        Linking.openURL(t('ledger.pair.support_url'))
+        Linking.openURL(t('ledger.pair.support_url')).catch(() => {
+            // Browser missing or URL unhandleable — silently no-op rather
+            // than crashing with an unhandled promise rejection.
+        })
     }, [t])
 
     return {
