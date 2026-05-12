@@ -31,9 +31,20 @@ export type LedgerErrorPreset = {
     kind: LedgerErrorPresetKind
     title: string
     body: string
+    isTroubleshootable: boolean
+    isRetryable: boolean
 }
 
 type Translate = (key: string, options?: Record<string, unknown>) => string
+
+const TROUBLESHOOTABLE_KINDS: ReadonlySet<LedgerErrorPresetKind> = new Set([
+    'connection_failed',
+    'connection_lost',
+])
+
+const NON_RETRYABLE_KINDS: ReadonlySet<LedgerErrorPresetKind> = new Set([
+    'address_mismatch',
+])
 
 const KIND_BY_ERROR: Array<{
     match: (error: Error) => boolean
@@ -84,5 +95,7 @@ export const getLedgerErrorPreset = (
         kind,
         title: t(`ledger.errors.${kind}_title`),
         body: t(`ledger.errors.${kind}`),
+        isTroubleshootable: TROUBLESHOOTABLE_KINDS.has(kind),
+        isRetryable: !NON_RETRYABLE_KINDS.has(kind),
     }
 }

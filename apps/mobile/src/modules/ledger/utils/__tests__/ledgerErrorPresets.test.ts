@@ -77,3 +77,28 @@ describe('getLedgerErrorPreset', () => {
         expect(preset.kind).toBe('connection_failed')
     })
 })
+
+describe('LedgerErrorPreset flags', () => {
+    type Translate = (key: string, options?: Record<string, unknown>) => string
+    const t: Translate = key => key
+
+    it('returns isTroubleshootable=true for connection_failed', () => {
+        const preset = getLedgerErrorPreset(new LedgerConnectionError('x'), t)
+        expect(preset.isTroubleshootable).toBe(true)
+        expect(preset.isRetryable).toBe(true)
+    })
+
+    it('returns isTroubleshootable=false for user_rejected', () => {
+        const preset = getLedgerErrorPreset(new LedgerUserRejectedError(), t)
+        expect(preset.isTroubleshootable).toBe(false)
+        expect(preset.isRetryable).toBe(true) // can retry by re-initiating
+    })
+
+    it('returns isRetryable=false for address_mismatch', () => {
+        const preset = getLedgerErrorPreset(
+            new LedgerAddressMismatchError('A', 'B'),
+            t,
+        )
+        expect(preset.isRetryable).toBe(false)
+    })
+})
