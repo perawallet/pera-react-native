@@ -1796,7 +1796,16 @@
             "confirm": "Please review and approve the transaction on your Ledger device.",
             "timeout": "The transaction was not confirmed in time. Please try again.",
             "cancel": "Cancel",
-            "progress": "Signing transaction {{current}} of {{total}}..."
+            "retry": "Retry",
+            "footnote": "Verification will continue on Ledger. To cancel verification, cancel from Ledger.",
+            "awaitingApproval": {
+                "title": "Ledger Approval",
+                "body": "Please review and sign the transaction on your Ledger device {{deviceName}}.",
+                "body_noDevice": "Please review and sign the transaction on your Ledger device."
+            },
+            "progress": {
+                "label": "Signing {{current}} out of {{total}}…"
+            }
         },
         "errors": {
             "app_not_open": "The Algorand app is not open on your Ledger device.",
@@ -1807,14 +1816,29 @@
             "user_rejected_title": "Cancelled on device",
             "bluetooth_disabled": "Bluetooth is not enabled. Please enable Bluetooth and try again.",
             "bluetooth_disabled_title": "Bluetooth is off",
+            "bluetooth_permission_title": "Permission required",
+            "bluetooth_permission": "Bluetooth scan permission needs to be granted in order to search for nearby Ledgers.",
+            "scan_timeout_title": "Couldn't find your Ledger",
+            "scan_timeout": "Make sure the device is unlocked, nearby and has Bluetooth enabled.",
             "connection_failed": "Failed to connect to the Ledger device.",
             "connection_failed_title": "Connection failed",
+            "signing_failed_title": "Signing failed",
+            "signing_failed": "Failed to sign transaction. Please try again.",
+            "transmission_error_title": "Transmission error",
+            "transmission_error": "We were unable to send the transaction to the Ledger device. Please try again.",
+            "public_key_read_failed_title": "Transmission error",
+            "public_key_read_failed": "We were unable to receive the public key from your Ledger device. Please try again.",
+            "network_error_title": "Connection error",
+            "network_error": "A network error occurred. Please try again.",
+            "unsupported_device_title": "Unsupported device",
+            "unsupported_device": "This Ledger device is not supported.",
             "timeout": "Your Ledger device did not respond in time. Please try again.",
             "timeout_title": "Request timed out",
             "address_mismatch": "The address on your Ledger device does not match the expected address. Please verify you selected the correct account.",
             "address_mismatch_title": "Address Mismatch",
             "retry": "Try again",
-            "troubleshoot": "Troubleshoot"
+            "troubleshoot": "Troubleshoot",
+            "troubleshooting_link": "Having Ledger connection issues?"
         },
         "troubleshooting": {
             "title": "Having Ledger connection issues?",
@@ -1828,7 +1852,13 @@
             "issue_bluetooth": "Bluetooth must be enabled on your device in order to search for nearby Ledger devices.",
             "issue_permissions": "Bluetooth scan permission needs to be granted in order to search for nearby Ledgers.",
             "issue_unsupported": "Pera supports Ledger Nano X, Stax, Flex, and Nano Gen5.",
-            "done": "Got it"
+            "done": "Got it",
+            "tip_unlocked": "Make sure the device is unlocked",
+            "tip_nearby": "Make sure the device is nearby",
+            "tip_bluetooth": "Make sure Bluetooth is enabled",
+            "tip_app_open": "Make sure the Algorand app is open on your Ledger",
+            "tip_repair": "If problems persist, try re-pairing the device from Settings",
+            "close": "Close"
         },
         "scan_header": {
             "having_issues": "Having issues?"
