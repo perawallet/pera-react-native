@@ -12,10 +12,29 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { createActor, toPromise } from 'xstate'
+
+// Hardware-participant signing reaches into `Address.fromString` for rekey
+// detection. The fixture addresses below are not canonical 58-char Algorand
+// addresses, so stub it the same way createHardwareStrategy.spec.ts does.
+vi.mock('@perawallet/wallet-core-blockchain', async () => {
+    const actual = await vi.importActual('@perawallet/wallet-core-blockchain')
+    return {
+        ...actual,
+        Address: {
+            fromString: (addr: string) => ({ address: addr }),
+        },
+    }
+})
+
 import { multisigSignerActor } from '../multisigSignerActor'
 import type { MultisigSignerActorInput } from '../multisigSignerActor'
 import type { AnalyzedSignableGroup } from '../../../../pipeline/types'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    createHardwareWalletRegistry,
+    type HardwareWalletTransport,
+    type HardwareWalletTransportProvider,
+} from '@perawallet/wallet-core-hardware-wallet'
 import {
     CannotSignError,
     NoLocalParticipantsError,
@@ -41,6 +60,31 @@ const makeMultisigAccount = (): WalletAccount =>
 
 const makeAlgo25Account = (address: string, keyPairId = 'key'): WalletAccount =>
     ({ type: 'algo25', address, keyPairId }) as unknown as WalletAccount
+
+const MOCK_HARDWARE_SIG = new Uint8Array([0xab, 0xcd, 0xef])
+
+const makeMockTransport = (address: string): HardwareWalletTransport => ({
+    getAddress: vi.fn().mockResolvedValue({
+        address,
+        publicKey: new Uint8Array(32),
+        accountIndex: 0,
+    }),
+    signTransaction: vi.fn().mockResolvedValue(MOCK_HARDWARE_SIG),
+    disconnect: vi.fn().mockResolvedValue(undefined),
+})
+
+const makeMockRegistry = (transport: HardwareWalletTransport) => {
+    const provider: HardwareWalletTransportProvider = {
+        manufacturer: 'ledger',
+        transportType: 'ble',
+        scan: () => () => {},
+        connect: vi.fn().mockResolvedValue(transport),
+        isSupported: vi.fn().mockResolvedValue(true),
+    }
+    const registry = createHardwareWalletRegistry()
+    registry.register(provider)
+    return registry
+}
 
 const mockTxn = { txn: {} } as never
 const mockGroup = (
@@ -211,32 +255,67 @@ describe('multisigSignerActor', () => {
         expect(results[1].signers[0].address).toBe(otherParticipant)
     })
 
-    it('does not auto-sign hardware participants (Ledger gets per-row Sign UI in PR 3)', async () => {
-        const ledgerParticipant: WalletAccount = {
+    it('signs hardware participants via hardwareStrategy alongside local-key participants', async () => {
+        const ledgerParticipant = {
             type: 'hardware',
             address: PARTICIPANT_B,
-            // no keyPairId — canSignWithAccount returns false
+            hardwareDetails: {
+                manufacturer: 'ledger',
+                deviceId: 'device-1',
+                deviceName: 'Nano X',
+                accountIndex: 0,
+                transportType: 'ble',
+            },
         } as unknown as WalletAccount
 
+        const transport = makeMockTransport(PARTICIPANT_B)
+        const hardwareWalletRegistry = makeMockRegistry(transport)
+        const encodeTransaction = vi
+            .fn()
+            .mockReturnValue(new Uint8Array([0x01]))
         const signTransactions = vi
             .fn()
-            .mockResolvedValue([{ txn: {}, sig: new Uint8Array([99]) }])
+            .mockResolvedValue([{ txn: {}, sig: new Uint8Array([0x42]) }])
+
+        // Hardware strategy reads `txn.sender.toString()` to detect rekey, so
+        // the txn shape needs a `sender` here (the local-key path doesn't
+        // touch the txn body, so the other tests get away with `{ txn: {} }`).
+        const hardwareReadyGroup: AnalyzedSignableGroup = {
+            ...mockGroup(),
+            data: {
+                type: 'transactions',
+                transactions: [
+                    { sender: { toString: () => MULTISIG_ADDRESS } } as never,
+                ],
+                indicesToSign: [0],
+            },
+        }
+
         const input = buildInput({
+            groups: [hardwareReadyGroup],
             allAccounts: [
                 makeMultisigAccount(),
                 makeAlgo25Account(PARTICIPANT_A),
                 ledgerParticipant,
             ],
             signTransactions,
+            encodeTransaction,
+            hardwareWalletRegistry,
         })
 
         const actor = createActor(multisigSignerActor, { input })
         actor.start()
         const results = await toPromise(actor)
 
-        // Only the local-key participant signs
-        expect(results[0].signers).toHaveLength(1)
-        expect(results[0].signers[0].address).toBe(PARTICIPANT_A)
+        // Both participants produce signatures: the algo25 one via the local
+        // signTransactions function, and the Ledger one via the hardware
+        // strategy (which goes through the registry's transport).
+        expect(results[0].signers).toHaveLength(2)
+        expect(results[0].signers.map(s => s.address).sort()).toEqual([
+            PARTICIPANT_A,
+            PARTICIPANT_B,
+        ])
         expect(signTransactions).toHaveBeenCalledTimes(1)
+        expect(transport.signTransaction).toHaveBeenCalledTimes(1)
     })
 })
