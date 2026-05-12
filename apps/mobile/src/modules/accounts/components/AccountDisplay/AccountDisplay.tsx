@@ -94,7 +94,7 @@ export const AccountDisplay = ({
                         {displayName}
                     </PWText>
                 )}
-                {renderSecondary && (
+                {(compact || renderSecondary) && (
                     <PWText
                         style={styles.addressText}
                         variant='caption'

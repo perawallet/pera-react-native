@@ -94,10 +94,7 @@ export const InputScreen = () => {
                 <AccountDisplay
                     account={selectedAccount ?? undefined}
                     style={styles.accountDisplay}
-                    iconProps={{ width: 16, height: 16 }}
-                    textProps={{
-                        style: styles.accountDisplaySubHeading,
-                    }}
+                    iconProps={{ size: 'sm' }}
                     showChevron={false}
                     compact
                 />
