@@ -12,8 +12,10 @@
 
 import { describe, it, expect, vi } from 'vitest'
 
+let mockIdCounter = 0
 vi.mock('@perawallet/wallet-core-shared', () => ({
     decodeFromBase64: (s: string) => new Uint8Array(Buffer.from(s, 'base64')),
+    generateOrderedUniqueId: () => `mock-id-${++mockIdCounter}`,
 }))
 
 vi.mock(import('@perawallet/wallet-core-multisig'), async importOriginal => {
@@ -108,6 +110,30 @@ describe('buildMultisigCosignRequest', () => {
         expect(result.signerOverrides).toBeDefined()
         expect(result.signerOverrides!.get(0)).toBe('B')
         expect(result.signerOverrides!.get(1)).toBe('B')
+    })
+
+    it('assigns a non-empty unique id to each cosign request', () => {
+        // Regression: an empty id collides in the actor map and `??` fall-
+        // backs further upstream, so two cosigns trample each other and a
+        // stale `lastFailedRequest` falsely matches any future cosign.
+        const decodeTransaction = vi.fn(
+            () => ({}) as unknown as PeraTransaction,
+        )
+
+        const a = buildMultisigCosignRequest({
+            signRequest: buildSignRequest(),
+            signerAddress: 'A',
+            decodeTransaction,
+        })
+        const b = buildMultisigCosignRequest({
+            signRequest: buildSignRequest(),
+            signerAddress: 'B',
+            decodeTransaction,
+        })
+
+        expect(a.id).not.toBe('')
+        expect(b.id).not.toBe('')
+        expect(a.id).not.toBe(b.id)
     })
 
     it('throws when the sign request has no transaction lists', () => {

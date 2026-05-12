@@ -12,7 +12,6 @@
 
 import { fireEvent, render, screen } from '@test-utils/render'
 import { describe, expect, it, vi } from 'vitest'
-import type { MultisigSignRequest } from '@perawallet/wallet-core-multisig'
 import type { UsePendingSignaturesBottomSheetResult } from '../usePendingSignaturesBottomSheet'
 
 vi.mock('@components/AddressDisplay', () => ({
@@ -57,31 +56,11 @@ import { PendingSignaturesBottomSheet } from '../PendingSignaturesBottomSheet'
 const ADDRESS_A = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
 const ADDRESS_B = 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB'
 
-const buildSignRequest = (): MultisigSignRequest =>
-    ({
-        id: 'sr-1',
-        status: 'expired',
-        type: 'async',
-        createdAt: new Date('2026-05-06T09:00:00Z'),
-        expectedExpireDatetime: new Date('2026-05-06T10:00:00Z'),
-        failReasonDisplay: null,
-        multisigAccount: {
-            customId: 'm-1',
-            createdAt: new Date('2026-05-06T09:00:00Z'),
-            address: 'MULTISIG',
-            version: 1,
-            threshold: 2,
-            participantAddresses: [ADDRESS_A, ADDRESS_B],
-        },
-        transactionLists: [],
-    }) as unknown as MultisigSignRequest
-
 const buildHookResult = (
     overrides: Partial<UsePendingSignaturesBottomSheetResult> = {},
 ): UsePendingSignaturesBottomSheetResult => ({
     isVisible: true,
-    isLoading: false,
-    signRequest: buildSignRequest(),
+    hasSignRequest: true,
     status: 'expired',
     bannerVariant: 'failure',
     failureBannerKey: 'multisig.pending_signatures.canceled',
@@ -90,12 +69,23 @@ const buildHookResult = (
     timeRemaining: null,
     failReason: null,
     signers: [
-        { address: ADDRESS_A, status: 'signed' },
-        { address: ADDRESS_B, status: 'unsigned' },
+        {
+            address: ADDRESS_A,
+            status: 'signed',
+            canSignAsHardware: false,
+            isSigning: false,
+        },
+        {
+            address: ADDRESS_B,
+            status: 'unsigned',
+            canSignAsHardware: false,
+            isSigning: false,
+        },
     ],
     handleClose: vi.fn(),
     canSign: false,
     handleSign: vi.fn(),
+    handleSignParticipant: vi.fn(),
     canCancel: false,
     isCancelling: false,
     isCancelConfirmOpen: false,
@@ -136,8 +126,18 @@ describe('PendingSignaturesBottomSheet', () => {
                 bannerVariant: 'waiting',
                 timeRemaining: '52m',
                 signers: [
-                    { address: ADDRESS_A, status: 'signed' },
-                    { address: ADDRESS_B, status: 'pending' },
+                    {
+                        address: ADDRESS_A,
+                        status: 'signed',
+                        canSignAsHardware: false,
+                        isSigning: false,
+                    },
+                    {
+                        address: ADDRESS_B,
+                        status: 'pending',
+                        canSignAsHardware: false,
+                        isSigning: false,
+                    },
                 ],
             }),
         )
@@ -165,8 +165,18 @@ describe('PendingSignaturesBottomSheet', () => {
                 status: 'confirmed',
                 bannerVariant: 'success',
                 signers: [
-                    { address: ADDRESS_A, status: 'signed' },
-                    { address: ADDRESS_B, status: 'signed' },
+                    {
+                        address: ADDRESS_A,
+                        status: 'signed',
+                        canSignAsHardware: false,
+                        isSigning: false,
+                    },
+                    {
+                        address: ADDRESS_B,
+                        status: 'signed',
+                        canSignAsHardware: false,
+                        isSigning: false,
+                    },
                 ],
             }),
         )
@@ -188,8 +198,7 @@ describe('PendingSignaturesBottomSheet', () => {
     it('renders a loading indicator and hides the body whenever the sign request data is not available', () => {
         usePendingSignaturesBottomSheetMock.mockReturnValue(
             buildHookResult({
-                isLoading: true,
-                signRequest: null,
+                hasSignRequest: false,
                 status: null,
                 bannerVariant: 'waiting',
                 signedCount: 0,
@@ -215,11 +224,10 @@ describe('PendingSignaturesBottomSheet', () => {
         ).toBeTruthy()
     })
 
-    it('keeps the loading indicator visible even after isLoading flips to false if the sign request is still null', () => {
+    it('keeps the loading indicator visible whenever signRequest is null (component gates on data, not the query loading flag)', () => {
         usePendingSignaturesBottomSheetMock.mockReturnValue(
             buildHookResult({
-                isLoading: false,
-                signRequest: null,
+                hasSignRequest: false,
                 status: null,
                 bannerVariant: 'waiting',
                 signers: [],
@@ -365,6 +373,87 @@ describe('PendingSignaturesBottomSheet', () => {
         fireEvent.click(screen.getByTestId('pending_signatures_sign_button'))
 
         expect(handleSign).toHaveBeenCalledTimes(1)
+    })
+
+    it('renders a per-row Sign action when a participant row reports canSignAsHardware', () => {
+        usePendingSignaturesBottomSheetMock.mockReturnValue(
+            buildHookResult({
+                status: 'pending',
+                bannerVariant: 'waiting',
+                signers: [
+                    {
+                        address: ADDRESS_A,
+                        status: 'signed',
+                        canSignAsHardware: false,
+                        isSigning: false,
+                    },
+                    {
+                        address: ADDRESS_B,
+                        status: 'pending',
+                        canSignAsHardware: true,
+                        isSigning: false,
+                    },
+                ],
+            }),
+        )
+
+        render(<PendingSignaturesBottomSheet />)
+
+        expect(
+            screen.getByTestId(`signer_status_action_${ADDRESS_B}`),
+        ).toBeTruthy()
+        // The signed row should not have a per-row action.
+        expect(
+            screen.queryByTestId(`signer_status_action_${ADDRESS_A}`),
+        ).toBeNull()
+    })
+
+    it('renders the per-row action in a loading state while the row reports isSigning', () => {
+        usePendingSignaturesBottomSheetMock.mockReturnValue(
+            buildHookResult({
+                status: 'pending',
+                bannerVariant: 'waiting',
+                signers: [
+                    {
+                        address: ADDRESS_B,
+                        status: 'pending',
+                        canSignAsHardware: false,
+                        isSigning: true,
+                    },
+                ],
+            }),
+        )
+
+        render(<PendingSignaturesBottomSheet />)
+
+        expect(
+            screen.getByTestId(`signer_status_action_${ADDRESS_B}`),
+        ).toBeTruthy()
+    })
+
+    it('invokes handleSignParticipant with the row address when the per-row Sign is pressed', () => {
+        const handleSignParticipant = vi.fn()
+        usePendingSignaturesBottomSheetMock.mockReturnValue(
+            buildHookResult({
+                status: 'pending',
+                bannerVariant: 'waiting',
+                handleSignParticipant,
+                signers: [
+                    {
+                        address: ADDRESS_B,
+                        status: 'pending',
+                        canSignAsHardware: true,
+                        isSigning: false,
+                    },
+                ],
+            }),
+        )
+
+        render(<PendingSignaturesBottomSheet />)
+        fireEvent.click(screen.getByTestId(`signer_status_action_${ADDRESS_B}`))
+
+        expect(handleSignParticipant).toHaveBeenCalledTimes(1)
+        expect(handleSignParticipant).toHaveBeenCalledWith(ADDRESS_B)
     })
 
     it('opens the cancel confirmation when the Cancel button is pressed', () => {

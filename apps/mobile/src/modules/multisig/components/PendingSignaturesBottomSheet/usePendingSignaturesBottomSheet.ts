@@ -19,10 +19,8 @@ import {
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import {
     ACTIONABLE_SIGN_REQUEST_STATUSES,
-    FAILURE_SIGN_REQUEST_STATUSES,
     FINALIZED_SIGN_REQUEST_STATUSES,
     useSignRequestDetailQuery,
-    type MultisigSignRequest,
     type SignRequestStatus,
 } from '@perawallet/wallet-core-multisig'
 import { formatTimeRemaining } from '@perawallet/wallet-core-shared'
@@ -30,21 +28,19 @@ import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import { useMultisigSignRequestDecline } from '../../hooks/useMultisigSignRequestDecline'
 import { usePendingSignaturesSheetStore } from '../../stores/usePendingSignaturesSheetStore'
 import { buildMultisigCosignRequest } from '../../utils/buildMultisigCosignRequest'
+import { buildSignerRows, type SignerRow } from '../../utils/buildSignerRows'
+import { getInFlightCosignAddresses } from '../../utils/getInFlightCosignAddresses'
 import { getLocalUnsignedSigners } from '../../utils/getLocalUnsignedSigners'
+import {
+    getStatusBannerVariant,
+    type StatusBannerVariant,
+} from '../../utils/getStatusBannerVariant'
 import { getSignedResponseCount } from '../../utils/signRequestStatus'
-import type { SignerStatus } from '../SignerStatusListItem'
-
-export type SignerRow = {
-    address: string
-    status: SignerStatus
-}
-
-type StatusBannerVariant = 'waiting' | 'success' | 'failure'
+import { splitLocalUnsignedSigners } from '../../utils/splitLocalUnsignedSigners'
 
 export type UsePendingSignaturesBottomSheetResult = {
     isVisible: boolean
-    isLoading: boolean
-    signRequest: MultisigSignRequest | null
+    hasSignRequest: boolean
     status: SignRequestStatus | null
     bannerVariant: StatusBannerVariant
     /**
@@ -62,6 +58,7 @@ export type UsePendingSignaturesBottomSheetResult = {
     handleClose: () => void
     canSign: boolean
     handleSign: () => void
+    handleSignParticipant: (address: string) => void
     canCancel: boolean
     isCancelling: boolean
     isCancelConfirmOpen: boolean
@@ -83,7 +80,7 @@ export const usePendingSignaturesBottomSheet =
         const deviceId = useDeviceID(network) ?? ''
         const accounts = useAllAccounts()
         const { decodeTransaction } = useTransactionEncoder()
-        const { addSignRequest } = useSigningRequest()
+        const { addSignRequest, pendingSignRequests } = useSigningRequest()
         const signRequestId = usePendingSignaturesSheetStore(
             state => state.signRequestId,
         )
@@ -92,61 +89,70 @@ export const usePendingSignaturesBottomSheet =
         )
         const isVisible = signRequestId !== null
 
-        const { data: signRequest, isLoading } = useSignRequestDetailQuery({
+        const { data: signRequestData } = useSignRequestDetailQuery({
             network,
             deviceId,
             signRequestId: signRequestId ?? '',
-            enabled: isVisible,
+            enabled: isVisible && deviceId !== '',
             pollWhilePending: true,
         })
+        const signRequest = signRequestData ?? null
 
         const status = signRequest?.status ?? null
 
-        const bannerVariant: StatusBannerVariant = useMemo(() => {
-            if (!status) return 'waiting'
-            if (status === 'confirmed') return 'success'
-            if (FAILURE_SIGN_REQUEST_STATUSES.has(status)) return 'failure'
-            return 'waiting'
-        }, [status])
+        const bannerVariant: StatusBannerVariant =
+            getStatusBannerVariant(status)
 
-        const signedCount = useMemo(
-            () => (signRequest ? getSignedResponseCount(signRequest) : 0),
-            [signRequest],
-        )
+        const signedCount = signRequest
+            ? getSignedResponseCount(signRequest)
+            : 0
 
         const threshold = signRequest?.multisigAccount.threshold ?? 0
 
-        const timeRemaining = useMemo(() => {
-            if (!signRequest) return null
-            if (status && FINALIZED_SIGN_REQUEST_STATUSES.has(status))
-                return null
-            return formatTimeRemaining(signRequest.expectedExpireDatetime)
-        }, [signRequest, status])
+        const timeRemaining =
+            !signRequest ||
+            (status && FINALIZED_SIGN_REQUEST_STATUSES.has(status))
+                ? null
+                : formatTimeRemaining(signRequest.expectedExpireDatetime)
 
-        const signers: SignerRow[] = useMemo(() => {
+        const {
+            localKey: localKeyUnsignedSigners,
+            hardware: hardwareUnsignedSet,
+        } = useMemo(() => {
+            if (
+                !signRequest ||
+                !status ||
+                !ACTIONABLE_SIGN_REQUEST_STATUSES.has(status)
+            ) {
+                return { localKey: [], hardware: new Set<string>() }
+            }
+            return splitLocalUnsignedSigners(
+                getLocalUnsignedSigners(signRequest, accounts),
+            )
+        }, [signRequest, status, accounts])
+
+        /**
+         * Source of truth for `isSigning` is the signing store: once the
+         * actor finishes (success → backend addSignatures → next
+         * sign-request-detail poll observes the signed response; failure →
+         * request moves to `lastFailedRequest`), the entry drops from
+         * `pendingSignRequests` and `isSigning` flips back to false.
+         */
+        const inFlightCosignAddresses = useMemo(
+            () =>
+                getInFlightCosignAddresses(pendingSignRequests, signRequestId),
+            [pendingSignRequests, signRequestId],
+        )
+
+        const signers = useMemo(() => {
             if (!signRequest) return []
-            const isFinalized =
-                status !== null && FINALIZED_SIGN_REQUEST_STATUSES.has(status)
-            const responses = signRequest.transactionLists[0]?.responses ?? []
-            const responseByAddress = new Map(
-                responses.map(r => [r.address, r]),
-            )
-            return signRequest.multisigAccount.participantAddresses.map(
-                address => {
-                    const response = responseByAddress.get(address)
-                    if (response?.response === 'signed') {
-                        return { address, status: 'signed' as const }
-                    }
-                    if (response?.response === 'declined') {
-                        return { address, status: 'declined' as const }
-                    }
-                    const unrespondedStatus: SignerStatus = isFinalized
-                        ? 'unsigned'
-                        : 'pending'
-                    return { address, status: unrespondedStatus }
-                },
-            )
-        }, [signRequest, status])
+            return buildSignerRows({
+                signRequest,
+                status,
+                hardwareUnsignedSet,
+                inFlightCosignAddresses,
+            })
+        }, [signRequest, status, hardwareUnsignedSet, inFlightCosignAddresses])
 
         const failureBannerKey =
             (status && FAILURE_BANNER_KEY_BY_STATUS[status]) ??
@@ -156,34 +162,46 @@ export const usePendingSignaturesBottomSheet =
             closeSheet()
         }, [closeSheet])
 
-        const localUnsignedSigners = useMemo(() => {
-            if (!signRequest) return []
-            if (!status || !ACTIONABLE_SIGN_REQUEST_STATUSES.has(status))
-                return []
-            return getLocalUnsignedSigners(signRequest, accounts)
-        }, [signRequest, status, accounts])
+        const canSign = localKeyUnsignedSigners.length > 0
 
-        const canSign = localUnsignedSigners.length > 0
-
-        const handleSign = useCallback(() => {
-            if (!signRequest) return
-            if (localUnsignedSigners.length === 0) return
-            for (const signer of localUnsignedSigners) {
+        const dispatchCosign = useCallback(
+            (address: string) => {
+                if (!signRequest) return
                 const cosignRequest = buildMultisigCosignRequest({
                     signRequest,
-                    signerAddress: signer.address,
+                    signerAddress: address,
                     decodeTransaction,
                 })
                 addSignRequest(cosignRequest)
+            },
+            [signRequest, decodeTransaction, addSignRequest],
+        )
+
+        const handleSign = useCallback(() => {
+            if (!signRequest) return
+            if (localKeyUnsignedSigners.length === 0) return
+            for (const signer of localKeyUnsignedSigners) {
+                dispatchCosign(signer.address)
             }
-            closeSheet()
-        }, [
-            signRequest,
-            localUnsignedSigners,
-            decodeTransaction,
-            addSignRequest,
-            closeSheet,
-        ])
+        }, [signRequest, localKeyUnsignedSigners, dispatchCosign])
+
+        const handleSignParticipant = useCallback(
+            (address: string) => {
+                if (!signRequest) return
+                if (!status || !ACTIONABLE_SIGN_REQUEST_STATUSES.has(status))
+                    return
+                if (!hardwareUnsignedSet.has(address)) return
+                if (inFlightCosignAddresses.has(address)) return
+                dispatchCosign(address)
+            },
+            [
+                signRequest,
+                status,
+                hardwareUnsignedSet,
+                inFlightCosignAddresses,
+                dispatchCosign,
+            ],
+        )
 
         const {
             canPerform: canCancel,
@@ -194,7 +212,7 @@ export const usePendingSignaturesBottomSheet =
             handleConfirm: cancelMutationCall,
         } = useMultisigSignRequestDecline({
             mode: 'cancel',
-            signRequest: signRequest ?? null,
+            signRequest,
         })
 
         const handleConfirmCancel = useCallback(async () => {
@@ -204,8 +222,7 @@ export const usePendingSignaturesBottomSheet =
 
         return {
             isVisible,
-            isLoading,
-            signRequest: signRequest ?? null,
+            hasSignRequest: signRequest !== null,
             status,
             bannerVariant,
             failureBannerKey,
@@ -217,6 +234,7 @@ export const usePendingSignaturesBottomSheet =
             handleClose,
             canSign,
             handleSign,
+            handleSignParticipant,
             canCancel,
             isCancelling,
             isCancelConfirmOpen,

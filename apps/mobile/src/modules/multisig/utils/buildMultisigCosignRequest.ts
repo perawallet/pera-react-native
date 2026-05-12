@@ -12,7 +12,10 @@
 
 import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
 import type { MultisigSignRequest } from '@perawallet/wallet-core-multisig'
-import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
+import {
+    decodeFromBase64,
+    generateOrderedUniqueId,
+} from '@perawallet/wallet-core-shared'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
 
 type BuildMultisigCosignRequestParams = {
@@ -45,7 +48,12 @@ export const buildMultisigCosignRequest = ({
     )
 
     return {
-        id: '',
+        // A real id is required so the actor map, queue dedup, and inline-
+        // error guards in SignRequestView keep cosign requests distinct.
+        // The lifecycle hooks fall back to `??` (null-coalescing), which
+        // doesn't substitute for empty strings — handing in a real id here
+        // is the only reliable place to do it.
+        id: generateOrderedUniqueId(),
         type: 'transactions',
         transport: 'callback',
         sourceType: 'multisig-cosign',

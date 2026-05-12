@@ -24,8 +24,9 @@ import type {
     LedgerDevice,
     LedgerAccount,
 } from './types'
-import { classifyLedgerError, LedgerSigningError } from './errors'
+import { classifyLedgerError } from './errors'
 import { resolveDeviceModel, buildLedgerAccountPath } from './constants'
+import { extractLedgerSignature } from './signature'
 
 /**
  * Wraps a connected Ledger BLE transport + Algorand app instance
@@ -62,12 +63,7 @@ const createTransportWrapper = (
             // hw-app-algorand.sign() expects a hex string message
             const hexMessage = bytesToHex(txnBytes)
             const result = await algorandApp.sign(path, hexMessage)
-
-            if (!result.signature) {
-                throw new LedgerSigningError('Empty signature returned')
-            }
-
-            return Uint8Array.from(result.signature)
+            return extractLedgerSignature(result.signature)
         } catch (error) {
             throw classifyLedgerError(error)
         }

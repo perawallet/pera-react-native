@@ -15,7 +15,6 @@ import {
     hasSigningKeys,
     isHardwareWalletAccount,
     isMultisigAccount,
-    resolveAuthAccount,
 } from '@perawallet/wallet-core-accounts'
 import type {
     SignableGroup,
@@ -25,6 +24,7 @@ import type {
 } from '../pipeline/types'
 import { CannotSignError, HardwareWalletError } from '../pipeline/errors'
 import { validateTransactionGroupIntegrity } from '../utils/validateTransactionGroupIntegrity'
+import { resolveSigningAccount } from './utils/resolveSigningAccount'
 import type {
     GroupSignerTypeMap,
     ResolvedSignerType,
@@ -76,8 +76,10 @@ const determineSignerType = (
  * Resolves the signing type for every unique signer address in the request.
  * Iterates all signable groups and determines the signer type per address,
  * enabling the machine to dispatch each group to the correct actor.
+ *
+ * Rekey vs. multisig-cosign handling is delegated to {@link resolveSigningAccount}.
  */
-const buildGroupSignerTypeMap = (
+export const buildGroupSignerTypeMap = (
     groups: SignableGroup[],
     allAccounts: WalletAccount[],
 ): GroupSignerTypeMap => {
@@ -90,7 +92,11 @@ const buildGroupSignerTypeMap = (
         if (!signerAccount) {
             throw new Error(`Signer account not found: ${group.signerAddress}`)
         }
-        const authAccount = resolveAuthAccount(signerAccount, allAccounts)
+        const authAccount = resolveSigningAccount(
+            signerAccount,
+            group.source,
+            allAccounts,
+        )
         map.set(
             group.signerAddress,
             determineSignerType(signerAccount, authAccount),

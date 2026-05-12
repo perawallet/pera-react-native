@@ -22,7 +22,7 @@ import {
     type LocalArbitrarySigningFunction,
     type LocalArc60SigningFunction,
 } from '../../../pipeline/signing/createLocalKeyStrategy'
-import { resolveAuthAccount } from '@perawallet/wallet-core-accounts'
+import { resolveSigningAccount } from '../../utils/resolveSigningAccount'
 import { CannotSignError } from '../../../pipeline/errors'
 
 export type LocalKeySignerActorInput = {
@@ -67,16 +67,17 @@ export const localKeySignerActor = fromPromise<
                     'Account not found in allAccounts',
                 )
             }
-            // Multisig cosign: signerAddress is the participant whose slot we
-            // are filling. The slot is keyed by the participant's ORIGINAL
-            // pubkey at multisig creation, so rekey indirection must NOT be
-            // followed — we sign with the participant's own key. For all
-            // other sources (regular local txs, walletconnect, etc.) the
-            // standard rekey rule applies: the auth account's key signs.
-            const accountForSigning =
-                group.source.type === 'multisig-cosign'
-                    ? signerAccount
-                    : resolveAuthAccount(signerAccount, allAccounts)
+            // Rekey vs. multisig-cosign handling lives in
+            // {@link resolveSigningAccount}. This call is defense-in-depth:
+            // the upstream dispatcher (`buildGroupSignerTypeMap`) already
+            // classifies cosign groups by the participant's own type, but
+            // routing through the same helper keeps signing correct if the
+            // dispatch logic ever changes.
+            const accountForSigning = resolveSigningAccount(
+                signerAccount,
+                group.source,
+                allAccounts,
+            )
             return strategy.sign(group, accountForSigning)
         }),
     )

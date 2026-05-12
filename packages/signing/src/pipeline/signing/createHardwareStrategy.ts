@@ -25,13 +25,14 @@ import type {
     PeraSignedTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { Address } from '@perawallet/wallet-core-blockchain'
-import { withTimeout } from '@perawallet/wallet-core-shared'
+import { encodeToBase64, withTimeout } from '@perawallet/wallet-core-shared'
 import type {
     SigningStrategy,
     AnalyzedSignableGroup,
     TransactionSignableData,
     SigningResult,
     SigningCallbacks,
+    SignerInfo,
 } from '../types'
 import { CannotSignError, HardwareWalletError, SigningError } from '../errors'
 import {
@@ -354,9 +355,22 @@ export const createHardwareStrategy = (
                 },
             )
 
+            // Surface per-transaction base64 signatures on the signer so the
+            // multisig cosign transport can post them to the backend's
+            // `responses[].signatures` (mirrors createLocalKeyStrategy and
+            // createMultisigStrategy.extractSignatures). Without this, Ledger
+            // cosigns produce request bodies with `signatures: [[]]` and the
+            // backend rejects them with "Lengths of transaction list and
+            // signature list should be equal."
+            const signerInfo: SignerInfo = {
+                address: account.address,
+                signatures: signed.map(stx =>
+                    stx.sig ? encodeToBase64(stx.sig) : null,
+                ),
+            }
             return {
                 signedData: { type: 'transactions', signed },
-                signers: [{ address: account.address }],
+                signers: [signerInfo],
                 originalIndices: group.originalIndices,
             }
         },

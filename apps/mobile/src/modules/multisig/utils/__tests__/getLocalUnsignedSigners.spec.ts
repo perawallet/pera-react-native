@@ -119,28 +119,35 @@ describe('getLocalUnsignedSigners', () => {
         expect(result.map(x => x.address)).toEqual(['A'])
     })
 
-    it('excludes hardware-wallet participants (Ledger deferred)', () => {
+    it('includes hardware-wallet participants', () => {
         const a = buildAlgo25Account('A')
         const ledger = buildHardwareAccount('L')
         const signRequest = buildSignRequest(['A', 'L'])
 
         const result = getLocalUnsignedSigners(signRequest, [a, ledger])
 
-        expect(result.map(x => x.address)).toEqual(['A'])
+        expect(result.map(x => x.address)).toEqual(['A', 'L'])
     })
 
-    it('orders non-hardware participants before hardware ones (sort kicks in once Ledger filter is lifted)', () => {
-        // Hardware accounts are filtered out today, so the visible result is
-        // just ['A']. The participant order in the request lists the hardware
-        // address first to prove the sort comparator does not let a hardware
-        // entry slip ahead of A; when the hardware filter is later removed,
-        // this assertion will need to become ['A', 'L'] without changing the
-        // sort code.
+    it('orders non-hardware participants before hardware ones', () => {
         const a = buildAlgo25Account('A')
         const ledger = buildHardwareAccount('L')
         const signRequest = buildSignRequest(['L', 'A'])
 
         const result = getLocalUnsignedSigners(signRequest, [ledger, a])
+
+        expect(result.map(x => x.address)).toEqual(['A', 'L'])
+    })
+
+    it('excludes watch-only participants even when included in accounts', () => {
+        const a = buildAlgo25Account('A')
+        const watch: WalletAccount = {
+            type: AccountTypes.watch,
+            address: 'W',
+        }
+        const signRequest = buildSignRequest(['A', 'W'])
+
+        const result = getLocalUnsignedSigners(signRequest, [a, watch])
 
         expect(result.map(x => x.address)).toEqual(['A'])
     })

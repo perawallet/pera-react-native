@@ -13,7 +13,10 @@
 import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useTransactionProcessingScreen } from '../useTransactionProcessingScreen'
-import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
+import {
+    UserRejectedSigningError,
+    type TransportResult,
+} from '@perawallet/wallet-core-signing'
 
 const mockGoBack = vi.fn()
 const mockReplace = vi.fn()
@@ -27,9 +30,15 @@ vi.mock('@react-navigation/native', () => ({
 
 vi.mock('@react-navigation/stack', () => ({}))
 
-const { mockExecute } = vi.hoisted(() => ({
-    mockExecute: vi.fn(),
-}))
+const { mockExecute, mockOnFinished, lastTransportResultMock } = vi.hoisted(
+    () => ({
+        mockExecute: vi.fn(),
+        mockOnFinished: vi.fn(),
+        lastTransportResultMock: {
+            current: null as TransportResult | null,
+        },
+    }),
+)
 
 vi.mock('@perawallet/wallet-core-transactions', () => ({
     useTransactionSendFlow: () => ({
@@ -84,8 +93,18 @@ vi.mock('@modules/transactions/hooks', () => ({
         sendMode: 'normal' as const,
         arc59Summary: undefined,
         isCloseAccount: false,
+        onFinished: mockOnFinished,
     }),
 }))
+
+vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-signing')>()
+    return {
+        ...actual,
+        useLastTransportResult: () => lastTransportResultMock.current,
+    }
+})
 
 vi.mock('@components/core', () => ({
     bottomSheetNotifier: { current: null },
@@ -106,9 +125,19 @@ vi.mock('react-native', () => ({
     },
 }))
 
+const proposedResult = (
+    overrides: Partial<Extract<TransportResult, { type: 'proposed' }>> = {},
+): TransportResult => ({
+    type: 'proposed',
+    signRequestId: 'sr-1',
+    status: 'pending',
+    ...overrides,
+})
+
 describe('useTransactionProcessingScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        lastTransportResultMock.current = null
     })
 
     it('calls navigation.goBack and does not show an error toast when user cancels the signing overlay', async () => {
@@ -137,5 +166,59 @@ describe('useTransactionProcessingScreen', () => {
             expect.anything(),
         )
         expect(mockGoBack).toHaveBeenCalled()
+    })
+
+    it('exits the send-funds flow via onFinished when lastTransportResult transitions to a `proposed` result', () => {
+        // execute() never settles for multisig propose; the hook must rely
+        // on the lastTransportResult store change to know when to leave the
+        // screen.
+        mockExecute.mockReturnValue(new Promise(() => {}))
+
+        const { rerender } = renderHook(() => useTransactionProcessingScreen())
+
+        lastTransportResultMock.current = proposedResult()
+        rerender()
+
+        expect(mockOnFinished).toHaveBeenCalledTimes(1)
+        expect(mockGoBack).not.toHaveBeenCalled()
+        expect(mockReplace).not.toHaveBeenCalled()
+    })
+
+    it('does not call onFinished on a non-proposed transport result', () => {
+        mockExecute.mockReturnValue(new Promise(() => {}))
+
+        const { rerender } = renderHook(() => useTransactionProcessingScreen())
+
+        lastTransportResultMock.current = {
+            type: 'submitted',
+            txIds: ['tx-1'],
+        } as TransportResult
+        rerender()
+
+        expect(mockOnFinished).not.toHaveBeenCalled()
+    })
+
+    it('only exits once even if rerender observes the same proposed result repeatedly', () => {
+        mockExecute.mockReturnValue(new Promise(() => {}))
+
+        const { rerender } = renderHook(() => useTransactionProcessingScreen())
+
+        lastTransportResultMock.current = proposedResult()
+        rerender()
+        rerender()
+        rerender()
+
+        expect(mockOnFinished).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not exit when a stale lastTransportResult is already present at mount', () => {
+        // Simulates re-entering the send-funds flow with a leftover propose
+        // result in the store from a prior in-session send.
+        mockExecute.mockReturnValue(new Promise(() => {}))
+        lastTransportResultMock.current = proposedResult()
+
+        renderHook(() => useTransactionProcessingScreen())
+
+        expect(mockOnFinished).not.toHaveBeenCalled()
     })
 })

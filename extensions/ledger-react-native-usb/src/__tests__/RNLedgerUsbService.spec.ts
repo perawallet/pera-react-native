@@ -152,9 +152,11 @@ describe('RNLedgerUsbService', () => {
         expect(account.accountIndex).toBe(0)
     })
 
-    test('wrapped transport.signTransaction returns signature bytes', async () => {
+    test('wrapped transport.signTransaction returns signature bytes (with the trailing APDU status word stripped)', async () => {
+        // hw-app-algorand@6.35.1 returns sig || SW (2 trailing bytes) —
+        // mimic that here and assert the wrapper strips the SW.
         algorandSignMock.mockResolvedValue({
-            signature: Buffer.from([1, 2, 3]),
+            signature: Buffer.from([1, 2, 3, 0x90, 0x00]),
         })
 
         const transport = await connectToFirstDevice()

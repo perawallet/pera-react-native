@@ -81,12 +81,27 @@ export const createSigningStrategySelector = (
         encodeTransaction: options.encodeTransaction,
     })
 
-    // The multisig strategy delegates back to selectStrategy for each
-    // participant via a lazy callback, avoiding circular init issues.
+    // Given an account that is already the resolved signing account
+    // (i.e. rekey has been followed where applicable, or doesn't apply),
+    // pick the strategy that produces its signature.
+    const selectStrategyForAccount = (
+        account: WalletAccount,
+    ): SigningStrategy => {
+        if (isHardwareWalletAccount(account)) return hardwareStrategy
+        if (hasSigningKeys(account)) return localStrategy
+        throw new CannotSignError(
+            account.address,
+            `No signing capability found for account type: ${account.type}`,
+        )
+    }
+
     const multisigStrategy = createMultisigStrategy({
         getLocalParticipants: options.getLocalParticipants,
-        getStrategyForParticipant: (participant, allAccounts) =>
-            selectStrategy(participant, allAccounts),
+        // Multisig participant slots are bound to the participant's OWN pubkey
+        // at multisig creation — rekey indirection is intentionally NOT
+        // followed here, so we pass the participant straight to
+        // `selectStrategyForAccount` instead of going through `selectStrategy`.
+        getStrategyForParticipant: selectStrategyForAccount,
         getAllAccounts: options.getAllAccounts,
     })
 
@@ -94,26 +109,9 @@ export const createSigningStrategySelector = (
         account: WalletAccount,
         allAccounts: WalletAccount[],
     ): SigningStrategy => {
-        // Multisig accounts are handled by the multisig strategy
-        if (isMultisigAccount(account)) {
-            return multisigStrategy
-        }
-
-        // Follow rekey chain to find actual signer
-        const actualSigner = resolveAuthAccount(account, allAccounts)
-
-        // Select strategy based on actual signer type
-        if (isHardwareWalletAccount(actualSigner)) {
-            return hardwareStrategy
-        }
-
-        if (hasSigningKeys(actualSigner)) {
-            return localStrategy
-        }
-
-        throw new CannotSignError(
-            account.address,
-            `No signing capability found for account type: ${actualSigner.type}`,
+        if (isMultisigAccount(account)) return multisigStrategy
+        return selectStrategyForAccount(
+            resolveAuthAccount(account, allAccounts),
         )
     }
 

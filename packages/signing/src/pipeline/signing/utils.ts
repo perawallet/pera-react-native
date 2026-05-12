@@ -32,14 +32,17 @@ import {
  *
  * Multisig participant slots are validated against the participant's original
  * pubkey at multisig creation; rekey of the participant address has no effect
- * on its multisig slot. So the participant must hold its OWN local signing
- * keys — rekey indirection is intentionally NOT followed here. Hardware
- * participants are excluded (Ledger cosigning is deferred).
+ * on its multisig slot. So the participant must hold its OWN signing
+ * capability (local key or hardware device) — rekey indirection is
+ * intentionally NOT followed here. Hardware participants are included; the
+ * strategy selector routes them to `hardwareStrategy`, which prompts the
+ * connected Ledger device during signing.
  *
  * @param account - The multisig account
  * @param allAccounts - All accounts in the wallet
  * @returns Local accounts that are participants and can sign with their own
- *          keys, in participant-list order
+ *          keys (or via their backing hardware device), in participant-list
+ *          order
  */
 export const getLocalParticipants = (
     account: WalletAccount,
@@ -57,8 +60,11 @@ export const getLocalParticipants = (
             a => a.address === participantAddress,
         )
         if (!localAccount) return []
-        if (!hasSigningKeys(localAccount)) return []
-        if (isHardwareWalletAccount(localAccount)) return []
+        if (
+            !hasSigningKeys(localAccount) &&
+            !isHardwareWalletAccount(localAccount)
+        )
+            return []
         return [localAccount]
     })
 }

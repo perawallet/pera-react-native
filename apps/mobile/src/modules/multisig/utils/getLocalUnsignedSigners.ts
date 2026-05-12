@@ -18,8 +18,9 @@ import {
 import type { MultisigSignRequest } from '@perawallet/wallet-core-multisig'
 
 /**
- * Returns the local-key participants of a multisig sign request that have not
- * yet responded (signed or declined).
+ * Returns the local-signable participants of a multisig sign request that
+ * have not yet responded (signed or declined). Includes both local-key
+ * (Algo25, HD) and hardware-wallet (Ledger) participants.
  *
  * Multisig participant slots are validated on chain against the participant's
  * original pubkey at the time the multisig was created — rekeying a
@@ -28,18 +29,15 @@ import type { MultisigSignRequest } from '@perawallet/wallet-core-multisig'
  * is irrelevant. (Contrast: a regular tx with sender = rekeyed account is
  * signed by the rekey target's key.)
  *
- * TODO: Hardware-wallet participants are excluded from this PR — Ledger
- * cosigning is deferred.
- *
  * "Responded" means the participant has an entry in
  * `transactionLists[0].responses` with `response: 'signed' | 'declined'`.
  * No entry means the participant is still pending.
  *
  * Non-hardware participants are returned before hardware ones; within each
  * tier, the backend's `participantAddresses` order is preserved (stable
- * sort). The sort is a no-op while the hardware filter above is in place,
- * but kicks in once Ledger cosigning is enabled — instant local-key signers
- * dispatch first, device-prompt Ledger signers last.
+ * sort). Callers that batch-dispatch (the footer Sign button) sign instant
+ * local-key signers first; per-row dispatches for Ledger happen one device
+ * prompt at a time.
  */
 export const getLocalUnsignedSigners = (
     signRequest: MultisigSignRequest,
@@ -60,8 +58,8 @@ export const getLocalUnsignedSigners = (
 
         const account = allAccounts.find(a => a.address === participantAddress)
         if (!account) continue
-        if (!hasSigningKeys(account)) continue
-        if (isHardwareWalletAccount(account)) continue
+        if (!hasSigningKeys(account) && !isHardwareWalletAccount(account))
+            continue
 
         result.push(account)
     }

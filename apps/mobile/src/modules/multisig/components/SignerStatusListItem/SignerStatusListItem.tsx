@@ -10,25 +10,64 @@
  limitations under the License
  */
 
+import type { ReactNode } from 'react'
 import { ActivityIndicator } from 'react-native'
 import { useTheme } from '@rneui/themed'
-import { PWIcon, PWView } from '@components/core'
+import { PWButton, PWIcon, PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { useStyles } from './styles'
 
 export type SignerStatus = 'signed' | 'declined' | 'pending' | 'unsigned'
 
+export type SignerAction = {
+    label: string
+    onPress: () => void
+    isLoading?: boolean
+}
+
 export type SignerStatusListItemProps = {
     address: string
     status: SignerStatus
+    action?: SignerAction
 }
 
 export const SignerStatusListItem = ({
     address,
     status,
+    action,
 }: SignerStatusListItemProps) => {
     const styles = useStyles()
     const { theme } = useTheme()
+
+    const statusIcons: Record<SignerStatus, ReactNode> = {
+        signed: (
+            <PWIcon
+                name='check'
+                size='md'
+                variant='positive'
+            />
+        ),
+        declined: (
+            <PWIcon
+                name='cross'
+                size='md'
+                variant='error'
+            />
+        ),
+        pending: (
+            <ActivityIndicator
+                size='small'
+                color={theme.colors.textGray}
+            />
+        ),
+        unsigned: (
+            <PWIcon
+                name='minus'
+                size='md'
+                variant='secondary'
+            />
+        ),
+    }
 
     return (
         <PWView
@@ -41,35 +80,20 @@ export const SignerStatusListItem = ({
                 forceShowIcon
                 style={styles.addressDisplay}
             />
-            <PWView testID={`signer_status_icon_${status}_${address}`}>
-                {status === 'signed' && (
-                    <PWIcon
-                        name='check'
-                        size='md'
-                        variant='positive'
-                    />
-                )}
-                {status === 'declined' && (
-                    <PWIcon
-                        name='cross'
-                        size='md'
-                        variant='error'
-                    />
-                )}
-                {status === 'pending' && (
-                    <ActivityIndicator
-                        size='small'
-                        color={theme.colors.textGray}
-                    />
-                )}
-                {status === 'unsigned' && (
-                    <PWIcon
-                        name='minus'
-                        size='md'
-                        variant='secondary'
-                    />
-                )}
-            </PWView>
+            {action ? (
+                <PWButton
+                    variant='primary'
+                    paddingStyle='dense'
+                    title={action.label}
+                    onPress={action.onPress}
+                    isLoading={action.isLoading}
+                    testID={`signer_status_action_${address}`}
+                />
+            ) : (
+                <PWView testID={`signer_status_icon_${status}_${address}`}>
+                    {statusIcons[status]}
+                </PWView>
+            )}
         </PWView>
     )
 }
