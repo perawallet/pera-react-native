@@ -26,8 +26,8 @@ import Algorand from '@ledgerhq/hw-app-algorand'
 import {
     classifyLedgerError,
     LedgerConnectionError,
-    LedgerSigningError,
     buildLedgerAccountPath,
+    extractLedgerSignature,
 } from '@perawallet/wallet-extension-ledger-react-native/protocol'
 
 /**
@@ -57,11 +57,7 @@ const createTransportWrapper = (
             const path = buildLedgerAccountPath(accountIndex)
             const hexMessage = bytesToHex(txnBytes)
             const result = await algorandApp.sign(path, hexMessage)
-
-            if (!result.signature) {
-                throw new LedgerSigningError('Empty signature returned')
-            }
-            return Uint8Array.from(result.signature)
+            return extractLedgerSignature(result.signature)
         } catch (error) {
             throw classifyLedgerError(error)
         }

@@ -153,6 +153,9 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
     const setLastFailedRequest = useSigningStore(
         state => state.setLastFailedRequest,
     )
+    const setLastTransportResult = useSigningStore(
+        state => state.setLastTransportResult,
+    )
 
     const { signTransactions } = useLocalKeyTransactionSigner()
     const { signArbitraryData } = useArbitraryDataSigner()
@@ -168,9 +171,11 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
     const removeSignRequestFromStoreRef = useRef(removeSignRequestFromStore)
     const setLastCompletedRequestRef = useRef(setLastCompletedRequest)
     const setLastFailedRequestRef = useRef(setLastFailedRequest)
+    const setLastTransportResultRef = useRef(setLastTransportResult)
     removeSignRequestFromStoreRef.current = removeSignRequestFromStore
     setLastCompletedRequestRef.current = setLastCompletedRequest
     setLastFailedRequestRef.current = setLastFailedRequest
+    setLastTransportResultRef.current = setLastTransportResult
 
     const buildDeps = useCallback(
         (request: SignRequest): SigningMachineDeps => ({
@@ -246,6 +251,17 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                 }
 
                 if (snapshot.matches('completed')) {
+                    // Publish the transport result regardless of `headless`.
+                    // Headless flows that don't surface completion UI still
+                    // need a reliable hook for store-driven listeners (e.g.
+                    // PendingSignatures auto-open, send-funds exit on
+                    // multisig propose). The `useSigningPipeline({ onEvent })`
+                    // path is unreliable here because the lifecycle's actor
+                    // lives in a non-reactive Map.
+                    const { transportResult } = snapshot.context
+                    if (transportResult) {
+                        setLastTransportResultRef.current(transportResult)
+                    }
                     // The transport is responsible for invoking the request's
                     // approve callback (with the actual signed data) — see
                     // createCallbackTransport / createWalletConnectTransport.

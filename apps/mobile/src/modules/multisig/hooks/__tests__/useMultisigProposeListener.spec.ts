@@ -12,19 +12,14 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import type { SigningPipelineEvent } from '@perawallet/wallet-core-signing'
+import type { TransportResult } from '@perawallet/wallet-core-signing'
 
-let capturedOnEvent: ((event: SigningPipelineEvent) => void) | undefined
+const { lastTransportResultMock } = vi.hoisted(() => ({
+    lastTransportResultMock: { current: null as TransportResult | null },
+}))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
-    useSigningPipeline: ({
-        onEvent,
-    }: {
-        onEvent?: (event: SigningPipelineEvent) => void
-    }) => {
-        capturedOnEvent = onEvent
-        return {}
-    },
+    useLastTransportResult: () => lastTransportResultMock.current,
 }))
 
 const openSheetMock = vi.fn()
@@ -43,107 +38,120 @@ import { useMultisigProposeListener } from '../useMultisigProposeListener'
 
 const SIGN_REQUEST_ID = 'sr-1'
 
+const proposedResult = (
+    overrides: Partial<Extract<TransportResult, { type: 'proposed' }>> = {},
+): TransportResult => ({
+    type: 'proposed',
+    signRequestId: SIGN_REQUEST_ID,
+    status: 'pending',
+    ...overrides,
+})
+
+const signaturesAddedResult = (
+    overrides: Partial<
+        Extract<TransportResult, { type: 'signatures-added' }>
+    > = {},
+): TransportResult => ({
+    type: 'signatures-added',
+    signRequestId: SIGN_REQUEST_ID,
+    status: 'pending',
+    ...overrides,
+})
+
 describe('useMultisigProposeListener', () => {
     beforeEach(() => {
-        capturedOnEvent = undefined
+        lastTransportResultMock.current = null
         openSheetMock.mockClear()
         invalidateInboxMock.mockClear()
     })
 
-    it('opens the sheet and invalidates inbox on a `proposed` event with a non-confirmed status', () => {
-        renderHook(() => useMultisigProposeListener())
+    it('opens the sheet and invalidates inbox when lastTransportResult transitions to a `proposed` non-confirmed result', () => {
+        const { rerender } = renderHook(() => useMultisigProposeListener())
 
-        capturedOnEvent?.({
-            type: 'signing_completed',
-            transportResult: {
-                type: 'proposed',
-                signRequestId: SIGN_REQUEST_ID,
-                status: 'pending',
-            },
-        })
+        lastTransportResultMock.current = proposedResult()
+        rerender()
 
         expect(openSheetMock).toHaveBeenCalledTimes(1)
         expect(openSheetMock).toHaveBeenCalledWith(SIGN_REQUEST_ID)
         expect(invalidateInboxMock).toHaveBeenCalledTimes(1)
     })
 
-    it('opens the sheet and invalidates inbox on a `signatures-added` event with a non-confirmed status', () => {
-        renderHook(() => useMultisigProposeListener())
+    it('opens the sheet and invalidates inbox on `signatures-added` non-confirmed result', () => {
+        const { rerender } = renderHook(() => useMultisigProposeListener())
 
-        capturedOnEvent?.({
-            type: 'signing_completed',
-            transportResult: {
-                type: 'signatures-added',
-                signRequestId: SIGN_REQUEST_ID,
-                status: 'pending',
-            },
-        })
+        lastTransportResultMock.current = signaturesAddedResult()
+        rerender()
 
         expect(openSheetMock).toHaveBeenCalledTimes(1)
         expect(openSheetMock).toHaveBeenCalledWith(SIGN_REQUEST_ID)
         expect(invalidateInboxMock).toHaveBeenCalledTimes(1)
     })
 
-    it('invalidates inbox but does not open the sheet on a `proposed` event with confirmed status', () => {
-        renderHook(() => useMultisigProposeListener())
+    it('invalidates inbox but does not open the sheet on confirmed status', () => {
+        const { rerender } = renderHook(() => useMultisigProposeListener())
 
-        capturedOnEvent?.({
-            type: 'signing_completed',
-            transportResult: {
-                type: 'proposed',
-                signRequestId: SIGN_REQUEST_ID,
-                status: 'confirmed',
-            },
+        lastTransportResultMock.current = proposedResult({
+            status: 'confirmed',
         })
-
-        expect(openSheetMock).not.toHaveBeenCalled()
-        expect(invalidateInboxMock).toHaveBeenCalledTimes(1)
-    })
-
-    it('invalidates inbox but does not open the sheet on a `signatures-added` event with confirmed status', () => {
-        renderHook(() => useMultisigProposeListener())
-
-        capturedOnEvent?.({
-            type: 'signing_completed',
-            transportResult: {
-                type: 'signatures-added',
-                signRequestId: SIGN_REQUEST_ID,
-                status: 'confirmed',
-            },
-        })
+        rerender()
 
         expect(openSheetMock).not.toHaveBeenCalled()
         expect(invalidateInboxMock).toHaveBeenCalledTimes(1)
     })
 
     it('ignores unrelated transport result types like `submitted` and `callback-sent`', () => {
-        renderHook(() => useMultisigProposeListener())
+        const { rerender } = renderHook(() => useMultisigProposeListener())
 
-        capturedOnEvent?.({
-            type: 'signing_completed',
-            transportResult: {
-                type: 'submitted',
-                txIds: ['tx-1'],
-            },
-        })
+        lastTransportResultMock.current = {
+            type: 'submitted',
+            txIds: ['tx-1'],
+        } as TransportResult
+        rerender()
 
-        capturedOnEvent?.({
-            type: 'signing_completed',
-            transportResult: {
-                type: 'callback-sent',
-                requestId: 'wc-1',
-            },
-        })
+        lastTransportResultMock.current = {
+            type: 'callback-sent',
+            requestId: 'wc-1',
+        } as TransportResult
+        rerender()
 
         expect(openSheetMock).not.toHaveBeenCalled()
         expect(invalidateInboxMock).not.toHaveBeenCalled()
     })
 
-    it('ignores non-completion pipeline events', () => {
-        renderHook(() => useMultisigProposeListener())
+    it('does not re-fire when the same transport result reference is observed again', () => {
+        const { rerender } = renderHook(() => useMultisigProposeListener())
 
-        capturedOnEvent?.({ type: 'signing_rejected' })
-        capturedOnEvent?.({ type: 'transport_started' })
+        const result = proposedResult()
+        lastTransportResultMock.current = result
+        rerender()
+        rerender()
+        rerender()
+
+        expect(openSheetMock).toHaveBeenCalledTimes(1)
+        expect(invalidateInboxMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('fires again when a fresh transport result reference appears', () => {
+        const { rerender } = renderHook(() => useMultisigProposeListener())
+
+        lastTransportResultMock.current = proposedResult()
+        rerender()
+        // New propose with a different sign request — fresh object reference.
+        lastTransportResultMock.current = proposedResult({
+            signRequestId: 'sr-2',
+        })
+        rerender()
+
+        expect(openSheetMock).toHaveBeenCalledTimes(2)
+        expect(openSheetMock).toHaveBeenNthCalledWith(1, SIGN_REQUEST_ID)
+        expect(openSheetMock).toHaveBeenNthCalledWith(2, 'sr-2')
+    })
+
+    it('skips a stale transport result that is already present at mount', () => {
+        // Stale value from a prior in-session propose — mount should NOT
+        // re-open the sheet for it.
+        lastTransportResultMock.current = proposedResult()
+        renderHook(() => useMultisigProposeListener())
 
         expect(openSheetMock).not.toHaveBeenCalled()
         expect(invalidateInboxMock).not.toHaveBeenCalled()

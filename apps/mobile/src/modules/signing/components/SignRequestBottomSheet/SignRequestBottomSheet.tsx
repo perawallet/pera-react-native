@@ -20,7 +20,18 @@ export function SignRequestBottomSheet() {
     const { pendingSignRequests, lastCompletedRequest } = useSigningRequest()
     // Headless requests run signing in the background without any user-facing
     // UI — the originating screen (e.g. swap) drives its own confirmation.
-    const nextRequest = pendingSignRequests.find(r => !r.headless)
+    //
+    // Also skip a request whose id is the one we just completed. Without
+    // this guard, there is a one-tick window between (a) the actor reaching
+    // `completed` / publishing `lastCompletedRequest` and (b) the request
+    // being removed from `pendingSignRequests`, during which `nextRequest`
+    // still resolves to the completed request and the modal renders with
+    // an empty body (the SigningRoutes inside SignRequestView unmount as
+    // the actor tears down) — visible to the user as a blank bottom sheet
+    // stacked over PendingSignaturesBottomSheet for multisig cosign.
+    const nextRequest = pendingSignRequests.find(
+        r => !r.headless && r.id !== lastCompletedRequest?.id,
+    )
     const [isVisible, setIsVisible] = React.useState(false)
 
     useEffect(() => {

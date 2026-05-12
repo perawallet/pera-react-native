@@ -99,11 +99,34 @@ describe('getLocalParticipants', () => {
         expect(participants).toEqual([accountA])
     })
 
-    test('filters out hardware-wallet participants (Ledger cosign deferred)', () => {
+    test('includes hardware-wallet participants', () => {
         mocks.isMultisigAccount.mockReturnValue(true)
+        // Hardware accounts have no keyPairId, so hasSigningKeys is false for
+        // them. The util must keep them anyway via the isHardwareWalletAccount
+        // branch so the propose flow can route them to hardwareStrategy.
+        mocks.hasSigningKeys.mockImplementation(
+            (acc: WalletAccount) => acc.address !== 'B',
+        )
         mocks.isHardwareWalletAccount.mockImplementation(
             (acc: WalletAccount) => acc.address === 'B',
         )
+        const multisig = makeMultisig(2, ['A', 'B'])
+
+        const participants = getLocalParticipants(multisig, [
+            accountA,
+            accountB,
+        ])
+
+        expect(participants).toEqual([accountA, accountB])
+    })
+
+    test('filters out participants that are neither local-key nor hardware (e.g. watch accounts)', () => {
+        mocks.isMultisigAccount.mockReturnValue(true)
+        // B has no keys (watch) AND is not hardware — must be dropped.
+        mocks.hasSigningKeys.mockImplementation(
+            (acc: WalletAccount) => acc.address === 'A',
+        )
+        mocks.isHardwareWalletAccount.mockReturnValue(false)
         const multisig = makeMultisig(2, ['A', 'B'])
 
         const participants = getLocalParticipants(multisig, [

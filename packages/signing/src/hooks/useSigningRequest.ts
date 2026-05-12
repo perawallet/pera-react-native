@@ -15,6 +15,7 @@ import type { AnyActorRef } from 'xstate'
 import { useSigningStore } from '../store'
 import { useSigningActorLifecycle } from './useSigningActorLifecycle'
 import type { FailedSignRequest, SignRequest } from '../models'
+import type { TransportResult } from '../pipeline/types'
 import {
     AppError,
     ErrorCategory,
@@ -35,6 +36,14 @@ type UseSigningRequestResult = {
     pendingSignRequests: SignRequest[]
     lastCompletedRequest: Nullable<SignRequest>
     lastFailedRequest: Nullable<FailedSignRequest>
+    /**
+     * Most recent transport result, set on every completed actor transition
+     * (algod-submit, multisig-propose, multisig-cosign, callback-sent…).
+     * Listeners that can't rely on `useSigningPipeline({ onEvent })`
+     * (because the actor subscription doesn't establish in time for headless
+     * propose) read this and dedupe via a ref-tracked previous reference.
+     */
+    lastTransportResult: Nullable<TransportResult>
     currentRequest: SignRequest | undefined
     currentActorRef: Nullable<AnyActorRef>
     addSignRequest: (request: SignRequest) => void
@@ -68,6 +77,9 @@ export const useSigningRequest = (): UseSigningRequestResult => {
     const lastFailedRequest = useSigningStore(state => state.lastFailedRequest)
     const setLastFailedRequest = useSigningStore(
         state => state.setLastFailedRequest,
+    )
+    const lastTransportResult = useSigningStore(
+        state => state.lastTransportResult,
     )
 
     const { getActorRef, stopActor } = useSigningActorLifecycle()
@@ -187,6 +199,7 @@ export const useSigningRequest = (): UseSigningRequestResult => {
         pendingSignRequests,
         lastCompletedRequest,
         lastFailedRequest,
+        lastTransportResult,
         currentRequest,
         currentActorRef,
         addSignRequest,

@@ -25,14 +25,27 @@ export const SigningCompletedBottomSheet = () => {
     const [isVisible, setIsVisible] = useState(false)
 
     const isTransaction = lastCompletedRequest?.type === 'transactions'
+    // Multisig cosign completions are surfaced by PendingSignaturesBottomSheet
+    // (live signer status + threshold progress). The generic "Transaction
+    // Processing" copy here is misleading for a cosign (the user added a
+    // signature; they didn't send a transaction), and stacking it over the
+    // pending-signatures sheet during dismissal produces the visible empty
+    // shell. Auto-clear the success state so the next request can render.
+    const isMultisigCosign =
+        lastCompletedRequest?.sourceType === 'multisig-cosign'
 
     useEffect(() => {
+        if (lastCompletedRequest && isMultisigCosign) {
+            clearLastCompletedRequest()
+            setIsVisible(false)
+            return
+        }
         if (lastCompletedRequest) {
             deferToNextCycle(() => setIsVisible(true))
         } else {
             setIsVisible(false)
         }
-    }, [lastCompletedRequest])
+    }, [lastCompletedRequest, isMultisigCosign, clearLastCompletedRequest])
 
     const handleDismiss = () => {
         setIsVisible(false)

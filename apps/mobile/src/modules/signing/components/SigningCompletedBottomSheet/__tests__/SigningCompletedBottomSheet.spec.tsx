@@ -136,6 +136,31 @@ describe('SigningCompletedBottomSheet', () => {
         ).toBeDefined()
     })
 
+    test('suppresses itself and auto-clears for multisig-cosign sourceType', () => {
+        // PendingSignaturesBottomSheet is the success surface for a cosign.
+        // Showing the generic "Transaction Processing" sheet here stacks an
+        // empty modal over it during dismiss — the blank-bottom-sheet bug.
+        const mockMultisigCosignRequest = {
+            id: 'cosign-1',
+            type: 'transactions',
+            transport: 'callback',
+            sourceType: 'multisig-cosign',
+            txs: [],
+        } as unknown as SignRequest
+        vi.mocked(useSigningRequest).mockReturnValue({
+            lastCompletedRequest: mockMultisigCosignRequest,
+            clearLastCompletedRequest: mockClearLastCompletedRequest,
+        } as unknown as ReturnType<typeof useSigningRequest>)
+
+        render(<SigningCompletedBottomSheet />)
+        act(() => {
+            vi.runAllTimers()
+        })
+
+        expect(screen.queryByTestId('PWBottomSheet')).toBeNull()
+        expect(mockClearLastCompletedRequest).toHaveBeenCalledTimes(1)
+    })
+
     test('calls clearLastCompletedRequest on Done button press', () => {
         vi.mocked(useSigningRequest).mockReturnValue({
             lastCompletedRequest: mockTransactionRequest,

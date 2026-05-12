@@ -40,12 +40,16 @@ export type MultisigSignerActorInput = {
 }
 
 /**
- * XState actor that signs each multisig group with every local-key
- * participant in parallel, producing one combined SigningResult per group.
+ * XState actor that signs each multisig group with every local participant
+ * (Algo25, HD, and hardware-wallet) in parallel, producing one combined
+ * SigningResult per group. Hardware participants trigger the standard
+ * LedgerSigningOverlay during signing.
  *
- * The strategy selector excludes hardware participants (no keyPairId), so
- * Ledger participants in the wallet are not auto-signed here — they get a
- * per-row "Sign" button that spawns a separate `multisig-cosign` request.
+ * This runs on the propose flow (creating a new multisig transaction). The
+ * cosign flow uses a different entry point: the PendingSignaturesBottomSheet
+ * dispatches per-participant `multisig-cosign` requests with `signerOverrides`
+ * pinned to a specific address — those bypass `getLocalParticipants` and route
+ * directly to the participant's strategy via `selectStrategy`.
  *
  * Throws NoLocalParticipantsError (from createMultisigStrategy) if the user
  * has no signing-capable participants in their wallet for the group's

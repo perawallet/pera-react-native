@@ -10,12 +10,18 @@
  limitations under the License
  */
 
-// Platform-agnostic Ledger protocol surface: types, errors, APDU codes,
-// timeout constants, classification helpers. Loaded by the business-logic
-// `@perawallet/wallet-core-ledger` package *without* pulling in
-// `@ledgerhq/react-native-hw-transport-ble` or other RN-only modules
-// (which carry Flow-typed source that vitest can't parse).
-export * from './types'
-export * from './errors'
-export * from './constants'
-export * from './signature'
+import {
+    FAILURE_SIGN_REQUEST_STATUSES,
+    type SignRequestStatus,
+} from '@perawallet/wallet-core-multisig'
+
+export type StatusBannerVariant = 'waiting' | 'success' | 'failure'
+
+export const getStatusBannerVariant = (
+    status: SignRequestStatus | null,
+): StatusBannerVariant => {
+    if (!status) return 'waiting'
+    if (status === 'confirmed') return 'success'
+    if (FAILURE_SIGN_REQUEST_STATUSES.has(status)) return 'failure'
+    return 'waiting'
+}

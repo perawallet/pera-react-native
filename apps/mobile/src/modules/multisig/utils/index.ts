@@ -11,6 +11,13 @@
  */
 
 export { buildMultisigCosignRequest } from './buildMultisigCosignRequest'
+export { buildSignerRows, type SignerRow } from './buildSignerRows'
+export { getInFlightCosignAddresses } from './getInFlightCosignAddresses'
 export { getLocalUnsignedSigners } from './getLocalUnsignedSigners'
 export { getNextSharedAccountName } from './getNextSharedAccountName'
+export {
+    getStatusBannerVariant,
+    type StatusBannerVariant,
+} from './getStatusBannerVariant'
 export { getSignedResponseCount } from './signRequestStatus'
+export { splitLocalUnsignedSigners } from './splitLocalUnsignedSigners'

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { render, screen } from '@test-utils/render'
+import { fireEvent, render, screen } from '@test-utils/render'
 import { describe, expect, it, vi } from 'vitest'
 import { SignerStatusListItem } from '../SignerStatusListItem'
 
@@ -71,5 +71,53 @@ describe('SignerStatusListItem', () => {
         expect(
             screen.getByTestId(`signer_status_icon_unsigned_${ADDRESS}`),
         ).toBeTruthy()
+    })
+
+    it('renders an action button in place of the status icon when action is provided', () => {
+        const onPress = vi.fn()
+
+        render(
+            <SignerStatusListItem
+                address={ADDRESS}
+                status='pending'
+                action={{ label: 'Sign', onPress }}
+            />,
+        )
+
+        expect(
+            screen.getByTestId(`signer_status_action_${ADDRESS}`),
+        ).toBeTruthy()
+        expect(
+            screen.queryByTestId(`signer_status_icon_pending_${ADDRESS}`),
+        ).toBeNull()
+    })
+
+    it('invokes the action handler when the action button is pressed', () => {
+        const onPress = vi.fn()
+
+        render(
+            <SignerStatusListItem
+                address={ADDRESS}
+                status='pending'
+                action={{ label: 'Sign', onPress }}
+            />,
+        )
+
+        fireEvent.click(screen.getByTestId(`signer_status_action_${ADDRESS}`))
+
+        expect(onPress).toHaveBeenCalledTimes(1)
+    })
+
+    it('renders the action in its loading state when isLoading is true', () => {
+        render(
+            <SignerStatusListItem
+                address={ADDRESS}
+                status='pending'
+                action={{ label: 'Sign', onPress: vi.fn(), isLoading: true }}
+            />,
+        )
+
+        // PWButton swaps the title for an activity indicator when loading.
+        expect(screen.getByTestId('activity-indicator')).toBeTruthy()
     })
 })

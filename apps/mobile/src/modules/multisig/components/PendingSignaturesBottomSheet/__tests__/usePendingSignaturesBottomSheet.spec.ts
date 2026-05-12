@@ -46,8 +46,14 @@ vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceID: () => 'device-id',
 }))
 
+const pendingSignRequestsMock = vi.fn<() => unknown[]>(() => [])
 vi.mock('@perawallet/wallet-core-signing', () => ({
-    useSigningRequest: () => ({ addSignRequest: addSignRequestMock }),
+    useSigningRequest: () => ({
+        addSignRequest: addSignRequestMock,
+        pendingSignRequests: pendingSignRequestsMock(),
+    }),
+    isTransactionRequest: (request: { type?: string }) =>
+        request?.type === 'transactions',
 }))
 
 vi.mock('@hooks/useToast', () => ({
@@ -143,6 +149,7 @@ describe('usePendingSignaturesBottomSheet', () => {
         useSignRequestDetailQueryMock.mockReset()
         mockQueryReturn(undefined)
         localUnsignedSignersMock.mockReturnValue([])
+        pendingSignRequestsMock.mockReturnValue([])
         addSignRequestMock.mockClear()
         buildCosignArgsMock.mockClear()
     })
@@ -164,9 +171,24 @@ describe('usePendingSignaturesBottomSheet', () => {
         expect(result.current.threshold).toBe(2)
         expect(result.current.timeRemaining).toBe('52m')
         expect(result.current.signers).toEqual([
-            { address: 'A', status: 'signed' },
-            { address: 'B', status: 'declined' },
-            { address: 'C', status: 'pending' },
+            {
+                address: 'A',
+                status: 'signed',
+                canSignAsHardware: false,
+                isSigning: false,
+            },
+            {
+                address: 'B',
+                status: 'declined',
+                canSignAsHardware: false,
+                isSigning: false,
+            },
+            {
+                address: 'C',
+                status: 'pending',
+                canSignAsHardware: false,
+                isSigning: false,
+            },
         ])
     })
 
@@ -332,7 +354,7 @@ describe('usePendingSignaturesBottomSheet', () => {
     })
 
     describe('handleSign', () => {
-        it('dispatches a cosign SignRequest for every local unsigned signer (in order) and closes the sheet', () => {
+        it('dispatches a cosign SignRequest for every local-key unsigned signer (in order) and keeps the sheet open', () => {
             usePendingSignaturesSheetStore.setState({ signRequestId: 'sr-1' })
             mockQueryReturn(buildSignRequest({ status: 'pending' }))
             localUnsignedSignersMock.mockReturnValue([
@@ -371,13 +393,53 @@ describe('usePendingSignaturesBottomSheet', () => {
             )
             expect(
                 usePendingSignaturesSheetStore.getState().signRequestId,
-            ).toBeNull()
+            ).toBe('sr-1')
+        })
+
+        it('iterates only local-key signers and skips hardware participants (those use per-row Sign)', () => {
+            usePendingSignaturesSheetStore.setState({ signRequestId: 'sr-1' })
+            mockQueryReturn(buildSignRequest({ status: 'pending' }))
+            localUnsignedSignersMock.mockReturnValue([
+                buildAccount('A'),
+                buildHardwareAccount('L'),
+            ])
+
+            const { result } = renderHook(() =>
+                usePendingSignaturesBottomSheet(),
+            )
+            result.current.handleSign()
+
+            expect(buildCosignArgsMock).toHaveBeenCalledTimes(1)
+            expect(
+                (
+                    buildCosignArgsMock.mock.calls[0]![0] as {
+                        signerAddress: string
+                    }
+                ).signerAddress,
+            ).toBe('A')
+            expect(addSignRequestMock).toHaveBeenCalledTimes(1)
         })
 
         it('does nothing when there is no signRequest', () => {
             usePendingSignaturesSheetStore.setState({ signRequestId: 'sr-1' })
             mockQueryReturn(undefined)
             localUnsignedSignersMock.mockReturnValue([buildAccount('A')])
+
+            const { result } = renderHook(() =>
+                usePendingSignaturesBottomSheet(),
+            )
+            result.current.handleSign()
+
+            expect(addSignRequestMock).not.toHaveBeenCalled()
+            expect(buildCosignArgsMock).not.toHaveBeenCalled()
+        })
+
+        it('does nothing when there are no local-key unsigned signers (only hardware)', () => {
+            usePendingSignaturesSheetStore.setState({ signRequestId: 'sr-1' })
+            mockQueryReturn(buildSignRequest({ status: 'pending' }))
+            localUnsignedSignersMock.mockReturnValue([
+                buildHardwareAccount('L'),
+            ])
 
             const { result } = renderHook(() =>
                 usePendingSignaturesBottomSheet(),
@@ -402,4 +464,243 @@ describe('usePendingSignaturesBottomSheet', () => {
             expect(buildCosignArgsMock).not.toHaveBeenCalled()
         })
     })
+
+    describe('canSign (footer Sign button gating)', () => {
+        it('is false when only hardware participants are unsigned (per-row Sign covers Ledger)', () => {
+            usePendingSignaturesSheetStore.setState({ signRequestId: 'sr-1' })
+            mockQueryReturn(buildSignRequest({ status: 'pending' }))
+            localUnsignedSignersMock.mockReturnValue([
+                buildHardwareAccount('L'),
+            ])
+
+            const { result } = renderHook(() =>
+                usePendingSignaturesBottomSheet(),
+            )
+
+            expect(result.current.canSign).toBe(false)
+        })
+
+        it('is true when at least one local-key signer is unsigned, even alongside hardware', () => {
+            usePendingSignaturesSheetStore.setState({ signRequestId: 'sr-1' })
+            mockQueryReturn(buildSignRequest({ status: 'pending' }))
+            localUnsignedSignersMock.mockReturnValue([
+                buildAccount('A'),
+                buildHardwareAccount('L'),
+            ])
+
+            const { result } = renderHook(() =>
+                usePendingSignaturesBottomSheet(),
+            )
+
+            expect(result.current.canSign).toBe(true)
+        })
+    })
+
+    describe('handleSignParticipant (per-row Sign for hardware)', () => {
+        it('dispatches a single cosign SignRequest for the given hardware address and keeps the sheet open', () => {
+            usePendingSignaturesSheetStore.setState({ signRequestId: 'sr-1' })
+            mockQueryReturn(buildSignRequest({ status: 'pending' }))
+            localUnsignedSignersMock.mockReturnValue([
+                buildHardwareAccount('L'),
+            ])
+
+            const { result } = renderHook(() =>
+                usePendingSignaturesBottomSheet(),
+            )
+            result.current.handleSignParticipant('L')
+
+            expect(buildCosignArgsMock).toHaveBeenCalledTimes(1)
+            expect(
+                (
+                    buildCosignArgsMock.mock.calls[0]![0] as {
+                        signerAddress: string
+                    }
+                ).signerAddress,
+            ).toBe('L')
+            expect(addSignRequestMock).toHaveBeenCalledTimes(1)
+            expect(addSignRequestMock).toHaveBeenCalledWith(cosignRequestStub)
+            expect(
+                usePendingSignaturesSheetStore.getState().signRequestId,
+            ).toBe('sr-1')
+        })
+
+        it('is a no-op when the address is not in hardwareUnsignedSigners', () => {
+            usePendingSignaturesSheetStore.setState({ signRequestId: 'sr-1' })
+            mockQueryReturn(buildSignRequest({ status: 'pending' }))
+            // Only a local-key signer; the address is a local-key one, not hardware.
+            localUnsignedSignersMock.mockReturnValue([buildAccount('A')])
+
+            const { result } = renderHook(() =>
+                usePendingSignaturesBottomSheet(),
+            )
+            result.current.handleSignParticipant('A')
+
+            expect(addSignRequestMock).not.toHaveBeenCalled()
+            expect(buildCosignArgsMock).not.toHaveBeenCalled()
+        })
+
+        it('is a no-op when the address is already in flight via the signing queue', () => {
+            usePendingSignaturesSheetStore.setState({ signRequestId: 'sr-1' })
+            mockQueryReturn(buildSignRequest({ status: 'pending' }))
+            localUnsignedSignersMock.mockReturnValue([
+                buildHardwareAccount('L'),
+            ])
+            pendingSignRequestsMock.mockReturnValue([
+                {
+                    type: 'transactions',
+                    sourceType: 'multisig-cosign',
+                    signRequestId: 'sr-1',
+                    signerOverrides: new Map([[0, 'L']]),
+                },
+            ])
+
+            const { result } = renderHook(() =>
+                usePendingSignaturesBottomSheet(),
+            )
+            result.current.handleSignParticipant('L')
+
+            expect(addSignRequestMock).not.toHaveBeenCalled()
+            expect(buildCosignArgsMock).not.toHaveBeenCalled()
+        })
+
+        it('is a no-op when there is no signRequest', () => {
+            usePendingSignaturesSheetStore.setState({ signRequestId: 'sr-1' })
+            mockQueryReturn(undefined)
+            localUnsignedSignersMock.mockReturnValue([
+                buildHardwareAccount('L'),
+            ])
+
+            const { result } = renderHook(() =>
+                usePendingSignaturesBottomSheet(),
+            )
+            result.current.handleSignParticipant('L')
+
+            expect(addSignRequestMock).not.toHaveBeenCalled()
+            expect(buildCosignArgsMock).not.toHaveBeenCalled()
+        })
+
+        it('is a no-op when status is not actionable', () => {
+            usePendingSignaturesSheetStore.setState({ signRequestId: 'sr-1' })
+            mockQueryReturn(buildSignRequest({ status: 'submitting' }))
+            localUnsignedSignersMock.mockReturnValue([
+                buildHardwareAccount('L'),
+            ])
+
+            const { result } = renderHook(() =>
+                usePendingSignaturesBottomSheet(),
+            )
+            result.current.handleSignParticipant('L')
+
+            expect(addSignRequestMock).not.toHaveBeenCalled()
+            expect(buildCosignArgsMock).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('signers per-row hardware flags', () => {
+        it('exposes canSignAsHardware on the hardware participant row when actionable and not in flight', () => {
+            usePendingSignaturesSheetStore.setState({ signRequestId: 'sr-1' })
+            mockQueryReturn(
+                buildSignRequest({
+                    status: 'pending',
+                    multisigAccount: {
+                        customId: 'm-1',
+                        createdAt: new Date('2026-05-06T09:00:00Z'),
+                        address: 'MULTISIG',
+                        version: 1,
+                        threshold: 2,
+                        participantAddresses: ['A', 'L', 'C'],
+                    },
+                    transactionLists: [
+                        {
+                            id: 'tl-1',
+                            rawTransactions: ['raw'],
+                            firstValidBlock: 1,
+                            lastValidBlock: 1000,
+                            expectedExpireDatetime: new Date(
+                                '2026-05-06T10:52:00Z',
+                            ),
+                            responses: [{ address: 'A', response: 'signed' }],
+                        },
+                    ],
+                }),
+            )
+            localUnsignedSignersMock.mockReturnValue([
+                buildHardwareAccount('L'),
+            ])
+
+            const { result } = renderHook(() =>
+                usePendingSignaturesBottomSheet(),
+            )
+
+            const ledgerRow = result.current.signers.find(
+                s => s.address === 'L',
+            )
+            expect(ledgerRow).toMatchObject({
+                address: 'L',
+                status: 'pending',
+                canSignAsHardware: true,
+                isSigning: false,
+            })
+        })
+
+        it('flips isSigning true while keeping canSignAsHardware true (capability is independent of liveness; consumer combines them)', () => {
+            usePendingSignaturesSheetStore.setState({ signRequestId: 'sr-1' })
+            mockQueryReturn(buildSignRequest({ status: 'pending' }))
+            localUnsignedSignersMock.mockReturnValue([
+                buildHardwareAccount('C'),
+            ])
+            pendingSignRequestsMock.mockReturnValue([
+                {
+                    type: 'transactions',
+                    sourceType: 'multisig-cosign',
+                    signRequestId: 'sr-1',
+                    signerOverrides: new Map([[0, 'C']]),
+                },
+            ])
+
+            const { result } = renderHook(() =>
+                usePendingSignaturesBottomSheet(),
+            )
+
+            const row = result.current.signers.find(s => s.address === 'C')
+            expect(row?.isSigning).toBe(true)
+            expect(row?.canSignAsHardware).toBe(true)
+        })
+
+        it('ignores cosign requests targeting a different multisig sign request', () => {
+            usePendingSignaturesSheetStore.setState({ signRequestId: 'sr-1' })
+            mockQueryReturn(buildSignRequest({ status: 'pending' }))
+            localUnsignedSignersMock.mockReturnValue([
+                buildHardwareAccount('C'),
+            ])
+            pendingSignRequestsMock.mockReturnValue([
+                {
+                    type: 'transactions',
+                    sourceType: 'multisig-cosign',
+                    signRequestId: 'sr-OTHER',
+                    signerOverrides: new Map([[0, 'C']]),
+                },
+            ])
+
+            const { result } = renderHook(() =>
+                usePendingSignaturesBottomSheet(),
+            )
+
+            const row = result.current.signers.find(s => s.address === 'C')
+            expect(row?.isSigning).toBe(false)
+            expect(row?.canSignAsHardware).toBe(true)
+        })
+    })
+})
+
+const buildHardwareAccount = (address: string): WalletAccount => ({
+    type: AccountTypes.hardware,
+    address,
+    hardwareDetails: {
+        manufacturer: 'ledger',
+        deviceId: 'dev-1',
+        deviceName: 'Ledger Nano X',
+        accountIndex: 0,
+        transportType: 'ble',
+    },
 })

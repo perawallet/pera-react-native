@@ -21,7 +21,11 @@ import {
 } from '@components/core'
 import { ConfirmActionBottomSheet } from '@components/ConfirmActionBottomSheet'
 import { useLanguage } from '@hooks/useLanguage'
-import { SignerStatusListItem } from '../SignerStatusListItem'
+import { type SignerRow } from '../../utils/buildSignerRows'
+import {
+    SignerStatusListItem,
+    type SignerAction,
+} from '../SignerStatusListItem'
 import { usePendingSignaturesBottomSheet } from './usePendingSignaturesBottomSheet'
 import { useStyles } from './styles'
 
@@ -31,7 +35,7 @@ export const PendingSignaturesBottomSheet = () => {
     const { t } = useLanguage()
     const {
         isVisible,
-        signRequest,
+        hasSignRequest,
         bannerVariant,
         failureBannerKey,
         signedCount,
@@ -42,6 +46,7 @@ export const PendingSignaturesBottomSheet = () => {
         handleClose,
         canSign,
         handleSign,
+        handleSignParticipant,
         canCancel,
         isCancelling,
         isCancelConfirmOpen,
@@ -49,6 +54,15 @@ export const PendingSignaturesBottomSheet = () => {
         closeCancelConfirm,
         handleConfirmCancel,
     } = usePendingSignaturesBottomSheet()
+
+    const getSignerAction = (signer: SignerRow): SignerAction | undefined => {
+        if (!signer.canSignAsHardware && !signer.isSigning) return undefined
+        return {
+            label: t('multisig.pending_signatures.sign'),
+            onPress: () => handleSignParticipant(signer.address),
+            isLoading: signer.isSigning,
+        }
+    }
 
     return (
         <>
@@ -104,7 +118,7 @@ export const PendingSignaturesBottomSheet = () => {
                         </PWView>
                     )}
 
-                    {!signRequest && (
+                    {!hasSignRequest && (
                         <PWView
                             style={styles.loadingContainer}
                             testID='pending_signatures_loading_indicator'
@@ -116,7 +130,7 @@ export const PendingSignaturesBottomSheet = () => {
                         </PWView>
                     )}
 
-                    {bannerVariant === 'waiting' && !!signRequest && (
+                    {bannerVariant === 'waiting' && hasSignRequest && (
                         <PWView style={styles.badgesRow}>
                             <PWView
                                 style={styles.badge}
@@ -156,7 +170,7 @@ export const PendingSignaturesBottomSheet = () => {
                         </PWView>
                     )}
 
-                    {!!signRequest && (
+                    {hasSignRequest && (
                         <PWView style={styles.accountsHeader}>
                             <PWText variant='h4'>
                                 {t(
@@ -177,13 +191,14 @@ export const PendingSignaturesBottomSheet = () => {
                         </PWView>
                     )}
 
-                    {!!signRequest && (
+                    {hasSignRequest && (
                         <PWView style={styles.signersList}>
                             {signers.map(signer => (
                                 <SignerStatusListItem
                                     key={signer.address}
                                     address={signer.address}
                                     status={signer.status}
+                                    action={getSignerAction(signer)}
                                 />
                             ))}
                         </PWView>
