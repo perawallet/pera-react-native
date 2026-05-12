@@ -30,6 +30,7 @@ export const useStyles = makeStyles(theme => {
         },
         amountContainer: {
             alignItems: 'flex-end',
+            flexShrink: 0,
         },
         suspiciousName: {
             color: theme.colors.error,
