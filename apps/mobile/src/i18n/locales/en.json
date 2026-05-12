@@ -1791,10 +1791,6 @@
             "retry": "Try Again"
         },
         "signing": {
-            "title": "Approve on Ledger",
-            "connect": "Connecting to your Ledger device...",
-            "confirm": "Please review and approve the transaction on your Ledger device.",
-            "timeout": "The transaction was not confirmed in time. Please try again.",
             "cancel": "Cancel",
             "retry": "Retry",
             "footnote": "Verification will continue on Ledger. To cancel verification, cancel from Ledger.",
