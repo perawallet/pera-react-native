@@ -13,6 +13,7 @@
 export * from './arc60'
 export * from './balance-validation'
 export * from './classification'
+export * from './classifyLedgerErrorKind'
 export * from './fees'
 export * from './mergeSigningResults'
 export * from './parseArc60ForDisplay'

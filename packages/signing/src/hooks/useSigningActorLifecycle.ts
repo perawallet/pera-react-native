@@ -18,12 +18,12 @@ import {
     useTransactionEncoder,
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
-    LedgerConnectionError,
-    LedgerTimeoutError,
-} from '@perawallet/wallet-core-ledger'
+    isHardwareWalletAccount,
+    useAllAccounts,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useLocalKeyTransactionSigner } from './useLocalKeyTransactionSigner'
 import { useArbitraryDataSigner } from './useArbitraryDataSigner'
 import { useArc60Signer } from './useArc60Signer'
@@ -35,7 +35,13 @@ import { createTransportSelector } from '../pipeline/transports/getTransport'
 import { getNextQueuedRequest } from '../pipeline/queue'
 import type { SigningMachineDeps } from '../machine/context'
 import type { SigningCallbacks } from '../pipeline/types'
-import type { SignRequest } from '../models'
+import {
+    isArbitraryDataRequest,
+    isArc60Request,
+    isTransactionRequest,
+    type SignRequest,
+} from '../models'
+import { classifyLedgerErrorKind } from '../utils/classifyLedgerErrorKind'
 
 // Process-wide registry of running signing-machine actors, keyed by
 // request id. Hoisted to module scope (rather than per-hook `useRef`) so
@@ -58,35 +64,86 @@ export const __resetSigningActorRegistryForTests = (): void => {
     actorRefsMap.clear()
 }
 
-const isTimeoutError = (error: Error): boolean =>
-    error instanceof LedgerTimeoutError ||
-    (error instanceof LedgerConnectionError && /timed out/.test(error.message))
+/**
+ * Resolve the primary signer address for a sign request so the lifecycle
+ * can look up the corresponding {@link WalletAccount} (we need this to
+ * thread the device name into the hardware-signing overlay).
+ *
+ * Mirrors the per-request-type signer extraction in `buildSignableGroups`
+ * (see `machine/actions.ts`); kept local + minimal because the overlay
+ * only needs *a* signer (the device name is identical across groups for a
+ * given hardware request).
+ */
+const resolveSignerAddress = (request: SignRequest): string | undefined => {
+    if (isTransactionRequest(request)) {
+        const firstTx = request.txs[0]
+        if (!firstTx) return undefined
+        const override = request.signerOverrides?.get(0)
+        if (override) return override
+        // Defensive: malformed/mocked tx shapes (e.g. test fixtures) may
+        // not carry a sender. The hardware overlay can still open without
+        // a known signer — deviceName just falls back to null.
+        return firstTx.sender?.toString?.()
+    }
+    if (isArbitraryDataRequest(request)) {
+        return request.data[0]?.signer
+    }
+    if (isArc60Request(request)) {
+        return request.stdSigData?.signer
+    }
+    return undefined
+}
 
 /**
  * Build SigningCallbacks that drive the hardware-signing UI store.
- * Bound to a specific request id so the overlay knows which actor to talk
- * to when the user presses cancel/retry.
+ *
+ * Translates strategy-emitted phase signals (connecting / awaiting-approval),
+ * signing-start, progress, and error events into the store-level actions
+ * that back the LedgerSigningOverlay. The error path uses
+ * {@link classifyLedgerErrorKind} so the overlay can render preset-specific
+ * copy without a UI-layer dependency reaching into the signing package.
+ *
+ * The signer account is taken at callback-build time (not lazily) so the
+ * overlay can show the device name from the very first `onPhaseChange`.
+ *
+ * Exported so callback-level behavior can be unit-tested in isolation —
+ * see `buildHardwareSigningCallbacks.spec.ts`.
  */
-const buildHardwareSigningCallbacks = (
-    requestId: string,
-): SigningCallbacks => ({
-    onPhaseChange: phase => {
-        const store = useHardwareSigningStore.getState()
-        if (phase === 'connecting') {
-            store.start(requestId)
-        } else if (phase === 'awaiting-approval') {
-            store.setStatus('confirming')
-        }
-    },
-    onProgress: (current, total) => {
-        useHardwareSigningStore.getState().setProgress(current, total)
-    },
-    onError: error => {
-        useHardwareSigningStore
-            .getState()
-            .setError(isTimeoutError(error) ? 'timeout' : 'error')
-    },
-})
+export const buildHardwareSigningCallbacks = (
+    request: SignRequest,
+    signerAccount: WalletAccount | undefined,
+): SigningCallbacks => {
+    const deviceName =
+        signerAccount && isHardwareWalletAccount(signerAccount)
+            ? signerAccount.hardwareDetails.deviceName
+            : null
+
+    return {
+        onPhaseChange: phase => {
+            const store = useHardwareSigningStore.getState()
+            if (phase === 'connecting') {
+                store.start(request.id, deviceName)
+            } else if (phase === 'awaiting-approval') {
+                store.setStatus('awaitingApproval')
+            }
+        },
+        onSigningStart: () => {
+            useHardwareSigningStore.getState().setStatus('signing')
+        },
+        onProgress: (current, total) => {
+            const store = useHardwareSigningStore.getState()
+            store.setProgress(current, total)
+            // Between txs in a group, the user is again waiting for an
+            // on-device approval. Returning to 'awaitingApproval' tells the
+            // overlay to render the approval chrome.
+            store.setStatus('awaitingApproval')
+        },
+        onError: error => {
+            const kind = classifyLedgerErrorKind(error)
+            useHardwareSigningStore.getState().setError({ kind, cause: error })
+        },
+    }
+}
 
 // =============================================================================
 // Helpers
@@ -178,28 +235,43 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
     setLastTransportResultRef.current = setLastTransportResult
 
     const buildDeps = useCallback(
-        (request: SignRequest): SigningMachineDeps => ({
-            signTransactions,
-            signArbitraryData,
-            signArc60,
-            createTransport: createTransportSelector({
-                algokit,
-                encodeSignedTransactions,
+        (request: SignRequest): SigningMachineDeps => {
+            // Resolve the signer account so the hardware-signing overlay
+            // can render the device name from the very first phase signal.
+            // For non-hardware signers, the callback builder degrades to a
+            // null deviceName — the overlay never opens in that case
+            // because only the hardware strategy emits phase callbacks.
+            const signerAddress = resolveSignerAddress(request)
+            const signerAccount = signerAddress
+                ? allAccounts.find(acc => acc.address === signerAddress)
+                : undefined
+
+            return {
+                signTransactions,
+                signArbitraryData,
+                signArc60,
+                createTransport: createTransportSelector({
+                    algokit,
+                    encodeSignedTransactions,
+                    network,
+                    proposeSignRequest,
+                    addSignatures,
+                }),
                 network,
-                proposeSignRequest,
-                addSignatures,
-            }),
-            network,
-            // Hardware-wallet actor consumes this. Ledger adds the "TX"
-            // domain-separation prefix on-device, so we pass raw msgpack.
-            encodeTransaction: encodeTransactionRaw,
-            hardwareWalletRegistry: getProvider().hardwareWalletRegistry,
-            // Drives the LedgerSigningOverlay via useHardwareSigningStore.
-            // Only the hardware strategy emits these callbacks, so requests
-            // that resolve to local-key/multisig signers never touch the
-            // overlay state.
-            signingCallbacks: buildHardwareSigningCallbacks(request.id),
-        }),
+                // Hardware-wallet actor consumes this. Ledger adds the "TX"
+                // domain-separation prefix on-device, so we pass raw msgpack.
+                encodeTransaction: encodeTransactionRaw,
+                hardwareWalletRegistry: getProvider().hardwareWalletRegistry,
+                // Drives the LedgerSigningOverlay via useHardwareSigningStore.
+                // Only the hardware strategy emits these callbacks, so requests
+                // that resolve to local-key/multisig signers never touch the
+                // overlay state.
+                signingCallbacks: buildHardwareSigningCallbacks(
+                    request,
+                    signerAccount,
+                ),
+            }
+        },
         [
             signTransactions,
             signArbitraryData,
@@ -210,6 +282,7 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
             network,
             proposeSignRequest,
             addSignatures,
+            allAccounts,
         ],
     )
 
