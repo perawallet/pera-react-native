@@ -100,6 +100,19 @@ export const PWBottomSheet = ({
         }
     }, [isVisible])
 
+    // Gorhom's `BottomSheetModal` registers itself with the
+    // `BottomSheetModalProvider` on `present()` and does NOT auto-dismiss
+    // when the React component unmounts. If a controlled sheet is removed
+    // from the tree while still presented, its entry stays in the provider's
+    // stack and re-surfaces when the topmost sheet pops — visible as an
+    // orphan, content-empty modal you can't dismiss. Explicit cleanup
+    // dismisses the modal whenever the component unmounts.
+    useEffect(() => {
+        return () => {
+            bottomSheetModalRef.current?.dismiss()
+        }
+    }, [])
+
     const renderBackdrop = useCallback(
         (props: BottomSheetBackdropProps) => (
             <BottomSheetBackdrop

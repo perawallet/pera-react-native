@@ -22,6 +22,7 @@
     "@perawallet/wallet-extension-platform": "workspace:*",
     "@perawallet/wallet-core-hardware-wallet": "workspace:*",
     "@perawallet/wallet-core-config": "workspace:*",
+    "@perawallet/wallet-core-shared": "workspace:*",
     "react": "catalog:",
     "react-native": "0.83.9",
     "react-native-mmkv": "^4.2.0",

@@ -12,6 +12,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { usePinCode, useBiometrics } from '@perawallet/wallet-core-security'
+import { useLanguage } from '@hooks/useLanguage'
 
 type UseLockScreenParams = {
     onUnlock: () => void
@@ -28,6 +29,7 @@ type UseLockScreenResult = {
 export const useLockScreen = ({
     onUnlock,
 }: UseLockScreenParams): UseLockScreenResult => {
+    const { t } = useLanguage()
     const {
         verifyPin,
         handleFailedAttempt,
@@ -81,7 +83,10 @@ export const useLockScreen = ({
         ;(async () => {
             const enabled = await checkBiometricsEnabled()
             if (cancelled || !enabled) return
-            const success = await authenticateWithBiometrics()
+            const success = await authenticateWithBiometrics({
+                title: t('security.biometric.unlock_prompt_title'),
+                cancelLabel: t('security.biometric.cancel_label'),
+            })
             if (cancelled || !success) return
             resetFailedAttempts()
             onUnlock()

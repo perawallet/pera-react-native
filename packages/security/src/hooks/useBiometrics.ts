@@ -11,7 +11,10 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import { type BiometricType } from '@perawallet/wallet-extension-platform'
+import {
+    type BiometricsAuthenticatePrompt,
+    type BiometricType,
+} from '@perawallet/wallet-extension-platform'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useKMSService } from '@perawallet/wallet-core-kms'
 import {
@@ -26,9 +29,13 @@ type UseBiometricsResult = {
     checkBiometricsEnabled: () => Promise<boolean>
     checkBiometricsAvailable: () => Promise<boolean>
     refreshBiometricsBinding: () => Promise<void>
-    enableBiometrics: () => Promise<boolean>
+    enableBiometrics: (
+        prompt?: BiometricsAuthenticatePrompt,
+    ) => Promise<boolean>
     disableBiometrics: () => Promise<void>
-    authenticateWithBiometrics: () => Promise<boolean>
+    authenticateWithBiometrics: (
+        prompt?: BiometricsAuthenticatePrompt,
+    ) => Promise<boolean>
 }
 
 export const useBiometrics = (): UseBiometricsResult => {
@@ -69,10 +76,7 @@ export const useBiometrics = (): UseBiometricsResult => {
     )
 
     const enableBiometrics = useCallback(
-        async (
-            promptTitle?: string,
-            promptDescription?: string,
-        ): Promise<boolean> => {
+        async (prompt?: BiometricsAuthenticatePrompt): Promise<boolean> => {
             try {
                 const result = await withTypedSecret(
                     PIN_RECORD_KEY_ID,
@@ -82,10 +86,7 @@ export const useBiometrics = (): UseBiometricsResult => {
                         if (!available) return false
 
                         const authenticated =
-                            await biometricsService.authenticate(
-                                promptTitle,
-                                promptDescription,
-                            )
+                            await biometricsService.authenticate(prompt)
                         if (!authenticated) return false
 
                         // `writeBiometricBlob` copies the bytes into the keystore;
@@ -120,19 +121,13 @@ export const useBiometrics = (): UseBiometricsResult => {
     }, [removeTypedSecret])
 
     const authenticateWithBiometrics = useCallback(
-        async (
-            promptTitle?: string,
-            promptDescription?: string,
-        ): Promise<boolean> => {
+        async (prompt?: BiometricsAuthenticatePrompt): Promise<boolean> => {
             if (!(await checkBiometricsEnabled())) {
                 return false
             }
 
             try {
-                return await biometricsService.authenticate(
-                    promptTitle,
-                    promptDescription,
-                )
+                return await biometricsService.authenticate(prompt)
             } catch {
                 return false
             }

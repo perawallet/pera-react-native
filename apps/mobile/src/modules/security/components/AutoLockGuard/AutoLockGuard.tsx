@@ -20,7 +20,6 @@ import { LockoutView } from './LockoutView'
 import { useLockScreen } from './useLockScreen'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { LoadingView } from '@components/LoadingView'
-import { Modal } from 'react-native'
 
 export const AutoLockGuard = ({ children }: PropsWithChildren) => {
     const { isLocked, isChecking, unlock, handleResetData } =
@@ -36,46 +35,44 @@ export const AutoLockGuard = ({ children }: PropsWithChildren) => {
     const styles = useStyles(insets)
     const { t } = useLanguage()
 
-    // we return the loading/lock screen as an overlay to allow the
-    // main screen to pre-load
+    const showLoadingOverlay = isChecking
+    const showLockOverlay = isLocked && !isChecking
+    const isGuardActive = showLoadingOverlay || showLockOverlay
+
     return (
         <>
-            {isChecking && (
-                <PWView style={styles.overlayContainer}>
+            <PWView
+                style={[
+                    styles.childrenContainer,
+                    isGuardActive && styles.childrenHidden,
+                ]}
+            >
+                {children}
+            </PWView>
+            {showLoadingOverlay && (
+                <PWView style={styles.loadingOverlay}>
                     <LoadingView variant='circle' />
                 </PWView>
             )}
-            {isLocked && (
-                <Modal
-                    visible={true}
-                    transparent={false}
-                    statusBarTranslucent={true}
-                    hardwareAccelerated={true}
-                >
-                    <PWView style={styles.container}>
-                        {isLockedOut ? (
-                            <PWView style={styles.container}>
-                                <LockoutView
-                                    remainingSeconds={remainingSeconds}
-                                    onResetData={handleResetData}
-                                />
-                            </PWView>
-                        ) : (
-                            <PWView style={styles.container}>
-                                <PinEntry
-                                    title={t('security.pin.unlock_title')}
-                                    onPinComplete={handlePinComplete}
-                                    hasError={hasError}
-                                    onErrorAnimationComplete={
-                                        handleErrorAnimationComplete
-                                    }
-                                />
-                            </PWView>
-                        )}
-                    </PWView>
-                </Modal>
+            {showLockOverlay && (
+                <PWView style={styles.lockOverlay}>
+                    {isLockedOut ? (
+                        <LockoutView
+                            remainingSeconds={remainingSeconds}
+                            onResetData={handleResetData}
+                        />
+                    ) : (
+                        <PinEntry
+                            title={t('security.pin.unlock_title')}
+                            onPinComplete={handlePinComplete}
+                            hasError={hasError}
+                            onErrorAnimationComplete={
+                                handleErrorAnimationComplete
+                            }
+                        />
+                    )}
+                </PWView>
             )}
-            {children}
         </>
     )
 }

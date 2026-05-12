@@ -30,10 +30,22 @@ vi.mock('expo-local-authentication', () => ({
     authenticateAsync: authenticateAsyncMock,
 }))
 
+vi.mock('@perawallet/wallet-core-shared', () => ({
+    logger: {
+        warn: vi.fn(),
+        error: vi.fn(),
+    },
+}))
+
 import { RNBiometricsService } from '../services/biometrics'
 
 describe('RNBiometricsService', () => {
     const service = new RNBiometricsService()
+
+    const setEnrolled = () => {
+        hasHardwareAsyncMock.mockResolvedValue(true)
+        isEnrolledAsyncMock.mockResolvedValue(true)
+    }
 
     beforeEach(() => {
         hasHardwareAsyncMock.mockReset()
@@ -55,16 +67,14 @@ describe('RNBiometricsService', () => {
         })
 
         test('prefers face over fingerprint when both are supported', async () => {
-            hasHardwareAsyncMock.mockResolvedValue(true)
-            isEnrolledAsyncMock.mockResolvedValue(true)
+            setEnrolled()
             // 1 = FINGERPRINT, 2 = FACIAL_RECOGNITION
             supportedAuthenticationTypesAsyncMock.mockResolvedValue([1, 2])
             expect(await service.getSupportedBiometricType()).toBe('face')
         })
 
         test('returns "fingerprint" when only fingerprint is supported', async () => {
-            hasHardwareAsyncMock.mockResolvedValue(true)
-            isEnrolledAsyncMock.mockResolvedValue(true)
+            setEnrolled()
             supportedAuthenticationTypesAsyncMock.mockResolvedValue([1])
             expect(await service.getSupportedBiometricType()).toBe(
                 'fingerprint',
@@ -72,15 +82,13 @@ describe('RNBiometricsService', () => {
         })
 
         test('returns "biometrics" when only iris is supported', async () => {
-            hasHardwareAsyncMock.mockResolvedValue(true)
-            isEnrolledAsyncMock.mockResolvedValue(true)
+            setEnrolled()
             supportedAuthenticationTypesAsyncMock.mockResolvedValue([3])
             expect(await service.getSupportedBiometricType()).toBe('biometrics')
         })
 
         test('returns null when supported list is empty', async () => {
-            hasHardwareAsyncMock.mockResolvedValue(true)
-            isEnrolledAsyncMock.mockResolvedValue(true)
+            setEnrolled()
             supportedAuthenticationTypesAsyncMock.mockResolvedValue([])
             expect(await service.getSupportedBiometricType()).toBeNull()
         })
@@ -88,8 +96,7 @@ describe('RNBiometricsService', () => {
 
     describe('checkBiometricsAvailable', () => {
         test('returns true when a supported type exists', async () => {
-            hasHardwareAsyncMock.mockResolvedValue(true)
-            isEnrolledAsyncMock.mockResolvedValue(true)
+            setEnrolled()
             supportedAuthenticationTypesAsyncMock.mockResolvedValue([2])
             expect(await service.checkBiometricsAvailable()).toBe(true)
         })
@@ -103,7 +110,13 @@ describe('RNBiometricsService', () => {
     describe('authenticate', () => {
         test('returns the native success flag', async () => {
             authenticateAsyncMock.mockResolvedValue({ success: true })
-            expect(await service.authenticate('t', 'd')).toBe(true)
+            expect(
+                await service.authenticate({
+                    title: 't',
+                    description: 'd',
+                    cancelLabel: 'Cancel',
+                }),
+            ).toBe(true)
         })
 
         test('returns false when the native call resolves with success: false', async () => {
@@ -121,14 +134,39 @@ describe('RNBiometricsService', () => {
 
         test('disables device PIN/password fallback (biometric-only)', async () => {
             authenticateAsyncMock.mockResolvedValue({ success: true })
-            await service.authenticate('Unlock')
+            await service.authenticate({ title: 'Unlock' })
             expect(authenticateAsyncMock).toHaveBeenCalledWith(
                 expect.objectContaining({
                     promptMessage: 'Unlock',
                     disableDeviceFallback: true,
-                    biometricsSecurityLevel: 'strong',
+                    // Intentionally 'weak' — see service comment for the
+                    // Samsung S21 / Galaxy firmware compatibility rationale.
+                    biometricsSecurityLevel: 'weak',
                 }),
             )
+        })
+
+        // Regression: AndroidX BiometricPrompt's PromptInfo.Builder#build()
+        // throws IllegalArgumentException unless a non-empty negative button
+        // text is supplied whenever DEVICE_CREDENTIAL isn't in the allowed
+        // authenticators. Forwarding cancelLabel keeps the prompt buildable.
+        test('forwards cancelLabel to the native call', async () => {
+            authenticateAsyncMock.mockResolvedValue({ success: true })
+            await service.authenticate({
+                title: 'Unlock',
+                cancelLabel: 'Dismiss',
+            })
+            expect(authenticateAsyncMock).toHaveBeenCalledWith(
+                expect.objectContaining({ cancelLabel: 'Dismiss' }),
+            )
+        })
+
+        test('falls back to a non-empty cancelLabel when caller omits it', async () => {
+            authenticateAsyncMock.mockResolvedValue({ success: true })
+            await service.authenticate({ title: 'Unlock' })
+            const call = authenticateAsyncMock.mock.calls[0][0]
+            expect(call.cancelLabel).toEqual(expect.any(String))
+            expect(call.cancelLabel.length).toBeGreaterThan(0)
         })
     })
 })

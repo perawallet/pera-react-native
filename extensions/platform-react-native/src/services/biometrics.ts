@@ -17,16 +17,20 @@ import {
     isEnrolledAsync,
     supportedAuthenticationTypesAsync,
 } from 'expo-local-authentication'
+import { logger } from '@perawallet/wallet-core-shared'
 import type {
+    BiometricsAuthenticatePrompt,
     BiometricsService,
     BiometricType,
 } from '@perawallet/wallet-extension-platform'
 
+const LOG_SOURCE = 'RNBiometricsService'
+
 // Backed by `expo-local-authentication` (Expo SDK 55), which on iOS uses
 // LAPolicy.deviceOwnerAuthenticationWithBiometrics and on Android uses the
-// AndroidX BiometricPrompt with BIOMETRIC_STRONG. We force biometric-only by
-// disabling the device PIN/password fallback — Pera has its own PIN flow and
-// the `BiometricsService` contract is "biometric or nothing."
+// AndroidX BiometricPrompt. We force biometric-only by disabling the device
+// PIN/password fallback — Pera has its own PIN flow and the
+// `BiometricsService` contract is "biometric or nothing."
 export class RNBiometricsService implements BiometricsService {
     async getSupportedBiometricType(): Promise<BiometricType> {
         const hasHardware = await hasHardwareAsync()
@@ -47,20 +51,28 @@ export class RNBiometricsService implements BiometricsService {
     }
 
     async authenticate(
-        promptTitle: string = 'Authenticate',
-        // expo-local-authentication doesn't expose a separate "description"
-        // field. Kept in the signature for `BiometricsService` API
-        // compatibility; ignored at runtime.
-        _promptDescription?: string,
+        prompt: BiometricsAuthenticatePrompt = {},
     ): Promise<boolean> {
         try {
             const result = await authenticateAsync({
-                promptMessage: promptTitle,
+                promptMessage: prompt.title ?? 'Authenticate',
+                cancelLabel: prompt.cancelLabel || 'Cancel',
                 disableDeviceFallback: true,
-                biometricsSecurityLevel: 'strong',
+                biometricsSecurityLevel: 'weak',
             })
+            if (!result.success) {
+                logger.warn('Biometric authentication did not succeed', {
+                    source: LOG_SOURCE,
+                    error: result.error ?? null,
+                    warning: result.warning ?? null,
+                })
+            }
             return result.success
-        } catch {
+        } catch (error) {
+            logger.error('Biometric authentication threw', {
+                source: LOG_SOURCE,
+                error,
+            })
             return false
         }
     }

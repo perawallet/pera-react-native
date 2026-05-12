@@ -158,6 +158,34 @@ describe('useSettingsSecurityScreen', () => {
             expect(success!).toBe(true)
         })
 
+        // Regression: AndroidX BiometricPrompt's PromptInfo.Builder#build()
+        // throws unless a non-empty negative button text is supplied when
+        // DEVICE_CREDENTIAL isn't in the allowed authenticators. The screen
+        // must forward a localized cancelLabel through to enableBiometrics.
+        it('forwards a localized title and cancelLabel to enableBiometrics', async () => {
+            mockEnableBiometrics.mockResolvedValue(true)
+
+            const { result } = renderHook(() => useSettingsSecurityScreen())
+
+            await waitFor(() => {
+                expect(mockCheckPinEnabled).toHaveBeenCalled()
+            })
+
+            await act(async () => {
+                await result.current.handleBiometricToggle(true)
+            })
+
+            expect(mockEnableBiometrics).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    title: expect.any(String),
+                    cancelLabel: expect.any(String),
+                }),
+            )
+            const arg = mockEnableBiometrics.mock.calls[0][0]
+            expect(arg.title.length).toBeGreaterThan(0)
+            expect(arg.cancelLabel.length).toBeGreaterThan(0)
+        })
+
         it('should call disableBiometrics when disabling biometrics', async () => {
             mockDisableBiometrics.mockResolvedValue(undefined)
 
