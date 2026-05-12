@@ -1115,8 +1115,15 @@ vi.mock('react-native', () => {
 })
 
 vi.mock('react-native-safe-area-context', () => {
+    const React = require('react')
     const inset = { top: 0, right: 0, bottom: 0, left: 0 }
     const frame = { x: 0, y: 0, width: 375, height: 812 }
+    // SafeAreaInsetsContext is consumed by @react-navigation/elements and
+    // other libraries that opt into the real React Context API rather than
+    // calling useSafeAreaInsets(). Provide a real Context so those callers
+    // resolve cleanly.
+    const SafeAreaInsetsContext = React.createContext(inset)
+    const SafeAreaFrameContext = React.createContext(frame)
     return {
         SafeAreaProvider: vi
             .fn()
@@ -1127,6 +1134,8 @@ vi.mock('react-native-safe-area-context', () => {
         SafeAreaView: vi.fn().mockImplementation(({ children }) => children),
         useSafeAreaInsets: vi.fn().mockImplementation(() => inset),
         useSafeAreaFrame: vi.fn().mockImplementation(() => frame),
+        SafeAreaInsetsContext,
+        SafeAreaFrameContext,
         initialWindowMetrics: { insets: inset, frame },
     }
 })
@@ -1854,6 +1863,7 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     Networks: { mainnet: 'mainnet', testnet: 'testnet' },
     formatDatetime: vi.fn(d => String(d)),
     formatRelativeTime: vi.fn(d => String(d)),
+    formatTimeRemaining: vi.fn(() => '52m'),
     formatCurrency: vi.fn(
         (value, _decimals, currency) => `${currency || '$'}${value}`,
     ),

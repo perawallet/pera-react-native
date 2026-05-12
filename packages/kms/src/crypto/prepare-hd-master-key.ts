@@ -35,14 +35,13 @@ export const prepareHDMasterKey = async (params?: {
     const masterKey = await generateHDMasterKey(params?.mnemonic)
 
     const rootKey = fromSeed(masterKey.seed)
-    const entropy = new Uint8Array(Buffer.from(masterKey.entropy, 'hex'))
 
     zeroBytes(masterKey.seed)
 
     return {
         keyId,
         rootKey,
-        entropy,
+        entropy: masterKey.entropy,
         mnemonic: masterKey.mnemonic,
     }
 }

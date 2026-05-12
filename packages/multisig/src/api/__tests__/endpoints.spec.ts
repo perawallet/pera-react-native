@@ -65,6 +65,7 @@ describe('createMultisigAccount', () => {
             version: 1,
             threshold: 2,
             participant_addresses: ['ADDR1', 'ADDR2'],
+            device_id: 'device-1',
         }
         await createMultisigAccount('testnet', params)
 
@@ -86,6 +87,7 @@ describe('createMultisigAccount', () => {
             version: 1,
             threshold: 2,
             participant_addresses: ['ADDR1', 'ADDR2'],
+            device_id: 'device-1',
         })
         expect(result.address).toBe('MSIG_ADDR')
     })
@@ -100,6 +102,7 @@ describe('createMultisigAccount', () => {
                 version: 1,
                 threshold: 2,
                 participant_addresses: ['ADDR1'],
+                device_id: 'device-1',
             }),
         ).rejects.toThrow()
     })
@@ -216,19 +219,40 @@ describe('getSignRequestDetail', () => {
         vi.clearAllMocks()
     })
 
-    test('calls queryClient with correct params', async () => {
+    test('routes through the search endpoint with the device id and sign request id', async () => {
         ;(queryClient as Mock).mockResolvedValue({
-            data: validSignRequestResponse,
+            data: { count: 1, results: [validSignRequestResponse] },
         })
 
-        await getSignRequestDetail('mainnet', 'sr-1')
+        const result = await getSignRequestDetail(
+            'mainnet',
+            'device-7',
+            validSignRequestResponse.id,
+        )
 
         expect(queryClient).toHaveBeenCalledWith({
             backend: 'pera',
             network: 'mainnet',
-            method: 'GET',
-            url: '/v1/joint-accounts/sign-requests/sr-1/with-signatures/',
+            method: 'POST',
+            url: '/v1/joint-accounts/sign-requests/search/',
+            data: {
+                device_id: 'device-7',
+                sign_request_id: validSignRequestResponse.id,
+            },
         })
+        expect(result.id).toBe(validSignRequestResponse.id)
+    })
+
+    test('throws when no result matches the requested sign request id', async () => {
+        ;(queryClient as Mock).mockResolvedValue({
+            data: { count: 0, results: [] },
+        })
+
+        await expect(
+            getSignRequestDetail('mainnet', 'device-7', 'sr-missing'),
+        ).rejects.toThrow(
+            /Sign request not found in search results: sr-missing/,
+        )
     })
 })
 

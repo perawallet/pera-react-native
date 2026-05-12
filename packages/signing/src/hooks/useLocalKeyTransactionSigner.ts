@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { KeyType, useKMS, type KeyPair } from '@perawallet/wallet-core-kms'
 import { useCallback } from 'react'
 import {
@@ -33,15 +32,29 @@ import type {
 import { SIGNING_KEY_DOMAIN } from '../constants'
 
 export type UseLocalKeyTransactionSignerResult = {
+    /**
+     * Signs the transactions at `indexesToSign` with `account`'s key.
+     *
+     * The caller is responsible for resolving the correct account before
+     * calling: for regular signing flows that means following rekey to the
+     * auth account; for multisig cosign that means using the participant's
+     * own (un-rekey-resolved) account. This hook signs with whatever account
+     * it receives and does NOT follow rekey internally.
+     *
+     * Do NOT look the account up from `txn.sender`: for multisig cosign and
+     * ARC-0001 explicit-`signers` flows, the signer differs from the
+     * transaction sender, and lookup-by-sender would either pick the wrong
+     * account or none at all.
+     */
     signTransactions: (
         txnGroup: PeraTransaction[],
         indexesToSign: number[],
+        account: WalletAccount,
     ) => Promise<PeraSignedTransaction[]>
 }
 
 export const useLocalKeyTransactionSigner =
     (): UseLocalKeyTransactionSignerResult => {
-        const accounts = useAccountsStore(state => state.accounts)
         const { getKeyOrThrow, withHDSession, withAlgo25Session } = useKMS()
         const { encodeTransaction } = useTransactionEncoder()
 
@@ -137,26 +150,7 @@ export const useLocalKeyTransactionSigner =
             async (
                 account: WalletAccount,
                 txns: PeraTransactionGroup,
-                dontFollowRekey?: boolean,
             ): Promise<PeraSignedTransaction[]> => {
-                if (account.rekeyAddress && !dontFollowRekey) {
-                    const rekeyedAccount =
-                        accounts.find(
-                            a => a.address === account.rekeyAddress,
-                        ) ?? null
-                    if (!rekeyedAccount) {
-                        return Promise.reject(
-                            `No rekeyed account found for ${account.rekeyAddress}`,
-                        )
-                    }
-                    //rekeys don't chain, so only follow rekeys for one level
-                    return signSingleAccountTransactions(
-                        rekeyedAccount,
-                        txns,
-                        true,
-                    )
-                }
-
                 if (isHDWalletAccount(account)) {
                     return signHDWalletTransactions(
                         account as HDWalletAccount,
@@ -175,72 +169,30 @@ export const useLocalKeyTransactionSigner =
                     `Unsupported account type ${account.type} for ${account.address}`,
                 )
             },
-            [accounts, signHDWalletTransactions, signAlgo25Transactions],
+            [signHDWalletTransactions, signAlgo25Transactions],
         )
 
         const signTransactions = useCallback(
             async (
                 txnGroup: PeraTransaction[],
                 indexesToSign: number[],
+                account: WalletAccount,
             ): Promise<PeraSignedTransaction[]> => {
-                // we want to group the transactions by account for signing efficiency
-                // but we must remember where they were originally in the array
-                const originalIndexes = txnGroup.map((txn, index) => ({
-                    index,
-                    txn,
-                }))
-                const groupedByAccount = originalIndexes.reduce(
-                    (acc, { index, txn }) => {
-                        const account = accounts.find(
-                            a => a.address === txn.sender.toString(),
-                        )
-                        if (!account) {
-                            return acc
-                        }
-                        if (!acc.has(account.address)) {
-                            acc.set(account.address, [])
-                        }
-                        acc.get(account.address)?.push({ index, txn })
-                        return acc
-                    },
-                    new Map<
-                        string,
-                        { index: number; txn: PeraTransaction }[]
-                    >(),
-                )
-
-                // sign each group of transactions for the same account
                 const result = txnGroup.map(txn => ({
                     txn,
                 })) as PeraSignedTransaction[]
-                await Promise.all(
-                    Array.from(groupedByAccount.entries()).map(async entry => {
-                        const accountAddress = entry[0]
-                        const txns = entry[1]
-                        const toSign = txns.filter(txnHolder =>
-                            indexesToSign.includes(txnHolder.index),
-                        )
 
-                        const account = accounts.find(
-                            a => a.address === accountAddress,
-                        )
-                        if (!account) {
-                            return Promise.reject(
-                                `No account found for ${accountAddress}`,
-                            )
-                        }
-                        const signedTxns = await signSingleAccountTransactions(
-                            account,
-                            toSign.map(txnHolder => txnHolder.txn),
-                        )
-                        signedTxns.forEach((signedTxn, idx) => {
-                            result[toSign[idx].index] = signedTxn
-                        })
-                    }),
+                const toSign = indexesToSign.map(i => txnGroup[i])
+                const signedTxns = await signSingleAccountTransactions(
+                    account,
+                    toSign,
                 )
+                signedTxns.forEach((signedTxn, idx) => {
+                    result[indexesToSign[idx]] = signedTxn
+                })
                 return result
             },
-            [accounts, signSingleAccountTransactions],
+            [signSingleAccountTransactions],
         )
 
         return {

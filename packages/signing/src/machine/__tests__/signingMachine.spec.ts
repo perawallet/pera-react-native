@@ -191,6 +191,44 @@ describe('signingMachine', () => {
         expect(state.matches('rejected')).toBe(true)
     })
 
+    it('honors USER_REJECTED while still in validating (cancel during analyzer run)', async () => {
+        // Regression: previously USER_REJECTED was only handled in
+        // awaiting_user. A cancel pressed while the analyzer was still
+        // running was silently dropped, leaving the actor alive and the
+        // single-flight queue blocked for every subsequent request.
+        const slowMachine = signingMachine.provide({
+            actors: {
+                analyzerActor: fromPromise(
+                    () =>
+                        new Promise<SignableAnalysis[]>(resolve => {
+                            // Never resolves on its own — only the
+                            // USER_REJECTED transition can move the
+                            // machine out of validating.
+                            setTimeout(() => resolve([mockAnalysis]), 60_000)
+                        }),
+                ),
+                localKeySignerActor: fromPromise(
+                    async (): Promise<SigningResult[]> => [mockSigningResult],
+                ),
+                multisigSignerActor: fromPromise(
+                    async (): Promise<SigningResult[]> => [],
+                ),
+                transportActor: fromPromise(
+                    async (): Promise<TransportResult> => mockTransportResult,
+                ),
+            },
+        })
+
+        const actor = createActor(slowMachine, { input: makeInput() })
+        actor.start()
+
+        await waitFor(actor, s => s.matches('validating'))
+        actor.send({ type: 'USER_REJECTED' })
+
+        const state = await waitFor(actor, s => s.matches('rejected'))
+        expect(state.matches('rejected')).toBe(true)
+    })
+
     it('reaches completed after USER_APPROVED', async () => {
         const actor = createActor(mockedMachine, { input: makeInput() })
         actor.start()

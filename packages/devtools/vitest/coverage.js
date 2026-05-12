@@ -18,6 +18,7 @@ export const coverageConfig = {
         'src/**/errors.ts',
         'src/models/**',
         'src/test-utils/**',
+        'src/**/{handlers,*-handlers}.ts',
     ],
     reporter: ['text', 'html', 'lcov'],
     reportsDirectory: './coverage',

@@ -10,12 +10,13 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { createWrapper } from '@perawallet/wallet-extension-platform'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useInboxQuery } from '../useInboxQuery'
 import { fetchInbox } from '../../api/inbox'
+import type { InboxResponse } from '../../api/inbox'
 
 vi.mock('../../api/inbox', () => ({
     fetchInbox: vi.fn(),
@@ -272,5 +273,122 @@ describe('useInboxQuery', () => {
 
         expect(result.current.data).toHaveLength(1)
         expect(result.current.data?.[0].type).toBe('asa_inbox')
+    })
+
+    describe('refetchInterval polling', () => {
+        const POLL_INTERVAL_MS = 10_000
+
+        const buildSignRequest = (
+            status: 'pending' | 'ready' | 'submitting' | 'confirmed',
+            id = '1',
+        ) => ({
+            id,
+            status,
+            type: 'transfer',
+            creation_datetime: '2025-01-20T00:00:00Z',
+            expected_expire_datetime: '2025-01-21T00:00:00Z',
+            fail_reason_display: null,
+            joint_account: {
+                custom_id: 'msig-1',
+                creation_datetime: '2025-01-10T00:00:00Z',
+                address: 'MSIG_ADDR1',
+                version: 1,
+                threshold: 2,
+                participant_addresses: ['ADDR1', 'ADDR2'],
+            },
+            transaction_lists: [],
+        })
+
+        const buildResponse = (
+            signRequests: ReturnType<typeof buildSignRequest>[],
+        ): InboxResponse => ({
+            joint_account_import_requests: [],
+            joint_account_sign_requests: signRequests,
+            asa_inboxes: [],
+        })
+
+        beforeEach(() => {
+            vi.mocked(fetchInbox).mockClear()
+            vi.useFakeTimers({ shouldAdvanceTime: true })
+        })
+
+        afterEach(() => {
+            vi.useRealTimers()
+        })
+
+        it.each(['pending', 'ready', 'submitting'] as const)(
+            'polls every 10s while a sign request is %s',
+            async status => {
+                vi.mocked(fetchInbox).mockResolvedValue(
+                    buildResponse([buildSignRequest(status)]),
+                )
+
+                renderHook(() => useInboxQuery(), { wrapper: createWrapper() })
+
+                await waitFor(() => {
+                    expect(fetchInbox).toHaveBeenCalledTimes(1)
+                })
+
+                await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS)
+                expect(fetchInbox).toHaveBeenCalledTimes(2)
+
+                await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS)
+                expect(fetchInbox).toHaveBeenCalledTimes(3)
+            },
+        )
+
+        it('stops polling once all sign requests reach a terminal status', async () => {
+            vi.mocked(fetchInbox)
+                .mockResolvedValueOnce(
+                    buildResponse([buildSignRequest('submitting')]),
+                )
+                .mockResolvedValueOnce(
+                    buildResponse([buildSignRequest('confirmed')]),
+                )
+
+            renderHook(() => useInboxQuery(), { wrapper: createWrapper() })
+
+            await waitFor(() => {
+                expect(fetchInbox).toHaveBeenCalledTimes(1)
+            })
+
+            await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS)
+            await waitFor(() => {
+                expect(fetchInbox).toHaveBeenCalledTimes(2)
+            })
+
+            // Cached response now has only a `confirmed` item — polling
+            // should halt.
+            await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * 3)
+            expect(fetchInbox).toHaveBeenCalledTimes(2)
+        })
+
+        it('does not poll when there are no in-flight sign requests', async () => {
+            vi.mocked(fetchInbox).mockResolvedValue(
+                buildResponse([buildSignRequest('confirmed')]),
+            )
+
+            renderHook(() => useInboxQuery(), { wrapper: createWrapper() })
+
+            await waitFor(() => {
+                expect(fetchInbox).toHaveBeenCalledTimes(1)
+            })
+
+            await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * 3)
+            expect(fetchInbox).toHaveBeenCalledTimes(1)
+        })
+
+        it('does not poll when the inbox response is empty', async () => {
+            vi.mocked(fetchInbox).mockResolvedValue(buildResponse([]))
+
+            renderHook(() => useInboxQuery(), { wrapper: createWrapper() })
+
+            await waitFor(() => {
+                expect(fetchInbox).toHaveBeenCalledTimes(1)
+            })
+
+            await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * 3)
+            expect(fetchInbox).toHaveBeenCalledTimes(1)
+        })
     })
 })

@@ -264,6 +264,45 @@ describe('useNameMultisigScreen', () => {
         expect(mockExitAccountFlow).toHaveBeenCalled()
     })
 
+    it('handleFinish shows duplicate-account toast and skips mutation when an account with the generated multisig address already exists', async () => {
+        // Pre-seed the wallet with an account holding the address
+        // generateMultisigAddress will produce — same participants +
+        // threshold deterministically yield the same address, so re-creating
+        // the configuration must not silently append a second copy. (Mirror
+        // of the algo25/HD duplicate-prevention behavior.)
+        mockUseAllAccounts.mockReturnValue([
+            {
+                address: 'MULTISIG_ADDR',
+                name: 'Existing Shared',
+                type: 'multisig',
+                multisigDetails: {
+                    threshold: 2,
+                    addresses: ['ADDR1', 'ADDR2'],
+                },
+            } as WalletAccount,
+        ])
+
+        const { result } = renderHook(() => useNameMultisigScreen())
+
+        await act(async () => {
+            await result.current.handleFinish()
+        })
+
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            'multisig.name.duplicate_account_title',
+            'multisig.name.duplicate_account_body',
+        )
+        // The remote create call is skipped — we never reach the mutation
+        // for an existing address.
+        expect(mockMutateAsync).not.toHaveBeenCalled()
+        expect(mockSetAccounts).not.toHaveBeenCalled()
+        expect(mockSetSelectedAccountAddress).not.toHaveBeenCalled()
+        expect(mockExitAccountFlow).not.toHaveBeenCalled()
+        // Loading flag is reset (the `finally` block runs after the early
+        // return) so the user can correct their input and try again.
+        expect(result.current.isCreating).toBe(false)
+    })
+
     it('handleFinish shows error toast and skips mutation when deviceId is missing', async () => {
         mockUseDeviceID.mockReturnValue('')
 

@@ -20,7 +20,12 @@ export default defineConfig({
         react(),
         dts({
             include: ['src'],
-            exclude: ['**/__tests__/**', '**/*.test.ts', '**/*.test.tsx'],
+            exclude: [
+                '**/__tests__/**',
+                '**/*.test.ts',
+                '**/*.test.tsx',
+                '**/{handlers,*-handlers}.ts',
+            ],
             tsconfigPath: resolve(__dirname, 'tsconfig.json'),
             afterDiagnostic: diagnostics => {
                 if (diagnostics.length > 0) {

@@ -63,6 +63,13 @@ vi.mock('../useArc60Signer', () => ({
     })),
 }))
 
+vi.mock('../useMultisigTransportAdapters', () => ({
+    useMultisigTransportAdapters: vi.fn(() => ({
+        proposeSignRequest: vi.fn(),
+        addSignatures: vi.fn(),
+    })),
+}))
+
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(() => [
         { address: 'ADDR1', type: 'algo25' },

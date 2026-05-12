@@ -23,6 +23,7 @@ export default defineConfig({
                 '**/*.test.ts',
                 '**/*.test.tsx',
                 '**/*.generated.ts',
+                '**/{handlers,*-handlers}.ts',
             ],
             afterDiagnostic: diagnostics => {
                 const nonGenerated = diagnostics.filter(

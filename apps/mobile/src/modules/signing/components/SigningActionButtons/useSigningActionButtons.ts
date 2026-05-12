@@ -14,8 +14,11 @@ import { useCallback, useMemo } from 'react'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import {
+    isTransactionRequest,
+    type SignRequest,
     type SigningPipelineEvent,
     useSigningPipeline,
+    useSigningRequest,
 } from '@perawallet/wallet-core-signing'
 import { bottomSheetNotifier } from '@components/core'
 import { useNavigation } from '@react-navigation/native'
@@ -27,14 +30,30 @@ import { UserPreferences } from '@constants/user-preferences'
 
 type GuardedWarningType = 'rekey' | 'asset-freeze'
 
+export type UseSigningActionButtonsResult = {
+    handleSignAndSend: () => void
+    handleReject: () => void
+    isLoading: boolean
+    hasMultipleTransactions: boolean
+    guardedWarningType: GuardedWarningType | null
+    isSecurityGuardOpen: boolean
+    handleSecurityGuardConfirm: () => void
+    handleSecurityGuardGoToSettings: () => void
+    closeSecurityGuard: () => void
+    currentRequest: SignRequest | undefined
+    isMultisigCosign: boolean
+    cosignSignerAddress: string
+}
+
 const preferenceKeyMap: Record<GuardedWarningType, string> = {
     rekey: UserPreferences.rekeySupportEnabled,
     'asset-freeze': UserPreferences.assetFreezeSupportEnabled,
 }
 
-export const useSigningActionButtons = () => {
+export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
     const { showError } = useErrorToast()
     const { t } = useLanguage()
+    const { currentRequest } = useSigningRequest()
 
     const securityGuardModal = useModalState()
     const navigation =
@@ -106,6 +125,21 @@ export const useSigningActionButtons = () => {
         pipeline.fail()
     }, [pipeline])
 
+    const isMultisigCosign = useMemo(
+        () =>
+            !!currentRequest &&
+            currentRequest.sourceType === 'multisig-cosign' &&
+            !!currentRequest.signRequestId &&
+            isTransactionRequest(currentRequest),
+        [currentRequest],
+    )
+
+    const cosignSignerAddress = useMemo(() => {
+        if (!isMultisigCosign) return ''
+        if (!currentRequest || !isTransactionRequest(currentRequest)) return ''
+        return currentRequest.signerOverrides?.get(0) ?? ''
+    }, [isMultisigCosign, currentRequest])
+
     return {
         handleSignAndSend,
         handleReject,
@@ -116,5 +150,8 @@ export const useSigningActionButtons = () => {
         handleSecurityGuardConfirm,
         handleSecurityGuardGoToSettings,
         closeSecurityGuard,
+        currentRequest,
+        isMultisigCosign,
+        cosignSignerAddress,
     }
 }

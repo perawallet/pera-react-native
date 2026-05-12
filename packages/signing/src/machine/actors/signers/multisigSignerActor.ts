@@ -12,29 +12,83 @@
 
 import { fromPromise } from 'xstate'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
 import type {
     AnalyzedSignableGroup,
+    SigningCallbacks,
     SigningResult,
 } from '../../../pipeline/types'
+import { createSigningStrategySelector } from '../../../pipeline/signing/getSigningStrategy'
+import { getLocalParticipants } from '../../../pipeline/signing/utils'
+import type {
+    LocalSigningFunction,
+    LocalArbitrarySigningFunction,
+    LocalArc60SigningFunction,
+} from '../../../pipeline/signing/createLocalKeyStrategy'
+import type { EncodeTransactionFunction } from '../../../pipeline/signing/createHardwareStrategy'
 import { CannotSignError } from '../../../pipeline/errors'
 
 export type MultisigSignerActorInput = {
     groups: AnalyzedSignableGroup[]
     allAccounts: WalletAccount[]
+    signTransactions: LocalSigningFunction
+    signArbitraryData: LocalArbitrarySigningFunction
+    signArc60: LocalArc60SigningFunction
+    encodeTransaction: EncodeTransactionFunction
+    hardwareWalletRegistry?: HardwareWalletRegistry
+    signingCallbacks?: SigningCallbacks
 }
 
 /**
- * XState actor stub for multisig signing.
- * Full implementation will collect partial signatures from local multisig participants
- * and route to the appropriate transport (propose or cosign).
+ * XState actor that signs each multisig group with every local-key
+ * participant in parallel, producing one combined SigningResult per group.
+ *
+ * The strategy selector excludes hardware participants (no keyPairId), so
+ * Ledger participants in the wallet are not auto-signed here — they get a
+ * per-row "Sign" button that spawns a separate `multisig-cosign` request.
+ *
+ * Throws NoLocalParticipantsError (from createMultisigStrategy) if the user
+ * has no signing-capable participants in their wallet for the group's
+ * multisig account.
  */
 export const multisigSignerActor = fromPromise<
     SigningResult[],
     MultisigSignerActorInput
 >(async ({ input }) => {
-    const firstGroup = input.groups[0]
-    throw new CannotSignError(
-        firstGroup?.signerAddress ?? 'unknown',
-        'Multisig signing is not yet implemented',
+    const {
+        groups,
+        allAccounts,
+        signTransactions,
+        signArbitraryData,
+        signArc60,
+        encodeTransaction,
+        hardwareWalletRegistry,
+        signingCallbacks,
+    } = input
+
+    const selectStrategy = createSigningStrategySelector({
+        signTransactions,
+        signArbitraryData,
+        signArc60,
+        encodeTransaction,
+        hardwareWalletRegistry,
+        getLocalParticipants,
+        getAllAccounts: () => allAccounts,
+    })
+
+    return Promise.all(
+        groups.map(group => {
+            const signerAccount = allAccounts.find(
+                a => a.address === group.signerAddress,
+            )
+            if (!signerAccount) {
+                throw new CannotSignError(
+                    group.signerAddress,
+                    'Account not found in allAccounts',
+                )
+            }
+            const strategy = selectStrategy(signerAccount, allAccounts)
+            return strategy.sign(group, signerAccount, signingCallbacks)
+        }),
     )
 })

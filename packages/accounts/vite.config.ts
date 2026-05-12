@@ -18,7 +18,12 @@ export default defineConfig({
     plugins: [
         dts({
             include: ['src'],
-            exclude: ['**/__tests__/**', '**/*.test.ts', '**/*.test.tsx'],
+            exclude: [
+                '**/__tests__/**',
+                '**/*.test.ts',
+                '**/*.test.tsx',
+                '**/{handlers,*-handlers}.ts',
+            ],
             afterDiagnostic: diagnostics => {
                 if (diagnostics.length > 0) {
                     throw new Error(
@@ -54,7 +59,6 @@ export default defineConfig({
                 '@perawallet/wallet-core-kms',
                 '@algorandfoundation/xhd-wallet-api',
                 'uuid',
-                'bip39',
                 'decimal.js',
                 '@perawallet/wallet-extension-provider',
             ],
