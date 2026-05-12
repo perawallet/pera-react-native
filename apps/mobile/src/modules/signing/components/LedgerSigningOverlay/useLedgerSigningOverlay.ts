@@ -10,71 +10,100 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
     useHardwareSigning,
     useSigningRequest,
+    type HardwareSigningStatus,
 } from '@perawallet/wallet-core-signing'
-
-type LedgerOverlayStatus = 'connecting' | 'confirming' | 'error' | 'timeout'
+import { useLanguage } from '@hooks/useLanguage'
+import {
+    getLedgerErrorPresetByKind,
+    type LedgerErrorPreset,
+} from '@modules/ledger/utils/ledgerErrorPresets'
 
 export type UseLedgerSigningOverlayResult = {
     isVisible: boolean
-    status: LedgerOverlayStatus
-    currentTx: number | undefined
-    totalTxs: number | undefined
+    status: HardwareSigningStatus
+    deviceName: string | null
+    currentTx: number | null
+    totalTxs: number | null
+    error: LedgerErrorPreset | null
     onCancel: () => void
     onRetry: () => void
+    isTroubleshootingVisible: boolean
+    onOpenTroubleshooting: () => void
+    onCloseTroubleshooting: () => void
 }
 
 /**
- * UI adapter that combines the store-only `useHardwareSigning` hook with
- * `useSigningRequest` to wire cancel/retry through to the signing machine.
+ * UI adapter combining the store-only `useHardwareSigning` hook with
+ * `useSigningRequest` to wire cancel/retry through to the signing machine,
+ * and managing the local visibility of the troubleshooting bottom sheet.
  *
- * The hardware strategy rejects ARC-60 and arbitrary-data requests before
- * any phase callback fires, so this overlay is Ledger-transaction-only
- * even though the underlying hook is hardware-agnostic.
+ * `isVisible` is derived from status: the silent-scan phase ('searching')
+ * keeps the overlay hidden so the user only sees UI once the device
+ * responds, matching Android's native behavior.
  */
 export const useLedgerSigningOverlay = (): UseLedgerSigningOverlayResult => {
     const {
         isActive,
         status,
+        deviceName,
         currentTx,
         totalTxs,
+        error: errorPayload,
         resolveActiveRequest,
         dismiss,
     } = useHardwareSigning()
+    const { t } = useLanguage()
     const { pendingSignRequests, rejectRequest, retryRequest } =
         useSigningRequest()
 
-    const handleCancel = useCallback(() => {
+    const [isTroubleshootingVisible, setTroubleshootingVisible] =
+        useState(false)
+
+    const error = useMemo<LedgerErrorPreset | null>(() => {
+        if (!errorPayload) return null
+        return getLedgerErrorPresetByKind(errorPayload.kind, t)
+    }, [errorPayload, t])
+
+    const onCloseTroubleshooting = useCallback(() => {
+        setTroubleshootingVisible(false)
+    }, [])
+
+    const onOpenTroubleshooting = useCallback(() => {
+        setTroubleshootingVisible(true)
+    }, [])
+
+    const onCancel = useCallback(() => {
         const activeRequest = resolveActiveRequest(pendingSignRequests)
         if (activeRequest) {
             rejectRequest(activeRequest)
         }
+        setTroubleshootingVisible(false)
         dismiss()
     }, [resolveActiveRequest, pendingSignRequests, rejectRequest, dismiss])
 
-    const handleRetry = useCallback(() => {
+    const onRetry = useCallback(() => {
+        if (!error?.isRetryable) return
         const activeRequest = resolveActiveRequest(pendingSignRequests)
         if (activeRequest) {
             retryRequest(activeRequest)
         }
-    }, [resolveActiveRequest, pendingSignRequests, retryRequest])
-
-    // Narrow: when isActive is true the status is one of the overlay's
-    // accepted values. The presentational component is unmounted when not
-    // visible so the cast is safe at runtime.
-    const overlayStatus = (
-        status === 'idle' ? 'connecting' : status
-    ) as LedgerOverlayStatus
+    }, [error, resolveActiveRequest, pendingSignRequests, retryRequest])
 
     return {
-        isVisible: isActive,
-        status: overlayStatus,
+        isVisible: isActive && status !== 'searching',
+        status,
+        deviceName,
         currentTx,
         totalTxs,
-        onCancel: handleCancel,
-        onRetry: handleRetry,
+        error,
+        onCancel,
+        onRetry,
+        isTroubleshootingVisible,
+        onOpenTroubleshooting,
+        onCloseTroubleshooting,
     }
 }

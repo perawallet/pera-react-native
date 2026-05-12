@@ -29,6 +29,7 @@ import {
 } from '@perawallet/wallet-core-ledger'
 import {
     getLedgerErrorPreset,
+    getLedgerErrorPresetByKind,
     type LedgerErrorPresetKind,
 } from '../ledgerErrorPresets'
 
@@ -180,5 +181,16 @@ describe('LedgerErrorPreset 13-kind taxonomy', () => {
         // reclassify it.
         const preset = getLedgerErrorPreset(new LedgerScanTimeoutError('x'), t)
         expect(preset.kind).toBe('scan_timeout')
+    })
+})
+
+describe('getLedgerErrorPresetByKind', () => {
+    type Translate = (key: string, options?: Record<string, unknown>) => string
+
+    it('getLedgerErrorPresetByKind returns the same flags as the matcher-based classifier', () => {
+        const t: Translate = key => key
+        const a = getLedgerErrorPresetByKind('connection_failed', t)
+        const b = getLedgerErrorPreset(new LedgerConnectionError('x'), t)
+        expect(a).toEqual(b)
     })
 })

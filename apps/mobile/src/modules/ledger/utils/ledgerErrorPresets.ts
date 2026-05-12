@@ -140,3 +140,20 @@ export const getLedgerErrorPreset = (
         isRetryable: !NON_RETRYABLE_KINDS.has(kind),
     }
 }
+
+/**
+ * Builds a preset directly from a `LedgerErrorPresetKind` without needing the
+ * original Error instance. Used by overlay adapters whose state already holds
+ * the classified kind (e.g. the hardware-signing store), so we don't have to
+ * round-trip through `instanceof` matching to render the UI copy.
+ */
+export const getLedgerErrorPresetByKind = (
+    kind: LedgerErrorPresetKind,
+    t: Translate,
+): LedgerErrorPreset => ({
+    kind,
+    title: t(`ledger.errors.${kind}_title`),
+    body: t(`ledger.errors.${kind}`),
+    isTroubleshootable: TROUBLESHOOTABLE_KINDS.has(kind),
+    isRetryable: !NON_RETRYABLE_KINDS.has(kind),
+})
