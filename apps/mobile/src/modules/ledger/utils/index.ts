@@ -11,3 +11,4 @@
  */
 
 export * from './ledgerErrorPresets'
+export * from './sanitizeDeviceName'

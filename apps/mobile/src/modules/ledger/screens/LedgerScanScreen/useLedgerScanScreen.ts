@@ -17,6 +17,7 @@ import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wall
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 import { useLedgerConnection } from '../../hooks'
+import { sanitizeDeviceName } from '../../utils'
 
 type UseLedgerScanScreenResult = {
     devices: HardwareWalletDevice[]
@@ -45,7 +46,7 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
             stopScan()
             navigation.navigate('LedgerFetchAccounts', {
                 deviceId: device.id,
-                deviceName: device.name,
+                deviceName: sanitizeDeviceName(device.name),
                 transportType: device.transportType,
             })
         },

@@ -84,6 +84,25 @@ describe('useLedgerScanScreen', () => {
         })
     })
 
+    it('sanitizes the device name before forwarding to navigation params', () => {
+        const { result } = renderHook(() => useLedgerScanScreen())
+        const hostileDevice: HardwareWalletDevice = {
+            ...DEVICE,
+            // RLO override + leading control char — must not reach the nav header.
+            name: 'Ledger ‮X9F2A',
+        }
+
+        act(() => {
+            result.current.handleDevicePress(hostileDevice)
+        })
+
+        expect(mockNavigate).toHaveBeenCalledWith('LedgerFetchAccounts', {
+            deviceId: hostileDevice.id,
+            deviceName: 'Ledger X9F2A',
+            transportType: hostileDevice.transportType,
+        })
+    })
+
     it('navigates to troubleshooting on handleTroubleshoot', () => {
         const { result } = renderHook(() => useLedgerScanScreen())
 
