@@ -19,7 +19,7 @@ import { AccountTypes } from '@perawallet/wallet-core-accounts'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useHardwareSigningStore } from '../../store/hardwareSigningStore'
 import type { SignRequest } from '../../models'
-import { buildHardwareSigningCallbacks } from '../useSigningActorLifecycle'
+import { buildHardwareSigningCallbacks } from '../buildHardwareSigningCallbacks'
 
 const hwAccount: WalletAccount = {
     type: AccountTypes.hardware,

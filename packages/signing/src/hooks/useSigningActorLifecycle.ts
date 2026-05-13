@@ -18,25 +18,20 @@ import {
     useTransactionEncoder,
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
-import {
-    isHardwareWalletAccount,
-    useAllAccounts,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useLocalKeyTransactionSigner } from './useLocalKeyTransactionSigner'
 import { useArbitraryDataSigner } from './useArbitraryDataSigner'
 import { useArc60Signer } from './useArc60Signer'
 import { useMultisigTransportAdapters } from './useMultisigTransportAdapters'
+import { buildHardwareSigningCallbacks } from './buildHardwareSigningCallbacks'
 import { useSigningStore, useHardwareSigningStore } from '../store'
 import { createSigningMachine } from '../machine/createSigningMachine'
 import { signingMachine } from '../machine/signingMachine'
 import { createTransportSelector } from '../pipeline/transports/getTransport'
 import { getNextQueuedRequest } from '../pipeline/queue'
 import type { SigningMachineDeps } from '../machine/context'
-import type { SigningCallbacks } from '../pipeline/types'
 import { type SignRequest } from '../models'
-import { classifyLedgerErrorKind } from '../utils/classifyLedgerErrorKind'
 import { resolveSignerAddress } from '../utils/resolveSignerAddress'
 
 // Process-wide registry of running signing-machine actors, keyed by
@@ -58,58 +53,6 @@ export const __resetSigningActorRegistryForTests = (): void => {
         actor.stop()
     }
     actorRefsMap.clear()
-}
-
-/**
- * Build SigningCallbacks that drive the hardware-signing UI store.
- *
- * Translates strategy-emitted phase signals (connecting / awaiting-approval),
- * signing-start, progress, and error events into the store-level actions
- * that back the LedgerSigningContent sheet. The error path uses
- * {@link classifyLedgerErrorKind} so the overlay can render preset-specific
- * copy without a UI-layer dependency reaching into the signing package.
- *
- * The signer account is taken at callback-build time (not lazily) so the
- * overlay can show the device name from the very first `onPhaseChange`.
- *
- * Exported so callback-level behavior can be unit-tested in isolation —
- * see `buildHardwareSigningCallbacks.spec.ts`.
- */
-export const buildHardwareSigningCallbacks = (
-    request: SignRequest,
-    signerAccount: WalletAccount | undefined,
-): SigningCallbacks => {
-    const deviceName =
-        signerAccount && isHardwareWalletAccount(signerAccount)
-            ? signerAccount.hardwareDetails.deviceName
-            : null
-
-    return {
-        onPhaseChange: phase => {
-            const store = useHardwareSigningStore.getState()
-            if (phase === 'connecting') {
-                store.start(request.id, deviceName)
-            } else if (phase === 'awaiting-approval') {
-                store.setStatus('awaitingApproval')
-            }
-        },
-        onSigningStart: () => {
-            useHardwareSigningStore.getState().setStatus('signing')
-        },
-        onProgress: (current, total) => {
-            // Update progress counters only. Status transitions are driven by
-            // onPhaseChange (which createHardwareStrategy emits before each
-            // signTransaction call) — decoupling progress from status means
-            // skipped indices never incorrectly flip the overlay to
-            // 'awaitingApproval', and the 'signing' state set by onSigningStart
-            // remains observable until the first onPhaseChange fires.
-            useHardwareSigningStore.getState().setProgress(current, total)
-        },
-        onError: error => {
-            const kind = classifyLedgerErrorKind(error)
-            useHardwareSigningStore.getState().setError({ kind, cause: error })
-        },
-    }
 }
 
 // =============================================================================
