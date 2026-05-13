@@ -21,11 +21,8 @@ export const swapQueryKeys = {
         network: Network,
     ) =>
         [MODULE_PREFIX, 'available-assets', { assetInId, q, network }] as const,
-    history: (
-        address: string,
-        statuses: Optional<string>,
-        network: Network,
-    ) => [MODULE_PREFIX, 'history', { address, statuses, network }] as const,
+    history: (address: string, statuses: Optional<string>, network: Network) =>
+        [MODULE_PREFIX, 'history', { address, statuses, network }] as const,
     historyInfinite: (
         address: string,
         statuses: Optional<string>,

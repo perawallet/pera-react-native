@@ -19,7 +19,10 @@ import {
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
-import { generateOrderedUniqueId, Optional } from '@perawallet/wallet-core-shared'
+import {
+    generateOrderedUniqueId,
+    Optional,
+} from '@perawallet/wallet-core-shared'
 import { useNfdResolve } from '@hooks/useNfdResolve'
 
 type UseWatchAccountScreenResult = {

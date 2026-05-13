@@ -11,7 +11,10 @@
  */
 
 import { useMemo } from 'react'
-import { Optional, truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
+import {
+    Optional,
+    truncateAlgorandAddress,
+} from '@perawallet/wallet-core-shared'
 import {
     useAllAccounts,
     type WalletAccount,

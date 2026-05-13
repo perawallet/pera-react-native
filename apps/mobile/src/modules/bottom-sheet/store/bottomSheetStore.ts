@@ -11,7 +11,10 @@
  */
 
 import { createElement } from 'react'
-import { generateOrderedUniqueId, Optional } from '@perawallet/wallet-core-shared'
+import {
+    generateOrderedUniqueId,
+    Optional,
+} from '@perawallet/wallet-core-shared'
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 
 import type {

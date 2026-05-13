@@ -59,9 +59,8 @@ describe('useInvalidateAssetPrices', () => {
         })
 
         // Test the predicate function
-        const predicate = invalidateQueriesSpy.mock.calls[0][0]?.predicate as Optional<
-            (query: QueryLike) => boolean
-        >
+        const predicate = invalidateQueriesSpy.mock.calls[0][0]
+            ?.predicate as Optional<(query: QueryLike) => boolean>
         expect(predicate).toBeDefined()
 
         if (predicate) {
@@ -94,9 +93,8 @@ describe('useInvalidateAssetPrices', () => {
 
         result.current.invalidateAssetPrices()
 
-        const predicate = invalidateQueriesSpy.mock.calls[0][0]?.predicate as Optional<
-            (query: QueryLike) => boolean
-        >
+        const predicate = invalidateQueriesSpy.mock.calls[0][0]
+            ?.predicate as Optional<(query: QueryLike) => boolean>
         expect(predicate).toBeDefined()
 
         if (predicate) {
@@ -149,9 +147,8 @@ describe('useInvalidateAssetPrices', () => {
         // For the price queries, we can't reliably test isInvalidated directly
         // since the test environment might handle invalidation differently
         // Instead, we'll verify the predicate function behavior
-        const predicate = invalidateQueriesSpy.mock.calls[0][0]?.predicate as Optional<
-            (query: QueryLike) => boolean
-        >
+        const predicate = invalidateQueriesSpy.mock.calls[0][0]
+            ?.predicate as Optional<(query: QueryLike) => boolean>
         expect(predicate).toBeDefined()
 
         if (predicate) {
