@@ -504,11 +504,6 @@ vi.mock('@components/core', () => {
                     React.createElement('span', { key: 'subtitle' }, subtitle),
                 children,
             ),
-        PWLottie: ({ testID, ...props }: any) =>
-            React.createElement('div', {
-                ...props,
-                'data-testid': testID || 'PWLottie',
-            }),
         PWLoadingOverlay: ({ isVisible, title, children, ...props }: any) =>
             isVisible
                 ? React.createElement(
@@ -519,6 +514,11 @@ vi.mock('@components/core', () => {
                       children,
                   )
                 : null,
+        PWLottie: ({ testID, ...props }: any) =>
+            React.createElement('div', {
+                ...props,
+                'data-testid': testID || 'PWLottie',
+            }),
         PWNumpad: ({ mode, onKeyPress, isDisabled, testID }: any) => {
             const keys =
                 mode === 'number'
