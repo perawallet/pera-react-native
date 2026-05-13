@@ -49,7 +49,7 @@ const renderLoadingSkeleton = () => {
 export const AccountNfts = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const flatListRef = useRef<any>(null)
+    const flatListRef = useRef<React.ComponentRef<typeof PWFlatList>>(null)
     const previousFirstItemIdRef = useRef<string | undefined>(undefined)
 
     const {
