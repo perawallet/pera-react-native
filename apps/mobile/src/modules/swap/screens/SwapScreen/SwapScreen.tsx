@@ -10,9 +10,8 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
-import { useModalState } from '@hooks/useModalState'
 import { config } from '@perawallet/wallet-core-config'
 import { PWIcon, PWText, PWToolbar, PWView } from '@components/core'
 import {
@@ -23,7 +22,8 @@ import {
 import { AccountSelection } from '@modules/accounts/components/AccountSelection'
 import { useWebView } from '@modules/webview'
 import { useSwapIntroduction } from '@modules/swap/hooks'
-import { SwapForm, SwapIntroduction } from '@modules/swap/components'
+import { SwapForm, SwapIntroductionContent } from '@modules/swap/components'
+import { useBottomSheet } from '@modules/bottom-sheet'
 import { useStyles } from './styles'
 import { useSwapScreen } from './useSwapScreen'
 
@@ -37,13 +37,22 @@ export const SwapScreen = () => {
     )
     const { pushWebView } = useWebView()
     const { isIntroductionSeen, markIntroductionSeen } = useSwapIntroduction()
-    const introModal = useModalState(!isIntroductionSeen)
+    const { request: requestBottomSheet } = useBottomSheet()
     useSwapScreen()
 
-    const handleStartSwapping = useCallback(() => {
-        markIntroductionSeen()
-        introModal.close()
-    }, [markIntroductionSeen, introModal])
+    const hasShownIntroRef = useRef(false)
+    useEffect(() => {
+        if (isIntroductionSeen || hasShownIntroRef.current) return
+        hasShownIntroRef.current = true
+        void requestBottomSheet<'start'>({
+            contents: <SwapIntroductionContent />,
+            options: { size: 'auto', enablePanDownToClose: true },
+        }).then(result => {
+            if (result === 'start') {
+                markIntroductionSeen()
+            }
+        })
+    }, [isIntroductionSeen, requestBottomSheet, markIntroductionSeen])
 
     const handleInfoPress = useCallback(() => {
         pushWebView({ url: config.swapSupportUrl })
@@ -85,12 +94,6 @@ export const SwapScreen = () => {
             />
 
             <SwapForm />
-
-            <SwapIntroduction
-                isVisible={introModal.isOpen}
-                onStartSwapping={handleStartSwapping}
-                onClose={introModal.close}
-            />
         </PWView>
     )
 }

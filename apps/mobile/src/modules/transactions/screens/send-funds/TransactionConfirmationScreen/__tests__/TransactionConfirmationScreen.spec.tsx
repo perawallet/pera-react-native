@@ -105,21 +105,6 @@ vi.mock('@components/LoadingView', () => ({
     ),
 }))
 
-vi.mock('../../../../components/send-funds/AddNotePanel', () => ({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    AddNotePanel: ({ isVisible, onClose }: any) =>
-        isVisible ? (
-            <div data-testid='add-note-panel'>
-                <button
-                    data-testid='close-note-panel'
-                    onClick={onClose}
-                >
-                    Close
-                </button>
-            </div>
-        ) : null,
-}))
-
 vi.mock('@perawallet/wallet-core-assets', () => ({
     ALGO_ASSET: {
         assetId: '0',
@@ -169,7 +154,6 @@ vi.mock('../CloseAccountWarning', () => ({
 
 const mockHandleConfirm = vi.fn()
 const mockOpenNote = vi.fn()
-const mockCloseNote = vi.fn()
 
 const defaultHookReturn = {
     asset: { unitName: 'ALGO', decimals: 6 },
@@ -184,9 +168,7 @@ const defaultHookReturn = {
     },
     currentBalancePending: false,
     note: undefined as Optional<string>,
-    noteOpen: false,
     openNote: mockOpenNote,
-    closeNote: mockCloseNote,
     handleConfirm: mockHandleConfirm,
     isReady: true,
 }
@@ -376,44 +358,6 @@ describe('TransactionConfirmationScreen', () => {
         fireEvent.click(getByText('send_funds.add_note.button'))
 
         expect(mockOpenNote).toHaveBeenCalledTimes(1)
-    })
-
-    it('renders AddNotePanel when noteOpen is true', () => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ;(useTransactionConfirmationScreen as any).mockReturnValue({
-            ...defaultHookReturn,
-            noteOpen: true,
-        })
-
-        const { getByTestId } = render(<TransactionConfirmationScreen />)
-
-        expect(getByTestId('add-note-panel')).toBeTruthy()
-    })
-
-    it('does not render AddNotePanel when noteOpen is false', () => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ;(useTransactionConfirmationScreen as any).mockReturnValue({
-            ...defaultHookReturn,
-            noteOpen: false,
-        })
-
-        const { queryByTestId } = render(<TransactionConfirmationScreen />)
-
-        expect(queryByTestId('add-note-panel')).toBeNull()
-    })
-
-    it('calls closeNote when note panel close is triggered', () => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ;(useTransactionConfirmationScreen as any).mockReturnValue({
-            ...defaultHookReturn,
-            noteOpen: true,
-        })
-
-        const { getByTestId } = render(<TransactionConfirmationScreen />)
-
-        fireEvent.click(getByTestId('close-note-panel'))
-
-        expect(mockCloseNote).toHaveBeenCalledTimes(1)
     })
 
     it('calls useTransactionConfirmationScreen with no arguments', () => {

@@ -20,7 +20,6 @@ import {
 import { useLanguage } from '@hooks/useLanguage'
 import { useSettingsSecurityScreen } from './useSettingsSecurityScreen'
 import { useStyles } from './styles'
-import { PinEditView } from '@modules/security/components/PinEditView/PinEditView'
 import { ExpandablePanel } from '@components/ExpandablePanel'
 
 export const SettingsSecurityScreen = () => {
@@ -28,7 +27,6 @@ export const SettingsSecurityScreen = () => {
     const styles = useStyles()
 
     const {
-        pinViewMode,
         isPinEnabled,
         isBiometricEnabled,
         isBiometricsAvailable,
@@ -41,8 +39,6 @@ export const SettingsSecurityScreen = () => {
         handleAdvancedSecurityToggle,
         handleRekeyToggle,
         handleAssetFreezeToggle,
-        pinSetSuccess,
-        clearPinViewMode,
     } = useSettingsSecurityScreen()
 
     return (
@@ -183,13 +179,6 @@ export const SettingsSecurityScreen = () => {
                     </PWView>
                 </ExpandablePanel>
             </PWView>
-
-            <PinEditView
-                mode={pinViewMode}
-                onSuccess={pinSetSuccess}
-                onClose={clearPinViewMode}
-                testID='settings_security_pin_edit_view'
-            />
         </PWView>
     )
 }

@@ -23,6 +23,18 @@ const mockDisconnectTransport = vi.fn()
 const mockConnect = vi.fn()
 const mockGetProviderRegistry = vi.fn()
 const mockErrorToast = vi.fn()
+const { mockRequestBottomSheet } = vi.hoisted(() => ({
+    mockRequestBottomSheet: vi.fn(),
+}))
+
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({
+        request: mockRequestBottomSheet,
+        requestByType: vi.fn(),
+        dismiss: vi.fn(),
+        dismissAll: vi.fn(),
+    }),
+}))
 
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({ navigate: mockNavigate }),
@@ -320,19 +332,12 @@ describe('useLedgerSelectAccountsScreen', () => {
         })
     })
 
-    it('exposes handleOpenInfo / handleCloseInfo to drive the address sheet', () => {
+    it('opens the address sheet via handleOpenInfo', () => {
         const { result } = renderHook(() => useLedgerSelectAccountsScreen())
-
-        expect(result.current.infoAddress).toBeNull()
 
         act(() => {
             result.current.handleOpenInfo('ADDR')
         })
-        expect(result.current.infoAddress).toBe('ADDR')
-
-        act(() => {
-            result.current.handleCloseInfo()
-        })
-        expect(result.current.infoAddress).toBeNull()
+        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
     })
 })

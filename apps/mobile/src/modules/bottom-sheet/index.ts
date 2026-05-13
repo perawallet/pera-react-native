@@ -27,3 +27,5 @@ export { registerBottomSheet } from './registry/registry'
 
 export { BottomSheetIdContext } from './components/BottomSheetHost'
 export { BottomSheetManager } from './components/BottomSheetManager'
+export { SheetHeader } from './components/SheetHeader'
+export type { SheetHeaderProps } from './components/SheetHeader'

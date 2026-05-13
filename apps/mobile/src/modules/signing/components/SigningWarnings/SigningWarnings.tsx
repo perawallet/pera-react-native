@@ -10,25 +10,27 @@
  limitations under the License
  */
 
-import {
-    PWBottomSheet,
-    PWIcon,
-    PWText,
-    PWToolbar,
-    PWView,
-} from '@components/core'
+import { useCallback } from 'react'
+import { PWView } from '@components/core'
 import { PanelButton } from '@components/PanelButton'
+import { useBottomSheet } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
-import { useModalState } from '@hooks/useModalState'
 import { useSigningPipeline } from '@perawallet/wallet-core-signing'
 import { useStyles } from './styles'
-import { WarningItem } from './WarningItem'
+import { SigningWarningsContent } from './SigningWarningsContent'
 
 export const SigningWarnings = ({ isGroup = false }: { isGroup?: boolean }) => {
     const styles = useStyles()
     const { t } = useLanguage()
     const { distinctWarnings, warnings } = useSigningPipeline()
-    const { isOpen, open, close } = useModalState()
+    const { request: requestBottomSheet } = useBottomSheet()
+
+    const handleOpen = useCallback(() => {
+        void requestBottomSheet({
+            contents: <SigningWarningsContent isGroup={isGroup} />,
+            options: { size: 'auto', enablePanDownToClose: true },
+        })
+    }, [requestBottomSheet, isGroup])
 
     if (distinctWarnings.length === 0) {
         return null
@@ -37,58 +39,25 @@ export const SigningWarnings = ({ isGroup = false }: { isGroup?: boolean }) => {
     const warningCount = warnings.length
 
     return (
-        <>
-            <PWView style={styles.warningContainer}>
-                <PanelButton
-                    onPress={open}
-                    title={t('transactions.warning.title')}
-                    titleWeight='h4'
-                    description={t(
-                        isGroup
-                            ? 'transactions.warning.title_cta_group'
-                            : 'transactions.warning.title_cta',
-                        {
-                            count: warningCount,
-                        },
-                    )}
-                    leftIcon='info'
-                    rightIcon='chevron-right'
-                    variant='error'
-                    paddingStyle='dense'
-                    style={styles.panelButton}
-                />
-
-                <PWBottomSheet isVisible={isOpen}>
-                    <PWView style={styles.sheetContainer}>
-                        <PWToolbar
-                            left={
-                                <PWIcon
-                                    name='cross'
-                                    variant='secondary'
-                                    onPress={close}
-                                />
-                            }
-                            center={
-                                <PWText variant='h4'>
-                                    {t('transactions.warning.title', {
-                                        count: warningCount,
-                                    })}
-                                </PWText>
-                            }
-                            paddingStyle='dense'
-                        />
-
-                        {distinctWarnings.map((warning, index) => (
-                            <WarningItem
-                                key={`${warning.type}-${warning.senderAddress}-${warning.targetAddress}`}
-                                warning={warning}
-                                showDivider={index > 0}
-                                isGroup={isGroup}
-                            />
-                        ))}
-                    </PWView>
-                </PWBottomSheet>
-            </PWView>
-        </>
+        <PWView style={styles.warningContainer}>
+            <PanelButton
+                onPress={handleOpen}
+                title={t('transactions.warning.title')}
+                titleWeight='h4'
+                description={t(
+                    isGroup
+                        ? 'transactions.warning.title_cta_group'
+                        : 'transactions.warning.title_cta',
+                    {
+                        count: warningCount,
+                    },
+                )}
+                leftIcon='info'
+                rightIcon='chevron-right'
+                variant='error'
+                paddingStyle='dense'
+                style={styles.panelButton}
+            />
+        </PWView>
     )
 }

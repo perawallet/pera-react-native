@@ -10,5 +10,7 @@
  limitations under the License
  */
 
-export { ViewPassphraseFlow } from './ViewPassphraseFlow'
-export type { ViewPassphraseFlowProps } from './ViewPassphraseFlow'
+export {
+    useViewPassphraseFlow,
+    type UseViewPassphraseFlowResult,
+} from './useViewPassphraseFlow'

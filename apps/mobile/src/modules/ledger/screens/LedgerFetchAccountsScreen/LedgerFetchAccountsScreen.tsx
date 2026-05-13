@@ -10,12 +10,14 @@
  limitations under the License
  */
 
-import React from 'react'
+import React, { useEffect, useRef } from 'react'
 import { ActivityIndicator } from 'react-native'
 import { PWView, PWText, PWResultView } from '@components/core'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 
-import { LedgerConnectingBottomSheet } from '../../components/LedgerConnectingBottomSheet'
+import { LedgerConnectingContent } from '../../components/LedgerConnectingContent'
+import { useBottomSheet } from '@modules/bottom-sheet'
+import { generateUniqueId } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import { useLedgerFetchAccountsScreen } from './useLedgerFetchAccountsScreen'
 
@@ -36,6 +38,34 @@ export const LedgerFetchAccountsScreen = () => {
         connectionStatus === 'connecting' ||
         connectionStatus === 'connected' ||
         isDiscovering
+
+    const { request: requestBottomSheet, dismiss } = useBottomSheet()
+    const sheetIdRef = useRef<string | null>(null)
+
+    useEffect(() => {
+        if (isLoading && !sheetIdRef.current) {
+            const id = generateUniqueId()
+            sheetIdRef.current = id
+            void requestBottomSheet<'cancel'>({
+                id,
+                contents: <LedgerConnectingContent />,
+                options: {
+                    size: 'auto',
+                    enablePanDownToClose: false,
+                    enableCloseOnBackdropPress: false,
+                },
+            }).then(result => {
+                sheetIdRef.current = null
+                if (result === 'cancel') {
+                    navigation.goBack()
+                }
+            })
+        } else if (!isLoading && sheetIdRef.current) {
+            const id = sheetIdRef.current
+            sheetIdRef.current = null
+            dismiss(id)
+        }
+    }, [isLoading, requestBottomSheet, dismiss, navigation])
 
     if (errorPreset) {
         return (
@@ -84,11 +114,6 @@ export const LedgerFetchAccountsScreen = () => {
                     </>
                 )}
             </PWView>
-
-            <LedgerConnectingBottomSheet
-                isVisible={isLoading}
-                onCancel={navigation.goBack}
-            />
         </PWView>
     )
 }

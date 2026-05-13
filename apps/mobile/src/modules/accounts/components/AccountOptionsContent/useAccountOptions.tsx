@@ -27,9 +27,9 @@ import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useClipboard } from '@hooks/useClipboard'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
-import { useModalState } from '@hooks/useModalState'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { useViewPassphraseFlow } from '@modules/view-passphrase'
 import { ExportShareAccountContent } from '@modules/multisig/components/ExportShareAccountContent'
 import { IconName } from '@components/core'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
@@ -52,8 +52,6 @@ export type UseAccountOptionsParams = {
 
 export type UseAccountOptionsResult = {
     options: AccountOption[]
-    isPassphraseFlowVisible: boolean
-    handleClosePassphraseFlow: () => void
 }
 
 export const useAccountOptions = ({
@@ -70,6 +68,7 @@ export const useAccountOptions = ({
     const updateAccount = useUpdateAccount()
     const navigation = useAppNavigation()
     const { request: requestBottomSheet } = useBottomSheet()
+    const { openViewPassphraseFlow } = useViewPassphraseFlow()
 
     const logicalType = useAccountLogicalType(account.address) ?? 'NoAuth'
     const showPassphrase = logicalType === 'Algo25' || logicalType === 'HdKey'
@@ -78,12 +77,6 @@ export const useAccountOptions = ({
     const isHdWallet = logicalType === 'HdKey'
     const canSign = isSigningLogicalType(logicalType)
     const isSharedAccount = isMultisigAccount(account)
-
-    const {
-        isOpen: isPassphraseFlowVisible,
-        open: openPassphraseFlow,
-        close: handleClosePassphraseFlow,
-    } = useModalState()
 
     const notImplemented = useCallback(() => {
         showToast({
@@ -105,11 +98,11 @@ export const useAccountOptions = ({
     }, [onClose, onShowAddress])
 
     const handleViewPassphrase = useCallback(() => {
-        // Don't dismiss the parent options sheet — the passphrase flow is still
-        // an inline child sheet rendered from this content. Dismissing the parent
-        // would unmount its state. The passphrase flow renders via portal on top.
-        openPassphraseFlow()
-    }, [openPassphraseFlow])
+        // Dismiss the options menu first so we don't end up with the menu
+        // sheet stacked under the PIN / acknowledge / display sheets.
+        onClose()
+        void openViewPassphraseFlow(account.address)
+    }, [onClose, openViewPassphraseFlow, account.address])
 
     const handleAuthAddress = useCallback(() => {
         if (account.rekeyAddress) {
@@ -402,7 +395,5 @@ export const useAccountOptions = ({
 
     return {
         options,
-        isPassphraseFlowVisible,
-        handleClosePassphraseFlow,
     }
 }

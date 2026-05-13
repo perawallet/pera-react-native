@@ -19,21 +19,22 @@ import { useStyles } from './styles'
 import { AccountAssetItemView } from '@modules/assets/components/AssetItem/AccountAssetItemView'
 import { NumberPad } from '@components/NumberPad'
 import { useSendFunds } from '@modules/transactions/hooks'
-import { AddNotePanel } from '../../../components/send-funds/AddNotePanel'
+import { AddNoteContent } from '../../../components/send-funds/AddNoteContent'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
-import { SendFundsInfoPanel } from '../../../components/send-funds/SendFundsInfoPanel/SendFundsInfoPanel'
-import { InsufficientBalancePanel } from '../../../components/send-funds/InsufficientBalancePanel'
-import { CloseAccountPanel } from '../../../components/send-funds/CloseAccountPanel'
+import { SendFundsInfoContent } from '../../../components/send-funds/SendFundsInfoContent'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { LoadingView } from '@components/LoadingView'
+import { useBottomSheet } from '@modules/bottom-sheet'
 import { useInputScreen } from './useInputScreen'
 import { useLanguage } from '@hooks/useLanguage'
-import { useModalState } from '@hooks/useModalState'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
-import { useCallback } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
+import { usePreferences } from '@perawallet/wallet-core-settings'
+import { UserPreferences } from '@constants/user-preferences'
+import { SHORT_PROMPT_DISPLAY_DELAY } from '@constants/ui'
 
 export const InputScreen = () => {
     const styles = useStyles()
@@ -48,20 +49,38 @@ export const InputScreen = () => {
         setMax,
         handleKey,
         handleNext,
-        handleContinuePastMbr,
-        isMaxExceeded,
-        dismissMaxExceeded,
-        minBalanceDisplay,
-        isCloseAccountEligible,
-        dismissCloseAccount,
-        handleConfirmCloseAccount,
         isCollectible,
     } = useInputScreen()
     const selectedAccount = useSelectedAccount()
     const { canSelectAsset, note, onFinished } = useSendFunds()
     const { t } = useLanguage()
-    const noteState = useModalState()
-    const infoState = useModalState()
+    const { request: requestBottomSheet } = useBottomSheet()
+
+    const openNote = useCallback(() => {
+        void requestBottomSheet({
+            contents: <AddNoteContent />,
+            options: { size: 'auto', enablePanDownToClose: true },
+        })
+    }, [requestBottomSheet])
+
+    const openInfo = useCallback(() => {
+        void requestBottomSheet({
+            contents: <SendFundsInfoContent />,
+            options: { size: 'auto', enablePanDownToClose: true },
+        })
+    }, [requestBottomSheet])
+
+    const { getPreference } = usePreferences()
+    const hasAgreed = getPreference(UserPreferences.transactionInfoAgreed)
+    const hasAutoOpenedRef = useRef(false)
+    useEffect(() => {
+        if (hasAgreed || hasAutoOpenedRef.current) return
+        hasAutoOpenedRef.current = true
+        const timer = setTimeout(() => {
+            openInfo()
+        }, SHORT_PROMPT_DISPLAY_DELAY)
+        return () => clearTimeout(timer)
+    }, [hasAgreed, openInfo])
 
     const handleBack = useCallback(() => {
         if (canSelectAsset) {
@@ -81,7 +100,7 @@ export const InputScreen = () => {
         right: (
             <PWIcon
                 name='info'
-                onPress={infoState.open}
+                onPress={openInfo}
             />
         ),
         title: (
@@ -149,7 +168,7 @@ export const InputScreen = () => {
                         }
                         variant='secondary'
                         style={styles.secondaryButton}
-                        onPress={noteState.open}
+                        onPress={openNote}
                     />
                     <PWButton
                         title={t('send_funds.input.max')}
@@ -178,26 +197,6 @@ export const InputScreen = () => {
                 style={styles.nextButton}
                 onPress={handleNext}
                 isDisabled={!cryptoValue}
-            />
-
-            <AddNotePanel
-                isVisible={noteState.isOpen}
-                onClose={noteState.close}
-            />
-            <SendFundsInfoPanel
-                isVisible={infoState.isOpen}
-                onClose={infoState.close}
-            />
-            <InsufficientBalancePanel
-                isVisible={isMaxExceeded}
-                onClose={dismissMaxExceeded}
-                onContinue={handleContinuePastMbr}
-                minBalance={minBalanceDisplay}
-            />
-            <CloseAccountPanel
-                isVisible={isCloseAccountEligible}
-                onClose={dismissCloseAccount}
-                onConfirm={handleConfirmCloseAccount}
             />
         </PWView>
     )

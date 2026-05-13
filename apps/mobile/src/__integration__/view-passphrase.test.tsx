@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import React, { useState } from 'react'
+import React from 'react'
 import {
     afterAll,
     afterEach,
@@ -50,7 +50,7 @@ import {
     type HDWalletKeyResult,
 } from '@perawallet/wallet-core-kms'
 import { usePinCode } from '@perawallet/wallet-core-security'
-import { ViewPassphraseFlow } from '@modules/view-passphrase'
+import { useViewPassphraseFlow } from '@modules/view-passphrase'
 import { BottomSheetManager } from '@modules/bottom-sheet'
 
 import {
@@ -65,11 +65,10 @@ import {
 
 const SLOW_TEST_TIMEOUT_MS = 30000
 
-// Tiny host that flips `isVisible` from false → true when the consumer
-// taps the trigger. Models how `AccountOptionsBottomSheet` opens the
-// flow in production: it owns a boolean and renders `<ViewPassphraseFlow
-// isVisible={...}>`. Starting at `false` lets us assert that the flow is
-// not rendered until the user explicitly opts in.
+// Tiny host that drives the imperative `useViewPassphraseFlow` hook
+// when the trigger is tapped. Models how `AccountOptionsContent` opens
+// the flow in production: it calls `openViewPassphraseFlow(address)`
+// after dismissing the parent options sheet.
 const ViewPassphraseHost = ({
     address,
     onClose = () => undefined,
@@ -77,29 +76,22 @@ const ViewPassphraseHost = ({
     address: string
     onClose?: () => void
 }) => {
-    const [isVisible, setIsVisible] = useState(false)
+    const { openViewPassphraseFlow } = useViewPassphraseFlow()
     return (
         <>
-            {/* ViewPassphraseFlow now opens its acknowledge / display
-                steps via `useBottomSheet().request(...)` — the test
-                harness uses `render()` directly (not
-                `renderWithNavigation`), so we need to mount the manager
-                here ourselves. */}
+            {/* The flow opens its PIN / acknowledge / display steps via
+                `useBottomSheet().request(...)` — the test harness uses
+                `render()` directly (not `renderWithNavigation`), so we
+                need to mount the manager here ourselves. */}
             <BottomSheetManager />
             <button
                 data-testid='open_view_passphrase'
-                onClick={() => setIsVisible(true)}
+                onClick={() => {
+                    void openViewPassphraseFlow(address).finally(onClose)
+                }}
             >
                 Open
             </button>
-            <ViewPassphraseFlow
-                isVisible={isVisible}
-                address={address}
-                onClose={() => {
-                    setIsVisible(false)
-                    onClose()
-                }}
-            />
         </>
     )
 }

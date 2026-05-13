@@ -12,17 +12,12 @@
 
 import React, { useCallback, useState } from 'react'
 import PagerView from 'react-native-pager-view'
-import {
-    PWBottomSheet,
-    PWText,
-    PWToolbar,
-    PWTouchableIcon,
-    PWView,
-} from '@components/core'
+import { PWText, PWToolbar, PWTouchableIcon, PWView } from '@components/core'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ZoomableImage } from '@components/ZoomableImage'
 import { VideoPlayer } from '@components/VideoPlayer'
 import { AudioPlayer } from '@components/AudioPlayer'
+import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useStyles } from './styles'
 
 export type FullScreenMediaItem = {
@@ -32,15 +27,11 @@ export type FullScreenMediaItem = {
 }
 
 export type FullScreenImageViewerProps = {
-    isVisible: boolean
-    onClose: () => void
     media: FullScreenMediaItem[]
     initialIndex?: number
 }
 
 export const FullScreenImageViewer = ({
-    isVisible,
-    onClose,
     media,
     initialIndex = 0,
 }: FullScreenImageViewerProps) => {
@@ -48,6 +39,7 @@ export const FullScreenImageViewer = ({
     const styles = useStyles(insets)
     const [activeIndex, setActiveIndex] = useState(initialIndex)
     const hasMultiple = media.length > 1
+    const { dismiss } = useBottomSheetResult()
 
     const handlePageSelected = useCallback(
         (e: { nativeEvent: { position: number } }) => {
@@ -57,21 +49,14 @@ export const FullScreenImageViewer = ({
     )
 
     return (
-        <PWBottomSheet
-            isVisible={isVisible}
-            onBackdropPress={onClose}
-            onDismiss={onClose}
-            size='full'
-            containerStyle={styles.container}
-            innerContainerStyle={styles.innerContainer}
-        >
+        <PWView style={styles.innerContainer}>
             <PWToolbar
                 right={
                     <PWTouchableIcon
                         name='cross'
                         size='md'
                         variant='white'
-                        onPress={onClose}
+                        onPress={dismiss}
                     />
                 }
             />
@@ -110,6 +95,6 @@ export const FullScreenImageViewer = ({
                     {activeIndex + 1} / {media.length}
                 </PWText>
             )}
-        </PWBottomSheet>
+        </PWView>
     )
 }
