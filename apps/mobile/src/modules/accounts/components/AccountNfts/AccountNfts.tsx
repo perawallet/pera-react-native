@@ -11,7 +11,6 @@
  */
 
 import React, { useCallback, useRef, useEffect } from 'react'
-import { FlatList } from 'react-native'
 import {
     PWButton,
     PWFlatList,
@@ -50,7 +49,7 @@ const renderLoadingSkeleton = () => {
 export const AccountNfts = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const flatListRef = useRef<FlatList>(null)
+    const flatListRef = useRef<any>(null)
     const previousFirstItemIdRef = useRef<string | undefined>(undefined)
 
     const {
