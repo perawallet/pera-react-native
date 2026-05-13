@@ -11,7 +11,12 @@
  */
 
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
-import { logger, LogLevel } from '../logging'
+import {
+    logger,
+    LogLevel,
+    redactSensitiveContext,
+    redactSensitiveUrl,
+} from '../logging'
 
 describe('logging', () => {
     beforeEach(() => {
@@ -197,7 +202,7 @@ describe('logging', () => {
             expect(reported.error.message).toContain('context:')
         })
 
-        test('falls back to an "[unserializable context]" marker when JSON fails', () => {
+        test('breaks circular references so the report still serializes', () => {
             const errorReporter = vi.fn()
             logger.setErrorReporter(errorReporter)
 
@@ -209,7 +214,13 @@ describe('logging', () => {
             const reported = errorReporter.mock.calls[0]?.[0] as {
                 error: Error
             }
-            expect(reported.error.message).toContain('[unserializable context]')
+            // The redactor replaces the cycle with the truncation marker so
+            // JSON.stringify never throws; the message is reportable rather
+            // than dropped to the "[unserializable context]" fallback.
+            expect(reported.error.message).toContain('still goes out')
+            expect(reported.error.message).not.toContain(
+                '[unserializable context]',
+            )
         })
 
         test('does not crash when console.error throws (RN LogBox in dev)', () => {
@@ -258,6 +269,131 @@ describe('logging', () => {
 
             expect(() => logger.error('still reports')).not.toThrow()
             expect(errorReporter).toHaveBeenCalled()
+        })
+
+        test('redacts mnemonic-bearing URLs in logger context', () => {
+            const errorReporter = vi.fn()
+            logger.setErrorReporter(errorReporter)
+
+            logger.error('deeplink failed', {
+                url: 'perawallet://app/recover-address/?mnemonic=word1+word2+word3+word4+word5',
+            })
+
+            const reported = errorReporter.mock.calls[0]?.[0] as {
+                error: Error
+            }
+            expect(reported.error.message).not.toContain('word1+word2')
+            expect(reported.error.message).toContain('[REDACTED]')
+        })
+
+        test('redacts sensitive keys at the top level of context', () => {
+            const errorReporter = vi.fn()
+            logger.setErrorReporter(errorReporter)
+
+            logger.error('signing failed', {
+                mnemonic: 'word1 word2 word3',
+                userId: 'public-id',
+            })
+
+            const reported = errorReporter.mock.calls[0]?.[0] as {
+                error: Error
+            }
+            expect(reported.error.message).not.toContain('word1 word2')
+            expect(reported.error.message).toContain('[REDACTED]')
+            expect(reported.error.message).toContain('public-id')
+        })
+    })
+
+    describe('redactSensitiveUrl', () => {
+        test('redacts mnemonic query parameter', () => {
+            expect(
+                redactSensitiveUrl(
+                    'perawallet://app/recover-address/?mnemonic=word1+word2',
+                ),
+            ).toBe('perawallet://app/recover-address/?mnemonic=[REDACTED]')
+        })
+
+        test('redacts multiple sensitive params', () => {
+            const out = redactSensitiveUrl(
+                'https://example.com/?passphrase=secret&pin=123456&safe=ok',
+            )
+            expect(out).toContain('passphrase=[REDACTED]')
+            expect(out).toContain('pin=[REDACTED]')
+            expect(out).toContain('safe=ok')
+        })
+
+        test('is a no-op for URLs without sensitive params', () => {
+            const url = 'https://example.com/path?foo=bar&baz=qux'
+            expect(redactSensitiveUrl(url)).toBe(url)
+        })
+
+        test('is a no-op for plain strings without "="', () => {
+            expect(redactSensitiveUrl('not a url')).toBe('not a url')
+        })
+
+        test('matches case-insensitively', () => {
+            expect(
+                redactSensitiveUrl('foo://x?MNEMONIC=word1+word2'),
+            ).toContain('[REDACTED]')
+        })
+    })
+
+    describe('redactSensitiveContext', () => {
+        test('redacts sensitive top-level keys', () => {
+            const out = redactSensitiveContext({
+                mnemonic: 'a b c',
+                privateKey: 'deadbeef',
+                user: 'will',
+            })
+            expect(out.mnemonic).toBe('[REDACTED]')
+            expect(out.privateKey).toBe('[REDACTED]')
+            expect(out.user).toBe('will')
+        })
+
+        test('redacts sensitive keys in nested objects', () => {
+            const out = redactSensitiveContext({
+                payload: {
+                    mnemonic: 'a b c',
+                    type: 'RECOVER_ADDRESS',
+                },
+            }) as { payload: { mnemonic: string; type: string } }
+            expect(out.payload.mnemonic).toBe('[REDACTED]')
+            expect(out.payload.type).toBe('RECOVER_ADDRESS')
+        })
+
+        test('redacts URL strings in non-sensitive keys', () => {
+            const out = redactSensitiveContext({
+                url: 'perawallet://app/recover-address/?mnemonic=word1+word2',
+            })
+            expect(out.url).toBe(
+                'perawallet://app/recover-address/?mnemonic=[REDACTED]',
+            )
+        })
+
+        test('preserves Error instances verbatim', () => {
+            const err = new TypeError('boom')
+            const out = redactSensitiveContext({ error: err })
+            expect(out.error).toBe(err)
+        })
+
+        test('truncates objects deeper than the recursion limit', () => {
+            // 12 levels deep — beyond MAX_REDACT_DEPTH (8)
+            let nested: Record<string, unknown> = { leaf: 'value' }
+            for (let i = 0; i < 12; i++) nested = { wrap: nested }
+
+            const out = redactSensitiveContext({ root: nested }) as Record<
+                string,
+                unknown
+            >
+            // Walk down — at some point we hit the truncation marker.
+            const json = JSON.stringify(out)
+            expect(json).toContain('[…]')
+        })
+
+        test('handles circular references without throwing', () => {
+            const a: Record<string, unknown> = {}
+            a.self = a
+            expect(() => redactSensitiveContext({ a })).not.toThrow()
         })
     })
 })

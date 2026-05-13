@@ -42,6 +42,96 @@ export interface LogContext {
     [key: string]: unknown
 }
 
+const SENSITIVE_KEY_FRAGMENTS = [
+    'mnemonic',
+    'passphrase',
+    'seed',
+    'privatekey',
+    'private_key',
+    'secret',
+    'password',
+    'pin',
+    'signature',
+] as const
+
+const REDACTED = '[REDACTED]'
+
+const isSensitiveKey = (key: string): boolean => {
+    const lower = key.toLowerCase()
+    return SENSITIVE_KEY_FRAGMENTS.some(fragment => lower.includes(fragment))
+}
+
+const SENSITIVE_QUERY_REGEX = new RegExp(
+    `((?:^|[?&#])(?:${SENSITIVE_KEY_FRAGMENTS.join('|')})=)([^&#]*)`,
+    'gi',
+)
+
+/**
+ * Strip values for any query/hash parameter whose name matches a known
+ * sensitive fragment (mnemonic, passphrase, seed, …). Idempotent on plain
+ * strings without query syntax.
+ */
+export const redactSensitiveUrl = (input: string): string =>
+    input.includes('=')
+        ? input.replace(SENSITIVE_QUERY_REGEX, `$1${REDACTED}`)
+        : input
+
+// Defense against pathological inputs (circular references, deeply-nested
+// objects). Logger contexts are normally small; anything beyond this depth is
+// almost certainly a mistake (e.g. a React fiber leaked into context).
+const MAX_REDACT_DEPTH = 8
+const TRUNCATED = '[…]'
+
+/**
+ * Recursively redact sensitive entries from a structured value:
+ *  - any object property whose key contains a sensitive fragment is replaced
+ *    with `[REDACTED]`
+ *  - any string value is passed through `redactSensitiveUrl` so a stray URL
+ *    in a non-sensitive key (e.g. `{ url }`) still gets its mnemonic/passphrase
+ *    query params scrubbed
+ *  - arrays and nested objects are walked; non-string primitives pass through
+ *  - `Error` instances are passed through verbatim — `formatContextValue`
+ *    handles their structured shape downstream
+ *  - circular references and depth > MAX_REDACT_DEPTH are short-circuited to
+ *    avoid stack overflow / DoS
+ *
+ * Used automatically by the logger on every context, so callers don't need to
+ * remember to pre-sanitize. Cheap on small contexts; for a hot path with very
+ * large objects, callers may still want to redact upstream.
+ */
+const redactSensitiveValue = (
+    value: unknown,
+    depth: number,
+    seen: WeakSet<object>,
+): unknown => {
+    if (value === null || value === undefined) return value
+    if (typeof value === 'string') return redactSensitiveUrl(value)
+    if (typeof value !== 'object') return value
+    if (value instanceof Error) return value
+    if (depth >= MAX_REDACT_DEPTH) return TRUNCATED
+    if (seen.has(value)) return TRUNCATED
+    seen.add(value)
+    if (Array.isArray(value)) {
+        return value.map(item => redactSensitiveValue(item, depth + 1, seen))
+    }
+    const out: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(value)) {
+        out[k] = isSensitiveKey(k)
+            ? REDACTED
+            : redactSensitiveValue(v, depth + 1, seen)
+    }
+    return out
+}
+
+export const redactSensitiveContext = (context: LogContext): LogContext => {
+    const seen = new WeakSet<object>()
+    const out: LogContext = {}
+    for (const [k, v] of Object.entries(context)) {
+        out[k] = isSensitiveKey(k) ? REDACTED : redactSensitiveValue(v, 0, seen)
+    }
+    return out
+}
+
 export type LogErrorSeverity = 'error' | 'critical'
 
 export type ErrorReportPayload = {
@@ -106,8 +196,9 @@ class Logger {
     }
 
     private formatContext(context: LogContext): LogContext {
+        const redacted = redactSensitiveContext(context)
         const formatted: LogContext = {}
-        for (const [key, value] of Object.entries(context)) {
+        for (const [key, value] of Object.entries(redacted)) {
             formatted[key] = this.formatContextValue(value)
         }
         return formatted

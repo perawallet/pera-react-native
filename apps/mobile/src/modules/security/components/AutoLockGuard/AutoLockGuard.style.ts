@@ -14,15 +14,35 @@ import { makeStyles } from '@rneui/themed'
 import { EdgeInsets } from 'react-native-safe-area-context'
 
 export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
-    container: {
+    // Children stay mounted at all times so the home tree pre-loads
+    // (TanStack queries warm up) behind the lock UI. When the guard is
+    // active we toggle `display` rather than unmounting — the data is
+    // ready the moment the user dismisses the lock screen.
+    childrenContainer: {
+        flex: 1,
+    },
+    childrenHidden: {
+        display: 'none',
+    },
+    // Full-screen, opaque overlay for the lock UI. Rendered inline (no
+    // Modal) so there's no Android Dialog enter/exit animation between
+    // locked and unlocked states — the React state flip is atomic with
+    // the render swap, and the children underneath never become visible
+    // until the overlay unmounts.
+    lockOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: theme.zIndex.max,
+        backgroundColor: theme.colors.background,
         paddingTop: insets.top + theme.spacing.xxl,
         paddingBottom: insets.bottom,
         paddingLeft: insets.left,
         paddingRight: insets.right,
-        flex: 1,
-        backgroundColor: theme.colors.background,
     },
-    overlayContainer: {
+    loadingOverlay: {
         position: 'absolute',
         top: 0,
         left: 0,

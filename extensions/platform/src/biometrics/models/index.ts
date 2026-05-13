@@ -12,11 +12,17 @@
 
 export type BiometricType = 'face' | 'fingerprint' | 'biometrics' | null
 
+export type BiometricsAuthenticatePrompt = {
+    title?: string
+    description?: string
+    // Required on Android when device-credential fallback is disabled:
+    // AndroidX BiometricPrompt rejects PromptInfo without a non-empty
+    // negative button text. Ignored on iOS (LAContext provides its own).
+    cancelLabel?: string
+}
+
 export interface BiometricsService {
     getSupportedBiometricType(): Promise<BiometricType>
     checkBiometricsAvailable(): Promise<boolean>
-    authenticate(
-        promptTitle?: string,
-        promptDescription?: string,
-    ): Promise<boolean>
+    authenticate(prompt?: BiometricsAuthenticatePrompt): Promise<boolean>
 }
