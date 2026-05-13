@@ -89,13 +89,15 @@ export const AccountNfts = () => {
 
     useEffect(() => {
         const currentFirstItemId = collectibles[0]?.assetId
-        
-        if (flatListRef.current && 
-            previousFirstItemIdRef.current !== undefined && 
-            previousFirstItemIdRef.current !== currentFirstItemId) {
+
+        if (
+            flatListRef.current &&
+            previousFirstItemIdRef.current !== undefined &&
+            previousFirstItemIdRef.current !== currentFirstItemId
+        ) {
             flatListRef.current.scrollToOffset({ offset: 0, animated: false })
         }
-        
+
         previousFirstItemIdRef.current = currentFirstItemId
     }, [collectibles])
 
