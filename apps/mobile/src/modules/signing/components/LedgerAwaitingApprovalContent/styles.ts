@@ -17,7 +17,9 @@ const LOTTIE_WIDTH = 164
 const LOTTIE_HEIGHT = 48
 const PROGRESS_BAR_HEIGHT = 2
 
-export const useStyles = makeStyles(theme => ({
+type StyleProps = { progressFillPercent: number }
+
+export const useStyles = makeStyles((theme, { progressFillPercent }: StyleProps) => ({
     container: {
         padding: theme.spacing.xl,
         alignItems: 'center',
@@ -56,6 +58,7 @@ export const useStyles = makeStyles(theme => ({
     },
     progressBarFill: {
         height: '100%',
+        width: `${progressFillPercent}%`,
         backgroundColor: theme.colors.positive,
     },
     cancelButton: {

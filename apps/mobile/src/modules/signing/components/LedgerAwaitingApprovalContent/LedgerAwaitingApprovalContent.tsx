@@ -32,7 +32,6 @@ export const LedgerAwaitingApprovalContent = ({
     totalTxs,
     onCancel,
 }: LedgerAwaitingApprovalContentProps) => {
-    const styles = useStyles()
     const { t } = useLanguage()
     const isDarkMode = useIsDarkMode()
 
@@ -53,6 +52,8 @@ export const LedgerAwaitingApprovalContent = ({
         showProgress && totalTxs !== null && totalTxs > 0 && currentTx !== null
             ? Math.min(100, Math.max(0, (currentTx / totalTxs) * 100))
             : 0
+
+    const styles = useStyles({ progressFillPercent })
 
     return (
         <PWView style={styles.container}>
@@ -85,10 +86,7 @@ export const LedgerAwaitingApprovalContent = ({
                         testID='ledger-signing-progress-bar'
                     >
                         <PWView
-                            style={[
-                                styles.progressBarFill,
-                                { width: `${progressFillPercent}%` },
-                            ]}
+                            style={styles.progressBarFill}
                         />
                     </PWView>
                 </>
