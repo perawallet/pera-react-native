@@ -33,10 +33,11 @@ import { TransactionRequestFAQContent } from '../TransactionRequestFAQContent'
  * to a different request id while a sheet is already open, the previous
  * sheet is dismissed via the manager so the new one opens cleanly.
  *
- * Skipped while a hardware-signing session is in flight — the
- * LedgerSigningContent sheet (or the troubleshooting sheet) takes over,
- * matching the native flow where the transaction-review sheet is gone
- * by the time device UI appears.
+ * Skipped while a hardware-signing overlay is actually visible — i.e.
+ * when status is 'awaitingApproval', 'signing', or 'error'. During the
+ * silent BLE-scan phase ('searching') no hardware UI is rendered yet, so
+ * this sheet stays mounted to avoid a jarring blank-screen gap between
+ * the sign-request sheet disappearing and the Ledger sheet appearing.
  *
  * The sheet preserves the legacy presentation: `size='lg'`, gestures and
  * backdrop press disabled — signing must complete via the UI controls.
@@ -47,10 +48,11 @@ const useSignRequestDriver = () => {
     const { request: requestBottomSheet, dismiss } = useBottomSheet()
     const openIdRef = useRef<string | null>(null)
 
-    // 'idle' means no hardware signing session. Anything else means the
-    // hardware overlay (or the troubleshooting sheet) is the primary
-    // surface, so this sheet stays out of the way.
-    const isHardwareSigningInFlight = hardwareStatus !== 'idle'
+    // 'idle' and 'searching' both render no hardware overlay. During
+    // 'searching' (silent BLE scan) the sign-request sheet stays visible
+    // so there is no blank-screen gap before the Ledger sheet appears.
+    const isHardwareSigningInFlight =
+        hardwareStatus !== 'idle' && hardwareStatus !== 'searching'
 
     const nextRequest = pendingSignRequests.find(r => !r.headless)
 

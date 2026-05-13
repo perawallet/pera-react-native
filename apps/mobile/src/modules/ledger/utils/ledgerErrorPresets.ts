@@ -65,4 +65,5 @@ export const getLedgerErrorPresetByKind = (
 export const getLedgerErrorPreset = (
     error: unknown,
     t: Translate,
-): LedgerErrorPreset => getLedgerErrorPresetByKind(classifyLedgerErrorKind(error), t)
+): LedgerErrorPreset =>
+    getLedgerErrorPresetByKind(classifyLedgerErrorKind(error), t)
