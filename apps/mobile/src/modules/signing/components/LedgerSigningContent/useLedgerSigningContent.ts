@@ -21,22 +21,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import {
     getLedgerErrorPresetByKind,
     type LedgerErrorPreset,
-    type LedgerErrorPresetKind,
 } from '@modules/ledger/utils/ledgerErrorPresets'
-
-/**
- * Error kinds where the user-actionable recovery is "check the device /
- * bluetooth / nearby" — i.e. exactly what the troubleshooting sheet covers.
- * For these, we skip the intermediate `LedgerErrorContent` and surface the
- * troubleshooting sheet directly, matching Android.
- */
-const BLE_CLASS_ERROR_KINDS: ReadonlySet<LedgerErrorPresetKind> = new Set([
-    'connection_failed',
-    'connection_lost',
-    'scan_timeout',
-    'bluetooth_disabled',
-    'bluetooth_permission',
-])
 
 export type UseLedgerSigningContentResult = {
     isVisible: boolean
@@ -94,9 +79,12 @@ export const useLedgerSigningContent = (): UseLedgerSigningContentResult => {
         s => s.setAutoOpenedForBleError,
     )
 
-    const isBleClassError =
-        errorPayload?.kind !== undefined &&
-        BLE_CLASS_ERROR_KINDS.has(errorPayload.kind)
+    const error = useMemo<LedgerErrorPreset | null>(() => {
+        if (!errorPayload) return null
+        return getLedgerErrorPresetByKind(errorPayload.kind, t)
+    }, [errorPayload, t])
+
+    const isBleClassError = error?.isTroubleshootable ?? false
 
     useEffect(() => {
         if (isBleClassError) {
@@ -111,11 +99,6 @@ export const useLedgerSigningContent = (): UseLedgerSigningContentResult => {
         openTroubleshooting,
         setAutoOpenedForBleError,
     ])
-
-    const error = useMemo<LedgerErrorPreset | null>(() => {
-        if (!errorPayload) return null
-        return getLedgerErrorPresetByKind(errorPayload.kind, t)
-    }, [errorPayload, t])
 
     const onCancel = useCallback(() => {
         const activeRequest = resolveActiveRequest(pendingSignRequests)
