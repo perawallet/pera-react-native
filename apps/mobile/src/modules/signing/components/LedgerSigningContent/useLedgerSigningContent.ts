@@ -105,7 +105,12 @@ export const useLedgerSigningContent = (): UseLedgerSigningContentResult => {
         } else if (autoOpenedForBleError) {
             setAutoOpenedForBleError(false)
         }
-    }, [isBleClassError, autoOpenedForBleError, openTroubleshooting, setAutoOpenedForBleError])
+    }, [
+        isBleClassError,
+        autoOpenedForBleError,
+        openTroubleshooting,
+        setAutoOpenedForBleError,
+    ])
 
     const error = useMemo<LedgerErrorPreset | null>(() => {
         if (!errorPayload) return null

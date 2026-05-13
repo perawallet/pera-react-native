@@ -234,7 +234,11 @@ describe('useLedgerSigningContent', () => {
                 // come from the same store; here they're mocked independently).
                 useHardwareSigningStore.getState().resetState()
                 vi.mocked(useHardwareSigning).mockReturnValue(
-                    buildHardwareSigningResult({ isActive: false, status: 'idle', error: null }),
+                    buildHardwareSigningResult({
+                        isActive: false,
+                        status: 'idle',
+                        error: null,
+                    }),
                 )
             })
             const activeRequest = { id: 'req-1' } as never

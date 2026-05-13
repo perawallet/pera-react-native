@@ -133,12 +133,13 @@ export const buildHardwareSigningCallbacks = (
             useHardwareSigningStore.getState().setStatus('signing')
         },
         onProgress: (current, total) => {
-            const store = useHardwareSigningStore.getState()
-            store.setProgress(current, total)
-            // Between txs in a group, the user is again waiting for an
-            // on-device approval. Returning to 'awaitingApproval' tells the
-            // overlay to render the approval chrome.
-            store.setStatus('awaitingApproval')
+            // Update progress counters only. Status transitions are driven by
+            // onPhaseChange (which createHardwareStrategy emits before each
+            // signTransaction call) — decoupling progress from status means
+            // skipped indices never incorrectly flip the overlay to
+            // 'awaitingApproval', and the 'signing' state set by onSigningStart
+            // remains observable until the first onPhaseChange fires.
+            useHardwareSigningStore.getState().setProgress(current, total)
         },
         onError: error => {
             const kind = classifyLedgerErrorKind(error)

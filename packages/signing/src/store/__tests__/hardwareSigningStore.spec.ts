@@ -86,47 +86,63 @@ describe('useHardwareSigningStore', () => {
 
     describe('isTroubleshootingVisible', () => {
         it('defaults to false', () => {
-            expect(useHardwareSigningStore.getState().isTroubleshootingVisible).toBe(false)
+            expect(
+                useHardwareSigningStore.getState().isTroubleshootingVisible,
+            ).toBe(false)
         })
 
         it('openTroubleshooting sets isTroubleshootingVisible to true', () => {
             useHardwareSigningStore.getState().openTroubleshooting()
-            expect(useHardwareSigningStore.getState().isTroubleshootingVisible).toBe(true)
+            expect(
+                useHardwareSigningStore.getState().isTroubleshootingVisible,
+            ).toBe(true)
         })
 
         it('closeTroubleshooting sets isTroubleshootingVisible to false', () => {
             useHardwareSigningStore.getState().openTroubleshooting()
             useHardwareSigningStore.getState().closeTroubleshooting()
-            expect(useHardwareSigningStore.getState().isTroubleshootingVisible).toBe(false)
+            expect(
+                useHardwareSigningStore.getState().isTroubleshootingVisible,
+            ).toBe(false)
         })
 
         it('reset clears isTroubleshootingVisible', () => {
             useHardwareSigningStore.getState().openTroubleshooting()
             useHardwareSigningStore.getState().reset()
-            expect(useHardwareSigningStore.getState().isTroubleshootingVisible).toBe(false)
+            expect(
+                useHardwareSigningStore.getState().isTroubleshootingVisible,
+            ).toBe(false)
         })
     })
 
     describe('autoOpenedForBleError', () => {
         it('defaults to false', () => {
-            expect(useHardwareSigningStore.getState().autoOpenedForBleError).toBe(false)
+            expect(
+                useHardwareSigningStore.getState().autoOpenedForBleError,
+            ).toBe(false)
         })
 
         it('setAutoOpenedForBleError(true) sets the flag', () => {
             useHardwareSigningStore.getState().setAutoOpenedForBleError(true)
-            expect(useHardwareSigningStore.getState().autoOpenedForBleError).toBe(true)
+            expect(
+                useHardwareSigningStore.getState().autoOpenedForBleError,
+            ).toBe(true)
         })
 
         it('setAutoOpenedForBleError(false) clears the flag', () => {
             useHardwareSigningStore.getState().setAutoOpenedForBleError(true)
             useHardwareSigningStore.getState().setAutoOpenedForBleError(false)
-            expect(useHardwareSigningStore.getState().autoOpenedForBleError).toBe(false)
+            expect(
+                useHardwareSigningStore.getState().autoOpenedForBleError,
+            ).toBe(false)
         })
 
         it('reset clears autoOpenedForBleError', () => {
             useHardwareSigningStore.getState().setAutoOpenedForBleError(true)
             useHardwareSigningStore.getState().reset()
-            expect(useHardwareSigningStore.getState().autoOpenedForBleError).toBe(false)
+            expect(
+                useHardwareSigningStore.getState().autoOpenedForBleError,
+            ).toBe(false)
         })
     })
 })

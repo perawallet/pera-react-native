@@ -71,15 +71,65 @@ describe('buildHardwareSigningCallbacks', () => {
         expect(useHardwareSigningStore.getState().status).toBe('signing')
     })
 
-    it('onProgress updates progress and returns status to "awaitingApproval"', () => {
+    it('onProgress updates progress counters without changing status', () => {
         const cbs = buildHardwareSigningCallbacks(request, hwAccount)
         cbs.onPhaseChange?.('connecting')
         cbs.onSigningStart?.()
+        // Status is now 'signing'; onProgress must NOT flip it to 'awaitingApproval'
         cbs.onProgress?.(2, 5)
         const state = useHardwareSigningStore.getState()
         expect(state.currentTx).toBe(2)
         expect(state.totalTxs).toBe(5)
-        expect(state.status).toBe('awaitingApproval')
+        expect(state.status).toBe('signing')
+    })
+
+    it('onProgress for a skipped index does not flip status to "awaitingApproval"', () => {
+        // Simulates a 3-tx group where indicesToSign=[0,2] — index 1 is skipped.
+        // The strategy should not call onProgress for skipped indices at all,
+        // so this test verifies that calling onProgress directly does not
+        // inadvertently change status.
+        const cbs = buildHardwareSigningCallbacks(request, hwAccount)
+        cbs.onPhaseChange?.('connecting')
+        cbs.onSigningStart?.()
+        // Even if onProgress were called for a skipped index, it must not
+        // change the status — status transitions belong to onPhaseChange.
+        cbs.onProgress?.(1, 3)
+        expect(useHardwareSigningStore.getState().status).toBe('signing')
+    })
+
+    it('onPhaseChange("awaiting-approval") after onSigningStart sets status="awaitingApproval"', () => {
+        // Verifies that status transitions between txs come from onPhaseChange,
+        // not from onProgress. The strategy emits onPhaseChange('awaiting-approval')
+        // before each signTransaction call.
+        const cbs = buildHardwareSigningCallbacks(request, hwAccount)
+        cbs.onPhaseChange?.('connecting')
+        cbs.onSigningStart?.()
+        expect(useHardwareSigningStore.getState().status).toBe('signing')
+        cbs.onPhaseChange?.('awaiting-approval')
+        expect(useHardwareSigningStore.getState().status).toBe(
+            'awaitingApproval',
+        )
+    })
+
+    it('onSigningStart status "signing" survives until next onPhaseChange signal', () => {
+        // Verifies the sequence: onSigningStart → 'signing' (durable) →
+        // onPhaseChange('awaiting-approval') → 'awaitingApproval'.
+        // In between, calling onProgress must not disturb the 'signing' state.
+        const cbs = buildHardwareSigningCallbacks(request, hwAccount)
+        cbs.onPhaseChange?.('connecting')
+        cbs.onSigningStart?.()
+        const afterSigningStart = useHardwareSigningStore.getState().status
+        expect(afterSigningStart).toBe('signing')
+
+        // Progress fires (for a signable tx) — status must remain 'signing'
+        cbs.onProgress?.(1, 3)
+        expect(useHardwareSigningStore.getState().status).toBe('signing')
+
+        // Only onPhaseChange may advance the status
+        cbs.onPhaseChange?.('awaiting-approval')
+        expect(useHardwareSigningStore.getState().status).toBe(
+            'awaitingApproval',
+        )
     })
 
     it('onError(LedgerAppNotOpenError) sets payload kind="app_not_open"', () => {

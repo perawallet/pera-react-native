@@ -481,7 +481,13 @@ describe('createHardwareStrategy', () => {
             expect(onError).toHaveBeenCalledWith(expect.any(Error))
         })
 
-        it('calls onPhaseChange with connecting and awaiting-approval', async () => {
+        it('calls onPhaseChange with connecting, awaiting-approval (connect), then awaiting-approval per signable tx', async () => {
+            // For a single-tx group (indicesToSign=[0]), the sequence is:
+            //   1. connectAndVerify → 'connecting'
+            //   2. connectAndVerify → 'awaiting-approval' (device verified)
+            //   3. signTransactions loop → 'awaiting-approval' (before each signTransaction)
+            // Status transitions belong to onPhaseChange so that skipped indices
+            // never incorrectly trigger awaitingApproval in the overlay.
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
@@ -493,12 +499,59 @@ describe('createHardwareStrategy', () => {
                 onPhaseChange,
             })
 
-            expect(onPhaseChange).toHaveBeenCalledTimes(2)
+            expect(onPhaseChange).toHaveBeenCalledTimes(3)
             expect(onPhaseChange).toHaveBeenNthCalledWith(1, 'connecting')
             expect(onPhaseChange).toHaveBeenNthCalledWith(
                 2,
                 'awaiting-approval',
             )
+            expect(onPhaseChange).toHaveBeenNthCalledWith(
+                3,
+                'awaiting-approval',
+            )
+        })
+
+        it('does not emit onPhaseChange for skipped indices (indicesToSign=[0,2] over 3-tx group)', async () => {
+            // Verifies that onPhaseChange('awaiting-approval') only fires for
+            // indices that actually need on-device signing, not for skipped ones.
+            const strategy = createHardwareStrategy({
+                hardwareWalletRegistry: mockRegistry,
+                encodeTransaction,
+            })
+            const txns = [
+                mockTransaction(),
+                mockTransaction(),
+                mockTransaction(),
+            ]
+            const group = makeGroup(txns, [0, 2]) // index 1 is skipped
+            const onPhaseChange = vi.fn()
+            const onProgress = vi.fn()
+
+            await strategy.sign(group, makeLedgerAccount(), {
+                onPhaseChange,
+                onProgress,
+            })
+
+            // 'connecting' + 'awaiting-approval' (connect) + 2 × 'awaiting-approval' (tx 0 and tx 2)
+            expect(onPhaseChange).toHaveBeenCalledTimes(4)
+            expect(onPhaseChange).toHaveBeenNthCalledWith(1, 'connecting')
+            expect(onPhaseChange).toHaveBeenNthCalledWith(
+                2,
+                'awaiting-approval',
+            )
+            expect(onPhaseChange).toHaveBeenNthCalledWith(
+                3,
+                'awaiting-approval',
+            )
+            expect(onPhaseChange).toHaveBeenNthCalledWith(
+                4,
+                'awaiting-approval',
+            )
+
+            // onProgress fires only for signable indices (0 and 2), not for 1
+            expect(onProgress).toHaveBeenCalledTimes(2)
+            expect(onProgress).toHaveBeenNthCalledWith(1, 1, 3)
+            expect(onProgress).toHaveBeenNthCalledWith(2, 3, 3)
         })
 
         it('preserves original error when disconnect also fails', async () => {

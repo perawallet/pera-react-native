@@ -209,12 +209,20 @@ const signTransactions = async (
 
     for (let index = 0; index < transactions.length; index++) {
         const txn = transactions[index]
-        callbacks?.onProgress?.(index + 1, transactions.length)
 
         if (!indicesToSign.includes(index)) {
             signed.push({ txn } as PeraSignedTransaction)
             continue
         }
+
+        // Progress counter reflects only signable transactions — skipped
+        // indices (cosigned by another party) are not meaningful UI progress.
+        callbacks?.onProgress?.(index + 1, transactions.length)
+
+        // Signal that the user must now approve this transaction on the device.
+        // Status transitions belong here (via onPhaseChange), not in onProgress,
+        // so the overlay can render the approval chrome for each signable tx.
+        callbacks?.onPhaseChange?.('awaiting-approval')
 
         const txnBytes = encodeTransaction(txn)
         // Sign-time timeout uses CONFIRMATION (30s) not CONNECTION (10s) —
