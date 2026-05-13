@@ -504,6 +504,11 @@ vi.mock('@components/core', () => {
                     React.createElement('span', { key: 'subtitle' }, subtitle),
                 children,
             ),
+        PWLottie: ({ testID, ...props }: any) =>
+            React.createElement('div', {
+                ...props,
+                'data-testid': testID || 'PWLottie',
+            }),
         PWLoadingOverlay: ({ isVisible, title, children, ...props }: any) =>
             isVisible
                 ? React.createElement(

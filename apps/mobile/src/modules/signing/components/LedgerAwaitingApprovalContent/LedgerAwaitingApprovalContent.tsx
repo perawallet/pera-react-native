@@ -11,8 +11,7 @@
  */
 
 import React from 'react'
-import LottieView from 'lottie-react-native'
-import { PWButton, PWText, PWView } from '@components/core'
+import { PWButton, PWLottie, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import animationSourceLight from '@assets/animations/ledger-signing.json'
@@ -57,7 +56,7 @@ export const LedgerAwaitingApprovalContent = ({
 
     return (
         <PWView style={styles.container}>
-            <LottieView
+            <PWLottie
                 autoPlay
                 loop
                 source={animationSource}
@@ -85,9 +84,7 @@ export const LedgerAwaitingApprovalContent = ({
                         style={styles.progressBarTrack}
                         testID='ledger-signing-progress-bar'
                     >
-                        <PWView
-                            style={styles.progressBarFill}
-                        />
+                        <PWView style={styles.progressBarFill} />
                     </PWView>
                 </>
             )}

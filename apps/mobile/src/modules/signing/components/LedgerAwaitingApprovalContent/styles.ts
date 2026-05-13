@@ -19,56 +19,58 @@ const PROGRESS_BAR_HEIGHT = 2
 
 type StyleProps = { progressFillPercent: number }
 
-export const useStyles = makeStyles((theme, { progressFillPercent }: StyleProps) => ({
-    container: {
-        padding: theme.spacing.xl,
-        alignItems: 'center',
-    },
-    lottie: {
-        // Matches Android dialog_ledger_loading.xml (164dp × 48dp).
-        width: LOTTIE_WIDTH,
-        height: LOTTIE_HEIGHT,
-        marginBottom: theme.spacing.lg,
-    },
-    title: {
-        ...getTypography(theme, 'h3'),
-        marginBottom: theme.spacing.sm,
-        textAlign: 'center',
-    },
-    body: {
-        ...getTypography(theme, 'body'),
-        color: theme.colors.textGray,
-        textAlign: 'center',
-        marginBottom: theme.spacing.xl,
-        paddingHorizontal: theme.spacing.lg,
-    },
-    progressLabel: {
-        ...getTypography(theme, 'body'),
-        color: theme.colors.textMain,
-        textAlign: 'center',
-        marginBottom: theme.spacing.sm,
-    },
-    progressBarTrack: {
-        width: '100%',
-        height: PROGRESS_BAR_HEIGHT,
-        backgroundColor: theme.colors.layerGrayLighter,
-        borderRadius: PROGRESS_BAR_HEIGHT / 2,
-        marginBottom: theme.spacing.xl,
-        overflow: 'hidden',
-    },
-    progressBarFill: {
-        height: '100%',
-        width: `${progressFillPercent}%`,
-        backgroundColor: theme.colors.positive,
-    },
-    cancelButton: {
-        width: '100%',
-        marginBottom: theme.spacing.lg,
-    },
-    footnote: {
-        ...getTypography(theme, 'body'),
-        color: theme.colors.textGray,
-        textAlign: 'center',
-        paddingHorizontal: theme.spacing.lg,
-    },
-}))
+export const useStyles = makeStyles(
+    (theme, { progressFillPercent }: StyleProps) => ({
+        container: {
+            padding: theme.spacing.xl,
+            alignItems: 'center',
+        },
+        lottie: {
+            // Matches Android dialog_ledger_loading.xml (164dp × 48dp).
+            width: LOTTIE_WIDTH,
+            height: LOTTIE_HEIGHT,
+            marginBottom: theme.spacing.lg,
+        },
+        title: {
+            ...getTypography(theme, 'h3'),
+            marginBottom: theme.spacing.sm,
+            textAlign: 'center',
+        },
+        body: {
+            ...getTypography(theme, 'body'),
+            color: theme.colors.textGray,
+            textAlign: 'center',
+            marginBottom: theme.spacing.xl,
+            paddingHorizontal: theme.spacing.lg,
+        },
+        progressLabel: {
+            ...getTypography(theme, 'body'),
+            color: theme.colors.textMain,
+            textAlign: 'center',
+            marginBottom: theme.spacing.sm,
+        },
+        progressBarTrack: {
+            width: '100%',
+            height: PROGRESS_BAR_HEIGHT,
+            backgroundColor: theme.colors.layerGrayLighter,
+            borderRadius: PROGRESS_BAR_HEIGHT / 2,
+            marginBottom: theme.spacing.xl,
+            overflow: 'hidden',
+        },
+        progressBarFill: {
+            height: '100%',
+            width: `${progressFillPercent}%`,
+            backgroundColor: theme.colors.positive,
+        },
+        cancelButton: {
+            width: '100%',
+            marginBottom: theme.spacing.lg,
+        },
+        footnote: {
+            ...getTypography(theme, 'body'),
+            color: theme.colors.textGray,
+            textAlign: 'center',
+            paddingHorizontal: theme.spacing.lg,
+        },
+    }),
+)
