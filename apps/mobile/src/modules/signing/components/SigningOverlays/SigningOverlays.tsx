@@ -41,7 +41,7 @@ const useSignRequestDriver = () => {
     const nextRequest = pendingSignRequests.find(r => !r.headless)
 
     useEffect(() => {
-        const sheetId = nextRequest ? `sign-request:${nextRequest.id}` : null
+        const sheetId = nextRequest ? nextRequest.id : null
 
         // No pending non-headless request — dismiss any open sheet so the
         // user isn't left looking at stale request data after the queue
