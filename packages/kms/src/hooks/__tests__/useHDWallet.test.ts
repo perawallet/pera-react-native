@@ -12,6 +12,7 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { useHDWallet } from '../useHDWallet'
 import type { HDWalletKeyResult } from '../useHDWallet'
 import { KeyType, KeyPair } from '../../models'
@@ -120,7 +121,7 @@ describe('useHDWallet', () => {
         test('creates an HD wallet root key and returns entropyKeyId', async () => {
             const { result } = renderHook(() => useHDWallet())
 
-            let keyResult: HDWalletKeyResult | undefined
+            let keyResult: Optional<HDWalletKeyResult>
             await act(async () => {
                 keyResult = await result.current.createHDWalletKey({
                     id: 'hd-1',
@@ -182,7 +183,7 @@ describe('useHDWallet', () => {
         test('generates uuid when id is not provided', async () => {
             const { result } = renderHook(() => useHDWallet())
 
-            let keyResult: HDWalletKeyResult | undefined
+            let keyResult: Optional<HDWalletKeyResult>
             await act(async () => {
                 keyResult = await result.current.createHDWalletKey()
             })
@@ -242,7 +243,7 @@ describe('useHDWallet', () => {
 
             const { result } = renderHook(() => useHDWallet())
 
-            let caughtError: Error | undefined
+            let caughtError: Optional<Error>
             await act(async () => {
                 try {
                     await result.current.createHDWalletKey({
@@ -265,7 +266,7 @@ describe('useHDWallet', () => {
 
             const { result } = renderHook(() => useHDWallet())
 
-            let derivedKeyId: string | undefined
+            let derivedKeyId: Optional<string>
             await act(async () => {
                 derivedKeyId = await result.current.generateDerivedKey(
                     'ks-root-1',
@@ -321,7 +322,7 @@ describe('useHDWallet', () => {
             const { result } = renderHook(() => useHDWallet())
 
             const encodedTx = new Uint8Array([84, 88, 1, 2, 3])
-            let signResult: Uint8Array | undefined
+            let signResult: Optional<Uint8Array>
             await act(async () => {
                 signResult = await result.current.withHDSession(
                     mockKey,
@@ -349,7 +350,7 @@ describe('useHDWallet', () => {
 
             const { result } = renderHook(() => useHDWallet())
 
-            let signResult: Uint8Array | undefined
+            let signResult: Optional<Uint8Array>
             await act(async () => {
                 signResult = await result.current.withHDSession(
                     mockKey,
@@ -378,7 +379,7 @@ describe('useHDWallet', () => {
 
             const { result } = renderHook(() => useHDWallet())
 
-            let pubKeyResult: Uint8Array | undefined
+            let pubKeyResult: Optional<Uint8Array>
             await act(async () => {
                 pubKeyResult = await result.current.withHDSession(
                     mockKey,
@@ -403,7 +404,7 @@ describe('useHDWallet', () => {
 
             const { result } = renderHook(() => useHDWallet())
 
-            let mnemonic: Uint8Array | undefined
+            let mnemonic: Optional<Uint8Array>
             await act(async () => {
                 mnemonic = await result.current.withHDSession(
                     mockKey,

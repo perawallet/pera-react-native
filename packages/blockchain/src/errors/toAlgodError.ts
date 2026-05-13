@@ -11,6 +11,7 @@
  */
 
 import { LogicError } from '@algorandfoundation/algokit-utils/logic-error'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { AlgodError } from './AlgodError'
 import { parseAlgodMessage } from './parseAlgodMessage'
 
@@ -104,7 +105,7 @@ const fromApiError = (err: ApiErrorLike, cause: Error): AlgodError => {
     )
 }
 
-const extractBodyMessage = (body: unknown): string | undefined => {
+const extractBodyMessage = (body: unknown): Optional<string> => {
     if (typeof body === 'string') return body
     if (body && typeof body === 'object' && 'message' in body) {
         const m = (body as { message?: unknown }).message

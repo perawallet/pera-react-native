@@ -18,13 +18,14 @@ import {
     useSigningPipeline,
 } from '@perawallet/wallet-core-signing'
 import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
+import { type Optional } from '@perawallet/wallet-core-shared'
 import { Arc60DataSigningDetailsView } from '@modules/signing/components/Arc60DataSigningView'
 import { useStyles } from './styles'
 
 export const Arc60SigningDetailsScreen = () => {
     const styles = useStyles()
     const { currentRequest } = useSigningPipeline()
-    const request = currentRequest as Arc60SignRequest | undefined
+    const request = currentRequest as Optional<Arc60SignRequest>
 
     const account = useFindAccountByAddress(request?.stdSigData.signer ?? '')
     const parsed = useMemo(

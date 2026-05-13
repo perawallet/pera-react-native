@@ -13,7 +13,7 @@
 import { useCallback } from 'react'
 import { AlgodError, toAlgodError } from '@perawallet/wallet-core-blockchain'
 import { config } from '@perawallet/wallet-core-config'
-import { AppError } from '@perawallet/wallet-core-shared'
+import { AppError, type Optional } from '@perawallet/wallet-core-shared'
 import { ShowNotificationParams, NotifierRoot } from 'react-native-notifier'
 import { useToast } from './useToast'
 import { useAlgodErrorMessage } from './useAlgodErrorMessage'
@@ -69,7 +69,7 @@ export const useErrorToast = (): UseErrorToastResult => {
 
 const resolveMessage = (
     error: unknown,
-    fallbackTitle: string | undefined,
+    fallbackTitle: Optional<string>,
     t: (key: string) => string,
     getMessage: (err: unknown) => { title: string; body: string },
 ): { title: string; body: string } => {

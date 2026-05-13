@@ -33,12 +33,13 @@ import { useToast } from '@hooks/useToast'
 import { useShouldPlayConfetti } from '@modules/onboarding/hooks'
 import { getNextSharedAccountName } from '@modules/multisig/utils'
 import type { MessagesStackParamList } from '../../routes/types'
+import { Optional } from '@perawallet/wallet-core-shared'
 
 type UseMultisigInvitationNameScreenResult = {
     accountName: string
     isSaving: boolean
     isNameTaken: boolean
-    nameError: string | undefined
+    nameError: Optional<string>
     isFinishDisabled: boolean
     handleNameChange: (value: string) => void
     handleFinish: () => Promise<void>

@@ -11,6 +11,7 @@
  */
 
 import { Decimal } from 'decimal.js'
+import { type Optional } from '@perawallet/wallet-core-shared'
 import {
     ALGO_ASSET_ID,
     PeraAssetType,
@@ -44,7 +45,7 @@ export const transformCollectibleResponse = (
 ): PeraCollectible => {
     return {
         title: data.title,
-        standard: data.standard as CollectibleStandard | undefined,
+        standard: data.standard as Optional<CollectibleStandard>,
         primaryImage: data.primary_image ?? undefined,
         mediaType: data.media_type as CollectibleMediaType,
         explorerUrl: data.explorer_url,

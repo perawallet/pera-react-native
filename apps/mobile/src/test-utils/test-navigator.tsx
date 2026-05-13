@@ -38,6 +38,7 @@ import React, {
     useMemo,
     useState,
 } from 'react'
+import { type Optional } from '@perawallet/wallet-core-shared'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -64,7 +65,7 @@ type NavigationApi = {
     dispatch: (action: unknown) => void
     reset: (state: unknown) => void
     setOptions: (options: unknown) => void
-    getParent: () => NavigationApi | undefined
+    getParent: () => Optional<NavigationApi>
     getState: () => { routes: RouteState[]; index: number }
 }
 
@@ -329,9 +330,9 @@ const collectScreens = (children: React.ReactNode): ScreenConfig[] => {
             screens.push({
                 name: props.name,
                 component,
-                initialParams: props.initialParams as
-                    | Record<string, unknown>
-                    | undefined,
+                initialParams: props.initialParams as Optional<
+                    Record<string, unknown>
+                >,
             })
         }
         // Recurse into Group / Fragment children

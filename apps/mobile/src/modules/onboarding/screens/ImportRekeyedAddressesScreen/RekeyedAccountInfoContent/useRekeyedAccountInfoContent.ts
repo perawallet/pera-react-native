@@ -20,6 +20,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
 import { Decimal } from 'decimal.js'
+import { Optional } from '@perawallet/wallet-core-shared'
 
 type UseRekeyedAccountInfoContentParams = {
     account: WalletAccount
@@ -28,7 +29,7 @@ type UseRekeyedAccountInfoContentParams = {
 export type UseRekeyedAccountInfoContentResult = {
     rekeyedAccountBalances: AssetWithAccountBalance[]
     rekeyedAccountAlgoValue: Decimal
-    authAddress: string | undefined
+    authAddress: Optional<string>
     authAccountAlgoValue: Decimal
     isPending: boolean
 }
@@ -39,7 +40,7 @@ export function useRekeyedAccountInfoContent({
     const { accountBalances: rekeyedBalances, isPending: isRekeyedPending } =
         useAccountBalancesQuery([account], true)
 
-    const authAccount = useMemo<WatchAccount | undefined>(() => {
+    const authAccount = useMemo<Optional<WatchAccount>>(() => {
         if (!account.rekeyAddress) return undefined
         return {
             address: account.rekeyAddress,

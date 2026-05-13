@@ -15,6 +15,7 @@ import {
     AccountTypes,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { useImportSelectAddressesScreen } from '../useImportSelectAddressesScreen'
 
 const {
@@ -193,7 +194,7 @@ describe('useImportSelectAddressesScreen — import mode', () => {
     })
 
     test('cancelImport runs when navigation beforeRemove fires (back/swipe)', async () => {
-        let beforeRemoveCallback: (() => void) | undefined
+        let beforeRemoveCallback: Optional<() => void>
         const addListenerSpy = vi.fn((eventName: string, cb: () => void) => {
             if (eventName === 'beforeRemove') {
                 beforeRemoveCallback = cb

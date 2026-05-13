@@ -14,7 +14,11 @@ import { useCallback, useMemo, useState } from 'react'
 import { Decimal } from 'decimal.js'
 import { formatAssetAmount } from '@perawallet/wallet-core-assets'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import { formatCurrency, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    formatCurrency,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import {
     useProvidersQuery,
     type SwapQuote,
@@ -28,10 +32,10 @@ type UseSwapProviderContentParams = {
 
 export type SwapProviderRow = {
     quote: SwapQuote
-    iconUrl: string | undefined
+    iconUrl: Optional<string>
     displayName: string
     amountDisplay: string
-    fiatDisplay: string | undefined
+    fiatDisplay: Optional<string>
 }
 
 type UseSwapProviderContentResult = {

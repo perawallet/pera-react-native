@@ -10,25 +10,25 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { Network, Optional } from '@perawallet/wallet-core-shared'
 
 const MODULE_PREFIX = 'swaps'
 
 export const swapQueryKeys = {
     availableAssets: (
         assetInId: number,
-        q: string | undefined,
+        q: Optional<string>,
         network: Network,
     ) =>
         [MODULE_PREFIX, 'available-assets', { assetInId, q, network }] as const,
     history: (
         address: string,
-        statuses: string | undefined,
+        statuses: Optional<string>,
         network: Network,
     ) => [MODULE_PREFIX, 'history', { address, statuses, network }] as const,
     historyInfinite: (
         address: string,
-        statuses: string | undefined,
+        statuses: Optional<string>,
         network: Network,
     ) =>
         [
@@ -38,7 +38,7 @@ export const swapQueryKeys = {
         ] as const,
     distinctPairsHistory: (
         address: string,
-        statuses: string | undefined,
+        statuses: Optional<string>,
         network: Network,
     ) =>
         [
@@ -48,6 +48,6 @@ export const swapQueryKeys = {
         ] as const,
     providers: (network: Network) =>
         [MODULE_PREFIX, 'providers', { network }] as const,
-    topPairs: (limit: number | undefined, network: Network) =>
+    topPairs: (limit: Optional<number>, network: Network) =>
         [MODULE_PREFIX, 'top-pairs', { limit, network }] as const,
 }

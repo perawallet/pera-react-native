@@ -25,7 +25,12 @@ import WalletConnect from '@walletconnect/client'
 import { createRef, useCallback, useEffect, useRef } from 'react'
 import { useWalletConnectSessionRequests } from './useWalletConnectSessionRequests'
 import { useWalletConnectHandlers } from './useWalletConnectHandlers'
-import { logger, Network, Networks } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    Network,
+    Networks,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 
 const connectors = new Map<string, WalletConnect>()
@@ -90,7 +95,7 @@ export const useWalletConnect = (network: Network) => {
             logger.debug('[WC] Reconnecting', { connection, network })
             const { autoConnect, ...restConnection } = connection
 
-            let connector: WalletConnect | undefined = undefined
+            let connector: Optional<WalletConnect> = undefined
 
             if (connection.clientId) {
                 const storedConnector = connectors.get(connection.clientId)

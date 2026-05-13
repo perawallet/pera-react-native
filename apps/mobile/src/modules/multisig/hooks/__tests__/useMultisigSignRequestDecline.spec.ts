@@ -21,6 +21,7 @@ import type {
     SignRequestStatus,
 } from '@perawallet/wallet-core-multisig'
 import type { SignRequest } from '@perawallet/wallet-core-signing'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 const useAllAccountsMock = vi.fn<() => WalletAccount[]>()
 vi.mock(import('@perawallet/wallet-core-accounts'), async importOriginal => {
@@ -112,7 +113,7 @@ const buildMultisigSignRequest = (
 })
 
 const buildSignRequest = (
-    signRequestId: string | undefined = 'sr-1',
+    signRequestId: Optional<string> = 'sr-1',
 ): SignRequest =>
     ({
         id: 'local-req-1',

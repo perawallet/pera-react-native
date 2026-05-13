@@ -11,6 +11,7 @@
  */
 
 import { describe, test, expect, vi } from 'vitest'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { submitAndAutoRefreshCore } from '../submitAndAutoRefresh'
 import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
 
@@ -37,7 +38,7 @@ const flushMicrotasks = async () => {
 }
 
 describe('submitAndAutoRefreshCore', () => {
-    const makeAlgokit = (txid: string | string[] | undefined = 'TX1') => ({
+    const makeAlgokit = (txid: Optional<string | string[]> = 'TX1') => ({
         client: {
             algod: {
                 sendRawTransaction: vi.fn().mockResolvedValue({ txid }),

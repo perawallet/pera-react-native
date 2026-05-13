@@ -12,6 +12,7 @@
 
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { Contact } from '../../models'
 import { ContactNotFoundError, DuplicateAddressError } from '../../errors'
 
@@ -167,7 +168,7 @@ describe('ContactsStore', () => {
                 result.current.addContact(contact)
             })
 
-            let removed: boolean | undefined
+            let removed: Optional<boolean>
             act(() => {
                 removed = result.current.deleteContact(contact)
             })
@@ -180,7 +181,7 @@ describe('ContactsStore', () => {
             const { useContactsStore } = await import('../index')
             const { result } = renderHook(() => useContactsStore())
 
-            let removed: boolean | undefined
+            let removed: Optional<boolean>
             act(() => {
                 removed = result.current.deleteContact({
                     name: 'Missing',

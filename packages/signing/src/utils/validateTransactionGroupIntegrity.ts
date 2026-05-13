@@ -15,12 +15,13 @@ import {
     Transaction,
     groupTransactions,
 } from '@perawallet/wallet-core-blockchain'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 import { InvalidSignableDataError } from '../pipeline/errors'
 
 const bytesEqual = (
-    a: Uint8Array | undefined,
-    b: Uint8Array | undefined,
+    a: Optional<Uint8Array>,
+    b: Optional<Uint8Array>,
 ): boolean => {
     if (!a && !b) return true
     if (!a || !b) return false
@@ -84,7 +85,7 @@ export const validateTransactionGroupIntegrity = (
     if (partitions.size === 0) return
 
     for (const { group: claimed, txs } of partitions.values()) {
-        let computed: Uint8Array | undefined
+        let computed: Optional<Uint8Array>
         try {
             const ungrouped = txs.map(
                 tx => new Transaction({ ...tx, group: undefined }),

@@ -12,14 +12,15 @@
 
 import { PWText, PWView } from '@components/core'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { AssetIcon } from '@modules/assets/components/AssetIcon'
 import { AssetTierChip } from '@modules/assets/components/AssetTierChip'
 import { useStyles } from './styles'
 
 type SwapAssetSectionProps = {
-    asset: PeraAsset | undefined
+    asset: Optional<PeraAsset>
     amountDisplay: string
-    fiatDisplay: string | undefined
+    fiatDisplay: Optional<string>
     unitName?: string
     verificationTier: string
 }

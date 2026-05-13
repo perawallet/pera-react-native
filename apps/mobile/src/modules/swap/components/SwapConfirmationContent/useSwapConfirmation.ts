@@ -16,6 +16,7 @@ import {
     formatCurrency,
     formatNumber,
     type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import {
@@ -40,13 +41,13 @@ type UseSwapConfirmationParams = {
 
 type UseSwapConfirmationResult = {
     selectedAccount: ReturnType<typeof useSelectedAccount>
-    inAsset: PeraAsset | undefined
-    outAsset: PeraAsset | undefined
+    inAsset: Optional<PeraAsset>
+    outAsset: Optional<PeraAsset>
     isProcessing: boolean
     payDisplay: string
     receiveDisplay: string
-    payFiatDisplay: string | undefined
-    receiveFiatDisplay: string | undefined
+    payFiatDisplay: Optional<string>
+    receiveFiatDisplay: Optional<string>
     rateDisplay: string
     minimumReceivedDisplay: string
     peraFeeDisplay: string

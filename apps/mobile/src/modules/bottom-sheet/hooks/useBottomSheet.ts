@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { Optional } from '@perawallet/wallet-core-shared'
 import { useBottomSheetStore } from '../store/bottomSheetStore'
 import type {
     BottomSheetOptions,
@@ -18,12 +19,12 @@ import type {
 } from '../types'
 
 type UseBottomSheetResult = {
-    request: <T = unknown>(req: BottomSheetRequest) => Promise<T | undefined>
+    request: <T = unknown>(req: BottomSheetRequest) => Promise<Optional<T>>
     requestByType: <K extends keyof BottomSheetRegistry, T = unknown>(
         type: K,
         props: BottomSheetRegistry[K],
         options?: BottomSheetOptions,
-    ) => Promise<T | undefined>
+    ) => Promise<Optional<T>>
     dismiss: (id?: string) => void
     dismissAll: () => void
 }

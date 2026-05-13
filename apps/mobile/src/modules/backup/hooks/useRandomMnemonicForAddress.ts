@@ -16,7 +16,7 @@ import {
     pickDistinctIndexes,
     type MnemonicWordAtPosition,
 } from '@perawallet/wallet-core-kms'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { useMnemonicForAddress } from './useMnemonicForAddress'
 
 export type UseRandomMnemonicForAddressResult = {
@@ -30,8 +30,8 @@ export type UseRandomMnemonicForAddressResult = {
 // bytes are zeroed before this hook's state is populated — only the sampled
 // pairs survive.
 export const useRandomMnemonicForAddress = (
-    address: string | undefined,
-    account: WalletAccount | null,
+    address: Optional<string>,
+    account: Nullable<WalletAccount>,
     count: number,
 ): UseRandomMnemonicForAddressResult => {
     const { executeWithMnemonic } = useMnemonicForAddress(address, account)

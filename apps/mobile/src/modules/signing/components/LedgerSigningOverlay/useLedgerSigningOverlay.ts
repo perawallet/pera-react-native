@@ -15,14 +15,15 @@ import {
     useHardwareSigning,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
+import { type Optional } from '@perawallet/wallet-core-shared'
 
 type LedgerOverlayStatus = 'connecting' | 'confirming' | 'error' | 'timeout'
 
 export type UseLedgerSigningOverlayResult = {
     isVisible: boolean
     status: LedgerOverlayStatus
-    currentTx: number | undefined
-    totalTxs: number | undefined
+    currentTx: Optional<number>
+    totalTxs: Optional<number>
     onCancel: () => void
     onRetry: () => void
 }

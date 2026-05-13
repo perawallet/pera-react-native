@@ -11,6 +11,7 @@
  */
 
 import { useCallback } from 'react'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     useHardwareSigningStore,
     type HardwareSigningStatus,
@@ -26,11 +27,11 @@ export type UseHardwareSigningResult = {
      */
     status: HardwareSigningStatus
     /** 1-based index of the transaction currently being signed, if any. */
-    currentTx: number | undefined
+    currentTx: Optional<number>
     /** Total number of transactions in the active signing session, if any. */
-    totalTxs: number | undefined
+    totalTxs: Optional<number>
     /** Id of the sign request the overlay is currently bound to, if any. */
-    requestId: string | undefined
+    requestId: Optional<string>
     /**
      * Resolve the active sign request from the caller's queue. Returns
      * `undefined` when the overlay has drifted ahead of the queue (for
@@ -39,7 +40,7 @@ export type UseHardwareSigningResult = {
      */
     resolveActiveRequest: (
         pendingSignRequests: SignRequest[],
-    ) => SignRequest | undefined
+    ) => Optional<SignRequest>
     /** Dismiss the overlay without cancelling or retrying a request. */
     dismiss: () => void
 }

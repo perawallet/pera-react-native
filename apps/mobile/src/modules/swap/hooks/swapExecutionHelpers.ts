@@ -16,7 +16,11 @@ import type {
 } from '@perawallet/wallet-core-blockchain'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
 import type { SwapStatusUpdateRequest } from '@perawallet/wallet-core-swaps'
-import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
+import {
+    generateOrderedUniqueId,
+    logger,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 
 import { SwapUserRejectedError } from './swapGroupPlan'
 
@@ -81,7 +85,7 @@ type UpdateSwapStatusFn = (params: {
  */
 export const reportSwapFailure = async (
     updateSwapStatus: UpdateSwapStatusFn,
-    swapIdStr: string | undefined,
+    swapIdStr: Optional<string>,
 ): Promise<void> => {
     if (!swapIdStr) return
     try {

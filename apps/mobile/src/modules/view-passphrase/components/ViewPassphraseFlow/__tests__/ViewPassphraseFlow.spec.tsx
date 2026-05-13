@@ -12,6 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import React from 'react'
+import { type Optional } from '@perawallet/wallet-core-shared'
 import { render, screen, fireEvent, waitFor } from '@test-utils/render'
 
 const { mockCheckPinEnabled } = vi.hoisted(() => ({
@@ -118,11 +119,11 @@ describe('ViewPassphraseFlow', () => {
         // First call (acknowledge) resolves with 'confirm', second call
         // (display) stays pending so we can assert it was requested.
         let resolveAcknowledge: (
-            value: 'confirm' | undefined,
+            value: Optional<'confirm'>,
         ) => void = () => {}
         mockRequestBottomSheet.mockImplementationOnce(
             () =>
-                new Promise<'confirm' | undefined>(resolve => {
+                new Promise<Optional<'confirm'>>(resolve => {
                     resolveAcknowledge = resolve
                 }),
         )

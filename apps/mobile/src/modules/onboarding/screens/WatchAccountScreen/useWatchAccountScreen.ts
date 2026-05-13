@@ -19,7 +19,7 @@ import {
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
-import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import { generateOrderedUniqueId, Optional } from '@perawallet/wallet-core-shared'
 import { useNfdResolve } from '@hooks/useNfdResolve'
 
 type UseWatchAccountScreenResult = {
@@ -29,7 +29,7 @@ type UseWatchAccountScreenResult = {
     isDuplicateAddress: boolean
     isNfdResolved: boolean
     isNfdResolving: boolean
-    nfdName: string | undefined
+    nfdName: Optional<string>
     handleAddressChange: (text: string) => void
     handleWatchAccount: () => void
 }

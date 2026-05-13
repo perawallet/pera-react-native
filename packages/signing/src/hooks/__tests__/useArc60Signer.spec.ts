@@ -14,7 +14,7 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { sha256 } from '@noble/hashes/sha256'
 import { canonify } from 'canonify'
-import { encodeToBase64 } from '@perawallet/wallet-core-shared'
+import { encodeToBase64, type Optional } from '@perawallet/wallet-core-shared'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useArc60Signer } from '../useArc60Signer'
 import {
@@ -176,7 +176,7 @@ describe('useArc60Signer', () => {
         )
 
         const { result } = renderHook(() => useArc60Signer())
-        let signature: Uint8Array | undefined
+        let signature: Optional<Uint8Array>
         await act(async () => {
             signature = await result.current.signArc60(
                 hdAccount,

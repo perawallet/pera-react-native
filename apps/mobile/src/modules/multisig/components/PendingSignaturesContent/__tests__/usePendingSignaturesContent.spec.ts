@@ -20,6 +20,7 @@ import type {
     MultisigSignRequest,
     SignRequestStatus,
 } from '@perawallet/wallet-core-multisig'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 const localUnsignedSignersMock = vi.fn<() => WalletAccount[]>(() => [])
 const addSignRequestMock = vi.fn()
@@ -146,7 +147,7 @@ const buildSignRequest = (
     ...overrides,
 })
 
-const mockQueryReturn = (data: MultisigSignRequest | undefined) => {
+const mockQueryReturn = (data: Optional<MultisigSignRequest>) => {
     useSignRequestDetailQueryMock.mockReturnValue({ data, isLoading: false })
 }
 

@@ -21,6 +21,7 @@ import {
     useSigningPipeline,
     type TransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
+import { type Optional } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import { SigningActionButtons } from '@modules/signing/components/SigningActionButtons'
 import { SigningAccountDisplay } from '@modules/signing/components/SigningAccountDisplay/SigningAccountDisplay'
@@ -30,9 +31,7 @@ export const SingleTransactionScreen = () => {
     const { theme } = useTheme()
     const { t } = useLanguage()
     const pipeline = useSigningPipeline()
-    const request = pipeline.currentRequest as
-        | TransactionSignRequest
-        | undefined
+    const request = pipeline.currentRequest as Optional<TransactionSignRequest>
     const { allTransactions } = pipeline
 
     const transaction = allTransactions[0]

@@ -11,6 +11,7 @@
  */
 
 import { ASAInbox } from '@perawallet/wallet-core-messages'
+import { Optional } from '@perawallet/wallet-core-shared'
 import type { StackScreenProps } from '@react-navigation/stack'
 
 export type MultisigInvitationParam = {
@@ -23,7 +24,7 @@ export type MultisigInvitationParam = {
 }
 
 export type MessagesStackParamList = {
-    MessagesHome: { initialTab?: 'Inbox' | 'Notifications' } | undefined
+    MessagesHome: Optional<{ initialTab?: 'Inbox' | 'Notifications' }>
     AssetTransferRequests: {
         item: ASAInbox
     }

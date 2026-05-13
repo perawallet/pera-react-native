@@ -12,6 +12,7 @@
 
 import { renderHook } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
+import { type Optional } from '@perawallet/wallet-core-shared'
 import { useInvalidateAssetPrices } from '../useInvalidateAssetPrices'
 import { createWrapper } from './test-utils'
 import { QueryClient } from '@tanstack/react-query'
@@ -58,9 +59,9 @@ describe('useInvalidateAssetPrices', () => {
         })
 
         // Test the predicate function
-        const predicate = invalidateQueriesSpy.mock.calls[0][0]?.predicate as
-            | ((query: QueryLike) => boolean)
-            | undefined
+        const predicate = invalidateQueriesSpy.mock.calls[0][0]?.predicate as Optional<
+            (query: QueryLike) => boolean
+        >
         expect(predicate).toBeDefined()
 
         if (predicate) {
@@ -93,9 +94,9 @@ describe('useInvalidateAssetPrices', () => {
 
         result.current.invalidateAssetPrices()
 
-        const predicate = invalidateQueriesSpy.mock.calls[0][0]?.predicate as
-            | ((query: QueryLike) => boolean)
-            | undefined
+        const predicate = invalidateQueriesSpy.mock.calls[0][0]?.predicate as Optional<
+            (query: QueryLike) => boolean
+        >
         expect(predicate).toBeDefined()
 
         if (predicate) {
@@ -148,9 +149,9 @@ describe('useInvalidateAssetPrices', () => {
         // For the price queries, we can't reliably test isInvalidated directly
         // since the test environment might handle invalidation differently
         // Instead, we'll verify the predicate function behavior
-        const predicate = invalidateQueriesSpy.mock.calls[0][0]?.predicate as
-            | ((query: QueryLike) => boolean)
-            | undefined
+        const predicate = invalidateQueriesSpy.mock.calls[0][0]?.predicate as Optional<
+            (query: QueryLike) => boolean
+        >
         expect(predicate).toBeDefined()
 
         if (predicate) {
@@ -186,7 +187,7 @@ describe('useInvalidateAssetPrices', () => {
                 'predicate',
             )
             const predicate = invalidateQueriesSpy.mock.calls[i][0]
-                ?.predicate as ((query: QueryLike) => boolean) | undefined
+                ?.predicate as Optional<(query: QueryLike) => boolean>
             expect(predicate).toBeDefined()
 
             if (predicate) {

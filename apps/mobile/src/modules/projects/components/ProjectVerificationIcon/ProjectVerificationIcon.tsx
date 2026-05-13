@@ -12,8 +12,9 @@
 
 import { IconName, PWIcon, PWIconProps } from '@components/core'
 import { VerificationTier } from '@perawallet/wallet-core-projects'
+import { Optional } from '@perawallet/wallet-core-shared'
 
-const verificationMap: Record<VerificationTier, IconName | undefined> = {
+const verificationMap: Record<VerificationTier, Optional<IconName>> = {
     verified: 'assets/verified',
     suspicious: 'assets/suspicious',
     unverified: undefined,

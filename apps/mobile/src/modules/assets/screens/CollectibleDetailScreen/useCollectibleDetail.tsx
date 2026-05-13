@@ -44,11 +44,11 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { OptOutConfirmationContent } from '@modules/accounts/components/AccountAssetList/OptOutConfirmationContent'
 import { SendFundsContent } from '@modules/transactions/components/send-funds/SendFundsContent'
 import type { FullScreenMediaItem } from '@modules/assets/screens/FullScreenImageViewer/FullScreenImageViewer'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 type UseCollectibleDetailResult = {
-    asset: PeraAsset | undefined
-    collectible: PeraCollectible | undefined
+    asset: Optional<PeraAsset>
+    collectible: Optional<PeraCollectible>
     isPending: boolean
     isWatch: boolean
     traits: CollectibleTrait[]
@@ -62,7 +62,7 @@ type UseCollectibleDetailResult = {
     assetBalance: Nullable<AssetWithAccountBalance>
     isOptingOut: boolean
     modelViewerModal: ModalState
-    modelViewerUrl: string | undefined
+    modelViewerUrl: Optional<string>
     handleOptOutPressed: () => void
     handleSendPressed: () => void
     handleSharePressed: () => void

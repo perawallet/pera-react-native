@@ -16,6 +16,7 @@ import { useFeeWarning } from '../useFeeWarning'
 import { useAssetPricesQuery } from '@perawallet/wallet-core-assets'
 import { useRemoteConfig } from '@perawallet/wallet-core-remote-config'
 import { useSigningPipeline } from '@perawallet/wallet-core-signing'
+import { type Optional } from '@perawallet/wallet-core-shared'
 import { Decimal } from 'decimal.js'
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
@@ -50,7 +51,7 @@ describe('useFeeWarning', () => {
         })
     })
 
-    const setupAlgoPrice = (price: Decimal | undefined) => {
+    const setupAlgoPrice = (price: Optional<Decimal>) => {
         const priceMap = new Map()
         if (price) {
             priceMap.set('0', { assetId: '0', usdPrice: price })

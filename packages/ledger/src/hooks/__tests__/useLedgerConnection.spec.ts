@@ -18,7 +18,7 @@ import type {
     HardwareWalletTransportProvider,
     HardwareWalletDevice,
 } from '@perawallet/wallet-core-hardware-wallet'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 const makeProvider = () => {
     const stop = vi.fn()
@@ -130,7 +130,7 @@ describe('useLedgerConnection', () => {
         }
         act(() => onDevice(device))
 
-        let returned: HardwareWalletTransport | undefined
+        let returned: Optional<HardwareWalletTransport>
         await act(async () => {
             returned = await result.current.connect(device)
         })

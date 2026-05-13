@@ -34,6 +34,7 @@ import {
     calculateBackoff,
     type Network,
     type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import type { SyncServiceDeps } from '../models'
@@ -211,7 +212,7 @@ export class SyncService {
         phase: string,
         results: PromiseSettledResult<unknown>[],
         network: Network,
-        subject: (index: number) => string | undefined,
+        subject: (index: number) => Optional<string>,
     ): void {
         results.forEach((result, index) => {
             if (result.status !== 'rejected') return

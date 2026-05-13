@@ -22,6 +22,7 @@ import {
     useMarkMnemonicBackupComplete,
     useRequiresMnemonicBackup,
 } from '@perawallet/wallet-core-backup'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 const hd = (address: string, keyIndex: number): WalletAccount => ({
     type: AccountTypes.hdWallet,
@@ -56,7 +57,7 @@ describe('Backup flow - HD sibling dedup', () => {
     test('marking one HD account backed up flags every sibling sharing the wallet root', () => {
         useMnemonicBackupStore.getState().resetState()
 
-        let mark: ((acc: WalletAccount) => void) | undefined
+        let mark: Optional<(acc: WalletAccount) => void>
         const sibling1Requires: boolean[] = []
         const sibling2Requires: boolean[] = []
 

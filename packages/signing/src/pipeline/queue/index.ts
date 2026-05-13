@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { SignRequest } from '../../models'
 
 /**
@@ -22,7 +23,7 @@ import type { SignRequest } from '../../models'
 export const getNextQueuedRequest = (
     pendingRequests: SignRequest[],
     runningActorCount: number,
-): SignRequest | undefined => {
+): Optional<SignRequest> => {
     if (runningActorCount > 0) return undefined
     return pendingRequests.at(0)
 }

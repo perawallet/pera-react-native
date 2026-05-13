@@ -19,6 +19,7 @@ import type {
     PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 const mockAddSignRequest = vi.fn()
 const mockDecodeTransaction = vi.fn()
@@ -224,7 +225,7 @@ describe('useSwapExecution', () => {
     it('executes full flow: prepare → pipeline sign → submit → update status', async () => {
         const { result } = renderHook(() => useSwapExecution())
 
-        let success: boolean | undefined
+        let success: Optional<boolean>
         await act(async () => {
             success = await result.current.execute('quote-123')
         })
@@ -364,7 +365,7 @@ describe('useSwapExecution', () => {
 
         const { result } = renderHook(() => useSwapExecution())
 
-        let success: boolean | undefined
+        let success: Optional<boolean>
         await act(async () => {
             success = await result.current.execute('quote-789')
         })
@@ -382,7 +383,7 @@ describe('useSwapExecution', () => {
 
         const { result } = renderHook(() => useSwapExecution())
 
-        let success: boolean | undefined
+        let success: Optional<boolean>
         await act(async () => {
             success = await result.current.execute('quote-reject')
         })
@@ -403,7 +404,7 @@ describe('useSwapExecution', () => {
 
         const { result } = renderHook(() => useSwapExecution())
 
-        let success: boolean | undefined
+        let success: Optional<boolean>
         await act(async () => {
             success = await result.current.execute('quote-pipeline-error')
         })
@@ -427,7 +428,7 @@ describe('useSwapExecution', () => {
 
         const { result } = renderHook(() => useSwapExecution())
 
-        let success: boolean | undefined
+        let success: Optional<boolean>
         await act(async () => {
             success = await result.current.execute('quote-submit-fail')
         })
@@ -449,7 +450,7 @@ describe('useSwapExecution', () => {
 
         const { result } = renderHook(() => useSwapExecution())
 
-        let success: boolean | undefined
+        let success: Optional<boolean>
         await act(async () => {
             success = await result.current.execute('quote-status-fail')
         })
@@ -485,7 +486,7 @@ describe('useSwapExecution', () => {
 
         const { result } = renderHook(() => useSwapExecution())
 
-        let success: boolean | undefined
+        let success: Optional<boolean>
         await act(async () => {
             success = await result.current.execute('quote-empty')
         })

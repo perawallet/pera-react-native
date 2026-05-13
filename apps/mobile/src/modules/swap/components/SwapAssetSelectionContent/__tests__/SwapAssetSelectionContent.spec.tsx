@@ -16,7 +16,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import type { AccountAssetSelectionListProps } from '@modules/assets/components/AccountAssetSelectionList'
 import type { SwapToAssetSelectionListProps } from '../../SwapToAssetSelectionList'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import {
     BottomSheetIdContext,
     useBottomSheetStore,
@@ -26,16 +26,16 @@ import { SwapAssetSelectionContent } from '../SwapAssetSelectionContent'
 let capturedFromOnAssetSelected: Nullable<
     (asset: AssetWithAccountBalance) => void
 > = null
-let capturedFromExcludeAssetId: string | undefined = undefined
-let capturedFromFilterAsset:
-    | ((asset: AssetWithAccountBalance) => boolean)
-    | undefined = undefined
+let capturedFromExcludeAssetId: Optional<string> = undefined
+let capturedFromFilterAsset: Optional<
+    (asset: AssetWithAccountBalance) => boolean
+> = undefined
 
 let capturedToOnAssetSelected: Nullable<
     (asset: AssetWithAccountBalance) => void
 > = null
-let capturedToExcludeAssetId: string | undefined = undefined
-let capturedToFromAssetId: string | undefined = undefined
+let capturedToExcludeAssetId: Optional<string> = undefined
+let capturedToFromAssetId: Optional<string> = undefined
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
     isCollectible: (asset: unknown) =>

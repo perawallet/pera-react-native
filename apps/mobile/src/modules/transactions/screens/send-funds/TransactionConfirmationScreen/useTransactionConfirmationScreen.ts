@@ -38,19 +38,19 @@ import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 import { useLanguage } from '@hooks/useLanguage'
-import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
+import type { Maybe, Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 type useTransactionConfirmationScreenResult = {
     asset: Maybe<PeraAsset>
-    amount: Decimal | undefined
-    destination: string | undefined
+    amount: Optional<Decimal>
+    destination: Optional<string>
     selectedAccount: Nullable<WalletAccount>
-    selectedAssetId: string | undefined
-    params: { minFee: bigint } | undefined
+    selectedAssetId: Optional<string>
+    params: Optional<{ minFee: bigint }>
     paramsPending: boolean
     currentBalance: Nullable<AssetWithAccountBalance>
     currentBalancePending: boolean
-    note: string | undefined
+    note: Optional<string>
     noteOpen: boolean
     openNote: () => void
     closeNote: () => void

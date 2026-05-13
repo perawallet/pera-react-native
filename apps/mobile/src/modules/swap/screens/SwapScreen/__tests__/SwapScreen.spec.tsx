@@ -11,6 +11,7 @@
  */
 
 import React from 'react'
+import { type Optional } from '@perawallet/wallet-core-shared'
 import { render, screen } from '@test-utils/render'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { SwapScreen } from '../SwapScreen'
@@ -28,7 +29,7 @@ const mockUseModalState = vi.hoisted(() =>
 const mockSetFromAsset = vi.hoisted(() => vi.fn())
 const mockSetToAsset = vi.hoisted(() => vi.fn())
 const mockRouteParams = vi.hoisted(() => ({
-    current: undefined as Record<string, string | undefined> | undefined,
+    current: undefined as Optional<Record<string, Optional<string>>>,
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {

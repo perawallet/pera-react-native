@@ -24,7 +24,11 @@ import {
     useUpdateSwapStatusMutation,
     type PrepareTransactionsResult,
 } from '@perawallet/wallet-core-swaps'
-import { logger, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
 import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
 import { useLanguage } from '@hooks/useLanguage'
@@ -83,7 +87,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
             setError(null)
             setTxIds([])
 
-            let prepareResult: PrepareTransactionsResult | undefined
+            let prepareResult: Optional<PrepareTransactionsResult>
 
             // Phase 1: Prepare transactions
             try {

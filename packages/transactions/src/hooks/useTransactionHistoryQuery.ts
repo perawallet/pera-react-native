@@ -11,7 +11,7 @@
  */
 
 import { useInfiniteQuery } from '@tanstack/react-query'
-import type { Network, Nullable } from '@perawallet/wallet-core-shared'
+import type { Network, Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { fetchTransactionHistory, fetchMoreTransactions } from '../api/history'
 import { transactionQueryKeys } from './querykeys'
 import type {
@@ -190,7 +190,7 @@ export const useTransactionHistoryQuery = (
         >,
         getNextPageParam: (
             lastPage: TransactionHistoryResult,
-        ): { type: 'db' } | { type: 'api'; url: string } | undefined => {
+        ): Optional<{ type: 'db' } | { type: 'api'; url: string }> => {
             if (lastPage.pagination.nextUrl === null) return undefined
 
             if (lastPage.pagination.nextUrl === '__load_more_from_api__') {
