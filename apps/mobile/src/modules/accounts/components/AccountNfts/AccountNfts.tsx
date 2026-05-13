@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import React, { useCallback, useRef, useEffect } from 'react'
+import React, { useCallback } from 'react'
 import {
     PWButton,
     PWFlatList,
@@ -49,9 +49,6 @@ const renderLoadingSkeleton = () => {
 export const AccountNfts = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const flatListRef = useRef<React.ComponentRef<typeof PWFlatList>>(null)
-    const previousFirstItemIdRef = useRef<string | undefined>(undefined)
-
     const {
         collectibles,
         collectibleCount,
@@ -66,6 +63,7 @@ export const AccountNfts = () => {
         handlePress,
         openManageSheet,
         openAddNftSheet,
+        flatListRef,
     } = useAccountNfts()
 
     const isGrid = galleryLayout === 'grid'
@@ -85,32 +83,6 @@ export const AccountNfts = () => {
             ),
         [isGrid, handlePress],
     )
-
-    useEffect(() => {
-        const currentFirstItemId = collectibles[0]?.assetId
-
-        if (
-            flatListRef.current &&
-            previousFirstItemIdRef.current !== undefined &&
-            previousFirstItemIdRef.current !== currentFirstItemId
-        ) {
-            flatListRef.current.scrollToOffset({ offset: 0, animated: false })
-        }
-
-        previousFirstItemIdRef.current = currentFirstItemId
-    }, [collectibles])
-
-    useEffect(() => {
-        if (flatListRef.current) {
-            flatListRef.current.scrollToOffset({ offset: 0, animated: false })
-        }
-    }, [galleryLayout])
-
-    useEffect(() => {
-        if (flatListRef.current && debouncedSearchFilter) {
-            flatListRef.current.scrollToOffset({ offset: 0, animated: false })
-        }
-    }, [debouncedSearchFilter])
 
     if (!hasAccount) {
         return null
