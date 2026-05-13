@@ -16,6 +16,19 @@ import { OnboardingScreen } from '../OnboardingScreen'
 import { config } from '@perawallet/wallet-core-config'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
 
+const { mockRequestBottomSheet } = vi.hoisted(() => ({
+    mockRequestBottomSheet: vi.fn(),
+}))
+
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({
+        request: mockRequestBottomSheet,
+        requestByType: vi.fn(),
+        dismiss: vi.fn(),
+        dismissAll: vi.fn(),
+    }),
+}))
+
 // Mock navigation
 const mockNavigate = vi.fn()
 const mockPush = vi.fn()
@@ -100,6 +113,7 @@ describe('OnboardingScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockUseHasAccounts.mockReturnValue(false)
+        mockRequestBottomSheet.mockResolvedValue(undefined)
         useOnboardingStore.getState().reset()
     })
 

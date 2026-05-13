@@ -12,6 +12,7 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { useAlgo25 } from '../useAlgo25'
 import type { Algo25KeyResult } from '../useAlgo25'
 import { KeyType, KeyPair } from '../../models'
@@ -104,7 +105,7 @@ describe('useAlgo25', () => {
 
             const { result } = renderHook(() => useAlgo25())
 
-            let keyResult: Algo25KeyResult | undefined
+            let keyResult: Optional<Algo25KeyResult>
             await act(async () => {
                 keyResult = await result.current.createAlgo25Key({
                     id: 'my-key',
@@ -168,7 +169,7 @@ describe('useAlgo25', () => {
 
             const { result } = renderHook(() => useAlgo25())
 
-            let keyResult: Algo25KeyResult | undefined
+            let keyResult: Optional<Algo25KeyResult>
             await act(async () => {
                 keyResult = await result.current.createAlgo25Key({
                     mnemonic: 'test',
@@ -200,7 +201,7 @@ describe('useAlgo25', () => {
             // `commit` receives `new Uint8Array(seed)`. The copy is taken at
             // call time, so if zeroBytes wins the race the copy will be all
             // zeros — captured here from the actual call args.
-            let committedPrivateKey: Uint8Array | undefined
+            let committedPrivateKey: Optional<Uint8Array>
             mockCommit.mockImplementationOnce(async (arg: any) => {
                 committedPrivateKey = new Uint8Array(arg.keyData.privateKey)
             })
@@ -223,7 +224,7 @@ describe('useAlgo25', () => {
 
             const { result } = renderHook(() => useAlgo25())
 
-            let keyResult: Algo25KeyResult | undefined
+            let keyResult: Optional<Algo25KeyResult>
             await act(async () => {
                 keyResult = await result.current.createAlgo25Key()
             })
@@ -244,7 +245,7 @@ describe('useAlgo25', () => {
 
             const { result } = renderHook(() => useAlgo25())
 
-            let caughtError: Error | undefined
+            let caughtError: Optional<Error>
             await act(async () => {
                 try {
                     await result.current.createAlgo25Key({
@@ -282,7 +283,7 @@ describe('useAlgo25', () => {
         test('signs transaction data locally via tweetnacl after exporting the seed', async () => {
             const { result } = renderHook(() => useAlgo25())
 
-            let signResult: Uint8Array | undefined
+            let signResult: Optional<Uint8Array>
             await act(async () => {
                 signResult = await result.current.withAlgo25Session(
                     mockKey,
@@ -302,7 +303,7 @@ describe('useAlgo25', () => {
         test('signs arbitrary data locally via tweetnacl', async () => {
             const { result } = renderHook(() => useAlgo25())
 
-            let signResult: Uint8Array | undefined
+            let signResult: Optional<Uint8Array>
             await act(async () => {
                 signResult = await result.current.withAlgo25Session(
                     mockKey,
@@ -320,7 +321,7 @@ describe('useAlgo25', () => {
         test('getPublicKey returns the raw public key derived from the seed', async () => {
             const { result } = renderHook(() => useAlgo25())
 
-            let pubKey: Uint8Array | undefined
+            let pubKey: Optional<Uint8Array>
             await act(async () => {
                 pubKey = await result.current.withAlgo25Session(
                     mockKey,
@@ -346,7 +347,7 @@ describe('useAlgo25', () => {
 
             const { result } = renderHook(() => useAlgo25())
 
-            let mnemonic: Uint8Array | undefined
+            let mnemonic: Optional<Uint8Array>
             await act(async () => {
                 mnemonic = await result.current.withAlgo25Session(
                     mockKey,

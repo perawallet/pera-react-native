@@ -51,7 +51,7 @@ import {
     useWalletConnectStore,
     type WalletConnectSessionRequest,
 } from '@perawallet/wallet-core-walletconnect'
-import { Networks } from '@perawallet/wallet-core-shared'
+import { Networks, type Optional } from '@perawallet/wallet-core-shared'
 import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletConnectProvider'
 
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
@@ -230,12 +230,12 @@ describe('Flow: WalletConnect v1 pair → approve session', () => {
             })
 
             // Wait for the Connect button.
-            const findConnectButton = (): HTMLButtonElement | undefined =>
+            const findConnectButton = (): Optional<HTMLButtonElement> =>
                 screen
                     .getAllByRole('button')
                     .find(b =>
                         (b.textContent ?? '').includes('common.connect.label'),
-                    ) as HTMLButtonElement | undefined
+                    ) as Optional<HTMLButtonElement>
             await waitFor(() => {
                 expect(findConnectButton()).toBeTruthy()
             })
@@ -316,12 +316,12 @@ describe('Flow: WalletConnect v1 pair → approve session', () => {
 
             // Cancel is the secondary CTA in ConnectionView. Match by the
             // i18n key (label falls back to the key in integration setup).
-            const findCancelButton = (): HTMLButtonElement | undefined =>
+            const findCancelButton = (): Optional<HTMLButtonElement> =>
                 screen
                     .getAllByRole('button')
                     .find(b =>
                         (b.textContent ?? '').includes('common.cancel.label'),
-                    ) as HTMLButtonElement | undefined
+                    ) as Optional<HTMLButtonElement>
             await waitFor(() => {
                 expect(findCancelButton()).toBeTruthy()
             })
@@ -375,12 +375,12 @@ describe('Flow: WalletConnect v1 pair → approve session', () => {
             // the connection to `walletConnectConnections` and the stub
             // flips `connected = true`. Without this, `disconnect` would
             // short-circuit before calling `killSession`.
-            const findConnectButton = (): HTMLButtonElement | undefined =>
+            const findConnectButton = (): Optional<HTMLButtonElement> =>
                 screen
                     .getAllByRole('button')
                     .find(b =>
                         (b.textContent ?? '').includes('common.connect.label'),
-                    ) as HTMLButtonElement | undefined
+                    ) as Optional<HTMLButtonElement>
             await waitFor(() => {
                 expect(findConnectButton()).toBeTruthy()
             })

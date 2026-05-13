@@ -29,7 +29,6 @@ import { KeyboardAvoidingView } from 'react-native'
 import { useStyles } from './styles'
 import { useImportAccountScreen } from './useImportAccountScreen'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
-import { ImportAccountSupportOptionsBottomSheet } from './ImportAccountSupportOptionsBottomSheet'
 import { QRScannerView } from '@components/QRScannerView'
 import { WordSuggestionDropdown } from './WordSuggestionDropdown'
 
@@ -48,12 +47,7 @@ export const ImportAccountScreen = () => {
         t,
         isKeyboardVisible,
         keyboardHeight,
-        isSupportOptionsVisible,
         handleOpenSupportOptions,
-        handleCloseSupportOptions,
-        handlePastePassphrase,
-        handleScanQRCode,
-        handleLearnMore,
         isQRScannerVisible,
         handleCloseQRScanner,
         handleQRScannerSuccess,
@@ -212,14 +206,6 @@ export const ImportAccountScreen = () => {
             <PWLoadingOverlay
                 isVisible={processing}
                 title={t('onboarding.import_account.importing')}
-            />
-
-            <ImportAccountSupportOptionsBottomSheet
-                isVisible={isSupportOptionsVisible}
-                onClose={handleCloseSupportOptions}
-                onPastePassphrase={handlePastePassphrase}
-                onScanQRCode={handleScanQRCode}
-                onLearnMore={handleLearnMore}
             />
 
             <QRScannerView

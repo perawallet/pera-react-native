@@ -22,7 +22,7 @@ import {
     useAccountBalancesInvalidator,
 } from '@perawallet/wallet-core-accounts'
 import { CreatorCannotOptOutError, NonZeroBalanceError } from '../errors'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 type AssetOptOutParams = {
     sender: string
@@ -83,7 +83,7 @@ export const useAssetOptOutMutation = (): UseAssetOptOutMutationResult => {
     // returns-or-throws contract.
     const assertCanOptOut = (
         params: ResolvedOptOutParams,
-        holding: { assetId: bigint; amount: bigint } | undefined,
+        holding: Optional<{ assetId: bigint; amount: bigint }>,
     ): void => {
         if (params.sender === params.creator) {
             throw new CreatorCannotOptOutError()

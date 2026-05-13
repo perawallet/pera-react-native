@@ -18,9 +18,10 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 
 import { useBlePermissions } from '../../hooks'
+import { Optional } from '@perawallet/wallet-core-shared'
 
 type LedgerInstructionsRouteParams = {
-    LedgerInstructions: { transportType?: LedgerTransportType } | undefined
+    LedgerInstructions: Optional<{ transportType?: LedgerTransportType }>
 }
 
 type UseLedgerInstructionsScreenResult = {

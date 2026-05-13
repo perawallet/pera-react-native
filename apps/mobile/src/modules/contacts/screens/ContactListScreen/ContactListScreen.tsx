@@ -31,7 +31,6 @@ import { SHORT_ADDRESS_FORMAT } from '@constants/ui'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
-import { ContactQRBottomSheet } from '@modules/contacts/components/ContactQRBottomSheet'
 import { useContactListScreen } from './useContactListScreen'
 import { useStyles } from './styles'
 
@@ -109,11 +108,9 @@ export const ContactListScreen = () => {
         contacts,
         search,
         onSearchChange,
-        qrContact,
         isEmpty,
         goToAddContact,
         showQR,
-        closeQR,
         selectContact,
     } = useContactListScreen({ onNavigateAddContact, onNavigateViewContact })
 
@@ -156,10 +153,6 @@ export const ContactListScreen = () => {
                         />
                     }
                 />
-                <ContactQRBottomSheet
-                    contact={qrContact}
-                    onClose={closeQR}
-                />
             </>
         )
     }
@@ -192,10 +185,6 @@ export const ContactListScreen = () => {
                     }
                 />
             </KeyboardAvoidingView>
-            <ContactQRBottomSheet
-                contact={qrContact}
-                onClose={closeQR}
-            />
         </>
     )
 }

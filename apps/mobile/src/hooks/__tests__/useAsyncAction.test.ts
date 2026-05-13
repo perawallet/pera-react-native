@@ -12,6 +12,7 @@
 
 import { renderHook, act } from '@testing-library/react'
 import { useAsyncAction } from '../useAsyncAction'
+import { Optional } from '@perawallet/wallet-core-shared'
 
 describe('useAsyncAction', () => {
     it('should handle successful execution', async () => {
@@ -21,11 +22,12 @@ describe('useAsyncAction', () => {
         expect(result.current.isProcessing).toBe(false)
         expect(result.current.error).toBe(null)
 
-        let executionResult: string | undefined
+        let executionResult: Optional<string>
         await act(async () => {
-            executionResult = (await result.current.execute('arg1', 123)) as
-                | string
-                | undefined
+            executionResult = (await result.current.execute(
+                'arg1',
+                123,
+            )) as Optional<string>
         })
 
         expect(mockAction).toHaveBeenCalledWith('arg1', 123)

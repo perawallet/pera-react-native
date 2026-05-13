@@ -32,8 +32,8 @@ export const useStyles = makeStyles(
             paddingTop: isFull ? insets.top : 0,
         },
         innerContainer: {
-            flex: 1,
-            paddingBottom: insets.bottom + theme.spacing.md,
+            flexGrow: 1,
+            paddingBottom: theme.spacing.md,
         },
         hidden: {
             display: 'none',

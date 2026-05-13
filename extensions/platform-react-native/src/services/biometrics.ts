@@ -11,53 +11,68 @@
  */
 
 import {
-    isSensorAvailable,
-    authenticateWithOptions,
-    BiometricStrength,
-} from '@sbaiahmed1/react-native-biometrics'
+    AuthenticationType,
+    authenticateAsync,
+    hasHardwareAsync,
+    isEnrolledAsync,
+    supportedAuthenticationTypesAsync,
+} from 'expo-local-authentication'
+import { logger } from '@perawallet/wallet-core-shared'
 import type {
+    BiometricsAuthenticatePrompt,
     BiometricsService,
     BiometricType,
 } from '@perawallet/wallet-extension-platform'
 
+const LOG_SOURCE = 'RNBiometricsService'
+
+// Backed by `expo-local-authentication` (Expo SDK 55), which on iOS uses
+// LAPolicy.deviceOwnerAuthenticationWithBiometrics and on Android uses the
+// AndroidX BiometricPrompt. We force biometric-only by disabling the device
+// PIN/password fallback — Pera has its own PIN flow and the
+// `BiometricsService` contract is "biometric or nothing."
 export class RNBiometricsService implements BiometricsService {
     async getSupportedBiometricType(): Promise<BiometricType> {
-        const { available, biometryType } = await isSensorAvailable()
+        const hasHardware = await hasHardwareAsync()
+        if (!hasHardware) return null
 
-        if (!available) {
-            return null
-        }
+        const isEnrolled = await isEnrolledAsync()
+        if (!isEnrolled) return null
 
-        switch (biometryType) {
-            case 'FaceID':
-                return 'face'
-            case 'TouchID':
-                return 'fingerprint'
-            case 'Biometrics':
-                return 'biometrics'
-            default:
-                return null
-        }
+        const types = await supportedAuthenticationTypesAsync()
+        if (types.includes(AuthenticationType.FACIAL_RECOGNITION)) return 'face'
+        if (types.includes(AuthenticationType.FINGERPRINT)) return 'fingerprint'
+        if (types.includes(AuthenticationType.IRIS)) return 'biometrics'
+        return null
     }
 
     async checkBiometricsAvailable(): Promise<boolean> {
-        const biometryType = await this.getSupportedBiometricType()
-        return biometryType !== null
+        return (await this.getSupportedBiometricType()) !== null
     }
 
     async authenticate(
-        promptTitle: string = 'Authenticate',
-        promptDescription: string = 'Use biometrics to authenticate',
+        prompt: BiometricsAuthenticatePrompt = {},
     ): Promise<boolean> {
         try {
-            const result = await authenticateWithOptions({
-                title: promptTitle,
-                description: promptDescription,
-                biometricStrength: BiometricStrength.Strong,
+            const result = await authenticateAsync({
+                promptMessage: prompt.title ?? 'Authenticate',
+                cancelLabel: prompt.cancelLabel || 'Cancel',
+                disableDeviceFallback: true,
+                biometricsSecurityLevel: 'weak',
             })
-
+            if (!result.success) {
+                logger.warn('Biometric authentication did not succeed', {
+                    source: LOG_SOURCE,
+                    error: result.error ?? null,
+                    warning: result.warning ?? null,
+                })
+            }
             return result.success
-        } catch {
+        } catch (error) {
+            logger.error('Biometric authentication threw', {
+                source: LOG_SOURCE,
+                error,
+            })
             return false
         }
     }

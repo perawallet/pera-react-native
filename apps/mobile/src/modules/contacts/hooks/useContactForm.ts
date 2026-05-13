@@ -26,12 +26,13 @@ import type {
 } from 'react-hook-form'
 import type { Contact } from '@perawallet/wallet-core-contacts'
 import type { PermissionDeniedState } from '@hooks/useImagePicker'
+import { Optional } from '@perawallet/wallet-core-shared'
 
 export type NfdState = {
     resolvedAddress: string
     isNfdResolved: boolean
     isNfdResolving: boolean
-    nfdName: string | undefined
+    nfdName: Optional<string>
 }
 
 export type UseContactFormResult = {
@@ -41,7 +42,7 @@ export type UseContactFormResult = {
     errors: FieldErrors<Contact>
     isValid: boolean
     rawAddressInput: string
-    imageUri: string | undefined
+    imageUri: Optional<string>
     nfd: NfdState
     onAddressInputChange: (text: string) => void
     onPickImage: () => Promise<void>

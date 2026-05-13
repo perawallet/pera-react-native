@@ -16,6 +16,7 @@ import {
     queryClient,
     type Network,
     type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import {
     calculatePeraFeeResponseSchema,
@@ -97,7 +98,7 @@ export const createQuotes = async (
         data,
     })
 
-    const toOptionalDecimal = (v?: Nullable<string>): Decimal | undefined =>
+    const toOptionalDecimal = (v?: Nullable<string>): Optional<Decimal> =>
         v != null ? new Decimal(v) : undefined
 
     const toNullableDecimal = (v?: Nullable<string>): Nullable<Decimal> =>

@@ -11,6 +11,7 @@
  */
 
 import { describe, test, expect, vi } from 'vitest'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { createAlgodTransport } from '../createAlgodTransport'
 import { createCallbackTransport } from '../createCallbackTransport'
 import { createWalletConnectTransport } from '../createWalletConnectTransport'
@@ -51,7 +52,7 @@ const arbitraryResult: SigningResult = {
 // =============================================================================
 
 describe('createAlgodTransport', () => {
-    const makeAlgokit = (txid: string | string[] | undefined = 'TX_ID') => ({
+    const makeAlgokit = (txid: Optional<string | string[]> = 'TX_ID') => ({
         client: {
             algod: {
                 sendRawTransaction: vi.fn().mockResolvedValue({ txid }),

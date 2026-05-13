@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useEffect } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
 import * as Clipboard from 'expo-clipboard'
@@ -26,7 +27,32 @@ import { useKMS, type Algo25KeyResult } from '@perawallet/wallet-core-kms'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import { useNotificationPreferences } from '@perawallet/wallet-core-messages'
 import { AccountMenu } from '@modules/accounts/components/AccountMenu/AccountMenu'
-import { AccountOptionsBottomSheet } from '@modules/accounts/components/AccountOptionsBottomSheet/AccountOptionsBottomSheet'
+import { AccountOptionsContent } from '@modules/accounts/components/AccountOptionsContent'
+import { useBottomSheet } from '@modules/bottom-sheet'
+
+// Production opens the account-options sheet through `requestBottomSheet`
+// (see useAccountOverview.openAccountOptions). Mirror that here so the
+// content mounts inside a real BottomSheetHost — the content reads
+// `useBottomSheetResult` from the host's context, so an inline render
+// would throw. The BottomSheetManager itself is provided by TestProviders
+// (apps/mobile/src/test-utils/render.tsx), mirroring production's
+// app-root wiring.
+const AccountOptionsHost = ({ account }: { account: WalletAccount }) => {
+    const { request } = useBottomSheet()
+    useEffect(() => {
+        void request({
+            contents: (
+                <AccountOptionsContent
+                    account={account}
+                    onShowAddress={() => {}}
+                />
+            ),
+            options: { size: 'lg', enablePanDownToClose: true },
+        })
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+    return null
+}
 
 import {
     ALGO25_TEST_ADDRESS,
@@ -146,14 +172,7 @@ describe('Flow: Account management', () => {
                 .setSelectedAccountAddress(ACCOUNT_B.address)
 
             renderWithNavigation(
-                () => (
-                    <AccountOptionsBottomSheet
-                        isVisible
-                        onClose={() => {}}
-                        onShowAddress={() => {}}
-                        account={ACCOUNT_B}
-                    />
-                ),
+                () => <AccountOptionsHost account={ACCOUNT_B} />,
                 'AccountOptionsHost',
             )
 
@@ -219,14 +238,7 @@ describe('Flow: Account management', () => {
                 .setSelectedAccountAddress(algo25Account.address)
 
             renderWithNavigation(
-                () => (
-                    <AccountOptionsBottomSheet
-                        isVisible
-                        onClose={() => {}}
-                        onShowAddress={() => {}}
-                        account={algo25Account}
-                    />
-                ),
+                () => <AccountOptionsHost account={algo25Account} />,
                 'AccountOptionsHost',
             )
 
@@ -284,14 +296,7 @@ describe('Flow: Account management', () => {
             expect(notifBefore.current.disabledAccounts).toEqual([])
 
             renderWithNavigation(
-                () => (
-                    <AccountOptionsBottomSheet
-                        isVisible
-                        onClose={() => {}}
-                        onShowAddress={() => {}}
-                        account={ACCOUNT_A}
-                    />
-                ),
+                () => <AccountOptionsHost account={ACCOUNT_A} />,
                 'AccountOptionsHost',
             )
 
@@ -334,19 +339,12 @@ describe('Flow: Account management', () => {
                 .setSelectedAccountAddress(ACCOUNT_A.address)
 
             renderWithNavigation(
-                () => (
-                    <AccountOptionsBottomSheet
-                        isVisible
-                        onClose={() => {}}
-                        onShowAddress={() => {}}
-                        account={ACCOUNT_A}
-                    />
-                ),
+                () => <AccountOptionsHost account={ACCOUNT_A} />,
                 'AccountOptionsHost',
             )
 
             // The copy-address row is in the "general" section of the
-            // sheet (see AccountOptionsBottomSheet.tsx generalOptions
+            // sheet (see AccountOptionsContent.tsx generalOptions
             // filter). Title comes from `account_options.copy_address`.
             tapButtonByLabel('account_options.copy_address')
 
@@ -371,14 +369,7 @@ describe('Flow: Account management', () => {
                 .setSelectedAccountAddress(ACCOUNT_A.address)
 
             renderWithNavigation(
-                () => (
-                    <AccountOptionsBottomSheet
-                        isVisible
-                        onClose={() => {}}
-                        onShowAddress={() => {}}
-                        account={ACCOUNT_A}
-                    />
-                ),
+                () => <AccountOptionsHost account={ACCOUNT_A} />,
                 'AccountOptionsHost',
             )
 

@@ -21,15 +21,17 @@ vi.mock('@modules/messages/components/InboxItem/InboxItem', () => ({
     ),
 }))
 
-vi.mock(
-    '@modules/messages/components/MultisigInvitationDetailBottomSheet',
-    () => ({
-        MultisigInvitationDetailBottomSheet: () => null,
-    }),
-)
-
 vi.mock('@modules/multisig/hooks/useHandleMultisigSignTap', () => ({
     useHandleMultisigSignTap: () => vi.fn(),
+}))
+
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({
+        request: vi.fn(),
+        requestByType: vi.fn(),
+        dismiss: vi.fn(),
+        dismissAll: vi.fn(),
+    }),
 }))
 
 vi.mock('@perawallet/wallet-core-messages', () => ({

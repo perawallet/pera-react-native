@@ -9,13 +9,13 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
-import type { Maybe } from './types'
+import type { Maybe, Optional } from './types'
 
 /**
  * Extracts the HTTP status code from an error thrown by the ky HTTP client.
  * Returns undefined if the error is not an HTTP error or has no status.
  */
-export const getHttpStatus = (error: unknown): number | undefined => {
+export const getHttpStatus = (error: unknown): Optional<number> => {
     if (typeof error !== 'object' || error === null) return undefined
     const response = (error as { response?: { status?: unknown } }).response
     return typeof response?.status === 'number' ? response.status : undefined

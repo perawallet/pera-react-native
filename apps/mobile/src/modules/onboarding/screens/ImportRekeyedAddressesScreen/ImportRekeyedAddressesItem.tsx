@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import React from 'react'
+import React, { useCallback } from 'react'
 import {
     PWView,
     PWText,
@@ -24,9 +24,9 @@ import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { CopyableText } from '@components/CopyableText'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
-import { useModalState } from '@hooks/useModalState'
+import { useBottomSheet } from '@modules/bottom-sheet'
 import { useStyles } from './styles'
-import { RekeyedAccountInfoBottomSheet } from './RekeyedAccountInfoBottomSheet'
+import { RekeyedAccountInfoContent } from './RekeyedAccountInfoContent'
 
 type ImportRekeyedAddressesItemProps = {
     account: WalletAccount
@@ -43,7 +43,18 @@ export const ImportRekeyedAddressesItem = ({
 }: ImportRekeyedAddressesItemProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const bottomSheetState = useModalState()
+    const { request: requestBottomSheet } = useBottomSheet()
+
+    const handleOpenInfo = useCallback(() => {
+        requestBottomSheet<void>({
+            contents: <RekeyedAccountInfoContent account={account} />,
+            options: {
+                size: 'lg',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
+        })
+    }, [requestBottomSheet, account])
 
     return (
         <PWView
@@ -96,7 +107,7 @@ export const ImportRekeyedAddressesItem = ({
 
             <PWTouchableOpacity
                 style={styles.infoIconContainer}
-                onPress={bottomSheetState.open}
+                onPress={handleOpenInfo}
                 testID={`import_rekeyed_addresses_item_info_${account.address}`}
             >
                 <PWIcon
@@ -105,12 +116,6 @@ export const ImportRekeyedAddressesItem = ({
                     variant='secondary'
                 />
             </PWTouchableOpacity>
-
-            <RekeyedAccountInfoBottomSheet
-                isVisible={bottomSheetState.isOpen}
-                onClose={bottomSheetState.close}
-                account={account}
-            />
 
             {isImported && (
                 <PWChip

@@ -11,14 +11,11 @@
  */
 
 import { AccountOverviewHeader } from './AccountOverviewHeader'
-import { SendFundsBottomSheet } from '@modules/transactions/components/send-funds/SendFundsBottomSheet/SendFundsBottomSheet'
-import { ReceiveFundsBottomSheet } from '@modules/transactions/components/receive-funds/ReceiveFundsBottomSheet'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useStyles } from './styles'
 import { useAccountOverview } from './useAccountOverview'
 import { PWView } from '@components/core'
 import { AccountAssetList } from '../AccountAssetList'
-import { AccountOptionsBottomSheet } from '../AccountOptionsBottomSheet'
 import { AccountOverviewModalContext } from './AccountOverviewModalContext'
 
 export type AccountOverviewProps = {
@@ -33,18 +30,10 @@ export const AccountOverview = ({
     onSwipeEnabledChange,
 }: AccountOverviewProps) => {
     const styles = useStyles()
-    const {
-        isSendFundsVisible,
-        handleCloseSendFunds,
-        isReceiveFundsVisible,
-        openReceiveFunds,
-        handleCloseReceiveFunds,
-        isAccountOptionsVisible,
-        handleCloseAccountOptions,
-        scrollingEnabled,
-        isLoading,
-        contextValue,
-    } = useAccountOverview({ account, onSwipeEnabledChange })
+    const { scrollingEnabled, isLoading, contextValue } = useAccountOverview({
+        account,
+        onSwipeEnabledChange,
+    })
 
     return (
         <AccountOverviewModalContext.Provider value={contextValue}>
@@ -60,24 +49,6 @@ export const AccountOverview = ({
                             isLoading={isLoading}
                         />
                     }
-                />
-
-                <SendFundsBottomSheet
-                    isVisible={isSendFundsVisible}
-                    onClose={handleCloseSendFunds}
-                />
-
-                <ReceiveFundsBottomSheet
-                    isVisible={isReceiveFundsVisible}
-                    onClose={handleCloseReceiveFunds}
-                    account={account}
-                />
-
-                <AccountOptionsBottomSheet
-                    isVisible={isAccountOptionsVisible}
-                    onClose={handleCloseAccountOptions}
-                    onShowAddress={openReceiveFunds}
-                    account={account}
                 />
             </PWView>
         </AccountOverviewModalContext.Provider>

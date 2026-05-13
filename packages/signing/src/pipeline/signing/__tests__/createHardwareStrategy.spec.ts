@@ -54,6 +54,7 @@ import {
     LEDGER_CONNECTION_TIMEOUT_MS,
     LEDGER_CONFIRMATION_TIMEOUT_MS,
 } from '@perawallet/wallet-core-ledger'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 const SIGNER_ADDRESS =
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
@@ -547,9 +548,9 @@ describe('createHardwareStrategy', () => {
             vi.useFakeTimers({ shouldAdvanceTime: true })
             try {
                 const lateTransport = makeMockTransport()
-                let resolveConnect:
-                    | ((t: HardwareWalletTransport) => void)
-                    | undefined
+                let resolveConnect: Optional<
+                    (t: HardwareWalletTransport) => void
+                >
                 const provider: HardwareWalletTransportProvider = {
                     manufacturer: 'ledger',
                     transportType: 'ble',

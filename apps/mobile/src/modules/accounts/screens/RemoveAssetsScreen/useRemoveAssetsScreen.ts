@@ -26,6 +26,7 @@ import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
+import { Optional } from '@perawallet/wallet-core-shared'
 
 type UseRemoveAssetsScreenProps = {
     onAfterRemove?: () => void
@@ -33,7 +34,7 @@ type UseRemoveAssetsScreenProps = {
 
 type UseRemoveAssetsScreenResult = {
     removableAssets: AssetWithAccountBalance[]
-    assets: Map<string, PeraAsset> | undefined
+    assets: Optional<Map<string, PeraAsset>>
     selectedAssetIds: Set<string>
     isAllSelected: boolean
     isRemoving: boolean

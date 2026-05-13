@@ -18,11 +18,12 @@ import {
     useSelectedAccountAddress,
     useSigningAccounts,
 } from '@perawallet/wallet-core-accounts'
+import { type Optional } from '@perawallet/wallet-core-shared'
 import { SwapScreenParams } from '@modules/swap/routes/types'
 
 export const useSwapScreen = () => {
     const route =
-        useRoute<RouteProp<{ Swap: SwapScreenParams | undefined }, 'Swap'>>()
+        useRoute<RouteProp<{ Swap: Optional<SwapScreenParams> }, 'Swap'>>()
     const { setFromAsset, setToAsset } = useSwaps()
     const selectedAccount = useSelectedAccount()
     const signingAccounts = useSigningAccounts()

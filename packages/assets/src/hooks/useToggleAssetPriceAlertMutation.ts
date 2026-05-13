@@ -17,6 +17,7 @@ import {
     type Network,
     logger,
     type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import { type ToggleStatusResponse } from '../api/settings/endpoints'
 import { updateAssetPeraMetadata } from '../db'
@@ -30,7 +31,7 @@ type UseToggleAssetPriceAlertMutationParams = {
 }
 
 type ToggleAssetPriceAlertMutationContext = {
-    previousData: PeraAsset | undefined
+    previousData: Optional<PeraAsset>
     previousIsPriceAlertEnabled: boolean
 }
 

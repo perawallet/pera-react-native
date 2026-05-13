@@ -35,6 +35,7 @@ import {
 import {
     generateOrderedUniqueId,
     logger,
+    Optional,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
@@ -143,7 +144,7 @@ type UseBidaliTransportResult = {
 }
 
 export const useBidaliTransport = (
-    account: WalletAccount | undefined,
+    account: Optional<WalletAccount>,
     balances: AccountBalances,
 ): UseBidaliTransportResult => {
     const { network } = useNetwork()

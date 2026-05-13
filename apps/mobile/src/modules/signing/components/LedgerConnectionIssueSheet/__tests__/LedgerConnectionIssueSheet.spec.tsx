@@ -23,13 +23,6 @@ vi.mock('@hooks/useLanguage', () => ({
 }))
 
 vi.mock('@components/core', () => ({
-    PWBottomSheet: ({
-        children,
-        isVisible,
-    }: {
-        children: React.ReactNode
-        isVisible: boolean
-    }) => (isVisible ? <>{children}</> : null),
     PWView: ({ children }: { children: React.ReactNode }) => (
         <div>{children}</div>
     ),
@@ -57,23 +50,15 @@ vi.mock('@components/core', () => ({
 describe('LedgerConnectionIssueSheet', () => {
     it('invokes onClose when the close button is pressed', () => {
         const onClose = vi.fn()
-        render(
-            <LedgerConnectionIssueSheet
-                isVisible
-                onClose={onClose}
-            />,
-        )
+        render(<LedgerConnectionIssueSheet onClose={onClose} />)
         fireEvent.click(screen.getByTestId('ledger-troubleshooting-close'))
         expect(onClose).toHaveBeenCalledOnce()
     })
 
-    it('renders nothing actionable when isVisible=false', () => {
-        render(
-            <LedgerConnectionIssueSheet
-                isVisible={false}
-                onClose={vi.fn()}
-            />,
-        )
-        expect(screen.queryByTestId('ledger-troubleshooting-close')).toBeNull()
+    it('renders the close action and tips', () => {
+        render(<LedgerConnectionIssueSheet onClose={vi.fn()} />)
+        expect(
+            screen.queryByTestId('ledger-troubleshooting-close'),
+        ).toBeTruthy()
     })
 })

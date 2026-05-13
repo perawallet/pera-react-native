@@ -22,6 +22,7 @@ import {
     ErrorSeverity,
     generateOrderedUniqueId,
     type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import {
     MAX_DATA_SIGN_REQUESTS,
@@ -44,7 +45,7 @@ type UseSigningRequestResult = {
      * propose) read this and dedupe via a ref-tracked previous reference.
      */
     lastTransportResult: Nullable<TransportResult>
-    currentRequest: SignRequest | undefined
+    currentRequest: Optional<SignRequest>
     currentActorRef: Nullable<AnyActorRef>
     addSignRequest: (request: SignRequest) => void
     removeSignRequest: (request: SignRequest) => void

@@ -592,7 +592,9 @@
         },
         "deeplink": {
             "invalid_url_title": "Invalid Link",
-            "invalid_url_body": "The detected link does not appear to be valid. Please check the link and try again."
+            "invalid_url_body": "The detected link does not appear to be valid. Please check the link and try again.",
+            "title": "Could not open link",
+            "no_account": "No account is selected. Choose an account first, then try the link again."
         },
         "general": {
             "title": "An error occurred",
@@ -1094,6 +1096,11 @@
             "subtitle": "Too many incorrect PIN attempts",
             "tryagain_in": "Try again in",
             "reset_button": "Reset All Data"
+        },
+        "biometric": {
+            "enable_prompt_title": "Enable biometric login",
+            "unlock_prompt_title": "Unlock Pera Wallet",
+            "cancel_label": "Cancel"
         }
     },
     "send_funds": {

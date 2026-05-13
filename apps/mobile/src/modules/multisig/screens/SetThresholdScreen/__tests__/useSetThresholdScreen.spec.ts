@@ -16,23 +16,21 @@ import { useSetThresholdScreen } from '../useSetThresholdScreen'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useMultisigCreationStore } from '../../../hooks/useMultisigCreation'
 
+const { mockRequestBottomSheet } = vi.hoisted(() => ({
+    mockRequestBottomSheet: vi.fn(),
+}))
+
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: vi.fn(),
 }))
 
-vi.mock('@hooks/useModalState', () => ({
-    useModalState: () => {
-        let isOpen = false
-        return {
-            isOpen,
-            open: vi.fn(() => {
-                isOpen = true
-            }),
-            close: vi.fn(() => {
-                isOpen = false
-            }),
-        }
-    },
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({
+        request: mockRequestBottomSheet,
+        requestByType: vi.fn(),
+        dismiss: vi.fn(),
+        dismissAll: vi.fn(),
+    }),
 }))
 
 describe('useSetThresholdScreen', () => {
@@ -100,5 +98,43 @@ describe('useSetThresholdScreen', () => {
         })
 
         expect(result.current.threshold).toBe(1)
+    })
+
+    it("navigates to NameMultisig when the before-create sheet resolves with 'proceed'", async () => {
+        mockRequestBottomSheet.mockResolvedValueOnce('proceed')
+        const { result } = renderHook(() => useSetThresholdScreen())
+
+        await act(async () => {
+            await result.current.handleContinue()
+        })
+
+        expect(mockPush).toHaveBeenCalledWith('NameMultisig')
+    })
+
+    it('does not navigate when the before-create sheet is dismissed', async () => {
+        mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+        const { result } = renderHook(() => useSetThresholdScreen())
+
+        await act(async () => {
+            await result.current.handleContinue()
+        })
+
+        expect(mockPush).not.toHaveBeenCalled()
+    })
+
+    it('requests the before-create sheet with size=auto', async () => {
+        mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+        const { result } = renderHook(() => useSetThresholdScreen())
+
+        await act(async () => {
+            await result.current.handleContinue()
+        })
+
+        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+        const arg = mockRequestBottomSheet.mock.calls[0][0]
+        expect(arg.options).toEqual({
+            size: 'auto',
+            enablePanDownToClose: true,
+        })
     })
 })

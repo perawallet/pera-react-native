@@ -12,6 +12,7 @@
 
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { fetchSwapHistory } from '../api'
 import type { SwapHistoryItem } from '../models'
 import { swapQueryKeys } from './querykeys'
@@ -34,7 +35,7 @@ export type UseSwapHistoryInfiniteQueryResult = {
 // API returns the next page as a full URL — we only need the cursor query param.
 const extractCursor = (
     nextUrl: string | null | undefined,
-): string | undefined => {
+): Optional<string> => {
     if (!nextUrl) return undefined
     try {
         return new URL(nextUrl).searchParams.get('cursor') ?? undefined
@@ -52,9 +53,9 @@ export const useSwapHistoryInfiniteQuery = (
 
     const query = useInfiniteQuery({
         queryKey: swapQueryKeys.historyInfinite(address, statuses, network),
-        queryFn: ({ pageParam }: { pageParam: string | undefined }) =>
+        queryFn: ({ pageParam }: { pageParam: Optional<string> }) =>
             fetchSwapHistory(address, network, statuses, pageParam, PAGE_SIZE),
-        initialPageParam: undefined as string | undefined,
+        initialPageParam: undefined as Optional<string>,
         getNextPageParam: (lastPage: FetchSwapHistoryResult) =>
             extractCursor(lastPage.next),
         enabled: enabled && address.length > 0,

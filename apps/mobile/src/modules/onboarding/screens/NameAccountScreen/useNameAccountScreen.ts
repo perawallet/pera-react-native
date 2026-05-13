@@ -28,6 +28,7 @@ import {
     useShouldPlayConfetti,
     useExitAccountFlow,
 } from '@modules/onboarding/hooks'
+import { Optional } from '@perawallet/wallet-core-shared'
 
 type NameAccountScreenRouteProp = RouteProp<
     OnboardingStackParamList,
@@ -48,7 +49,7 @@ export const useNameAccountScreen = () => {
 
     const routeAccount = route.params?.account
 
-    const [account] = useState<WalletAccount | undefined>(routeAccount)
+    const [account] = useState<Optional<WalletAccount>>(routeAccount)
 
     const numWallets = useMemo(() => {
         // TODO: making sure this is ordered might be important. Come back at this once integrating multiple wallets.

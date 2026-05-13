@@ -16,6 +16,7 @@ import { ReactElement, useEffect, useMemo, useState } from 'react'
 import { PinSecurityPrompt } from '../PinSecurityPrompt/PinSecurityPrompt'
 import { PromptViewProps } from '@modules/prompts/models'
 import { useHasAccounts } from '@perawallet/wallet-core-accounts'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { UserPreferences } from '@constants/user-preferences'
 import { LONG_PROMPT_DISPLAY_DELAY } from '@constants/ui'
 
@@ -39,7 +40,7 @@ export const usePromptContainer = (): UsePromptContainerResult => {
     const { checkPinEnabled } = usePinCode()
     const hasAccounts = useHasAccounts()
     const [hiddenPrompts, setHiddenPrompts] = useState<Set<string>>(new Set())
-    const [nextPrompt, setNextPrompt] = useState<Prompt | undefined>(undefined)
+    const [nextPrompt, setNextPrompt] = useState<Optional<Prompt>>(undefined)
 
     const prompt = useMemo(() => {
         if (!hasAccounts) {
@@ -67,7 +68,7 @@ export const usePromptContainer = (): UsePromptContainerResult => {
         }
 
         let cancelled = false
-        let timeoutId: ReturnType<typeof setTimeout> | undefined
+        let timeoutId: Optional<ReturnType<typeof setTimeout>>
 
         const showPromptAfterChecks = async () => {
             // For the PIN security prompt, check if PIN is already enabled

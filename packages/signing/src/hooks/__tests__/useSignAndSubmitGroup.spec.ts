@@ -12,6 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     useSignAndSubmitGroup,
     UserRejectedSigningError,
@@ -56,7 +57,7 @@ describe('useSignAndSubmitGroup', () => {
 
     it('resolves with the algod txIds after the pipeline approves', async () => {
         mockSubmitAndAutoRefresh.mockResolvedValue(['tx1', 'tx2'])
-        let captured: TransactionSignRequest | undefined
+        let captured: Optional<TransactionSignRequest>
         mockAddSignRequest.mockImplementation((r: TransactionSignRequest) => {
             captured = r
         })
@@ -86,7 +87,7 @@ describe('useSignAndSubmitGroup', () => {
     })
 
     it('rejects with UserRejectedSigningError when reject() fires', async () => {
-        let captured: TransactionSignRequest | undefined
+        let captured: Optional<TransactionSignRequest>
         mockAddSignRequest.mockImplementation((r: TransactionSignRequest) => {
             captured = r
         })
@@ -107,7 +108,7 @@ describe('useSignAndSubmitGroup', () => {
     })
 
     it('rejects with the original error when error() fires', async () => {
-        let captured: TransactionSignRequest | undefined
+        let captured: Optional<TransactionSignRequest>
         mockAddSignRequest.mockImplementation((r: TransactionSignRequest) => {
             captured = r
         })

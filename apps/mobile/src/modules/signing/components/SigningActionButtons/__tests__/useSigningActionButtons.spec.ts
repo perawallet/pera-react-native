@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
+import { renderHook, act, waitFor } from '@testing-library/react'
 import { useSigningActionButtons } from '../useSigningActionButtons'
 import {
     useSigningPipeline,
@@ -23,6 +23,7 @@ import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { useNavigation } from '@react-navigation/native'
 import { useErrorToast } from '@hooks/useErrorToast'
+import { useBottomSheet } from '@modules/bottom-sheet'
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningPipeline: vi.fn(),
@@ -55,11 +56,16 @@ vi.mock('@components/core', () => ({
     bottomSheetNotifier: { current: null },
 }))
 
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: vi.fn(),
+}))
+
 describe('useSigningActionButtons', () => {
     const mockNext = vi.fn()
     const mockFail = vi.fn()
     const mockNavigate = vi.fn()
     const mockGetPreference = vi.fn()
+    const mockRequestBottomSheet = vi.fn()
     const mockRequest = { id: 'test', transport: 'algod', txs: [] }
 
     const setupPipeline = (
@@ -89,6 +95,10 @@ describe('useSigningActionButtons', () => {
         ;(useNavigation as Mock).mockReturnValue({
             navigate: mockNavigate,
         })
+        mockRequestBottomSheet.mockResolvedValue(undefined)
+        ;(useBottomSheet as Mock).mockReturnValue({
+            request: mockRequestBottomSheet,
+        })
     })
 
     it('signs directly when there are no guarded warnings', () => {
@@ -99,10 +109,10 @@ describe('useSigningActionButtons', () => {
         })
 
         expect(mockNext).toHaveBeenCalledTimes(1)
-        expect(result.current.isSecurityGuardOpen).toBe(false)
+        expect(mockRequestBottomSheet).not.toHaveBeenCalled()
     })
 
-    it('opens security guard instead of signing when rekey warnings exist', () => {
+    it('opens security guard sheet instead of signing when rekey warnings exist', () => {
         setupPipeline([
             { type: 'rekey', senderAddress: 'addr1', targetAddress: 'addr2' },
         ])
@@ -113,12 +123,11 @@ describe('useSigningActionButtons', () => {
             result.current.handleSignAndSend()
         })
 
-        expect(result.current.isSecurityGuardOpen).toBe(true)
-        expect(result.current.guardedWarningType).toBe('rekey')
+        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
         expect(mockNext).not.toHaveBeenCalled()
     })
 
-    it('opens security guard when asset-freeze warnings exist', () => {
+    it('opens security guard sheet when asset-freeze warnings exist', () => {
         setupPipeline([
             {
                 type: 'asset-freeze',
@@ -133,127 +142,63 @@ describe('useSigningActionButtons', () => {
             result.current.handleSignAndSend()
         })
 
-        expect(result.current.isSecurityGuardOpen).toBe(true)
-        expect(result.current.guardedWarningType).toBe('asset-freeze')
+        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
         expect(mockNext).not.toHaveBeenCalled()
     })
 
-    it('prioritizes disabled type when both rekey and asset-freeze exist', () => {
-        mockGetPreference.mockImplementation((key: string) => {
-            if (key === 'rekey-support-enabled') return true
-            return undefined
-        })
-        setupPipeline([
-            { type: 'rekey', senderAddress: 'addr1', targetAddress: 'addr2' },
-            {
-                type: 'asset-freeze',
-                senderAddress: 'addr1',
-                targetAddress: 'addr3',
-            },
-        ])
-
-        const { result } = renderHook(() => useSigningActionButtons())
-
-        // rekey is enabled, asset-freeze is not — guard should show asset-freeze
-        expect(result.current.guardedWarningType).toBe('asset-freeze')
-    })
-
-    it('shows rekey guard when both exist and neither is enabled', () => {
-        setupPipeline([
-            { type: 'rekey', senderAddress: 'addr1', targetAddress: 'addr2' },
-            {
-                type: 'asset-freeze',
-                senderAddress: 'addr1',
-                targetAddress: 'addr3',
-            },
-        ])
-
-        const { result } = renderHook(() => useSigningActionButtons())
-
-        // both disabled — rekey comes first in priority order
-        expect(result.current.guardedWarningType).toBe('rekey')
-    })
-
-    it('shows rekey confirmation when both exist and both are enabled', () => {
-        mockGetPreference.mockImplementation((key: string) => {
-            if (key === 'rekey-support-enabled') return true
-            if (key === 'asset-freeze-support-enabled') return true
-            return undefined
-        })
-        setupPipeline([
-            { type: 'rekey', senderAddress: 'addr1', targetAddress: 'addr2' },
-            {
-                type: 'asset-freeze',
-                senderAddress: 'addr1',
-                targetAddress: 'addr3',
-            },
-        ])
-
-        const { result } = renderHook(() => useSigningActionButtons())
-
-        // both enabled — show "are you sure?" for rekey (first in priority)
-        expect(result.current.guardedWarningType).toBe('rekey')
-    })
-
-    it('proceeds with signing when security guard is confirmed', () => {
+    it('proceeds with signing when security guard resolves with confirm', async () => {
         setupPipeline([
             { type: 'rekey', senderAddress: 'addr1', targetAddress: 'addr2' },
         ])
+        mockRequestBottomSheet.mockResolvedValue('confirm')
 
         const { result } = renderHook(() => useSigningActionButtons())
 
-        act(() => {
+        await act(async () => {
             result.current.handleSignAndSend()
         })
 
-        expect(result.current.isSecurityGuardOpen).toBe(true)
-
-        act(() => {
-            result.current.handleSecurityGuardConfirm()
+        await waitFor(() => {
+            expect(mockNext).toHaveBeenCalledTimes(1)
         })
-
-        expect(result.current.isSecurityGuardOpen).toBe(false)
-        expect(mockNext).toHaveBeenCalledTimes(1)
     })
 
-    it('navigates to settings when go-to-settings is pressed', () => {
+    it('navigates to settings when guard resolves with go-to-settings', async () => {
         setupPipeline([
             { type: 'rekey', senderAddress: 'addr1', targetAddress: 'addr2' },
         ])
+        mockRequestBottomSheet.mockResolvedValue('go-to-settings')
 
         const { result } = renderHook(() => useSigningActionButtons())
 
-        act(() => {
+        await act(async () => {
             result.current.handleSignAndSend()
         })
 
-        act(() => {
-            result.current.handleSecurityGuardGoToSettings()
+        await waitFor(() => {
+            expect(mockNavigate).toHaveBeenCalledWith('SecuritySettings')
         })
-
-        expect(result.current.isSecurityGuardOpen).toBe(false)
-        expect(mockNavigate).toHaveBeenCalledWith('SecuritySettings')
-    })
-
-    it('closes security guard without signing when dismissed', () => {
-        setupPipeline([
-            { type: 'rekey', senderAddress: 'addr1', targetAddress: 'addr2' },
-        ])
-
-        const { result } = renderHook(() => useSigningActionButtons())
-
-        act(() => {
-            result.current.handleSignAndSend()
-        })
-
-        expect(result.current.isSecurityGuardOpen).toBe(true)
-
-        act(() => {
-            result.current.closeSecurityGuard()
-        })
-
-        expect(result.current.isSecurityGuardOpen).toBe(false)
         expect(mockNext).not.toHaveBeenCalled()
+    })
+
+    it('does not call next when guard is dismissed', async () => {
+        setupPipeline([
+            { type: 'rekey', senderAddress: 'addr1', targetAddress: 'addr2' },
+        ])
+        mockRequestBottomSheet.mockResolvedValue(undefined)
+
+        const { result } = renderHook(() => useSigningActionButtons())
+
+        await act(async () => {
+            result.current.handleSignAndSend()
+        })
+
+        await waitFor(() => {
+            expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+        })
+
+        expect(mockNext).not.toHaveBeenCalled()
+        expect(mockNavigate).not.toHaveBeenCalled()
     })
 
     it('does not trigger guard for close warnings only', () => {
@@ -263,14 +208,12 @@ describe('useSigningActionButtons', () => {
 
         const { result } = renderHook(() => useSigningActionButtons())
 
-        expect(result.current.guardedWarningType).toBeNull()
-
         act(() => {
             result.current.handleSignAndSend()
         })
 
         expect(mockNext).toHaveBeenCalledTimes(1)
-        expect(result.current.isSecurityGuardOpen).toBe(false)
+        expect(mockRequestBottomSheet).not.toHaveBeenCalled()
     })
 
     describe('signing_failed handling', () => {

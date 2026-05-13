@@ -46,8 +46,6 @@ type UsePinCodeResult = {
     setAutoLockStartedAt: (date: Nullable<number>) => void
 }
 
-const encoder = new TextEncoder()
-
 const calculateLockoutSeconds = (failedAttempts: number): number => {
     const lockoutBlock = Math.floor(
         failedAttempts / MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT,
@@ -80,8 +78,11 @@ export const usePinCode = (): UsePinCodeResult => {
         state => state.setAutoLockStartedAt,
     )
 
-    const { checkBiometricsEnabled, disableBiometrics, setBiometricsCode } =
-        useBiometrics()
+    const {
+        checkBiometricsEnabled,
+        disableBiometrics,
+        refreshBiometricsBinding,
+    } = useBiometrics()
 
     const isLockedOut = useMemo(
         () => lockoutEndTime !== null && Date.now() < lockoutEndTime,
@@ -169,9 +170,12 @@ export const usePinCode = (): UsePinCodeResult => {
                 await writeRecord(record)
                 setFailedAttemptsInStore(0)
                 setLockoutEndTimeInStore(null)
-                if (await checkBiometricsEnabled()) {
-                    await setBiometricsCode(encoder.encode(pin))
-                }
+                // Re-bind the biometric blob to the new PinRecord bytes so
+                // its content matches `PIN_RECORD_KEY_ID`. Critically, this
+                // does NOT write the raw PIN — that previously meant a
+                // 6-digit cleartext PIN sat in the keystore alongside the
+                // PBKDF2-hashed record, defeating the hashing.
+                await refreshBiometricsBinding()
             } else {
                 await removeTypedSecret(PIN_RECORD_KEY_ID)
                 setFailedAttemptsInStore(0)
@@ -188,7 +192,7 @@ export const usePinCode = (): UsePinCodeResult => {
             setFailedAttemptsInStore,
             setLockoutEndTimeInStore,
             checkBiometricsEnabled,
-            setBiometricsCode,
+            refreshBiometricsBinding,
             disableBiometrics,
         ],
     )

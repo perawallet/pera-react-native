@@ -12,7 +12,7 @@
 
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import { useNfdSearchQuery } from '@perawallet/wallet-core-nfd'
-import { useDebouncedValue } from '@perawallet/wallet-core-shared'
+import { Optional, useDebouncedValue } from '@perawallet/wallet-core-shared'
 import { SEARCH_DEBOUNCE_TIME } from '@constants/ui'
 
 type UseNfdResolveResult = {
@@ -25,7 +25,7 @@ type UseNfdResolveResult = {
     /** Whether an NFD lookup is currently in flight. */
     isNfdResolving: boolean
     /** The matching NFD name, if one was resolved. */
-    nfdName: string | undefined
+    nfdName: Optional<string>
 }
 
 export const useNfdResolve = (

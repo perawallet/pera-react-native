@@ -10,10 +10,42 @@
  limitations under the License
  */
 
-import { PendingSignaturesBottomSheet } from '../PendingSignaturesBottomSheet'
+import { useEffect, useRef } from 'react'
+import { useBottomSheet } from '@modules/bottom-sheet'
 import { useMultisigProposeListener } from '../../hooks/useMultisigProposeListener'
+import { usePendingSignaturesSheetStore } from '../../stores/usePendingSignaturesSheetStore'
+import { PendingSignaturesContent } from '../PendingSignaturesContent'
 
 export const MultisigOverlays = () => {
     useMultisigProposeListener()
-    return <PendingSignaturesBottomSheet />
+
+    const signRequestId = usePendingSignaturesSheetStore(
+        state => state.signRequestId,
+    )
+    const closeSheet = usePendingSignaturesSheetStore(state => state.closeSheet)
+    const { request: requestBottomSheet } = useBottomSheet()
+    const openIdRef = useRef<string | null>(null)
+
+    useEffect(() => {
+        if (!signRequestId) return
+        if (openIdRef.current === signRequestId) return
+        openIdRef.current = signRequestId
+        let cancelled = false
+        void (async () => {
+            await requestBottomSheet<void>({
+                contents: <PendingSignaturesContent />,
+                options: { size: 'auto', enablePanDownToClose: true },
+            })
+            if (cancelled) return
+            openIdRef.current = null
+            // Ensure the store is cleared if the sheet was dismissed via gesture
+            // or backdrop press rather than handleClose.
+            closeSheet()
+        })()
+        return () => {
+            cancelled = true
+        }
+    }, [signRequestId, requestBottomSheet, closeSheet])
+
+    return null
 }

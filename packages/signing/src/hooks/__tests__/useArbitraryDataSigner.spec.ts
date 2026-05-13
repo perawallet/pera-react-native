@@ -12,6 +12,7 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { useArbitraryDataSigner } from '../useArbitraryDataSigner'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
@@ -153,7 +154,7 @@ describe('useArbitraryDataSigner', () => {
 
             const { result } = renderHook(() => useArbitraryDataSigner())
 
-            let sigs: Uint8Array[] | undefined
+            let sigs: Optional<Uint8Array[]>
             await act(async () => {
                 sigs = await result.current.signArbitraryData(
                     hdAccount,

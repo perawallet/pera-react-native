@@ -55,7 +55,7 @@ vi.mock('../useBiometrics', () => ({
     useBiometrics: vi.fn(() => ({
         checkBiometricsEnabled: vi.fn().mockResolvedValue(false),
         disableBiometrics: vi.fn(),
-        setBiometricsCode: vi.fn(),
+        refreshBiometricsBinding: vi.fn(),
     })),
 }))
 
@@ -202,13 +202,13 @@ describe('usePinCode', () => {
         expect(mockSetLockoutEndTime).toHaveBeenCalledWith(null)
     }, 30_000)
 
-    test('savePin also updates biometric storage when biometrics are enabled', async () => {
-        const setBiometricsCode = vi.fn()
+    test('savePin re-binds biometric storage when biometrics are enabled', async () => {
+        const refreshBiometricsBinding = vi.fn()
         const disableBiometrics = vi.fn()
         const { useBiometrics } = await import('../useBiometrics')
         vi.mocked(useBiometrics).mockReturnValue({
             checkBiometricsEnabled: vi.fn().mockResolvedValue(true),
-            setBiometricsCode,
+            refreshBiometricsBinding,
             disableBiometrics,
             checkBiometricsAvailable: vi.fn(),
             enableBiometrics: vi.fn(),
@@ -224,16 +224,22 @@ describe('usePinCode', () => {
             await result.current.savePin('123456')
         })
 
-        expect(setBiometricsCode).toHaveBeenCalled()
+        expect(refreshBiometricsBinding).toHaveBeenCalled()
+        // Critical: the raw PIN bytes must never be passed anywhere — the
+        // bug we fixed was savePin writing `encoder.encode(pin)` into the
+        // biometric blob, which puts cleartext PIN in the keystore.
+        expect(refreshBiometricsBinding).not.toHaveBeenCalledWith(
+            expect.any(Uint8Array),
+        )
     }, 30_000)
 
     test('savePin(null) removes the PIN and disables biometrics when enabled', async () => {
-        const setBiometricsCode = vi.fn()
+        const refreshBiometricsBinding = vi.fn()
         const disableBiometrics = vi.fn()
         const { useBiometrics } = await import('../useBiometrics')
         vi.mocked(useBiometrics).mockReturnValue({
             checkBiometricsEnabled: vi.fn().mockResolvedValue(true),
-            setBiometricsCode,
+            refreshBiometricsBinding,
             disableBiometrics,
             checkBiometricsAvailable: vi.fn(),
             enableBiometrics: vi.fn(),

@@ -12,6 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import React from 'react'
+import { type Optional } from '@perawallet/wallet-core-shared'
 import { render, screen } from '@test-utils/render'
 import { PWBottomSheet, PWBottomSheetSize } from '../PWBottomSheet'
 import { Text } from 'react-native'
@@ -182,7 +183,7 @@ describe('PWBottomSheet', () => {
         ['lg', false, ['90%']],
         ['md', false, ['50%']],
         ['full', false, ['100%']],
-    ] as [PWBottomSheetSize, boolean, string[] | undefined][])(
+    ] as [PWBottomSheetSize, boolean, Optional<string[]>][])(
         'passes correct config for size=%s',
         (size, expectedDynamic, expectedSnap) => {
             render(

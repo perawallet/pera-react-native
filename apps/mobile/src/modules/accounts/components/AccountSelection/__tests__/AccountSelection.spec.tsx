@@ -10,11 +10,17 @@
  limitations under the License
  */
 
-import { fireEvent, render } from '@test-utils/render'
+import { fireEvent, render, waitFor } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+
+const mockRequestBottomSheet = vi.hoisted(() => vi.fn())
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({
+        request: mockRequestBottomSheet,
+    }),
+}))
+
 import { AccountSelection } from '../AccountSelection'
-import { useModalState } from '@hooks/useModalState'
-import { AccountMenuBottomSheet } from '@modules/accounts/components/AccountMenuBottomSheet'
 
 const mockNavigate = vi.fn()
 
@@ -25,28 +31,17 @@ vi.mock('@hooks/useAppNavigation', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-accounts', async () => ({
+vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(() => null),
     useAllAccounts: vi.fn(() => []),
 }))
 
-const defaultModalState = {
-    isOpen: false,
-    open: vi.fn(),
-    close: vi.fn(),
-    toggle: vi.fn(),
-}
-
-vi.mock('@hooks/useModalState', () => ({
-    useModalState: vi.fn(() => ({ ...defaultModalState })),
+vi.mock('@modules/accounts/components/AccountMenuContent', () => ({
+    AccountMenuContent: () => null,
 }))
 
-vi.mock('@modules/accounts/components/AccountMenuBottomSheet', () => ({
-    AccountMenuBottomSheet: vi.fn(() => null),
-}))
-
-vi.mock('@modules/accounts/components/AccountSortBottomSheet', () => ({
-    AccountSortBottomSheet: vi.fn(() => null),
+vi.mock('@modules/accounts/components/AccountSortContent', () => ({
+    AccountSortContent: () => null,
 }))
 
 vi.mock('../../AccountDisplay', () => ({
@@ -56,6 +51,7 @@ vi.mock('../../AccountDisplay', () => ({
 describe('AccountSelection', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockRequestBottomSheet.mockResolvedValue(undefined)
     })
 
     it('renders correctly', () => {
@@ -63,42 +59,61 @@ describe('AccountSelection', () => {
         expect(container).toBeTruthy()
     })
 
-    it('opens account menu on press', () => {
-        const openMock = vi.fn()
-        const useModalStateMock = vi.mocked(useModalState)
-        useModalStateMock.mockReturnValue({
-            isOpen: false,
-            open: openMock,
-            close: vi.fn(),
-            toggle: vi.fn(),
+    it('requests the account menu bottom sheet on press', async () => {
+        const { getByTestId } = render(<AccountSelection />)
+        fireEvent.click(getByTestId('account-display'))
+
+        await waitFor(() => {
+            expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
         })
+        const call = mockRequestBottomSheet.mock.calls[0][0]
+        expect(call.options).toMatchObject({
+            size: 'lg',
+            enablePanDownToClose: true,
+        })
+    })
+
+    it('navigates to AddAccount when the menu resolves with add-account', async () => {
+        mockRequestBottomSheet.mockResolvedValueOnce({ kind: 'add-account' })
 
         const { getByTestId } = render(<AccountSelection />)
         fireEvent.click(getByTestId('account-display'))
 
-        expect(openMock).toHaveBeenCalled()
+        await waitFor(() => {
+            expect(mockNavigate).toHaveBeenCalledWith('AddAccount', {
+                screen: 'AddAccountHome',
+            })
+        })
     })
 
-    it('closes bottom sheet and navigates to AddAccount when add account is triggered', () => {
-        const closeMock = vi.fn()
-        const useModalStateMock = vi.mocked(useModalState)
-        useModalStateMock.mockReturnValue({
-            isOpen: true,
-            open: vi.fn(),
-            close: closeMock,
-            toggle: vi.fn(),
+    it('navigates to Search when the menu resolves with search', async () => {
+        mockRequestBottomSheet.mockResolvedValueOnce({ kind: 'search' })
+
+        const { getByTestId } = render(<AccountSelection />)
+        fireEvent.click(getByTestId('account-display'))
+
+        await waitFor(() => {
+            expect(mockNavigate).toHaveBeenCalledWith('Search', {
+                screen: 'SearchScreen',
+            })
         })
+    })
 
-        render(<AccountSelection />)
+    it('calls onSelected when the menu resolves with a selected account', async () => {
+        const account = { id: 'A', address: 'ADDR', name: 'A' }
+        mockRequestBottomSheet.mockResolvedValueOnce({
+            kind: 'selected',
+            account,
+        })
+        const onSelected = vi.fn()
 
-        // Get the onAddAccount prop passed to AccountMenuBottomSheet
-        const bottomSheetMock = vi.mocked(AccountMenuBottomSheet)
-        const onAddAccount = bottomSheetMock.mock.calls[0][0].onAddAccount
-        onAddAccount()
+        const { getByTestId } = render(
+            <AccountSelection onSelected={onSelected} />,
+        )
+        fireEvent.click(getByTestId('account-display'))
 
-        expect(closeMock).toHaveBeenCalled()
-        expect(mockNavigate).toHaveBeenCalledWith('AddAccount', {
-            screen: 'AddAccountHome',
+        await waitFor(() => {
+            expect(onSelected).toHaveBeenCalledWith(account)
         })
     })
 })

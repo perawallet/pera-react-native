@@ -13,6 +13,7 @@
 import { makeStyles } from '@rneui/themed'
 import { TextStyle } from 'react-native'
 import { PWButtonProps } from './PWButton'
+import { Optional } from '@perawallet/wallet-core-shared'
 
 const TITLE_LINE_HEIGHT = 15
 
@@ -66,7 +67,7 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
         normal: {
             paddingHorizontal: theme.spacing.xxl,
             paddingVertical: theme.spacing.md,
-            minWidth: undefined as number | undefined,
+            minWidth: undefined as Optional<number>,
         },
         dense: {
             paddingHorizontal: theme.spacing.md,
@@ -76,7 +77,7 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
         none: {
             paddingHorizontal: 0,
             paddingVertical: 0,
-            minWidth: undefined as number | undefined,
+            minWidth: undefined as Optional<number>,
         },
     }
 

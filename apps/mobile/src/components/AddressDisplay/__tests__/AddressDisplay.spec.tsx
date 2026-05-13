@@ -12,6 +12,7 @@
 
 import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { type Optional } from '@perawallet/wallet-core-shared'
 import { AddressDisplay } from '../AddressDisplay'
 
 const mockUseAllAccounts = vi.fn(() => [] as unknown[])
@@ -32,7 +33,7 @@ vi.mock('@perawallet/wallet-core-contacts', () => ({
 }))
 
 const mockUseNfdForAddress = vi.fn(() => ({
-    data: undefined as { name: string }[] | undefined,
+    data: undefined as Optional<{ name: string }[]>,
     isPending: false,
 }))
 

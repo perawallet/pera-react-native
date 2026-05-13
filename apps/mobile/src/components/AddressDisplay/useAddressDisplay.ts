@@ -11,7 +11,10 @@
  */
 
 import { useMemo } from 'react'
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
+import {
+    Optional,
+    truncateAlgorandAddress,
+} from '@perawallet/wallet-core-shared'
 import {
     useAllAccounts,
     type WalletAccount,
@@ -38,13 +41,13 @@ type UseAddressDisplayProps = {
 
 type ResolvedLabels = {
     primary: string
-    secondary: string | undefined
+    secondary: Optional<string>
 }
 
 type UseAddressDisplayResult = {
     account: WalletAccount | null
     contact: Contact | null
-    nfdName: string | undefined
+    nfdName: Optional<string>
     truncatedAddress: string
     fallbackIconName: IconName
     copyAddress: () => void
@@ -61,7 +64,7 @@ const resolveUnifiedLabels = ({
 }: {
     account: WalletAccount | null
     contact: Contact | null
-    nfdName: string | undefined
+    nfdName: Optional<string>
     truncatedAddress: string
     showSecondaryAddress: boolean
     youSuffix: string

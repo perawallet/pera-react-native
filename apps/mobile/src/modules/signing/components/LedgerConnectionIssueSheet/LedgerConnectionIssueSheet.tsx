@@ -11,7 +11,7 @@
  */
 
 import React from 'react'
-import { PWBottomSheet, PWButton, PWText, PWView } from '@components/core'
+import { PWButton, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
@@ -24,48 +24,43 @@ const TIP_KEYS = [
 ] as const
 
 export type LedgerConnectionIssueSheetProps = {
-    isVisible: boolean
     onClose: () => void
 }
 
+/**
+ * Pure presentational content for the Ledger troubleshooting bottom sheet.
+ * The sheet chrome (PWBottomSheet) is provided by the bottom-sheet driver
+ * in SigningOverlays — this component renders only the body.
+ */
 export const LedgerConnectionIssueSheet = ({
-    isVisible,
     onClose,
 }: LedgerConnectionIssueSheetProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
 
     return (
-        <PWBottomSheet
-            isVisible={isVisible}
-            enablePanDownToClose
-            enableCloseOnBackdropPress
-            onBackdropPress={onClose}
-            onDismiss={onClose}
-        >
-            <PWView style={styles.container}>
-                <PWText style={styles.title}>
-                    {t('ledger.troubleshooting.title')}
-                </PWText>
+        <PWView style={styles.container}>
+            <PWText style={styles.title}>
+                {t('ledger.troubleshooting.title')}
+            </PWText>
 
-                {TIP_KEYS.map(key => (
-                    <PWView
-                        key={key}
-                        style={styles.bulletWrapper}
-                    >
-                        <PWText style={styles.bullet}>{'•'}</PWText>
-                        <PWText style={styles.tip}>{t(key)}</PWText>
-                    </PWView>
-                ))}
+            {TIP_KEYS.map(key => (
+                <PWView
+                    key={key}
+                    style={styles.bulletWrapper}
+                >
+                    <PWText style={styles.bullet}>{'•'}</PWText>
+                    <PWText style={styles.tip}>{t(key)}</PWText>
+                </PWView>
+            ))}
 
-                <PWButton
-                    variant='secondary'
-                    title={t('ledger.troubleshooting.close')}
-                    onPress={onClose}
-                    style={styles.closeButton}
-                    testID='ledger-troubleshooting-close'
-                />
-            </PWView>
-        </PWBottomSheet>
+            <PWButton
+                variant='secondary'
+                title={t('ledger.troubleshooting.close')}
+                onPress={onClose}
+                style={styles.closeButton}
+                testID='ledger-troubleshooting-close'
+            />
+        </PWView>
     )
 }

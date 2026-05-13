@@ -11,8 +11,9 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, fireEvent } from '@test-utils/render'
 import { Decimal } from 'decimal.js'
+import type { Optional } from '@perawallet/wallet-core-shared'
+import { render, fireEvent } from '@test-utils/render'
 import { TransactionConfirmationScreen } from '../TransactionConfirmationScreen'
 import { useTransactionConfirmationScreen } from '../useTransactionConfirmationScreen'
 
@@ -182,7 +183,7 @@ const defaultHookReturn = {
         amount: new Decimal('100'),
     },
     currentBalancePending: false,
-    note: undefined as string | undefined,
+    note: undefined as Optional<string>,
     noteOpen: false,
     openNote: mockOpenNote,
     closeNote: mockCloseNote,

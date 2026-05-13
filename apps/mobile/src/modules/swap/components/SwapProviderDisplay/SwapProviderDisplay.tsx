@@ -11,13 +11,14 @@
  */
 
 import { useTheme } from '@rneui/themed'
-import { PWImage, PWText, PWView } from '@components/core'
 import { useProvidersQuery } from '@perawallet/wallet-core-swaps'
+import type { Optional } from '@perawallet/wallet-core-shared'
+import { PWImage, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
 
 export type SwapProviderDisplayProps = {
-    providerName: string | undefined
-    providerDisplayName: string | undefined
+    providerName: Optional<string>
+    providerDisplayName: Optional<string>
 }
 
 export const SwapProviderDisplay = ({

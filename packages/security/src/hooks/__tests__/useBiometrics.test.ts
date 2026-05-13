@@ -188,23 +188,40 @@ describe('useBiometrics', () => {
         expect(mockCheckBiometricsAvailable).toHaveBeenCalled()
     })
 
-    test('setBiometricsCode stores biometric code and sets isEnabled', async () => {
+    test('refreshBiometricsBinding is a no-op when biometrics are not enabled', async () => {
+        wireBlobMocks()
+        // PIN exists but biometrics aren't enabled yet.
+        kmsMocks.pinBytes = new Uint8Array([1, 2, 3])
+
         const { result } = await renderAndSettle()
 
-        expect(result.current.isEnabled).toBe(false)
+        await act(async () => {
+            await result.current.refreshBiometricsBinding()
+        })
 
-        const code = new TextEncoder().encode('123456')
+        // Should not have written anything to the biometric blob.
+        expect(kmsMocks.commitTypedSecret).not.toHaveBeenCalled()
+        expect(kmsMocks.biometricBytes).toBeNull()
+    })
+
+    test('refreshBiometricsBinding copies the current PIN_RECORD bytes to the biometric blob', async () => {
+        wireBlobMocks()
+        const pinRecordBytes = new Uint8Array([10, 20, 30, 40])
+        kmsMocks.pinBytes = pinRecordBytes
+        // Pretend biometrics are already enabled by seeding the blob.
+        kmsMocks.biometricBytes = new Uint8Array([99])
+
+        const { result } = await renderAndSettle()
 
         await act(async () => {
-            await result.current.setBiometricsCode(code)
+            await result.current.refreshBiometricsBinding()
         })
 
         expect(kmsMocks.commitTypedSecret).toHaveBeenCalledWith({
             id: BIOMETRIC_BLOB_KEY_ID,
             type: BIOMETRIC_BLOB_KEYSTORE_TYPE,
-            bytes: code,
+            bytes: pinRecordBytes,
         })
-        expect(result.current.isEnabled).toBe(true)
     })
 
     test('enableBiometrics returns false when PIN is not enabled', async () => {
@@ -236,6 +253,35 @@ describe('useBiometrics', () => {
             PIN_RECORD_KEY_ID,
             expect.any(Function),
         )
+    })
+
+    test('enableBiometrics forwards the prompt to the biometrics service', async () => {
+        kmsMocks.pinBytes = new TextEncoder().encode('123456')
+        mockCheckBiometricsAvailable.mockResolvedValue(true)
+        mockAuthenticate.mockResolvedValue(true)
+
+        const { result } = await renderAndSettle()
+        const prompt = { title: 'Enable', cancelLabel: 'Cancel' }
+
+        await act(async () => {
+            await result.current.enableBiometrics(prompt)
+        })
+
+        expect(mockAuthenticate).toHaveBeenCalledWith(prompt)
+    })
+
+    test('authenticateWithBiometrics forwards the prompt to the biometrics service', async () => {
+        kmsMocks.biometricBytes = new TextEncoder().encode('123456')
+        mockAuthenticate.mockResolvedValue(true)
+
+        const { result } = await renderAndSettle()
+        const prompt = { title: 'Unlock', cancelLabel: 'Cancel' }
+
+        await act(async () => {
+            await result.current.authenticateWithBiometrics(prompt)
+        })
+
+        expect(mockAuthenticate).toHaveBeenCalledWith(prompt)
     })
 
     test('enableBiometrics successfully copies PIN to biometric storage and sets isEnabled', async () => {

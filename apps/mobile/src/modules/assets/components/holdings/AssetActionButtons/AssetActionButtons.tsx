@@ -18,9 +18,9 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useCallback } from 'react'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
-import { useModalState } from '@hooks/useModalState'
-import { SendFundsBottomSheet } from '@modules/transactions/components/send-funds/SendFundsBottomSheet/SendFundsBottomSheet'
-import { ReceiveFundsBottomSheet } from '@modules/transactions/components/receive-funds/ReceiveFundsBottomSheet'
+import { SendFundsContent } from '@modules/transactions/components/send-funds/SendFundsContent'
+import { ReceiveFundsContent } from '@modules/transactions/components/receive-funds/ReceiveFundsContent'
+import { useBottomSheet } from '@modules/bottom-sheet'
 import {
     useSelectedAccount,
     useAccountLogicalType,
@@ -44,14 +44,24 @@ export const AssetActionButtons = ({
     const styles = useStyles()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { t } = useLanguage()
-    const sendFunds = useModalState()
-    const receiveFunds = useModalState()
     const account = useSelectedAccount()
+    const { request: requestBottomSheet } = useBottomSheet()
     const logicalType = useAccountLogicalType(account?.address)
     const { setSelectedAssetId, setCanSelectAsset } = useSendFunds()
     const { copyToClipboard } = useClipboard()
     const { showToast } = useToast()
     const isWatch = !logicalType || !isSigningLogicalType(logicalType)
+
+    const openReceiveFunds = useCallback(() => {
+        void requestBottomSheet({
+            contents: <ReceiveFundsContent account={account ?? undefined} />,
+            options: {
+                size: 'lg',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
+        })
+    }, [requestBottomSheet, account])
 
     const goToRootPage = (name: string) => {
         navigation.replace('TabBar', { screen: name })
@@ -73,8 +83,21 @@ export const AssetActionButtons = ({
             setCanSelectAsset(false)
         }
 
-        sendFunds.open()
-    }, [assetHolding, setSelectedAssetId, setCanSelectAsset, sendFunds])
+        void requestBottomSheet({
+            contents: <SendFundsContent assetId={asset.assetId} />,
+            options: {
+                size: 'lg',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
+        })
+    }, [
+        assetHolding,
+        setSelectedAssetId,
+        setCanSelectAsset,
+        requestBottomSheet,
+        asset.assetId,
+    ])
 
     const handleCopyAddress = useCallback(() => {
         if (account) {
@@ -100,12 +123,7 @@ export const AssetActionButtons = ({
                     title={t('asset_details.action_buttons.receive')}
                     icon='inflow'
                     variant='secondary'
-                    onPress={receiveFunds.open}
-                />
-                <ReceiveFundsBottomSheet
-                    account={account ?? undefined}
-                    onClose={receiveFunds.close}
-                    isVisible={receiveFunds.isOpen}
+                    onPress={openReceiveFunds}
                 />
             </PWView>
         )
@@ -135,17 +153,7 @@ export const AssetActionButtons = ({
                 title={t('asset_details.action_buttons.receive')}
                 icon='inflow'
                 variant='secondary'
-                onPress={receiveFunds.open}
-            />
-            <SendFundsBottomSheet
-                assetId={asset.assetId}
-                onClose={sendFunds.close}
-                isVisible={sendFunds.isOpen}
-            />
-            <ReceiveFundsBottomSheet
-                account={account ?? undefined}
-                onClose={receiveFunds.close}
-                isVisible={receiveFunds.isOpen}
+                onPress={openReceiveFunds}
             />
         </PWView>
     )

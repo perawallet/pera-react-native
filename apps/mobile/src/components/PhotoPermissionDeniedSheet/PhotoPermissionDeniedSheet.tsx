@@ -10,7 +10,9 @@
  limitations under the License
  */
 
-import { ConfirmActionBottomSheet } from '@components/ConfirmActionBottomSheet'
+import { useEffect, useRef } from 'react'
+import { ConfirmActionContent } from '@components/ConfirmActionContent'
+import { useBottomSheet } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 
 export type PhotoPermissionDeniedSheetProps = {
@@ -23,7 +25,9 @@ export type PhotoPermissionDeniedSheetProps = {
  * Bottom sheet shown when the photo-library permission has been denied
  * permanently (iOS / legacy Android). Guides the user to the system
  * Settings app to grant access. Owns its own i18n copy so callers only
- * have to wire visibility + handlers.
+ * have to wire visibility + handlers. Keeps the `isVisible`/`onClose`
+ * shape used by callers and internally routes through the managed
+ * bottom-sheet stack.
  */
 export const PhotoPermissionDeniedSheet = ({
     isVisible,
@@ -31,16 +35,37 @@ export const PhotoPermissionDeniedSheet = ({
     onOpenSettings,
 }: PhotoPermissionDeniedSheetProps) => {
     const { t } = useLanguage()
+    const { request: requestBottomSheet } = useBottomSheet()
+    const openRef = useRef(false)
 
-    return (
-        <ConfirmActionBottomSheet
-            isVisible={isVisible}
-            onClose={onClose}
-            onConfirm={onOpenSettings}
-            title={t('image_picker.permission_title')}
-            message={t('image_picker.permission_body')}
-            confirmLabel={t('image_picker.open_settings.label')}
-            cancelLabel={t('common.cancel.label')}
-        />
-    )
+    useEffect(() => {
+        if (!isVisible || openRef.current) return
+        openRef.current = true
+        let cancelled = false
+        void (async () => {
+            const confirmed = await requestBottomSheet<boolean>({
+                contents: (
+                    <ConfirmActionContent
+                        title={t('image_picker.permission_title')}
+                        message={t('image_picker.permission_body')}
+                        confirmLabel={t('image_picker.open_settings.label')}
+                        cancelLabel={t('common.cancel.label')}
+                    />
+                ),
+                options: { size: 'auto', enablePanDownToClose: true },
+            })
+            if (cancelled) return
+            openRef.current = false
+            if (confirmed) {
+                onOpenSettings()
+            } else {
+                onClose()
+            }
+        })()
+        return () => {
+            cancelled = true
+        }
+    }, [isVisible, requestBottomSheet, onOpenSettings, onClose, t])
+
+    return null
 }

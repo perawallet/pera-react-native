@@ -20,7 +20,6 @@ import {
 } from '@components/core'
 import type { SwapDistinctPairItem } from '@perawallet/wallet-core-swaps'
 import { useLanguage } from '@hooks/useLanguage'
-import { SwapHistoryBottomSheet } from '@modules/swap/components/SwapHistoryBottomSheet'
 import { SwapPairChip } from './SwapPairChip'
 import { useSwapPairHistoryWidget } from './useSwapPairHistoryWidget'
 import { useStyles } from './styles'
@@ -35,11 +34,8 @@ export const SwapPairHistoryWidget = () => {
         isLoading,
         isError,
         isEnabled,
-        address,
-        isHistorySheetVisible,
         handlePairPress,
         handleSeeAllPress,
-        handleHistorySheetClose,
     } = useSwapPairHistoryWidget()
 
     const renderPair = useCallback(
@@ -96,41 +92,34 @@ export const SwapPairHistoryWidget = () => {
     if (pairs.length === 0) return null
 
     return (
-        <>
-            <PWView
-                style={styles.container}
-                testID='swap-pair-history-widget'
-            >
-                <PWView style={styles.header}>
-                    <PWText
-                        variant='h4'
-                        style={styles.title}
-                    >
-                        {t('swap.history.widget.title')}
-                    </PWText>
-                    <PWButton
-                        variant='linkPositive'
-                        paddingStyle='none'
-                        title={t('swap.history.widget.see_all')}
-                        onPress={handleSeeAllPress}
-                        testID='swap-pair-history-see-all'
-                    />
-                </PWView>
-                <PWFlatList
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    data={pairs}
-                    renderItem={renderPair}
-                    keyExtractor={keyExtractor}
-                    style={styles.list}
-                    contentContainerStyle={styles.listContent}
+        <PWView
+            style={styles.container}
+            testID='swap-pair-history-widget'
+        >
+            <PWView style={styles.header}>
+                <PWText
+                    variant='h4'
+                    style={styles.title}
+                >
+                    {t('swap.history.widget.title')}
+                </PWText>
+                <PWButton
+                    variant='linkPositive'
+                    paddingStyle='none'
+                    title={t('swap.history.widget.see_all')}
+                    onPress={handleSeeAllPress}
+                    testID='swap-pair-history-see-all'
                 />
             </PWView>
-            <SwapHistoryBottomSheet
-                isVisible={isHistorySheetVisible}
-                address={address}
-                onClose={handleHistorySheetClose}
+            <PWFlatList
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                data={pairs}
+                renderItem={renderPair}
+                keyExtractor={keyExtractor}
+                style={styles.list}
+                contentContainerStyle={styles.listContent}
             />
-        </>
+        </PWView>
     )
 }

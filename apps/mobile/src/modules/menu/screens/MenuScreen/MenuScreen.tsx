@@ -20,16 +20,39 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { QRScannerView } from '@components/QRScannerView'
 import { useModalState } from '@hooks/useModalState'
 import { useLanguage } from '@hooks/useLanguage'
-import { ReceiveFundsBottomSheet } from '@modules/transactions/components/receive-funds/ReceiveFundsBottomSheet'
-import { BidaliBottomSheet } from '@modules/gift-card/components/BidaliBottomSheet'
+import { useBottomSheet } from '@modules/bottom-sheet'
+import { ReceiveFundsContent } from '@modules/transactions/components/receive-funds/ReceiveFundsContent'
+import { BidaliContent } from '@modules/gift-card/components/BidaliContent'
+import { useCallback } from 'react'
 
 export const MenuScreen = () => {
     const styles = useStyles()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const scanner = useModalState()
-    const receiveFunds = useModalState()
-    const bidali = useModalState()
     const { t } = useLanguage()
+    const { request: requestBottomSheet } = useBottomSheet()
+
+    const openReceiveFunds = useCallback(() => {
+        void requestBottomSheet({
+            contents: <ReceiveFundsContent />,
+            options: {
+                size: 'lg',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
+        })
+    }, [requestBottomSheet])
+
+    const openBidali = useCallback(() => {
+        void requestBottomSheet({
+            contents: <BidaliContent />,
+            options: {
+                size: 'lg',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
+        })
+    }, [requestBottomSheet])
 
     const goToSettings = () => {
         navigation.push('Settings')
@@ -90,14 +113,14 @@ export const MenuScreen = () => {
                     titleWeight='h3'
                     leftIcon='gift'
                     rightIcon='chevron-right'
-                    onPress={bidali.open}
+                    onPress={openBidali}
                 />
                 <PanelButton
                     title={t('menu.receive')}
                     titleWeight='h3'
                     leftIcon='inflow'
                     rightIcon='chevron-right'
-                    onPress={receiveFunds.open}
+                    onPress={openReceiveFunds}
                 />
                 <PanelButton
                     title={t('menu.contacts')}
@@ -112,14 +135,6 @@ export const MenuScreen = () => {
                 onSuccess={scanner.close}
                 onClose={scanner.close}
                 animationType='slide'
-            />
-            <ReceiveFundsBottomSheet
-                isVisible={receiveFunds.isOpen}
-                onClose={receiveFunds.close}
-            />
-            <BidaliBottomSheet
-                isVisible={bidali.isOpen}
-                onClose={bidali.close}
             />
         </PWView>
     )

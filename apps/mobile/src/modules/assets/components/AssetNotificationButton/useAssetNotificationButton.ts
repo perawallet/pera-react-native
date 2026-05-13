@@ -14,10 +14,11 @@ import { useCallback } from 'react'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useToggleAssetPriceAlertMutation } from '@perawallet/wallet-core-assets'
+import { Optional } from '@perawallet/wallet-core-shared'
 
 export const useAssetNotificationButton = (
     assetId: string,
-    isNotificationsEnabled: boolean | undefined,
+    isNotificationsEnabled: Optional<boolean>,
 ) => {
     const { network } = useNetwork()
     const deviceId = useDeviceID(network)

@@ -121,6 +121,15 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
     }),
 }))
 
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({
+        request: vi.fn(),
+        requestByType: vi.fn(),
+        dismiss: vi.fn(),
+        dismissAll: vi.fn(),
+    }),
+}))
+
 vi.mock('@perawallet/wallet-core-currencies', () => ({
     useCurrency: vi.fn(() => ({
         preferredCurrency: 'USD',

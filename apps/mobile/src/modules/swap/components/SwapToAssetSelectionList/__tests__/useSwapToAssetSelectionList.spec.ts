@@ -13,6 +13,7 @@
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { useSwapToAssetSelectionList } from '../useSwapToAssetSelectionList'
 
 const mockUseSelectedAccount = vi.hoisted(() => vi.fn())
@@ -211,7 +212,7 @@ describe('useSwapToAssetSelectionList', () => {
         const { result, rerender } = renderHook(
             ({ isVisible }) =>
                 useSwapToAssetSelectionList({ ...defaultParams, isVisible }),
-            { initialProps: { isVisible: true as boolean | undefined } },
+            { initialProps: { isVisible: true as Optional<boolean> } },
         )
 
         act(() => {

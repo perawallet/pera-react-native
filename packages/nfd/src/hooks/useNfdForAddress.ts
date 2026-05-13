@@ -16,11 +16,12 @@ import {
     useNetwork,
     isValidAlgorandAddress,
 } from '@perawallet/wallet-core-blockchain'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { fetchNfdNamesForAddress } from '../api'
 import { nfdQueryKeys } from './querykeys'
 
 type UseNfdForAddressResult = {
-    nfdName: string | undefined
+    nfdName: Optional<string>
     isResolving: boolean
 }
 

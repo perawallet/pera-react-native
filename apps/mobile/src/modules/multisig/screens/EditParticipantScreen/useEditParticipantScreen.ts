@@ -24,11 +24,12 @@ import type { PermissionDeniedState } from '@hooks/useImagePicker'
 import { useContactForm } from '@modules/contacts/hooks'
 import { useMultisigCreationStore } from '../../hooks/useMultisigCreation'
 import type { MultisigStackParamList } from '../../routes/types'
+import { Optional } from '@perawallet/wallet-core-shared'
 
 type UseEditParticipantScreenResult = {
     address: string
     control: Control<Contact>
-    imageUri: string | undefined
+    imageUri: Optional<string>
     isDoneDisabled: boolean
     onPickImage: () => Promise<void>
     permissionDenied: PermissionDeniedState

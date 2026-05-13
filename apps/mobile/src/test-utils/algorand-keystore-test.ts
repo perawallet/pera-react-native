@@ -21,6 +21,7 @@
 // Aliased into the test build via apps/mobile/vitest.config.ts.
 
 import { KeyContext, XHDWalletAPI } from '@algorandfoundation/xhd-wallet-api'
+import { type Optional } from '@perawallet/wallet-core-shared'
 
 // Types come from `@tanstack/store` and `@algorandfoundation/keystore`,
 // which are transitive deps not listed in apps/mobile's package.json. tsc
@@ -56,7 +57,7 @@ const keyData = new Map<string, KeyData>()
 // Tests don't actually hydrate from "previous sessions" — each run starts
 // clean — but we still need the surface so the import doesn't crash.
 export const storage = {
-    getString: (key: string): string | undefined => {
+    getString: (key: string): Optional<string> => {
         const entry = keyData.get(key)
         return entry ? JSON.stringify(entry, replaceUint8Array) : undefined
     },
@@ -162,7 +163,7 @@ const exportKey = async (id: string): Promise<KeyData> => {
 //
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const WithKeyStore = (_provider: any, options: any) => {
-    const reactiveStore: Store<KeyStoreState> | undefined =
+    const reactiveStore: Optional<Store<KeyStoreState>> =
         options?.keystore?.store
 
     if (reactiveStore) reactiveStoreRef = reactiveStore
@@ -325,4 +326,4 @@ export const resetTestKeystore = (): void => {
 // Tracked separately because `WithKeyStore` is the only place we have
 // access to the reactive store; capture it on first init so the reset
 // helper above can wipe it without a Provider re-bootstrap.
-let reactiveStoreRef: Store<KeyStoreState> | undefined
+let reactiveStoreRef: Optional<Store<KeyStoreState>>

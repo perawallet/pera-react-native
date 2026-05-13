@@ -1,0 +1,278 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { act, renderHook } from '@testing-library/react'
+import {
+    useHardwareSigning,
+    useSigningRequest,
+} from '@perawallet/wallet-core-signing'
+import type { UseHardwareSigningResult } from '@perawallet/wallet-core-signing'
+import { useLedgerSigningContent } from '../useLedgerSigningContent'
+
+vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-signing')>()
+    return {
+        ...actual,
+        useSigningRequest: vi.fn(),
+        useHardwareSigning: vi.fn(),
+    }
+})
+
+const buildHardwareSigningResult = (
+    overrides: Partial<UseHardwareSigningResult>,
+): UseHardwareSigningResult => ({
+    isActive: true,
+    status: 'awaitingApproval',
+    deviceName: 'Nano X',
+    currentTx: null,
+    totalTxs: null,
+    requestId: 'req-1',
+    error: null,
+    resolveActiveRequest: vi.fn(() => undefined),
+    dismiss: vi.fn(),
+    ...overrides,
+})
+
+describe('useLedgerSigningContent', () => {
+    beforeEach(() => {
+        vi.mocked(useSigningRequest).mockReturnValue({
+            pendingSignRequests: [],
+            rejectRequest: vi.fn(),
+            retryRequest: vi.fn(),
+        } as never)
+    })
+
+    it('isVisible is false when status is "idle"', () => {
+        vi.mocked(useHardwareSigning).mockReturnValue(
+            buildHardwareSigningResult({ isActive: false, status: 'idle' }),
+        )
+        const { result } = renderHook(() => useLedgerSigningContent())
+        expect(result.current.isVisible).toBe(false)
+    })
+
+    it('isVisible is false when status is "searching" (silent-scan phase)', () => {
+        vi.mocked(useHardwareSigning).mockReturnValue(
+            buildHardwareSigningResult({
+                isActive: false,
+                status: 'searching',
+            }),
+        )
+        const { result } = renderHook(() => useLedgerSigningContent())
+        expect(result.current.isVisible).toBe(false)
+    })
+
+    it('isVisible is true when status is "awaitingApproval"', () => {
+        vi.mocked(useHardwareSigning).mockReturnValue(
+            buildHardwareSigningResult({
+                isActive: true,
+                status: 'awaitingApproval',
+            }),
+        )
+        const { result } = renderHook(() => useLedgerSigningContent())
+        expect(result.current.isVisible).toBe(true)
+    })
+
+    it('isVisible is true when status is "error"', () => {
+        vi.mocked(useHardwareSigning).mockReturnValue(
+            buildHardwareSigningResult({ isActive: true, status: 'error' }),
+        )
+        const { result } = renderHook(() => useLedgerSigningContent())
+        expect(result.current.isVisible).toBe(true)
+    })
+
+    it('exposes a derived LedgerErrorPreset when error payload is set', () => {
+        vi.mocked(useHardwareSigning).mockReturnValue(
+            buildHardwareSigningResult({
+                status: 'error',
+                error: { kind: 'app_not_open' },
+            }),
+        )
+        const { result } = renderHook(() => useLedgerSigningContent())
+        expect(result.current.error?.kind).toBe('app_not_open')
+        expect(result.current.error?.isRetryable).toBe(true)
+        expect(result.current.error?.isTroubleshootable).toBe(false)
+    })
+
+    it('onCancel rejects the active request, dismisses store, and closes troubleshooting', () => {
+        const rejectRequest = vi.fn()
+        const dismiss = vi.fn()
+        const activeRequest = { id: 'req-1' } as never
+        vi.mocked(useSigningRequest).mockReturnValue({
+            pendingSignRequests: [activeRequest],
+            rejectRequest,
+            retryRequest: vi.fn(),
+        } as never)
+        vi.mocked(useHardwareSigning).mockReturnValue(
+            buildHardwareSigningResult({
+                resolveActiveRequest: () => activeRequest,
+                dismiss,
+            }),
+        )
+        const { result } = renderHook(() => useLedgerSigningContent())
+        act(() => {
+            result.current.onOpenTroubleshooting()
+        })
+        act(() => {
+            result.current.onCancel()
+        })
+        expect(rejectRequest).toHaveBeenCalledWith(activeRequest)
+        expect(dismiss).toHaveBeenCalledOnce()
+        expect(result.current.isTroubleshootingVisible).toBe(false)
+    })
+
+    it('onRetry is a no-op when error is not retryable', () => {
+        const retryRequest = vi.fn()
+        vi.mocked(useSigningRequest).mockReturnValue({
+            pendingSignRequests: [{ id: 'req-1' }],
+            rejectRequest: vi.fn(),
+            retryRequest,
+        } as never)
+        vi.mocked(useHardwareSigning).mockReturnValue(
+            buildHardwareSigningResult({
+                status: 'error',
+                error: { kind: 'address_mismatch' },
+                resolveActiveRequest: () => ({ id: 'req-1' }) as never,
+            }),
+        )
+        const { result } = renderHook(() => useLedgerSigningContent())
+        act(() => {
+            result.current.onRetry()
+        })
+        expect(retryRequest).not.toHaveBeenCalled()
+    })
+
+    it('onOpenTroubleshooting / onCloseTroubleshooting flips local state', () => {
+        vi.mocked(useHardwareSigning).mockReturnValue(
+            buildHardwareSigningResult({ status: 'error' }),
+        )
+        const { result } = renderHook(() => useLedgerSigningContent())
+        expect(result.current.isTroubleshootingVisible).toBe(false)
+        act(() => result.current.onOpenTroubleshooting())
+        expect(result.current.isTroubleshootingVisible).toBe(true)
+        act(() => result.current.onCloseTroubleshooting())
+        expect(result.current.isTroubleshootingVisible).toBe(false)
+    })
+
+    describe('BLE-class error auto-troubleshooting', () => {
+        const BLE_CLASS_KINDS = [
+            'connection_failed',
+            'connection_lost',
+            'scan_timeout',
+            'bluetooth_disabled',
+            'bluetooth_permission',
+        ] as const
+
+        beforeEach(() => {
+            vi.mocked(useSigningRequest).mockReturnValue({
+                pendingSignRequests: [{ id: 'req-1' } as never],
+                rejectRequest: vi.fn(),
+                retryRequest: vi.fn(),
+            } as never)
+        })
+
+        it.each(BLE_CLASS_KINDS)(
+            'auto-opens the troubleshooting sheet for kind=%s',
+            kind => {
+                vi.mocked(useHardwareSigning).mockReturnValue(
+                    buildHardwareSigningResult({
+                        status: 'error',
+                        error: { kind },
+                    }),
+                )
+                const { result } = renderHook(() => useLedgerSigningContent())
+                expect(result.current.isTroubleshootingVisible).toBe(true)
+            },
+        )
+
+        it.each(BLE_CLASS_KINDS)(
+            'hides the main overlay (isVisible=false) when the BLE-class error %s opens troubleshooting',
+            kind => {
+                vi.mocked(useHardwareSigning).mockReturnValue(
+                    buildHardwareSigningResult({
+                        status: 'error',
+                        error: { kind },
+                    }),
+                )
+                const { result } = renderHook(() => useLedgerSigningContent())
+                expect(result.current.isVisible).toBe(false)
+            },
+        )
+
+        it('does NOT auto-open troubleshooting for non-BLE errors', () => {
+            vi.mocked(useHardwareSigning).mockReturnValue(
+                buildHardwareSigningResult({
+                    status: 'error',
+                    error: { kind: 'user_rejected' },
+                }),
+            )
+            const { result } = renderHook(() => useLedgerSigningContent())
+            expect(result.current.isTroubleshootingVisible).toBe(false)
+            expect(result.current.isVisible).toBe(true)
+        })
+
+        it('closing troubleshooting after a BLE-class auto-open rejects the request', () => {
+            const rejectRequest = vi.fn()
+            const dismiss = vi.fn()
+            const activeRequest = { id: 'req-1' } as never
+            vi.mocked(useSigningRequest).mockReturnValue({
+                pendingSignRequests: [activeRequest],
+                rejectRequest,
+                retryRequest: vi.fn(),
+            } as never)
+            vi.mocked(useHardwareSigning).mockReturnValue(
+                buildHardwareSigningResult({
+                    status: 'error',
+                    error: { kind: 'connection_failed' },
+                    resolveActiveRequest: () => activeRequest,
+                    dismiss,
+                }),
+            )
+            const { result } = renderHook(() => useLedgerSigningContent())
+            act(() => {
+                result.current.onCloseTroubleshooting()
+            })
+            expect(rejectRequest).toHaveBeenCalledWith(activeRequest)
+            expect(dismiss).toHaveBeenCalledOnce()
+            expect(result.current.isTroubleshootingVisible).toBe(false)
+        })
+
+        it('closing troubleshooting after a MANUAL open (non-BLE error) only closes the sheet', () => {
+            const rejectRequest = vi.fn()
+            const dismiss = vi.fn()
+            vi.mocked(useSigningRequest).mockReturnValue({
+                pendingSignRequests: [{ id: 'req-1' } as never],
+                rejectRequest,
+                retryRequest: vi.fn(),
+            } as never)
+            vi.mocked(useHardwareSigning).mockReturnValue(
+                buildHardwareSigningResult({
+                    status: 'error',
+                    error: { kind: 'user_rejected' },
+                    dismiss,
+                }),
+            )
+            const { result } = renderHook(() => useLedgerSigningContent())
+            act(() => {
+                result.current.onOpenTroubleshooting()
+            })
+            expect(result.current.isTroubleshootingVisible).toBe(true)
+            act(() => {
+                result.current.onCloseTroubleshooting()
+            })
+            expect(rejectRequest).not.toHaveBeenCalled()
+            expect(dismiss).not.toHaveBeenCalled()
+            expect(result.current.isTroubleshootingVisible).toBe(false)
+        })
+    })
+})

@@ -234,26 +234,30 @@ vi.mock('../../AccountAssetList', () => ({
     ),
 }))
 
+vi.mock('@modules/transactions/components/send-funds/SendFundsContent', () => ({
+    SendFundsContent: () => null,
+}))
 vi.mock(
-    '@modules/transactions/components/send-funds/SendFundsBottomSheet/SendFundsBottomSheet',
+    '@modules/transactions/components/receive-funds/ReceiveFundsContent',
     () => ({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        SendFundsBottomSheet: ({ isVisible }: any) =>
-            isVisible ? <div data-testid='send-funds-sheet' /> : null,
+        ReceiveFundsContent: () => null,
     }),
 )
-vi.mock(
-    '@modules/transactions/components/receive-funds/ReceiveFundsBottomSheet',
-    () => ({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ReceiveFundsBottomSheet: ({ isVisible }: any) =>
-            isVisible ? <div data-testid='receive-funds-sheet' /> : null,
+const { mockRequestBottomSheet } = vi.hoisted(() => ({
+    mockRequestBottomSheet: vi.fn(() => Promise.resolve(undefined)),
+}))
+
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({
+        request: mockRequestBottomSheet,
+        requestByType: vi.fn(),
+        dismiss: vi.fn(),
+        dismissAll: vi.fn(),
     }),
-)
-vi.mock('../../AccountOptionsBottomSheet', () => ({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    AccountOptionsBottomSheet: ({ isVisible }: any) =>
-        isVisible ? <div data-testid='account-options-sheet' /> : null,
+}))
+
+vi.mock('../../AccountOptionsContent', () => ({
+    AccountOptionsContent: () => null,
 }))
 
 describe('AccountOverview', () => {
@@ -334,7 +338,7 @@ describe('AccountOverview', () => {
             })
         })
 
-        it('opens Receive Funds sheet when Receive is pressed', () => {
+        it('requests Receive Funds sheet when Receive is pressed', () => {
             render(
                 <AccountOverview
                     account={mockAccount}
@@ -342,7 +346,7 @@ describe('AccountOverview', () => {
                 />,
             )
             fireEvent.click(screen.getByText('Receive'))
-            expect(screen.getByTestId('receive-funds-sheet')).toBeTruthy()
+            expect(mockRequestBottomSheet).toHaveBeenCalled()
         })
 
         it('opens account options sheet when More is pressed', () => {
@@ -353,7 +357,7 @@ describe('AccountOverview', () => {
                 />,
             )
             fireEvent.click(screen.getByText('More'))
-            expect(screen.getByTestId('account-options-sheet')).toBeTruthy()
+            expect(mockRequestBottomSheet).toHaveBeenCalled()
         })
     })
 
@@ -503,10 +507,10 @@ describe('AccountOverview', () => {
                 />,
             )
             fireEvent.click(screen.getByText('More'))
-            expect(screen.getByTestId('account-options-sheet')).toBeTruthy()
+            expect(mockRequestBottomSheet).toHaveBeenCalled()
         })
 
-        it('opens receive funds sheet when Show QR is pressed', () => {
+        it('requests receive funds sheet when Show QR is pressed', () => {
             render(
                 <AccountOverview
                     account={mockAccount}
@@ -514,7 +518,7 @@ describe('AccountOverview', () => {
                 />,
             )
             fireEvent.click(screen.getByText('Show QR'))
-            expect(screen.getByTestId('receive-funds-sheet')).toBeTruthy()
+            expect(mockRequestBottomSheet).toHaveBeenCalled()
         })
     })
 })

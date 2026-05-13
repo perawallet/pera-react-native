@@ -9,7 +9,7 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 type Network = 'mainnet' | 'testnet' | 'betanet' | string
 
@@ -53,7 +53,7 @@ export function parseAlgorandURI(uri: string): Nullable<AlgorandURI> {
         const [beforeQuery, query] = stripped.split('?', 2)
 
         // Split network/address
-        let network: Network | undefined
+        let network: Optional<Network>
         let path = beforeQuery
 
         // Network specified with netauth

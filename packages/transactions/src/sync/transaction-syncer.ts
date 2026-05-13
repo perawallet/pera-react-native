@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { Network, Optional } from '@perawallet/wallet-core-shared'
 import { fetchTransactionHistory } from '../api/history'
 import { getLatestTransactionRoundTime, upsertTransactions } from '../db'
 
@@ -23,7 +23,7 @@ export async function fetchAndPersistTransactions(
         network,
     })
 
-    let afterTime: string | undefined
+    let afterTime: Optional<string>
     if (latestRoundTime !== null) {
         // Fetch only transactions newer than what we have
         // Add 1 second to avoid re-fetching the latest transaction

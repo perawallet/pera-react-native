@@ -19,6 +19,7 @@ import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useSendFunds } from '@modules/transactions/hooks'
 import { useTransactionSendFlow } from '@perawallet/wallet-core-transactions'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 const mockReplace = vi.fn()
 const mockGoBack = vi.fn()
@@ -89,7 +90,7 @@ describe('useTransactionProcessingScreen', () => {
     const mockAsset = { id: '123', name: 'Test Asset' }
 
     const mockSendFundsState = {
-        selectedAssetId: undefined as string | undefined,
+        selectedAssetId: undefined as Optional<string>,
         amount: undefined,
         destination: undefined,
         note: undefined,

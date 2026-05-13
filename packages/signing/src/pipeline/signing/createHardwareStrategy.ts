@@ -25,7 +25,11 @@ import type {
     PeraSignedTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { Address } from '@perawallet/wallet-core-blockchain'
-import { encodeToBase64, withTimeout } from '@perawallet/wallet-core-shared'
+import {
+    encodeToBase64,
+    withTimeout,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import type {
     SigningStrategy,
     AnalyzedSignableGroup,
@@ -292,7 +296,7 @@ export const signTransactionsOnHardwareWallet = async (
     }
 
     const { deviceId, accountIndex } = hwAccount.hardwareDetails
-    let transport: HardwareWalletTransport | undefined
+    let transport: Optional<HardwareWalletTransport>
 
     try {
         transport = await connectAndVerify(

@@ -10,7 +10,7 @@
  limitations under the License
  */
 import { DEFAULT_PRISM_IMAGE_QUALITY } from '../models/constants'
-import type { Maybe } from './types'
+import type { Maybe, Optional } from './types'
 
 export const stripUrlScheme = (url?: string) => {
     if (!url) {
@@ -29,7 +29,7 @@ export const buildPrismUrl = (
     url: Maybe<string>,
     width: number,
     quality: number = DEFAULT_PRISM_IMAGE_QUALITY,
-): string | undefined => {
+): Optional<string> => {
     if (!url) {
         return undefined
     }

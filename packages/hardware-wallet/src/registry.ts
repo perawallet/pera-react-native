@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type {
     HardwareWalletManufacturer,
     HardwareWalletTransportProvider,
@@ -29,7 +30,7 @@ export type HardwareWalletRegistry = {
     getProvider: (
         manufacturer: HardwareWalletManufacturer,
         transportType: LedgerTransportType,
-    ) => HardwareWalletTransportProvider | undefined
+    ) => Optional<HardwareWalletTransportProvider>
     /** Return all registered providers. */
     getAllProviders: () => HardwareWalletTransportProvider[]
     /** Return all providers registered for a given manufacturer (across transports). */

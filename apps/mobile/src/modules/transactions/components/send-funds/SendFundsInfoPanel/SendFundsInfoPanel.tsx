@@ -24,7 +24,6 @@ import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSendFundsInfoPanel } from './useSendFundsInfoPanel'
 import { useTheme } from '@rneui/themed'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export type SendFundsInfoPanelProps = {
     onClose: () => void
@@ -35,9 +34,8 @@ export const SendFundsInfoPanel = ({
     onClose,
     ...rest
 }: SendFundsInfoPanelProps) => {
-    const insets = useSafeAreaInsets()
     const { theme } = useTheme()
-    const styles = useStyles({ insets })
+    const styles = useStyles()
     const { t } = useLanguage()
     const { forceOpen, handleOpenInfoLink, handleClose } =
         useSendFundsInfoPanel(onClose)

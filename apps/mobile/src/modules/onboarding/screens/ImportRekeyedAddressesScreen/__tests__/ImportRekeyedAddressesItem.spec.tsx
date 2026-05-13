@@ -16,11 +16,16 @@ import { ImportRekeyedAddressesItem } from '../ImportRekeyedAddressesItem'
 import { AccountTypes } from '@perawallet/wallet-core-accounts'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 
-vi.mock('../RekeyedAccountInfoBottomSheet', () => ({
-    RekeyedAccountInfoBottomSheet: ({ isVisible }: { isVisible: boolean }) =>
-        isVisible ? (
-            <div data-testid='rekeyed-account-info-bottom-sheet' />
-        ) : null,
+const mockRequestBottomSheet = vi.fn()
+
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({
+        request: mockRequestBottomSheet,
+    }),
+}))
+
+vi.mock('../RekeyedAccountInfoContent', () => ({
+    RekeyedAccountInfoContent: () => null,
 }))
 
 const MOCK_ACCOUNT = {
@@ -87,6 +92,7 @@ describe('ImportRekeyedAddressesItem', () => {
     })
 
     it('opens info bottom sheet when info icon is pressed', () => {
+        mockRequestBottomSheet.mockReset()
         render(
             <ImportRekeyedAddressesItem
                 account={MOCK_ACCOUNT}
@@ -96,18 +102,14 @@ describe('ImportRekeyedAddressesItem', () => {
             />,
         )
 
-        expect(
-            screen.queryByTestId('rekeyed-account-info-bottom-sheet'),
-        ).toBeNull()
+        expect(mockRequestBottomSheet).not.toHaveBeenCalled()
 
         const infoButton = screen.getByTestId(
             `import_rekeyed_addresses_item_info_${MOCK_ACCOUNT.address}`,
         )
         fireEvent.click(infoButton)
 
-        expect(
-            screen.getByTestId('rekeyed-account-info-bottom-sheet'),
-        ).toBeTruthy()
+        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
     })
 
     it('renders selected state correctly', () => {

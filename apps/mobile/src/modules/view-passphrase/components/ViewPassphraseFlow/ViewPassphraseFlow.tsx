@@ -11,8 +11,6 @@
  */
 
 import { PinEditView } from '@modules/security/components/PinEditView'
-import { PassphraseAcknowledgeBottomSheet } from '../PassphraseAcknowledgeBottomSheet'
-import { ViewPassphraseBottomSheet } from '../ViewPassphraseBottomSheet'
 import { useViewPassphraseFlow } from './useViewPassphraseFlow'
 
 export type ViewPassphraseFlowProps = {
@@ -26,30 +24,25 @@ export const ViewPassphraseFlow = ({
     address,
     onClose,
 }: ViewPassphraseFlowProps) => {
-    const {
-        step,
-        handlePinSuccess,
-        handleAcknowledgeConfirm,
-        handleAcknowledgeClose,
-    } = useViewPassphraseFlow({ isVisible, onClose })
+    const { step, handlePinSuccess } = useViewPassphraseFlow({
+        isVisible,
+        address,
+        onClose,
+    })
 
+    // PinEditView is mounted only while we're in the 'pin' step. Keeping it
+    // always-mounted (toggling `mode` to null) relies on gorhom's
+    // BottomSheetModal `dismiss()` resolving before the next sheet's
+    // `present()`, which is racy — when the biometric prompt resolves
+    // quickly, the dismissed-but-not-popped PinEdit modal stays on the stack
+    // underneath and re-surfaces when the topmost sheet closes (you'd see a
+    // titleless PIN sheet you can't dismiss). Unmounting drops the modal
+    // from the stack entirely.
     return (
-        <>
-            <PinEditView
-                mode={step === 'pin' ? 'verify' : null}
-                onSuccess={handlePinSuccess}
-                onClose={onClose}
-            />
-            <PassphraseAcknowledgeBottomSheet
-                isVisible={step === 'acknowledge'}
-                onClose={handleAcknowledgeClose}
-                onConfirm={handleAcknowledgeConfirm}
-            />
-            <ViewPassphraseBottomSheet
-                isVisible={step === 'display'}
-                address={address}
-                onClose={onClose}
-            />
-        </>
+        <PinEditView
+            mode={step === 'pin' ? 'verify' : null}
+            onSuccess={handlePinSuccess}
+            onClose={onClose}
+        />
     )
 }

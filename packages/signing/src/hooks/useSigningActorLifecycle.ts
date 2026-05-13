@@ -12,7 +12,7 @@
 
 import { useCallback, useEffect, useRef } from 'react'
 import type { AnyActorRef, SnapshotFrom } from 'xstate'
-import { AppError } from '@perawallet/wallet-core-shared'
+import { AppError, type Optional } from '@perawallet/wallet-core-shared'
 import {
     useAlgorandClient,
     useTransactionEncoder,
@@ -181,7 +181,7 @@ const isHeadlessFailure = (
 
 type UseSigningActorLifecycleResult = {
     /** Returns the running actor ref for a request ID, if any */
-    getActorRef: (requestId: string) => AnyActorRef | undefined
+    getActorRef: (requestId: string) => Optional<AnyActorRef>
     /** Stops and removes the actor for the given request */
     stopActor: (requestId: string) => void
 }

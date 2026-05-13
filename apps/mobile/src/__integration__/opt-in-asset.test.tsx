@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useEffect } from 'react'
 import {
     afterAll,
     afterEach,
@@ -44,8 +45,9 @@ import {
     useAssetOptInMutation,
     useAssetOptOutMutation,
 } from '@perawallet/wallet-core-transactions'
-import { OptInConfirmationBottomSheet } from '@modules/assets/components/OptInConfirmationBottomSheet/OptInConfirmationBottomSheet'
-import { OptOutConfirmationBottomSheet } from '@modules/accounts/components/AccountAssetList/OptOutConfirmationBottomSheet/OptOutConfirmationBottomSheet'
+import { OptInConfirmationContent } from '@modules/assets/components/OptInConfirmationContent'
+import { OptOutConfirmationContent } from '@modules/accounts/components/AccountAssetList/OptOutConfirmationContent'
+import { useBottomSheet } from '@modules/bottom-sheet'
 import {
     getAccountHoldings,
     insertAssetHolding,
@@ -70,9 +72,10 @@ import { USDC_TEST_ASSET, USDC_TEST_ASSET_ID } from './__fixtures__/assets'
 const SLOW_TEST_TIMEOUT_MS = 30000
 
 // Test host that mirrors what AddAssetView does for the "approve
-// opt-in" step: render the confirmation sheet and forward its onConfirm
-// to `useAssetOptInMutation.optIn(...)`. The opt-in business logic
-// lives in the mutation; this host is just the UI hand-off.
+// opt-in" step: open the confirmation sheet via `requestBottomSheet`
+// and forward its 'confirm' resolution to
+// `useAssetOptInMutation.optIn(...)`. The opt-in business logic lives
+// in the mutation; this host is just the UI hand-off.
 const OptInHost = ({
     sender,
     assetId,
@@ -80,27 +83,31 @@ const OptInHost = ({
     sender: WalletAccount
     assetId: string
 }) => {
-    const { optIn, isLoading } = useAssetOptInMutation()
-    return (
-        <OptInConfirmationBottomSheet
-            isVisible
-            onClose={() => {}}
-            assetId={assetId}
-            accountAddress={sender.address}
-            accountName={sender.name ?? ''}
-            onConfirmOptIn={() => {
-                // Swallow rejection at the host boundary — test 2
-                // intentionally drives the mutation into an
-                // `AlreadyOptedInError` and we don't want it surfacing
-                // as an unhandled rejection.
-                optIn({
-                    sender: sender.address,
-                    assetId: BigInt(assetId),
-                }).catch(() => {})
-            }}
-            isLoading={isLoading}
-        />
-    )
+    const { optIn } = useAssetOptInMutation()
+    const { request } = useBottomSheet()
+    useEffect(() => {
+        void request<'confirm'>({
+            contents: (
+                <OptInConfirmationContent
+                    assetId={assetId}
+                    accountAddress={sender.address}
+                />
+            ),
+            options: { size: 'auto', enablePanDownToClose: true },
+        }).then(result => {
+            if (result !== 'confirm') return
+            // Swallow rejection at the host boundary — test 2
+            // intentionally drives the mutation into an
+            // `AlreadyOptedInError` and we don't want it surfacing
+            // as an unhandled rejection.
+            optIn({
+                sender: sender.address,
+                assetId: BigInt(assetId),
+            }).catch(() => {})
+        })
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+    return null
 }
 
 // Same shape as `OptInHost` but for the opt-out path. Wires the
@@ -124,26 +131,30 @@ const OptOutHost = ({
     onResolved?: (result: { txIds: string[] }) => void
     onRejected?: (error: unknown) => void
 }) => {
-    const { optOut, isLoading } = useAssetOptOutMutation()
-    return (
-        <OptOutConfirmationBottomSheet
-            isVisible
-            onClose={() => {}}
-            accountBalance={accountBalance}
-            accountAddress={sender.address}
-            accountName={sender.name ?? ''}
-            onConfirmOptOut={() => {
-                optOut({
-                    sender: sender.address,
-                    assetId: BigInt(accountBalance.assetId),
-                    creator,
-                })
-                    .then(result => onResolved?.(result))
-                    .catch(error => onRejected?.(error))
-            }}
-            isLoading={isLoading}
-        />
-    )
+    const { optOut } = useAssetOptOutMutation()
+    const { request } = useBottomSheet()
+    useEffect(() => {
+        void request<'confirm'>({
+            contents: (
+                <OptOutConfirmationContent
+                    accountBalance={accountBalance}
+                    accountAddress={sender.address}
+                />
+            ),
+            options: { size: 'auto', enablePanDownToClose: true },
+        }).then(result => {
+            if (result !== 'confirm') return
+            optOut({
+                sender: sender.address,
+                assetId: BigInt(accountBalance.assetId),
+                creator,
+            })
+                .then(res => onResolved?.(res))
+                .catch(error => onRejected?.(error))
+        })
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+    return null
 }
 
 describe('Flow: Opt into an asset', () => {

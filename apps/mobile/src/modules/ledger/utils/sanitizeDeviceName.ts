@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { Maybe } from '@perawallet/wallet-core-shared'
+
 // BLE advertisement names are fully attacker-controllable. Strip characters
 // that can spoof rendering in trusted chrome (nav header, account list):
 // C0/C1 controls, Arabic letter mark, zero-width chars, LRM/RLM, bidi
@@ -40,7 +42,7 @@ const UNSAFE_CHARS = new RegExp(
 
 const MAX_DEVICE_NAME_LENGTH = 32
 
-export const sanitizeDeviceName = (name: string | undefined | null): string => {
+export const sanitizeDeviceName = (name: Maybe<string>): string => {
     if (!name) return ''
 
     return name

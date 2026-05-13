@@ -34,18 +34,24 @@ vi.mock('@react-navigation/native', async importOriginal => {
     }
 })
 
+vi.mock('@modules/transactions/components/send-funds/SendFundsContent', () => ({
+    SendFundsContent: () => null,
+}))
 vi.mock(
-    '@modules/transactions/components/send-funds/SendFundsBottomSheet/SendFundsBottomSheet',
+    '@modules/transactions/components/receive-funds/ReceiveFundsContent',
     () => ({
-        SendFundsBottomSheet: () => null,
+        ReceiveFundsContent: () => null,
     }),
 )
-vi.mock(
-    '@modules/transactions/components/receive-funds/ReceiveFundsBottomSheet',
-    () => ({
-        ReceiveFundsBottomSheet: () => null,
+
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({
+        request: vi.fn(),
+        requestByType: vi.fn(),
+        dismiss: vi.fn(),
+        dismissAll: vi.fn(),
     }),
-)
+}))
 
 const mockSetSelectedAsset = vi.fn()
 const mockSetCanSelectAsset = vi.fn()

@@ -10,19 +10,10 @@
  limitations under the License
  */
 
-import {
-    PWBottomSheet,
-    PWButton,
-    PWIcon,
-    PWIconSize,
-    PWTouchableOpacity,
-    PWView,
-    PWText,
-} from '@components/core'
-import { useModalState } from '@hooks/useModalState'
+import { PWIcon, PWIconSize, PWTouchableOpacity } from '@components/core'
 import { PropsWithChildren } from 'react'
 import { useStyles } from './styles'
-import { useLanguage } from '@hooks/useLanguage'
+import { useInfoButton } from './useInfoButton'
 
 export type InfoButtonProps = {
     variant?: 'primary' | 'secondary' | 'error'
@@ -36,42 +27,20 @@ export const InfoButton = ({
     title,
     children,
 }: InfoButtonProps) => {
-    const bottomSheetState = useModalState()
     const styles = useStyles()
-    const { t } = useLanguage()
+    const { openInfo } = useInfoButton({ title, children })
 
     return (
-        <>
-            <PWTouchableOpacity
-                style={styles.iconContainer}
-                onPress={bottomSheetState.open}
-                testID='info-button'
-            >
-                <PWIcon
-                    name='info'
-                    variant={variant}
-                    size={size}
-                />
-            </PWTouchableOpacity>
-            <PWBottomSheet
-                isVisible={bottomSheetState.isOpen}
-                innerContainerStyle={styles.container}
-            >
-                {!!title && (
-                    <PWText
-                        variant='h3'
-                        style={styles.title}
-                    >
-                        {title}
-                    </PWText>
-                )}
-                <PWView style={styles.contentContainer}>{children}</PWView>
-                <PWButton
-                    variant='secondary'
-                    title={t('common.close.label')}
-                    onPress={bottomSheetState.close}
-                />
-            </PWBottomSheet>
-        </>
+        <PWTouchableOpacity
+            style={styles.iconContainer}
+            onPress={openInfo}
+            testID='info-button'
+        >
+            <PWIcon
+                name='info'
+                variant={variant}
+                size={size}
+            />
+        </PWTouchableOpacity>
     )
 }

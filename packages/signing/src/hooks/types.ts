@@ -24,7 +24,7 @@ import type {
     RequestStructure,
     TransactionListItem,
 } from '../utils/classification'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 /**
  * Configuration passed to useSigningPipeline.
@@ -40,7 +40,7 @@ export type SigningConfiguration = {
  */
 export type SigningPipeline = {
     /** The current signing request, or undefined if the queue is empty. */
-    currentRequest: SignRequest | undefined
+    currentRequest: Optional<SignRequest>
 
     /** Current machine stage. */
     stage: PipelineStage

@@ -15,12 +15,23 @@
 // imports aren't bound when they run. The SVG mocks below have to use
 // `require('react')` for the same reason vitest.setup.ts does.
 
-import { vi } from 'vitest'
+import { afterEach, vi } from 'vitest'
 
 // Inherit every RN runtime, native module, navigation, and PW component mock
 // from the unit setup. Integration tests need those — running real
 // react-native, native firebase, etc. under jsdom would explode.
 import './vitest.setup'
+
+import { useBottomSheetStore } from './src/modules/bottom-sheet'
+
+// The bottom-sheet store is a module-scoped zustand singleton — requests
+// opened in one test will still be present when the next test starts.
+// Reset it after each integration test so flows that count requests, or
+// assert sheet visibility from a known clean slate, aren't poisoned by
+// the previous case.
+afterEach(() => {
+    useBottomSheetStore.getState().resetState()
+})
 
 // jsdom installs its own `Uint8Array` constructor on `globalThis`. Node's
 // `Buffer` extends node's `Uint8Array`, which is a *different* constructor

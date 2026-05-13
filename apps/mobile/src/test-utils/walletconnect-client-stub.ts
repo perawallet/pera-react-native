@@ -32,6 +32,8 @@
 // every consumer that imports `@walletconnect/client` ends up with
 // this class instead of the production transport.
 
+import { type Optional } from '@perawallet/wallet-core-shared'
+
 type Handler = (...args: unknown[]) => void
 
 export type StubConnectorInstance = StubWalletConnect
@@ -45,7 +47,7 @@ export const walletConnectClientStub = {
         this.nextClientId = 1
     },
     /** Most recent constructed connector — usually what the test wants. */
-    last(): StubConnectorInstance | undefined {
+    last(): Optional<StubConnectorInstance> {
         return this.instances[this.instances.length - 1]
     },
 }

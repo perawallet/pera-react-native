@@ -19,11 +19,8 @@ import {
     PWText,
     PWView,
 } from '@components/core'
-import { ConfirmActionBottomSheet } from '@components/ConfirmActionBottomSheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { AppVersion } from '@modules/settings/components/AppVersion'
-import { DeleteAllSuccessBottomSheet } from '@modules/settings/components/DeleteAllSuccessBottomSheet'
-import { RatingsBottomSheet } from '@modules/settings/components/RatingsBottomSheet/RatingsBottomSheet'
 import { getTestProps } from '@utils/test-id-helper'
 import { useSettingsScreen } from './useSettingsScreen'
 import { useStyles } from './styles'
@@ -37,18 +34,8 @@ export const SettingsScreen = () => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
     const { t } = useLanguage()
-    const {
-        settingsOptions,
-        handleTapEvent,
-        isDeleteModalOpen,
-        openDeleteModal,
-        closeDeleteModal,
-        handleDeleteAllAccounts,
-        isSuccessModalOpen,
-        handleSuccessClose,
-        isRatingModalOpen,
-        closeRatingModal,
-    } = useSettingsScreen()
+    const { settingsOptions, handleTapEvent, openDeleteConfirm } =
+        useSettingsScreen()
 
     return (
         <PWScrollView
@@ -82,32 +69,10 @@ export const SettingsScreen = () => {
             <PWButton
                 variant='secondary'
                 title={t('settings.main.remove_all_accounts')}
-                onPress={openDeleteModal}
+                onPress={openDeleteConfirm}
                 {...getTestProps('settings_remove_all_accounts_button')}
             />
             <AppVersion enableSecretTaps />
-            <ConfirmActionBottomSheet
-                isVisible={isDeleteModalOpen}
-                onClose={closeDeleteModal}
-                onConfirm={handleDeleteAllAccounts}
-                icon='trash'
-                iconVariant='error'
-                title={t('settings.main.remove_title')}
-                message={t('settings.main.remove_message')}
-                confirmLabel={t('settings.main.remove_confirm')}
-                cancelLabel={t('settings.main.remove_cancel')}
-                testID='settings_delete_all_confirm_bottom_sheet'
-            />
-            <DeleteAllSuccessBottomSheet
-                isVisible={isSuccessModalOpen}
-                onClose={handleSuccessClose}
-                testID='settings_delete_all_success_bottom_sheet'
-            />
-            <RatingsBottomSheet
-                isOpen={isRatingModalOpen}
-                onClose={closeRatingModal}
-                testID='settings_ratings_bottom_sheet'
-            />
         </PWScrollView>
     )
 }

@@ -11,9 +11,8 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { EdgeInsets } from 'react-native-safe-area-context'
 
-export const useStyles = makeStyles((theme, props: { insets: EdgeInsets }) => {
+export const useStyles = makeStyles(theme => {
     const tipNumber = {
         fontSize: theme.spacing.lg,
         color: theme.colors.textGray,
@@ -21,7 +20,6 @@ export const useStyles = makeStyles((theme, props: { insets: EdgeInsets }) => {
     return {
         container: {
             padding: theme.spacing.xl,
-            paddingBottom: props.insets.bottom,
             paddingTop: theme.spacing.xxl,
             borderTopStartRadius: theme.spacing.sm,
             borderTopEndRadius: theme.spacing.sm,
