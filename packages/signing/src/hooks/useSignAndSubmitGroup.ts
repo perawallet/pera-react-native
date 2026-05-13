@@ -25,7 +25,7 @@ import type { TransactionSignRequest } from '../models'
 import { useSigningRequest } from './useSigningRequest'
 
 /**
- * Thrown when the user dismisses the LedgerSigningOverlay or the in-app
+ * Thrown when the user dismisses the LedgerSigningContent sheet or the in-app
  * signing sheet for a `headless: true` request. Callers should treat this
  * as a non-fatal cancellation rather than a backend failure.
  */
@@ -61,8 +61,8 @@ export type SignAndSubmitGroupResult = {
  *
  * Local-key accounts run validating → signing → completed without showing
  * any sheet (headless skips the review state). Hardware-wallet accounts
- * render the LedgerSigningOverlay automatically because the pipeline binds
- * its phase callbacks for every actor.
+ * render the LedgerSigningContent sheet automatically because the pipeline
+ * binds its phase callbacks for every actor.
  */
 export const useSignAndSubmitGroup = (): SignAndSubmitGroupResult => {
     const { addSignRequest } = useSigningRequest()

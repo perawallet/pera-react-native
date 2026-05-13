@@ -43,10 +43,11 @@ export type UseLedgerSigningContentResult = {
  * and managing the local visibility of the troubleshooting bottom sheet.
  *
  * `isVisible` is derived from status: the silent-scan phase ('searching')
- * keeps the overlay hidden so the user only sees UI once the device
- * responds, matching Android's native behavior. For BLE-class errors the
- * troubleshooting sheet is the primary surface, so isVisible is false then
- * too (the main overlay stays hidden underneath).
+ * keeps the sheet closed so the user only sees UI once the device responds,
+ * matching Android's native behavior. For BLE-class errors the
+ * troubleshooting sheet is the primary surface; the LedgerSigningContent
+ * sheet stays closed (isVisible is false) because there is no useful state
+ * behind the troubleshooting copy.
  */
 export const useLedgerSigningContent = (): UseLedgerSigningContentResult => {
     const {

@@ -72,10 +72,11 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
             if (!req) return
 
             // Hardware-wallet signing failures are surfaced through the
-            // LedgerSigningOverlay (auto-opens the troubleshooting sheet for
-            // BLE-class errors, shows LedgerErrorContent for the rest). The
-            // toast pre-dates that overlay and would duplicate the error
-            // surface, so skip it for hardware signers.
+            // LedgerSigningContent sheet (which renders LedgerErrorContent
+            // inline for non-BLE errors) or via the auto-opened
+            // LedgerConnectionIssueContent troubleshooting sheet for BLE-class
+            // errors. The toast pre-dates that surface and would duplicate the
+            // error UI, so skip it for hardware signers.
             const signerAddr = resolveSignerAddress(req)
             const signerAccount = signerAddr
                 ? allAccounts.find(acc => acc.address === signerAddr)

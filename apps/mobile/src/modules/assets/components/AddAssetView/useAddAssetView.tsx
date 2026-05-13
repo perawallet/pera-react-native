@@ -149,7 +149,7 @@ export const useAddAssetView = (
                 })
             } catch (err) {
                 if (err instanceof UserRejectedSigningError) {
-                    // User dismissed the LedgerSigningOverlay — overlay already went away; no toast.
+                    // User dismissed the LedgerSigningContent sheet — sheet already went away; no toast.
                     return
                 }
                 showError(err, t('add_asset.opt_in.failed_title'))

@@ -101,7 +101,7 @@ export const resolveSignerAddress = (
  *
  * Translates strategy-emitted phase signals (connecting / awaiting-approval),
  * signing-start, progress, and error events into the store-level actions
- * that back the LedgerSigningOverlay. The error path uses
+ * that back the LedgerSigningContent sheet. The error path uses
  * {@link classifyLedgerErrorKind} so the overlay can render preset-specific
  * copy without a UI-layer dependency reaching into the signing package.
  *
@@ -265,10 +265,10 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                 // domain-separation prefix on-device, so we pass raw msgpack.
                 encodeTransaction: encodeTransactionRaw,
                 hardwareWalletRegistry: getProvider().hardwareWalletRegistry,
-                // Drives the LedgerSigningOverlay via useHardwareSigningStore.
+                // Drives the LedgerSigningContent sheet via useHardwareSigningStore.
                 // Only the hardware strategy emits these callbacks, so requests
                 // that resolve to local-key/multisig signers never touch the
-                // overlay state.
+                // sheet state.
                 signingCallbacks: buildHardwareSigningCallbacks(
                     request,
                     signerAccount,
