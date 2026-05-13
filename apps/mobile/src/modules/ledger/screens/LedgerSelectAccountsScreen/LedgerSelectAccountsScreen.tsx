@@ -26,7 +26,6 @@ import { useStyles } from './styles'
 import { useLedgerSelectAccountsScreen } from './useLedgerSelectAccountsScreen'
 import { FindAnotherWalletRow } from './FindAnotherWalletRow'
 import { LedgerAccountSelectionRow } from './LedgerAccountSelectionRow'
-import { LedgerAccountAddressBottomSheet } from './LedgerAccountAddressBottomSheet'
 
 export const LedgerSelectAccountsScreen = () => {
     const styles = useStyles()
@@ -38,13 +37,11 @@ export const LedgerSelectAccountsScreen = () => {
         canContinue,
         alreadyImportedAddresses,
         isFetchingMore,
-        infoAddress,
         toggleSelection,
         toggleSelectAll,
         handleContinue,
         handleFindAnother,
         handleOpenInfo,
-        handleCloseInfo,
         t,
     } = useLedgerSelectAccountsScreen()
 
@@ -144,12 +141,6 @@ export const LedgerSelectAccountsScreen = () => {
                     isDisabled={!canContinue}
                 />
             </SafeAreaView>
-
-            <LedgerAccountAddressBottomSheet
-                isVisible={infoAddress !== null}
-                address={infoAddress ?? ''}
-                onDismiss={handleCloseInfo}
-            />
         </PWView>
     )
 }

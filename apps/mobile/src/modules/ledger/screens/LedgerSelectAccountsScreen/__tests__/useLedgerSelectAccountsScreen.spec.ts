@@ -24,6 +24,14 @@ const mockConnect = vi.fn()
 const mockGetProviderRegistry = vi.fn()
 const mockErrorToast = vi.fn()
 
+const { mockRequest } = vi.hoisted(() => ({
+    mockRequest: vi.fn(),
+}))
+
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({ request: mockRequest, dismiss: vi.fn() }),
+}))
+
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({ navigate: mockNavigate }),
 }))
@@ -83,6 +91,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 }))
 
 import { useLedgerSelectAccountsScreen } from '../useLedgerSelectAccountsScreen'
+import { LedgerAccountAddressContent } from '../LedgerAccountAddressContent'
 
 const buildTransport = (): HardwareWalletTransport =>
     ({
@@ -108,6 +117,7 @@ describe('useLedgerSelectAccountsScreen', () => {
         mockConnect.mockReset()
         mockGetProviderRegistry.mockReset()
         mockErrorToast.mockReset()
+        mockRequest.mockReset()
 
         const transport = buildTransport()
         mockConnect.mockResolvedValue(transport)
@@ -320,19 +330,22 @@ describe('useLedgerSelectAccountsScreen', () => {
         })
     })
 
-    it('exposes handleOpenInfo / handleCloseInfo to drive the address sheet', () => {
+    it('opens the address content sheet when handleOpenInfo is called', () => {
         const { result } = renderHook(() => useLedgerSelectAccountsScreen())
-
-        expect(result.current.infoAddress).toBeNull()
 
         act(() => {
             result.current.handleOpenInfo('ADDR')
         })
-        expect(result.current.infoAddress).toBe('ADDR')
 
-        act(() => {
-            result.current.handleCloseInfo()
+        expect(mockRequest).toHaveBeenCalledTimes(1)
+        const [call] = mockRequest.mock.calls
+        expect(call[0].options).toEqual({
+            size: 'auto',
+            enablePanDownToClose: true,
         })
-        expect(result.current.infoAddress).toBeNull()
+        // The contents node must be a <LedgerAccountAddressContent /> element
+        // with the right address prop captured at request time.
+        expect(call[0].contents.type).toBe(LedgerAccountAddressContent)
+        expect(call[0].contents.props.address).toBe('ADDR')
     })
 })

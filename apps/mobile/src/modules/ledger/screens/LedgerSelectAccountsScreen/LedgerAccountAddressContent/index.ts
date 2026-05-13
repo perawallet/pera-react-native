@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { LedgerAccountAddressBottomSheet } from './LedgerAccountAddressBottomSheet'
-export type { LedgerAccountAddressBottomSheetProps } from './LedgerAccountAddressBottomSheet'
+export { LedgerAccountAddressContent } from './LedgerAccountAddressContent'
+export type { LedgerAccountAddressContentProps } from './LedgerAccountAddressContent'

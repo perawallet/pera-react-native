@@ -10,8 +10,13 @@
  limitations under the License
  */
 
+import React from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@test-utils/render'
+import {
+    BottomSheetIdContext,
+    useBottomSheetStore,
+} from '@modules/bottom-sheet'
 
 const { mockCopy } = vi.hoisted(() => ({
     mockCopy: vi.fn(),
@@ -25,35 +30,31 @@ vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
 }))
 
-import { LedgerAccountAddressBottomSheet } from '../LedgerAccountAddressBottomSheet'
+import { LedgerAccountAddressContent } from '../LedgerAccountAddressContent'
 
 const ADDRESS = '4WU2BYFAVWV33766FLYBEBVMDSCBYB2I5U257SGGHJ6FHFB3ZVDIVSHXLI'
 
-describe('LedgerAccountAddressBottomSheet', () => {
+const renderWithId = (id = 'sheet-1') =>
+    render(
+        <BottomSheetIdContext.Provider value={id}>
+            <LedgerAccountAddressContent address={ADDRESS} />
+        </BottomSheetIdContext.Provider>,
+    )
+
+describe('LedgerAccountAddressContent', () => {
     beforeEach(() => {
+        useBottomSheetStore.getState().resetState()
         vi.clearAllMocks()
     })
 
     it('renders the full address', () => {
-        render(
-            <LedgerAccountAddressBottomSheet
-                isVisible={true}
-                address={ADDRESS}
-                onDismiss={vi.fn()}
-            />,
-        )
+        renderWithId()
 
         expect(screen.getByText(ADDRESS)).toBeTruthy()
     })
 
     it('copies the address when the copy button is pressed', () => {
-        render(
-            <LedgerAccountAddressBottomSheet
-                isVisible={true}
-                address={ADDRESS}
-                onDismiss={vi.fn()}
-            />,
-        )
+        renderWithId()
 
         fireEvent.click(screen.getByText('common.copy_address'))
 
