@@ -20,11 +20,7 @@ import { SlippageToleranceSection } from './SlippageToleranceSection'
 import { PrimaryCurrencyToggle } from './PrimaryCurrencyToggle'
 import { useSwapConfigurationContent } from './useSwapConfigurationContent'
 
-export type SwapConfigurationContentProps = Record<string, never>
-
-export const SwapConfigurationContent = (
-    _: SwapConfigurationContentProps = {},
-) => {
+export const SwapConfigurationContent = () => {
     const { t } = useLanguage()
     const { resolve, dismiss } = useBottomSheetResult<SwapConfigurationResult>()
 
