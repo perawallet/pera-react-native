@@ -30,6 +30,7 @@ const mockGenerateMultisigAddress = vi.fn(
         'NEW_MULTISIG_ADDR',
 )
 const mockUseAllAccounts = vi.fn((): WalletAccount[] => [])
+const mockRequestBottomSheet = vi.fn()
 
 const mockNavigation = {
     addListener: vi.fn(() => vi.fn()),
@@ -48,6 +49,15 @@ vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({
         push: mockPush,
         goBack: vi.fn(),
+    }),
+}))
+
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({
+        request: mockRequestBottomSheet,
+        requestByType: vi.fn(),
+        dismiss: vi.fn(),
+        dismissAll: vi.fn(),
     }),
 }))
 
@@ -154,11 +164,15 @@ describe('multisig creation flow', () => {
     it('happy path: 2 participants → default threshold 2 → finish creates multisig', async () => {
         const createHook = renderHook(() => useCreateMultisigScreen())
 
-        act(() => {
-            createHook.result.current.handleAddAddress('ADDR_A')
+        mockRequestBottomSheet
+            .mockResolvedValueOnce('ADDR_A')
+            .mockResolvedValueOnce('ADDR_B')
+
+        await act(async () => {
+            await createHook.result.current.handleOpenAddParticipant()
         })
-        act(() => {
-            createHook.result.current.handleAddAddress('ADDR_B')
+        await act(async () => {
+            await createHook.result.current.handleOpenAddParticipant()
         })
 
         expect(createHook.result.current.canContinue).toBe(true)
@@ -175,12 +189,9 @@ describe('multisig creation flow', () => {
         expect(thresholdHook.result.current.participantCount).toBe(2)
         expect(thresholdHook.result.current.participants).toHaveLength(2)
 
-        act(() => {
-            thresholdHook.result.current.handleContinue()
-        })
-
-        act(() => {
-            thresholdHook.result.current.handleProceed()
+        mockRequestBottomSheet.mockResolvedValueOnce('proceed')
+        await act(async () => {
+            await thresholdHook.result.current.handleContinue()
         })
         expect(mockPush).toHaveBeenCalledWith('NameMultisig')
 
@@ -228,11 +239,14 @@ describe('multisig creation flow', () => {
         ])
 
         const createHook = renderHook(() => useCreateMultisigScreen())
-        act(() => {
-            createHook.result.current.handleAddAddress('ADDR_A')
+        mockRequestBottomSheet
+            .mockResolvedValueOnce('ADDR_A')
+            .mockResolvedValueOnce('ADDR_B')
+        await act(async () => {
+            await createHook.result.current.handleOpenAddParticipant()
         })
-        act(() => {
-            createHook.result.current.handleAddAddress('ADDR_B')
+        await act(async () => {
+            await createHook.result.current.handleOpenAddParticipant()
         })
 
         const nameHook = renderHook(() => useNameMultisigScreen())
@@ -252,16 +266,20 @@ describe('multisig creation flow', () => {
         expect(nameHook.result.current.isFinishDisabled).toBe(false)
     })
 
-    it('threshold increments/decrements stay within participant bounds', () => {
+    it('threshold increments/decrements stay within participant bounds', async () => {
         const createHook = renderHook(() => useCreateMultisigScreen())
-        act(() => {
-            createHook.result.current.handleAddAddress('ADDR_A')
+        mockRequestBottomSheet
+            .mockResolvedValueOnce('ADDR_A')
+            .mockResolvedValueOnce('ADDR_B')
+            .mockResolvedValueOnce('ADDR_C')
+        await act(async () => {
+            await createHook.result.current.handleOpenAddParticipant()
         })
-        act(() => {
-            createHook.result.current.handleAddAddress('ADDR_B')
+        await act(async () => {
+            await createHook.result.current.handleOpenAddParticipant()
         })
-        act(() => {
-            createHook.result.current.handleAddAddress('ADDR_C')
+        await act(async () => {
+            await createHook.result.current.handleOpenAddParticipant()
         })
 
         const thresholdHook = renderHook(() => useSetThresholdScreen())

@@ -21,8 +21,13 @@ import {
 } from '@perawallet/wallet-core-transactions'
 import { shareCsvFile } from '@utils/shareCsvFile'
 import { useToast } from '@hooks/useToast'
-import { TransactionFilter } from '../../TransactionsFilterBottomSheet/types'
+import { TransactionFilter } from '../../TransactionsFilterContent/types'
 import { useErrorToast } from '@hooks/useErrorToast'
+
+const mockRequestBottomSheet = vi.fn()
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({ request: mockRequestBottomSheet }),
+}))
 
 // Mock dependencies
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -199,11 +204,14 @@ describe('useAccountHistory', () => {
     })
 
     describe('filter handling', () => {
-        it('passes filter parameters to useTransactionHistoryQuery', () => {
+        it('passes filter parameters to useTransactionHistoryQuery', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce({
+                filter: TransactionFilter.Today,
+            })
             const { result } = renderHook(() => useAccountHistory())
 
-            act(() => {
-                result.current.handleApplyFilter(TransactionFilter.Today)
+            await act(async () => {
+                await result.current.handleOpenFilter()
             })
 
             expect(useTransactionHistoryQuery).toHaveBeenCalledWith(
@@ -213,13 +221,16 @@ describe('useAccountHistory', () => {
             )
         })
 
-        it('updates activeFilter when handleApplyFilter is called', () => {
+        it('updates activeFilter when filter sheet resolves', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce({
+                filter: TransactionFilter.Yesterday,
+            })
             const { result } = renderHook(() => useAccountHistory())
 
             expect(result.current.activeFilter).toBe(TransactionFilter.AllTime)
 
-            act(() => {
-                result.current.handleApplyFilter(TransactionFilter.Yesterday)
+            await act(async () => {
+                await result.current.handleOpenFilter()
             })
 
             expect(result.current.activeFilter).toBe(
@@ -227,18 +238,19 @@ describe('useAccountHistory', () => {
             )
         })
 
-        it('handles custom range filter', () => {
-            const { result } = renderHook(() => useAccountHistory())
+        it('handles custom range filter', async () => {
             const customRange = {
                 from: new Date('2024-01-01'),
                 to: new Date('2024-01-15'),
             }
+            mockRequestBottomSheet.mockResolvedValueOnce({
+                filter: TransactionFilter.CustomRange,
+                customRange,
+            })
+            const { result } = renderHook(() => useAccountHistory())
 
-            act(() => {
-                result.current.handleApplyFilter(
-                    TransactionFilter.CustomRange,
-                    customRange,
-                )
+            await act(async () => {
+                await result.current.handleOpenFilter()
             })
 
             expect(result.current.activeFilter).toBe(

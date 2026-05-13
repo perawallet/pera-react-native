@@ -32,12 +32,13 @@ import {
 } from '@modules/onboarding/hooks'
 import { useMultisigCreationStore } from '../../hooks/useMultisigCreation'
 import { getNextSharedAccountName } from '../../utils'
+import { Optional } from '@perawallet/wallet-core-shared'
 
 type UseNameMultisigScreenResult = {
     accountName: string
     isCreating: boolean
     isNameTaken: boolean
-    nameError: string | undefined
+    nameError: Optional<string>
     isFinishDisabled: boolean
     handleNameChange: (value: string) => void
     handleFinish: () => void

@@ -21,21 +21,14 @@ import {
     PWTouchableOpacity,
 } from '@components/core'
 
-import { LedgerHowItWorksBottomSheet } from '../../components/LedgerHowItWorksBottomSheet'
 import { useStyles } from './styles'
 import { useLedgerPairScreen } from './useLedgerPairScreen'
 
 export const LedgerPairScreen = () => {
     const styles = useStyles()
     const navigation = useNavigation()
-    const {
-        isHowDoesItWorkVisible,
-        handlePair,
-        handleOpenHowDoesItWork,
-        handleCloseHowDoesItWork,
-        handleOpenSupport,
-        t,
-    } = useLedgerPairScreen()
+    const { handlePair, handleOpenHowDoesItWork, handleOpenSupport, t } =
+        useLedgerPairScreen()
 
     useLayoutEffect(() => {
         navigation.setOptions({
@@ -93,11 +86,6 @@ export const LedgerPairScreen = () => {
                     variant='secondary'
                 />
             </SafeAreaView>
-
-            <LedgerHowItWorksBottomSheet
-                isVisible={isHowDoesItWorkVisible}
-                onDismiss={handleCloseHowDoesItWork}
-            />
         </PWView>
     )
 }

@@ -154,21 +154,27 @@ vi.mock('../AccountTypeInfoContent', () => ({
     ),
 }))
 
-vi.mock('../SharedAccountDetailsBottomSheet', () => ({
+const mockRequestBottomSheet = vi.fn()
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({
+        request: mockRequestBottomSheet,
+    }),
+}))
+
+vi.mock('../SharedAccountDetailsContent', () => ({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    SharedAccountDetailsBottomSheet: ({ isVisible, details }: any) =>
-        isVisible && details ? (
-            <div data-testid='shared_account_details_content'>
-                {details.addresses.map((address: string) => (
-                    <span
-                        key={address}
-                        data-testid={`shared_account_participant_${address}`}
-                    >
-                        {address}
-                    </span>
-                ))}
-            </div>
-        ) : null,
+    SharedAccountDetailsContent: ({ details }: any) => (
+        <div data-testid='shared_account_details_content'>
+            {details.addresses.map((address: string) => (
+                <span
+                    key={address}
+                    data-testid={`shared_account_participant_${address}`}
+                >
+                    {address}
+                </span>
+            ))}
+        </div>
+    ),
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
@@ -446,7 +452,7 @@ describe('AccountInfoCard', () => {
         expect(screen.getByText('account_info.type_multisig (3)')).toBeTruthy()
     })
 
-    it('opens the shared account details bottom sheet when multisig account type row is pressed', () => {
+    it('requests the shared account details bottom sheet when multisig account type row is pressed', () => {
         const onClose = vi.fn()
         render(
             <AccountInfoCard
@@ -455,19 +461,15 @@ describe('AccountInfoCard', () => {
             />,
         )
 
-        expect(
-            screen.queryByTestId('shared_account_details_content'),
-        ).toBeNull()
-
         fireEvent.click(screen.getByTestId('shared_account_details_button'))
 
         expect(onClose).not.toHaveBeenCalled()
         expect(mockNavigate).not.toHaveBeenCalled()
-        expect(
-            screen.getByTestId('shared_account_details_content'),
-        ).toBeTruthy()
-        expect(screen.getByText('PARTICIPANT_1')).toBeTruthy()
-        expect(screen.getByText('PARTICIPANT_2')).toBeTruthy()
-        expect(screen.getByText('PARTICIPANT_3')).toBeTruthy()
+        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+        const call = mockRequestBottomSheet.mock.calls[0][0]
+        expect(call.options).toMatchObject({
+            size: 'lg',
+            enablePanDownToClose: true,
+        })
     })
 })

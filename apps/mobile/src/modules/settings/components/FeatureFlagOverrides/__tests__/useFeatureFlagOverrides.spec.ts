@@ -24,10 +24,11 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import { type Optional } from '@perawallet/wallet-core-shared'
 import { useFeatureFlagOverrides } from '../useFeatureFlagOverrides'
 
 const mockSetConfigOverride = vi.fn()
-const mockConfigOverrides: Record<string, boolean | undefined> = {}
+const mockConfigOverrides: Record<string, Optional<boolean>> = {}
 
 vi.mock('@perawallet/wallet-core-remote-config', () => ({
     useRemoteConfigOverrides: () => ({

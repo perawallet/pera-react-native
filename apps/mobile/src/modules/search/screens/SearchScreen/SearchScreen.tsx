@@ -25,7 +25,6 @@ import { LoadingView } from '@components/LoadingView'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { AssetTitle } from '@modules/assets/components/AssetTitle'
-import { SearchFilterBottomSheet } from '@modules/search/components/SearchFilterBottomSheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { useStyles } from './styles'
@@ -45,19 +44,18 @@ export const SearchScreen = () => {
         hasResults,
         isLoading,
         scopes,
-        toggleScope,
-        filterSheetState,
         onAccountPress,
         onContactPress,
         onAssetPress,
         onExpandSection,
+        openFilterSheet,
     } = useSearchScreen()
 
     useNavigationHeader({
         right: (
             <PWIcon
                 name='sliders'
-                onPress={filterSheetState.open}
+                onPress={openFilterSheet}
                 testID='search_filter_button'
                 style={styles.searchIcon}
             />
@@ -200,12 +198,6 @@ export const SearchScreen = () => {
                         />
                     )
                 }
-            />
-            <SearchFilterBottomSheet
-                isVisible={filterSheetState.isOpen}
-                onClose={filterSheetState.close}
-                scopes={scopes}
-                onToggleScope={toggleScope}
             />
         </PWView>
     )

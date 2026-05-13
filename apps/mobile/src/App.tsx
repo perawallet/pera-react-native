@@ -47,6 +47,12 @@ import {
 } from '@perawallet/wallet-extension-provider'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { RootComponent } from '@components/RootComponent'
+// Side-effect: binds every entry in the bottom-sheet manager's typed
+// registry (see modules/bottom-sheet/registrations.ts) before anything in
+// the React tree mounts, so deep links and other non-React callers can
+// safely call useBottomSheetStore.getState().requestByType(...) from the
+// moment the app boots.
+import '@modules/bottom-sheet/registrations'
 import * as SplashScreen from 'expo-splash-screen'
 
 // Keep the splash screen visible while we fetch resources

@@ -19,22 +19,14 @@ import { EmptyView } from '@components/EmptyView'
 import { SHORT_ADDRESS_FORMAT } from '@constants/ui'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
-import { ContactQRBottomSheet } from '@modules/contacts/components/ContactQRBottomSheet'
 import { useViewContactScreen } from './useViewContactScreen'
 import { useStyles } from './styles'
 
 export const ViewContactScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const {
-        selectedContact,
-        nfdName,
-        qrVisible,
-        openQR,
-        closeQR,
-        goToEdit,
-        handleShare,
-    } = useViewContactScreen()
+    const { selectedContact, nfdName, openQR, goToEdit, handleShare } =
+        useViewContactScreen()
 
     useNavigationHeader({
         enabled: true,
@@ -130,10 +122,6 @@ export const ViewContactScreen = () => {
                     </PWText>
                 </PWView>
             )}
-            <ContactQRBottomSheet
-                contact={qrVisible ? selectedContact : null}
-                onClose={closeQR}
-            />
         </PWView>
     )
 }

@@ -12,7 +12,11 @@
 
 import nacl from 'tweetnacl'
 import { KeyManagementError } from '../errors'
-import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
+import {
+    generateOrderedUniqueId,
+    logger,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import { KeyType, KMSAlgo25Session } from '../models'
 import type { KeyPair } from '../models'
 import {
@@ -47,8 +51,8 @@ export const useAlgo25 = () => {
     }): Promise<Algo25KeyResult> => {
         const keyId = params?.id ?? generateOrderedUniqueId()
 
-        let seed: Uint8Array | undefined
-        let naclKeyPair: nacl.SignKeyPair | undefined
+        let seed: Optional<Uint8Array>
+        let naclKeyPair: Optional<nacl.SignKeyPair>
         let committedRoot = false
 
         try {

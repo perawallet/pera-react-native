@@ -28,10 +28,6 @@ import {
     CollectibleListItem,
 } from '@modules/assets/components'
 import { NftEmptyState } from '../NftEmptyState'
-import { ManageNftsBottomSheet } from '../ManageNftsBottomSheet'
-import { NftSortBottomSheet } from '../NftSortBottomSheet'
-import { NftFilterBottomSheet } from '../NftFilterBottomSheet'
-import { AddAssetBottomSheet } from '@modules/assets/components/AddAssetBottomSheet'
 import { LoadingView } from '@components/LoadingView'
 import { EmptyView } from '@components/EmptyView'
 import { CollectibleDisplayItem } from '@modules/assets/types/collectible'
@@ -62,27 +58,11 @@ export const AccountNfts = () => {
         galleryLayout,
         searchFilter,
         debouncedSearchFilter,
-        sortMode,
-        showOptedIn,
-        isAddNftSheetVisible,
-        showWatchAccounts,
-        isManageSheetVisible,
-        isSortSheetVisible,
-        isFilterSheetVisible,
         setSearchFilter,
         setGalleryLayout,
-        setSortMode,
-        setShowOptedIn,
-        setShowWatchAccounts,
         handlePress,
         openManageSheet,
-        closeManageSheet,
-        openSortSheet,
-        closeSortSheet,
-        openFilterSheet,
-        closeFilterSheet,
         openAddNftSheet,
-        closeAddNftSheet,
     } = useAccountNfts()
 
     const isGrid = galleryLayout === 'grid'
@@ -210,35 +190,8 @@ export const AccountNfts = () => {
                             />
                         }
                     />
-
-                    <ManageNftsBottomSheet
-                        isVisible={isManageSheetVisible}
-                        onClose={closeManageSheet}
-                        onSortPress={openSortSheet}
-                        onFilterPress={openFilterSheet}
-                    />
-                    <NftSortBottomSheet
-                        isVisible={isSortSheetVisible}
-                        onClose={closeSortSheet}
-                        sortMode={sortMode}
-                        onSortModeChange={setSortMode}
-                    />
-                    <NftFilterBottomSheet
-                        isVisible={isFilterSheetVisible}
-                        onClose={closeFilterSheet}
-                        showOptedIn={showOptedIn}
-                        showWatchAccounts={showWatchAccounts}
-                        onToggleWatchAccounts={setShowWatchAccounts}
-                        onToggleOptedIn={setShowOptedIn}
-                    />
                 </>
             )}
-
-            <AddAssetBottomSheet
-                variant='collectible'
-                isVisible={isAddNftSheetVisible}
-                onClose={closeAddNftSheet}
-            />
         </PWView>
     )
 }

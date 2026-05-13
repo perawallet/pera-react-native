@@ -12,6 +12,7 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { useKMSService, checkAccess } from '../useKMSServices'
 import { AccessControlPermission, KeyPair, KeyType } from '../../models'
 import { KeyAccessError } from '../../errors'
@@ -165,7 +166,7 @@ describe('useKMSService', () => {
 
             const { result } = renderHook(() => useKMSService())
 
-            let handlerResult: Uint8Array | undefined
+            let handlerResult: Optional<Uint8Array>
             await act(async () => {
                 handlerResult = await result.current.withExportedKey(
                     'ks-key-1',
@@ -222,7 +223,7 @@ describe('useKMSService', () => {
 
             const { result } = renderHook(() => useKMSService())
 
-            let mnemonic: string | undefined
+            let mnemonic: Optional<string>
             await act(async () => {
                 mnemonic = await result.current.withExportedKey(
                     'ks-key-1',

@@ -11,8 +11,6 @@
  */
 
 import { PinEditView } from '@modules/security/components/PinEditView'
-import { PassphraseAcknowledgeBottomSheet } from '../PassphraseAcknowledgeBottomSheet'
-import { ViewPassphraseBottomSheet } from '../ViewPassphraseBottomSheet'
 import { useViewPassphraseFlow } from './useViewPassphraseFlow'
 
 export type ViewPassphraseFlowProps = {
@@ -26,12 +24,11 @@ export const ViewPassphraseFlow = ({
     address,
     onClose,
 }: ViewPassphraseFlowProps) => {
-    const {
-        step,
-        handlePinSuccess,
-        handleAcknowledgeConfirm,
-        handleAcknowledgeClose,
-    } = useViewPassphraseFlow({ isVisible, onClose })
+    const { step, handlePinSuccess } = useViewPassphraseFlow({
+        isVisible,
+        address,
+        onClose,
+    })
 
     // PinEditView is mounted only while we're in the 'pin' step. Keeping it
     // always-mounted (toggling `mode` to null) relies on gorhom's
@@ -42,24 +39,10 @@ export const ViewPassphraseFlow = ({
     // titleless PIN sheet you can't dismiss). Unmounting drops the modal
     // from the stack entirely.
     return (
-        <>
-            {step === 'pin' && (
-                <PinEditView
-                    mode='verify'
-                    onSuccess={handlePinSuccess}
-                    onClose={onClose}
-                />
-            )}
-            <PassphraseAcknowledgeBottomSheet
-                isVisible={step === 'acknowledge'}
-                onClose={handleAcknowledgeClose}
-                onConfirm={handleAcknowledgeConfirm}
-            />
-            <ViewPassphraseBottomSheet
-                isVisible={step === 'display'}
-                address={address}
-                onClose={onClose}
-            />
-        </>
+        <PinEditView
+            mode={step === 'pin' ? 'verify' : null}
+            onSuccess={handlePinSuccess}
+            onClose={onClose}
+        />
     )
 }

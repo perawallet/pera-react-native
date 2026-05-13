@@ -19,12 +19,10 @@ import {
     KeyboardAvoidingView,
     SectionList,
 } from 'react-native'
-import { useState } from 'react'
 import { useStyles } from './styles'
 import { useAccountHistory, type TransactionSection } from './useAccountHistory'
 import { TransactionListItem } from '@modules/transactions/components/TransactionListItem'
 import { TransactionDateHeader } from '@modules/transactions/components/TransactionDateHeader'
-import { TransactionsFilterBottomSheet } from '../TransactionsFilterBottomSheet'
 
 const TAB_AND_HEADER_HEIGHT = 100
 
@@ -44,13 +42,9 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
         handleExportCsv,
         isExportingCsv,
         isCsvExportVisible,
-        activeFilter,
-        customRange,
-        handleApplyFilter,
+        handleOpenFilter,
         handleTransactionPress,
     } = useAccountHistory()
-
-    const [isFilterVisible, setIsFilterVisible] = useState(false)
 
     const renderItem = ({ item }: { item: TransactionHistoryItem }) => (
         <TransactionListItem
@@ -131,7 +125,7 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
                                         variant='helper'
                                         style={styles.transparentButton}
                                         paddingStyle='dense'
-                                        onPress={() => setIsFilterVisible(true)}
+                                        onPress={handleOpenFilter}
                                     />
                                     {isCsvExportVisible && (
                                         <PWButton
@@ -160,14 +154,6 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
                     </PWView>
                 )}
             </PWTouchableOpacity>
-
-            <TransactionsFilterBottomSheet
-                isVisible={isFilterVisible}
-                onClose={() => setIsFilterVisible(false)}
-                activeFilter={activeFilter}
-                onApplyFilter={handleApplyFilter}
-                initialCustomRange={customRange}
-            />
         </KeyboardAvoidingView>
     )
 }

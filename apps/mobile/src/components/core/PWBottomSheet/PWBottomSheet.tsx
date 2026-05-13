@@ -25,7 +25,7 @@ import {
     useRef,
 } from 'react'
 import { useStyles } from './styles'
-import { StyleProp, ViewStyle } from 'react-native'
+import { Keyboard, StyleProp, ViewStyle } from 'react-native'
 import { NotifierRoot, NotifierWrapper } from 'react-native-notifier'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -91,11 +91,14 @@ export const PWBottomSheet = ({
     const defaults = DEFAULT_PROPS[size]
     const styles = useStyles({ insets, isFull: size === 'full' })
 
-    // Sync isVisible prop with modal state
+    // Sync isVisible prop with modal state. Dismiss the keyboard on the
+    // outgoing transition so a sheet that owns a focused input doesn't leave
+    // the keyboard stuck open over the rest of the app.
     useEffect(() => {
         if (isVisible) {
             bottomSheetModalRef.current?.present()
         } else {
+            Keyboard.dismiss()
             bottomSheetModalRef.current?.dismiss()
         }
     }, [isVisible])
@@ -132,6 +135,16 @@ export const PWBottomSheet = ({
         onDismiss?.()
     }, [onBackdropPress, onDismiss])
 
+    // Pan-down / backdrop dismissals bypass the isVisible flow. Listen to the
+    // animation transitioning toward index -1 (closed) and dismiss the
+    // keyboard at the start of that animation so it doesn't linger after the
+    // sheet finishes closing.
+    const handleAnimate = useCallback((_from: number, toIndex: number) => {
+        if (toIndex === -1) {
+            Keyboard.dismiss()
+        }
+    }, [])
+
     // Merge background style with containerStyle for backward compatibility
     const mergedBackgroundStyle = containerStyle
         ? [styles.background, containerStyle]
@@ -144,6 +157,7 @@ export const PWBottomSheet = ({
             enableDynamicSizing={defaults.enableDynamicSizing}
             backdropComponent={renderBackdrop}
             onDismiss={handleDismiss}
+            onAnimate={handleAnimate}
             handleIndicatorStyle={
                 enablePanDownToClose ? styles.handleIndicator : styles.hidden
             }
@@ -154,6 +168,7 @@ export const PWBottomSheet = ({
             enablePanDownToClose={enablePanDownToClose}
             enableContentPanningGesture={enableContentPanningGesture}
             enableOverDrag={false}
+            bottomInset={insets.bottom}
         >
             <NotifierWrapper
                 omitGlobalMethodsHookup

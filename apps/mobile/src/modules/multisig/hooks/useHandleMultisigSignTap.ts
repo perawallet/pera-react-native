@@ -32,7 +32,7 @@ export type UseHandleMultisigSignTapResult = (
  * least one unsigned participant key, dispatch a `multisig-cosign`
  * SignRequest per local signer so the signing pipeline opens the sign
  * bottom sheet directly. Slow path (already signed, no local key, or
- * non-actionable status): open `PendingSignaturesBottomSheet` so the
+ * non-actionable status): open `PendingSignaturesContent` so the
  * user can review signer status.
  */
 export const useHandleMultisigSignTap = (): UseHandleMultisigSignTapResult => {

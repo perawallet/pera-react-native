@@ -1,0 +1,939 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { renderHook, act } from '@testing-library/react'
+import { useAccountOptions } from '../useAccountOptions'
+import { AccountTypes, WalletAccount } from '@perawallet/wallet-core-accounts'
+
+const { mockCopyToClipboard } = vi.hoisted(() => ({
+    mockCopyToClipboard: vi.fn(),
+}))
+const { mockShowToast } = vi.hoisted(() => ({ mockShowToast: vi.fn() }))
+const { mockNavigate } = vi.hoisted(() => ({ mockNavigate: vi.fn() }))
+const { mockIsAccountEnabled, mockSetAccountEnabled } = vi.hoisted(() => ({
+    mockIsAccountEnabled: vi.fn(() => true),
+    mockSetAccountEnabled: vi.fn(),
+}))
+const { mockRemoveAccountById } = vi.hoisted(() => ({
+    mockRemoveAccountById: vi.fn(),
+}))
+const { mockAllAccounts } = vi.hoisted(() => ({
+    mockAllAccounts: vi.fn((): WalletAccount[] => []),
+}))
+const { mockUpdateAccount } = vi.hoisted(() => ({
+    mockUpdateAccount: vi.fn(),
+}))
+const { mockUseAccountLogicalType } = vi.hoisted(() => ({
+    mockUseAccountLogicalType: vi.fn<(address?: string) => string | null>(
+        () => 'Algo25',
+    ),
+}))
+const { mockRequestBottomSheet } = vi.hoisted(() => ({
+    mockRequestBottomSheet: vi.fn(),
+}))
+
+vi.mock('@hooks/useClipboard', () => ({
+    useClipboard: () => ({
+        copyToClipboard: mockCopyToClipboard,
+    }),
+}))
+
+vi.mock('@hooks/useToast', () => ({
+    useToast: () => ({
+        showToast: mockShowToast,
+    }),
+}))
+
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({
+        t: (key: string) => key,
+    }),
+}))
+
+vi.mock('@hooks/useAppNavigation', () => ({
+    useAppNavigation: () => ({
+        navigate: mockNavigate,
+    }),
+}))
+
+vi.mock('@perawallet/wallet-core-messages', () => ({
+    useNotificationPreferences: () => ({
+        disabledAccounts: [],
+        isAccountEnabled: mockIsAccountEnabled,
+        setAccountEnabled: mockSetAccountEnabled,
+    }),
+}))
+
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({
+        request: mockRequestBottomSheet,
+        requestByType: vi.fn(),
+        dismiss: vi.fn(),
+        dismissAll: vi.fn(),
+    }),
+}))
+
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-accounts')
+        >()
+    return {
+        ...actual,
+        useRemoveAccountById: () => mockRemoveAccountById,
+        useUpdateAccount: () => mockUpdateAccount,
+        useAllAccounts: () => mockAllAccounts(),
+        useAccountLogicalType: (address?: string) =>
+            mockUseAccountLogicalType(address),
+    }
+})
+
+describe('useAccountOptions', () => {
+    const mockOnClose = vi.fn()
+    const mockOnShowAddress = vi.fn()
+
+    const algo25Account: WalletAccount = {
+        id: 'acc-1',
+        address: 'ALGO25ADDRESS',
+        type: AccountTypes.algo25,
+        keyPairId: 'key-1',
+        name: 'My Account',
+    }
+
+    const watchAccount: WalletAccount = {
+        id: 'acc-2',
+        address: 'WATCHADDRESS',
+        type: AccountTypes.watch,
+    }
+
+    const rekeyedAccount: WalletAccount = {
+        id: 'acc-3',
+        address: 'REKEYEDADDRESS',
+        type: AccountTypes.algo25,
+        keyPairId: 'key-3',
+        rekeyAddress: 'AUTHADDRESS',
+    }
+
+    const rekeyedWatchAccount: WalletAccount = {
+        id: 'acc-5',
+        address: 'REKEYEDWATCHADDRESS',
+        type: AccountTypes.watch,
+        rekeyAddress: 'ALGO25ADDRESS',
+    }
+
+    const hardwareAccount: WalletAccount = {
+        id: 'acc-4',
+        address: 'HARDWAREADDRESS',
+        type: AccountTypes.hardware,
+        hardwareDetails: {
+            manufacturer: 'ledger',
+            deviceId: 'test-device',
+            deviceName: 'Ledger Nano X',
+            accountIndex: 0,
+            transportType: 'ble',
+        },
+    }
+
+    const multisigAccount: WalletAccount = {
+        id: 'acc-6',
+        address: 'MULTISIGADDRESS',
+        type: AccountTypes.multisig,
+        multisigDetails: {
+            threshold: 2,
+            addresses: ['ALGO25ADDRESS', 'HARDWAREADDRESS'],
+        },
+    }
+
+    beforeEach(() => {
+        vi.clearAllMocks()
+        mockIsAccountEnabled.mockReturnValue(true)
+        mockAllAccounts.mockReturnValue([algo25Account, watchAccount])
+        mockUseAccountLogicalType.mockImplementation((address?: string) => {
+            switch (address) {
+                case algo25Account.address:
+                    return 'Algo25'
+                case watchAccount.address:
+                    return 'NoAuth'
+                case rekeyedAccount.address:
+                    return 'RekeyedAuth'
+                case rekeyedWatchAccount.address:
+                    return 'RekeyedAuth'
+                case hardwareAccount.address:
+                    return 'LedgerBle'
+                case multisigAccount.address:
+                    return 'Multisig'
+                default:
+                    return null
+            }
+        })
+    })
+
+    describe('option visibility', () => {
+        it('shows all options for a regular algo25 account', () => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const optionIds = result.current.options.map(o => o.id)
+            expect(optionIds).toEqual([
+                'copy-address',
+                'show-address',
+                'view-passphrase',
+                'rekey-to-ledger',
+                'rekey-to-standard',
+                'rename-account',
+                'toggle-notifications',
+                'remove-account',
+            ])
+        })
+
+        it('shows only applicable options for a watch account', () => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: watchAccount,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const optionIds = result.current.options.map(o => o.id)
+            expect(optionIds).toEqual([
+                'copy-address',
+                'show-address',
+                'rename-account',
+                'toggle-notifications',
+                'remove-account',
+            ])
+        })
+
+        it('shows all options including rekey for a rekeyed account', () => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: rekeyedAccount,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const optionIds = result.current.options.map(o => o.id)
+            expect(optionIds).toEqual([
+                'copy-address',
+                'show-address',
+                'auth-address',
+                'undo-rekey',
+                'rekey-to-ledger',
+                'rekey-to-standard',
+                'rename-account',
+                'toggle-notifications',
+                'remove-account',
+            ])
+        })
+
+        it('shows undo-rekey for a rekeyed watch account whose auth account we hold', () => {
+            mockAllAccounts.mockReturnValue([
+                algo25Account,
+                rekeyedWatchAccount,
+            ])
+
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: rekeyedWatchAccount,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const optionIds = result.current.options.map(o => o.id)
+            expect(optionIds).toContain('auth-address')
+            expect(optionIds).toContain('rekey-to-ledger')
+            expect(optionIds).toContain('rekey-to-standard')
+            expect(optionIds).toContain('undo-rekey')
+            expect(optionIds).not.toContain('view-passphrase')
+            expect(optionIds).not.toContain('rekey-to-shared')
+        })
+
+        it('shows rekey options but hides passphrase for a hardware account', () => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: hardwareAccount,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const optionIds = result.current.options.map(o => o.id)
+            expect(optionIds).toEqual([
+                'copy-address',
+                'show-address',
+                'rekey-to-ledger',
+                'rekey-to-standard',
+                'rename-account',
+                'toggle-notifications',
+                'remove-account',
+            ])
+        })
+
+        it('shows rekey-to-shared and export options for a shared account', () => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: multisigAccount,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const optionIds = result.current.options.map(o => o.id)
+            expect(optionIds).toEqual([
+                'copy-address',
+                'show-address',
+                'rekey-to-shared',
+                'export-share-account',
+                'rename-account',
+                'toggle-notifications',
+                'remove-account',
+            ])
+            expect(optionIds).not.toContain('rekey-to-ledger')
+            expect(optionIds).not.toContain('rekey-to-standard')
+        })
+    })
+
+    describe('handlers', () => {
+        it('copies address and closes when copy address is pressed', () => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const copyOption = result.current.options.find(
+                o => o.id === 'copy-address',
+            )
+
+            act(() => {
+                copyOption?.onPress()
+            })
+
+            expect(mockCopyToClipboard).toHaveBeenCalledWith('ALGO25ADDRESS')
+            expect(mockOnClose).toHaveBeenCalled()
+        })
+
+        it('includes truncated address as subtitle on copy-address option', () => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const copyOption = result.current.options.find(
+                o => o.id === 'copy-address',
+            )
+
+            expect(copyOption?.subtitle).toBeDefined()
+            expect(copyOption?.subtitle).toBe('ALGO25ADDRESS')
+        })
+
+        it('toggles notifications from enabled to disabled', () => {
+            mockIsAccountEnabled.mockReturnValue(true)
+
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const notifOption = result.current.options.find(
+                o => o.id === 'toggle-notifications',
+            )
+
+            act(() => {
+                notifOption?.onPress()
+            })
+
+            expect(mockSetAccountEnabled).toHaveBeenCalledWith(
+                'ALGO25ADDRESS',
+                false,
+            )
+            expect(mockShowToast).toHaveBeenCalledWith({
+                title: 'account_options.notifications_muted',
+                body: '',
+                type: 'success',
+            })
+            expect(mockOnClose).toHaveBeenCalled()
+        })
+
+        it('toggles notifications from disabled to enabled', () => {
+            mockIsAccountEnabled.mockReturnValue(false)
+
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const notifOption = result.current.options.find(
+                o => o.id === 'toggle-notifications',
+            )
+
+            act(() => {
+                notifOption?.onPress()
+            })
+
+            expect(mockSetAccountEnabled).toHaveBeenCalledWith(
+                'ALGO25ADDRESS',
+                true,
+            )
+            expect(mockShowToast).toHaveBeenCalledWith({
+                title: 'account_options.notifications_unmuted',
+                body: '',
+                type: 'success',
+            })
+        })
+
+        it('closes options sheet and requests rename bottom sheet when pressed', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const renameOption = result.current.options.find(
+                o => o.id === 'rename-account',
+            )
+
+            await act(async () => {
+                await renameOption?.onPress()
+            })
+
+            expect(mockOnClose).toHaveBeenCalled()
+            expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+            const arg = mockRequestBottomSheet.mock.calls[0][0]
+            expect(arg.options).toEqual({
+                size: 'auto',
+                enablePanDownToClose: true,
+            })
+        })
+
+        it('updates the account with the trimmed name returned by the rename sheet', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce('New Name')
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const renameOption = result.current.options.find(
+                o => o.id === 'rename-account',
+            )
+
+            await act(async () => {
+                await renameOption?.onPress()
+            })
+
+            expect(mockUpdateAccount).toHaveBeenCalledWith({
+                ...algo25Account,
+                name: 'New Name',
+            })
+            expect(mockShowToast).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    title: 'account_options.rename_success',
+                    type: 'success',
+                }),
+                expect.anything(),
+            )
+        })
+
+        it('does not update the account when rename is cancelled', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const renameOption = result.current.options.find(
+                o => o.id === 'rename-account',
+            )
+
+            await act(async () => {
+                await renameOption?.onPress()
+            })
+
+            expect(mockUpdateAccount).not.toHaveBeenCalled()
+        })
+
+        it('requests backup warning bottom sheet when remove is pressed for non-watch account', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const removeOption = result.current.options.find(
+                o => o.id === 'remove-account',
+            )
+
+            await act(async () => {
+                await removeOption?.onPress()
+            })
+
+            expect(mockOnClose).toHaveBeenCalled()
+            expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+            const arg = mockRequestBottomSheet.mock.calls[0][0]
+            expect(arg.options).toEqual({
+                size: 'auto',
+                enablePanDownToClose: true,
+            })
+            // Backup warning cancelled — should not proceed to remove
+            expect(mockRemoveAccountById).not.toHaveBeenCalled()
+        })
+
+        it('skips backup warning and goes straight to remove confirm for watch account', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: watchAccount,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const removeOption = result.current.options.find(
+                o => o.id === 'remove-account',
+            )
+
+            await act(async () => {
+                await removeOption?.onPress()
+            })
+
+            expect(mockOnClose).toHaveBeenCalled()
+            // Only one sheet (the confirm) requested, no backup warning
+            expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+        })
+
+        it("opens remove confirm when backup warning resolves with 'continue'", async () => {
+            mockRequestBottomSheet
+                .mockResolvedValueOnce('continue')
+                .mockResolvedValueOnce(undefined)
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const removeOption = result.current.options.find(
+                o => o.id === 'remove-account',
+            )
+
+            await act(async () => {
+                await removeOption?.onPress()
+            })
+
+            expect(mockRequestBottomSheet).toHaveBeenCalledTimes(2)
+        })
+
+        it("removes account and navigates home when confirm sheet resolves with 'confirm'", async () => {
+            mockRequestBottomSheet
+                .mockResolvedValueOnce('continue')
+                .mockResolvedValueOnce('confirm')
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const removeOption = result.current.options.find(
+                o => o.id === 'remove-account',
+            )
+
+            await act(async () => {
+                await removeOption?.onPress()
+            })
+
+            expect(mockRemoveAccountById).toHaveBeenCalledWith('acc-1')
+            expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+                screen: 'Home',
+            })
+        })
+
+        it('copies rekey auth address when auth address option is pressed', () => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: rekeyedAccount,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const authOption = result.current.options.find(
+                o => o.id === 'auth-address',
+            )
+
+            act(() => {
+                authOption?.onPress()
+            })
+
+            expect(mockCopyToClipboard).toHaveBeenCalledWith('AUTHADDRESS')
+            expect(mockOnClose).toHaveBeenCalled()
+        })
+
+        it('shows notification mute label when notifications are enabled', () => {
+            mockIsAccountEnabled.mockReturnValue(true)
+
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const notifOption = result.current.options.find(
+                o => o.id === 'toggle-notifications',
+            )
+
+            expect(notifOption?.title).toBe(
+                'account_options.mute_notifications',
+            )
+            expect(notifOption?.icon).toBe('bell')
+        })
+
+        it('shows notification unmute label when notifications are disabled', () => {
+            mockIsAccountEnabled.mockReturnValue(false)
+
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const notifOption = result.current.options.find(
+                o => o.id === 'toggle-notifications',
+            )
+
+            expect(notifOption?.title).toBe(
+                'account_options.unmute_notifications',
+            )
+            expect(notifOption?.icon).toBe('bell')
+        })
+
+        it('calls onShowAddress when show-address option is pressed', () => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const showOption = result.current.options.find(
+                o => o.id === 'show-address',
+            )
+
+            act(() => {
+                showOption?.onPress()
+            })
+
+            expect(mockOnClose).toHaveBeenCalled()
+            expect(mockOnShowAddress).toHaveBeenCalled()
+        })
+
+        it('opens the passphrase flow without dismissing the parent sheet when view-passphrase is pressed', () => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            expect(result.current.isPassphraseFlowVisible).toBe(false)
+
+            const passphraseOption = result.current.options.find(
+                o => o.id === 'view-passphrase',
+            )
+
+            act(() => {
+                passphraseOption?.onPress()
+            })
+
+            // Parent options sheet stays mounted; legacy passphrase flow renders on top
+            expect(mockOnClose).not.toHaveBeenCalled()
+            expect(result.current.isPassphraseFlowVisible).toBe(true)
+        })
+
+        it('hides the passphrase flow when handleClosePassphraseFlow is called', () => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const passphraseOption = result.current.options.find(
+                o => o.id === 'view-passphrase',
+            )
+
+            act(() => {
+                passphraseOption?.onPress()
+            })
+
+            expect(result.current.isPassphraseFlowVisible).toBe(true)
+
+            act(() => {
+                result.current.handleClosePassphraseFlow()
+            })
+
+            expect(result.current.isPassphraseFlowVisible).toBe(false)
+        })
+
+        it('shows not implemented toast for rekey-to-ledger', () => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const rekeyOption = result.current.options.find(
+                o => o.id === 'rekey-to-ledger',
+            )
+
+            act(() => {
+                rekeyOption?.onPress()
+            })
+
+            expect(mockShowToast).toHaveBeenCalledWith({
+                title: 'common.not_implemented.title',
+                body: 'common.not_implemented.body',
+                type: 'error',
+            })
+        })
+
+        it('shows not implemented toast for rekey-to-standard', () => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const rekeyOption = result.current.options.find(
+                o => o.id === 'rekey-to-standard',
+            )
+
+            act(() => {
+                rekeyOption?.onPress()
+            })
+
+            expect(mockShowToast).toHaveBeenCalledWith({
+                title: 'common.not_implemented.title',
+                body: 'common.not_implemented.body',
+                type: 'error',
+            })
+        })
+
+        it('shows not implemented toast for rekey-to-shared', () => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: multisigAccount,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const rekeyOption = result.current.options.find(
+                o => o.id === 'rekey-to-shared',
+            )
+
+            act(() => {
+                rekeyOption?.onPress()
+            })
+
+            expect(mockShowToast).toHaveBeenCalledWith({
+                title: 'common.not_implemented.title',
+                body: 'common.not_implemented.body',
+                type: 'error',
+            })
+        })
+
+        it('closes the options sheet and requests the export-share sheet when pressed', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: multisigAccount,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const exportOption = result.current.options.find(
+                o => o.id === 'export-share-account',
+            )
+
+            await act(async () => {
+                await exportOption?.onPress()
+            })
+
+            expect(mockOnClose).toHaveBeenCalled()
+            expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+            const arg = mockRequestBottomSheet.mock.calls[0][0]
+            expect(arg.options).toEqual({
+                size: 'auto',
+                enablePanDownToClose: true,
+            })
+        })
+
+        it('shows not implemented toast for undo-rekey', () => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: rekeyedAccount,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const undoOption = result.current.options.find(
+                o => o.id === 'undo-rekey',
+            )
+
+            act(() => {
+                undoOption?.onPress()
+            })
+
+            expect(mockShowToast).toHaveBeenCalledWith({
+                title: 'common.not_implemented.title',
+                body: 'common.not_implemented.body',
+                type: 'error',
+            })
+        })
+
+        it('does not navigate when removing the last account', async () => {
+            mockAllAccounts.mockReturnValue([algo25Account])
+            mockRequestBottomSheet
+                .mockResolvedValueOnce('continue')
+                .mockResolvedValueOnce('confirm')
+
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const removeOption = result.current.options.find(
+                o => o.id === 'remove-account',
+            )
+
+            await act(async () => {
+                await removeOption?.onPress()
+            })
+
+            expect(mockRemoveAccountById).toHaveBeenCalledWith('acc-1')
+            expect(mockNavigate).not.toHaveBeenCalled()
+        })
+
+        it('shows error toast and prevents removal when account has rekeyed dependents', async () => {
+            const rekeyedToAlgo25: WalletAccount = {
+                id: 'acc-rekeyed',
+                address: 'SOMEOTHERADDRESS',
+                type: AccountTypes.algo25,
+                keyPairId: 'key-rekeyed',
+                rekeyAddress: 'ALGO25ADDRESS',
+            }
+            mockAllAccounts.mockReturnValue([algo25Account, rekeyedToAlgo25])
+            mockRequestBottomSheet
+                .mockResolvedValueOnce('continue')
+                .mockResolvedValueOnce('confirm')
+
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const removeOption = result.current.options.find(
+                o => o.id === 'remove-account',
+            )
+
+            await act(async () => {
+                await removeOption?.onPress()
+            })
+
+            expect(mockRemoveAccountById).not.toHaveBeenCalled()
+            expect(mockShowToast).toHaveBeenCalledWith({
+                title: 'account_options.remove_rekey_error_title',
+                body: 'account_options.remove_rekey_error_message',
+                type: 'error',
+            })
+        })
+
+        it('allows removal when no other accounts are rekeyed to it', async () => {
+            mockAllAccounts.mockReturnValue([algo25Account, rekeyedAccount])
+            mockRequestBottomSheet
+                .mockResolvedValueOnce('continue')
+                .mockResolvedValueOnce('confirm')
+
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const removeOption = result.current.options.find(
+                o => o.id === 'remove-account',
+            )
+
+            await act(async () => {
+                await removeOption?.onPress()
+            })
+
+            expect(mockRemoveAccountById).toHaveBeenCalledWith('acc-1')
+        })
+    })
+})

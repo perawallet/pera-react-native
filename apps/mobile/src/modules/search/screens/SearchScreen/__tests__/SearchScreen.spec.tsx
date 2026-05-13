@@ -33,8 +33,7 @@ const mockOnAssetPress = vi.fn()
 const mockOnExpandSection = vi.fn()
 const mockSetValue = vi.fn()
 const mockToggleScope = vi.fn()
-const mockFilterOpen = vi.fn()
-const mockFilterClose = vi.fn()
+const mockOpenFilterSheet = vi.fn()
 
 type MockState = {
     value: string
@@ -58,11 +57,7 @@ vi.mock('../useSearchScreen', () => ({
         isLoading: mockState.isLoading,
         scopes: ['accounts', 'contacts', 'assets'],
         toggleScope: mockToggleScope,
-        filterSheetState: {
-            isOpen: false,
-            open: mockFilterOpen,
-            close: mockFilterClose,
-        },
+        openFilterSheet: mockOpenFilterSheet,
         onAccountPress: mockOnAccountPress,
         onContactPress: mockOnContactPress,
         onAssetPress: mockOnAssetPress,

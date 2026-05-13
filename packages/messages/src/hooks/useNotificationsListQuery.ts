@@ -21,7 +21,7 @@ import {
 } from '../api/notifications'
 import type { PeraNotification } from '../models'
 import { getNotificationsListQueryKey } from './querykeys'
-import { Maybe, Nullable } from '@perawallet/wallet-core-shared'
+import { Maybe, Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 const mapNotificationResponseToNotification = (
     response: NotificationResponse,
@@ -54,7 +54,7 @@ export const useNotificationsListQuery = () => {
             fetchNotificationList(
                 network,
                 deviceID ?? '',
-                pageParam as string | undefined,
+                pageParam as Optional<string>,
             ),
         initialPageParam: '',
         getNextPageParam: lastPage => extractCursor(lastPage.next),

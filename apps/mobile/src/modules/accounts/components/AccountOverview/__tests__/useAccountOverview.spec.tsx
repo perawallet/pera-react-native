@@ -20,11 +20,40 @@ const {
     mockSetCanSelectAccount,
     mockBalancesPending,
     mockHistoryPending,
+    mockRequestBottomSheet,
 } = vi.hoisted(() => ({
     mockSetSelectedAccount: vi.fn(),
     mockSetCanSelectAccount: vi.fn(),
     mockBalancesPending: { value: false },
     mockHistoryPending: { value: false },
+    mockRequestBottomSheet: vi.fn(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (_req: any) => Promise.resolve(undefined) as Promise<unknown>,
+    ),
+}))
+
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({
+        request: mockRequestBottomSheet,
+        requestByType: vi.fn(),
+        dismiss: vi.fn(),
+        dismissAll: vi.fn(),
+    }),
+}))
+
+vi.mock('../../AccountOptionsContent', () => ({
+    AccountOptionsContent: () => null,
+}))
+
+vi.mock(
+    '@modules/transactions/components/receive-funds/ReceiveFundsContent',
+    () => ({
+        ReceiveFundsContent: () => null,
+    }),
+)
+
+vi.mock('@modules/transactions/components/send-funds/SendFundsContent', () => ({
+    SendFundsContent: () => null,
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -58,94 +87,59 @@ describe('useAccountOverview', () => {
         vi.clearAllMocks()
         mockBalancesPending.value = false
         mockHistoryPending.value = false
+        mockRequestBottomSheet.mockResolvedValue(undefined)
     })
 
-    it('opens send funds modal when openSendFunds is called', () => {
-        const { result } = renderUseAccountOverview()
-
-        expect(result.current.isSendFundsVisible).toBe(false)
-
-        act(() => {
-            result.current.openSendFunds()
-        })
-
-        expect(result.current.isSendFundsVisible).toBe(true)
-    })
-
-    it('closes send funds modal when handleCloseSendFunds is called', () => {
+    it('requests the send funds bottom sheet when openSendFunds is called', () => {
         const { result } = renderUseAccountOverview()
 
         act(() => {
             result.current.openSendFunds()
         })
 
-        expect(result.current.isSendFundsVisible).toBe(true)
-
-        act(() => {
-            result.current.handleCloseSendFunds()
+        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+        const arg = mockRequestBottomSheet.mock.calls[0]?.[0]
+        expect(arg?.options).toEqual({
+            size: 'lg',
+            enablePanDownToClose: true,
+            autoCreateContainer: false,
         })
-
-        expect(result.current.isSendFundsVisible).toBe(false)
     })
 
-    it('opens receive funds modal and sets selected account when openReceiveFunds is called', () => {
+    it('requests the receive funds bottom sheet and sets selected account when openReceiveFunds is called', () => {
         const { result } = renderUseAccountOverview()
-
-        expect(result.current.isReceiveFundsVisible).toBe(false)
 
         act(() => {
             result.current.openReceiveFunds()
         })
 
-        expect(result.current.isReceiveFundsVisible).toBe(true)
         expect(mockSetCanSelectAccount).toHaveBeenCalledWith(false)
         expect(mockSetSelectedAccount).toHaveBeenCalledWith({
             address: 'selected-address',
         })
+        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+        const arg = mockRequestBottomSheet.mock.calls[0]?.[0]
+        expect(arg?.options).toEqual({
+            size: 'lg',
+            enablePanDownToClose: true,
+            autoCreateContainer: false,
+        })
     })
 
-    it('closes receive funds modal when handleCloseReceiveFunds is called', () => {
-        const { result } = renderUseAccountOverview()
-
-        act(() => {
-            result.current.openReceiveFunds()
-        })
-
-        expect(result.current.isReceiveFundsVisible).toBe(true)
-
-        act(() => {
-            result.current.handleCloseReceiveFunds()
-        })
-
-        expect(result.current.isReceiveFundsVisible).toBe(false)
-    })
-
-    it('opens account options when openAccountOptions is called', () => {
-        const { result } = renderUseAccountOverview()
-
-        expect(result.current.isAccountOptionsVisible).toBe(false)
-
-        act(() => {
-            result.current.openAccountOptions()
-        })
-
-        expect(result.current.isAccountOptionsVisible).toBe(true)
-    })
-
-    it('closes account options when handleCloseAccountOptions is called', () => {
+    it('requests the account options bottom sheet when openAccountOptions is called', () => {
         const { result } = renderUseAccountOverview()
 
         act(() => {
             result.current.openAccountOptions()
         })
 
-        expect(result.current.isAccountOptionsVisible).toBe(true)
-
-        act(() => {
-            result.current.handleCloseAccountOptions()
+        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+        const arg = mockRequestBottomSheet.mock.calls[0]?.[0]
+        expect(arg?.options).toEqual({
+            size: 'lg',
+            enablePanDownToClose: true,
+            autoCreateContainer: false,
         })
-
-        expect(result.current.isAccountOptionsVisible).toBe(false)
     })
 
     it('starts with scrolling enabled', () => {

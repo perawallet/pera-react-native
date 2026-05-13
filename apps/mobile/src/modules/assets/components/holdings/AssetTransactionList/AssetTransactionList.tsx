@@ -21,7 +21,6 @@ import { useAssetTransactionList } from './useAssetTransactionList'
 import { TransactionListItem } from '@modules/transactions/components/TransactionListItem'
 import { TransactionDateHeader } from '@modules/transactions/components/TransactionDateHeader'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
-import { TransactionsFilterBottomSheet } from '@modules/accounts/components/TransactionsFilterBottomSheet'
 import type { TransactionSection } from '@modules/accounts/components/AccountHistory/useAccountHistory'
 
 export type AssetTransactionListProps = {
@@ -45,13 +44,8 @@ export const AssetTransactionList = ({
         handleExportCsv,
         isExportingCsv,
         isCsvExportVisible,
-        activeFilter,
-        customRange,
-        handleApplyFilter,
         handleTransactionPress,
-        isFilterVisible,
         handleOpenFilter,
-        handleCloseFilter,
     } = useAssetTransactionList({ account, asset })
 
     const renderItem = ({ item }: { item: TransactionHistoryItem }) => (
@@ -127,14 +121,6 @@ export const AssetTransactionList = ({
                         </PWView>
                     )
                 }
-            />
-
-            <TransactionsFilterBottomSheet
-                isVisible={isFilterVisible}
-                onClose={handleCloseFilter}
-                activeFilter={activeFilter}
-                onApplyFilter={handleApplyFilter}
-                initialCustomRange={customRange}
             />
         </>
     )

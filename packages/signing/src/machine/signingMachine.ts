@@ -15,6 +15,7 @@ import {
     toError,
     assertDefined,
     isRetryableError,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import type {
     SigningMachineContext,
@@ -43,7 +44,7 @@ import { SigningError } from '../pipeline/errors'
  */
 const getNextPendingSignerType = (
     context: SigningMachineContext,
-): ResolvedSignerType | undefined => {
+): Optional<ResolvedSignerType> => {
     if (!context.groupSignerTypes) return undefined
     const uniqueTypes = [...new Set(context.groupSignerTypes.values())]
     return uniqueTypes.find(t => !context.completedSignerTypes.includes(t))

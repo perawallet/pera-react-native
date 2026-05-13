@@ -16,10 +16,10 @@ import { getGroupTransactionsQueryKey } from './querykeys'
 import { mapIndexerTxToDisplayableTransaction } from '../utils/transactions'
 import type { PeraDisplayableTransaction } from '../models'
 import { useNetwork } from './useNetwork'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 type UseGroupTransactionsQueryParams = {
-    groupId: string | undefined
+    groupId: Optional<string>
     isEnabled?: boolean
 }
 

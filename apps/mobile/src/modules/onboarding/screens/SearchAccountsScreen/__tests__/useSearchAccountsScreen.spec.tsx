@@ -12,8 +12,9 @@
 
 import { renderHook, waitFor } from '@test-utils/render'
 import { vi } from 'vitest'
-import { useSearchAccountsScreen } from '../useSearchAccountsScreen'
 import { AccountTypes } from '@perawallet/wallet-core-accounts'
+import type { Optional } from '@perawallet/wallet-core-shared'
+import { useSearchAccountsScreen } from '../useSearchAccountsScreen'
 import type { SearchAccountsParams } from '../../../routes/types'
 
 const {
@@ -55,7 +56,7 @@ const {
                     derivationType: 9,
                 },
             },
-            createIfEmpty: undefined as boolean | undefined,
+            createIfEmpty: undefined as Optional<boolean>,
         } as SearchAccountsParams,
     },
 }))

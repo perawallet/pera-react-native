@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type {
     DataAnalyzer,
     SignableGroup,
@@ -34,7 +35,7 @@ export const createChainedAnalyzer = (
                 return EMPTY_SIGNABLE_ANALYSIS
             }
 
-            let result: SignableAnalysis | undefined
+            let result: Optional<SignableAnalysis>
 
             for (const analyzer of analyzers) {
                 const analysis = await analyzer.analyze(group, context)

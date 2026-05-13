@@ -12,12 +12,8 @@
 
 import { PWButton, PWScrollView, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { SwapAssetSelectionBottomSheet } from '../SwapAssetSelectionBottomSheet'
 import { SwapAmountSection } from '../SwapAmountSection'
-import { SwapConfigurationBottomSheet } from '../SwapConfigurationBottomSheet'
-import { SwapConfirmationBottomSheet } from '../SwapConfirmationBottomSheet'
 import { SwapPairHistoryWidget } from '../SwapPairHistoryWidget'
-import { SwapProviderBottomSheet } from '../SwapProviderBottomSheet'
 import { SwapProviderRow } from '../SwapProviderRow'
 import { SwapTopPairs } from '../SwapTopPairs'
 import { SwapFormControls } from './SwapFormControls'
@@ -37,129 +33,78 @@ export const SwapForm = () => {
         isQuoteFetching,
         isQuoteError,
         selectedQuote,
-        allQuotes,
-        selectedProviderName,
         providerSelectionMode,
         canSwap,
-        swapStatus,
-        payAssetModal,
-        receiveAssetModal,
-        configModal,
-        confirmModal,
-        providerModal,
         handlePayAmountChange,
         handleSwapDirection,
         handleMaxPress,
-        handlePayAssetSelected,
-        handleReceiveAssetSelected,
-        handleConfigApply,
-        handleProviderApply,
-        handleConfirmSwap,
+        handleOpenPayAssetSelection,
+        handleOpenReceiveAssetSelection,
+        handleOpenConfig,
+        handleOpenProvider,
         handleOpenConfirm,
-        handleCloseConfirm,
     } = useSwapForm()
 
     return (
-        <>
-            <PWScrollView contentContainerStyle={styles.formContainer}>
-                <PWView>
-                    <SwapAmountSection
-                        variant='pay'
-                        assetId={payAssetId}
-                        balance={payBalance}
-                        amount={payAmount}
-                        onAmountChange={handlePayAmountChange}
-                        onAssetPress={payAssetModal.open}
-                    />
+        <PWScrollView contentContainerStyle={styles.formContainer}>
+            <PWView>
+                <SwapAmountSection
+                    variant='pay'
+                    assetId={payAssetId}
+                    balance={payBalance}
+                    amount={payAmount}
+                    onAmountChange={handlePayAmountChange}
+                    onAssetPress={handleOpenPayAssetSelection}
+                />
 
-                    <SwapFormControls
-                        onSwapPress={handleSwapDirection}
-                        onMaxPress={handleMaxPress}
-                        onConfigurePress={configModal.open}
-                    />
+                <SwapFormControls
+                    onSwapPress={handleSwapDirection}
+                    onMaxPress={handleMaxPress}
+                    onConfigurePress={handleOpenConfig}
+                />
 
-                    <SwapAmountSection
-                        variant='receive'
-                        assetId={receiveAssetId}
-                        balance={receiveBalance}
-                        amount={receiveAmount}
-                        isLoading={isQuoteFetching && !receiveAmount}
-                        onAssetPress={receiveAssetModal.open}
-                    />
+                <SwapAmountSection
+                    variant='receive'
+                    assetId={receiveAssetId}
+                    balance={receiveBalance}
+                    amount={receiveAmount}
+                    isLoading={isQuoteFetching && !receiveAmount}
+                    onAssetPress={handleOpenReceiveAssetSelection}
+                />
+            </PWView>
+
+            {selectedQuote && (
+                <SwapProviderRow
+                    quote={selectedQuote}
+                    selectionMode={providerSelectionMode}
+                    onPress={handleOpenProvider}
+                />
+            )}
+
+            {isQuoteError && (
+                <PWView style={styles.errorContainer}>
+                    <PWText
+                        variant='body'
+                        style={styles.errorText}
+                    >
+                        {t('swap.quote.quote_error')}
+                    </PWText>
                 </PWView>
+            )}
 
-                {selectedQuote && (
-                    <SwapProviderRow
-                        quote={selectedQuote}
-                        selectionMode={providerSelectionMode}
-                        onPress={providerModal.open}
-                    />
-                )}
+            {selectedQuote && (
+                <PWButton
+                    variant='primary'
+                    title={t('swap.form.swap')}
+                    onPress={handleOpenConfirm}
+                    isDisabled={!canSwap}
+                    style={styles.swapButton}
+                    testID='swap-button'
+                />
+            )}
 
-                {isQuoteError && (
-                    <PWView style={styles.errorContainer}>
-                        <PWText
-                            variant='body'
-                            style={styles.errorText}
-                        >
-                            {t('swap.quote.quote_error')}
-                        </PWText>
-                    </PWView>
-                )}
-
-                {selectedQuote && (
-                    <PWButton
-                        variant='primary'
-                        title={t('swap.form.swap')}
-                        onPress={handleOpenConfirm}
-                        isDisabled={!canSwap}
-                        style={styles.swapButton}
-                        testID='swap-button'
-                    />
-                )}
-
-                <SwapPairHistoryWidget />
-                <SwapTopPairs />
-            </PWScrollView>
-
-            <SwapAssetSelectionBottomSheet
-                variant='from'
-                isVisible={payAssetModal.isOpen}
-                onClose={payAssetModal.close}
-                onAssetSelected={handlePayAssetSelected}
-                excludeAssetId={receiveAssetId}
-            />
-
-            <SwapAssetSelectionBottomSheet
-                variant='to'
-                isVisible={receiveAssetModal.isOpen}
-                onClose={receiveAssetModal.close}
-                onAssetSelected={handleReceiveAssetSelected}
-                excludeAssetId={payAssetId}
-                fromAssetId={payAssetId}
-            />
-
-            <SwapConfigurationBottomSheet
-                isVisible={configModal.isOpen}
-                onClose={configModal.close}
-                onApply={handleConfigApply}
-            />
-
-            <SwapConfirmationBottomSheet
-                isVisible={confirmModal.isOpen}
-                onClose={handleCloseConfirm}
-                onConfirm={handleConfirmSwap}
-                quote={selectedQuote}
-                swapStatus={swapStatus}
-            />
-
-            <SwapProviderBottomSheet
-                isVisible={providerModal.isOpen}
-                onClose={providerModal.close}
-                quotes={allQuotes}
-                selectedProviderName={selectedProviderName}
-                onApply={handleProviderApply}
-            />
-        </>
+            <SwapPairHistoryWidget />
+            <SwapTopPairs />
+        </PWScrollView>
     )
 }

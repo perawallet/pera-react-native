@@ -37,6 +37,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, renderHook, waitFor } from '@testing-library/react'
 
+import { type Optional } from '@perawallet/wallet-core-shared'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useBiometrics, usePinCode } from '@perawallet/wallet-core-security'
@@ -93,7 +94,7 @@ describe('Flow: Biometric authentication lifecycle', () => {
 
             // No PIN → withTypedSecret(PIN_RECORD_KEY_ID, ...) yields
             // undefined → enableBiometrics resolves false.
-            let enabled: boolean | undefined
+            let enabled: Optional<boolean>
             await act(async () => {
                 enabled = await result.current.enableBiometrics()
             })
@@ -120,7 +121,7 @@ describe('Flow: Biometric authentication lifecycle', () => {
             // approves authenticate() with `true`, so the PIN bytes
             // get copied under BIOMETRIC_BLOB_KEY_ID and isEnabled
             // flips to true.
-            let enabled: boolean | undefined
+            let enabled: Optional<boolean>
             await act(async () => {
                 enabled = await result.current.enableBiometrics()
             })
@@ -134,7 +135,7 @@ describe('Flow: Biometric authentication lifecycle', () => {
             })
 
             // Authentication resolves true via the stub.
-            let authResult: boolean | undefined
+            let authResult: Optional<boolean>
             await act(async () => {
                 authResult = await result.current.authenticateWithBiometrics()
             })
@@ -168,7 +169,7 @@ describe('Flow: Biometric authentication lifecycle', () => {
             })
             expect(result.current.isEnabled).toBe(false)
 
-            let authResult: boolean | undefined
+            let authResult: Optional<boolean>
             await act(async () => {
                 authResult = await result.current.authenticateWithBiometrics()
             })
@@ -202,7 +203,7 @@ describe('Flow: Biometric authentication lifecycle', () => {
             // see "biometrics enabled, last prompt failed".
             wireBiometricsService({ available: true, authenticate: false })
 
-            let authResult: boolean | undefined
+            let authResult: Optional<boolean>
             await act(async () => {
                 authResult = await result.current.authenticateWithBiometrics()
             })
@@ -222,7 +223,7 @@ describe('Flow: Biometric authentication lifecycle', () => {
             })
             expect(result.current.isEnabled).toBe(false)
 
-            let authResult: boolean | undefined
+            let authResult: Optional<boolean>
             await act(async () => {
                 authResult = await result.current.authenticateWithBiometrics()
             })

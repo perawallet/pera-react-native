@@ -18,6 +18,10 @@ import { useInboxQuery } from '@perawallet/wallet-core-messages'
 const mockPush = vi.fn()
 const mockErrorToast = vi.fn()
 
+const { mockRequestBottomSheet } = vi.hoisted(() => ({
+    mockRequestBottomSheet: vi.fn(),
+}))
+
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({
         push: mockPush,
@@ -39,6 +43,19 @@ vi.mock('@hooks/useToast', () => ({
 vi.mock('@perawallet/wallet-core-messages', () => ({
     useInboxQuery: vi.fn(),
     useCleanupDuplicateMultisigInvitations: vi.fn(),
+}))
+
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({
+        request: mockRequestBottomSheet,
+        requestByType: vi.fn(),
+        dismiss: vi.fn(),
+        dismissAll: vi.fn(),
+    }),
+}))
+
+vi.mock('@modules/messages/components/MultisigInvitationDetailContent', () => ({
+    MultisigInvitationDetailContent: () => null,
 }))
 
 const mockHandleMultisigSignTap = vi.fn()
@@ -98,7 +115,8 @@ describe('useInboxScreen', () => {
         })
     })
 
-    it('handleInboxItemPress sets selectedInvitation for multisig_import with ISO createdAt', () => {
+    it('handleInboxItemPress requests the multisig invitation bottom sheet for multisig_import', async () => {
+        mockRequestBottomSheet.mockResolvedValueOnce(undefined)
         const createdAt = new Date('2025-01-15T00:00:00.000Z')
         const importItem = {
             type: 'multisig_import' as const,
@@ -115,9 +133,7 @@ describe('useInboxScreen', () => {
 
         const { result } = renderHook(() => useInboxScreen())
 
-        expect(result.current.selectedInvitation).toBeNull()
-
-        act(() => {
+        await act(async () => {
             result.current.handleInboxItemPress(
                 importItem as unknown as Parameters<
                     typeof result.current.handleInboxItemPress
@@ -126,20 +142,12 @@ describe('useInboxScreen', () => {
         })
 
         expect(mockPush).not.toHaveBeenCalled()
-        expect(result.current.selectedInvitation).toEqual({
-            customId: 'msig-1',
-            createdAt: '2025-01-15T00:00:00.000Z',
-            address: 'MSIG_ADDR1',
-            version: 1,
-            threshold: 2,
-            participantAddresses: ['ADDR1', 'ADDR2'],
+        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+        const arg = mockRequestBottomSheet.mock.calls[0][0]
+        expect(arg.options).toEqual({
+            size: 'lg',
+            enablePanDownToClose: true,
         })
-
-        act(() => {
-            result.current.closeInvitation()
-        })
-
-        expect(result.current.selectedInvitation).toBeNull()
     })
 
     it('handleInboxItemPress delegates multisig_sign to the multisig sign-tap handler', () => {

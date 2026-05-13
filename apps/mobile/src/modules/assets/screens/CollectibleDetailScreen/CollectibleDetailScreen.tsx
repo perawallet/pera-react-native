@@ -23,10 +23,8 @@ import {
     PWView,
 } from '@components/core'
 import { MediaCarousel } from '@components/MediaCarousel'
-import { SendFundsBottomSheet } from '@modules/transactions/components/send-funds/SendFundsBottomSheet/SendFundsBottomSheet'
 import { FullScreenImageViewer } from '@modules/assets/screens/FullScreenImageViewer'
 import { ModelViewerBottomSheet } from '@components/ModelViewerBottomSheet'
-import { OptOutConfirmationBottomSheet } from '@modules/accounts/components/AccountAssetList/OptOutConfirmationBottomSheet'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useCollectibleDetail } from './useCollectibleDetail'
@@ -60,21 +58,15 @@ export const CollectibleDetailScreen = ({
         accountAddress,
         assetAmount,
         isOptedInNotOwned,
-        optOutModal,
-        isOptingOut,
-        assetBalance,
-        accountName,
         handleSendPressed,
         handleSharePressed,
         handleMediaPress,
         handleCopyImage,
         handleSaveImage,
         handleOptOutPressed,
-        handleConfirmOptOut,
         fullScreenMedia,
         fullScreenInitialIndex,
         fullScreenViewerModal,
-        sendFundsModal,
         modelViewerModal,
         modelViewerUrl,
     } = useCollectibleDetail(assetId)
@@ -234,20 +226,6 @@ export const CollectibleDetailScreen = ({
                 isVisible={modelViewerModal.isOpen}
                 onClose={modelViewerModal.close}
                 modelUrl={modelViewerUrl ?? ''}
-            />
-            <SendFundsBottomSheet
-                assetId={assetId}
-                isVisible={sendFundsModal.isOpen}
-                onClose={sendFundsModal.close}
-            />
-            <OptOutConfirmationBottomSheet
-                isVisible={optOutModal.isOpen}
-                onClose={optOutModal.close}
-                accountBalance={assetBalance}
-                accountAddress={accountAddress}
-                accountName={accountName}
-                onConfirmOptOut={handleConfirmOptOut}
-                isLoading={isOptingOut}
             />
         </PWView>
     )

@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Optional } from './types'
+
 /**
  * Calculates the next backoff interval using exponential backoff.
  * @param currentInterval The current interval in milliseconds.
@@ -87,7 +89,7 @@ export function withTimeout<T>(
     operation: string,
     rejectWith?: (operation: string, ms: number) => Error,
 ): Promise<T> {
-    let timerId: ReturnType<typeof setTimeout> | undefined
+    let timerId: Optional<ReturnType<typeof setTimeout>>
     return new Promise<T>((resolve, reject) => {
         timerId = setTimeout(() => {
             const error = rejectWith

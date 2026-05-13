@@ -38,6 +38,7 @@ import React, {
     useMemo,
     useState,
 } from 'react'
+import { type Optional } from '@perawallet/wallet-core-shared'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -64,7 +65,7 @@ type NavigationApi = {
     dispatch: (action: unknown) => void
     reset: (state: unknown) => void
     setOptions: (options: unknown) => void
-    getParent: () => NavigationApi | undefined
+    getParent: () => Optional<NavigationApi>
     getState: () => { routes: RouteState[]; index: number }
 }
 
@@ -260,6 +261,15 @@ export const createNavigationContainerRef = () => ({
     current: null,
 })
 
+// Bottom-sheet hosts wrap their portal children with
+// `<NavigationContainerRefContext.Provider value={navigationRef}>` (see
+// apps/mobile/src/modules/bottom-sheet/components/BottomSheetHost/BottomSheetHost.tsx)
+// so navigation hooks keep working across the portal. The integration mock
+// replaces `@react-navigation/native` wholesale with this module, so we need
+// to export the context — without it, the import is `undefined` and rendering
+// the bottom-sheet host throws.
+export const NavigationContainerRefContext = createContext<unknown>(null)
+
 export const StackActions = {
     replace: (name: string, params?: Record<string, unknown>) => ({
         type: 'REPLACE' as const,
@@ -320,9 +330,9 @@ const collectScreens = (children: React.ReactNode): ScreenConfig[] => {
             screens.push({
                 name: props.name,
                 component,
-                initialParams: props.initialParams as
-                    | Record<string, unknown>
-                    | undefined,
+                initialParams: props.initialParams as Optional<
+                    Record<string, unknown>
+                >,
             })
         }
         // Recurse into Group / Fragment children

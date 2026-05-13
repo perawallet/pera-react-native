@@ -16,7 +16,7 @@ import { searchAssets } from '../api/assets/search-endpoints'
 import type { AssetSearchItem } from '../models/search'
 import { transformSearchResult } from './mappers'
 import { MODULE_PREFIX } from './querykeys'
-import type { Maybe } from '@perawallet/wallet-core-shared'
+import type { Maybe, Optional } from '@perawallet/wallet-core-shared'
 
 type UseAssetSearchQueryOptions = {
     hasCollectible?: boolean
@@ -39,7 +39,7 @@ const getAssetSearchQueryKey = (
     hasCollectible: boolean,
 ) => [MODULE_PREFIX, 'search', { query, network, hasCollectible }]
 
-const extractCursor = (nextUrl: Maybe<string>): string | undefined => {
+const extractCursor = (nextUrl: Maybe<string>): Optional<string> => {
     if (!nextUrl) {
         return undefined
     }
@@ -69,7 +69,7 @@ export const useAssetSearchQuery = (
                 hasCollectible,
             }),
         enabled,
-        initialPageParam: undefined as string | undefined,
+        initialPageParam: undefined as Optional<string>,
         getNextPageParam: lastPage => extractCursor(lastPage.next),
     })
 

@@ -26,12 +26,7 @@ export type UseImportAccountScreenResult = {
     t: (key: string) => string
     isKeyboardVisible: boolean
     keyboardHeight: number
-    isSupportOptionsVisible: boolean
     handleOpenSupportOptions: () => void
-    handleCloseSupportOptions: () => void
-    handlePastePassphrase: () => void
-    handleScanQRCode: () => void
-    handleLearnMore: () => void
     isQRScannerVisible: boolean
     handleCloseQRScanner: () => void
     handleQRScannerSuccess: (url: string) => void

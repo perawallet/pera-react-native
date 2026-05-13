@@ -16,6 +16,7 @@ import {
     type AssetSortMode,
     useAssetPreferencesStore,
 } from '@perawallet/wallet-core-assets'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { AssetWithAccountBalance } from '../models'
 
 type UseSortedAssetBalancesResult = {
@@ -26,7 +27,7 @@ type UseSortedAssetBalancesResult = {
 
 const buildComparator = (
     mode: AssetSortMode,
-    assets: Map<string, PeraAsset> | undefined,
+    assets: Optional<Map<string, PeraAsset>>,
 ) => {
     const getName = (id: string) => assets?.get(id)?.name?.toLowerCase() ?? ''
     const isFav = (id: string) =>
@@ -66,7 +67,7 @@ const buildComparator = (
 
 export const useSortedAssetBalances = (
     assetBalances: AssetWithAccountBalance[],
-    assets: Map<string, PeraAsset> | undefined,
+    assets: Optional<Map<string, PeraAsset>>,
 ): UseSortedAssetBalancesResult => {
     const assetSortMode = useAssetPreferencesStore(state => state.assetSortMode)
     const setAssetSortMode = useAssetPreferencesStore(

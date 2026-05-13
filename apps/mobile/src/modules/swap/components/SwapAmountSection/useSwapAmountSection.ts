@@ -13,7 +13,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Decimal } from 'decimal.js'
 import { useAssetsQuery, type PeraAsset } from '@perawallet/wallet-core-assets'
-import { formatCurrency, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    formatCurrency,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
 
 type UseSwapAmountSectionParams = {
@@ -24,7 +28,7 @@ type UseSwapAmountSectionParams = {
 }
 
 type UseSwapAmountSectionResult = {
-    asset: PeraAsset | undefined
+    asset: Optional<PeraAsset>
     isPay: boolean
     displayValue: string
     hasPositiveAmount: boolean

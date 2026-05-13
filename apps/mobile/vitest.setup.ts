@@ -309,14 +309,35 @@ vi.mock('@components/core', () => {
                 { ...props, 'data-testid': testID || 'PWBadge' },
                 value || label || children,
             ),
-        PWBottomSheet: ({ isVisible, children, ...props }: any) =>
-            isVisible
+        PWBottomSheet: ({
+            isVisible,
+            children,
+            onDismiss,
+            onBackdropPress: _onBackdropPress,
+            ...props
+        }: any) => {
+            // Mirror real PWBottomSheet behavior: when isVisible flips
+            // true → false, fire `onDismiss` so request-based hosts
+            // (BottomSheetHost.handleDismiss → store.remove) can finalize
+            // their state. The previous stub just toggled rendering, which
+            // left request promises stuck waiting on a dismiss callback
+            // that never came.
+            const wasVisibleRef = React.useRef(false)
+            React.useEffect(() => {
+                if (wasVisibleRef.current && !isVisible) {
+                    onDismiss?.()
+                }
+                wasVisibleRef.current = isVisible
+            }, [isVisible, onDismiss])
+
+            return isVisible
                 ? React.createElement(
                       'div',
                       { ...props, 'data-testid': 'PWBottomSheet' },
                       children,
                   )
-                : null,
+                : null
+        },
         PWTouchableIcon: ({ name, onPress, testID, ...props }: any) =>
             React.createElement('div', {
                 ...props,
@@ -1307,6 +1328,10 @@ vi.mock('@react-navigation/native', () => ({
         isReady: vi.fn(() => true),
         current: null,
     }),
+    NavigationContainerRefContext: (() => {
+        const React = require('react')
+        return React.createContext(undefined)
+    })(),
 }))
 
 vi.mock('@react-navigation/bottom-tabs', () => ({

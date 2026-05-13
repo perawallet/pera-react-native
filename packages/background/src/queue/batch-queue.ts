@@ -9,7 +9,7 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 /**
  * Executes a coalesced batch of keys for a given partition. Implementations
@@ -26,7 +26,7 @@ export type BatchExecutor<TKey, TResult, TPartition> = (
 ) => Promise<Map<TKey, TResult>>
 
 type Waiter<TResult> = {
-    resolve: (value: TResult | undefined) => void
+    resolve: (value: Optional<TResult>) => void
     reject: (error: unknown) => void
 }
 
@@ -80,14 +80,14 @@ export class BatchQueue<TKey, TResult, TPartition = void> {
         private readonly delayMs: number = 0,
     ) {}
 
-    enqueue(key: TKey, partition: TPartition): Promise<TResult | undefined> {
+    enqueue(key: TKey, partition: TPartition): Promise<Optional<TResult>> {
         let partitionMap = this.current.get(partition)
         if (!partitionMap) {
             partitionMap = new Map()
             this.current.set(partition, partitionMap)
         }
 
-        const promise = new Promise<TResult | undefined>((resolve, reject) => {
+        const promise = new Promise<Optional<TResult>>((resolve, reject) => {
             const waiters = partitionMap!.get(key) ?? []
             waiters.push({ resolve, reject })
             partitionMap!.set(key, waiters)

@@ -20,10 +20,15 @@ import {
 } from '@perawallet/wallet-core-transactions'
 import { shareCsvFile } from '@utils/shareCsvFile'
 import { useToast } from '@hooks/useToast'
-import { TransactionFilter } from '../../../../../accounts/components/TransactionsFilterBottomSheet/types'
+import { TransactionFilter } from '../../../../../accounts/components/TransactionsFilterContent/types'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import { useErrorToast } from '@hooks/useErrorToast'
+
+const mockRequestBottomSheet = vi.fn()
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({ request: mockRequestBottomSheet }),
+}))
 
 // Mock dependencies
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
@@ -289,7 +294,10 @@ describe('useAssetTransactionList', () => {
     })
 
     describe('filter handling', () => {
-        it('passes filter parameters to useTransactionHistoryQuery', () => {
+        it('passes filter parameters to useTransactionHistoryQuery', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce({
+                filter: TransactionFilter.Today,
+            })
             const { result } = renderHook(() =>
                 useAssetTransactionList({
                     account: mockAccount,
@@ -297,8 +305,8 @@ describe('useAssetTransactionList', () => {
                 }),
             )
 
-            act(() => {
-                result.current.handleApplyFilter(TransactionFilter.Today)
+            await act(async () => {
+                await result.current.handleOpenFilter()
             })
 
             expect(useTransactionHistoryQuery).toHaveBeenCalledWith(
@@ -309,7 +317,10 @@ describe('useAssetTransactionList', () => {
             )
         })
 
-        it('updates activeFilter when handleApplyFilter is called', () => {
+        it('updates activeFilter when filter sheet resolves', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce({
+                filter: TransactionFilter.Yesterday,
+            })
             const { result } = renderHook(() =>
                 useAssetTransactionList({
                     account: mockAccount,
@@ -319,8 +330,8 @@ describe('useAssetTransactionList', () => {
 
             expect(result.current.activeFilter).toBe(TransactionFilter.AllTime)
 
-            act(() => {
-                result.current.handleApplyFilter(TransactionFilter.Yesterday)
+            await act(async () => {
+                await result.current.handleOpenFilter()
             })
 
             expect(result.current.activeFilter).toBe(
@@ -328,23 +339,24 @@ describe('useAssetTransactionList', () => {
             )
         })
 
-        it('handles custom range filter', () => {
+        it('handles custom range filter', async () => {
+            const customRange = {
+                from: new Date('2024-01-01'),
+                to: new Date('2024-01-15'),
+            }
+            mockRequestBottomSheet.mockResolvedValueOnce({
+                filter: TransactionFilter.CustomRange,
+                customRange,
+            })
             const { result } = renderHook(() =>
                 useAssetTransactionList({
                     account: mockAccount,
                     asset: mockAsset,
                 }),
             )
-            const customRange = {
-                from: new Date('2024-01-01'),
-                to: new Date('2024-01-15'),
-            }
 
-            act(() => {
-                result.current.handleApplyFilter(
-                    TransactionFilter.CustomRange,
-                    customRange,
-                )
+            await act(async () => {
+                await result.current.handleOpenFilter()
             })
 
             expect(result.current.activeFilter).toBe(
@@ -353,7 +365,10 @@ describe('useAssetTransactionList', () => {
             expect(result.current.customRange).toEqual(customRange)
         })
 
-        it('applies both date filter and asset filter', () => {
+        it('applies both date filter and asset filter', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce({
+                filter: TransactionFilter.LastWeek,
+            })
             const { result } = renderHook(() =>
                 useAssetTransactionList({
                     account: mockAccount,
@@ -361,8 +376,8 @@ describe('useAssetTransactionList', () => {
                 }),
             )
 
-            act(() => {
-                result.current.handleApplyFilter(TransactionFilter.LastWeek)
+            await act(async () => {
+                await result.current.handleOpenFilter()
             })
 
             expect(useTransactionHistoryQuery).toHaveBeenCalledWith(
@@ -758,7 +773,8 @@ describe('useAssetTransactionList', () => {
     })
 
     describe('filter visibility', () => {
-        it('isFilterVisible defaults to false', () => {
+        it('handleOpenFilter requests the filter bottom sheet', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce(undefined)
             const { result } = renderHook(() =>
                 useAssetTransactionList({
                     account: mockAccount,
@@ -766,41 +782,11 @@ describe('useAssetTransactionList', () => {
                 }),
             )
 
-            expect(result.current.isFilterVisible).toBe(false)
-        })
-
-        it('handleOpenFilter sets isFilterVisible to true', () => {
-            const { result } = renderHook(() =>
-                useAssetTransactionList({
-                    account: mockAccount,
-                    asset: mockAsset,
-                }),
-            )
-
-            act(() => {
-                result.current.handleOpenFilter()
+            await act(async () => {
+                await result.current.handleOpenFilter()
             })
 
-            expect(result.current.isFilterVisible).toBe(true)
-        })
-
-        it('handleCloseFilter sets isFilterVisible to false', () => {
-            const { result } = renderHook(() =>
-                useAssetTransactionList({
-                    account: mockAccount,
-                    asset: mockAsset,
-                }),
-            )
-
-            act(() => {
-                result.current.handleOpenFilter()
-            })
-            expect(result.current.isFilterVisible).toBe(true)
-
-            act(() => {
-                result.current.handleCloseFilter()
-            })
-            expect(result.current.isFilterVisible).toBe(false)
+            expect(mockRequestBottomSheet).toHaveBeenCalledOnce()
         })
     })
 

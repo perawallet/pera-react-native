@@ -13,6 +13,7 @@
 import { useSyncExternalStore } from 'react'
 import type { Key } from '@algorandfoundation/keystore'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 const subscribe = (listener: () => void): (() => void) => {
     const sub = getKeystoreStore().subscribe(listener)
@@ -32,7 +33,7 @@ export const useKeystoreKeys = (): Key[] =>
  * React hook returning a single keystore Key by id, or undefined if not
  * present. Re-renders when that key (or any other) is added or removed.
  */
-export const useKeystoreKey = (id: string | undefined): Key | undefined => {
+export const useKeystoreKey = (id: Optional<string>): Optional<Key> => {
     const keys = useKeystoreKeys()
     return id ? keys.find(k => k.id === id) : undefined
 }

@@ -12,6 +12,7 @@
 
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { useAccountAssetSelectionList } from '../useAccountAssetSelectionList'
 
 const mockUseSelectedAccount = vi.hoisted(() => vi.fn())
@@ -143,7 +144,7 @@ describe('useAccountAssetSelectionList', () => {
     it('clears search when isVisible becomes false', () => {
         const { result, rerender } = renderHook(
             ({ isVisible }) => useAccountAssetSelectionList({ isVisible }),
-            { initialProps: { isVisible: true as boolean | undefined } },
+            { initialProps: { isVisible: true as Optional<boolean> } },
         )
 
         act(() => {

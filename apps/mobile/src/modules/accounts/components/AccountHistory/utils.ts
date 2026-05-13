@@ -14,7 +14,7 @@ import type { TransactionHistoryItem } from '@perawallet/wallet-core-transaction
 import {
     TransactionFilter,
     type CustomDateRange,
-} from '../TransactionsFilterBottomSheet'
+} from '../TransactionsFilterContent'
 import {
     formatISODate,
     formatDisplayDate,

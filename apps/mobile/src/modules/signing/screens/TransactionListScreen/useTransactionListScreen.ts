@@ -19,6 +19,7 @@ import {
     type TransactionSignRequest,
     type TransactionListItem,
 } from '@perawallet/wallet-core-signing'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { SigningStackParamList } from '@modules/signing/routes'
 
 type NavigationProp = StackNavigationProp<
@@ -30,7 +31,7 @@ export const useTransactionListScreen = () => {
     const navigation = useNavigation<NavigationProp>()
     const pipeline = useSigningPipeline()
     const { listItems, allTransactions, currentRequest } = pipeline
-    const request = currentRequest as TransactionSignRequest | undefined
+    const request = currentRequest as Optional<TransactionSignRequest>
 
     const handleTransactionPress = useCallback(
         (tx: PeraDisplayableTransaction) => {

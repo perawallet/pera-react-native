@@ -15,7 +15,7 @@ import { Decimal } from 'decimal.js'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import { AssetsPeraSchema, PeraAssetType } from '@perawallet/wallet-core-assets'
 import { AccountAssetHoldingsSchema, AccountBalancesSchema } from './schema'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 export type HoldingRow = {
     assetId: string
@@ -294,7 +294,7 @@ export async function getAccountBalance({
     db = getDatabase(),
     accountAddress,
     network,
-}: GetAccountBalanceParams): Promise<AccountBalanceRow | undefined> {
+}: GetAccountBalanceParams): Promise<Optional<AccountBalanceRow>> {
     const rows = await db
         .select({
             accountAddress: AccountBalancesSchema.accountAddress,

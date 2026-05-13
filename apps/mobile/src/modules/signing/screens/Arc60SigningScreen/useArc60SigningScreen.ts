@@ -24,13 +24,13 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { SigningStackParamList } from '@modules/signing/routes'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 type NavigationProp = StackNavigationProp<SigningStackParamList, 'Arc60Signing'>
 
 type UseArc60SigningScreenResult = {
     request: Nullable<Arc60SignRequest>
-    account: WalletAccount | undefined
+    account: Optional<WalletAccount>
     parsed: Nullable<Arc60ParsedPayload>
     isPending: boolean
     canConfirm: boolean
@@ -44,7 +44,7 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
     const navigation = useNavigation<NavigationProp>()
     const pipeline = useSigningPipeline()
     const request =
-        (pipeline.currentRequest as Arc60SignRequest | undefined) ?? null
+        (pipeline.currentRequest as Optional<Arc60SignRequest>) ?? null
 
     const account = useFindAccountByAddress(request?.stdSigData.signer ?? '')
     const parsed = useMemo(

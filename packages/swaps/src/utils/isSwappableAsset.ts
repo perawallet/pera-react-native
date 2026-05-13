@@ -11,6 +11,7 @@
  */
 
 import { isCollectible, type PeraAsset } from '@perawallet/wallet-core-assets'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 // Category 1 = RUG_NINJA — swappable despite unverified tier.
 // Update this when the category enum is added (see PeraAsset.peraMetadata.category TODO in models/assets.ts).
@@ -18,7 +19,7 @@ const RUG_NINJA_CATEGORY_ID = 1
 
 const SWAPPABLE_VERIFICATION_TIERS = new Set(['verified', 'trusted'])
 
-export const isSwappableAsset = (asset: PeraAsset | undefined): boolean => {
+export const isSwappableAsset = (asset: Optional<PeraAsset>): boolean => {
     if (!asset) return false
     if (isCollectible(asset)) return false
 

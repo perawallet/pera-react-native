@@ -19,7 +19,7 @@ import {
     type PeraAssetMetadata,
 } from '../models'
 import { AssetsNodeSchema, AssetsPeraSchema, AssetPricesSchema } from './schema'
-import { type Nullable } from '@perawallet/wallet-core-shared'
+import { type Nullable, type Optional } from '@perawallet/wallet-core-shared'
 
 function fromDb(row: {
     assetId: Decimal
@@ -32,7 +32,7 @@ function fromDb(row: {
     metadata: Nullable<string>
     peraMetadataJson: Nullable<string>
 }): PeraAsset {
-    const peraMetadata: PeraAssetMetadata | undefined = row.peraMetadataJson
+    const peraMetadata: Optional<PeraAssetMetadata> = row.peraMetadataJson
         ? (JSON.parse(row.peraMetadataJson) as PeraAssetMetadata)
         : undefined
 
@@ -307,7 +307,7 @@ export async function updateAssetPeraMetadata({
         )
         .all()
 
-    const existing: PeraAssetMetadata | undefined = rows[0]?.peraMetadataJson
+    const existing: Optional<PeraAssetMetadata> = rows[0]?.peraMetadataJson
         ? (JSON.parse(rows[0].peraMetadataJson) as PeraAssetMetadata)
         : undefined
 

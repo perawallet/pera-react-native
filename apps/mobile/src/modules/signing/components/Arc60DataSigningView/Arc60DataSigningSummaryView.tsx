@@ -16,13 +16,14 @@ import type {
     Arc60SignRequest,
 } from '@perawallet/wallet-core-signing'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './Arc60DataSigningSummaryView.style'
 
 export type Arc60DataSigningSummaryViewProps = {
     request: Arc60SignRequest
-    account: WalletAccount | undefined
+    account: Optional<WalletAccount>
     parsed: Arc60ParsedPayload
     onDetailsPress: () => void
 }

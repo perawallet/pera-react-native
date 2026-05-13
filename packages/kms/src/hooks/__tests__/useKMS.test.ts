@@ -13,6 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import type { Key } from '@algorandfoundation/keystore'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { useKMS } from '../useKMS'
 import { KeyPair, KeyType } from '../../models'
 import { InvalidKeyError } from '../../errors'
@@ -203,7 +204,7 @@ describe('useKMS', () => {
 
         const { result } = renderHook(() => useKMS())
 
-        let signed: Uint8Array[] | undefined
+        let signed: Optional<Uint8Array[]>
         await act(async () => {
             signed = await result.current.signTransactionsWithKey(
                 'hd-key',
@@ -254,7 +255,7 @@ describe('useKMS', () => {
 
         const { result } = renderHook(() => useKMS())
 
-        let signed: Uint8Array[] | undefined
+        let signed: Optional<Uint8Array[]>
         await act(async () => {
             signed = await result.current.signTransactionsWithKey(
                 'algo-key',
@@ -303,7 +304,7 @@ describe('useKMS', () => {
 
         const { result } = renderHook(() => useKMS())
 
-        let signed: Uint8Array[] | undefined
+        let signed: Optional<Uint8Array[]>
         await act(async () => {
             signed = await result.current.signDataWithKey(
                 'hd-key',
@@ -337,7 +338,7 @@ describe('useKMS', () => {
 
         const { result } = renderHook(() => useKMS())
 
-        let signed: Uint8Array[] | undefined
+        let signed: Optional<Uint8Array[]>
         await act(async () => {
             signed = await result.current.signDataWithKey(
                 'algo-key',
@@ -427,7 +428,7 @@ describe('useKMS', () => {
 
         const { result } = renderHook(() => useKMS())
 
-        let received: string[] | undefined
+        let received: Optional<string[]>
         await act(async () => {
             received = await result.current.executeWithMnemonic(
                 'hd-key',
@@ -460,7 +461,7 @@ describe('useKMS', () => {
 
         const { result } = renderHook(() => useKMS())
 
-        let received: string[] | undefined
+        let received: Optional<string[]>
         await act(async () => {
             received = await result.current.executeWithMnemonic(
                 'algo-key',
@@ -526,7 +527,7 @@ describe('useKMS', () => {
 
     it('should zero mnemonic bytes even when handler throws', async () => {
         seedHDRoot('hd-key')
-        let captured: Uint8Array | undefined
+        let captured: Optional<Uint8Array>
         mockWithHDSession.mockImplementation(
             async (_key: any, _domain: string, handler: any) => {
                 captured = new TextEncoder().encode('alpha bravo')

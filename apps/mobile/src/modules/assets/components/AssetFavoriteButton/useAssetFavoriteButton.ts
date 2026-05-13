@@ -14,10 +14,11 @@ import { useCallback } from 'react'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useToggleAssetFavoriteMutation } from '@perawallet/wallet-core-assets'
+import { Optional } from '@perawallet/wallet-core-shared'
 
 export const useAssetFavoriteButton = (
     assetId: string,
-    isFavorite: boolean | undefined,
+    isFavorite: Optional<boolean>,
 ) => {
     const { network } = useNetwork()
     const deviceId = useDeviceID(network)

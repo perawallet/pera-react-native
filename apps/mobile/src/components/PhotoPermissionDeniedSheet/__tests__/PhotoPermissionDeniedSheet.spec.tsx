@@ -10,12 +10,42 @@
  limitations under the License
  */
 
-import { fireEvent, render, screen } from '@test-utils/render'
-import { describe, it, expect, vi } from 'vitest'
+import { render } from '@test-utils/render'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { PhotoPermissionDeniedSheet } from '../PhotoPermissionDeniedSheet'
 
+const mockRequestBottomSheet = vi.hoisted(() => vi.fn())
+
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({
+        request: mockRequestBottomSheet,
+    }),
+}))
+
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({
+        t: (key: string) => key,
+    }),
+}))
+
 describe('PhotoPermissionDeniedSheet', () => {
-    it('renders the permission copy when visible', () => {
+    beforeEach(() => {
+        mockRequestBottomSheet.mockReset()
+    })
+
+    it('does not open the bottom sheet while isVisible is false', () => {
+        render(
+            <PhotoPermissionDeniedSheet
+                isVisible={false}
+                onClose={vi.fn()}
+                onOpenSettings={vi.fn()}
+            />,
+        )
+        expect(mockRequestBottomSheet).not.toHaveBeenCalled()
+    })
+
+    it('opens the bottom sheet when isVisible turns true', () => {
+        mockRequestBottomSheet.mockReturnValue(new Promise(() => {}))
         render(
             <PhotoPermissionDeniedSheet
                 isVisible
@@ -23,35 +53,40 @@ describe('PhotoPermissionDeniedSheet', () => {
                 onOpenSettings={vi.fn()}
             />,
         )
-        expect(screen.getByText('image_picker.permission_title')).toBeTruthy()
-        expect(
-            screen.getByText('image_picker.open_settings.label'),
-        ).toBeTruthy()
+        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
     })
 
-    it('invokes onOpenSettings when the confirm button is pressed', () => {
+    it('calls onOpenSettings when the sheet resolves with true', async () => {
+        mockRequestBottomSheet.mockResolvedValue(true)
         const onOpenSettings = vi.fn()
-        render(
-            <PhotoPermissionDeniedSheet
-                isVisible
-                onClose={vi.fn()}
-                onOpenSettings={onOpenSettings}
-            />,
-        )
-        fireEvent.click(screen.getByText('image_picker.open_settings.label'))
-        expect(onOpenSettings).toHaveBeenCalledTimes(1)
-    })
-
-    it('invokes onClose when the cancel button is pressed', () => {
         const onClose = vi.fn()
         render(
             <PhotoPermissionDeniedSheet
                 isVisible
                 onClose={onClose}
-                onOpenSettings={vi.fn()}
+                onOpenSettings={onOpenSettings}
             />,
         )
-        fireEvent.click(screen.getByText('common.cancel.label'))
-        expect(onClose).toHaveBeenCalledTimes(1)
+        await vi.waitFor(() => {
+            expect(onOpenSettings).toHaveBeenCalledTimes(1)
+        })
+        expect(onClose).not.toHaveBeenCalled()
+    })
+
+    it('calls onClose when the sheet resolves with undefined', async () => {
+        mockRequestBottomSheet.mockResolvedValue(undefined)
+        const onOpenSettings = vi.fn()
+        const onClose = vi.fn()
+        render(
+            <PhotoPermissionDeniedSheet
+                isVisible
+                onClose={onClose}
+                onOpenSettings={onOpenSettings}
+            />,
+        )
+        await vi.waitFor(() => {
+            expect(onClose).toHaveBeenCalledTimes(1)
+        })
+        expect(onOpenSettings).not.toHaveBeenCalled()
     })
 })

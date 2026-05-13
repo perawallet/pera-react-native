@@ -11,7 +11,7 @@
  */
 
 import { create } from 'zustand'
-import { registerStore } from '@perawallet/wallet-core-shared'
+import { Optional, registerStore } from '@perawallet/wallet-core-shared'
 
 export type Participant = {
     address: string
@@ -27,7 +27,7 @@ type MultisigCreationState = {
 type MultisigCreationActions = {
     addParticipant: (participant: Participant) => void
     removeParticipant: (address: string) => void
-    updateParticipant: (address: string, name: string | undefined) => void
+    updateParticipant: (address: string, name: Optional<string>) => void
     setThreshold: (threshold: number) => void
     setAccountName: (name: string) => void
     resetState: () => void
@@ -51,7 +51,7 @@ export const useMultisigCreationStore = create<MultisigCreationStore>(set => ({
         set(state => ({
             participants: state.participants.filter(p => p.address !== address),
         })),
-    updateParticipant: (address: string, name: string | undefined) =>
+    updateParticipant: (address: string, name: Optional<string>) =>
         set(state => ({
             participants: state.participants.map(p =>
                 p.address === address ? { ...p, name } : p,

@@ -18,6 +18,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import type { LedgerTransportType } from '@perawallet/wallet-core-hardware-wallet'
 import type { LedgerAccount } from '@perawallet/wallet-core-ledger'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 export type SearchAccountsParams =
     | {
@@ -50,11 +51,9 @@ export type ImportSelectAddressesParams =
  */
 export type ImportFlowParamList = {
     ImportAccountOptions: undefined
-    NameAccount:
-        | {
-              account?: WalletAccount
-          }
-        | undefined
+    NameAccount: Optional<{
+        account?: WalletAccount
+    }>
     ImportSelectAddresses: ImportSelectAddressesParams
     ImportRekeyedAddresses: {
         accounts: WalletAccount[]
@@ -67,7 +66,7 @@ export type ImportFlowParamList = {
     }
     SearchAccounts: SearchAccountsParams
     LedgerPair: undefined
-    LedgerInstructions: { transportType?: LedgerTransportType } | undefined
+    LedgerInstructions: Optional<{ transportType?: LedgerTransportType }>
     LedgerScan: undefined
     LedgerFetchAccounts: {
         deviceId: string

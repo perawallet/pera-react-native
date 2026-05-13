@@ -117,21 +117,6 @@ describe('useEditContactForm', () => {
         expect(replaceMock).toHaveBeenCalledWith('Contacts')
     })
 
-    it('exposes a confirmDelete modal handle with open/close', () => {
-        const { result } = renderHook(() => useEditContactForm())
-        expect(result.current.confirmDelete.isOpen).toBe(false)
-
-        act(() => {
-            result.current.confirmDelete.open()
-        })
-        expect(result.current.confirmDelete.isOpen).toBe(true)
-
-        act(() => {
-            result.current.confirmDelete.close()
-        })
-        expect(result.current.confirmDelete.isOpen).toBe(false)
-    })
-
     it('no-ops save when the form is invalid (default state)', () => {
         const { result } = renderHook(() => useEditContactForm())
 

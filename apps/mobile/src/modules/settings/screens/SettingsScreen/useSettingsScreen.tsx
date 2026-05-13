@@ -1,0 +1,123 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { useCallback } from 'react'
+
+import {
+    deferToNextCycle,
+    generateUniqueId,
+} from '@perawallet/wallet-core-shared'
+
+import { ConfirmActionContent } from '@components/ConfirmActionContent'
+import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useLanguage } from '@hooks/useLanguage'
+import { useBottomSheet } from '@modules/bottom-sheet'
+import {
+    clearAccountsStore,
+    useDeleteAllData,
+} from '@modules/settings/hooks/useDeleteAllData'
+import { DeleteAllSuccessContent } from '@modules/settings/components/DeleteAllSuccessContent'
+import { RatingsContent } from '@modules/settings/components/RatingsContent'
+import { useWebView } from '@modules/webview'
+import { useSettingsOptions } from './useSettingsOptions'
+
+import type { SettingsStackParamsList } from '@modules/settings/routes'
+
+export const useSettingsScreen = () => {
+    const navigation = useAppNavigation()
+    const { t } = useLanguage()
+    const { pushWebView } = useWebView()
+    const { deleteAllData } = useDeleteAllData()
+    const { request: requestBottomSheet } = useBottomSheet()
+    const { settingsOptions } = useSettingsOptions()
+
+    const openRatingModal = useCallback(() => {
+        void requestBottomSheet({
+            contents: <RatingsContent />,
+            options: {
+                size: 'auto',
+                enablePanDownToClose: true,
+            },
+        })
+    }, [requestBottomSheet])
+
+    const goToSettingsPage = (route: keyof SettingsStackParamsList) => {
+        navigation.push(route)
+    }
+
+    const openWebView = (url: string) => {
+        const id = generateUniqueId()
+        pushWebView({
+            url,
+            id,
+        })
+    }
+
+    const handleTapEvent = (page: {
+        title: string
+        icon: string
+        url?: string
+        route?: keyof SettingsStackParamsList
+    }) => {
+        if (page.route) {
+            goToSettingsPage(page.route)
+        } else if (page.url) {
+            openWebView(page.url)
+        } else {
+            openRatingModal()
+        }
+    }
+
+    const showDeleteSuccess = useCallback(async () => {
+        await requestBottomSheet({
+            contents: <DeleteAllSuccessContent />,
+            options: {
+                size: 'auto',
+                enablePanDownToClose: true,
+            },
+        })
+
+        clearAccountsStore()
+
+        deferToNextCycle(() => {
+            navigation.navigate('Onboarding', {
+                screen: 'OnboardingHome',
+            })
+        })
+    }, [navigation, requestBottomSheet])
+
+    const openDeleteConfirm = useCallback(async () => {
+        const confirmed = await requestBottomSheet<boolean>({
+            contents: (
+                <ConfirmActionContent
+                    icon='trash'
+                    iconVariant='error'
+                    title={t('settings.main.remove_title')}
+                    message={t('settings.main.remove_message')}
+                    confirmLabel={t('settings.main.remove_confirm')}
+                    cancelLabel={t('settings.main.remove_cancel')}
+                    testID='settings_delete_all_confirm_bottom_sheet'
+                />
+            ),
+            options: { size: 'auto', enablePanDownToClose: true },
+        })
+        if (!confirmed) return
+        await deleteAllData()
+        await showDeleteSuccess()
+    }, [requestBottomSheet, t, deleteAllData, showDeleteSuccess])
+
+    return {
+        openDeleteConfirm,
+        settingsOptions,
+        handleTapEvent,
+    }
+}

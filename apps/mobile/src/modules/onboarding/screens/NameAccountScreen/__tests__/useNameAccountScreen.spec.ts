@@ -12,6 +12,7 @@
 
 import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { useNameAccountScreen } from '../useNameAccountScreen'
 
 const mockUpdateAccount = vi.fn()
@@ -21,7 +22,7 @@ const mockSetShouldPlayConfetti = vi.fn()
 const mockExitAccountFlow = vi.fn()
 const mockShowToast = vi.fn()
 
-let mockRouteParams: { account?: unknown } | undefined
+let mockRouteParams: Optional<{ account?: unknown }>
 
 vi.mock('@react-navigation/native', async () => {
     const actual = await vi.importActual<object>('@react-navigation/native')

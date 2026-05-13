@@ -19,8 +19,8 @@ import {
 } from '@components/core'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { useBottomSheet } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
-import { useModalState } from '@hooks/useModalState'
 import { useStyles } from './styles'
 import { useAccountInfoCard } from './useAccountInfoCard'
 import { AccountIcon } from '../AccountIcon'
@@ -29,7 +29,7 @@ import { ExpandablePanel } from '@components/ExpandablePanel'
 import { AccountStructureTree } from './AccountStructureTree'
 import { InfoButton } from '@components/InfoButton'
 import { AccountTypeInfoContent } from './AccountTypeInfoContent'
-import { SharedAccountDetailsBottomSheet } from './SharedAccountDetailsBottomSheet'
+import { SharedAccountDetailsContent } from './SharedAccountDetailsContent'
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated'
 import { EXPANDABLE_PANEL_ANIMATION_DURATION } from '@constants/ui'
 
@@ -41,7 +41,7 @@ export type AccountInfoCardProps = {
 export const AccountInfoCard = ({ account, onClose }: AccountInfoCardProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const sharedDetailsState = useModalState()
+    const { request: requestBottomSheet } = useBottomSheet()
     const {
         isExpanded,
         handleToggleExpanded,
@@ -57,6 +57,20 @@ export const AccountInfoCard = ({ account, onClose }: AccountInfoCardProps) => {
         structureAccounts,
         handleScanAddresses,
     } = useAccountInfoCard({ account, onClose })
+
+    const handleOpenSharedDetails = () => {
+        if (!sharedAccountDetails) return
+        void requestBottomSheet({
+            contents: (
+                <SharedAccountDetailsContent details={sharedAccountDetails} />
+            ),
+            options: {
+                size: 'lg',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
+        })
+    }
 
     const chevronStyle = useAnimatedStyle(() => {
         return {
@@ -75,7 +89,7 @@ export const AccountInfoCard = ({ account, onClose }: AccountInfoCardProps) => {
             {/* Account type row */}
             {showSharedAccountDetails ? (
                 <PWTouchableOpacity
-                    onPress={sharedDetailsState.open}
+                    onPress={handleOpenSharedDetails}
                     style={styles.infoRow}
                     testID='shared_account_details_button'
                 >
@@ -187,14 +201,6 @@ export const AccountInfoCard = ({ account, onClose }: AccountInfoCardProps) => {
                         </PWTouchableOpacity>
                     </PWView>
                 </>
-            )}
-
-            {sharedAccountDetails && (
-                <SharedAccountDetailsBottomSheet
-                    isVisible={sharedDetailsState.isOpen}
-                    onClose={sharedDetailsState.close}
-                    details={sharedAccountDetails}
-                />
             )}
         </PWView>
     )

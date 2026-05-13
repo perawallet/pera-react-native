@@ -10,14 +10,12 @@
  limitations under the License
  */
 
-import React, { PropsWithChildren } from 'react'
+import { PropsWithChildren } from 'react'
 import { PWBottomSheet } from '@components/core'
 import { ConnectionView } from '@modules/walletconnect/components/ConnectionView/ConnectionView'
 
 import { WalletConnectErrorBoundary } from '@modules/walletconnect/components/BaseErrorBoundary/WalletConnectErrorBoundary'
 import { useLanguage } from '@hooks/useLanguage'
-import { ConnectionSuccessBottomSheet } from '../components/ConnectionSuccessBottomSheet/ConnectionSuccessBottomSheet'
-import { WalletConnectErrorBottomSheet } from '../components/WalletConnectErrorBottomSheet/WalletConnectErrorBottomSheet'
 import { useWalletConnectProvider } from './useWalletConnectProvider'
 
 export type WalletConnectProviderProps = {} & PropsWithChildren
@@ -32,8 +30,6 @@ export function WalletConnectProvider({
         connectionError,
         handleConnectionError,
         handleSuccess,
-        clearSuccessRequest,
-        clearConnectionError,
     } = useWalletConnectProvider()
 
     return (
@@ -52,17 +48,6 @@ export function WalletConnectProvider({
                     />
                 )}
             </PWBottomSheet>
-
-            <ConnectionSuccessBottomSheet
-                onClose={clearSuccessRequest}
-                request={successRequest}
-            />
-
-            <WalletConnectErrorBottomSheet
-                isVisible={!!connectionError}
-                error={connectionError}
-                onClose={clearConnectionError}
-            />
         </WalletConnectErrorBoundary>
     )
 }

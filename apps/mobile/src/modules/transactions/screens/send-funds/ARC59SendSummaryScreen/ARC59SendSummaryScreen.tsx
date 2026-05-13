@@ -13,7 +13,6 @@
 import { PWButton, PWText, PWView } from '@components/core'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLanguage } from '@hooks/useLanguage'
-import { ARC59WarningBottomSheet } from '@modules/transactions/components/send-funds/ARC59WarningBottomSheet'
 import { useStyles } from './styles'
 import { useARC59SendSummaryScreen } from './useARC59SendSummaryScreen'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
@@ -29,7 +28,6 @@ export const ARC59SendSummaryScreen = () => {
     const {
         summary,
         isLoading,
-        isWarningVisible,
         amount,
         assetId,
         fee,
@@ -38,8 +36,6 @@ export const ARC59SendSummaryScreen = () => {
         handleSend,
         handleClose,
         handleReadMore,
-        handleWarningConfirm,
-        handleWarningClose,
     } = useARC59SendSummaryScreen()
 
     if (isLoading) {
@@ -127,12 +123,6 @@ export const ARC59SendSummaryScreen = () => {
                     onPress={handleClose}
                 />
             </SafeAreaView>
-
-            <ARC59WarningBottomSheet
-                isVisible={isWarningVisible}
-                onClose={handleWarningClose}
-                onConfirm={handleWarningConfirm}
-            />
         </PWView>
     )
 }

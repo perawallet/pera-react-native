@@ -28,7 +28,7 @@ import type {
 import { fetchStakingProjectsInfo } from './endpoints'
 import { getStakingProjectsQueryKey } from './queryKeys'
 import { parseStakingProjectsConfig } from '../utils'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 type UseStakingProjectsQueryResult = {
     data: StakingProject[]
@@ -48,7 +48,7 @@ const parseTvlValue = (value?: Nullable<string>): Decimal => {
 
 const mapProjects = (
     projects: StakingProjectInfo[],
-    projectTVLs: StakingProjectsApiResponse | undefined,
+    projectTVLs: Optional<StakingProjectsApiResponse>,
 ) => {
     return projects
         .map(project => {
