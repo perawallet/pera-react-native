@@ -45,6 +45,8 @@ type State = {
     requestId: Nullable<string>
     deviceName: Nullable<string>
     error: Nullable<LedgerSigningErrorPayload>
+    isTroubleshootingVisible: boolean
+    autoOpenedForBleError: boolean
 }
 
 type Actions = {
@@ -52,6 +54,9 @@ type Actions = {
     setStatus: (status: Exclude<HardwareSigningStatus, 'error'>) => void
     setProgress: (current: number, total: number) => void
     setError: (payload: LedgerSigningErrorPayload) => void
+    openTroubleshooting: () => void
+    closeTroubleshooting: () => void
+    setAutoOpenedForBleError: (value: boolean) => void
     reset: () => void
     resetState: () => void
 }
@@ -65,6 +70,8 @@ const initialState: State = {
     requestId: null,
     deviceName: null,
     error: null,
+    isTroubleshootingVisible: false,
+    autoOpenedForBleError: false,
 }
 
 export const useHardwareSigningStore = create<Store>(set => ({
@@ -80,6 +87,9 @@ export const useHardwareSigningStore = create<Store>(set => ({
     setProgress: (current, total) =>
         set({ currentTx: current, totalTxs: total }),
     setError: payload => set({ status: 'error', error: payload }),
+    openTroubleshooting: () => set({ isTroubleshootingVisible: true }),
+    closeTroubleshooting: () => set({ isTroubleshootingVisible: false }),
+    setAutoOpenedForBleError: value => set({ autoOpenedForBleError: value }),
     reset: () => set(initialState),
     resetState: () => set(initialState),
 }))

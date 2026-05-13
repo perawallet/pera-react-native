@@ -14,6 +14,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import {
     useHardwareSigning,
+    useHardwareSigningStore,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
 import type { UseHardwareSigningResult } from '@perawallet/wallet-core-signing'
@@ -46,6 +47,7 @@ const buildHardwareSigningResult = (
 
 describe('useLedgerSigningContent', () => {
     beforeEach(() => {
+        useHardwareSigningStore.getState().resetState()
         vi.mocked(useSigningRequest).mockReturnValue({
             pendingSignRequests: [],
             rejectRequest: vi.fn(),
@@ -273,6 +275,36 @@ describe('useLedgerSigningContent', () => {
             expect(rejectRequest).not.toHaveBeenCalled()
             expect(dismiss).not.toHaveBeenCalled()
             expect(result.current.isTroubleshootingVisible).toBe(false)
+        })
+    })
+
+    describe('cross-instance state sharing (regression)', () => {
+        it('calling onOpenTroubleshooting in one instance is visible to a second concurrent instance', () => {
+            vi.mocked(useHardwareSigning).mockReturnValue(
+                buildHardwareSigningResult({
+                    isActive: true,
+                    status: 'error',
+                    error: { kind: 'user_rejected' },
+                }),
+            )
+
+            const { result: instanceA } = renderHook(() =>
+                useLedgerSigningContent(),
+            )
+            const { result: instanceB } = renderHook(() =>
+                useLedgerSigningContent(),
+            )
+
+            expect(instanceA.current.isTroubleshootingVisible).toBe(false)
+            expect(instanceB.current.isTroubleshootingVisible).toBe(false)
+
+            act(() => {
+                instanceA.current.onOpenTroubleshooting()
+            })
+
+            // Both instances see the updated store state
+            expect(instanceA.current.isTroubleshootingVisible).toBe(true)
+            expect(instanceB.current.isTroubleshootingVisible).toBe(true)
         })
     })
 })

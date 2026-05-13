@@ -10,9 +10,10 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import {
     useHardwareSigning,
+    useHardwareSigningStore,
     useSigningRequest,
     type HardwareSigningStatus,
 } from '@perawallet/wallet-core-signing'
@@ -77,9 +78,21 @@ export const useLedgerSigningContent = (): UseLedgerSigningContentResult => {
     const { pendingSignRequests, rejectRequest, retryRequest } =
         useSigningRequest()
 
-    const [isTroubleshootingVisible, setTroubleshootingVisible] =
-        useState(false)
-    const [autoOpenedForBleError, setAutoOpenedForBleError] = useState(false)
+    const isTroubleshootingVisible = useHardwareSigningStore(
+        s => s.isTroubleshootingVisible,
+    )
+    const autoOpenedForBleError = useHardwareSigningStore(
+        s => s.autoOpenedForBleError,
+    )
+    const openTroubleshooting = useHardwareSigningStore(
+        s => s.openTroubleshooting,
+    )
+    const closeTroubleshooting = useHardwareSigningStore(
+        s => s.closeTroubleshooting,
+    )
+    const setAutoOpenedForBleError = useHardwareSigningStore(
+        s => s.setAutoOpenedForBleError,
+    )
 
     const isBleClassError =
         errorPayload?.kind !== undefined &&
@@ -87,12 +100,12 @@ export const useLedgerSigningContent = (): UseLedgerSigningContentResult => {
 
     useEffect(() => {
         if (isBleClassError) {
-            setTroubleshootingVisible(true)
+            openTroubleshooting()
             setAutoOpenedForBleError(true)
         } else {
             setAutoOpenedForBleError(false)
         }
-    }, [isBleClassError])
+    }, [isBleClassError, openTroubleshooting, setAutoOpenedForBleError])
 
     const error = useMemo<LedgerErrorPreset | null>(() => {
         if (!errorPayload) return null
@@ -104,22 +117,29 @@ export const useLedgerSigningContent = (): UseLedgerSigningContentResult => {
         if (activeRequest) {
             rejectRequest(activeRequest)
         }
-        setTroubleshootingVisible(false)
+        closeTroubleshooting()
         setAutoOpenedForBleError(false)
         dismiss()
-    }, [resolveActiveRequest, pendingSignRequests, rejectRequest, dismiss])
+    }, [
+        resolveActiveRequest,
+        pendingSignRequests,
+        rejectRequest,
+        closeTroubleshooting,
+        setAutoOpenedForBleError,
+        dismiss,
+    ])
 
     const onOpenTroubleshooting = useCallback(() => {
-        setTroubleshootingVisible(true)
-    }, [])
+        openTroubleshooting()
+    }, [openTroubleshooting])
 
     const onCloseTroubleshooting = useCallback(() => {
         if (autoOpenedForBleError) {
             onCancel()
             return
         }
-        setTroubleshootingVisible(false)
-    }, [autoOpenedForBleError, onCancel])
+        closeTroubleshooting()
+    }, [autoOpenedForBleError, onCancel, closeTroubleshooting])
 
     const onRetry = useCallback(() => {
         if (!error?.isRetryable) return
