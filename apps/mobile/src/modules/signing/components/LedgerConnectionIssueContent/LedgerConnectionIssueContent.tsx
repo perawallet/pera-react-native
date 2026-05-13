@@ -12,6 +12,7 @@
 
 import React from 'react'
 import { PWButton, PWText, PWView } from '@components/core'
+import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
@@ -23,20 +24,15 @@ const TIP_KEYS = [
     'ledger.troubleshooting.tip_repair',
 ] as const
 
-export type LedgerConnectionIssueSheetProps = {
-    onClose: () => void
-}
-
 /**
  * Pure presentational content for the Ledger troubleshooting bottom sheet.
- * The sheet chrome (PWBottomSheet) is provided by the bottom-sheet driver
- * in SigningOverlays — this component renders only the body.
+ * The sheet chrome (PWBottomSheet) is provided by the bottom-sheet manager;
+ * this component renders only the body.
  */
-export const LedgerConnectionIssueSheet = ({
-    onClose,
-}: LedgerConnectionIssueSheetProps) => {
+export const LedgerConnectionIssueContent = () => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const { dismiss } = useBottomSheetResult<void>()
 
     return (
         <PWView style={styles.container}>
@@ -57,7 +53,7 @@ export const LedgerConnectionIssueSheet = ({
             <PWButton
                 variant='secondary'
                 title={t('ledger.troubleshooting.close')}
-                onPress={onClose}
+                onPress={dismiss}
                 style={styles.closeButton}
                 testID='ledger-troubleshooting-close'
             />

@@ -11,9 +11,13 @@
  */
 
 import React from 'react'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { fireEvent, render, screen } from '@test-utils/render'
-import { LedgerConnectionIssueSheet } from '../LedgerConnectionIssueSheet'
+import {
+    BottomSheetIdContext,
+    useBottomSheetStore,
+} from '@modules/bottom-sheet'
+import { LedgerConnectionIssueContent } from '../LedgerConnectionIssueContent'
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
@@ -47,18 +51,36 @@ vi.mock('@components/core', () => ({
     ),
 }))
 
-describe('LedgerConnectionIssueSheet', () => {
-    it('invokes onClose when the close button is pressed', () => {
-        const onClose = vi.fn()
-        render(<LedgerConnectionIssueSheet onClose={onClose} />)
-        fireEvent.click(screen.getByTestId('ledger-troubleshooting-close'))
-        expect(onClose).toHaveBeenCalledOnce()
+const renderWithId = (id = 'sheet-1') =>
+    render(
+        <BottomSheetIdContext.Provider value={id}>
+            <LedgerConnectionIssueContent />
+        </BottomSheetIdContext.Provider>,
+    )
+
+describe('LedgerConnectionIssueContent', () => {
+    beforeEach(() => {
+        useBottomSheetStore.getState().resetState()
+        vi.clearAllMocks()
     })
 
     it('renders the close action and tips', () => {
-        render(<LedgerConnectionIssueSheet onClose={vi.fn()} />)
+        renderWithId()
+
         expect(
             screen.queryByTestId('ledger-troubleshooting-close'),
         ).toBeTruthy()
+    })
+
+    it('dismisses the sheet when the close button is pressed', async () => {
+        const promise = useBottomSheetStore
+            .getState()
+            .request<void>({ id: 'sheet-1', contents: null })
+        renderWithId('sheet-1')
+
+        fireEvent.click(screen.getByTestId('ledger-troubleshooting-close'))
+
+        useBottomSheetStore.getState().remove('sheet-1')
+        await expect(promise).resolves.toBeUndefined()
     })
 })

@@ -10,5 +10,4 @@
  limitations under the License
  */
 
-export { LedgerConnectionIssueSheet } from './LedgerConnectionIssueSheet'
-export type { LedgerConnectionIssueSheetProps } from './LedgerConnectionIssueSheet'
+export { LedgerConnectionIssueContent } from './LedgerConnectionIssueContent'

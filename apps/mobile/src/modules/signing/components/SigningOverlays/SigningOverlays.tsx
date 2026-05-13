@@ -17,7 +17,7 @@ import {
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
 import { usePreferences } from '@perawallet/wallet-core-settings'
-import { LedgerConnectionIssueSheet } from '../LedgerConnectionIssueSheet'
+import { LedgerConnectionIssueContent } from '../LedgerConnectionIssueContent'
 import { LedgerSigningContent } from '../LedgerSigningContent'
 import { useLedgerSigningContent } from '../LedgerSigningContent/useLedgerSigningContent'
 import { SignRequestContent } from '../SignRequestContent'
@@ -239,11 +239,15 @@ const useLedgerSigningDriver = () => {
 
 /**
  * Watches the hardware-signing content hook for the troubleshooting sheet
- * visibility flag and shows the LedgerConnectionIssueSheet via the
+ * visibility flag and shows the LedgerConnectionIssueContent via the
  * centralized bottom sheet manager.
  *
- * Sheet content includes its own close handler — the driver only mirrors
- * the visibility flag.
+ * User dismissal (Close button, pan-down, backdrop press) resolves the
+ * awaited request and the driver then calls onCloseTroubleshooting to
+ * notify the signing state machine. Driver-initiated dismiss (when
+ * isTroubleshootingVisible flips back to false) takes the same code path,
+ * which is safe because onCloseTroubleshooting is idempotent — flipping
+ * an already-false flag to false is a no-op.
  */
 const useLedgerConnectionIssueDriver = () => {
     const { isTroubleshootingVisible, onCloseTroubleshooting } =
@@ -268,11 +272,7 @@ const useLedgerConnectionIssueDriver = () => {
         void (async () => {
             await requestBottomSheet<void>({
                 id: sheetId,
-                contents: (
-                    <LedgerConnectionIssueSheet
-                        onClose={onCloseTroubleshooting}
-                    />
-                ),
+                contents: <LedgerConnectionIssueContent />,
                 options: {
                     size: 'auto',
                     enablePanDownToClose: true,
@@ -283,6 +283,7 @@ const useLedgerConnectionIssueDriver = () => {
             if (openIdRef.current === sheetId) {
                 openIdRef.current = null
             }
+            onCloseTroubleshooting()
         })()
         return () => {
             cancelled = true
