@@ -170,4 +170,25 @@ describe('LedgerSigningOverlay router', () => {
             screen.queryByTestId('ledger-troubleshooting-close'),
         ).toBeTruthy()
     })
+
+    it('does not render LedgerErrorContent when isVisible is false (BLE-class auto-troubleshooting case)', () => {
+        vi.mocked(useLedgerSigningOverlay).mockReturnValue({
+            ...base,
+            isVisible: false,
+            status: 'error',
+            error: {
+                kind: 'connection_failed',
+                title: 't',
+                body: 'b',
+                isTroubleshootable: true,
+                isRetryable: true,
+            },
+            isTroubleshootingVisible: true,
+        })
+        render(<LedgerSigningOverlay />)
+        expect(screen.queryByTestId('ledger-error-close')).toBeNull()
+        expect(
+            screen.queryByTestId('ledger-troubleshooting-close'),
+        ).toBeTruthy()
+    })
 })

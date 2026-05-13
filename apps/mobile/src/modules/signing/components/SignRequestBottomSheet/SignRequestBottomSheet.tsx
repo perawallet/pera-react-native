@@ -13,11 +13,21 @@
 import React, { useEffect } from 'react'
 import { PWBottomSheet } from '@components/core'
 import { SignRequestView } from '@modules/signing/components/SignRequestView'
-import { useSigningRequest } from '@perawallet/wallet-core-signing'
+import {
+    useHardwareSigning,
+    useSigningRequest,
+} from '@perawallet/wallet-core-signing'
 import { deferToNextCycle } from '@perawallet/wallet-core-shared'
 
 export function SignRequestBottomSheet() {
     const { pendingSignRequests, lastCompletedRequest } = useSigningRequest()
+    const { status: hardwareStatus } = useHardwareSigning()
+    // While a hardware-signing session is in flight (including the silent
+    // BLE-scan phase), the LedgerSigningOverlay or troubleshooting sheet
+    // takes over the user's attention. Hiding this parent review sheet
+    // matches the native iOS/Android flow where the transaction review is
+    // gone by the time the device UI appears.
+    const isHardwareSigningInFlight = hardwareStatus !== 'idle'
     // Headless requests run signing in the background without any user-facing
     // UI — the originating screen (e.g. swap) drives its own confirmation.
     //
@@ -51,7 +61,10 @@ export function SignRequestBottomSheet() {
             // setIsVisible(true) firing after the request has been pulled
             // from the queue (e.g. WC error path that auto-dismisses) —
             // without this guard the sheet sticks around with empty content.
-            isVisible={isVisible && !!nextRequest}
+            // Also hide while a hardware-signing session is in flight so
+            // the LedgerSigningOverlay / troubleshooting sheet owns the
+            // screen without this large review sheet competing for layout.
+            isVisible={isVisible && !!nextRequest && !isHardwareSigningInFlight}
             size='lg'
             autoCreateContainer={false}
             enablePanDownToClose={false}

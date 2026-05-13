@@ -163,4 +163,116 @@ describe('useLedgerSigningOverlay', () => {
         act(() => result.current.onCloseTroubleshooting())
         expect(result.current.isTroubleshootingVisible).toBe(false)
     })
+
+    describe('BLE-class error auto-troubleshooting', () => {
+        const BLE_CLASS_KINDS = [
+            'connection_failed',
+            'connection_lost',
+            'scan_timeout',
+            'bluetooth_disabled',
+            'bluetooth_permission',
+        ] as const
+
+        beforeEach(() => {
+            vi.mocked(useSigningRequest).mockReturnValue({
+                pendingSignRequests: [{ id: 'req-1' } as never],
+                rejectRequest: vi.fn(),
+                retryRequest: vi.fn(),
+            } as never)
+        })
+
+        it.each(BLE_CLASS_KINDS)(
+            'auto-opens the troubleshooting sheet for kind=%s',
+            kind => {
+                vi.mocked(useHardwareSigning).mockReturnValue(
+                    buildHardwareSigningResult({
+                        status: 'error',
+                        error: { kind },
+                    }),
+                )
+                const { result } = renderHook(() => useLedgerSigningOverlay())
+                expect(result.current.isTroubleshootingVisible).toBe(true)
+            },
+        )
+
+        it.each(BLE_CLASS_KINDS)(
+            'hides the main overlay (isVisible=false) when the BLE-class error %s opens troubleshooting',
+            kind => {
+                vi.mocked(useHardwareSigning).mockReturnValue(
+                    buildHardwareSigningResult({
+                        status: 'error',
+                        error: { kind },
+                    }),
+                )
+                const { result } = renderHook(() => useLedgerSigningOverlay())
+                expect(result.current.isVisible).toBe(false)
+            },
+        )
+
+        it('does NOT auto-open troubleshooting for non-BLE errors', () => {
+            vi.mocked(useHardwareSigning).mockReturnValue(
+                buildHardwareSigningResult({
+                    status: 'error',
+                    error: { kind: 'user_rejected' },
+                }),
+            )
+            const { result } = renderHook(() => useLedgerSigningOverlay())
+            expect(result.current.isTroubleshootingVisible).toBe(false)
+            expect(result.current.isVisible).toBe(true)
+        })
+
+        it('closing troubleshooting after a BLE-class auto-open rejects the request', () => {
+            const rejectRequest = vi.fn()
+            const dismiss = vi.fn()
+            const activeRequest = { id: 'req-1' } as never
+            vi.mocked(useSigningRequest).mockReturnValue({
+                pendingSignRequests: [activeRequest],
+                rejectRequest,
+                retryRequest: vi.fn(),
+            } as never)
+            vi.mocked(useHardwareSigning).mockReturnValue(
+                buildHardwareSigningResult({
+                    status: 'error',
+                    error: { kind: 'connection_failed' },
+                    resolveActiveRequest: () => activeRequest,
+                    dismiss,
+                }),
+            )
+            const { result } = renderHook(() => useLedgerSigningOverlay())
+            act(() => {
+                result.current.onCloseTroubleshooting()
+            })
+            expect(rejectRequest).toHaveBeenCalledWith(activeRequest)
+            expect(dismiss).toHaveBeenCalledOnce()
+            expect(result.current.isTroubleshootingVisible).toBe(false)
+        })
+
+        it('closing troubleshooting after a MANUAL open (non-BLE error) only closes the sheet', () => {
+            const rejectRequest = vi.fn()
+            const dismiss = vi.fn()
+            vi.mocked(useSigningRequest).mockReturnValue({
+                pendingSignRequests: [{ id: 'req-1' } as never],
+                rejectRequest,
+                retryRequest: vi.fn(),
+            } as never)
+            vi.mocked(useHardwareSigning).mockReturnValue(
+                buildHardwareSigningResult({
+                    status: 'error',
+                    error: { kind: 'user_rejected' },
+                    dismiss,
+                }),
+            )
+            const { result } = renderHook(() => useLedgerSigningOverlay())
+            act(() => {
+                result.current.onOpenTroubleshooting()
+            })
+            expect(result.current.isTroubleshootingVisible).toBe(true)
+            act(() => {
+                result.current.onCloseTroubleshooting()
+            })
+            expect(rejectRequest).not.toHaveBeenCalled()
+            expect(dismiss).not.toHaveBeenCalled()
+            expect(result.current.isTroubleshootingVisible).toBe(false)
+        })
+    })
 })
