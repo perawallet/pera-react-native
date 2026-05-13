@@ -20,19 +20,14 @@ import { useLedgerFetchAccountsScreen } from './useLedgerFetchAccountsScreen'
 export const LedgerFetchAccountsScreen = () => {
     const styles = useStyles()
     const {
-        connectionStatus,
         isDiscovering,
+        isLoading,
         progress,
         errorPreset,
         handleRetry,
         handleTroubleshoot,
         t,
     } = useLedgerFetchAccountsScreen()
-
-    const isLoading =
-        connectionStatus === 'connecting' ||
-        connectionStatus === 'connected' ||
-        isDiscovering
 
     if (errorPreset) {
         return (

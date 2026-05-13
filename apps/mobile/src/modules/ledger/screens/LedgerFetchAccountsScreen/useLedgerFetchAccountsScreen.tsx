@@ -40,6 +40,7 @@ type LedgerFetchAccountsRouteProp = RouteProp<
 type UseLedgerFetchAccountsScreenResult = {
     connectionStatus: LedgerConnectionStatus
     isDiscovering: boolean
+    isLoading: boolean
     progress: { current: number; total: Nullable<number> }
     error: Nullable<AppError>
     errorPreset: Nullable<LedgerErrorPreset>
@@ -198,6 +199,7 @@ export const useLedgerFetchAccountsScreen =
         return {
             connectionStatus,
             isDiscovering,
+            isLoading,
             progress,
             error,
             errorPreset,
