@@ -33,10 +33,6 @@ import type { LedgerErrorPresetKind } from '../types/ledgerErrorPresetKind'
  * Strategy-agnostic classifier that turns a thrown error into the
  * UI-facing preset kind. Lives in the signing package (not the mobile
  * module) so the lifecycle hook can run without a UI dependency.
- *
- * Order matches `KIND_BY_ERROR` in
- * `apps/mobile/src/modules/ledger/utils/ledgerErrorPresets.ts` — keep
- * the two lists in lockstep.
  */
 export const classifyLedgerErrorKind = (
     error: unknown,

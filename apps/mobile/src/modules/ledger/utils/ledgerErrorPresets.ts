@@ -11,23 +11,9 @@
  */
 
 import {
-    LedgerAppNotOpenError,
-    LedgerAddressMismatchError,
-    LedgerBluetoothDisabledError,
-    LedgerConnectionError,
-    LedgerDisconnectedError,
-    LedgerNetworkError,
-    LedgerPermissionDeniedError,
-    LedgerPublicKeyReadError,
-    LedgerScanTimeoutError,
-    LedgerSigningError,
-    LedgerSigningFailedError,
-    LedgerTimeoutError,
-    LedgerTransmissionError,
-    LedgerUnsupportedDeviceError,
-    LedgerUserRejectedError,
-} from '@perawallet/wallet-core-ledger'
-import type { LedgerErrorPresetKind } from '@perawallet/wallet-core-signing'
+    classifyLedgerErrorKind,
+    type LedgerErrorPresetKind,
+} from '@perawallet/wallet-core-signing'
 
 export type { LedgerErrorPresetKind }
 
@@ -54,99 +40,6 @@ const NON_RETRYABLE_KINDS: ReadonlySet<LedgerErrorPresetKind> = new Set([
     'unsupported_device',
 ])
 
-const KIND_BY_ERROR: Array<{
-    match: (error: Error) => boolean
-    kind: LedgerErrorPresetKind
-}> = [
-    // Order: subclasses / specific cases first, generic cases last.
-    {
-        match: error => error instanceof LedgerBluetoothDisabledError,
-        kind: 'bluetooth_disabled',
-    },
-    {
-        match: error => error instanceof LedgerPermissionDeniedError,
-        kind: 'bluetooth_permission',
-    },
-    {
-        match: error => error instanceof LedgerScanTimeoutError,
-        kind: 'scan_timeout',
-    },
-    {
-        match: error => error instanceof LedgerUserRejectedError,
-        kind: 'user_rejected',
-    },
-    {
-        match: error => error instanceof LedgerAppNotOpenError,
-        kind: 'app_not_open',
-    },
-    {
-        match: error => error instanceof LedgerAddressMismatchError,
-        kind: 'address_mismatch',
-    },
-    {
-        match: error => error instanceof LedgerSigningError,
-        kind: 'signing_failed',
-    },
-    {
-        match: error => error instanceof LedgerSigningFailedError,
-        kind: 'signing_failed',
-    },
-    {
-        match: error => error instanceof LedgerTransmissionError,
-        kind: 'transmission_error',
-    },
-    {
-        match: error => error instanceof LedgerPublicKeyReadError,
-        kind: 'public_key_read_failed',
-    },
-    {
-        match: error => error instanceof LedgerNetworkError,
-        kind: 'network_error',
-    },
-    {
-        match: error => error instanceof LedgerUnsupportedDeviceError,
-        kind: 'unsupported_device',
-    },
-    {
-        match: error => error instanceof LedgerDisconnectedError,
-        kind: 'connection_lost',
-    },
-    // Mid-operation timeout (APDU exchange, approval wait) — device was already
-    // connected so BLE troubleshooting tips are irrelevant; not troubleshootable.
-    {
-        match: error => error instanceof LedgerTimeoutError,
-        kind: 'timeout',
-    },
-    {
-        match: error => error instanceof LedgerConnectionError,
-        kind: 'connection_failed',
-    },
-]
-
-/**
- * Maps a Ledger-domain error (or plain Error) to a user-facing preset for the
- * shared PWResultView. Falls back to generic "connection_failed" copy for
- * anything we don't recognise so the UI is always actionable.
- */
-export const getLedgerErrorPreset = (
-    error: unknown,
-    t: Translate,
-): LedgerErrorPreset => {
-    const kind: LedgerErrorPresetKind =
-        error instanceof Error
-            ? (KIND_BY_ERROR.find(entry => entry.match(error))?.kind ??
-              'connection_failed')
-            : 'connection_failed'
-
-    return {
-        kind,
-        title: t(`ledger.errors.${kind}_title`),
-        body: t(`ledger.errors.${kind}`),
-        isTroubleshootable: TROUBLESHOOTABLE_KINDS.has(kind),
-        isRetryable: !NON_RETRYABLE_KINDS.has(kind),
-    }
-}
-
 /**
  * Builds a preset directly from a `LedgerErrorPresetKind` without needing the
  * original Error instance. Used by overlay adapters whose state already holds
@@ -163,3 +56,13 @@ export const getLedgerErrorPresetByKind = (
     isTroubleshootable: TROUBLESHOOTABLE_KINDS.has(kind),
     isRetryable: !NON_RETRYABLE_KINDS.has(kind),
 })
+
+/**
+ * Maps a Ledger-domain error (or plain Error) to a user-facing preset for the
+ * shared PWResultView. Falls back to generic "connection_failed" copy for
+ * anything we don't recognise so the UI is always actionable.
+ */
+export const getLedgerErrorPreset = (
+    error: unknown,
+    t: Translate,
+): LedgerErrorPreset => getLedgerErrorPresetByKind(classifyLedgerErrorKind(error), t)
