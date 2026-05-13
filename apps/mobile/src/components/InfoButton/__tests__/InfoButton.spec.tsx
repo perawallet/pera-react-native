@@ -12,17 +12,18 @@
 
 import { render, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { Text } from 'react-native'
 import { InfoButton } from '../InfoButton'
 
-// Mock dependencies
-const mockOpen = vi.fn()
-const mockClose = vi.fn()
+const mockRequest = vi.fn().mockResolvedValue(undefined)
 
-vi.mock('@hooks/useModalState', () => ({
-    useModalState: () => ({
-        isOpen: false,
-        open: mockOpen,
-        close: mockClose,
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({
+        request: mockRequest,
+    }),
+    useBottomSheetResult: () => ({
+        resolve: vi.fn(),
+        dismiss: vi.fn(),
     }),
 }))
 
@@ -31,16 +32,23 @@ describe('InfoButton', () => {
         vi.clearAllMocks()
     })
 
-    it('renders and handles press interaction', () => {
-        const { container } = render(<InfoButton title='Test Info' />)
+    it('requests a bottom sheet when pressed', () => {
+        const { container } = render(
+            <InfoButton title='Test Info'>
+                <Text>Body</Text>
+            </InfoButton>,
+        )
 
-        // Use querySelector because the environment renders 'testid' instead of 'data-testid' for TouchableOpacity
         const button = container.querySelector('[testid="info-button"]')
         expect(button).toBeTruthy()
 
-        if (button) {
-            fireEvent.click(button)
-            expect(mockOpen).toHaveBeenCalledTimes(1)
-        }
+        fireEvent.click(button!)
+        expect(mockRequest).toHaveBeenCalledTimes(1)
+        const call = mockRequest.mock.calls[0][0]
+        expect(call.options).toMatchObject({
+            size: 'auto',
+            enablePanDownToClose: true,
+        })
+        expect(call.contents).toBeTruthy()
     })
 })
