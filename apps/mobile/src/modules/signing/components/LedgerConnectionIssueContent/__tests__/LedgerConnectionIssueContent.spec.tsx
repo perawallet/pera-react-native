@@ -19,6 +19,13 @@ import {
 } from '@modules/bottom-sheet'
 import { LedgerConnectionIssueContent } from '../LedgerConnectionIssueContent'
 
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({
+        t: (key: string, params?: Record<string, unknown>) =>
+            params ? `${key}|${JSON.stringify(params)}` : key,
+    }),
+}))
+
 vi.mock('@components/core', () => ({
     PWView: ({ children }: { children: React.ReactNode }) => (
         <div>{children}</div>
