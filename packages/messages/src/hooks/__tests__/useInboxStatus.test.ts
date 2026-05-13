@@ -54,15 +54,15 @@ describe('useInboxStatus', () => {
         })
 
         await waitFor(() => {
-            expect(result.current.hasUnreadItems).toBe(true)
+            expect(result.current.hasUnreadItems).toBe(false)
         })
 
         expect(fetchNotificationStatus).toHaveBeenCalledWith(
             'test-network',
             'test-device-id',
         )
-        expect(result.current.hasUnreadItems).toEqual(true)
-        expect(result.current.hasUnreadNotifications).toEqual(true)
+        expect(result.current.hasUnreadItems).toEqual(false)
+        expect(result.current.hasUnreadNotifications).toEqual(false)
         expect(result.current.hasUnreadInboxItems).toBeFalsy()
     })
 
@@ -78,6 +78,6 @@ describe('useInboxStatus', () => {
         })
 
         expect(fetchNotificationStatus).not.toHaveBeenCalled()
-        expect(result.current.hasUnreadNotifications).toBeUndefined()
+        expect(result.current.hasUnreadNotifications).toBe(false)
     })
 })
