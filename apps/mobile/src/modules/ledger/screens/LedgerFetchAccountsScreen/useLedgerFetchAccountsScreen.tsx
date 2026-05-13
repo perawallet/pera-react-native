@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useEffect, useMemo, useRef, useCallback, useState } from 'react'
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { RouteProp, useRoute } from '@react-navigation/native'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
@@ -25,10 +25,12 @@ import {
 import type { HardwareWalletTransport } from '@perawallet/wallet-core-hardware-wallet'
 import type { AppError, Nullable } from '@perawallet/wallet-core-shared'
 import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
+import { useBottomSheet } from '@modules/bottom-sheet'
 import {
     getLedgerErrorPreset,
     type LedgerErrorPreset,
 } from '@modules/ledger/utils'
+import { LedgerConnectingContent } from '../../components/LedgerConnectingContent'
 
 type LedgerFetchAccountsRouteProp = RouteProp<
     AddAccountStackParamList,
@@ -53,6 +55,7 @@ export const useLedgerFetchAccountsScreen =
         } = useRoute<LedgerFetchAccountsRouteProp>()
         const { t } = useLanguage()
         const navigation = useAppNavigation()
+        const { request: requestBottomSheet, dismiss } = useBottomSheet()
 
         const [connectionStatus, setConnectionStatus] =
             useState<LedgerConnectionStatus>('disconnected')
@@ -66,6 +69,7 @@ export const useLedgerFetchAccountsScreen =
         const hasStartedRef = useRef(false)
         const mountedRef = useRef(true)
         const transportRef = useRef<Nullable<HardwareWalletTransport>>(null)
+        const openIdRef = useRef<string | null>(null)
 
         const run = useCallback(async () => {
             setError(null)
@@ -148,6 +152,48 @@ export const useLedgerFetchAccountsScreen =
             () => (error ? getLedgerErrorPreset(error, t) : null),
             [error, t],
         )
+
+        const isLoading =
+            connectionStatus === 'connecting' ||
+            connectionStatus === 'connected' ||
+            isDiscovering
+
+        useEffect(() => {
+            if (!isLoading) {
+                if (openIdRef.current) {
+                    dismiss(openIdRef.current)
+                    openIdRef.current = null
+                }
+                return
+            }
+            if (openIdRef.current) return
+
+            const sheetId = `ledger-connecting-${Date.now()}`
+            openIdRef.current = sheetId
+
+            let cancelled = false
+            void (async () => {
+                const result = await requestBottomSheet<'cancel'>({
+                    id: sheetId,
+                    contents: <LedgerConnectingContent />,
+                    options: {
+                        size: 'auto',
+                        enablePanDownToClose: false,
+                        enableCloseOnBackdropPress: false,
+                    },
+                })
+                if (cancelled) return
+                if (openIdRef.current === sheetId) {
+                    openIdRef.current = null
+                }
+                if (result === 'cancel') {
+                    navigation.goBack()
+                }
+            })()
+            return () => {
+                cancelled = true
+            }
+        }, [isLoading, requestBottomSheet, dismiss, navigation])
 
         return {
             connectionStatus,

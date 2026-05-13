@@ -10,5 +10,4 @@
  limitations under the License
  */
 
-export { LedgerConnectingBottomSheet } from './LedgerConnectingBottomSheet'
-export type { LedgerConnectingBottomSheetProps } from './LedgerConnectingBottomSheet'
+export { LedgerConnectingContent } from './LedgerConnectingContent'
