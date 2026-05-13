@@ -70,6 +70,12 @@ describe('LedgerConnectionIssueContent', () => {
         expect(
             screen.queryByTestId('ledger-troubleshooting-close'),
         ).toBeTruthy()
+        expect(
+            screen.getByText('ledger.troubleshooting.tip_unlocked'),
+        ).toBeTruthy()
+        expect(
+            screen.getByText('ledger.troubleshooting.tip_app_open'),
+        ).toBeTruthy()
     })
 
     it('dismisses the sheet when the close button is pressed', async () => {

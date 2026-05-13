@@ -242,12 +242,12 @@ const useLedgerSigningDriver = () => {
  * visibility flag and shows the LedgerConnectionIssueContent via the
  * centralized bottom sheet manager.
  *
- * User dismissal (Close button, pan-down, backdrop press) resolves the
- * awaited request and the driver then calls onCloseTroubleshooting to
- * notify the signing state machine. Driver-initiated dismiss (when
- * isTroubleshootingVisible flips back to false) takes the same code path,
- * which is safe because onCloseTroubleshooting is idempotent — flipping
- * an already-false flag to false is a no-op.
+ * `onCloseTroubleshooting()` is only invoked when the user dismisses the
+ * sheet (Close button, pan-down, backdrop press). The effect cleanup sets
+ * `cancelled = true` before driver-initiated dismissals, so the post-await
+ * branch is skipped in that path — important because in the BLE-class
+ * auto-open flow `onCloseTroubleshooting` rejects the active sign request
+ * (it is not safely idempotent).
  */
 const useLedgerConnectionIssueDriver = () => {
     const { isTroubleshootingVisible, onCloseTroubleshooting } =
