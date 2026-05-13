@@ -233,13 +233,6 @@ describe('useLedgerSigningContent', () => {
                 // clear the error from the hardware signing hook (in production both
                 // come from the same store; here they're mocked independently).
                 useHardwareSigningStore.getState().resetState()
-                vi.mocked(useHardwareSigning).mockReturnValue(
-                    buildHardwareSigningResult({
-                        isActive: false,
-                        status: 'idle',
-                        error: null,
-                    }),
-                )
             })
             const activeRequest = { id: 'req-1' } as never
             vi.mocked(useSigningRequest).mockReturnValue({
@@ -255,12 +248,25 @@ describe('useLedgerSigningContent', () => {
                     dismiss,
                 }),
             )
-            const { result } = renderHook(() => useLedgerSigningContent())
+            const { result, rerender } = renderHook(() =>
+                useLedgerSigningContent(),
+            )
             act(() => {
                 result.current.onCloseTroubleshooting()
             })
             expect(rejectRequest).toHaveBeenCalledWith(activeRequest)
             expect(dismiss).toHaveBeenCalledOnce()
+            // After dismiss resets the store, re-render with no error to confirm the
+            // sheet closes. In production dismiss() clears the signing store error
+            // too; here we simulate that by updating the mock and rerendering.
+            vi.mocked(useHardwareSigning).mockReturnValue(
+                buildHardwareSigningResult({
+                    isActive: false,
+                    status: 'idle',
+                    error: null,
+                }),
+            )
+            rerender()
             expect(result.current.isTroubleshootingVisible).toBe(false)
         })
 
@@ -290,6 +296,47 @@ describe('useLedgerSigningContent', () => {
             expect(rejectRequest).not.toHaveBeenCalled()
             expect(dismiss).not.toHaveBeenCalled()
             expect(result.current.isTroubleshootingVisible).toBe(false)
+        })
+    })
+
+    describe('BLE auto-open synchronous derivation (perf)', () => {
+        it('isTroubleshootingVisible becomes true on the first render when a BLE-class error appears — no extra render cycle', () => {
+            // Arrange: start with no error
+            vi.mocked(useHardwareSigning).mockReturnValue(
+                buildHardwareSigningResult({
+                    isActive: true,
+                    status: 'awaitingApproval',
+                    error: null,
+                }),
+            )
+            const { result, rerender } = renderHook(() =>
+                useLedgerSigningContent(),
+            )
+            expect(result.current.isTroubleshootingVisible).toBe(false)
+
+            // Act: simulate a BLE-class error arriving
+            vi.mocked(useHardwareSigning).mockReturnValue(
+                buildHardwareSigningResult({
+                    isActive: true,
+                    status: 'error',
+                    error: { kind: 'connection_failed' },
+                }),
+            )
+
+            // Count renders from this point to verify synchronous update
+            let renderCount = 0
+            const { result: result2 } = renderHook(() => {
+                renderCount++
+                return useLedgerSigningContent()
+            })
+
+            // Assert: isTroubleshootingVisible is true on the very first render
+            // after the error — no second render needed (no useEffect flush)
+            expect(renderCount).toBe(1)
+            expect(result2.current.isTroubleshootingVisible).toBe(true)
+
+            // Silence unused variable warning
+            void rerender
         })
     })
 

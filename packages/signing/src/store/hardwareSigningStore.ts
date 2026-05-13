@@ -45,8 +45,12 @@ type State = {
     requestId: Nullable<string>
     deviceName: Nullable<string>
     error: Nullable<LedgerSigningErrorPayload>
+    /**
+     * Tracks whether the troubleshooting sheet was opened manually by the user.
+     * BLE-class errors auto-show troubleshooting as a pure derivation in the
+     * hook (`isBleClassError`), so no separate flag is needed here.
+     */
     isTroubleshootingVisible: boolean
-    autoOpenedForBleError: boolean
 }
 
 type Actions = {
@@ -56,7 +60,6 @@ type Actions = {
     setError: (payload: LedgerSigningErrorPayload) => void
     openTroubleshooting: () => void
     closeTroubleshooting: () => void
-    setAutoOpenedForBleError: (value: boolean) => void
     reset: () => void
     resetState: () => void
 }
@@ -71,7 +74,6 @@ const initialState: State = {
     deviceName: null,
     error: null,
     isTroubleshootingVisible: false,
-    autoOpenedForBleError: false,
 }
 
 export const useHardwareSigningStore = create<Store>(set => ({
@@ -89,7 +91,6 @@ export const useHardwareSigningStore = create<Store>(set => ({
     setError: payload => set({ status: 'error', error: payload }),
     openTroubleshooting: () => set({ isTroubleshootingVisible: true }),
     closeTroubleshooting: () => set({ isTroubleshootingVisible: false }),
-    setAutoOpenedForBleError: value => set({ autoOpenedForBleError: value }),
     reset: () => set(initialState),
     resetState: () => set(initialState),
 }))

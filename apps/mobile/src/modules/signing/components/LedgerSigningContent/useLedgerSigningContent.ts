@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import {
     useHardwareSigning,
     useHardwareSigningStore,
@@ -64,20 +64,14 @@ export const useLedgerSigningContent = (): UseLedgerSigningContentResult => {
     const { pendingSignRequests, rejectRequest, retryRequest } =
         useSigningRequest()
 
-    const isTroubleshootingVisible = useHardwareSigningStore(
+    const manualTroubleshootingOpen = useHardwareSigningStore(
         s => s.isTroubleshootingVisible,
-    )
-    const autoOpenedForBleError = useHardwareSigningStore(
-        s => s.autoOpenedForBleError,
     )
     const openTroubleshooting = useHardwareSigningStore(
         s => s.openTroubleshooting,
     )
     const closeTroubleshooting = useHardwareSigningStore(
         s => s.closeTroubleshooting,
-    )
-    const setAutoOpenedForBleError = useHardwareSigningStore(
-        s => s.setAutoOpenedForBleError,
     )
 
     const error = useMemo<LedgerErrorPreset | null>(() => {
@@ -86,20 +80,6 @@ export const useLedgerSigningContent = (): UseLedgerSigningContentResult => {
     }, [errorPayload, t])
 
     const isBleClassError = error?.isTroubleshootable ?? false
-
-    useEffect(() => {
-        if (isBleClassError) {
-            openTroubleshooting()
-            setAutoOpenedForBleError(true)
-        } else if (autoOpenedForBleError) {
-            setAutoOpenedForBleError(false)
-        }
-    }, [
-        isBleClassError,
-        autoOpenedForBleError,
-        openTroubleshooting,
-        setAutoOpenedForBleError,
-    ])
 
     const onCancel = useCallback(() => {
         const activeRequest = resolveActiveRequest(pendingSignRequests)
@@ -114,12 +94,12 @@ export const useLedgerSigningContent = (): UseLedgerSigningContentResult => {
     }, [openTroubleshooting])
 
     const onCloseTroubleshooting = useCallback(() => {
-        if (autoOpenedForBleError) {
+        if (isBleClassError) {
             onCancel()
             return
         }
         closeTroubleshooting()
-    }, [autoOpenedForBleError, onCancel, closeTroubleshooting])
+    }, [isBleClassError, onCancel, closeTroubleshooting])
 
     const onRetry = useCallback(() => {
         if (!error?.isRetryable) return
@@ -138,7 +118,7 @@ export const useLedgerSigningContent = (): UseLedgerSigningContentResult => {
         error,
         onCancel,
         onRetry,
-        isTroubleshootingVisible,
+        isTroubleshootingVisible: manualTroubleshootingOpen || isBleClassError,
         onOpenTroubleshooting,
         onCloseTroubleshooting,
     }

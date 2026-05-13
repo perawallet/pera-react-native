@@ -114,35 +114,4 @@ describe('useHardwareSigningStore', () => {
             ).toBe(false)
         })
     })
-
-    describe('autoOpenedForBleError', () => {
-        it('defaults to false', () => {
-            expect(
-                useHardwareSigningStore.getState().autoOpenedForBleError,
-            ).toBe(false)
-        })
-
-        it('setAutoOpenedForBleError(true) sets the flag', () => {
-            useHardwareSigningStore.getState().setAutoOpenedForBleError(true)
-            expect(
-                useHardwareSigningStore.getState().autoOpenedForBleError,
-            ).toBe(true)
-        })
-
-        it('setAutoOpenedForBleError(false) clears the flag', () => {
-            useHardwareSigningStore.getState().setAutoOpenedForBleError(true)
-            useHardwareSigningStore.getState().setAutoOpenedForBleError(false)
-            expect(
-                useHardwareSigningStore.getState().autoOpenedForBleError,
-            ).toBe(false)
-        })
-
-        it('reset clears autoOpenedForBleError', () => {
-            useHardwareSigningStore.getState().setAutoOpenedForBleError(true)
-            useHardwareSigningStore.getState().reset()
-            expect(
-                useHardwareSigningStore.getState().autoOpenedForBleError,
-            ).toBe(false)
-        })
-    })
 })
