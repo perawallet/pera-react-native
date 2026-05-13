@@ -24,6 +24,4 @@ export {
     type LedgerSigningErrorPayload,
 } from './store/hardwareSigningStore'
 
-export { resolveSignerAddress } from './hooks/useSigningActorLifecycle'
-
 export type { LedgerErrorPresetKind } from './types/ledgerErrorPresetKind'

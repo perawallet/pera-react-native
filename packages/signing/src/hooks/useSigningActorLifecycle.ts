@@ -35,13 +35,9 @@ import { createTransportSelector } from '../pipeline/transports/getTransport'
 import { getNextQueuedRequest } from '../pipeline/queue'
 import type { SigningMachineDeps } from '../machine/context'
 import type { SigningCallbacks } from '../pipeline/types'
-import {
-    isArbitraryDataRequest,
-    isArc60Request,
-    isTransactionRequest,
-    type SignRequest,
-} from '../models'
+import { type SignRequest } from '../models'
 import { classifyLedgerErrorKind } from '../utils/classifyLedgerErrorKind'
+import { resolveSignerAddress } from '../utils/resolveSignerAddress'
 
 // Process-wide registry of running signing-machine actors, keyed by
 // request id. Hoisted to module scope (rather than per-hook `useRef`) so
@@ -62,38 +58,6 @@ export const __resetSigningActorRegistryForTests = (): void => {
         actor.stop()
     }
     actorRefsMap.clear()
-}
-
-/**
- * Resolve the primary signer address for a sign request so the lifecycle
- * can look up the corresponding {@link WalletAccount} (we need this to
- * thread the device name into the hardware-signing overlay).
- *
- * Mirrors the per-request-type signer extraction in `buildSignableGroups`
- * (see `machine/actions.ts`); kept local + minimal because the overlay
- * only needs *a* signer (the device name is identical across groups for a
- * given hardware request).
- */
-export const resolveSignerAddress = (
-    request: SignRequest,
-): string | undefined => {
-    if (isTransactionRequest(request)) {
-        const firstTx = request.txs[0]
-        if (!firstTx) return undefined
-        const override = request.signerOverrides?.get(0)
-        if (override) return override
-        // Defensive: malformed/mocked tx shapes (e.g. test fixtures) may
-        // not carry a sender. The hardware overlay can still open without
-        // a known signer — deviceName just falls back to null.
-        return firstTx.sender?.toString?.()
-    }
-    if (isArbitraryDataRequest(request)) {
-        return request.data[0]?.signer
-    }
-    if (isArc60Request(request)) {
-        return request.stdSigData?.signer
-    }
-    return undefined
 }
 
 /**
