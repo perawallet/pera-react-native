@@ -21,6 +21,7 @@ import {
     LedgerBluetoothDisabledError,
     LedgerPermissionDeniedError,
     LedgerScanTimeoutError,
+    LedgerSigningError,
     LedgerSigningFailedError,
     LedgerTransmissionError,
     LedgerPublicKeyReadError,
@@ -140,6 +141,11 @@ describe('LedgerErrorPreset 13-kind taxonomy', () => {
             new LedgerScanTimeoutError('x'),
             'scan_timeout',
             { trbl: true, retry: true },
+        ],
+        [
+            new LedgerSigningError('Empty signature returned by Ledger device'),
+            'signing_failed',
+            { trbl: false, retry: true },
         ],
         [
             new LedgerSigningFailedError('x'),

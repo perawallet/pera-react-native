@@ -20,6 +20,7 @@ import {
     LedgerPermissionDeniedError,
     LedgerPublicKeyReadError,
     LedgerScanTimeoutError,
+    LedgerSigningError,
     LedgerSigningFailedError,
     LedgerTimeoutError,
     LedgerTransmissionError,
@@ -81,6 +82,10 @@ const KIND_BY_ERROR: Array<{
     {
         match: error => error instanceof LedgerAddressMismatchError,
         kind: 'address_mismatch',
+    },
+    {
+        match: error => error instanceof LedgerSigningError,
+        kind: 'signing_failed',
     },
     {
         match: error => error instanceof LedgerSigningFailedError,

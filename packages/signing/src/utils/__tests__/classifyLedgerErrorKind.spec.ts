@@ -21,6 +21,7 @@ import {
     LedgerPermissionDeniedError,
     LedgerPublicKeyReadError,
     LedgerScanTimeoutError,
+    LedgerSigningError,
     LedgerSigningFailedError,
     LedgerTimeoutError,
     LedgerTransmissionError,
@@ -37,6 +38,10 @@ describe('classifyLedgerErrorKind', () => {
         [new LedgerUserRejectedError(), 'user_rejected'],
         [new LedgerAppNotOpenError(), 'app_not_open'],
         [new LedgerAddressMismatchError('A', 'B'), 'address_mismatch'],
+        [
+            new LedgerSigningError('Empty signature returned by Ledger device'),
+            'signing_failed',
+        ],
         [new LedgerSigningFailedError('x'), 'signing_failed'],
         [new LedgerTransmissionError('x'), 'transmission_error'],
         [new LedgerPublicKeyReadError(), 'public_key_read_failed'],

@@ -20,6 +20,7 @@ import {
     LedgerPermissionDeniedError,
     LedgerPublicKeyReadError,
     LedgerScanTimeoutError,
+    LedgerSigningError,
     LedgerSigningFailedError,
     LedgerTimeoutError,
     LedgerTransmissionError,
@@ -49,6 +50,7 @@ export const classifyLedgerErrorKind = (
     if (error instanceof LedgerUserRejectedError) return 'user_rejected'
     if (error instanceof LedgerAppNotOpenError) return 'app_not_open'
     if (error instanceof LedgerAddressMismatchError) return 'address_mismatch'
+    if (error instanceof LedgerSigningError) return 'signing_failed'
     if (error instanceof LedgerSigningFailedError) return 'signing_failed'
     if (error instanceof LedgerTransmissionError) return 'transmission_error'
     if (error instanceof LedgerPublicKeyReadError)
