@@ -56,7 +56,9 @@ type UseAccountNftsResult = {
     handlePress: (item: CollectibleDisplayItem) => void
     openManageSheet: () => void
     openAddNftSheet: () => void
-    flatListRef: React.MutableRefObject<React.ComponentRef<typeof PWFlatList> | null> 
+    flatListRef: React.MutableRefObject<React.ComponentRef<
+        typeof PWFlatList
+    > | null>
 }
 
 const getCollectibleName = (item: CollectibleDisplayItem): string =>
@@ -273,9 +275,11 @@ export const useAccountNfts = (): UseAccountNftsResult => {
 
     useEffect(() => {
         const currentFirstItemId = collectibles[0]?.assetId
-        if (flatListRef.current && 
-            previousFirstItemIdRef.current !== undefined && 
-            previousFirstItemIdRef.current !== currentFirstItemId) {
+        if (
+            flatListRef.current &&
+            previousFirstItemIdRef.current !== undefined &&
+            previousFirstItemIdRef.current !== currentFirstItemId
+        ) {
             flatListRef.current.scrollToOffset({ offset: 0, animated: false })
         }
         previousFirstItemIdRef.current = currentFirstItemId
@@ -313,6 +317,6 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         handlePress,
         openManageSheet,
         openAddNftSheet,
-        flatListRef
+        flatListRef,
     }
 }
