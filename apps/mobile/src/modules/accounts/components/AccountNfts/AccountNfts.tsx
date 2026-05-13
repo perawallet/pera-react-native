@@ -63,6 +63,7 @@ export const AccountNfts = () => {
         handlePress,
         openManageSheet,
         openAddNftSheet,
+        flatListRef,
     } = useAccountNfts()
 
     const isGrid = galleryLayout === 'grid'
@@ -170,6 +171,7 @@ export const AccountNfts = () => {
                         </PWView>
                     </PWView>
                     <PWFlatList
+                        ref={flatListRef}
                         key={`${galleryLayout}:${debouncedSearchFilter}`}
                         data={collectibles}
                         renderItem={renderItem}

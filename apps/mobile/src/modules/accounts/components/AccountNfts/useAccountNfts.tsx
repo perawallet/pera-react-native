@@ -10,9 +10,10 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useRef, useEffect, useMemo, useState } from 'react'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { PWFlatList } from '@components/core'
 import {
     useSelectedAccount,
     useAccountBalancesQuery,
@@ -55,6 +56,9 @@ type UseAccountNftsResult = {
     handlePress: (item: CollectibleDisplayItem) => void
     openManageSheet: () => void
     openAddNftSheet: () => void
+    flatListRef: React.MutableRefObject<React.ComponentRef<
+        typeof PWFlatList
+    > | null>
 }
 
 const getCollectibleName = (item: CollectibleDisplayItem): string =>
@@ -266,6 +270,33 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         [navigation],
     )
 
+    const flatListRef = useRef<React.ComponentRef<typeof PWFlatList>>(null)
+    const previousFirstItemIdRef = useRef<string | undefined>(undefined)
+
+    useEffect(() => {
+        const currentFirstItemId = collectibles[0]?.assetId
+        if (
+            flatListRef.current &&
+            previousFirstItemIdRef.current !== undefined &&
+            previousFirstItemIdRef.current !== currentFirstItemId
+        ) {
+            flatListRef.current.scrollToOffset({ offset: 0, animated: false })
+        }
+        previousFirstItemIdRef.current = currentFirstItemId
+    }, [collectibles])
+
+    useEffect(() => {
+        if (flatListRef.current) {
+            flatListRef.current.scrollToOffset({ offset: 0, animated: false })
+        }
+    }, [galleryLayout])
+
+    useEffect(() => {
+        if (flatListRef.current && debouncedSearchFilter) {
+            flatListRef.current.scrollToOffset({ offset: 0, animated: false })
+        }
+    }, [debouncedSearchFilter])
+
     return {
         collectibles,
         collectibleCount: collectibles.length,
@@ -286,5 +317,6 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         handlePress,
         openManageSheet,
         openAddNftSheet,
+        flatListRef,
     }
 }
