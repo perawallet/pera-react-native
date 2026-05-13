@@ -13,12 +13,14 @@
 import React from 'react'
 import { ActivityIndicator } from 'react-native'
 import { PWView, PWText, PWResultView } from '@components/core'
+import { useLanguage } from '@hooks/useLanguage'
 
 import { useStyles } from './styles'
 import { useLedgerFetchAccountsScreen } from './useLedgerFetchAccountsScreen'
 
 export const LedgerFetchAccountsScreen = () => {
     const styles = useStyles()
+    const { t } = useLanguage()
     const {
         isDiscovering,
         isLoading,
@@ -26,7 +28,6 @@ export const LedgerFetchAccountsScreen = () => {
         errorPreset,
         handleRetry,
         handleTroubleshoot,
-        t,
     } = useLedgerFetchAccountsScreen()
 
     if (errorPreset) {

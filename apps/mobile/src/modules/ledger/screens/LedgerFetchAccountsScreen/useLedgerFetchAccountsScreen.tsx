@@ -46,7 +46,6 @@ type UseLedgerFetchAccountsScreenResult = {
     errorPreset: Nullable<LedgerErrorPreset>
     handleRetry: () => void
     handleTroubleshoot: () => void
-    t: (key: string, options?: Record<string, unknown>) => string
 }
 
 export const useLedgerFetchAccountsScreen =
@@ -205,6 +204,5 @@ export const useLedgerFetchAccountsScreen =
             errorPreset,
             handleRetry,
             handleTroubleshoot,
-            t,
         }
     }

@@ -59,8 +59,6 @@ vi.mock('../useLedgerSelectAccountsScreen', () => ({
         handleContinue: mockHandleContinue,
         handleFindAnother: mockHandleFindAnother,
         handleOpenInfo: mockHandleOpenInfo,
-        t: (key: string, opts?: { count?: number }) =>
-            opts?.count !== undefined ? `${key}:${opts.count}` : key,
     }),
 }))
 

@@ -47,7 +47,6 @@ type UseLedgerSelectAccountsScreenResult = {
     handleContinue: () => void
     handleFindAnother: () => Promise<void>
     handleOpenInfo: (address: string) => void
-    t: (key: string, options?: Record<string, unknown>) => string
 }
 
 export const useLedgerSelectAccountsScreen =
@@ -231,6 +230,5 @@ export const useLedgerSelectAccountsScreen =
             handleContinue,
             handleFindAnother,
             handleOpenInfo,
-            t,
         }
     }

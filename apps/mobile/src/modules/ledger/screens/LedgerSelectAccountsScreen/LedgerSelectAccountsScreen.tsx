@@ -21,6 +21,7 @@ import {
     PWFlatList,
 } from '@components/core'
 import type { LedgerAccount } from '@perawallet/wallet-core-ledger'
+import { useLanguage } from '@hooks/useLanguage'
 
 import { useStyles } from './styles'
 import { useLedgerSelectAccountsScreen } from './useLedgerSelectAccountsScreen'
@@ -29,6 +30,7 @@ import { LedgerAccountSelectionRow } from './LedgerAccountSelectionRow'
 
 export const LedgerSelectAccountsScreen = () => {
     const styles = useStyles()
+    const { t } = useLanguage()
     const {
         accounts,
         selectedAddresses,
@@ -42,7 +44,6 @@ export const LedgerSelectAccountsScreen = () => {
         handleContinue,
         handleFindAnother,
         handleOpenInfo,
-        t,
     } = useLedgerSelectAccountsScreen()
 
     const showSelectAll = accounts.length > 1 && !areAllImported
