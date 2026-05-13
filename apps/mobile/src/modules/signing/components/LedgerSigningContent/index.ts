@@ -10,6 +10,9 @@
  limitations under the License
  */
 
-export { LedgerSigningOverlay } from './LedgerSigningOverlay'
-export { LedgerSigningOverlayContainer } from './LedgerSigningOverlayContainer'
-export { useLedgerSigningOverlay } from './useLedgerSigningOverlay'
+export { LedgerSigningContent } from './LedgerSigningContent'
+export { useLedgerSigningContent } from './useLedgerSigningContent'
+export type {
+    LedgerSigningStatus,
+    UseLedgerSigningContentResult,
+} from './useLedgerSigningContent'

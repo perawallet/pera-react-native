@@ -41,10 +41,10 @@ vi.mock('@perawallet/wallet-core-signing', async () => {
     }
 })
 
-import { useLedgerSigningOverlay } from '../useLedgerSigningOverlay'
+import { useLedgerSigningContent } from '../useLedgerSigningContent'
 import { useHardwareSigningStore } from '@perawallet/wallet-core-signing'
 
-describe('useLedgerSigningOverlay', () => {
+describe('useLedgerSigningContent', () => {
     beforeEach(() => {
         useHardwareSigningStore.getState().reset()
         mockRejectRequest.mockReset()
@@ -52,10 +52,12 @@ describe('useLedgerSigningOverlay', () => {
         mockPendingRequests = []
     })
 
-    it('is hidden when status is idle', () => {
-        const { result } = renderHook(() => useLedgerSigningOverlay())
+    it('falls back to connecting status when the store is idle', () => {
+        const { result } = renderHook(() => useLedgerSigningContent())
 
-        expect(result.current.isVisible).toBe(false)
+        expect(result.current.status).toBe('connecting')
+        expect(result.current.currentTx).toBeUndefined()
+        expect(result.current.totalTxs).toBeUndefined()
     })
 
     it('exposes connecting status with no progress when signing starts', () => {
@@ -63,9 +65,8 @@ describe('useLedgerSigningOverlay', () => {
             useHardwareSigningStore.getState().start('req-1')
         })
 
-        const { result } = renderHook(() => useLedgerSigningOverlay())
+        const { result } = renderHook(() => useLedgerSigningContent())
 
-        expect(result.current.isVisible).toBe(true)
         expect(result.current.status).toBe('connecting')
         expect(result.current.currentTx).toBeUndefined()
         expect(result.current.totalTxs).toBeUndefined()
@@ -78,7 +79,7 @@ describe('useLedgerSigningOverlay', () => {
             useHardwareSigningStore.getState().setProgress(2, 3)
         })
 
-        const { result } = renderHook(() => useLedgerSigningOverlay())
+        const { result } = renderHook(() => useLedgerSigningContent())
 
         expect(result.current.status).toBe('confirming')
         expect(result.current.currentTx).toBe(2)
@@ -92,7 +93,7 @@ describe('useLedgerSigningOverlay', () => {
             useHardwareSigningStore.getState().start('req-1')
         })
 
-        const { result } = renderHook(() => useLedgerSigningOverlay())
+        const { result } = renderHook(() => useLedgerSigningContent())
         act(() => {
             result.current.onCancel()
         })
@@ -110,7 +111,7 @@ describe('useLedgerSigningOverlay', () => {
             useHardwareSigningStore.getState().start('req-missing')
         })
 
-        const { result } = renderHook(() => useLedgerSigningOverlay())
+        const { result } = renderHook(() => useLedgerSigningContent())
         act(() => {
             result.current.onCancel()
         })
@@ -127,7 +128,7 @@ describe('useLedgerSigningOverlay', () => {
             useHardwareSigningStore.getState().setError('error')
         })
 
-        const { result } = renderHook(() => useLedgerSigningOverlay())
+        const { result } = renderHook(() => useLedgerSigningContent())
         act(() => {
             result.current.onRetry()
         })

@@ -17,11 +17,14 @@ import {
 } from '@perawallet/wallet-core-signing'
 import { type Optional } from '@perawallet/wallet-core-shared'
 
-type LedgerOverlayStatus = 'connecting' | 'confirming' | 'error' | 'timeout'
+export type LedgerSigningStatus =
+    | 'connecting'
+    | 'confirming'
+    | 'error'
+    | 'timeout'
 
-export type UseLedgerSigningOverlayResult = {
-    isVisible: boolean
-    status: LedgerOverlayStatus
+export type UseLedgerSigningContentResult = {
+    status: LedgerSigningStatus
     currentTx: Optional<number>
     totalTxs: Optional<number>
     onCancel: () => void
@@ -29,22 +32,21 @@ export type UseLedgerSigningOverlayResult = {
 }
 
 /**
- * UI adapter that combines the store-only `useHardwareSigning` hook with
- * `useSigningRequest` to wire cancel/retry through to the signing machine.
+ * UI adapter for `LedgerSigningContent`. Combines the store-only
+ * `useHardwareSigning` hook with `useSigningRequest` to wire cancel/retry
+ * through to the signing machine.
  *
  * The hardware strategy rejects ARC-60 and arbitrary-data requests before
- * any phase callback fires, so this overlay is Ledger-transaction-only
+ * any phase callback fires, so this content is Ledger-transaction-only
  * even though the underlying hook is hardware-agnostic.
+ *
+ * Cancel resets the hardware signing store, which flips `isActive` to
+ * false. The driver in `SigningOverlays` observes that and dismisses the
+ * bottom sheet — content never dismisses itself directly.
  */
-export const useLedgerSigningOverlay = (): UseLedgerSigningOverlayResult => {
-    const {
-        isActive,
-        status,
-        currentTx,
-        totalTxs,
-        resolveActiveRequest,
-        dismiss,
-    } = useHardwareSigning()
+export const useLedgerSigningContent = (): UseLedgerSigningContentResult => {
+    const { status, currentTx, totalTxs, resolveActiveRequest, dismiss } =
+        useHardwareSigning()
     const { pendingSignRequests, rejectRequest, retryRequest } =
         useSigningRequest()
 
@@ -63,16 +65,16 @@ export const useLedgerSigningOverlay = (): UseLedgerSigningOverlayResult => {
         }
     }, [resolveActiveRequest, pendingSignRequests, retryRequest])
 
-    // Narrow: when isActive is true the status is one of the overlay's
-    // accepted values. The presentational component is unmounted when not
-    // visible so the cast is safe at runtime.
-    const overlayStatus = (
+    // Narrow: the content is only mounted while a hardware signing session is
+    // active (driver in SigningOverlays opens it on `isActive`), so the store
+    // status is one of the accepted values. During the dismiss animation the
+    // store may briefly read `idle`; fall back to `connecting` so the cast is
+    // sound and the UI doesn't flicker into an unknown state.
+    const contentStatus: LedgerSigningStatus =
         status === 'idle' ? 'connecting' : status
-    ) as LedgerOverlayStatus
 
     return {
-        isVisible: isActive,
-        status: overlayStatus,
+        status: contentStatus,
         currentTx,
         totalTxs,
         onCancel: handleCancel,

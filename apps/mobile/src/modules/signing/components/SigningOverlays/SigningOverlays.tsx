@@ -12,9 +12,12 @@
 
 import { useEffect, useRef } from 'react'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { useSigningRequest } from '@perawallet/wallet-core-signing'
+import {
+    useHardwareSigning,
+    useSigningRequest,
+} from '@perawallet/wallet-core-signing'
 import { usePreferences } from '@perawallet/wallet-core-settings'
-import { LedgerSigningOverlayContainer } from '../LedgerSigningOverlay'
+import { LedgerSigningContent } from '../LedgerSigningContent'
 import { SignRequestContent } from '../SignRequestContent'
 import { SigningCompletedContent } from '../SigningCompletedContent'
 import { TransactionRequestFAQContent } from '../TransactionRequestFAQContent'
@@ -170,10 +173,71 @@ const useTransactionRequestFAQDriver = () => {
     }, [pendingSignRequests, getPreference, setPreference, requestBottomSheet])
 }
 
+/**
+ * Watches the hardware-wallet signing store for an active session and
+ * shows the LedgerSigningContent sheet via the centralized bottom sheet
+ * manager.
+ *
+ * The sheet is keyed by the active sign request id so that a new request
+ * starting before the previous overlay has fully torn down (e.g. retry
+ * after a terminal transition) swaps to a fresh sheet rather than reusing
+ * stale content. Cancel/retry are wired inside the content via
+ * `useLedgerSigningContent`; cancel resets the store, which flips
+ * `isActive` to false and lets this driver dismiss the sheet.
+ *
+ * Presentation matches the legacy overlay: `size='lg'`, gestures and
+ * backdrop press disabled — signing must complete via the UI controls.
+ */
+const useLedgerSigningDriver = () => {
+    const { isActive, requestId } = useHardwareSigning()
+    const { request: requestBottomSheet, dismiss } = useBottomSheet()
+    const openIdRef = useRef<string | null>(null)
+
+    useEffect(() => {
+        const sheetId = isActive && requestId ? requestId : null
+
+        if (!sheetId) {
+            if (openIdRef.current) {
+                dismiss(openIdRef.current)
+                openIdRef.current = null
+            }
+            return
+        }
+        if (openIdRef.current === sheetId) return
+
+        if (openIdRef.current) {
+            dismiss(openIdRef.current)
+        }
+        openIdRef.current = sheetId
+
+        let cancelled = false
+        void (async () => {
+            await requestBottomSheet<void>({
+                id: sheetId,
+                contents: <LedgerSigningContent />,
+                options: {
+                    size: 'lg',
+                    enablePanDownToClose: false,
+                    enableCloseOnBackdropPress: false,
+                    autoCreateContainer: false,
+                },
+            })
+            if (cancelled) return
+            if (openIdRef.current === sheetId) {
+                openIdRef.current = null
+            }
+        })()
+        return () => {
+            cancelled = true
+        }
+    }, [isActive, requestId, requestBottomSheet, dismiss])
+}
+
 export const SigningOverlays = () => {
     useSignRequestDriver()
     useSigningCompletedDriver()
     useTransactionRequestFAQDriver()
+    useLedgerSigningDriver()
 
-    return <LedgerSigningOverlayContainer />
+    return null
 }

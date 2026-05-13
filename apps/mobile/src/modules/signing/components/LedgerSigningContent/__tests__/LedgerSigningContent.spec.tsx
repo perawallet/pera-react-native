@@ -12,7 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@test-utils/render'
-import { LedgerSigningOverlay } from '../LedgerSigningOverlay'
+import type { UseLedgerSigningContentResult } from '../useLedgerSigningContent'
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
@@ -49,50 +49,50 @@ vi.mock('@assets/animations/ledger-bluetooth.dark.json', () => ({
     default: { __variant: 'dark' },
 }))
 
-describe('LedgerSigningOverlay', () => {
-    const defaultProps = {
-        isVisible: true,
-        status: 'connecting' as const,
-        onCancel: vi.fn(),
-        onRetry: vi.fn(),
-    }
+const defaultHookResult: UseLedgerSigningContentResult = {
+    status: 'connecting',
+    currentTx: undefined,
+    totalTxs: undefined,
+    onCancel: vi.fn(),
+    onRetry: vi.fn(),
+}
+const mockUseLedgerSigningContent = vi.fn<() => UseLedgerSigningContentResult>(
+    () => defaultHookResult,
+)
+vi.mock('../useLedgerSigningContent', () => ({
+    useLedgerSigningContent: () => mockUseLedgerSigningContent(),
+}))
 
+import { LedgerSigningContent } from '../LedgerSigningContent'
+
+const renderWithHook = (overrides: Partial<UseLedgerSigningContentResult>) => {
+    mockUseLedgerSigningContent.mockReturnValue({
+        ...defaultHookResult,
+        ...overrides,
+    })
+    return render(<LedgerSigningContent />)
+}
+
+describe('LedgerSigningContent', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockUseIsDarkMode.mockReturnValue(false)
     })
 
     it('renders the connecting message when status is connecting', () => {
-        render(
-            <LedgerSigningOverlay
-                {...defaultProps}
-                status='connecting'
-            />,
-        )
+        renderWithHook({ status: 'connecting' })
 
         expect(screen.getByText('ledger.signing.connect')).toBeTruthy()
     })
 
     it('renders the confirming message when status is confirming', () => {
-        render(
-            <LedgerSigningOverlay
-                {...defaultProps}
-                status='confirming'
-            />,
-        )
+        renderWithHook({ status: 'confirming' })
 
         expect(screen.getByText('ledger.signing.confirm')).toBeTruthy()
     })
 
     it('shows progress text when signing multiple transactions', () => {
-        render(
-            <LedgerSigningOverlay
-                {...defaultProps}
-                status='confirming'
-                currentTx={2}
-                totalTxs={3}
-            />,
-        )
+        renderWithHook({ status: 'confirming', currentTx: 2, totalTxs: 3 })
 
         expect(
             screen.getByText('ledger.signing.progress|{"current":2,"total":3}'),
@@ -100,113 +100,66 @@ describe('LedgerSigningOverlay', () => {
     })
 
     it('hides progress text for a single transaction', () => {
-        render(
-            <LedgerSigningOverlay
-                {...defaultProps}
-                status='confirming'
-                currentTx={1}
-                totalTxs={1}
-            />,
-        )
+        renderWithHook({ status: 'confirming', currentTx: 1, totalTxs: 1 })
 
         expect(screen.queryByText(/ledger.signing.progress/)).toBeNull()
     })
 
     it('shows the retry button when status is error', () => {
-        render(
-            <LedgerSigningOverlay
-                {...defaultProps}
-                status='error'
-            />,
-        )
+        renderWithHook({ status: 'error' })
 
         expect(screen.getByText('ledger.fetch_accounts.retry')).toBeTruthy()
     })
 
     it('shows the retry button when status is timeout', () => {
-        render(
-            <LedgerSigningOverlay
-                {...defaultProps}
-                status='timeout'
-            />,
-        )
+        renderWithHook({ status: 'timeout' })
 
         expect(screen.getByText('ledger.fetch_accounts.retry')).toBeTruthy()
     })
 
     it('renders the bluetooth Lottie animation while connecting', () => {
-        render(
-            <LedgerSigningOverlay
-                {...defaultProps}
-                status='connecting'
-            />,
-        )
+        renderWithHook({ status: 'connecting' })
 
-        expect(screen.getByTestId('ledger-signing-overlay-lottie')).toBeTruthy()
+        expect(screen.getByTestId('ledger-signing-content-lottie')).toBeTruthy()
     })
 
     it('uses the light Lottie variant when not in dark mode', () => {
         mockUseIsDarkMode.mockReturnValue(false)
-        render(
-            <LedgerSigningOverlay
-                {...defaultProps}
-                status='connecting'
-            />,
-        )
+        renderWithHook({ status: 'connecting' })
 
         expect(
             screen
-                .getByTestId('ledger-signing-overlay-lottie')
+                .getByTestId('ledger-signing-content-lottie')
                 .getAttribute('data-variant'),
         ).toBe('light')
     })
 
     it('uses the dark Lottie variant in dark mode', () => {
         mockUseIsDarkMode.mockReturnValue(true)
-        render(
-            <LedgerSigningOverlay
-                {...defaultProps}
-                status='connecting'
-            />,
-        )
+        renderWithHook({ status: 'connecting' })
 
         expect(
             screen
-                .getByTestId('ledger-signing-overlay-lottie')
+                .getByTestId('ledger-signing-content-lottie')
                 .getAttribute('data-variant'),
         ).toBe('dark')
     })
 
     it('hides the Lottie animation in error state (replaced by retry UI)', () => {
-        render(
-            <LedgerSigningOverlay
-                {...defaultProps}
-                status='error'
-            />,
-        )
+        renderWithHook({ status: 'error' })
 
-        expect(screen.queryByTestId('ledger-signing-overlay-lottie')).toBeNull()
+        expect(screen.queryByTestId('ledger-signing-content-lottie')).toBeNull()
     })
 
     it('hides the retry button while connecting', () => {
-        render(
-            <LedgerSigningOverlay
-                {...defaultProps}
-                status='connecting'
-            />,
-        )
+        renderWithHook({ status: 'connecting' })
 
         expect(screen.queryByText('ledger.fetch_accounts.retry')).toBeNull()
     })
 
     it('calls onCancel when the cancel button is pressed', () => {
         const onCancel = vi.fn()
-        render(
-            <LedgerSigningOverlay
-                {...defaultProps}
-                onCancel={onCancel}
-            />,
-        )
+        renderWithHook({ onCancel })
 
         fireEvent.click(screen.getByText('ledger.signing.cancel'))
 
@@ -215,13 +168,7 @@ describe('LedgerSigningOverlay', () => {
 
     it('calls onRetry when retry is pressed in error state', () => {
         const onRetry = vi.fn()
-        render(
-            <LedgerSigningOverlay
-                {...defaultProps}
-                status='error'
-                onRetry={onRetry}
-            />,
-        )
+        renderWithHook({ status: 'error', onRetry })
 
         fireEvent.click(screen.getByText('ledger.fetch_accounts.retry'))
 
