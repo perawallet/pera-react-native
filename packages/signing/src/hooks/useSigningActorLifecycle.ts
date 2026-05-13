@@ -74,7 +74,9 @@ export const __resetSigningActorRegistryForTests = (): void => {
  * only needs *a* signer (the device name is identical across groups for a
  * given hardware request).
  */
-const resolveSignerAddress = (request: SignRequest): string | undefined => {
+export const resolveSignerAddress = (
+    request: SignRequest,
+): string | undefined => {
     if (isTransactionRequest(request)) {
         const firstTx = request.txs[0]
         if (!firstTx) return undefined

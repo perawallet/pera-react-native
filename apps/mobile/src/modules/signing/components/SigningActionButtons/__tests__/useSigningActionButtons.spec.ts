@@ -17,14 +17,26 @@ import {
     useSigningPipeline,
     useSigningRequest,
     type TransactionWarning,
+    type SigningPipelineEvent,
 } from '@perawallet/wallet-core-signing'
+import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { useNavigation } from '@react-navigation/native'
+import { useErrorToast } from '@hooks/useErrorToast'
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningPipeline: vi.fn(),
     useSigningRequest: vi.fn(),
     isTransactionRequest: vi.fn(() => false),
+    resolveSignerAddress: vi.fn((req: { txs?: { sender?: unknown }[] }) => {
+        const sender = req?.txs?.[0]?.sender as
+            | { toString?: () => string }
+            | string
+            | undefined
+        if (!sender) return undefined
+        if (typeof sender === 'string') return sender
+        return sender.toString?.()
+    }),
 }))
 
 vi.mock('@perawallet/wallet-core-settings', () => ({
@@ -259,5 +271,120 @@ describe('useSigningActionButtons', () => {
 
         expect(mockNext).toHaveBeenCalledTimes(1)
         expect(result.current.isSecurityGuardOpen).toBe(false)
+    })
+
+    describe('signing_failed handling', () => {
+        const HW_ADDR = 'HW_ADDR'
+        const LOCAL_ADDR = 'LOCAL_ADDR'
+
+        const hwAccount = {
+            type: 'hardware',
+            address: HW_ADDR,
+            hardwareDetails: {
+                manufacturer: 'ledger',
+                deviceId: 'd1',
+                deviceName: 'Nano X',
+                accountIndex: 0,
+                transportType: 'ble',
+            },
+        } as never
+
+        const localAccount = {
+            type: 'algo25',
+            address: LOCAL_ADDR,
+            keyPairId: 'kp1',
+        } as never
+
+        const showError = vi.fn()
+        let capturedHandler: ((event: SigningPipelineEvent) => void) | undefined
+
+        const setupPipelineCapturingHandler = (
+            currentRequest: unknown,
+        ): void => {
+            ;(useSigningPipeline as Mock).mockImplementation(
+                ({
+                    onEvent,
+                }: {
+                    onEvent: (event: SigningPipelineEvent) => void
+                }) => {
+                    capturedHandler = onEvent
+                    return {
+                        currentRequest,
+                        allTransactions: [],
+                        warnings: [],
+                        isLoading: false,
+                        next: mockNext,
+                        fail: mockFail,
+                    }
+                },
+            )
+        }
+
+        beforeEach(() => {
+            capturedHandler = undefined
+            showError.mockClear()
+            ;(useErrorToast as Mock).mockReturnValue({ showError })
+            ;(useAllAccounts as Mock).mockReturnValue([hwAccount, localAccount])
+            // `isHardwareWalletAccount` is globally mocked in vitest.setup.ts
+            // to return true when `account.type === 'hardware'`, which matches
+            // the `hwAccount` fixture above. No per-test override is needed.
+        })
+
+        it('skips showError when the failed request is for a hardware account', () => {
+            setupPipelineCapturingHandler({
+                id: 'r1',
+                transport: 'algod',
+                txs: [{ sender: { toString: () => HW_ADDR } }],
+            })
+
+            renderHook(() => useSigningActionButtons())
+
+            act(() => {
+                capturedHandler?.({
+                    type: 'signing_failed',
+                    error: new Error('boom'),
+                } as SigningPipelineEvent)
+            })
+
+            expect(showError).not.toHaveBeenCalled()
+        })
+
+        it('calls showError when the failed request is for a local-key account', () => {
+            setupPipelineCapturingHandler({
+                id: 'r2',
+                transport: 'algod',
+                txs: [{ sender: { toString: () => LOCAL_ADDR } }],
+            })
+
+            renderHook(() => useSigningActionButtons())
+
+            act(() => {
+                capturedHandler?.({
+                    type: 'signing_failed',
+                    error: new Error('boom'),
+                } as SigningPipelineEvent)
+            })
+
+            expect(showError).toHaveBeenCalledOnce()
+        })
+
+        it('skips showError when transport is not algod (existing behavior preserved)', () => {
+            setupPipelineCapturingHandler({
+                id: 'r3',
+                transport: 'walletconnect',
+                txs: [{ sender: { toString: () => LOCAL_ADDR } }],
+            })
+
+            renderHook(() => useSigningActionButtons())
+
+            act(() => {
+                capturedHandler?.({
+                    type: 'signing_failed',
+                    error: new Error('boom'),
+                } as SigningPipelineEvent)
+            })
+
+            expect(showError).not.toHaveBeenCalled()
+        })
     })
 })
