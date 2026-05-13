@@ -63,7 +63,7 @@ export const MultisigDeclineButton = ({
     return (
         <PWButton
             title={t('multisig.sign_sheet.decline')}
-            variant='secondary'
+            variant='linkNeutral'
             onPress={handlePress}
             isDisabled={isDisabled || isDeclining}
             isLoading={isDeclining}

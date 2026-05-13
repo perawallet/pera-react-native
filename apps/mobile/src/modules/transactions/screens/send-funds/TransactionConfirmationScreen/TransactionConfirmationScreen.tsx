@@ -11,9 +11,9 @@
  */
 
 import {
-    PWButton,
     PWDivider,
     PWIcon,
+    PWSlideToConfirm,
     PWText,
     PWTouchableOpacity,
     PWView,
@@ -182,15 +182,14 @@ export const TransactionConfirmationScreen = () => {
                             minBalance={recipientMbrDisplay}
                         />
                     )}
-                    <PWButton
-                        title={t('send_funds.confirmation.confirm_button')}
-                        variant='primary'
-                        testID='send_confirm_button'
-                        onPress={handleConfirm}
+                    <PWSlideToConfirm
+                        title={t('common.slide_to_confirm.label')}
+                        onConfirm={handleConfirm}
+                        isLoading={isRecipientInfoPending}
                         isDisabled={
                             isRecipientBelowMbr || isRecipientInfoPending
                         }
-                        isLoading={isRecipientInfoPending}
+                        testID='send_confirm_button'
                     />
                 </PWView>
 

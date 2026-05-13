@@ -67,15 +67,8 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
         color: theme.colors.success,
     },
     footer: {
-        flexDirection: 'row',
         gap: theme.spacing.md,
         marginBottom: theme.spacing.xl,
-    },
-    rejectButton: {
-        flex: 2,
-    },
-    claimButton: {
-        flex: 3,
     },
     usdText: {
         color: theme.colors.textGray,

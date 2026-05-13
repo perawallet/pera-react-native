@@ -26,6 +26,10 @@ vi.mock('@components/core', () => ({
     PWButton: ({ title, onPress }: any) => (
         <button onClick={onPress}>{title}</button>
     ),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    PWSlideToConfirm: ({ title, onConfirm }: any) => (
+        <button onClick={onConfirm}>{title}</button>
+    ),
 
     PWIcon: () => null,
 
@@ -161,14 +165,13 @@ describe('ArbitraryDataSigningView', () => {
         expect(text).toContain('confirm')
     })
 
-    it('shows Confirm All for multiple sign requests', () => {
+    it('renders confirm action for multiple sign requests', () => {
         setupMock(mockMultipleRequest)
         const { container } = render(
             <ArbitraryDataSigningView request={mockMultipleRequest} />,
         )
         const text = container.textContent?.toLowerCase() || ''
         expect(text).toContain('confirm')
-        expect(text).toContain('all')
     })
 
     it('displays the message to be signed', () => {

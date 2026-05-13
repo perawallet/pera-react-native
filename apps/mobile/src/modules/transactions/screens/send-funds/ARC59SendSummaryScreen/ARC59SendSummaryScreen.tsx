@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWButton, PWText, PWView } from '@components/core'
+import { PWButton, PWSlideToConfirm, PWText, PWView } from '@components/core'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
@@ -111,15 +111,15 @@ export const ARC59SendSummaryScreen = () => {
                 edges={['bottom']}
                 style={styles.footer}
             >
-                <PWButton
-                    title={t('send_funds.arc59_summary.send_button')}
-                    variant='primary'
-                    onPress={handleSend}
+                <PWSlideToConfirm
+                    title={t('common.slide_to_confirm.label')}
+                    onConfirm={handleSend}
                     isDisabled={!summary}
+                    testID='arc59_send_confirm_slide'
                 />
                 <PWButton
                     title={t('common.go_back.label')}
-                    variant='secondary'
+                    variant='linkNeutral'
                     onPress={handleClose}
                 />
             </SafeAreaView>
