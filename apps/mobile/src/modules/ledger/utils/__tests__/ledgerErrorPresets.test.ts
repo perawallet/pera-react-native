@@ -185,10 +185,9 @@ describe('LedgerErrorPreset 13-kind taxonomy', () => {
     )
 
     it('LedgerScanTimeoutError beats LedgerTimeoutError because subclass matches first', () => {
-        // LedgerScanTimeoutError does NOT extend LedgerTimeoutError, but the
-        // KIND_BY_ERROR priority list must put scan_timeout before timeout
-        // matchers so that future subclass relationships do not silently
-        // reclassify it.
+        // LedgerScanTimeoutError does NOT extend LedgerTimeoutError, but
+        // classifyLedgerErrorKind must check scan_timeout before timeout
+        // so that future subclass relationships do not silently reclassify it.
         const preset = getLedgerErrorPreset(new LedgerScanTimeoutError('x'), t)
         expect(preset.kind).toBe('scan_timeout')
     })
