@@ -106,9 +106,12 @@ describe('useLedgerSigningContent', () => {
         expect(result.current.error?.isTroubleshootable).toBe(false)
     })
 
-    it('onCancel rejects the active request, dismisses store, and closes troubleshooting', () => {
+    it('onCancel rejects the active request and dismisses the store (which resets all flags)', () => {
         const rejectRequest = vi.fn()
-        const dismiss = vi.fn()
+        const dismiss = vi.fn(() => {
+            // Simulate what dismiss() actually does: reset the store state
+            useHardwareSigningStore.getState().resetState()
+        })
         const activeRequest = { id: 'req-1' } as never
         vi.mocked(useSigningRequest).mockReturnValue({
             pendingSignRequests: [activeRequest],
@@ -225,7 +228,15 @@ describe('useLedgerSigningContent', () => {
 
         it('closing troubleshooting after a BLE-class auto-open rejects the request', () => {
             const rejectRequest = vi.fn()
-            const dismiss = vi.fn()
+            const dismiss = vi.fn(() => {
+                // Simulate what dismiss() actually does: reset the store state AND
+                // clear the error from the hardware signing hook (in production both
+                // come from the same store; here they're mocked independently).
+                useHardwareSigningStore.getState().resetState()
+                vi.mocked(useHardwareSigning).mockReturnValue(
+                    buildHardwareSigningResult({ isActive: false, status: 'idle', error: null }),
+                )
+            })
             const activeRequest = { id: 'req-1' } as never
             vi.mocked(useSigningRequest).mockReturnValue({
                 pendingSignRequests: [activeRequest],

@@ -102,10 +102,10 @@ export const useLedgerSigningContent = (): UseLedgerSigningContentResult => {
         if (isBleClassError) {
             openTroubleshooting()
             setAutoOpenedForBleError(true)
-        } else {
+        } else if (autoOpenedForBleError) {
             setAutoOpenedForBleError(false)
         }
-    }, [isBleClassError, openTroubleshooting, setAutoOpenedForBleError])
+    }, [isBleClassError, autoOpenedForBleError, openTroubleshooting, setAutoOpenedForBleError])
 
     const error = useMemo<LedgerErrorPreset | null>(() => {
         if (!errorPayload) return null
@@ -117,17 +117,8 @@ export const useLedgerSigningContent = (): UseLedgerSigningContentResult => {
         if (activeRequest) {
             rejectRequest(activeRequest)
         }
-        closeTroubleshooting()
-        setAutoOpenedForBleError(false)
         dismiss()
-    }, [
-        resolveActiveRequest,
-        pendingSignRequests,
-        rejectRequest,
-        closeTroubleshooting,
-        setAutoOpenedForBleError,
-        dismiss,
-    ])
+    }, [resolveActiveRequest, pendingSignRequests, rejectRequest, dismiss])
 
     const onOpenTroubleshooting = useCallback(() => {
         openTroubleshooting()
