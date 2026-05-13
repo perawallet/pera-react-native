@@ -40,10 +40,13 @@ export const useInboxStatus = () => {
         }, []),
     })
 
+    const hasUnreadNotifications = inboxData?.length
+        ? notificationStatusData?.hasNewNotification
+        : false
+
     return {
-        hasUnreadItems:
-            inboxData?.length || notificationStatusData?.hasNewNotification,
+        hasUnreadItems: inboxData?.length || hasUnreadNotifications,
         hasUnreadInboxItems: inboxData?.length,
-        hasUnreadNotifications: notificationStatusData?.hasNewNotification,
+        hasUnreadNotifications,
     }
 }
