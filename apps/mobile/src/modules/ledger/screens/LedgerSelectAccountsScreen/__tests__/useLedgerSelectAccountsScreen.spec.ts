@@ -343,8 +343,6 @@ describe('useLedgerSelectAccountsScreen', () => {
             size: 'auto',
             enablePanDownToClose: true,
         })
-        // The contents node must be a <LedgerAccountAddressContent /> element
-        // with the right address prop captured at request time.
         expect(call[0].contents.type).toBe(LedgerAccountAddressContent)
         expect(call[0].contents.props.address).toBe('ADDR')
     })

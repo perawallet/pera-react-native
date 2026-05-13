@@ -34,10 +34,14 @@ import { resolveDeviceModel, buildLedgerAccountPath } from './constants'
 import { extractLedgerSignature } from './signature'
 
 /**
- * Pre-flight check that BLE scan permissions are granted at sign time.
+ * Pre-flight check that BLE scan + connect permissions are granted at sign time
+ * (Android API ≥ 31 requires both BLUETOOTH_SCAN and BLUETOOTH_CONNECT).
  * Mirrors the gate in `useBlePermissions` but is callable from the
- * non-React transport layer. iOS handles permission prompting at the
- * system level when scanning begins, so it's a no-op here.
+ * non-React transport layer.
+ *
+ * iOS does not require pre-flighting: the Transport library handles the
+ * CoreBluetooth permission prompt automatically when scanning begins and
+ * surfaces a classified error if the user denies it.
  *
  * This only CHECKS — it does not prompt. The pairing flow already
  * prompts for these permissions; if they're revoked at sign time we
@@ -178,9 +182,9 @@ export class RNLedgerService implements HardwareWalletService {
                     throw new LedgerBluetoothDisabledError()
                 }
 
-                // Pre-flight: are scan permissions granted? The pairing
-                // flow already prompts for these — at sign time we only
-                // check. If perms were revoked (or for some reason never
+                // Pre-flight: are scan + connect permissions granted? The
+                // pairing flow already prompts for these — at sign time we
+                // only check. If perms were revoked (or for some reason never
                 // granted), throw so the overlay surfaces the "permission
                 // required" preset with the troubleshooting link.
                 const permitted = await hasBlePermissions()

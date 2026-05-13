@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import React from 'react'
 import { PWView, PWText, PWButton } from '@components/core'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'

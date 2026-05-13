@@ -76,6 +76,8 @@ const initialState: State = {
     isTroubleshootingVisible: false,
 }
 
+// Intentionally session-only (no persist middleware) — live signing state is
+// meaningless after an app reload. Same pattern as useHDImportSessionStore.
 export const useHardwareSigningStore = create<Store>(set => ({
     ...initialState,
     start: (requestId, deviceName) =>

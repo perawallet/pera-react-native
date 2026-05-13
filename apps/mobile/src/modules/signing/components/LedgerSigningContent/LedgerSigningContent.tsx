@@ -20,6 +20,11 @@ import { useLedgerSigningContent } from './useLedgerSigningContent'
  * adapter hook and dispatches to the correct phase-specific content based
  * on the current signing status. The troubleshooting sheet is mounted as
  * a peer via the `useLedgerConnectionIssueDriver` in SigningOverlays.
+ *
+ * Intentionally style-less: this is a phase router with no direct visual
+ * output. All visual styles live in the phase-content components
+ * (`LedgerAwaitingApprovalContent`, `LedgerErrorContent`), per CLAUDE.md
+ * convention. The absence of a `styles.ts` is deliberate.
  */
 export const LedgerSigningContent = () => {
     const {
