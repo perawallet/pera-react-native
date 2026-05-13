@@ -254,6 +254,7 @@ const useLedgerSigningDriver = () => {
 const useLedgerConnectionIssueDriver = () => {
     const { isTroubleshootingVisible, onCloseTroubleshooting } =
         useLedgerSigningContent()
+    const { requestId } = useHardwareSigning()
     const { request: requestBottomSheet, dismiss } = useBottomSheet()
     const openIdRef = useRef<string | null>(null)
 
@@ -267,7 +268,9 @@ const useLedgerConnectionIssueDriver = () => {
         }
         if (openIdRef.current) return
 
-        const sheetId = `ledger-troubleshooting-${Date.now()}`
+        const sheetId = requestId
+            ? `ledger-troubleshooting:${requestId}`
+            : 'ledger-troubleshooting'
         openIdRef.current = sheetId
 
         let cancelled = false
@@ -292,6 +295,7 @@ const useLedgerConnectionIssueDriver = () => {
         }
     }, [
         isTroubleshootingVisible,
+        requestId,
         onCloseTroubleshooting,
         requestBottomSheet,
         dismiss,

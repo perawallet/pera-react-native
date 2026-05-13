@@ -169,7 +169,7 @@ export const useLedgerFetchAccountsScreen =
             }
             if (openIdRef.current) return
 
-            const sheetId = `ledger-connecting-${Date.now()}`
+            const sheetId = 'ledger-connecting'
             openIdRef.current = sheetId
 
             let cancelled = false
