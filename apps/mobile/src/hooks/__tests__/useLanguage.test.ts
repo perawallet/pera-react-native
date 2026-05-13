@@ -15,6 +15,7 @@ import { renderHook, act } from '@testing-library/react'
 import { useLanguage } from '../useLanguage'
 import { useTranslation } from 'react-i18next'
 
+vi.unmock('@hooks/useLanguage')
 vi.mock('react-i18next', () => ({
     useTranslation: vi.fn(),
 }))

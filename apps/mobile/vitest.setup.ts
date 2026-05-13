@@ -18,6 +18,16 @@ import { vi, afterEach } from 'vitest'
 
 const store = new Map<string, string>()
 
+// Global fallback for useLanguage — per-file vi.mock calls override this,
+// so specs that need a spy or a different shape can still provide their own.
+// Returns the key as-is (matching real i18next missing-key behaviour) so that
+// specs which assert on translated strings continue to work without change.
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({
+        t: (key: string) => key,
+    }),
+}))
+
 // Mock platform driver to prevent "No platform driver configured" errors
 vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
     WithPlatformExtension: () => ({

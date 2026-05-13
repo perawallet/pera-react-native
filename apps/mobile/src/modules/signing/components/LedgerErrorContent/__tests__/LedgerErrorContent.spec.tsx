@@ -15,13 +15,6 @@ import { fireEvent, render, screen } from '@test-utils/render'
 import type { LedgerErrorPreset } from '@modules/ledger/utils/ledgerErrorPresets'
 import { LedgerErrorContent } from '../LedgerErrorContent'
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({
-        t: (key: string, params?: Record<string, unknown>) =>
-            params ? `${key}|${JSON.stringify(params)}` : key,
-    }),
-}))
-
 const baseError: LedgerErrorPreset = {
     kind: 'connection_failed',
     title: 'Connection failed',

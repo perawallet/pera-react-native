@@ -105,6 +105,7 @@ vi.mock('@modules/onboarding/hooks', () => ({
     }),
 }))
 
+vi.unmock('@hooks/useLanguage')
 vi.mock('react-i18next', async () => {
     const actual = await vi.importActual<object>('react-i18next')
     return {

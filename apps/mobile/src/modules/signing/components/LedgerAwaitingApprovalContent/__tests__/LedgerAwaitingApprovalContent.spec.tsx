@@ -14,13 +14,6 @@ import { describe, it, expect, vi } from 'vitest'
 import { fireEvent, render, screen } from '@test-utils/render'
 import { LedgerAwaitingApprovalContent } from '../LedgerAwaitingApprovalContent'
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({
-        t: (key: string, params?: Record<string, unknown>) =>
-            params ? `${key}|${JSON.stringify(params)}` : key,
-    }),
-}))
-
 vi.mock('@hooks/useIsDarkMode', () => ({
     useIsDarkMode: () => false,
 }))
