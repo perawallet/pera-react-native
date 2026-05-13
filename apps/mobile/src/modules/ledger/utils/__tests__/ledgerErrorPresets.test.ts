@@ -53,12 +53,16 @@ describe('getLedgerErrorPreset', () => {
         expect(preset.kind).toBe('connection_lost')
     })
 
-    it('maps LedgerTimeoutError to scan_timeout preset (generic timeout collapses for UX)', () => {
+    it('maps LedgerTimeoutError to timeout preset (distinct from scan_timeout)', () => {
         const preset = getLedgerErrorPreset(
-            new LedgerTimeoutError('discovery'),
+            new LedgerTimeoutError('Sign Ledger transaction'),
             t,
         )
-        expect(preset.kind).toBe('scan_timeout')
+        expect(preset.kind).toBe('timeout')
+        expect(preset.title).toBe('ledger.errors.timeout_title')
+        expect(preset.body).toBe('ledger.errors.timeout')
+        expect(preset.isTroubleshootable).toBe(false)
+        expect(preset.isRetryable).toBe(true)
     })
 
     it('maps LedgerConnectionError to connection_failed preset', () => {
@@ -181,6 +185,21 @@ describe('LedgerErrorPreset 13-kind taxonomy', () => {
         // reclassify it.
         const preset = getLedgerErrorPreset(new LedgerScanTimeoutError('x'), t)
         expect(preset.kind).toBe('scan_timeout')
+    })
+
+    it('LedgerTimeoutError maps to timeout with isTroubleshootable=false and isRetryable=true', () => {
+        const preset = getLedgerErrorPreset(
+            new LedgerTimeoutError('Sign Ledger transaction'),
+            t,
+        )
+        expect(preset.kind).toBe('timeout')
+        expect(preset.isTroubleshootable).toBe(false)
+        expect(preset.isRetryable).toBe(true)
+    })
+
+    it('timeout kind is NOT in the troubleshootable set', () => {
+        const preset = getLedgerErrorPresetByKind('timeout', t)
+        expect(preset.isTroubleshootable).toBe(false)
     })
 })
 

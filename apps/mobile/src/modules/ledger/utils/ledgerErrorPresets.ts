@@ -106,10 +106,11 @@ const KIND_BY_ERROR: Array<{
         match: error => error instanceof LedgerDisconnectedError,
         kind: 'connection_lost',
     },
-    // Generic timeout collapses into scan_timeout for the UX.
+    // Mid-operation timeout (APDU exchange, approval wait) — device was already
+    // connected so BLE troubleshooting tips are irrelevant; not troubleshootable.
     {
         match: error => error instanceof LedgerTimeoutError,
-        kind: 'scan_timeout',
+        kind: 'timeout',
     },
     {
         match: error => error instanceof LedgerConnectionError,

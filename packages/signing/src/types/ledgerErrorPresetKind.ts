@@ -20,6 +20,7 @@ export type LedgerErrorPresetKind =
     | 'bluetooth_disabled'
     | 'bluetooth_permission'
     | 'scan_timeout'
+    | 'timeout'
     | 'connection_failed'
     | 'connection_lost'
     | 'user_rejected'

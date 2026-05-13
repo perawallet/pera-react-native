@@ -57,7 +57,7 @@ export const classifyLedgerErrorKind = (
     if (error instanceof LedgerUnsupportedDeviceError)
         return 'unsupported_device'
     if (error instanceof LedgerDisconnectedError) return 'connection_lost'
-    if (error instanceof LedgerTimeoutError) return 'scan_timeout'
+    if (error instanceof LedgerTimeoutError) return 'timeout'
     if (error instanceof LedgerConnectionError) return 'connection_failed'
     return 'connection_failed'
 }

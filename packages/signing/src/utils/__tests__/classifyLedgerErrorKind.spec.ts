@@ -43,7 +43,7 @@ describe('classifyLedgerErrorKind', () => {
         [new LedgerNetworkError(), 'network_error'],
         [new LedgerUnsupportedDeviceError(), 'unsupported_device'],
         [new LedgerDisconnectedError(), 'connection_lost'],
-        [new LedgerTimeoutError('x'), 'scan_timeout'],
+        [new LedgerTimeoutError('x'), 'timeout'],
         [new LedgerConnectionError('x'), 'connection_failed'],
     ]
 
