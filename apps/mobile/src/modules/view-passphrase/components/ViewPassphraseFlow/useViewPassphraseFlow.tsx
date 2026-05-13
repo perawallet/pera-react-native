@@ -12,25 +12,33 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { usePinCode } from '@perawallet/wallet-core-security'
+import { useBottomSheet } from '@modules/bottom-sheet'
+import {
+    PassphraseAcknowledgeContent,
+    type PassphraseAcknowledgeContentResult,
+} from '../PassphraseAcknowledgeContent'
+import { ViewPassphraseContent } from '../ViewPassphraseContent'
 
 export type ViewPassphraseFlowStep = 'pin' | 'acknowledge' | 'display' | null
 
 export type UseViewPassphraseFlowParams = {
     isVisible: boolean
+    address: string
     onClose: () => void
 }
 
 export type UseViewPassphraseFlowResult = {
     step: ViewPassphraseFlowStep
     handlePinSuccess: () => void
-    advanceToDisplay: () => void
 }
 
 export const useViewPassphraseFlow = ({
     isVisible,
-    onClose: _onClose,
+    address,
+    onClose,
 }: UseViewPassphraseFlowParams): UseViewPassphraseFlowResult => {
     const { checkPinEnabled } = usePinCode()
+    const { request: requestBottomSheet } = useBottomSheet()
     const [step, setStep] = useState<ViewPassphraseFlowStep>(null)
 
     useEffect(() => {
@@ -53,13 +61,41 @@ export const useViewPassphraseFlow = ({
         setStep('acknowledge')
     }, [])
 
-    const advanceToDisplay = useCallback(() => {
-        setStep('display')
-    }, [])
+    useEffect(() => {
+        if (step !== 'acknowledge') return
+        let cancelled = false
+        requestBottomSheet<PassphraseAcknowledgeContentResult>({
+            contents: <PassphraseAcknowledgeContent />,
+            options: { size: 'auto', enablePanDownToClose: true },
+        }).then(result => {
+            if (cancelled) return
+            if (result === 'confirm') {
+                setStep('display')
+            } else {
+                onClose()
+            }
+        })
+        return () => {
+            cancelled = true
+        }
+    }, [step, requestBottomSheet, onClose])
+
+    useEffect(() => {
+        if (step !== 'display') return
+        let cancelled = false
+        requestBottomSheet<void>({
+            contents: <ViewPassphraseContent address={address} />,
+            options: { size: 'lg', enablePanDownToClose: true },
+        }).finally(() => {
+            if (!cancelled) onClose()
+        })
+        return () => {
+            cancelled = true
+        }
+    }, [step, requestBottomSheet, address, onClose])
 
     return {
         step,
         handlePinSuccess,
-        advanceToDisplay,
     }
 }

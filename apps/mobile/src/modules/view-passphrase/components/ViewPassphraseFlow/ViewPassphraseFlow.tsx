@@ -10,14 +10,7 @@
  limitations under the License
  */
 
-import { useEffect } from 'react'
 import { PinEditView } from '@modules/security/components/PinEditView'
-import { useBottomSheet } from '@modules/bottom-sheet'
-import {
-    PassphraseAcknowledgeContent,
-    type PassphraseAcknowledgeContentResult,
-} from '../PassphraseAcknowledgeContent'
-import { ViewPassphraseContent } from '../ViewPassphraseContent'
 import { useViewPassphraseFlow } from './useViewPassphraseFlow'
 
 export type ViewPassphraseFlowProps = {
@@ -31,44 +24,11 @@ export const ViewPassphraseFlow = ({
     address,
     onClose,
 }: ViewPassphraseFlowProps) => {
-    const { step, handlePinSuccess, advanceToDisplay } = useViewPassphraseFlow({
+    const { step, handlePinSuccess } = useViewPassphraseFlow({
         isVisible,
+        address,
         onClose,
     })
-    const { request: requestBottomSheet } = useBottomSheet()
-
-    useEffect(() => {
-        if (step !== 'acknowledge') return
-        let cancelled = false
-        requestBottomSheet<PassphraseAcknowledgeContentResult>({
-            contents: <PassphraseAcknowledgeContent />,
-            options: { size: 'auto', enablePanDownToClose: true },
-        }).then(result => {
-            if (cancelled) return
-            if (result === 'confirm') {
-                advanceToDisplay()
-            } else {
-                onClose()
-            }
-        })
-        return () => {
-            cancelled = true
-        }
-    }, [step, requestBottomSheet, advanceToDisplay, onClose])
-
-    useEffect(() => {
-        if (step !== 'display') return
-        let cancelled = false
-        requestBottomSheet<void>({
-            contents: <ViewPassphraseContent address={address} />,
-            options: { size: 'lg', enablePanDownToClose: true },
-        }).finally(() => {
-            if (!cancelled) onClose()
-        })
-        return () => {
-            cancelled = true
-        }
-    }, [step, requestBottomSheet, address, onClose])
 
     // PinEditView is mounted only while we're in the 'pin' step. Keeping it
     // always-mounted (toggling `mode` to null) relies on gorhom's

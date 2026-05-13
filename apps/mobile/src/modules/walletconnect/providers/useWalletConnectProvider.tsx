@@ -17,8 +17,11 @@ import {
     useWalletConnectStore,
     WalletConnectSessionRequest,
 } from '@perawallet/wallet-core-walletconnect'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { useBottomSheet } from '@modules/bottom-sheet'
+import { ConnectionSuccessContent } from '../components/ConnectionSuccessContent'
+import { WalletConnectErrorContent } from '../components/WalletConnectErrorContent'
 
 export const useWalletConnectProvider = () => {
     const { sessionRequests, removeSessionRequest } =
@@ -33,13 +36,12 @@ export const useWalletConnectProvider = () => {
     const setConnectionError = useWalletConnectStore(
         state => state.setConnectionError,
     )
+    const { request: requestBottomSheet } = useBottomSheet()
+    const successOpenRef = useRef(false)
+    const errorOpenRef = useRef(false)
 
     const handleSuccess = (request: WalletConnectSessionRequest) => {
         setSuccessRequest(request)
-    }
-
-    const clearSuccessRequest = () => {
-        setSuccessRequest(null)
     }
 
     const handleConnectionError = (error?: Error) => {
@@ -51,18 +53,56 @@ export const useWalletConnectProvider = () => {
         }
     }
 
-    const clearConnectionError = () => {
-        if (nextRequest) {
-            removeSessionRequest(nextRequest)
-        }
-        setConnectionError(null)
-    }
-
     const { initWalletConnect } = useWalletConnect(network)
 
     useEffect(() => {
         initWalletConnect()
     }, [initWalletConnect, network])
+
+    useEffect(() => {
+        if (!successRequest || successOpenRef.current) return
+        successOpenRef.current = true
+        let cancelled = false
+        void (async () => {
+            await requestBottomSheet<void>({
+                contents: <ConnectionSuccessContent request={successRequest} />,
+                options: { size: 'auto', enablePanDownToClose: true },
+            })
+            if (cancelled) return
+            successOpenRef.current = false
+            setSuccessRequest(null)
+        })()
+        return () => {
+            cancelled = true
+        }
+    }, [successRequest, requestBottomSheet])
+
+    useEffect(() => {
+        if (!connectionError || errorOpenRef.current) return
+        errorOpenRef.current = true
+        let cancelled = false
+        void (async () => {
+            await requestBottomSheet<void>({
+                contents: <WalletConnectErrorContent error={connectionError} />,
+                options: { size: 'auto', enablePanDownToClose: true },
+            })
+            if (cancelled) return
+            errorOpenRef.current = false
+            if (nextRequest) {
+                removeSessionRequest(nextRequest)
+            }
+            setConnectionError(null)
+        })()
+        return () => {
+            cancelled = true
+        }
+    }, [
+        connectionError,
+        requestBottomSheet,
+        nextRequest,
+        removeSessionRequest,
+        setConnectionError,
+    ])
 
     return {
         nextRequest,
@@ -70,7 +110,5 @@ export const useWalletConnectProvider = () => {
         connectionError,
         handleConnectionError,
         handleSuccess,
-        clearSuccessRequest,
-        clearConnectionError,
     }
 }
