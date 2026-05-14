@@ -55,6 +55,7 @@ export const AccountInfoCard = ({ account, onClose }: AccountInfoCardProps) => {
         structureLabel,
         structureIcon,
         structureAccounts,
+        structureMainAddress,
         handleScanAddresses,
     } = useAccountInfoCard({ account, onClose })
 
@@ -173,6 +174,7 @@ export const AccountInfoCard = ({ account, onClose }: AccountInfoCardProps) => {
                             label={structureLabel}
                             icon={structureIcon}
                             accounts={structureAccounts}
+                            mainAccountAddress={structureMainAddress}
                             onScanAddresses={handleScanAddresses}
                         />
                     </ExpandablePanel>
