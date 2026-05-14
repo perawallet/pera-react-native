@@ -94,10 +94,15 @@ export const usePinCode = (): UsePinCodeResult => {
 
     const writeRecord = useCallback(
         async (record: PinRecord): Promise<void> => {
-            await commitSecret({
-                id: PIN_RECORD_KEY_ID,
-                bytes: serializePinRecord(record),
-            })
+            const bytes = serializePinRecord(record)
+            try {
+                await commitSecret({
+                    id: PIN_RECORD_KEY_ID,
+                    bytes,
+                })
+            } finally {
+                bytes.fill(0)
+            }
         },
         [commitSecret],
     )

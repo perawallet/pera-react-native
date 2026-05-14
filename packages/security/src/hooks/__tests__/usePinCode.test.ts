@@ -61,8 +61,14 @@ vi.mock('../useBiometrics', () => ({
 const wireBlobMocks = () => {
     kmsMocks.commitSecret.mockImplementation(
         async ({ id, bytes }: { id: string; bytes: Uint8Array }) => {
-            if (id === PIN_RECORD_KEY_ID) kmsMocks.pinBytes = bytes
-            if (id !== PIN_RECORD_KEY_ID) kmsMocks.biometricBytes = bytes
+            // Snapshot bytes via a defensive copy (mirroring production
+            // commitSecret behavior). Callers now zero their input
+            // buffer once commit resolves; without copying here the
+            // mock's stashed reference would be wiped out from under
+            // the test.
+            const copy = new Uint8Array(bytes)
+            if (id === PIN_RECORD_KEY_ID) kmsMocks.pinBytes = copy
+            if (id !== PIN_RECORD_KEY_ID) kmsMocks.biometricBytes = copy
         },
     )
     kmsMocks.withSecret.mockImplementation(
@@ -189,13 +195,19 @@ describe('usePinCode', () => {
         expect(kmsMocks.commitSecret).toHaveBeenCalledTimes(1)
         const arg = kmsMocks.commitSecret.mock.calls[0][0]
         expect(arg.id).toBe(PIN_RECORD_KEY_ID)
-        const record = parsePinRecord(arg.bytes)
+        // Read from the mock's snapshotted copy — `writeRecord` zeros
+        // the source `bytes` Uint8Array once commit resolves, so
+        // `arg.bytes` (the same reference) is now all zeros. The mock
+        // mirrors production by deep-copying into `pinBytes` at call
+        // time; that's the persisted form callers actually see.
+        const persisted = kmsMocks.pinBytes!
+        const record = parsePinRecord(persisted)
         expect(record).not.toBeNull()
         expect(record?.version).toBe(PIN_RECORD_VERSION)
         expect(record?.salt).toMatch(/^[0-9a-f]{32}$/)
         expect(record?.hash).toMatch(/^[0-9a-f]{64}$/)
         // The raw PIN must never appear in the serialized bytes.
-        expect(new TextDecoder().decode(arg.bytes)).not.toContain('123456')
+        expect(new TextDecoder().decode(persisted)).not.toContain('123456')
         expect(mockSetFailedAttempts).toHaveBeenCalledWith(0)
         expect(mockSetLockoutEndTime).toHaveBeenCalledWith(null)
     }, 30_000)
@@ -338,7 +350,9 @@ describe('usePinCode', () => {
         expect(mockSetFailedAttempts).toHaveBeenCalledWith(3)
         const lastCall = kmsMocks.commitSecret.mock.calls.at(-1)
         expect(lastCall).toBeDefined()
-        const persisted = parsePinRecord(lastCall![0].bytes)
+        // `lastCall![0].bytes` is zeroed by writeRecord's finally; read
+        // the snapshot the mock stashed at call time instead.
+        const persisted = parsePinRecord(kmsMocks.pinBytes!)
         expect(persisted?.failedAttempts).toBe(3)
         expect(persisted?.lockoutEndTime).toBeNull()
     }, 30_000)
@@ -370,7 +384,9 @@ describe('usePinCode', () => {
             now + INITIAL_LOCKOUT_SECONDS * 1000,
         )
         const lastCall = kmsMocks.commitSecret.mock.calls.at(-1)
-        const persisted = parsePinRecord(lastCall![0].bytes)
+        // `lastCall![0].bytes` is zeroed by writeRecord's finally; read
+        // the snapshot the mock stashed at call time instead.
+        const persisted = parsePinRecord(kmsMocks.pinBytes!)
         expect(persisted?.lockoutEndTime).toBe(
             now + INITIAL_LOCKOUT_SECONDS * 1000,
         )
@@ -451,7 +467,9 @@ describe('usePinCode', () => {
         expect(mockResetFailedAttempts).toHaveBeenCalled()
         expect(mockSetLockoutEndTime).toHaveBeenCalledWith(null)
         const lastCall = kmsMocks.commitSecret.mock.calls.at(-1)
-        const persisted = parsePinRecord(lastCall![0].bytes)
+        // `lastCall![0].bytes` is zeroed by writeRecord's finally; read
+        // the snapshot the mock stashed at call time instead.
+        const persisted = parsePinRecord(kmsMocks.pinBytes!)
         expect(persisted?.failedAttempts).toBe(0)
         expect(persisted?.lockoutEndTime).toBeNull()
     }, 30_000)

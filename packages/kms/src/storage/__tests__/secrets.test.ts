@@ -20,6 +20,7 @@ const mocks = vi.hoisted(() => ({
     generate: vi.fn(),
     remove: vi.fn(),
     exportKey: vi.fn(),
+    lastValueSnapshot: null as Uint8Array | null,
 }))
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
@@ -66,9 +67,24 @@ describe('secrets', () => {
         // the upsert tests can exercise the cleanup that `commitSecret`
         // performs.
         mocks.generate.mockImplementation(
-            async (options: { type: string; params?: { id?: string } }) => {
+            async (options: {
+                type: string
+                params?: {
+                    id?: string
+                    params?: { value?: Uint8Array }
+                }
+            }) => {
                 const id = options.params?.id ?? 'generated-id'
                 mocks.keys.unshift({ id, type: options.type })
+                // Snapshot the secret bytes synchronously so the test
+                // can inspect what was passed in. `commitSecret` zeros
+                // its defensive valueCopy in a finally once we resolve,
+                // so the live reference would otherwise be all zeros by
+                // the time the assertion runs.
+                const value = options.params?.params?.value
+                if (value instanceof Uint8Array) {
+                    mocks.lastValueSnapshot = new Uint8Array(value)
+                }
                 return id
             },
         )
@@ -96,7 +112,10 @@ describe('secrets', () => {
             // `keyData.metadata.params` for the value, and rn-keystore
             // hangs our params under metadata via `metadata: {...params}`.
             expect(arg.params.id).toBe('pera.pinCode')
-            expect(Array.from(arg.params.params.value)).toEqual([1, 2, 3, 4])
+            // Read the snapshot stashed by the mock at call time —
+            // commitSecret zeros its defensive copy after generate
+            // resolves, so `arg.params.params.value` is now all zeros.
+            expect(Array.from(mocks.lastValueSnapshot!)).toEqual([1, 2, 3, 4])
         })
 
         test('passes through metadata via params.params.metadata when provided', async () => {

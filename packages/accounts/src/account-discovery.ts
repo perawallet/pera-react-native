@@ -134,11 +134,6 @@ async function scanAccountKeys({
                 id: generateOrderedUniqueId(),
                 address,
                 type: AccountTypes.hdWallet,
-                // Stamp the deterministic child id even though the child
-                // hasn't been committed yet — at commit time we'll mint
-                // the same id, so this account is signed-ready out of the
-                // gate. The seed is reachable from the child's
-                // metadata.parentKeyId once committed.
                 keyPairId: hdDerivedKeyId(
                     walletKeyId,
                     accountIdx,

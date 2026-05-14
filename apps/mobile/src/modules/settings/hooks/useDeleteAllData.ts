@@ -31,12 +31,6 @@ import { useCallback } from 'react'
 const REACT_QUERY_PERSIST_KEY = 'reactQuery'
 
 export const clearAccountsStore = () => {
-    // Clear persisted MMKV first, then reset in-memory. Doing it in this
-    // order means the persist middleware's onChange listener (fired by
-    // resetState's `set(initialState)`) writes the empty initialState
-    // *after* we've removed any prior blob — so the storage entry ends
-    // up with the empty defaults rather than racing with a pre-clear
-    // setItem.
     useAccountsStore.persist.clearStorage()
     useAccountsStore.getState().resetState()
 }
@@ -106,17 +100,7 @@ export const useDeleteAllData = (): UseDeleteAllDataResult => {
             logger.error('Failed to delete database', { error: e })
         }
 
-        // 8. Clear all registered stores INCLUDING the accounts store.
-        // Previously this skipped accounts so the settings success modal
-        // could render before the route tree switched to Onboarding —
-        // but that left the accounts store populated for the entire
-        // duration of the modal, and any code path that captured
-        // `accounts` in a closure during that window would write the
-        // old list back when its async work resolved (e.g. an in-flight
-        // create-account handler from before the user opened settings,
-        // or NameAccount's `useUpdateAccount` resolving with a stale
-        // snapshot). Wipe accounts up front so there's no stale state
-        // anywhere by the time the user lands back on Onboarding.
+        // 8. Clear all registered stores (this will redirect to onboarding, then show the success popup)
         clearAllStores()
     }, [
         queryClient,

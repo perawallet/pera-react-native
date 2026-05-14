@@ -39,16 +39,6 @@ export const useRemoveAccountById = () => {
                 if (!sharedSeed) {
                     await removeKeyAndChildren(seedId)
                 }
-            } else {
-                // Legacy / non-derived: account.keyPairId points directly at
-                // a top-level keystore entry. Remove it (with any children)
-                // when no other account still references it.
-                const sharedRoot = remaining.some(
-                    a => a.keyPairId === childKeyId,
-                )
-                if (!sharedRoot) {
-                    await removeKeyAndChildren(childKeyId)
-                }
             }
         }
 

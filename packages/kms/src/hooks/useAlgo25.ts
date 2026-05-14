@@ -54,10 +54,7 @@ export const useAlgo25 = () => {
 
             const metadata = buildSeedMetadata({ scheme: SeedScheme.Algo25 })
 
-            // 1. Persist the 32-byte algo25 seed under the canonical `seed`
-            //    type, scheme=algo25. Mnemonic recovery reads `privateKey`
-            //    back via `mnemonicFromSeed` — no entropy stashing needed
-            //    (algo25 mnemonics ARE the seed).
+            // 1. Persist the 32-byte algo25 seed
             const seedData: Omit<Seed, 'id'> & { id: string } = {
                 id: seedKeyId,
                 type: 'seed',
@@ -70,12 +67,7 @@ export const useAlgo25 = () => {
             await keyStore.import(seedData, 'raw')
             committedSeed = true
 
-            // 2. Derive the Ed25519 signing child and persist it with
-            //    parentKeyId=seedId. The keystore's `generate({type:'ed25519'})`
-            //    path resolves the seed parent and calls
-            //    `generateEd25519FromSeed` for us, producing the canonical
-            //    64-byte secret + 32-byte public keypair. The deterministic
-            //    id `${seedId}-ed25519` is what `account.keyPairId` references.
+            // 2. Derive the Ed25519 signing child
             const signKeyId = algo25SignKeyId(seedKeyId)
             await keyStore.generate({
                 type: 'ed25519',
@@ -100,11 +92,7 @@ export const useAlgo25 = () => {
                 signKeyId,
             }
         } catch (e) {
-            // If we committed the seed but the ed25519 child mint failed,
-            // roll the seed back — an orphan seed without its signing key
-            // would surface as an algo25 account that can't sign and can't
-            // be safely re-imported under the same id. Best-effort: if the
-            // rollback itself throws, the original error wins.
+            // delete the seed if it was created
             if (committedSeed) {
                 try {
                     await keyStore.remove(seedKeyId)

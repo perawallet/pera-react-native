@@ -177,24 +177,4 @@ describe('useRemoveAccountById', () => {
         expect(keyStoreRemoveSpy).toHaveBeenCalledWith('hd-1-acc0-idx0-dt9')
         expect(removeKeyAndChildrenSpy).toHaveBeenCalledWith('hd-1')
     })
-
-    test('legacy fallback: account.keyPairId points directly at a top-level entry — sweeps it via removeKeyAndChildren', async () => {
-        // No entry in parentMap → seedIdOf returns undefined.
-        const a: WalletAccount = {
-            id: '1',
-            name: 'Legacy',
-            type: 'algo25',
-            address: 'ADDR1',
-            keyPairId: 'legacy-key',
-        }
-        useAccountsStore.setState({ accounts: [a] })
-
-        const { result } = renderHook(() => useRemoveAccountById())
-
-        await act(async () => {
-            await result.current('1')
-        })
-
-        expect(removeKeyAndChildrenSpy).toHaveBeenCalledWith('legacy-key')
-    })
 })

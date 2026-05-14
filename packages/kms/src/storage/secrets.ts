@@ -36,27 +36,26 @@ export const commitSecret = async (params: {
 }): Promise<void> => {
     const keyStore = getProvider().key.store
 
-    // The keystore generate path reads the secret-key value from
-    // `keyData.metadata.params.value` (see `generateSecretKey` in
-    // `@algorandfoundation/keystore`). The rn-keystore wraps whatever
-    // `params` we pass here as `metadata: {...params, createdAt}`, so
-    // the value needs to nest one extra level under `params.params`
-    // for it to land at the path the core factory expects.
-    await keyStore.generate({
-        type: 'secret-key',
-        algorithm: 'raw',
-        extractable: true,
-        keyUsages: [],
-        params: {
-            id: params.id,
+    const valueCopy = new Uint8Array(params.bytes)
+    try {
+        await keyStore.generate({
+            type: 'secret-key',
+            algorithm: 'raw',
+            extractable: true,
+            keyUsages: [],
             params: {
-                value: new Uint8Array(params.bytes),
-                ...(params.metadata !== undefined
-                    ? { metadata: params.metadata }
-                    : {}),
+                id: params.id,
+                params: {
+                    value: valueCopy,
+                    ...(params.metadata !== undefined
+                        ? { metadata: params.metadata }
+                        : {}),
+                },
             },
-        },
-    })
+        })
+    } finally {
+        valueCopy.fill(0)
+    }
 
     // The rn-keystore's `commit` prepends to the reactive `keys` array
     // without dedupe, so an upsert can leave a stale entry behind. Sweep

@@ -47,12 +47,7 @@ export const useCreateAccount = () => {
         useKMS()
 
     const saveAndUpdateAccounts = async (newAccount: WalletAccount) => {
-        // Read accounts FRESH inside the handler — never use a snapshot
-        // captured at hook-render time. Async actions (e.g. createHDWalletKey)
-        // can finish after the store has been wiped (delete-all-data flow),
-        // and a stale closure here would otherwise re-introduce the cleared
-        // accounts when we wrote `[...staleAccounts, newAccount]` back. Also
-        // never mutate the snapshot — zustand state is meant to be immutable.
+        // We get the state fresh to avoid stale captures
         const currentAccounts = useAccountsStore.getState().accounts
         const nextAccounts = [...currentAccounts, newAccount]
         setAccounts(nextAccounts)
@@ -93,13 +88,6 @@ export const useCreateAccount = () => {
             throw new NoHDWalletError(rootWalletId)
         }
 
-        // The derived child is what `account.keyPairId` references — and
-        // what every signing call hits via `keyStore.sign(keyPairId, data)`.
-        // The seed parent is reachable via the child's `metadata.parentKeyId`.
-        // `getDerivedPublicKey` mints (or no-ops, since the id is
-        // deterministic) the child and reads its publicKey from the live
-        // reactive store — we can't use `keyStore.export` because the
-        // rn-keystore stamps derived keys `extractable: false`.
         const derivationType = BIP32DerivationType.Peikert
         const publicKey = await getDerivedPublicKey(
             seedKeyId,
@@ -138,13 +126,6 @@ export const useCreateAccount = () => {
         seed,
         id,
     }: {
-        // Pass a freshly-minted seed reference here (e.g. from the import
-        // flow) to skip `getKey()`. `getKey` reads a `useMemo` bound to the
-        // *previous render's* keystore snapshot, so a key committed earlier
-        // in the same async handler isn't visible yet — without this we'd
-        // fall through to the no-mnemonic branch below and mint an algo25
-        // key from a fresh random seed, surfacing a different (random)
-        // address each import.
         seed?: Algo25SeedReference
         id?: string
     }) => {
@@ -154,10 +135,6 @@ export const useCreateAccount = () => {
             const keyId = id ?? generateOrderedUniqueId()
             const existing = getKey(keyId)
             if (existing) {
-                // Re-importing under a known seed id: use the existing entry.
-                // The seed itself doesn't carry the algo25 address, so we
-                // just derive it via the deterministic child id (which is
-                // already persisted) — its publicKey gives us the address.
                 resolved = {
                     seedKeyId: existing.id,
                     address: encodeAlgorandAddress(
@@ -181,9 +158,6 @@ export const useCreateAccount = () => {
             id: generateOrderedUniqueId(),
             address: resolved.address,
             type: AccountTypes.algo25,
-            // The algo25 child key is committed deterministically alongside
-            // the seed at `${seedKeyId}-ed25519`. Accounts reference the
-            // child directly, so signing is just `keyStore.sign(keyPairId, ...)`.
             keyPairId: algo25SignKeyId(resolved.seedKeyId),
         }
 

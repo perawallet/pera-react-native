@@ -27,11 +27,7 @@ export const useUpdateAccount = () => {
     const { mutateAsync: updateDeviceOnBackend } = useUpdateDeviceMutation()
 
     return (account: WalletAccount) => {
-        // Read accounts fresh inside the handler — never use a snapshot
-        // captured at hook-render time. Async flows (e.g. delete-all-data
-        // wipes the store) can change the list out from under a stale
-        // closure; writing back the captured snapshot would re-introduce
-        // accounts that were just cleared.
+        // Read fresh copy of accounts to avoid stale captures.
         const currentAccounts = useAccountsStore.getState().accounts
         const updated = currentAccounts.map(a =>
             a.address === account.address ? account : a,
