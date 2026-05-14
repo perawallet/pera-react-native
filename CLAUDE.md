@@ -204,12 +204,30 @@ import { useStyles } from './styles'
 
 ## Testing
 
-- **Vitest + React Native Testing Library**
-- Files: `.spec.tsx` extension in `__tests__/` directory (colocated)
-- Test **behavior only** — not styles or static text
-- **AAA pattern**: Arrange, Act, Assert
-- Import from `@test-utils/render` for `render`, `fireEvent`, `screen`
-- Hook tests: use `renderHook` from `@testing-library/react`
+**Vitest + React Native Testing Library.** Files use `.spec.tsx` (`.spec.ts` for non-JSX) and live in colocated `__tests__/` folders. Use **AAA** (Arrange, Act, Assert), import `render`/`fireEvent`/`screen` from `@test-utils/render`, and use `renderHook` from `@testing-library/react` for hooks.
+
+### What to test
+
+| Location                                                             | Unit tests?                                                                                                                |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Hooks (`useXxx.ts`), utils, stores, transformers                     | **Yes — required.** This is where behavior lives.                                                                          |
+| Core components (`apps/mobile/src/components/core/PW*/`)             | **Yes** — behavioral tests (interactions, prop wiring, conditional rendering) + one smoke test is fine.                    |
+| Shared components (`apps/mobile/src/components/[Name]/`)             | **Yes** — same rules as core: behavioral + smoke OK.                                                                       |
+| Module-level components & screens (`apps/mobile/src/modules/**/...`) | **No.** These are covered by integration tests in `apps/mobile/src/__integration__/`. Test the hook (`use[Name]`) instead. |
+
+### Avoid
+
+- Tests with no real assertion (`expect(container).toBeTruthy()` after `render()`).
+- Multiple tests in the same file that all just check the same text or count renders — pick one.
+- Style assertions (color, padding, fontWeight, etc.). Theme/style tokens are caught by reviews, not tests.
+- Re-testing React Native primitives ("renders children", "passes testID through") on every wrapper.
+- Snapshot tests.
+
+### Hook tests are the unit-test backbone for screens
+
+When a screen or module-level component has logic, extract it into a `useXxx` hook and test the hook. Don't test the rendered screen — the integration test exercises the rendered flow.
+
+See `docs/TESTING.md` for the integration test harness, MSW handler factories, and flow-test patterns.
 
 ## Work Completion
 

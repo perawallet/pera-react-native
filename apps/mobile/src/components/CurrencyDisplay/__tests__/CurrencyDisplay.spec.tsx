@@ -38,53 +38,6 @@ describe('CurrencyDisplay', () => {
         expect(container.textContent).toContain('---')
     })
 
-    it('displays placeholder when value is undefined', () => {
-        const { container } = render(
-            <CurrencyDisplay
-                value={undefined}
-                currency='USD'
-                precision={2}
-            />,
-        )
-        expect(container.textContent).toContain('---')
-    })
-
-    it('shows skeleton when isLoading is true', () => {
-        const { container } = render(
-            <CurrencyDisplay
-                value={new Decimal(100)}
-                currency='USD'
-                precision={2}
-                isLoading={true}
-            />,
-        )
-        expect(container).toBeTruthy()
-    })
-
-    it('displays ALGO icon for ALGO currency', () => {
-        const { container } = render(
-            <CurrencyDisplay
-                value={new Decimal(100)}
-                currency='ALGO'
-                precision={6}
-                showSymbol={true}
-            />,
-        )
-        expect(container).toBeTruthy()
-    })
-
-    it('respects showSymbol prop', () => {
-        const { container } = render(
-            <CurrencyDisplay
-                value={new Decimal(100)}
-                currency='ALGO'
-                precision={6}
-                showSymbol={false}
-            />,
-        )
-        expect(container).toBeTruthy()
-    })
-
     it('applies prefix when provided', () => {
         const { container } = render(
             <CurrencyDisplay
@@ -94,7 +47,6 @@ describe('CurrencyDisplay', () => {
                 prefix='+'
             />,
         )
-        // Prefix should be in the rendered output
         expect(container.textContent).toContain('+')
     })
 })

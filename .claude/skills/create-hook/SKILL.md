@@ -52,6 +52,30 @@ See `references/store-patterns.md` for store creation and access patterns.
 
 See `references/patterns.md` for component and screen hook examples.
 
+## Testing
+
+Hook tests are **required** — they're where module/screen behavior gets unit-tested (module-level rendered components are covered by integration tests, not unit tests). Use `renderHook` from `@testing-library/react`:
+
+```typescript
+import { describe, it, expect, vi } from 'vitest'
+import { renderHook } from '@testing-library/react'
+import { useAccountsQuery } from '../useAccountsQuery'
+
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    fetchAccounts: vi.fn().mockResolvedValue([]),
+}))
+
+describe('useAccountsQuery', () => {
+    it('returns the accounts list', async () => {
+        const { result } = renderHook(() => useAccountsQuery())
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
+        expect(result.current.accounts).toEqual([])
+    })
+})
+```
+
+For hook-tests-with-JSX (e.g. provider wrappers), use `.spec.tsx`; for pure logic hooks, `.spec.ts` is fine.
+
 ## Verification
 
 ```sh

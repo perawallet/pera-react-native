@@ -55,31 +55,6 @@ describe('QRScannerView', () => {
         expect(container).toBeTruthy()
     })
 
-    it('renders empty view when no camera device is found', () => {
-        // This test is simplified - we just verify rendering works
-        const { container } = render(
-            <QRScannerView
-                isVisible={true}
-                animationType='none'
-                onClose={vi.fn()}
-                onSuccess={vi.fn()}
-            />,
-        )
-        expect(container).toBeTruthy()
-    })
-
-    it('renders close button', () => {
-        const { container } = render(
-            <QRScannerView
-                isVisible={true}
-                animationType='none'
-                onClose={vi.fn()}
-                onSuccess={vi.fn()}
-            />,
-        )
-        expect(container).toBeTruthy()
-    })
-
     it('displays custom title when provided', () => {
         const { container } = render(
             <QRScannerView
@@ -91,38 +66,5 @@ describe('QRScannerView', () => {
             />,
         )
         expect(container.textContent).toContain('Scan WalletConnect QR')
-    })
-
-    it('displays default title when no title is provided', () => {
-        const { container } = render(
-            <QRScannerView
-                isVisible={true}
-                animationType='none'
-                onClose={vi.fn()}
-                onSuccess={vi.fn()}
-            />,
-        )
-        expect(container).toBeTruthy()
-    })
-
-    it('handles different animation types', () => {
-        const { container: slideContainer } = render(
-            <QRScannerView
-                isVisible={true}
-                animationType='slide'
-                onClose={vi.fn()}
-                onSuccess={vi.fn()}
-            />,
-        )
-        const { container: fadeContainer } = render(
-            <QRScannerView
-                isVisible={true}
-                animationType='fade'
-                onClose={vi.fn()}
-                onSuccess={vi.fn()}
-            />,
-        )
-        expect(slideContainer).toBeTruthy()
-        expect(fadeContainer).toBeTruthy()
     })
 })
