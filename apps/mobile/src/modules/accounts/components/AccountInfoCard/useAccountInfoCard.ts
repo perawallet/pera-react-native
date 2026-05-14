@@ -53,6 +53,7 @@ type UseAccountInfoCardResult = {
     structureLabel: string
     structureIcon: IconName
     structureAccounts: WalletAccount[]
+    structureMainAddress: string
     handleScanAddresses: () => void
 }
 
@@ -168,6 +169,22 @@ export const useAccountInfoCard = ({
         ledgerDeviceGroup,
     ])
 
+    const structureMainAddress = useMemo<string>(() => {
+        if (isHDWallet && hdWalletGroupIndex >= 0) {
+            return hdWalletGroups[hdWalletGroupIndex].firstAccount.address
+        }
+        if (isLedger && ledgerDeviceGroup) {
+            return ledgerDeviceGroup.firstAccount.address
+        }
+        return ''
+    }, [
+        isHDWallet,
+        hdWalletGroupIndex,
+        hdWalletGroups,
+        isLedger,
+        ledgerDeviceGroup,
+    ])
+
     const handleScanAddresses = useCallback(() => {
         if (isHDWalletAccount(account)) {
             onClose()
@@ -206,6 +223,7 @@ export const useAccountInfoCard = ({
         structureLabel,
         structureIcon,
         structureAccounts,
+        structureMainAddress,
         handleScanAddresses,
     }
 }

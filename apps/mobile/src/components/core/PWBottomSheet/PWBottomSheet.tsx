@@ -25,7 +25,7 @@ import {
     useRef,
 } from 'react'
 import { useStyles } from './styles'
-import { Keyboard, StyleProp, ViewStyle } from 'react-native'
+import { Keyboard, Platform, StyleProp, ViewStyle } from 'react-native'
 import { NotifierRoot, NotifierWrapper } from 'react-native-notifier'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -168,7 +168,7 @@ export const PWBottomSheet = ({
             enablePanDownToClose={enablePanDownToClose}
             enableContentPanningGesture={enableContentPanningGesture}
             enableOverDrag={false}
-            bottomInset={insets.bottom}
+            bottomInset={Platform.OS === 'android' ? insets.bottom : 0}
         >
             <NotifierWrapper
                 omitGlobalMethodsHookup

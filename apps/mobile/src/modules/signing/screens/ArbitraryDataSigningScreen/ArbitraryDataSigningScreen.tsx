@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWButton, PWView } from '@components/core'
+import { PWButton, PWSlideToConfirm, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { SourceMetadataView } from '@modules/signing/components/SourceMetadataView'
 import { SingleArbitrarySignRequestView } from '@modules/signing/components/SingleArbitrarySignRequestView'
@@ -52,24 +52,17 @@ export const ArbitraryDataSigningScreen = () => {
                     )}
                 </PWView>
                 <PWView style={styles.buttonContainer}>
-                    <PWButton
-                        title={t('common.cancel.label')}
-                        variant='secondary'
-                        onPress={handleReject}
-                        style={styles.button}
-                        isDisabled={isPending}
+                    <PWSlideToConfirm
+                        title={t('common.slide_to_confirm.label')}
+                        onConfirm={handleApprove}
+                        isLoading={isPending}
+                        testID='arbitrary-data-confirm-slide'
                     />
                     <PWButton
-                        title={
-                            isSingleSignRequest
-                                ? t('common.confirm.label')
-                                : t('common.confirm_all.label')
-                        }
-                        variant='primary'
-                        onPress={handleApprove}
-                        style={styles.button}
+                        title={t('common.cancel.label')}
+                        variant='linkNeutral'
+                        onPress={handleReject}
                         isDisabled={isPending}
-                        isLoading={isPending}
                     />
                 </PWView>
             </PWView>

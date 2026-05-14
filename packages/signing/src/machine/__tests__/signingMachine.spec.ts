@@ -141,33 +141,32 @@ describe('signingMachine', () => {
         expect(state.context.error).toBeNull()
     })
 
-    it('skips awaiting_user for headless requests and reaches completed', async () => {
-        const headlessRequest: TransactionSignRequest = {
+    it('pauses at awaiting_user even for non-interactive transports — caller drives resume', async () => {
+        // Post-PERA-XXXX the machine has no UI knowledge: every request
+        // reaches `awaiting_user` and only resumes when the lifecycle
+        // forwards an approval (instantly for non-interactive flows, after
+        // the user slides to confirm for `INTERACTIVE_SOURCES`).
+        const nonInteractiveRequest: TransactionSignRequest = {
             ...mockRequest,
-            id: 'req-headless',
+            id: 'req-non-interactive',
             transport: 'callback',
-            headless: true,
             approve: vi.fn().mockResolvedValue(undefined),
         }
 
         const actor = createActor(mockedMachine, {
-            input: makeInput({ request: headlessRequest }),
-        })
-
-        const visited: string[] = []
-        actor.subscribe(snapshot => {
-            const value =
-                typeof snapshot.value === 'string'
-                    ? snapshot.value
-                    : Object.keys(snapshot.value)[0]
-            if (value && !visited.includes(value)) visited.push(value)
+            input: makeInput({ request: nonInteractiveRequest }),
         })
 
         actor.start()
 
-        const state = await waitFor(actor, s => s.matches('completed'))
-        expect(state.matches('completed')).toBe(true)
-        expect(visited).not.toContain('awaiting_user')
+        const awaitingState = await waitFor(actor, s =>
+            s.matches('awaiting_user'),
+        )
+        expect(awaitingState.matches('awaiting_user')).toBe(true)
+
+        actor.send({ type: 'USER_APPROVED' })
+        const completedState = await waitFor(actor, s => s.matches('completed'))
+        expect(completedState.matches('completed')).toBe(true)
     })
 
     it('requires USER_APPROVED before signing — stays in awaiting_user', async () => {
@@ -309,6 +308,23 @@ describe('signingMachine', () => {
 
         const state = await waitFor(actor, s => s.matches('failed'))
         expect(state.context.error?.message).toMatch(/signing failure/)
+    })
+
+    it('transitions to rejected (terminal) when USER_REJECTED is sent from failed state', async () => {
+        // Red-green: before the fix, USER_REJECTED was not handled in `failed`
+        // and the actor would remain alive, blocking the single-flight queue.
+        const actor = createActor(mockedMachine, {
+            input: makeInput({ allAccounts: [] }), // triggers immediate failed
+        })
+        actor.start()
+
+        await waitFor(actor, s => s.matches('failed'))
+
+        actor.send({ type: 'USER_REJECTED' })
+
+        const state = await waitFor(actor, s => s.matches('rejected'))
+        expect(state.matches('rejected')).toBe(true)
+        expect(actor.getSnapshot().status).toBe('done')
     })
 
     it('goes to failed when transport throws', async () => {

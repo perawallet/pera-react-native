@@ -11,8 +11,7 @@
  */
 
 export { LedgerSigningContent } from './LedgerSigningContent'
-export { useLedgerSigningContent } from './useLedgerSigningContent'
-export type {
-    LedgerSigningStatus,
-    UseLedgerSigningContentResult,
+export {
+    useLedgerSigningContent,
+    type UseLedgerSigningContentResult,
 } from './useLedgerSigningContent'

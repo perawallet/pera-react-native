@@ -14,7 +14,12 @@ import React, { useCallback, useMemo } from 'react'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import {
+    isHardwareWalletAccount,
+    useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
+import {
     isTransactionRequest,
+    resolveSignerAddress,
     type SignRequest,
     type SigningPipelineEvent,
     useSigningPipeline,
@@ -53,6 +58,7 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
     const { showError } = useErrorToast()
     const { t } = useLanguage()
     const { currentRequest } = useSigningRequest()
+    const allAccounts = useAllAccounts()
 
     const navigation =
         useNavigation<StackNavigationProp<SigningStackParamList>>()
@@ -63,7 +69,21 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
         (event: SigningPipelineEvent) => {
             if (event.type !== 'signing_failed') return
             const req = pipeline.currentRequest
-            if (req?.transport === 'algod') {
+            if (!req) return
+
+            // Hardware-wallet signing failures are surfaced through the
+            // LedgerSigningContent sheet (which renders LedgerErrorContent
+            // inline for non-BLE errors) or via the auto-opened
+            // LedgerConnectionIssueContent troubleshooting sheet for BLE-class
+            // errors. The toast pre-dates that surface and would duplicate the
+            // error UI, so skip it for hardware signers.
+            const signerAddr = resolveSignerAddress(req)
+            const signerAccount = signerAddr
+                ? allAccounts.find(acc => acc.address === signerAddr)
+                : undefined
+            if (signerAccount && isHardwareWalletAccount(signerAccount)) return
+
+            if (req.transport === 'algod') {
                 showError(
                     event.error,
                     t('signing.transaction_view.transaction_failed_title'),
@@ -73,7 +93,7 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
                 )
             }
         },
-        [showError, t],
+        [allAccounts, showError, t],
     )
 
     const pipeline = useSigningPipeline({ onEvent: handleEvent })

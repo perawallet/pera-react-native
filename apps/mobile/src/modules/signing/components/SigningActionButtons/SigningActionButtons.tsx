@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWButton, PWView } from '@components/core'
+import { PWButton, PWSlideToConfirm, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { MultisigDeclineButton } from '@modules/multisig/components/MultisigDeclineButton'
 import { useStyles } from './styles'
@@ -23,7 +23,6 @@ export const SigningActionButtons = () => {
         handleReject,
         handleSignAndSend,
         isLoading,
-        hasMultipleTransactions,
         currentRequest,
         isMultisigCosign,
         cosignSignerAddress,
@@ -31,35 +30,26 @@ export const SigningActionButtons = () => {
 
     return (
         <PWView style={styles.container}>
-            <PWView style={styles.buttonContainer}>
-                {isMultisigCosign && currentRequest && cosignSignerAddress ? (
-                    <MultisigDeclineButton
-                        request={currentRequest}
-                        signerAddress={cosignSignerAddress}
-                        isDisabled={isLoading}
-                        style={styles.button}
-                    />
-                ) : (
-                    <PWButton
-                        title={t('common.cancel.label')}
-                        variant='secondary'
-                        onPress={handleReject}
-                        isDisabled={isLoading}
-                        style={styles.button}
-                    />
-                )}
-                <PWButton
-                    title={
-                        hasMultipleTransactions
-                            ? t('common.confirm_all.label')
-                            : t('common.confirm.label')
-                    }
-                    variant='primary'
-                    onPress={handleSignAndSend}
-                    isLoading={isLoading}
-                    style={styles.button}
+            <PWSlideToConfirm
+                title={t('common.slide_to_confirm.label')}
+                onConfirm={handleSignAndSend}
+                isLoading={isLoading}
+                testID='signing-confirm-slide'
+            />
+            {isMultisigCosign && currentRequest && cosignSignerAddress ? (
+                <MultisigDeclineButton
+                    request={currentRequest}
+                    signerAddress={cosignSignerAddress}
+                    isDisabled={isLoading}
                 />
-            </PWView>
+            ) : (
+                <PWButton
+                    title={t('common.cancel.label')}
+                    variant='linkNeutral'
+                    onPress={handleReject}
+                    isDisabled={isLoading}
+                />
+            )}
         </PWView>
     )
 }

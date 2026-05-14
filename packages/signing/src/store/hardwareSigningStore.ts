@@ -12,39 +12,54 @@
 
 import { create } from 'zustand'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { LedgerErrorPresetKind } from '../types/ledgerErrorPresetKind'
 
 /**
- * UI state for the hardware-wallet signing overlay. Not persisted — this
- * describes the live session, which is meaningless once the app reloads.
+ * Phase-accurate status for the hardware-wallet signing overlay. Not
+ * persisted — this describes the live session, which is meaningless once
+ * the app reloads.
  *
- * The store is driven by SigningCallbacks threaded through the signing
- * machine into the hardware strategy (see useSigningActorLifecycle).
+ * Driven by SigningCallbacks threaded through the signing machine into
+ * the hardware strategy (see useSigningActorLifecycle).
  *
- * `idle` means no overlay is shown. All other states render the overlay.
+ * `idle` and `searching` both render no overlay; the search phase is
+ * intentionally silent so the user only sees UI once the device responds.
  */
 export type HardwareSigningStatus =
     | 'idle'
-    | 'connecting'
-    | 'confirming'
+    | 'searching'
+    | 'awaitingApproval'
+    | 'signing'
     | 'error'
-    | 'timeout'
+
+export type LedgerSigningErrorPayload = {
+    kind: LedgerErrorPresetKind
+    /** Original classified Error retained for debug/log; not rendered. */
+    cause?: Error
+}
 
 type State = {
     status: HardwareSigningStatus
     currentTx: Nullable<number>
     totalTxs: Nullable<number>
-    /** The sign request currently driving the overlay, if any. */
     requestId: Nullable<string>
+    deviceName: Nullable<string>
+    error: Nullable<LedgerSigningErrorPayload>
+    /**
+     * Tracks whether the troubleshooting sheet was opened manually by the user.
+     * BLE-class errors auto-show troubleshooting as a pure derivation in the
+     * hook (`isBleClassError`), so no separate flag is needed here.
+     */
+    isTroubleshootingVisible: boolean
 }
 
 type Actions = {
-    /** Begin a new hardware signing session for the given request. */
-    start: (requestId: string) => void
-    setStatus: (status: HardwareSigningStatus) => void
+    start: (requestId: string, deviceName: Nullable<string>) => void
+    setStatus: (status: Exclude<HardwareSigningStatus, 'error'>) => void
     setProgress: (current: number, total: number) => void
-    /** Move to an error/timeout state while keeping the current requestId. */
-    setError: (kind: 'error' | 'timeout') => void
-    /** Dismiss the overlay and clear all session state. */
+    setError: (payload: LedgerSigningErrorPayload) => void
+    openTroubleshooting: () => void
+    closeTroubleshooting: () => void
     reset: () => void
     resetState: () => void
 }
@@ -56,16 +71,28 @@ const initialState: State = {
     currentTx: null,
     totalTxs: null,
     requestId: null,
+    deviceName: null,
+    error: null,
+    isTroubleshootingVisible: false,
 }
 
+// Intentionally session-only (no persist middleware) — live signing state is
+// meaningless after an app reload. Same pattern as useHDImportSessionStore.
 export const useHardwareSigningStore = create<Store>(set => ({
     ...initialState,
-    start: requestId =>
-        set({ ...initialState, status: 'connecting', requestId }),
+    start: (requestId, deviceName) =>
+        set({
+            ...initialState,
+            status: 'searching',
+            requestId,
+            deviceName,
+        }),
     setStatus: status => set({ status }),
     setProgress: (current, total) =>
         set({ currentTx: current, totalTxs: total }),
-    setError: kind => set({ status: kind }),
+    setError: payload => set({ status: 'error', error: payload }),
+    openTroubleshooting: () => set({ isTroubleshootingVisible: true }),
+    closeTroubleshooting: () => set({ isTroubleshootingVisible: false }),
     reset: () => set(initialState),
     resetState: () => set(initialState),
 }))

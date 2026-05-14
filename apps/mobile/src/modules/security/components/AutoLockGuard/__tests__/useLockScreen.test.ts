@@ -53,7 +53,7 @@ describe('useLockScreen', () => {
 
     it('should return initial state', () => {
         const { result } = renderHook(() =>
-            useLockScreen({ onUnlock: mockOnUnlock }),
+            useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
         )
 
         expect(result.current.hasError).toBe(false)
@@ -68,7 +68,9 @@ describe('useLockScreen', () => {
     it('should check biometrics enabled on mount', async () => {
         mockCheckBiometricsEnabled.mockResolvedValue(false)
 
-        renderHook(() => useLockScreen({ onUnlock: mockOnUnlock }))
+        renderHook(() =>
+            useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
+        )
 
         await vi.waitFor(() => {
             expect(mockCheckBiometricsEnabled).toHaveBeenCalled()
@@ -91,7 +93,9 @@ describe('useLockScreen', () => {
         mockCheckBiometricsEnabled.mockResolvedValue(true)
         mockAuthenticateWithBiometrics.mockResolvedValue(true)
 
-        renderHook(() => useLockScreen({ onUnlock: mockOnUnlock }))
+        renderHook(() =>
+            useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
+        )
 
         // Flush microtasks; if the effect was going to call biometrics it
         // would have queued the work by now.
@@ -109,7 +113,7 @@ describe('useLockScreen', () => {
             mockVerifyPin.mockResolvedValue(true)
 
             const { result } = renderHook(() =>
-                useLockScreen({ onUnlock: mockOnUnlock }),
+                useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
             )
 
             await act(async () => {
@@ -125,7 +129,7 @@ describe('useLockScreen', () => {
             mockVerifyPin.mockResolvedValue(false)
 
             const { result } = renderHook(() =>
-                useLockScreen({ onUnlock: mockOnUnlock }),
+                useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
             )
 
             await act(async () => {
@@ -143,7 +147,7 @@ describe('useLockScreen', () => {
             mockVerifyPin.mockResolvedValue(false)
 
             const { result } = renderHook(() =>
-                useLockScreen({ onUnlock: mockOnUnlock }),
+                useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
             )
 
             await act(async () => {
@@ -174,7 +178,7 @@ describe('useLockScreen', () => {
             })
 
             const { result } = renderHook(() =>
-                useLockScreen({ onUnlock: mockOnUnlock }),
+                useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
             )
 
             expect(result.current.isLockedOut).toBe(true)
@@ -194,7 +198,7 @@ describe('useLockScreen', () => {
             })
 
             const { result } = renderHook(() =>
-                useLockScreen({ onUnlock: mockOnUnlock }),
+                useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
             )
 
             expect(result.current.remainingSeconds).toBe(60)
@@ -219,7 +223,7 @@ describe('useLockScreen', () => {
             })
 
             const { result } = renderHook(() =>
-                useLockScreen({ onUnlock: mockOnUnlock }),
+                useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
             )
 
             act(() => {
@@ -241,10 +245,66 @@ describe('useLockScreen', () => {
             })
 
             const { result } = renderHook(() =>
-                useLockScreen({ onUnlock: mockOnUnlock }),
+                useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
             )
 
             expect(result.current.remainingSeconds).toBe(0)
+        })
+
+        describe('biometric prompt on repeated lock activations', () => {
+            it('prompts biometrics again after unlock and re-lock', async () => {
+                mockCheckBiometricsEnabled.mockResolvedValue(true)
+                mockAuthenticateWithBiometrics.mockResolvedValue(true)
+
+                const { rerender } = renderHook(
+                    ({ isLocked }: { isLocked: boolean }) =>
+                        useLockScreen({ onUnlock: mockOnUnlock, isLocked }),
+                    { initialProps: { isLocked: true } },
+                )
+
+                // First lock: biometrics should be called once
+                await act(async () => {
+                    await Promise.resolve()
+                })
+                expect(mockAuthenticateWithBiometrics).toHaveBeenCalledTimes(1)
+
+                // Unlock
+                rerender({ isLocked: false })
+
+                // Second lock: biometrics should be called again
+                rerender({ isLocked: true })
+                await act(async () => {
+                    await Promise.resolve()
+                })
+                expect(mockAuthenticateWithBiometrics).toHaveBeenCalledTimes(2)
+            })
+
+            it('does not prompt biometrics on re-lock if user is locked out', async () => {
+                mockCheckBiometricsEnabled.mockResolvedValue(true)
+                mockAuthenticateWithBiometrics.mockResolvedValue(true)
+
+                ;(usePinCode as Mock).mockReturnValue({
+                    verifyPin: mockVerifyPin,
+                    handleFailedAttempt: mockHandleFailedAttempt,
+                    resetFailedAttempts: mockResetFailedAttempts,
+                    isLockedOut: true,
+                    lockoutEndTime: Date.now() + 60_000,
+                    setLockoutEndTime: mockSetLockoutEndTime,
+                })
+
+                const { rerender } = renderHook(
+                    ({ isLocked }: { isLocked: boolean }) =>
+                        useLockScreen({ onUnlock: mockOnUnlock, isLocked }),
+                    { initialProps: { isLocked: false } },
+                )
+
+                rerender({ isLocked: true })
+                await act(async () => {
+                    await Promise.resolve()
+                })
+
+                expect(mockAuthenticateWithBiometrics).not.toHaveBeenCalled()
+            })
         })
     })
 })

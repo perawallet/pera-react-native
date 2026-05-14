@@ -72,6 +72,7 @@ export const TransactionListScreen = () => {
                 ItemSeparatorComponent={ItemSeparator}
                 contentContainerStyle={styles.contentContainer}
                 showsVerticalScrollIndicator={false}
+                inBottomSheet
             />
             <TransactionListFooter />
         </PWView>

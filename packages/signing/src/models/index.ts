@@ -45,28 +45,6 @@ type BaseSignRequest = {
      * transport can target the right backend record.
      */
     signRequestId?: string
-    /**
-     * When true, the signing pipeline skips the `awaiting_user` review state
-     * and proceeds directly from `validating` to `signing`, and also
-     * suppresses the post-completion notification sheet on success.
-     *
-     * **Contract — the caller takes on full responsibility for UI on both
-     * ends of the pipeline:** the pipeline will not surface fees, warnings,
-     * risk level, or any other analysis the `validating` stage produces,
-     * nor will it show a "transaction sent" confirmation when signing
-     * completes. Before setting `headless: true` the caller MUST have
-     * already shown the user everything they would see on the standard
-     * review screen (amounts, fees, warnings, destination, etc.) and
-     * collected an explicit confirmation, and MUST render its own
-     * completion feedback.
-     *
-     * Intended for internal flows like swap where the review UI lives on the
-     * preceding screen and the post-sign state is owned by the feature.
-     * Do not set this for external (WalletConnect, webview, deeplink)
-     * requests — those must always pass through `awaiting_user` so the
-     * standard review sheet is shown.
-     */
-    headless?: boolean
 }
 
 export type TransactionSignRequest = {
@@ -148,7 +126,7 @@ export type SigningStore = BaseStoreState & {
     lastFailedRequest: FailedSignRequest | null
     /**
      * Most recent transport result, set on every completed actor transition
-     * regardless of `headless`. Drives propose/cosign completion listeners
+     * regardless of source. Drives propose/cosign completion listeners
      * (PendingSignatures auto-open, TransactionProcessingScreen exit) that
      * can't rely on the `useSigningPipeline({ onEvent })` actor subscription
      * — that subscription doesn't reliably establish in time for headless

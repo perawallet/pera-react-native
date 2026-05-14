@@ -21,6 +21,17 @@ vi.mock('@ledgerhq/hw-app-algorand', () => ({
         sign = vi.fn()
     },
 }))
+vi.mock('react-native', () => ({
+    Platform: { OS: 'ios', Version: 17 },
+    PermissionsAndroid: {
+        check: vi.fn(),
+        PERMISSIONS: {
+            BLUETOOTH_SCAN: 'android.permission.BLUETOOTH_SCAN',
+            BLUETOOTH_CONNECT: 'android.permission.BLUETOOTH_CONNECT',
+            ACCESS_FINE_LOCATION: 'android.permission.ACCESS_FINE_LOCATION',
+        },
+    },
+}))
 
 import { WithLedgerExtension } from '../extension'
 

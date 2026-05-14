@@ -11,3 +11,4 @@
  */
 
 export { LedgerAccountAddressContent } from './LedgerAccountAddressContent'
+export type { LedgerAccountAddressContentProps } from './LedgerAccountAddressContent'

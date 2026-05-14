@@ -514,6 +514,11 @@ vi.mock('@components/core', () => {
                       children,
                   )
                 : null,
+        PWLottie: ({ testID, ...props }: any) =>
+            React.createElement('div', {
+                ...props,
+                'data-testid': testID || 'PWLottie',
+            }),
         PWNumpad: ({ mode, onKeyPress, isDisabled, testID }: any) => {
             const keys =
                 mode === 'number'
