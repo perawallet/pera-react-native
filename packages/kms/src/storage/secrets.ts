@@ -15,19 +15,12 @@ import {
     getKeystoreStore,
     getProvider,
 } from '@perawallet/wallet-extension-provider'
+import { zeroBytes } from '../crypto/secure-memory'
 
 /**
  * Stores an arbitrary byte payload in the keystore as a canonical
  * `secret-key` entry. Used for PIN records, biometric blobs, and any other
  * Pera-domain secret that doesn't fit the seed/derived-key flow.
- *
- * Routes through `keyStore.generate({type:'secret-key', ...})` — the
- * platform keystore's own factory accepts a custom `value` via
- * `params.value` and commits the result via the same path it uses for
- * every other key type. No direct dependency on `react-native-keystore`.
- *
- * The MMKV layer overwrites under the same id, so this acts as an upsert
- * — there's no need to remove a previous entry first.
  */
 export const commitSecret = async (params: {
     id: string
@@ -54,13 +47,9 @@ export const commitSecret = async (params: {
             },
         })
     } finally {
-        valueCopy.fill(0)
+        zeroBytes(valueCopy)
     }
 
-    // The rn-keystore's `commit` prepends to the reactive `keys` array
-    // without dedupe, so an upsert can leave a stale entry behind. Sweep
-    // duplicates here so consumers reading the reactive store see one
-    // entry per id.
     const store = getKeystoreStore()
     const seen = new Set<string>()
     const deduped = store.state.keys.filter(k => {
@@ -74,9 +63,7 @@ export const commitSecret = async (params: {
 }
 
 /**
- * Synchronous existence check via the reactive store. Usable from React
- * render guards because the provider's `hydrateKeystore` populates the
- * store from MMKV during bootstrap.
+ * Synchronous existence check via the reactive store.
  */
 export const hasSecret = (id: string): boolean => {
     return getKeystoreStore().state.keys.some(k => k.id === id)
@@ -100,7 +87,7 @@ export const withSecret = async <T>(
     try {
         return await handler(bytes)
     } finally {
-        bytes.fill(0)
+        zeroBytes(bytes)
     }
 }
 

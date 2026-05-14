@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { pbkdf2, randomBytes } from 'crypto'
 
 // v1 used Argon2id in pure-JS; unusably slow on mobile engines, so it was
@@ -63,7 +64,7 @@ const hashPin = (pin: string, salt: Uint8Array): Promise<Uint8Array> =>
             HASH_LENGTH_BYTES,
             PBKDF2_DIGEST,
             (err, derivedKey) => {
-                pinBytes.fill(0)
+                zeroBytes(pinBytes)
                 if (err || !derivedKey) {
                     reject(err ?? new Error('pbkdf2 returned no key'))
                     return
@@ -86,8 +87,7 @@ export const createPinRecord = async (pin: string): Promise<PinRecord> => {
         }
     } finally {
         // Hex copies are now in the record; the raw buffers can go.
-        salt.fill(0)
-        hash.fill(0)
+        zeroBytes(salt, hash)
     }
 }
 
@@ -111,9 +111,7 @@ export const verifyPinAgainstRecord = async (
     try {
         return constantTimeEqual(candidate, hashBytes)
     } finally {
-        candidate.fill(0)
-        saltBytes.fill(0)
-        hashBytes.fill(0)
+        zeroBytes(candidate, saltBytes, hashBytes)
     }
 }
 

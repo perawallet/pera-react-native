@@ -54,14 +54,17 @@ export const useAlgo25 = () => {
 
             const metadata = buildSeedMetadata({ scheme: SeedScheme.Algo25 })
 
-            // 1. Persist the 32-byte algo25 seed
+            // 1. Persist the 32-byte algo25 seed.
+            //
+            // Pass the seed buffer directly (no defensive copy) so the
+            // `finally`'s `zeroBytes(seed)` wipes the same Uint8Array
             const seedData: Omit<Seed, 'id'> & { id: string } = {
                 id: seedKeyId,
                 type: 'seed',
                 algorithm: 'raw',
                 extractable: true,
                 keyUsages: ['deriveKey', 'deriveBits'],
-                privateKey: new Uint8Array(seed),
+                privateKey: seed,
                 metadata,
             }
             await keyStore.import(seedData, 'raw')

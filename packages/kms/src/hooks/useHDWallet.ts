@@ -54,26 +54,22 @@ export const useHDWallet = () => {
             entropy,
         })
 
-        // The seed entry holds the 96-byte XHD root in `privateKey`. The
-        // platform keystore's `deriveFromSeed` / `sign` paths force-cast a
-        // `seed` parent to `hd-root-key` and pass `privateKey` straight into
-        // `xhd.keyGen` / `xhd.rawSign`, which both expect a 96-byte XHD root.
-        // Storing the root here lets those paths work out-of-the-box; the
-        // BIP39 entropy bytes are stashed in `metadata.entropy` (hex) for
-        // mnemonic recovery, since `bip39.mnemonicToSeed` isn't reversible.
-        const seed: Omit<Seed, 'id'> & { id: string } = {
-            id: keyId,
-            type: 'seed',
-            algorithm: 'raw',
-            extractable: true,
-            keyUsages: ['deriveKey', 'deriveBits'],
-            privateKey: rootKey,
-            metadata,
+        try {
+            // The seed entry holds the 96-byte XHD root in `privateKey`.
+            const seed: Omit<Seed, 'id'> & { id: string } = {
+                id: keyId,
+                type: 'seed',
+                algorithm: 'raw',
+                extractable: true,
+                keyUsages: ['deriveKey', 'deriveBits'],
+                privateKey: rootKey,
+                metadata,
+            }
+
+            await keyStore.import(seed, 'raw')
+        } finally {
+            zeroBytes(rootKey, entropy)
         }
-
-        await keyStore.import(seed, 'raw')
-
-        zeroBytes(rootKey, entropy)
 
         return {
             seedKey: {

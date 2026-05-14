@@ -26,7 +26,7 @@ import {
     verifyPinAgainstRecord,
 } from '../pinRecord'
 import { useBiometrics } from './useBiometrics'
-import { useKMSService } from '@perawallet/wallet-core-kms'
+import { useKMSService, zeroBytes } from '@perawallet/wallet-core-kms'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UsePinCodeResult = {
@@ -101,7 +101,7 @@ export const usePinCode = (): UsePinCodeResult => {
                     bytes,
                 })
             } finally {
-                bytes.fill(0)
+                zeroBytes(bytes)
             }
         },
         [commitSecret],

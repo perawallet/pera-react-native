@@ -50,10 +50,7 @@ export const useKMS = () => {
     const { deleteKey, keyStore, withExportedKey, checkAccess } =
         useKMSService()
 
-    // Wallet-domain view of the keystore: only wallet-root seeds (with
-    // `metadata.scheme: 'bip39' | 'algo25'`). Derived signing keys
-    // (hd-derived-ed25519, ed25519) and secret-key entries (PIN, biometric)
-    // are filtered out by `isSeedKey`.
+    // All seed keys mapped by id for quick lookup. No private data is exposed here
     const seeds = useMemo(() => {
         const out = new Map<string, Key>()
         for (const k of keystoreKeys) {
@@ -62,9 +59,7 @@ export const useKMS = () => {
         return out
     }, [keystoreKeys])
 
-    // child id → parent (seed) id. Built once per keystore snapshot so
-    // helpers like `seedIdOf` are O(1) and don't have to keep scanning the
-    // full key list.
+    // A map of child key id to parent seed id, derived from the reactive keystore. No private data is exposed here.
     const childToParent = useMemo(() => {
         const m = new Map<string, string>()
         for (const k of keystoreKeys) {
@@ -76,15 +71,7 @@ export const useKMS = () => {
     }, [keystoreKeys])
 
     /**
-     * Resolves a child keystore id to its parent seed id by following
-     * `metadata.parentKeyId`. Returns `undefined` for seed entries
-     * themselves (no parent), unknown ids, and any other top-level keys.
-     *
-     * Falls back to a live read of the reactive store when the memoised
-     * map doesn't have it yet — necessary for callers that fire during
-     * the same async tick a key was committed in (e.g. account removal
-     * right after account creation, before React has re-rendered with
-     * the new keystore snapshot).
+     * Resolves a child keystore id to its parent seed id
      */
     const seedIdOf = useCallback(
         (childId: string | undefined): string | undefined => {
@@ -104,13 +91,7 @@ export const useKMS = () => {
 
     /**
      * Removes a top-level key (typically a seed) and every keystore entry
-     * whose `metadata.parentKeyId` points back to it. Used by account
-     * removal to wipe a seed once no remaining account references it,
-     * sweeping orphan derivation entries in the process.
-     *
-     * Reads `getKeystoreStore().state.keys` directly (not the React
-     * snapshot) so callers that fire in the same tick a key was just
-     * committed see the up-to-date list.
+     * whose `metadata.parentKeyId` points back to it.
      */
     const removeKeyAndChildren = useCallback(
         async (rootKeyId: string): Promise<void> => {
@@ -161,10 +142,7 @@ export const useKMS = () => {
     )
 
     /**
-     * Signs each item with the child key at `childKeyId`. The keystore's
-     * own `sign` walks `metadata.parentKeyId` to fetch the parent seed and
-     * routes correctly (subtle for `ed25519`, XHD for `hd-derived-ed25519`).
-     * `domain` is checked against the parent seed's ACL before signing.
+     * Signs each item with the child key at `childKeyId`.
      */
     const signTransactionsWithKey = async (
         childKeyId: string,
@@ -203,10 +181,7 @@ export const useKMS = () => {
 
     /**
      * Runs `handler` with the mnemonic words for the seed that minted
-     * `childKeyId`. The seed is resolved via the keystore's
-     * `metadata.parentKeyId` chain; the mnemonic itself is reconstructed
-     * from the seed's stored bytes (entropy hex for bip39 seeds, raw
-     * `privateKey` for algo25). Mnemonic bytes are zeroed before returning.
+     * `childKeyId`.
      */
     const executeWithMnemonic = async <T>(
         childKeyId: string,
@@ -255,11 +230,6 @@ export const useKMS = () => {
     }
 
     return {
-        /**
-         * Seeds keyed by id — wallet-root entries (algo25 + HD). Use
-         * `seedIdOf(account.keyPairId)` to navigate from an account's
-         * child key to its parent seed.
-         */
         keys: seeds,
         seedIdOf,
         removeKeyAndChildren,

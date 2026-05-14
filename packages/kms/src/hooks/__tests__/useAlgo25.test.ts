@@ -96,6 +96,22 @@ describe('useAlgo25', () => {
             mockSeedFromMnemonic.mockReturnValue(fakeSeed)
             mockEncodeAddress.mockReturnValue('ADDR')
 
+            // Snapshot the privateKey contents synchronously when import
+            // fires — `createAlgo25Key` now passes the seed buffer
+            // directly (no defensive copy) and zeros it in `finally`,
+            // so reading `arg.privateKey` after the await would see all
+            // zeros. The snapshot captures what the keystore actually
+            // received.
+            let privateKeySnapshot: number[] = []
+            mockKeyStoreImport.mockImplementationOnce(
+                async (data: { privateKey?: Uint8Array }) => {
+                    if (data.privateKey) {
+                        privateKeySnapshot = Array.from(data.privateKey)
+                    }
+                    return 'my-key'
+                },
+            )
+
             const { result } = renderHook(() => useAlgo25())
             await act(async () => {
                 await result.current.createAlgo25Key({
@@ -113,7 +129,10 @@ describe('useAlgo25', () => {
                 extractable: true,
                 keyUsages: ['deriveKey', 'deriveBits'],
             })
-            expect(Array.from(arg.privateKey)).toEqual(expectedBytes)
+            expect(privateKeySnapshot).toEqual(expectedBytes)
+            // The post-call buffer is wiped — proves the zeroing path
+            // actually fired.
+            expect(Array.from(arg.privateKey)).toEqual(new Array(32).fill(0))
             expect(arg.metadata.scheme).toBe(SeedScheme.Algo25)
             expect(arg.metadata.pera.createdAt).toBeDefined()
         })
