@@ -29,6 +29,7 @@ type AccountStructureTreeProps = {
     label: string
     icon: IconName
     accounts: WalletAccount[]
+    mainAccountAddress: string
     onScanAddresses: () => void
 }
 
@@ -36,6 +37,7 @@ export const AccountStructureTree = ({
     label,
     icon,
     accounts,
+    mainAccountAddress,
     onScanAddresses,
 }: AccountStructureTreeProps) => {
     const styles = useStyles()
@@ -52,36 +54,44 @@ export const AccountStructureTree = ({
                 <PWText variant='body'>{label}</PWText>
             </PWView>
 
-            {accounts.map(account => (
-                <PWView
-                    key={account.address}
-                    style={styles.accountRowWithConnector}
-                >
-                    <PWView style={styles.connectorContainer}>
-                        <PWView style={styles.connectorVertical} />
-                        <PWView style={styles.connectorHorizontal} />
-                    </PWView>
-                    <PWView style={styles.accountRow}>
-                        <AccountIcon
-                            account={account}
-                            size='md'
-                        />
-                        <PWView style={styles.accountInfo}>
-                            <PWText variant='body'>
-                                {account.name ?? t('account_info.main_address')}
-                            </PWText>
-                            <CopyableText copyValue={account.address}>
-                                <PWText
-                                    variant='body'
-                                    style={styles.addressText}
-                                >
-                                    {truncateAlgorandAddress(account.address)}
+            {accounts.map(account => {
+                const isMain = account.address === mainAccountAddress
+                const fallbackLabel = isMain
+                    ? t('account_info.main_address')
+                    : t('account_info.sub_address')
+                return (
+                    <PWView
+                        key={account.address}
+                        style={styles.accountRowWithConnector}
+                    >
+                        <PWView style={styles.connectorContainer}>
+                            <PWView style={styles.connectorVertical} />
+                            <PWView style={styles.connectorHorizontal} />
+                        </PWView>
+                        <PWView style={styles.accountRow}>
+                            <AccountIcon
+                                account={account}
+                                size='md'
+                            />
+                            <PWView style={styles.accountInfo}>
+                                <PWText variant='body'>
+                                    {account.name ?? fallbackLabel}
                                 </PWText>
-                            </CopyableText>
+                                <CopyableText copyValue={account.address}>
+                                    <PWText
+                                        variant='body'
+                                        style={styles.addressText}
+                                    >
+                                        {truncateAlgorandAddress(
+                                            account.address,
+                                        )}
+                                    </PWText>
+                                </CopyableText>
+                            </PWView>
                         </PWView>
                     </PWView>
-                </PWView>
-            ))}
+                )
+            })}
 
             <PWTouchableOpacity
                 style={styles.scanButton}

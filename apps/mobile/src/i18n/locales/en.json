@@ -322,6 +322,7 @@
         "scan_new_addresses": "Scan new addresses",
         "wallet_label": "Wallet #{{number}}",
         "main_address": "Main Address",
+        "sub_address": "Sub Address",
         "type_universal_wallet": "Universal Wallet",
         "type_algo25": "Algo25 Account",
         "type_watch": "Watch Account",

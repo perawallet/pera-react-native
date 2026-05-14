@@ -146,6 +146,7 @@ describe('useAccountInfoCard', () => {
         expect(result.current.structureIcon).toBe('wallet')
         expect(result.current.structureLabel).toBe('account_info.wallet_label')
         expect(result.current.structureAccounts).toEqual([hdAccount])
+        expect(result.current.structureMainAddress).toBe(hdAccount.address)
     })
 
     test('Ledger account: showStructure true with deviceName and ledger icon', () => {
@@ -156,6 +157,44 @@ describe('useAccountInfoCard', () => {
         expect(result.current.structureIcon).toBe('ledger')
         expect(result.current.structureLabel).toBe('My Ledger')
         expect(result.current.structureAccounts).toEqual([ledgerAccount])
+        expect(result.current.structureMainAddress).toBe(ledgerAccount.address)
+    })
+
+    test('Ledger account with sub-addresses: structureMainAddress is the firstAccount address', () => {
+        const subLedgerAccount: HardwareWalletAccount = {
+            type: 'hardware',
+            address: 'LEDGER_SUB_ADDR',
+            hardwareDetails: {
+                manufacturer: 'ledger',
+                deviceId: 'device-abc',
+                deviceName: 'My Ledger',
+                accountIndex: 1,
+                transportType: 'ble',
+            },
+        }
+        mockUseLedgerDeviceGroups.mockReturnValueOnce({
+            ledgerDeviceGroups: [
+                {
+                    deviceId: 'device-abc',
+                    deviceName: 'My Ledger',
+                    accounts: [ledgerAccount, subLedgerAccount],
+                    firstAccount: ledgerAccount,
+                    accountCount: 2,
+                },
+            ],
+            hasMultipleLedgerDevices: false,
+        })
+        const { result } = renderHook(() =>
+            useAccountInfoCard({
+                account: subLedgerAccount,
+                onClose: vi.fn(),
+            }),
+        )
+        expect(result.current.structureMainAddress).toBe(ledgerAccount.address)
+        expect(result.current.structureAccounts).toEqual([
+            ledgerAccount,
+            subLedgerAccount,
+        ])
     })
 
     test('Watch account: showStructure false', () => {
@@ -164,6 +203,7 @@ describe('useAccountInfoCard', () => {
         )
         expect(result.current.showStructure).toBe(false)
         expect(result.current.structureAccounts).toEqual([])
+        expect(result.current.structureMainAddress).toBe('')
     })
 
     test('Multisig account: shows shared account details entry with participant count', () => {
