@@ -21,6 +21,7 @@ import { CreateMultisigScreen } from '../screens/CreateMultisigScreen'
 import { EditParticipantScreen } from '../screens/EditParticipantScreen'
 import { SetThresholdScreen } from '../screens/SetThresholdScreen'
 import { NameMultisigScreen } from '../screens/NameMultisigScreen'
+import { ImportSharedAccountScreen } from '../screens/ImportSharedAccountScreen'
 import { MultisigStackParamList } from './types'
 
 export type { MultisigStackParamList } from './types'
@@ -59,6 +60,11 @@ export const MultisigStackNavigator = () => {
                 name='NameMultisig'
                 options={{ title: '' }}
                 component={NameMultisigScreen}
+            />
+            <MultisigStack.Screen
+                name='ImportSharedAccount'
+                options={{ title: '' }}
+                component={ImportSharedAccountScreen}
             />
         </MultisigStack.Navigator>
     )

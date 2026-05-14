@@ -19,7 +19,6 @@ export const NameMultisigScreen = () => {
     const {
         accountName,
         isCreating,
-        nameError,
         isFinishDisabled,
         handleNameChange,
         handleFinish,
@@ -36,7 +35,6 @@ export const NameMultisigScreen = () => {
             onFinish={handleFinish}
             isLoading={isCreating}
             isDisabled={isFinishDisabled}
-            errorMessage={nameError}
         />
     )
 }
