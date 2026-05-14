@@ -106,6 +106,34 @@ export type SourceType =
     | 'deeplink'
     | 'multisig-cosign'
     | 'arc60'
+    | 'gift-card'
+
+/**
+ * Source types that the in-app standard review flow gates on. A request
+ * whose `sourceType` is in this list pauses for user confirmation: the
+ * actor lifecycle registers an approval gate when the actor is created
+ * and the signing machine blocks at `awaiting_user` until the gate is
+ * resolved by `signAndSendRequest` / `rejectRequest`. Everything else
+ * (`'local'`, undefined) runs headless — the originating screen owns
+ * its own confirmation UI and the gate's unregistered fast-path
+ * auto-resumes the machine.
+ *
+ * Adding a new external source generally means appending it here too.
+ */
+export const INTERACTIVE_SOURCES = [
+    'walletconnect',
+    'webview',
+    'deeplink',
+    'multisig-cosign',
+    'arc60',
+    'gift-card',
+] as const satisfies readonly SourceType[]
+
+export const isInteractiveSource = (
+    sourceType: SourceType | undefined,
+): boolean =>
+    sourceType !== undefined &&
+    (INTERACTIVE_SOURCES as readonly SourceType[]).includes(sourceType)
 
 /**
  * Metadata about where signable data came from

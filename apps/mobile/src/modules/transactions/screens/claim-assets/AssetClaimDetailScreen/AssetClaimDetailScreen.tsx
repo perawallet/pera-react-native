@@ -15,6 +15,7 @@ import {
     PWDivider,
     PWIcon,
     PWScrollView,
+    PWSlideToConfirm,
     PWText,
     PWTouchableOpacity,
     PWView,
@@ -176,20 +177,16 @@ export const AssetClaimDetailScreen = () => {
             )}
 
             <PWView style={styles.footer}>
-                <PWView style={styles.rejectButton}>
-                    <PWButton
-                        variant='secondary'
-                        title={t('arc59.claim.reject')}
-                        onPress={handleRejectPress}
-                    />
-                </PWView>
-                <PWView style={styles.claimButton}>
-                    <PWButton
-                        variant='primary'
-                        title={t('arc59.claim.claim')}
-                        onPress={handleClaim}
-                    />
-                </PWView>
+                <PWSlideToConfirm
+                    title={t('common.slide_to_confirm.label')}
+                    onConfirm={handleClaim}
+                    testID='arc59_claim_confirm_slide'
+                />
+                <PWButton
+                    variant='linkNeutral'
+                    title={t('arc59.claim.reject')}
+                    onPress={handleRejectPress}
+                />
             </PWView>
         </PWView>
     )

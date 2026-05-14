@@ -470,6 +470,9 @@
         "confirm_all": {
             "label": "Confirm All"
         },
+        "slide_to_confirm": {
+            "label": "Slide To Confirm"
+        },
         "copied_to_clipboard": {
             "title": "Copied to clipboard",
             "body": ""

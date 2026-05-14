@@ -14,6 +14,7 @@ import { useCallback } from 'react'
 import type { AnyActorRef } from 'xstate'
 import { useSigningStore } from '../store'
 import { useSigningActorLifecycle } from './useSigningActorLifecycle'
+import { approvalGate } from '../pipeline/approvalGate'
 import type { FailedSignRequest, SignRequest } from '../models'
 import type { TransportResult } from '../pipeline/types'
 import {
@@ -150,32 +151,36 @@ export const useSigningRequest = (): UseSigningRequestResult => {
     }, [setLastFailedRequest])
 
     /**
-     * Approves the current signing request — sends USER_APPROVED to its actor.
-     * The actor handles signing and transport internally.
+     * Approves the current signing request by resolving its approval gate.
+     * The lifecycle hook picks up the resolution and sends USER_APPROVED
+     * to the actor; the actor handles signing and transport internally.
+     *
+     * For headless requests (no gate registered), this is a no-op — the
+     * lifecycle auto-resumes them as soon as the machine pauses.
      */
-    const signAndSendRequest = useCallback(
-        (request: SignRequest) => {
-            getActorRef(request.id)?.send({ type: 'USER_APPROVED' })
-        },
-        [getActorRef],
-    )
+    const signAndSendRequest = useCallback((request: SignRequest) => {
+        approvalGate.approve(request.id)
+    }, [])
 
     /**
-     * Rejects the current signing request — sends USER_REJECTED to its actor.
-     * For callback transport requests, also fires the reject callback.
+     * Rejects the current signing request by resolving its approval gate
+     * with `'rejected'`. The lifecycle sends USER_REJECTED to the actor,
+     * which transitions to `rejected` and fires the request's `reject`
+     * callback via the standard terminal handler.
+     *
+     * Fallback path (no actor — shouldn't happen in normal flow): fires
+     * the callback directly and drops the request from the queue.
      */
     const rejectRequest = useCallback(
         (request: SignRequest) => {
-            const actor = getActorRef(request.id)
-            if (actor) {
-                actor.send({ type: 'USER_REJECTED' })
-            } else {
-                // Fallback: no actor found (shouldn't happen in normal flow)
-                if (request.transport === 'callback') {
-                    ;(request as { reject?: () => void }).reject?.()
-                }
-                removeSignRequestFromStore(request)
+            if (getActorRef(request.id)) {
+                approvalGate.reject(request.id)
+                return
             }
+            if (request.transport === 'callback') {
+                ;(request as { reject?: () => void }).reject?.()
+            }
+            removeSignRequestFromStore(request)
         },
         [getActorRef, removeSignRequestFromStore],
     )

@@ -21,8 +21,8 @@ export type SignRequestContentProps = {
 /**
  * Renders the sign-request UI inside a bottom sheet. The sheet itself is
  * driven by `useSignRequestDriver` in `SigningOverlays`, which watches the
- * signing queue and calls `requestBottomSheet` whenever a new non-headless
- * request appears.
+ * signing queue and calls `requestBottomSheet` whenever a new request
+ * whose `sourceType` is in `INTERACTIVE_SOURCES` appears.
  */
 export const SignRequestContent = ({ request }: SignRequestContentProps) => (
     <SignRequestView request={request} />

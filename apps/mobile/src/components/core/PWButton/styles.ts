@@ -53,6 +53,10 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
             backgroundColor: theme.colors.background,
             color: theme.colors.linkPrimary,
         },
+        linkNeutral: {
+            backgroundColor: theme.colors.background,
+            color: theme.colors.textMain,
+        },
         linkPositive: {
             backgroundColor: theme.colors.background,
             color: theme.colors.positive,
