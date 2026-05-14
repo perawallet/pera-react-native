@@ -87,7 +87,6 @@ export const useLockScreen = ({
         prevIsLockedRef.current = isLocked
     }, [isLocked])
 
-
     useEffect(() => {
         if (isLockedOut || hasAttemptedBiometricsRef.current) return
         hasAttemptedBiometricsRef.current = true
