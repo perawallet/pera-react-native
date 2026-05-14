@@ -33,6 +33,8 @@ import { createSigningMachine } from '../machine/createSigningMachine'
 import { signingMachine } from '../machine/signingMachine'
 import { createTransportSelector } from '../pipeline/transports/getTransport'
 import { getNextQueuedRequest } from '../pipeline/queue'
+import { approvalGate } from '../pipeline/approvalGate'
+import { isInteractiveSource } from '../pipeline/types'
 import type { SigningMachineDeps } from '../machine/context'
 import type { SigningCallbacks } from '../pipeline/types'
 import type { SignRequest } from '../models'
@@ -46,6 +48,11 @@ import type { SignRequest } from '../models'
 // produce one parallel signing machine per mount.
 const actorRefsMap = new Map<string, AnyActorRef>()
 
+// Tracks which requests we've already started awaiting the approval gate
+// for, so we don't re-enter `waitFor` on every snapshot tick while the
+// machine sits in `awaiting_user`.
+const awaitingApprovalSet = new Set<string>()
+
 /**
  * Test-only: stops every running actor and clears the module-level
  * registry. Call from `beforeEach` so leftover actors from one test never
@@ -56,6 +63,8 @@ export const __resetSigningActorRegistryForTests = (): void => {
         actor.stop()
     }
     actorRefsMap.clear()
+    awaitingApprovalSet.clear()
+    approvalGate.__resetForTests()
 }
 
 const isTimeoutError = (error: Error): boolean =>
@@ -103,17 +112,18 @@ const isNonRetryableFailure = (
 }
 
 /**
- * Headless callers (e.g. internal send/swap flows — anything that did not
- * set `interactive: true`) have no retry UI, so a `failed` state is terminal
- * for them regardless of the error's retryable flag — otherwise the actor
- * and request both leak, blocking every subsequent request because the
- * single-flight queue guard sees a running actor.
+ * Non-interactive callers (internal send/swap flows — anything whose
+ * `sourceType` is not in `INTERACTIVE_SOURCES`) have no retry UI, so a
+ * `failed` state is terminal for them regardless of the error's
+ * retryable flag — otherwise the actor and request both leak, blocking
+ * every subsequent request because the single-flight queue guard sees a
+ * running actor.
  */
-const isHeadlessFailure = (
+const isNonInteractiveFailure = (
     snapshot: SnapshotFrom<typeof signingMachine>,
 ): boolean => {
     if (!snapshot.matches('failed')) return false
-    return snapshot.context.request.interactive !== true
+    return !isInteractiveSource(snapshot.context.request.sourceType)
 }
 
 // =============================================================================
@@ -220,6 +230,18 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                 return
             }
 
+            // Register the approval gate synchronously here, before the
+            // machine has a chance to reach `awaiting_user`. Co-locating
+            // registration with actor creation (rather than driving it
+            // from a sibling effect on `pendingSignRequests`) removes the
+            // cross-effect ordering dependency: an interactive request
+            // can never reach the pause state with no gate registered,
+            // so it can never be silently auto-approved by the headless
+            // fast-path. Headless sources skip registration entirely.
+            if (isInteractiveSource(request.sourceType)) {
+                approvalGate.register(request.id)
+            }
+
             const actor = createSigningMachine(
                 request,
                 allAccounts,
@@ -227,20 +249,49 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
             )
 
             actor.subscribe(snapshot => {
+                // Bridge the machine's external sync point to the approval
+                // gate. Headless flows resolve immediately (no gate was
+                // registered when the actor was created), interactive
+                // flows block on the gate until `signAndSendRequest` /
+                // `rejectRequest` (slide / dismiss) resolves it.
+                //
+                // `'cancelled'` is emitted by `approvalGate.unregister` to
+                // release this `.then` chain when the actor is torn down
+                // for reasons unrelated to user input. The actor is on its
+                // way to (or already at) a terminal state in that case, so
+                // we just no-op.
+                if (
+                    snapshot.matches('awaiting_user') &&
+                    !awaitingApprovalSet.has(actor.id)
+                ) {
+                    awaitingApprovalSet.add(actor.id)
+                    void approvalGate.waitFor(actor.id).then(result => {
+                        awaitingApprovalSet.delete(actor.id)
+                        if (result === 'cancelled') return
+                        actor.send({
+                            type:
+                                result === 'approved'
+                                    ? 'USER_APPROVED'
+                                    : 'USER_REJECTED',
+                        })
+                    })
+                }
+
                 const isTerminal =
                     snapshot.status === 'done' ||
                     isNonRetryableFailure(snapshot) ||
-                    isHeadlessFailure(snapshot)
+                    isNonInteractiveFailure(snapshot)
 
                 if (!isTerminal) return
 
                 const req = snapshot.context.request
+                const isInteractive = isInteractiveSource(req.sourceType)
                 // Interactive failures stay in the queue so the signing sheet
                 // keeps rendering; the inline error view (driven by
                 // lastFailedRequest in the store) takes over the sheet
                 // content until the user dismisses via removeSignRequest.
                 const keepForInlineError =
-                    snapshot.matches('failed') && req.interactive === true
+                    snapshot.matches('failed') && isInteractive
 
                 // Tear down the hardware overlay on any terminal transition
                 // for the matching request — success, rejection, or
@@ -251,7 +302,7 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                 }
 
                 if (snapshot.matches('completed')) {
-                    // Publish the transport result regardless of `interactive`.
+                    // Publish the transport result regardless of source.
                     // Headless flows that don't surface completion UI still
                     // need a reliable hook for store-driven listeners (e.g.
                     // PendingSignatures auto-open, send-funds exit on
@@ -265,9 +316,10 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                     // The transport is responsible for invoking the request's
                     // approve callback (with the actual signed data) — see
                     // createCallbackTransport / createWalletConnectTransport.
-                    // Headless callers own the completion UI, same as the
-                    // pre-sign review UI (see SignRequest.interactive).
-                    if (req.interactive) {
+                    // Headless callers own the completion UI; only the
+                    // standard review flow (the `SigningOverlays` drivers)
+                    // reads these store fields.
+                    if (isInteractive) {
                         setLastCompletedRequestRef.current(req)
                     }
                 } else if (snapshot.matches('failed')) {
@@ -284,7 +336,7 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                     // maps (not shared state), so the store is the only
                     // mechanism that reliably re-renders all subscribers.
                     // Headless callers drive their own error UI.
-                    if (req.interactive) {
+                    if (isInteractive) {
                         setLastFailedRequestRef.current({
                             request: req,
                             error: normalizedError,
@@ -293,6 +345,14 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                 } else if (snapshot.matches('rejected')) {
                     ;(req as { reject?: () => Promise<void> }).reject?.()
                 }
+
+                // Drop any approval-gate entry that lingered. The gate
+                // resolver clears its own map on approve/reject, but a
+                // request that fails before the gate resolves (e.g. a
+                // validation error after the standard review hook already
+                // registered) would leak a deferred otherwise.
+                approvalGate.unregister(actor.id)
+                awaitingApprovalSet.delete(actor.id)
 
                 if (keepForInlineError) return
 
@@ -318,6 +378,8 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
             actor.stop()
             actorRefsMap.delete(requestId)
         }
+        approvalGate.unregister(requestId)
+        awaitingApprovalSet.delete(requestId)
     }, [])
 
     const getActorRef = useCallback((requestId: string) => {

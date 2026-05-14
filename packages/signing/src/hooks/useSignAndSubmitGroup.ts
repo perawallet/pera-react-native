@@ -57,9 +57,9 @@ export type SignAndSubmitGroupResult = {
 /**
  * Push a pre-built unsigned transaction group through the XState signing
  * pipeline as a headless, `transport: 'callback'` request (the pipeline's
- * default — no `interactive` flag is set, so no review or completion sheet
- * is surfaced). Resolves with the algod txIds once signing and submission
- * succeed.
+ * default — no `sourceType` is set, so it falls outside
+ * `INTERACTIVE_SOURCES` and no review or completion sheet is surfaced).
+ * Resolves with the algod txIds once signing and submission succeed.
  *
  * Local-key accounts run validating → signing → completed without showing
  * any sheet. Hardware-wallet accounts render the LedgerSigningOverlay

@@ -56,10 +56,11 @@ export const buildMultisigCosignRequest = ({
         id: generateOrderedUniqueId(),
         type: 'transactions',
         transport: 'callback',
+        // `sourceType: 'multisig-cosign'` is in `INTERACTIVE_SOURCES`, so
+        // the standard review flow shows the review sheet automatically
+        // and the local signer can see the proposed transactions before
+        // adding their signature.
         sourceType: 'multisig-cosign',
-        // Cosign always shows the review sheet so the local signer can see
-        // the proposed transactions before adding their signature.
-        interactive: true,
         signRequestId: signRequest.id,
         txs,
         rawTransactionsBase64,

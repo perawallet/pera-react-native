@@ -45,31 +45,6 @@ type BaseSignRequest = {
      * transport can target the right backend record.
      */
     signRequestId?: string
-    /**
-     * Opts the request into the pipeline's built-in UI. Controls two things
-     * in lockstep:
-     *   1. Pre-sign — the pipeline pauses at `awaiting_user` so the standard
-     *      review sheet (`SignRequestBottomSheet`) can render fees, warnings,
-     *      and the request body.
-     *   2. Post-sign — the pipeline publishes to `lastCompletedRequest` /
-     *      `lastFailedRequest`, surfacing the completion/error sheets.
-     *
-     * **The default (omitted or `false`) is headless.** Headless requests run
-     * `validating → signing → completed` without any pipeline-owned UI; the
-     * caller takes full responsibility for showing fees/warnings before
-     * dispatch and for rendering its own completion / error feedback.
-     *
-     * Set `interactive: true` for sources that haven't already shown the user
-     * a review screen — WalletConnect, deeplinks, in-app dApp webview, gift
-     * card transports, multisig cosign tap-throughs. Internal flows that
-     * render their own review screen (swap and anything else routed through
-     * `useSignAndSubmitGroup`) should leave it unset.
-     *
-     * `lastTransportResult` is published regardless of this flag — listeners
-     * that react to transport completion (e.g. the multisig propose listener)
-     * work for both interactive and headless requests.
-     */
-    interactive?: boolean
 }
 
 export type TransactionSignRequest = {
@@ -151,7 +126,7 @@ export type SigningStore = BaseStoreState & {
     lastFailedRequest: FailedSignRequest | null
     /**
      * Most recent transport result, set on every completed actor transition
-     * regardless of `interactive`. Drives propose/cosign completion listeners
+     * regardless of source. Drives propose/cosign completion listeners
      * (PendingSignatures auto-open, TransactionProcessingScreen exit) that
      * can't rely on the `useSigningPipeline({ onEvent })` actor subscription
      * — that subscription doesn't reliably establish in time for headless

@@ -97,7 +97,6 @@ export const signingMachine = setup({
     },
     guards: {
         hasError: ({ context }) => context.error !== null,
-        isInteractive: ({ context }) => context.request.interactive === true,
         allGroupsSigned: ({ context }) =>
             getNextPendingSignerType(context) === undefined &&
             context.groupSignerTypes !== null,
@@ -237,11 +236,9 @@ export const signingMachine = setup({
 
         /**
          * Analyzes the signable group: calculates fees, detects warnings,
-         * extracts signable addresses.
-         *
-         * Headless requests skip `awaiting_user` and proceed directly to
-         * signing — the caller has already collected user intent on a
-         * preceding screen.
+         * extracts signable addresses. Always transitions to `awaiting_user`
+         * on success — the machine has no UI knowledge and treats that
+         * state as a generic external sync point.
          */
         validating: {
             invoke: {
@@ -256,17 +253,10 @@ export const signingMachine = setup({
                         accounts: context.allAccounts,
                     },
                 }),
-                onDone: [
-                    {
-                        guard: 'isInteractive',
-                        target: 'awaiting_user',
-                        actions: 'storeAnalyses',
-                    },
-                    {
-                        target: 'signing',
-                        actions: 'storeAnalyses',
-                    },
-                ],
+                onDone: {
+                    target: 'awaiting_user',
+                    actions: 'storeAnalyses',
+                },
                 onError: {
                     target: 'failed',
                     actions: 'setValidatingError',
@@ -278,8 +268,11 @@ export const signingMachine = setup({
         },
 
         /**
-         * Waits for the user to confirm or reject the signing request.
-         * The UI reads analysis from context to display fees, warnings, etc.
+         * External sync point between analysis and signing. The machine
+         * pauses here unconditionally; the actor lifecycle decides whether
+         * to resume immediately (headless callers — no gate registered) or
+         * wait for a UI gate (interactive sources — gate registered by
+         * the lifecycle at actor creation, resolved by user confirmation).
          */
         awaiting_user: {
             on: {

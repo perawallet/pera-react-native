@@ -29,9 +29,10 @@ import { SwapUserRejectedError } from './swapGroupPlan'
  * the user-signed bytes to come back via the callback transport.
  *
  * This is a headless local callback request — the caller is responsible for
- * having shown a review UI on the preceding screen, so we leave `interactive`
- * unset (the pipeline default) and skip the built-in review sheet, going
- * directly from `validating` to `signing`.
+ * having shown a review UI on the preceding screen, so we leave the
+ * `sourceType` as `'local'` (outside `INTERACTIVE_SOURCES`). The lifecycle
+ * auto-resumes the machine at its `awaiting_user` pause, skipping the
+ * standard review sheet.
  *
  * Rejections are surfaced as:
  * - {@link SwapUserRejectedError} when the user cancels — callers should

@@ -243,10 +243,11 @@ describe('useSwapExecution', () => {
             .calls[0][0] as TransactionSignRequest
         expect(request.type).toBe('transactions')
         expect(request.transport).toBe('callback')
-        expect(request.sourceType).toBe('local')
         // Swap is a headless-by-default flow: it renders its own review and
-        // success UI, so `interactive` must remain unset.
-        expect(request.interactive).toBeUndefined()
+        // success UI, so its `sourceType` must stay `'local'` (outside
+        // `INTERACTIVE_SOURCES`) to skip the standard review/completion
+        // sheets.
+        expect(request.sourceType).toBe('local')
         expect(request.txs).toHaveLength(2)
 
         expect(mockSendRawTransaction).toHaveBeenCalled()

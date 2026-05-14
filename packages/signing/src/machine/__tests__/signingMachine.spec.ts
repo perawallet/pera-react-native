@@ -45,9 +45,6 @@ const mockRequest: TransactionSignRequest = {
     id: 'req-1',
     type: 'transactions',
     transport: 'algod',
-    // Default fixture exercises the interactive path so tests that await
-    // `awaiting_user` keep working after headless became the pipeline default.
-    interactive: true,
     txs: [mockTx],
 }
 
@@ -144,34 +141,32 @@ describe('signingMachine', () => {
         expect(state.context.error).toBeNull()
     })
 
-    it('skips awaiting_user when interactive is not set and reaches completed', async () => {
-        const headlessRequest: TransactionSignRequest = {
+    it('pauses at awaiting_user even for non-interactive transports — caller drives resume', async () => {
+        // Post-PERA-XXXX the machine has no UI knowledge: every request
+        // reaches `awaiting_user` and only resumes when the lifecycle
+        // forwards an approval (instantly for non-interactive flows, after
+        // the user slides to confirm for `INTERACTIVE_SOURCES`).
+        const nonInteractiveRequest: TransactionSignRequest = {
             ...mockRequest,
-            id: 'req-headless',
+            id: 'req-non-interactive',
             transport: 'callback',
-            // Omitting `interactive` is the headless default after PERA-XXXX.
-            interactive: undefined,
             approve: vi.fn().mockResolvedValue(undefined),
         }
 
         const actor = createActor(mockedMachine, {
-            input: makeInput({ request: headlessRequest }),
-        })
-
-        const visited: string[] = []
-        actor.subscribe(snapshot => {
-            const value =
-                typeof snapshot.value === 'string'
-                    ? snapshot.value
-                    : Object.keys(snapshot.value)[0]
-            if (value && !visited.includes(value)) visited.push(value)
+            input: makeInput({ request: nonInteractiveRequest }),
         })
 
         actor.start()
 
-        const state = await waitFor(actor, s => s.matches('completed'))
-        expect(state.matches('completed')).toBe(true)
-        expect(visited).not.toContain('awaiting_user')
+        const awaitingState = await waitFor(actor, s =>
+            s.matches('awaiting_user'),
+        )
+        expect(awaitingState.matches('awaiting_user')).toBe(true)
+
+        actor.send({ type: 'USER_APPROVED' })
+        const completedState = await waitFor(actor, s => s.matches('completed'))
+        expect(completedState.matches('completed')).toBe(true)
     })
 
     it('requires USER_APPROVED before signing — stays in awaiting_user', async () => {
@@ -382,7 +377,6 @@ describe('signingMachine', () => {
             id: 'req-override',
             type: 'transactions',
             transport: 'callback',
-            interactive: true,
             txs: [contractTx],
             signerOverrides: new Map([[0, MOCK_ADDRESS]]),
         }
@@ -421,7 +415,6 @@ describe('signingMachine', () => {
             type: 'transactions',
             transport: 'callback',
             sourceType: 'webview',
-            interactive: true,
             txs: [mockTx, contractTx, mockTx],
         }
 
@@ -517,7 +510,6 @@ describe('signingMachine', () => {
             id: 'req-mixed',
             type: 'transactions',
             transport: 'algod',
-            interactive: true,
             txs: [mockTx, mockTxFromMultisig],
         }
 

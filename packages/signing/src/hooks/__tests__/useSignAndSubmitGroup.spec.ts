@@ -79,11 +79,10 @@ describe('useSignAndSubmitGroup', () => {
         await captured?.approve?.(signed)
 
         await expect(promise).resolves.toEqual({ txIds: ['tx1', 'tx2'] })
-        // Headless is now the default — useSignAndSubmitGroup must NOT set
-        // `interactive: true`. Asserting the field is absent guards against
-        // a regression where the swap flow accidentally surfaces the pipeline's
-        // built-in review/completion sheets.
-        expect(captured?.interactive).toBeUndefined()
+        // Internal flows must stamp `sourceType: 'local'` (or omit it) —
+        // never one of `INTERACTIVE_SOURCES`. Asserting the field guards
+        // against a regression where the swap flow accidentally pulls in
+        // the standard review/completion sheets.
         expect(captured?.transport).toBe('callback')
         expect(captured?.sourceType).toBe('local')
         expect(captured?.txs).toEqual([fakeTxn, fakeTxn])

@@ -274,7 +274,6 @@ export const useWalletConnectHandlers = () => {
                 type: 'arc60',
                 transport: 'callback',
                 sourceType: 'walletconnect',
-                interactive: true,
                 transportId: connector.clientId,
                 sourceMetadata: connector.session?.peerMeta,
                 stdSigData,
@@ -374,7 +373,6 @@ export const useWalletConnectHandlers = () => {
                 type: 'arbitrary-data',
                 transport: 'callback',
                 sourceType: 'walletconnect',
-                interactive: true,
                 transportId: connector.clientId,
                 sourceMetadata: connector.session?.peerMeta,
                 data: params,
@@ -488,7 +486,6 @@ export const useWalletConnectHandlers = () => {
                 type: 'transactions',
                 transport: 'callback',
                 sourceType: 'walletconnect',
-                interactive: true,
                 transportId: connector.clientId,
                 txs: signableTxns,
                 // Carry the full pre-filter payload so the signing pipeline
