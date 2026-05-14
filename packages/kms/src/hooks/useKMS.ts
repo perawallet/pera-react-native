@@ -215,9 +215,12 @@ export const useKMS = () => {
                         'Algo25 seed has no private key bytes',
                     )
                 }
-                words = mnemonicFromSeed(
-                    new Uint8Array(seedData.privateKey),
-                ).split(' ')
+                const seedBytes = new Uint8Array(seedData.privateKey)
+                try {
+                    words = mnemonicFromSeed(seedBytes).split(' ')
+                } finally {
+                    zeroBytes(seedBytes)
+                }
             }
 
             const bytes = new TextEncoder().encode(words.join(' '))
@@ -241,7 +244,6 @@ export const useKMS = () => {
         persistHDMasterKey,
         generateDerivedKey,
         getDerivedPublicKey,
-        keyStore,
         withExportedKey,
         signTransactionsWithKey,
         signDataWithKey,

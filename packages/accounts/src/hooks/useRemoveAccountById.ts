@@ -15,7 +15,7 @@ import { useKMS } from '@perawallet/wallet-core-kms'
 
 export const useRemoveAccountById = () => {
     const accounts = useAccountsStore(state => state.accounts)
-    const { keyStore, seedIdOf, removeKeyAndChildren } = useKMS()
+    const { deleteKey, seedIdOf, removeKeyAndChildren } = useKMS()
     const setAccounts = useAccountsStore(state => state.setAccounts)
 
     return async (id: string) => {
@@ -29,7 +29,7 @@ export const useRemoveAccountById = () => {
             if (seedId) {
                 // Always wipe this account's own derived child — no other
                 // account references it (account.id is unique).
-                await keyStore.remove(childKeyId)
+                await deleteKey(childKeyId)
 
                 // If no remaining account hangs off the same seed, sweep
                 // the seed and any orphan derivation entries with it.
