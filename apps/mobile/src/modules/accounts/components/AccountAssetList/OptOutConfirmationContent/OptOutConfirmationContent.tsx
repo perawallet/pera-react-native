@@ -10,7 +10,13 @@
  limitations under the License
  */
 
-import { PWButton, PWHeader, PWText, PWView } from '@components/core'
+import {
+    PWButton,
+    PWHeader,
+    PWSlideToConfirm,
+    PWText,
+    PWView,
+} from '@components/core'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { AddressDisplay } from '@components/AddressDisplay'
 import {
@@ -152,15 +158,14 @@ export const OptOutConfirmationContent = ({
                 </PWText>
 
                 <PWView style={styles.buttonContainer}>
-                    <PWButton
-                        title={t('asset_opt_out.remove')}
-                        variant='primary'
-                        onPress={() => resolve('confirm')}
+                    <PWSlideToConfirm
+                        title={t('common.slide_to_confirm.label')}
+                        onConfirm={() => resolve('confirm')}
                         testID='opt_out_confirm'
                     />
                     <PWButton
                         title={t('asset_opt_out.keep')}
-                        variant='secondary'
+                        variant='linkNeutral'
                         onPress={dismiss}
                         testID='opt_out_cancel'
                     />

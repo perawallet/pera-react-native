@@ -26,7 +26,7 @@ import { useSigningRequest } from './useSigningRequest'
 
 /**
  * Thrown when the user dismisses the LedgerSigningContent sheet or the in-app
- * signing sheet for a `headless: true` request. Callers should treat this
+ * signing sheet for a headless request. Callers should treat this
  * as a non-fatal cancellation rather than a backend failure.
  */
 export class UserRejectedSigningError extends Error {
@@ -56,8 +56,10 @@ export type SignAndSubmitGroupResult = {
 
 /**
  * Push a pre-built unsigned transaction group through the XState signing
- * pipeline as a `headless: true`, `transport: 'callback'` request. Resolves
- * with the algod txIds once the user approves and submission succeeds.
+ * pipeline as a headless, `transport: 'callback'` request (the pipeline's
+ * default — no `sourceType` is set, so it falls outside
+ * `INTERACTIVE_SOURCES` and no review or completion sheet is surfaced).
+ * Resolves with the algod txIds once signing and submission succeed.
  *
  * Local-key accounts run validating → signing → completed without showing
  * any sheet (headless skips the review state). Hardware-wallet accounts
@@ -83,7 +85,6 @@ export const useSignAndSubmitGroup = (): SignAndSubmitGroupResult => {
                     type: 'transactions',
                     transport: 'callback',
                     sourceType: 'local',
-                    headless: true,
                     txs: unsignedTxs,
                     sourceMetadata: source,
                     approve: async (signed: PeraSignedTransaction[]) => {

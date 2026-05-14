@@ -13,6 +13,7 @@
 import React, { useEffect, useRef } from 'react'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import {
+    isInteractiveSource,
     useHardwareSigning,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
@@ -25,13 +26,16 @@ import { SigningCompletedContent } from '../SigningCompletedContent'
 import { TransactionRequestFAQContent } from '../TransactionRequestFAQContent'
 
 /**
- * Watches the signing queue for the next non-headless sign request and
+ * Watches the signing queue for the next interactive sign request and
  * shows the request sheet via the centralized bottom sheet manager.
  *
- * Headless requests run signing in the background (e.g. swap drives its
- * own confirmation UI) so they're skipped here. When the queue advances
- * to a different request id while a sheet is already open, the previous
- * sheet is dismissed via the manager so the new one opens cleanly.
+ * A request is "interactive" if its `sourceType` belongs to
+ * `INTERACTIVE_SOURCES` (WalletConnect, deeplinks, in-app web view,
+ * multisig cosign, ARC-60, gift card). Headless requests (internal
+ * send/swap flows where the originating screen owns the confirmation
+ * UI) are skipped here. When the queue advances to a different
+ * request id while a sheet is already open, the previous sheet is
+ * dismissed via the manager so the new one opens cleanly.
  *
  * Skipped while a hardware-signing overlay is actually visible — i.e.
  * when status is 'awaitingApproval', 'signing', or 'error'. During the
@@ -39,8 +43,9 @@ import { TransactionRequestFAQContent } from '../TransactionRequestFAQContent'
  * this sheet stays mounted to avoid a jarring blank-screen gap between
  * the sign-request sheet disappearing and the Ledger sheet appearing.
  *
- * The sheet preserves the legacy presentation: `size='lg'`, gestures and
- * backdrop press disabled — signing must complete via the UI controls.
+ * The sheet preserves the legacy presentation: `size='lg'`, gestures
+ * and backdrop press disabled — signing must complete via the UI
+ * controls.
  */
 const useSignRequestDriver = () => {
     const { pendingSignRequests } = useSigningRequest()
@@ -54,12 +59,17 @@ const useSignRequestDriver = () => {
     const isHardwareSigningInFlight =
         hardwareStatus !== 'idle' && hardwareStatus !== 'searching'
 
-    const nextRequest = pendingSignRequests.find(r => !r.headless)
+    const nextRequest = pendingSignRequests.find(r =>
+        isInteractiveSource(r.sourceType),
+    )
 
     useEffect(() => {
         const sheetId =
             !isHardwareSigningInFlight && nextRequest ? nextRequest.id : null
 
+        // No pending interactive request (or hardware overlay is showing) —
+        // dismiss any open sheet so the user isn't left looking at stale
+        // request data after the queue drains (e.g. WC tx signing completes).
         if (!sheetId) {
             if (openIdRef.current) {
                 dismiss(openIdRef.current)
@@ -157,7 +167,7 @@ const useTransactionRequestFAQDriver = () => {
     useEffect(() => {
         const next = pendingSignRequests.find(
             r =>
-                !r.headless &&
+                isInteractiveSource(r.sourceType) &&
                 r.type === 'transactions' &&
                 r.sourceType !== 'multisig-cosign',
         )

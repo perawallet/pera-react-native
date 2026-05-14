@@ -33,6 +33,8 @@ const mockUseSigningRequest = vi.fn()
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useHardwareSigning: () => mockUseHardwareSigning(),
     useSigningRequest: () => mockUseSigningRequest(),
+    isInteractiveSource: (sourceType: string | undefined) =>
+        sourceType === 'walletconnect',
 }))
 
 // ----- mock settings -----
@@ -76,9 +78,8 @@ vi.mock('../../TransactionRequestFAQContent', () => ({
 const PENDING_REQUEST_ID = 'req-1'
 const PENDING_REQUEST = {
     id: PENDING_REQUEST_ID,
-    headless: false,
     type: 'transactions',
-    sourceType: 'dapp',
+    sourceType: 'walletconnect',
 } as never
 
 const buildHardwareSigningResult = (status: string) => ({

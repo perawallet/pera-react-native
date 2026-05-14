@@ -47,6 +47,10 @@ vi.mock('@components/core', () => ({
         <button onClick={onPress}>{title}</button>
     ),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    PWSlideToConfirm: ({ title, onConfirm }: any) => (
+        <button onClick={onConfirm}>{title}</button>
+    ),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     PWTouchableOpacity: ({ children, onPress }: any) => (
         <button onClick={onPress}>{children}</button>
     ),
@@ -194,7 +198,7 @@ describe('TransactionConfirmationScreen', () => {
         )
 
         expect(getByTestId('loading-view')).toBeTruthy()
-        expect(queryByText('send_funds.confirmation.confirm_button')).toBeNull()
+        expect(queryByText('common.slide_to_confirm.label')).toBeNull()
     })
 
     it('renders amount key-value row', () => {
@@ -296,7 +300,7 @@ describe('TransactionConfirmationScreen', () => {
     it('calls handleConfirm when confirm button is pressed', () => {
         const { getByText } = render(<TransactionConfirmationScreen />)
 
-        fireEvent.click(getByText('send_funds.confirmation.confirm_button'))
+        fireEvent.click(getByText('common.slide_to_confirm.label'))
 
         expect(mockHandleConfirm).toHaveBeenCalledTimes(1)
     })
