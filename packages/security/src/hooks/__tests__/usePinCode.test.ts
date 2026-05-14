@@ -29,6 +29,15 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
         hasSecret: kmsMocks.hasSecret,
         removeSecret: kmsMocks.removeSecret,
     }),
+    // pinRecord.ts (transitively imported by usePinCode) calls
+    // `zeroBytes` from this module inside the PBKDF2 callback. Without
+    // it the callback throws as an uncaught exception and savePin /
+    // verifyPin hang forever.
+    zeroBytes: (...buffers: Array<Uint8Array | undefined | null>) => {
+        for (const buf of buffers) {
+            if (buf) buf.fill(0)
+        }
+    },
 }))
 
 import { usePinCode } from '../usePinCode'
@@ -73,11 +82,19 @@ const wireBlobMocks = () => {
     )
     kmsMocks.withSecret.mockImplementation(
         async (id: string, handler: (bytes: Uint8Array) => unknown) => {
-            const bytes =
+            const stash =
                 id === PIN_RECORD_KEY_ID
                     ? kmsMocks.pinBytes
                     : kmsMocks.biometricBytes
-            if (!bytes) return null
+            if (!stash) return null
+            // Mirror production `withSecret`: hand the handler a fresh
+            // decrypted copy and zero THAT copy in finally. The stashed
+            // bytes represent the persisted encrypted form — they must
+            // survive across calls so the next `loadRecord` can read
+            // them again. Zeroing `stash` directly here would wipe the
+            // persisted state out from under subsequent calls (the bug
+            // that broke 19 of these tests).
+            const bytes = new Uint8Array(stash)
             try {
                 return await handler(bytes)
             } finally {
