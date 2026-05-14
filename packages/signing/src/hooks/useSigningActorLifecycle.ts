@@ -346,11 +346,12 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                     ;(req as { reject?: () => Promise<void> }).reject?.()
                 }
 
-                // Drop any approval-gate entry that lingered. The gate
-                // resolver clears its own map on approve/reject, but a
-                // request that fails before the gate resolves (e.g. a
-                // validation error after the standard review hook already
-                // registered) would leak a deferred otherwise.
+                // The lifecycle owns gate cleanup — `approve`/`reject` only
+                // resolve, they don't delete (otherwise a Cancel tap during
+                // the async validating phase would be lost). `unregister`
+                // both resolves any still-pending deferred with `'cancelled'`
+                // (releasing the awaiting `.then` closure) and removes the
+                // map entry.
                 approvalGate.unregister(actor.id)
                 awaitingApprovalSet.delete(actor.id)
 

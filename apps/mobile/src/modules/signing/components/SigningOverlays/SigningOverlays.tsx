@@ -221,7 +221,7 @@ const useLedgerSigningDriver = () => {
                 id: sheetId,
                 contents: <LedgerSigningContent />,
                 options: {
-                    size: 'lg',
+                    size: 'auto',
                     enablePanDownToClose: false,
                     enableCloseOnBackdropPress: false,
                     autoCreateContainer: false,
