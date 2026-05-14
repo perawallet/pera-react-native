@@ -47,10 +47,6 @@ type MockCardProps = {
     onPress: (project: unknown) => void
 }
 
-type MockSheetProps = {
-    isVisible: boolean
-}
-
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
 }))
@@ -59,10 +55,6 @@ vi.mock('@modules/staking/components', () => ({
     StakingProjectCard: ({ project, onPress }: MockCardProps) => (
         <button onClick={() => onPress(project)}>{project.title}</button>
     ),
-    StakingHelpSheet: ({ isVisible }: MockSheetProps) =>
-        isVisible ? <div data-testid='staking-help-sheet' /> : null,
-    StakingDisclaimerSheet: ({ isVisible }: MockSheetProps) =>
-        isVisible ? <div data-testid='staking-disclaimer-sheet' /> : null,
     StakingErrorBoundary: ({ children }: { children: React.ReactNode }) => (
         <>{children}</>
     ),
@@ -73,14 +65,9 @@ describe('StakingScreen', () => {
         projects: [],
         isLoading: false,
         isError: false,
-        isHelpVisible: false,
-        isDisclaimerVisible: false,
         handleRetry: vi.fn(),
         handleProjectPress: vi.fn(),
         handleHelpOpen: vi.fn(),
-        handleHelpClose: vi.fn(),
-        handleDisclaimerAccept: vi.fn(),
-        handleDisclaimerClose: vi.fn(),
     }
 
     beforeEach(() => {

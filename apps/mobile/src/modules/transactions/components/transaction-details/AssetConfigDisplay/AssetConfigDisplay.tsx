@@ -27,7 +27,9 @@ import { TransactionWarnings } from '../../TransactionWarnings/TransactionWarnin
 import { TransactionFooter } from '../TransactionFooter/TransactionFooter'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { useAssetConfigDisplay } from './useAssetConfigDisplay'
-import { ViewTextDetailsPanel } from '../../ViewTextDetailsPanel'
+import { ViewTextDetailsContent } from '../../ViewTextDetailsContent'
+import { useBottomSheet } from '@modules/bottom-sheet'
+import { useCallback } from 'react'
 
 export type AssetConfigDisplayProps = {
     transaction: PeraDisplayableTransaction
@@ -49,10 +51,21 @@ export const AssetConfigDisplay = ({
         showWarnings,
         supply,
         metadataHash,
-        openMetadataHashDetailsModal,
-        closeMetadataHashDetailsModal,
-        isMetadataHashDetailsModalVisible,
     } = useAssetConfigDisplay(transaction)
+
+    const { request: requestBottomSheet } = useBottomSheet()
+    const openMetadataHashDetails = useCallback(() => {
+        if (!metadataHash) return
+        void requestBottomSheet({
+            contents: (
+                <ViewTextDetailsContent
+                    text={metadataHash}
+                    title={t('transactions.common.view_metadata')}
+                />
+            ),
+            options: { size: 'auto', enablePanDownToClose: true },
+        })
+    }, [metadataHash, requestBottomSheet, t])
 
     if (!assetConfig) {
         return null
@@ -197,7 +210,7 @@ export const AssetConfigDisplay = ({
                             variant='link'
                             paddingStyle='none'
                             title={t('transactions.common.view_metadata')}
-                            onPress={openMetadataHashDetailsModal}
+                            onPress={openMetadataHashDetails}
                         />
                     </KeyValueRow>
                 )}
@@ -221,15 +234,6 @@ export const AssetConfigDisplay = ({
             />
 
             <TransactionFooter transaction={transaction} />
-
-            {!!metadataHash && (
-                <ViewTextDetailsPanel
-                    isVisible={isMetadataHashDetailsModalVisible}
-                    onClose={closeMetadataHashDetailsModal}
-                    text={metadataHash}
-                    title={t('transactions.common.view_metadata')}
-                />
-            )}
         </PWView>
     )
 }

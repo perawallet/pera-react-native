@@ -17,7 +17,6 @@ import {
     aggregateTransactionWarnings,
     type TransactionWarning,
 } from '@perawallet/wallet-core-signing'
-import { useModalState } from '@hooks/useModalState'
 
 type TransactionWarningType = TransactionWarning['type']
 
@@ -26,16 +25,12 @@ type WarningsByType = Record<TransactionWarningType, TransactionWarning[]>
 type UseTransactionWarningsResult = {
     warningCount: number
     warningsByType: WarningsByType
-    isModalOpen: boolean
-    openModal: () => void
-    closeModal: () => void
 }
 
 export const useTransactionWarnings = (
     transaction: PeraDisplayableTransaction,
 ): UseTransactionWarningsResult => {
     const signingAccounts = useSigningAccounts()
-    const { isOpen, open, close } = useModalState()
 
     const userAccountAddresses = useMemo(
         () => new Set(signingAccounts.map(a => a.address)),
@@ -47,17 +42,17 @@ export const useTransactionWarnings = (
         [transaction, userAccountAddresses],
     )
 
-    const warningsByType: WarningsByType = {
-        close: warnings.filter(w => w.type === 'close'),
-        rekey: warnings.filter(w => w.type === 'rekey'),
-        'asset-freeze': warnings.filter(w => w.type === 'asset-freeze'),
-    }
+    const warningsByType: WarningsByType = useMemo(
+        () => ({
+            close: warnings.filter(w => w.type === 'close'),
+            rekey: warnings.filter(w => w.type === 'rekey'),
+            'asset-freeze': warnings.filter(w => w.type === 'asset-freeze'),
+        }),
+        [warnings],
+    )
 
     return {
         warningCount: warnings.length,
         warningsByType,
-        isModalOpen: isOpen,
-        openModal: open,
-        closeModal: close,
     }
 }

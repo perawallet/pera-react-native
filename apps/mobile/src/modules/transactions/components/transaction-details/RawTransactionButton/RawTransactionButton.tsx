@@ -10,24 +10,12 @@
  limitations under the License
  */
 
-import {
-    algorandSafeJsonStringify,
-    PeraDisplayableTransaction,
-} from '@perawallet/wallet-core-blockchain'
-import {
-    bottomSheetNotifier,
-    PWBottomSheet,
-    PWButton,
-    PWIcon,
-    PWText,
-    PWToolbar,
-} from '@components/core'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import { PWButton } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { useModalState } from '@hooks/useModalState'
-import { useStyles } from './styles'
-import { useClipboard } from '@hooks/useClipboard'
-import { useMemo } from 'react'
-import { BottomSheetScrollView } from '@gorhom/bottom-sheet'
+import { useBottomSheet } from '@modules/bottom-sheet'
+import { useCallback } from 'react'
+import { RawTransactionContent } from './RawTransactionContent'
 
 type RawTransactionButtonProps = {
     transaction: PeraDisplayableTransaction
@@ -37,67 +25,31 @@ export const RawTransactionButton = ({
     transaction,
 }: RawTransactionButtonProps) => {
     const { t } = useLanguage()
-    const modalState = useModalState()
-    const styles = useStyles()
-    const { copyToClipboard } = useClipboard()
+    const { request: requestBottomSheet } = useBottomSheet()
 
-    const rawText = useMemo(() => {
-        return algorandSafeJsonStringify(transaction.rawTransaction)
-    }, [transaction.rawTransaction])
-
-    const copyText = () => {
-        copyToClipboard(rawText, bottomSheetNotifier.current ?? undefined)
-    }
+    const handleOpen = useCallback(() => {
+        void requestBottomSheet({
+            contents: <RawTransactionContent transaction={transaction} />,
+            options: {
+                size: 'lg',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
+        })
+    }, [requestBottomSheet, transaction])
 
     if (!transaction.rawTransaction || !!transaction.id) {
         return null
     }
 
     return (
-        <>
-            <PWButton
-                variant='secondary'
-                title={t('transactions.common.view_raw_transaction')}
-                iconRight='code'
-                onPress={modalState.open}
-                paddingStyle='dense'
-                rounded
-            />
-            <PWBottomSheet
-                containerStyle={styles.contentContainer}
-                isVisible={modalState.isOpen}
-                size='lg'
-                autoCreateContainer={false}
-            >
-                <PWToolbar
-                    left={
-                        <PWIcon
-                            name='cross'
-                            variant='secondary'
-                            onPress={modalState.close}
-                        />
-                    }
-                    center={
-                        <PWText variant='h4'>
-                            {t('transactions.common.raw_transaction')}
-                        </PWText>
-                    }
-                    right={
-                        <PWIcon
-                            name='copy'
-                            variant='secondary'
-                            onPress={copyText}
-                        />
-                    }
-                    paddingStyle='dense'
-                />
-                <BottomSheetScrollView
-                    contentContainerStyle={styles.scrollview}
-                    scrollEnabled
-                >
-                    <PWText variant='mono'>{rawText}</PWText>
-                </BottomSheetScrollView>
-            </PWBottomSheet>
-        </>
+        <PWButton
+            variant='secondary'
+            title={t('transactions.common.view_raw_transaction')}
+            iconRight='code'
+            onPress={handleOpen}
+            paddingStyle='dense'
+            rounded
+        />
     )
 }

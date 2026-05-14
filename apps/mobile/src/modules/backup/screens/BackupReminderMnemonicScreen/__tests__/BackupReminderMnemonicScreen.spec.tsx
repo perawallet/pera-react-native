@@ -67,15 +67,13 @@ vi.mock('../../../hooks', () => ({
     useMnemonicForAddress: () => stableMnemonicHook,
 }))
 
-vi.mock('@modules/security/components/PinEditView', () => ({
+vi.mock('@modules/security', () => ({
     PinEditView: ({
         mode,
         onSuccess,
-        onClose,
     }: {
         mode?: string | null
         onSuccess?: () => void
-        onClose?: () => void
     }) =>
         mode
             ? React.createElement(
@@ -84,10 +82,6 @@ vi.mock('@modules/security/components/PinEditView', () => ({
                   React.createElement('button', {
                       'data-testid': 'pin_success',
                       onClick: onSuccess,
-                  }),
-                  React.createElement('button', {
-                      'data-testid': 'pin_close',
-                      onClick: onClose,
                   }),
               )
             : null,
@@ -124,14 +118,6 @@ describe('BackupReminderMnemonicScreen', () => {
             expect(screen.getByText('alpha')).toBeTruthy()
             expect(screen.getByText('foxtrot')).toBeTruthy()
         })
-    })
-
-    test('navigates back when PIN modal is dismissed without verifying', async () => {
-        mockCheckPinEnabled.mockResolvedValue(true)
-        render(<BackupReminderMnemonicScreen />)
-        await waitFor(() => screen.getByTestId('pin_close'))
-        fireEvent.click(screen.getByTestId('pin_close'))
-        expect(mockGoBack).toHaveBeenCalled()
     })
 
     test('skips the PIN gate when no PIN is set', async () => {

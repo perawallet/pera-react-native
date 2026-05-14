@@ -14,7 +14,7 @@ import { ActivityIndicator } from 'react-native'
 import { PWButton, PWScrollView, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
-import { PinEditView } from '@modules/security/components/PinEditView'
+import { PinEditView } from '@modules/security'
 import { useBackupReminderMnemonicScreen } from './useBackupReminderMnemonicScreen'
 import { useStyles } from './styles'
 
@@ -30,7 +30,6 @@ export const BackupReminderMnemonicScreen = () => {
         isPinVisible,
         isPinGateResolved,
         handlePinVerified,
-        handlePinClose,
         onContinue,
     } = useBackupReminderMnemonicScreen()
 
@@ -39,11 +38,12 @@ export const BackupReminderMnemonicScreen = () => {
     if (!isPinGateResolved) {
         return (
             <PWView style={styles.root}>
-                <PinEditView
-                    mode={isPinVisible ? 'verify' : null}
-                    onSuccess={handlePinVerified}
-                    onClose={handlePinClose}
-                />
+                {isPinVisible && (
+                    <PinEditView
+                        mode='verify'
+                        onSuccess={handlePinVerified}
+                    />
+                )}
             </PWView>
         )
     }

@@ -45,6 +45,23 @@ vi.mock('@components/core', () => ({
     PWView: vi.fn(),
 }))
 
+const { mockRequestBottomSheet } = vi.hoisted(() => ({
+    mockRequestBottomSheet: vi.fn(),
+}))
+
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({
+        request: mockRequestBottomSheet,
+        requestByType: vi.fn(),
+        dismiss: vi.fn(),
+        dismissAll: vi.fn(),
+    }),
+}))
+
+vi.mock('../../../components/send-funds/AddNoteContent', () => ({
+    AddNoteContent: () => null,
+}))
+
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
     useAccountAssetBalanceQuery: vi.fn(),
@@ -480,24 +497,16 @@ describe('useTransactionConfirmationScreen', () => {
     })
 
     describe('note state', () => {
-        it('should toggle noteOpen state with openNote and closeNote', () => {
+        it('opens the note sheet when openNote is called', () => {
             const { result } = renderHook(() =>
                 useTransactionConfirmationScreen(),
             )
-
-            expect(result.current.noteOpen).toBe(false)
 
             act(() => {
                 result.current.openNote()
             })
 
-            expect(result.current.noteOpen).toBe(true)
-
-            act(() => {
-                result.current.closeNote()
-            })
-
-            expect(result.current.noteOpen).toBe(false)
+            expect(mockRequestBottomSheet).toHaveBeenCalled()
         })
     })
 

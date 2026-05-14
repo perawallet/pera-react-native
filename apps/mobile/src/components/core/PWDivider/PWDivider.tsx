@@ -10,10 +10,26 @@
  limitations under the License
  */
 
-import { Divider, DividerProps } from '@rneui/themed'
+import { View, StyleSheet } from 'react-native'
+import { defaultTheme } from '@rneui/base'
+import type { ViewStyle } from 'react-native'
 
-type PWDividerProps = DividerProps
+type PWDividerProps = {
+    color?: string
+    style?: ViewStyle
+}
 
-export const PWDivider = (props: PWDividerProps) => {
-    return <Divider {...props} />
+export const PWDivider = ({ color, style }: PWDividerProps) => {
+    return (
+        <View
+            style={[
+                {
+                    height: StyleSheet.hairlineWidth,
+                    width: '100%',
+                    backgroundColor: color ?? defaultTheme.colors.divider,
+                },
+                style,
+            ]}
+        />
+    )
 }

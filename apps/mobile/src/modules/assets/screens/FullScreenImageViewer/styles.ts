@@ -14,10 +14,6 @@ import { makeStyles } from '@rneui/themed'
 import { EdgeInsets } from 'react-native-safe-area-context'
 
 export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
-    container: {
-        flex: 1,
-        backgroundColor: theme.colors.black,
-    },
     innerContainer: {
         flexGrow: 1,
         backgroundColor: theme.colors.black,

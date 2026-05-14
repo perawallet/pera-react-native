@@ -17,7 +17,6 @@ import {
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import { formatNumber, formatWithUnits } from '@perawallet/wallet-core-shared'
-import { useModalState } from '@hooks/useModalState'
 
 export const useAssetConfigDisplay = (
     transaction: PeraDisplayableTransaction,
@@ -27,7 +26,6 @@ export const useAssetConfigDisplay = (
     const configType = getAssetConfigType(transaction)
     const assetId = assetConfig?.assetId
     const showWarnings = !transaction?.id
-    const metadataHashDetailsModal = useModalState()
 
     const supply = useMemo(() => {
         const { amount, unit } = assetConfig?.params?.total
@@ -56,8 +54,5 @@ export const useAssetConfigDisplay = (
         showWarnings,
         supply,
         metadataHash,
-        openMetadataHashDetailsModal: metadataHashDetailsModal.open,
-        closeMetadataHashDetailsModal: metadataHashDetailsModal.close,
-        isMetadataHashDetailsModalVisible: metadataHashDetailsModal.isOpen,
     }
 }

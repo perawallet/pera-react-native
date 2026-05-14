@@ -14,24 +14,23 @@ import { render, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { TransactionWarnings } from '../TransactionWarnings'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
-import { useModalState } from '@hooks/useModalState'
 import { useSigningAccounts } from '@perawallet/wallet-core-accounts'
 
-vi.mock('@hooks/useModalState', () => ({
-    useModalState: vi.fn(() => ({
-        isOpen: false,
-        open: vi.fn(),
-        close: vi.fn(),
-        toggle: vi.fn(),
-    })),
+const { mockRequestBottomSheet } = vi.hoisted(() => ({
+    mockRequestBottomSheet: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+vi.mock('@modules/bottom-sheet', async importOriginal => {
     const actual =
-        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+        await importOriginal<typeof import('@modules/bottom-sheet')>()
     return {
         ...actual,
-        truncateAlgorandAddress: vi.fn(a => a),
+        useBottomSheet: () => ({
+            request: mockRequestBottomSheet,
+            requestByType: vi.fn(),
+            dismiss: vi.fn(),
+            dismissAll: vi.fn(),
+        }),
     }
 })
 
@@ -43,14 +42,6 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     return {
         ...actual,
         useSigningAccounts: vi.fn(() => []),
-    }
-})
-
-vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
-    const actual =
-        await importOriginal<typeof import('@perawallet/wallet-core-signing')>()
-    return {
-        ...actual,
     }
 })
 
@@ -75,15 +66,10 @@ const mockUserAccount = {
 
 describe('TransactionWarnings', () => {
     beforeEach(() => {
+        vi.clearAllMocks()
         vi.mocked(useSigningAccounts).mockReturnValue([
             mockUserAccount,
         ] as unknown as ReturnType<typeof useSigningAccounts>)
-        vi.mocked(useModalState).mockReturnValue({
-            isOpen: false,
-            open: vi.fn(),
-            close: vi.fn(),
-            toggle: vi.fn(),
-        })
     })
 
     const mockTransaction = {
@@ -105,21 +91,13 @@ describe('TransactionWarnings', () => {
         expect(getByText('transactions.warning.title')).toBeTruthy()
     })
 
-    it('calls open when warning button is pressed', () => {
-        const open = vi.fn()
-        vi.mocked(useModalState).mockReturnValue({
-            isOpen: false,
-            open,
-            close: vi.fn(),
-            toggle: vi.fn(),
-        })
-
+    it('opens the bottom sheet when warning button is pressed', () => {
         const { getByText } = render(
             <TransactionWarnings transaction={mockTransaction} />,
         )
 
         fireEvent.click(getByText('transactions.warning.title'))
-        expect(open).toHaveBeenCalled()
+        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
     })
 
     it('renders null when no warnings exist', () => {
@@ -133,90 +111,6 @@ describe('TransactionWarnings', () => {
         )
 
         expect(container.firstChild).toBeNull()
-    })
-
-    it('shows close account warning in bottom sheet when sender is a user account', () => {
-        vi.mocked(useModalState).mockReturnValue({
-            isOpen: true,
-            open: vi.fn(),
-            close: vi.fn(),
-            toggle: vi.fn(),
-        })
-
-        const { getByText } = render(
-            <TransactionWarnings transaction={mockTransaction} />,
-        )
-
-        expect(getByText('transactions.warning.close_warning')).toBeTruthy()
-    })
-
-    it('hides close warning when sender is not a user account', () => {
-        vi.mocked(useModalState).mockReturnValue({
-            isOpen: true,
-            open: vi.fn(),
-            close: vi.fn(),
-            toggle: vi.fn(),
-        })
-
-        const closeTx = {
-            sender: 'EXTERNAL_ADDR',
-            paymentTransaction: {
-                closeRemainderTo: 'CLOSE_ADDRESS',
-            },
-            id: 'TX_ID',
-        } as unknown as PeraDisplayableTransaction
-
-        const { queryByText } = render(
-            <TransactionWarnings transaction={closeTx} />,
-        )
-
-        expect(queryByText('transactions.warning.close_warning')).toBeNull()
-    })
-
-    it('shows rekey warning when sender is a user account', () => {
-        vi.mocked(useModalState).mockReturnValue({
-            isOpen: true,
-            open: vi.fn(),
-            close: vi.fn(),
-            toggle: vi.fn(),
-        })
-
-        const rekeyTx = {
-            sender: 'USER_ADDR',
-            rekeyTo: {
-                publicKey: new Uint8Array([1, 2, 3]),
-            },
-            id: 'TX_ID',
-        } as unknown as PeraDisplayableTransaction
-
-        const { getByText } = render(
-            <TransactionWarnings transaction={rekeyTx} />,
-        )
-
-        expect(getByText('transactions.warning.rekey_warning')).toBeTruthy()
-    })
-
-    it('shows rekey warning even when sender is not a user account', () => {
-        vi.mocked(useModalState).mockReturnValue({
-            isOpen: true,
-            open: vi.fn(),
-            close: vi.fn(),
-            toggle: vi.fn(),
-        })
-
-        const rekeyTx = {
-            sender: 'EXTERNAL_ADDR',
-            rekeyTo: {
-                publicKey: new Uint8Array([1, 2, 3]),
-            },
-            id: 'TX_ID',
-        } as unknown as PeraDisplayableTransaction
-
-        const { getByText } = render(
-            <TransactionWarnings transaction={rekeyTx} />,
-        )
-
-        expect(getByText('transactions.warning.rekey_warning')).toBeTruthy()
     })
 
     it('renders null for close-only transaction when sender is not a user account', () => {

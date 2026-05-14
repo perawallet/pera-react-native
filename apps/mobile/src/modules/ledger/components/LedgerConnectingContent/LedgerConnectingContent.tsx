@@ -10,10 +10,9 @@
  limitations under the License
  */
 
-import React from 'react'
 import { PWView, PWText, PWButton } from '@components/core'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
+import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { LedgerCompositeIcon } from '../LedgerCompositeIcon'
 import { useStyles } from './styles'
 

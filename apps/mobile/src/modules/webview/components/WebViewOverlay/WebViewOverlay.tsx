@@ -10,52 +10,86 @@
  limitations under the License
  */
 
-import React from 'react'
-import { PWBottomSheet } from '@components/core'
+import { useEffect, useRef } from 'react'
+import { useBottomSheet } from '@modules/bottom-sheet'
 import { useWebViewStack, WebViewRequest } from '../../hooks'
 import { PWWebView } from '../PWWebView'
 
 /**
- * WebViewOverlay renders WebView bottom sheets from the store.
- * Place this component at the app root level to enable WebView overlays.
- * Use the `useWebView` hook to open webviews from anywhere in the app.
- *
- * @example
- * // In RootComponent
- * <RootContent />
- * <WebViewOverlay />
+ * WebViewOverlay opens a WebView bottom sheet for each entry in the
+ * webview stack via the managed bottom-sheet system. Place this at the
+ * app root so `useWebView().pushWebView(...)` resolves anywhere in the
+ * app.
  */
 export const WebViewOverlay = () => {
     const { openWebViews, removeWebView } = useWebViewStack()
+    const { request: requestBottomSheet, dismiss } = useBottomSheet()
 
-    const onCloseRequested = (view: WebViewRequest) => {
-        if (view.onCloseRequested) {
-            view.onCloseRequested()
-        } else {
-            removeWebView(view.id)
-        }
-    }
+    // Track which webview ids we've already opened a sheet for so we
+    // don't re-request on every render.
+    const openedRef = useRef<Set<string>>(new Set())
 
-    return (
-        <>
-            {openWebViews.map((view: WebViewRequest) => (
-                <PWBottomSheet
-                    key={view.id}
-                    isVisible={true}
-                    size='full'
-                    autoCreateContainer={false}
-                >
-                    <PWWebView
-                        requestId={view.id}
-                        url={view.url}
-                        enablePeraConnect={view.enablePeraConnect ?? false}
-                        showControls
-                        onBack={view.onBackRequested}
-                        onClose={() => onCloseRequested(view)}
-                        inBottomSheet
+    useEffect(() => {
+        const currentIds = new Set(openWebViews.map(v => v.id))
+
+        // Open sheets for newly-added entries.
+        for (const view of openWebViews) {
+            if (openedRef.current.has(view.id)) continue
+            openedRef.current.add(view.id)
+
+            const onCloseRequested = () => {
+                if (view.onCloseRequested) {
+                    view.onCloseRequested()
+                } else {
+                    removeWebView(view.id)
+                }
+            }
+
+            void requestBottomSheet({
+                id: view.id,
+                contents: (
+                    <WebViewSheetContents
+                        view={view}
+                        onClose={onCloseRequested}
                     />
-                </PWBottomSheet>
-            ))}
-        </>
-    )
+                ),
+                options: {
+                    size: 'full',
+                    autoCreateContainer: false,
+                },
+            }).finally(() => {
+                openedRef.current.delete(view.id)
+                // If the sheet was dismissed externally (e.g. pan-down),
+                // make sure the store reflects that.
+                removeWebView(view.id)
+            })
+        }
+
+        // Close sheets that have been removed from the store.
+        for (const id of Array.from(openedRef.current)) {
+            if (!currentIds.has(id)) {
+                openedRef.current.delete(id)
+                dismiss(id)
+            }
+        }
+    }, [openWebViews, requestBottomSheet, dismiss, removeWebView])
+
+    return null
 }
+
+type WebViewSheetContentsProps = {
+    view: WebViewRequest
+    onClose: () => void
+}
+
+const WebViewSheetContents = ({ view, onClose }: WebViewSheetContentsProps) => (
+    <PWWebView
+        requestId={view.id}
+        url={view.url}
+        enablePeraConnect={view.enablePeraConnect ?? false}
+        showControls
+        onBack={view.onBackRequested}
+        onClose={onClose}
+        inBottomSheet
+    />
+)

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import React, { useCallback } from 'react'
+import { useCallback } from 'react'
 import { PWView, PWText, PWButton } from '@components/core'
 import { useClipboard } from '@hooks/useClipboard'
 import { useLanguage } from '@hooks/useLanguage'

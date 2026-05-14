@@ -19,7 +19,7 @@ import { useErrorToast } from '@hooks/useErrorToast'
 export type PinEntryMode = 'setup' | 'confirm' | 'verify' | 'change_old'
 
 type UsePinEditViewParams = {
-    mode: Nullable<PinEntryMode>
+    mode: PinEntryMode
     onSuccess?: () => void
 }
 
@@ -50,7 +50,7 @@ export const usePinEditView = ({
         useBiometrics()
     const { showError } = useErrorToast()
 
-    const [currentMode, setCurrentMode] = useState<Nullable<PinEntryMode>>(mode)
+    const [currentMode, setCurrentMode] = useState<PinEntryMode>(mode)
     const [storedPin, setStoredPin] = useState<string>('')
     const [hasError, setHasError] = useState(false)
 
@@ -68,11 +68,6 @@ export const usePinEditView = ({
                 return ''
         }
     }, [currentMode, t])
-
-    // TODO: revisit this: it's a little clunky to be managing the state internally and externally
-    useEffect(() => {
-        setCurrentMode(mode)
-    }, [mode])
 
     // Auto-prompt biometrics when entering a verification step. The user's
     // security settings drive which factor is used: if biometrics is enabled,

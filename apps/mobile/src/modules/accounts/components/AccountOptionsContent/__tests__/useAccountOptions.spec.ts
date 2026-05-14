@@ -41,6 +41,15 @@ const { mockUseAccountLogicalType } = vi.hoisted(() => ({
 const { mockRequestBottomSheet } = vi.hoisted(() => ({
     mockRequestBottomSheet: vi.fn(),
 }))
+const { mockOpenViewPassphraseFlow } = vi.hoisted(() => ({
+    mockOpenViewPassphraseFlow: vi.fn(),
+}))
+
+vi.mock('@modules/view-passphrase', () => ({
+    useViewPassphraseFlow: () => ({
+        openViewPassphraseFlow: mockOpenViewPassphraseFlow,
+    }),
+}))
 
 vi.mock('@hooks/useClipboard', () => ({
     useClipboard: () => ({
@@ -675,31 +684,7 @@ describe('useAccountOptions', () => {
             expect(mockOnShowAddress).toHaveBeenCalled()
         })
 
-        it('opens the passphrase flow without dismissing the parent sheet when view-passphrase is pressed', () => {
-            const { result } = renderHook(() =>
-                useAccountOptions({
-                    account: algo25Account,
-                    onClose: mockOnClose,
-                    onShowAddress: mockOnShowAddress,
-                }),
-            )
-
-            expect(result.current.isPassphraseFlowVisible).toBe(false)
-
-            const passphraseOption = result.current.options.find(
-                o => o.id === 'view-passphrase',
-            )
-
-            act(() => {
-                passphraseOption?.onPress()
-            })
-
-            // Parent options sheet stays mounted; legacy passphrase flow renders on top
-            expect(mockOnClose).not.toHaveBeenCalled()
-            expect(result.current.isPassphraseFlowVisible).toBe(true)
-        })
-
-        it('hides the passphrase flow when handleClosePassphraseFlow is called', () => {
+        it('dismisses the parent sheet and opens the view-passphrase flow when view-passphrase is pressed', () => {
             const { result } = renderHook(() =>
                 useAccountOptions({
                     account: algo25Account,
@@ -716,13 +701,12 @@ describe('useAccountOptions', () => {
                 passphraseOption?.onPress()
             })
 
-            expect(result.current.isPassphraseFlowVisible).toBe(true)
-
-            act(() => {
-                result.current.handleClosePassphraseFlow()
-            })
-
-            expect(result.current.isPassphraseFlowVisible).toBe(false)
+            // Parent options sheet is dismissed before the flow opens so
+            // we don't end up with stacked sheets.
+            expect(mockOnClose).toHaveBeenCalled()
+            expect(mockOpenViewPassphraseFlow).toHaveBeenCalledWith(
+                algo25Account.address,
+            )
         })
 
         it('shows not implemented toast for rekey-to-ledger', () => {

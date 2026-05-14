@@ -18,8 +18,9 @@ import {
     WalletConnectSessionRequest,
 } from '@perawallet/wallet-core-walletconnect'
 import { useEffect, useRef, useState } from 'react'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import { generateUniqueId, type Nullable } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { ConnectionView } from '../components/ConnectionView/ConnectionView'
 import { ConnectionSuccessContent } from '../components/ConnectionSuccessContent'
 import { WalletConnectErrorContent } from '../components/WalletConnectErrorContent'
 
@@ -36,9 +37,10 @@ export const useWalletConnectProvider = () => {
     const setConnectionError = useWalletConnectStore(
         state => state.setConnectionError,
     )
-    const { request: requestBottomSheet } = useBottomSheet()
+    const { request: requestBottomSheet, dismiss } = useBottomSheet()
     const successOpenRef = useRef(false)
     const errorOpenRef = useRef(false)
+    const connectionSheetIdRef = useRef<Nullable<string>>(null)
 
     const handleSuccess = (request: WalletConnectSessionRequest) => {
         setSuccessRequest(request)
@@ -58,6 +60,41 @@ export const useWalletConnectProvider = () => {
     useEffect(() => {
         initWalletConnect()
     }, [initWalletConnect, network])
+
+    const shouldShowConnection =
+        !!nextRequest && !successRequest && !connectionError
+
+    useEffect(() => {
+        if (shouldShowConnection && !connectionSheetIdRef.current) {
+            const id = generateUniqueId()
+            connectionSheetIdRef.current = id
+            void requestBottomSheet({
+                id,
+                contents: (
+                    <ConnectionView
+                        request={nextRequest!}
+                        onSuccess={handleSuccess}
+                        onError={handleConnectionError}
+                    />
+                ),
+                options: {
+                    size: 'lg',
+                    autoCreateContainer: false,
+                },
+            }).finally(() => {
+                connectionSheetIdRef.current = null
+            })
+        } else if (!shouldShowConnection && connectionSheetIdRef.current) {
+            const id = connectionSheetIdRef.current
+            connectionSheetIdRef.current = null
+            dismiss(id)
+        }
+        // ConnectionView's props are captured once at request-time per the
+        // bottom-sheet contract — re-running on every state change would
+        // re-open a stale sheet, so we only react to whether the sheet
+        // should be open.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [shouldShowConnection])
 
     useEffect(() => {
         if (!successRequest || successOpenRef.current) return
