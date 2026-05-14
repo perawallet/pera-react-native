@@ -30,7 +30,7 @@ export const AutoLockGuard = ({ children }: PropsWithChildren) => {
         remainingSeconds,
         handlePinComplete,
         handleErrorAnimationComplete,
-    } = useLockScreen({ onUnlock: unlock })
+    } = useLockScreen({ onUnlock: unlock, isLocked })
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
     const { t } = useLanguage()
