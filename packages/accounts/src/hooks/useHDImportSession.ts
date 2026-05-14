@@ -35,7 +35,7 @@ export type UseHDImportSessionResult = {
 }
 
 export const useHDImportSession = (): UseHDImportSessionResult => {
-    const { persistHDMasterKey } = useKMS()
+    const { persistHDMasterKey, generateDerivedKey } = useKMS()
     const setAccounts = useAccountsStore(state => state.setAccounts)
 
     const prepareImport = useCallback(
@@ -92,6 +92,17 @@ export const useHDImportSession = (): UseHDImportSessionResult => {
                 entropy: pending.entropy,
             })
 
+            await Promise.all(
+                selectedAccounts.map(acc =>
+                    generateDerivedKey(
+                        pending.walletKeyId,
+                        acc.hdWalletDetails.account,
+                        acc.hdWalletDetails.keyIndex,
+                        acc.hdWalletDetails.derivationType,
+                    ),
+                ),
+            )
+
             const existing = useAccountsStore.getState().accounts
             const next = [...existing, ...selectedAccounts]
             setAccounts(next)
@@ -100,7 +111,7 @@ export const useHDImportSession = (): UseHDImportSessionResult => {
 
             return selectedAccounts
         },
-        [persistHDMasterKey, setAccounts],
+        [persistHDMasterKey, generateDerivedKey, setAccounts],
     )
 
     const cancelImport = useCallback(() => {

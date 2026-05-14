@@ -16,18 +16,18 @@ import { renderHook, act, waitFor } from '@testing-library/react'
 const kmsMocks = vi.hoisted(() => ({
     pinBytes: null as Uint8Array | null,
     biometricBytes: null as Uint8Array | null,
-    commitTypedSecret: vi.fn(),
-    withTypedSecret: vi.fn(),
-    hasTypedSecret: vi.fn(),
-    removeTypedSecret: vi.fn(),
+    commitSecret: vi.fn(),
+    withSecret: vi.fn(),
+    hasSecret: vi.fn(),
+    removeSecret: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
     useKMSService: () => ({
-        commitTypedSecret: kmsMocks.commitTypedSecret,
-        withTypedSecret: kmsMocks.withTypedSecret,
-        hasTypedSecret: kmsMocks.hasTypedSecret,
-        removeTypedSecret: kmsMocks.removeTypedSecret,
+        commitSecret: kmsMocks.commitSecret,
+        withSecret: kmsMocks.withSecret,
+        hasSecret: kmsMocks.hasSecret,
+        removeSecret: kmsMocks.removeSecret,
     }),
 }))
 
@@ -35,7 +35,6 @@ import { usePinCode } from '../usePinCode'
 import { useSecurityStore } from '../../store'
 import {
     PIN_RECORD_KEY_ID,
-    PIN_RECORD_KEYSTORE_TYPE,
     MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT,
     INITIAL_LOCKOUT_SECONDS,
 } from '../../constants'
@@ -60,13 +59,13 @@ vi.mock('../useBiometrics', () => ({
 }))
 
 const wireBlobMocks = () => {
-    kmsMocks.commitTypedSecret.mockImplementation(
+    kmsMocks.commitSecret.mockImplementation(
         async ({ id, bytes }: { id: string; bytes: Uint8Array }) => {
             if (id === PIN_RECORD_KEY_ID) kmsMocks.pinBytes = bytes
             if (id !== PIN_RECORD_KEY_ID) kmsMocks.biometricBytes = bytes
         },
     )
-    kmsMocks.withTypedSecret.mockImplementation(
+    kmsMocks.withSecret.mockImplementation(
         async (id: string, handler: (bytes: Uint8Array) => unknown) => {
             const bytes =
                 id === PIN_RECORD_KEY_ID
@@ -80,12 +79,12 @@ const wireBlobMocks = () => {
             }
         },
     )
-    kmsMocks.hasTypedSecret.mockImplementation((id: string) =>
+    kmsMocks.hasSecret.mockImplementation((id: string) =>
         id === PIN_RECORD_KEY_ID
             ? kmsMocks.pinBytes !== null
             : kmsMocks.biometricBytes !== null,
     )
-    kmsMocks.removeTypedSecret.mockImplementation(async (id: string) => {
+    kmsMocks.removeSecret.mockImplementation(async (id: string) => {
         if (id === PIN_RECORD_KEY_ID) kmsMocks.pinBytes = null
         else kmsMocks.biometricBytes = null
     })
@@ -187,10 +186,9 @@ describe('usePinCode', () => {
             await result.current.savePin('123456')
         })
 
-        expect(kmsMocks.commitTypedSecret).toHaveBeenCalledTimes(1)
-        const arg = kmsMocks.commitTypedSecret.mock.calls[0][0]
+        expect(kmsMocks.commitSecret).toHaveBeenCalledTimes(1)
+        const arg = kmsMocks.commitSecret.mock.calls[0][0]
         expect(arg.id).toBe(PIN_RECORD_KEY_ID)
-        expect(arg.type).toBe(PIN_RECORD_KEYSTORE_TYPE)
         const record = parsePinRecord(arg.bytes)
         expect(record).not.toBeNull()
         expect(record?.version).toBe(PIN_RECORD_VERSION)
@@ -256,9 +254,7 @@ describe('usePinCode', () => {
             await result.current.savePin(null)
         })
 
-        expect(kmsMocks.removeTypedSecret).toHaveBeenCalledWith(
-            PIN_RECORD_KEY_ID,
-        )
+        expect(kmsMocks.removeSecret).toHaveBeenCalledWith(PIN_RECORD_KEY_ID)
         expect(disableBiometrics).toHaveBeenCalled()
     }, 30_000)
 
@@ -340,7 +336,7 @@ describe('usePinCode', () => {
         })
 
         expect(mockSetFailedAttempts).toHaveBeenCalledWith(3)
-        const lastCall = kmsMocks.commitTypedSecret.mock.calls.at(-1)
+        const lastCall = kmsMocks.commitSecret.mock.calls.at(-1)
         expect(lastCall).toBeDefined()
         const persisted = parsePinRecord(lastCall![0].bytes)
         expect(persisted?.failedAttempts).toBe(3)
@@ -373,7 +369,7 @@ describe('usePinCode', () => {
         expect(mockSetLockoutEndTime).toHaveBeenCalledWith(
             now + INITIAL_LOCKOUT_SECONDS * 1000,
         )
-        const lastCall = kmsMocks.commitTypedSecret.mock.calls.at(-1)
+        const lastCall = kmsMocks.commitSecret.mock.calls.at(-1)
         const persisted = parsePinRecord(lastCall![0].bytes)
         expect(persisted?.lockoutEndTime).toBe(
             now + INITIAL_LOCKOUT_SECONDS * 1000,
@@ -454,7 +450,7 @@ describe('usePinCode', () => {
 
         expect(mockResetFailedAttempts).toHaveBeenCalled()
         expect(mockSetLockoutEndTime).toHaveBeenCalledWith(null)
-        const lastCall = kmsMocks.commitTypedSecret.mock.calls.at(-1)
+        const lastCall = kmsMocks.commitSecret.mock.calls.at(-1)
         const persisted = parsePinRecord(lastCall![0].bytes)
         expect(persisted?.failedAttempts).toBe(0)
         expect(persisted?.lockoutEndTime).toBeNull()

@@ -33,6 +33,7 @@ import {
     fetchAccountFastLookup,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
+import { hdDerivedKeyId } from '@perawallet/wallet-core-kms'
 
 const ACCOUNT_GAP_LIMIT = 5
 const KEY_INDEX_GAP_LIMIT = 5
@@ -133,7 +134,17 @@ async function scanAccountKeys({
                 id: generateOrderedUniqueId(),
                 address,
                 type: AccountTypes.hdWallet,
-                keyPairId: walletKeyId,
+                // Stamp the deterministic child id even though the child
+                // hasn't been committed yet — at commit time we'll mint
+                // the same id, so this account is signed-ready out of the
+                // gate. The seed is reachable from the child's
+                // metadata.parentKeyId once committed.
+                keyPairId: hdDerivedKeyId(
+                    walletKeyId,
+                    accountIdx,
+                    currentKeyIdx,
+                    derivationType,
+                ),
                 hdWalletDetails: {
                     account: accountIdx,
                     change: 0,

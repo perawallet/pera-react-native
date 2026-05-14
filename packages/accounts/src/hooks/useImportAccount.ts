@@ -53,19 +53,19 @@ export const useImportAccount = () => {
         // HD imports get the same protection at the selection screen — see
         // useImportSelectAddressesScreen, which filters already-imported
         // addresses out of the selectable set.
-        const { keyPair } = await createAlgo25Key({ mnemonic })
-        const isDuplicate = allAccounts.some(
-            a => a.address === keyPair.publicKey,
-        )
-        if (isDuplicate && keyPair.id) {
+        const { seedKey, address } = await createAlgo25Key({ mnemonic })
+        const isDuplicate = allAccounts.some(a => a.address === address)
+        if (isDuplicate) {
             try {
-                await deleteKey(keyPair.id)
+                await deleteKey(seedKey.id)
             } catch {
                 // Best-effort cleanup; don't shadow the duplicate error
                 // with a keystore-removal failure.
             }
-            throw new DuplicateAccountError(keyPair.publicKey)
+            throw new DuplicateAccountError(address)
         }
-        return await createAlgo25WalletAccount({ keyPair })
+        return await createAlgo25WalletAccount({
+            seed: { seedKeyId: seedKey.id, address },
+        })
     }
 }

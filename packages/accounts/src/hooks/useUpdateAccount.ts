@@ -20,7 +20,6 @@ import { WalletAccount } from '../models'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
 export const useUpdateAccount = () => {
-    const accounts = useAccountsStore(state => state.accounts)
     const setAccounts = useAccountsStore(state => state.setAccounts)
     const { network } = useNetwork()
     const deviceID = useDeviceID(network)
@@ -28,7 +27,13 @@ export const useUpdateAccount = () => {
     const { mutateAsync: updateDeviceOnBackend } = useUpdateDeviceMutation()
 
     return (account: WalletAccount) => {
-        const updated = accounts.map(a =>
+        // Read accounts fresh inside the handler — never use a snapshot
+        // captured at hook-render time. Async flows (e.g. delete-all-data
+        // wipes the store) can change the list out from under a stale
+        // closure; writing back the captured snapshot would re-introduce
+        // accounts that were just cleared.
+        const currentAccounts = useAccountsStore.getState().accounts
+        const updated = currentAccounts.map(a =>
             a.address === account.address ? account : a,
         )
         setAccounts(updated)
@@ -38,7 +43,7 @@ export const useUpdateAccount = () => {
                 deviceId: deviceID,
                 data: {
                     platform: deviceInfo.getDevicePlatform(),
-                    accounts: accounts.map(a => a.address),
+                    accounts: updated.map(a => a.address),
                 },
             })
         }

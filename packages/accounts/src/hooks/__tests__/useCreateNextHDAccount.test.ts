@@ -30,6 +30,17 @@ vi.mock('../useCreateAccount', () => ({
     useCreateAccount: () => mockCreateAccount,
 }))
 
+// HD accounts now reference their derived child via keyPairId; the seed
+// (wallet identifier) is the parent. We mock seedIdOf so tests can declare
+// "this child belongs to that seed".
+const parentMap: Map<string, string> = new Map()
+vi.mock('@perawallet/wallet-core-kms', () => ({
+    useKMS: () => ({
+        seedIdOf: (childId?: string) =>
+            childId ? parentMap.get(childId) : undefined,
+    }),
+}))
+
 const HD_ACCOUNT = {
     id: 'hd-1',
     address: 'HD_ADDRESS',
@@ -40,13 +51,15 @@ const HD_ACCOUNT = {
         keyIndex: 0,
         derivationType: 9 as const,
     },
-    keyPairId: 'wallet-1',
+    keyPairId: 'wallet-1-acc0-idx0-dt9',
 }
 
 describe('useCreateNextHDAccount', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockUseAllAccounts.mockReturnValue([])
+        parentMap.clear()
+        parentMap.set(HD_ACCOUNT.keyPairId, 'wallet-1')
     })
 
     test('hasHDWallet is false when no HD wallet accounts exist', () => {
@@ -84,18 +97,21 @@ describe('useCreateNextHDAccount', () => {
             ...HD_ACCOUNT,
             id: 'hd-2',
             address: 'HD_ADDRESS_2',
+            keyPairId: 'wallet-1-acc1-idx0-dt9',
             hdWalletDetails: {
                 ...HD_ACCOUNT.hdWalletDetails,
                 account: 1,
             },
         }
+        // Both children resolve to the same seed.
+        parentMap.set(secondHDAccount.keyPairId, 'wallet-1')
         mockUseAllAccounts.mockReturnValue([HD_ACCOUNT, secondHDAccount])
 
         const newAccount = {
             id: 'new-hd',
             address: 'NEW_HD_ADDRESS',
             type: 'hdWallet' as const,
-            keyPairId: 'wallet-1',
+            keyPairId: 'wallet-1-acc2-idx0-dt9',
         }
         mockCreateAccount.createHdWalletAccount.mockResolvedValue(newAccount)
 

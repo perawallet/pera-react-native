@@ -12,44 +12,42 @@
 
 import { useAccountsStore } from '../store'
 import { useKMS } from '@perawallet/wallet-core-kms'
-import { isAlgo25Account, isHDWalletAccount } from '../utils'
 
 export const useRemoveAccountById = () => {
     const accounts = useAccountsStore(state => state.accounts)
-    const { deleteKey, keyStore } = useKMS()
+    const { keyStore, seedIdOf, removeKeyAndChildren } = useKMS()
     const setAccounts = useAccountsStore(state => state.setAccounts)
 
     return async (id: string) => {
         const account = accounts.find(a => a.id === id)
         const remaining = accounts.filter(a => a.id !== id)
 
-        if (account && account.keyPairId) {
-            if (account.type === 'algo25' || account.type === 'hdWallet') {
-                await deleteKey(account.keyPairId)
-            }
+        if (account?.keyPairId) {
+            const childKeyId = account.keyPairId
+            const seedId = seedIdOf(childKeyId)
 
-            // The seed/entropy keystore entries are siblings of the root key,
-            // named deterministically as `${keyPairId}-seed` and
-            // `${keyPairId}-entropy` (see useAlgo25.ts / useHDWallet.ts). Remove
-            // them only when no other account still references the same root.
-            if (isAlgo25Account(account)) {
-                const sharedRoot = remaining.some(
-                    a =>
-                        isAlgo25Account(a) && a.keyPairId === account.keyPairId,
+            if (seedId) {
+                // Always wipe this account's own derived child — no other
+                // account references it (account.id is unique).
+                await keyStore.remove(childKeyId)
+
+                // If no remaining account hangs off the same seed, sweep
+                // the seed and any orphan derivation entries with it.
+                const sharedSeed = remaining.some(
+                    a => !!a.keyPairId && seedIdOf(a.keyPairId) === seedId,
                 )
-                if (!sharedRoot) {
-                    await keyStore.remove(`${account.keyPairId}-seed`)
+                if (!sharedSeed) {
+                    await removeKeyAndChildren(seedId)
                 }
-            }
-
-            if (isHDWalletAccount(account)) {
+            } else {
+                // Legacy / non-derived: account.keyPairId points directly at
+                // a top-level keystore entry. Remove it (with any children)
+                // when no other account still references it.
                 const sharedRoot = remaining.some(
-                    a =>
-                        isHDWalletAccount(a) &&
-                        a.keyPairId === account.keyPairId,
+                    a => a.keyPairId === childKeyId,
                 )
                 if (!sharedRoot) {
-                    await keyStore.remove(`${account.keyPairId}-entropy`)
+                    await removeKeyAndChildren(childKeyId)
                 }
             }
         }

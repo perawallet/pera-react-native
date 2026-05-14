@@ -79,7 +79,13 @@ vi.mock('@hooks/useToast', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
-    useKMS: () => ({}),
+    // useSearchAccountsScreen walks child→seed via seedIdOf to derive the
+    // walletKeyId it hands to the discovery API. Tests pre-stamp accounts
+    // with `keyPairId = 'wallet-1'` (used as a seed id directly) so map
+    // identity → identity for this test surface.
+    useKMS: () => ({
+        seedIdOf: (childId?: string) => childId,
+    }),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({

@@ -2062,17 +2062,40 @@ vi.mock('@perawallet/wallet-core-background', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
-    useKMS: vi.fn(),
-    useKMSService: vi.fn(() => ({
-        commitTypedSecret: vi.fn(async () => {}),
-        withTypedSecret: vi.fn(async () => null),
-        hasTypedSecret: vi.fn(() => false),
-        removeTypedSecret: vi.fn(async () => {}),
+    // Default useKMS stub: provides every shape consumers destructure
+    // (seedIdOf, sign helpers, etc.) so tests that don't care about the
+    // KMS layer can render without rewiring. Suite-specific tests
+    // override via their own vi.mock call.
+    useKMS: vi.fn(() => ({
+        keys: new Map(),
+        seedIdOf: vi.fn(() => undefined),
+        deleteKey: vi.fn(async () => {}),
+        getKey: vi.fn(() => null),
+        getKeyOrThrow: vi.fn(() => {
+            throw new Error('Key not found (default mock)')
+        }),
+        createAlgo25Key: vi.fn(),
+        createHDWalletKey: vi.fn(),
+        persistHDMasterKey: vi.fn(),
+        generateDerivedKey: vi.fn(),
+        getDerivedPublicKey: vi.fn(),
+        removeKeyAndChildren: vi.fn(async () => {}),
+        keyStore: {},
+        withExportedKey: vi.fn(),
+        signTransactionsWithKey: vi.fn(async () => []),
+        signDataWithKey: vi.fn(async () => []),
+        executeWithMnemonic: vi.fn(),
     })),
-    commitTypedSecret: vi.fn(async () => {}),
-    withTypedSecret: vi.fn(async () => null),
-    hasTypedSecret: vi.fn(() => false),
-    removeTypedSecret: vi.fn(async () => {}),
+    useKMSService: vi.fn(() => ({
+        commitSecret: vi.fn(async () => {}),
+        withSecret: vi.fn(async () => null),
+        hasSecret: vi.fn(() => false),
+        removeSecret: vi.fn(async () => {}),
+    })),
+    commitSecret: vi.fn(async () => {}),
+    withSecret: vi.fn(async () => null),
+    hasSecret: vi.fn(() => false),
+    removeSecret: vi.fn(async () => {}),
     uniformIntBelow: (max: number) =>
         max <= 0 ? 0 : Math.floor(Math.random() * max),
     pickDistinctIndexes: (count: number, poolSize: number) => {

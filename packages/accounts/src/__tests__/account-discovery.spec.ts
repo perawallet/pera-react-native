@@ -36,10 +36,24 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 }))
 
 const mockFetchAccountFastLookup = vi.fn()
-vi.mock('@perawallet/wallet-core-shared', () => ({
-    generateOrderedUniqueId: vi.fn(() => Math.random().toString(36)),
-    fetchAccountFastLookup: (...args: unknown[]) =>
-        mockFetchAccountFastLookup(...args),
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    return {
+        ...actual,
+        generateOrderedUniqueId: vi.fn(() => Math.random().toString(36)),
+        fetchAccountFastLookup: (...args: unknown[]) =>
+            mockFetchAccountFastLookup(...args),
+    }
+})
+
+vi.mock('@perawallet/wallet-core-kms', () => ({
+    hdDerivedKeyId: (
+        seedKeyId: string,
+        account: number,
+        keyIndex: number,
+        derivationType: number,
+    ) => `${seedKeyId}-acc${account}-idx${keyIndex}-dt${derivationType}`,
 }))
 
 const createMockGetPublicKey = (): GetPublicKey =>

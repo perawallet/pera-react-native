@@ -19,11 +19,7 @@ import {
     isHardwareWalletAccount,
     useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
-import type {
-    Algo25Account,
-    HDWalletAccount,
-    WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { SIGNING_KEY_DOMAIN } from '../constants'
 import type { Arc60Metadata, Arc60StdSigData } from '../pipeline/types'
@@ -54,41 +50,7 @@ export type UseArc60SignerResult = {
 
 export const useArc60Signer = (): UseArc60SignerResult => {
     const accounts = useAccountsStore(state => state.accounts)
-    const { getKeyOrThrow, withHDSession, withAlgo25Session } = useKMS()
-
-    const signHd = useCallback(
-        async (
-            account: HDWalletAccount,
-            payload: Uint8Array,
-        ): Promise<Uint8Array> => {
-            const key = getKeyOrThrow(account.keyPairId)
-            return withHDSession(key, SIGNING_KEY_DOMAIN, async session =>
-                session.signData(
-                    {
-                        account: account.hdWalletDetails.account,
-                        keyIndex: account.hdWalletDetails.keyIndex,
-                        derivationType: account.hdWalletDetails.derivationType,
-                    },
-                    payload,
-                ),
-            )
-        },
-        [getKeyOrThrow, withHDSession],
-    )
-
-    const signAlgo25 = useCallback(
-        async (
-            account: Algo25Account,
-            payload: Uint8Array,
-        ): Promise<Uint8Array> => {
-            const key = getKeyOrThrow(account.keyPairId)
-            return withAlgo25Session(key, SIGNING_KEY_DOMAIN, async session =>
-                // ARC-60 specifies the signing payload exactly — no MX prefix.
-                session.signData(payload),
-            )
-        },
-        [getKeyOrThrow, withAlgo25Session],
-    )
+    const { signDataWithKey } = useKMS()
 
     const signArc60 = useCallback(
         async (
@@ -185,25 +147,31 @@ export const useArc60Signer = (): UseArc60SignerResult => {
                         throw caught
                     }
                 }
-                return signHd(account, payload)
-            }
-
-            if (isAlgo25Account(account)) {
+            } else if (isAlgo25Account(account)) {
                 if (stdSigData.hdPath) {
                     throw new Arc60FailedHdPathError(
                         stdSigData.hdPath,
                         'Algo25 accounts have no BIP44 derivation path',
                     )
                 }
-                return signAlgo25(account, payload)
+            } else {
+                throw new Arc60InvalidSignerError(
+                    account.address,
+                    `unsupported account type ${account.type}`,
+                )
             }
 
-            throw new Arc60InvalidSignerError(
-                account.address,
-                `unsupported account type ${account.type}`,
+            // ARC-60 specifies the signing payload exactly — no MX prefix.
+            // Both HD and algo25 accounts route through the same direct
+            // sign on their child key.
+            const [signature] = await signDataWithKey(
+                account.keyPairId,
+                SIGNING_KEY_DOMAIN,
+                [payload],
             )
+            return signature
         },
-        [accounts, signAlgo25, signHd],
+        [accounts, signDataWithKey],
     )
 
     return { signArc60 }

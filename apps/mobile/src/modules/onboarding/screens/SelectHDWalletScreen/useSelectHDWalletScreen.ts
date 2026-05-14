@@ -18,8 +18,6 @@ import {
     useHDWalletGroups,
     useCreateAccount,
     useAccountBalancesQuery,
-    useAllAccounts,
-    AccountTypes,
     type HDWalletGroup,
     type AccountBalances,
 } from '@perawallet/wallet-core-accounts'
@@ -41,7 +39,6 @@ export const useSelectHDWalletScreen = (): UseSelectHDWalletScreenResult => {
     const { showToast } = useToast()
     const { hdWalletGroups } = useHDWalletGroups()
     const { createHdWalletAccount } = useCreateAccount()
-    const allAccounts = useAllAccounts()
     const [isCreatingWallet, setIsCreatingWallet] = useState(false)
 
     const allGroupAccounts = useMemo(
@@ -53,26 +50,26 @@ export const useSelectHDWalletScreen = (): UseSelectHDWalletScreenResult => {
 
     const handleSelectWallet = useCallback(
         async (group: HDWalletGroup) => {
-            const account = group.firstAccount
-            const walletAccounts = allAccounts
-                .filter(a => a.type === AccountTypes.hdWallet)
-                .filter(a => a.keyPairId === account.keyPairId)
+            // Group is keyed by the bip39 seed id; siblings are the
+            // accounts already grouped under it. Compute the next free
+            // keyIndex on account 0 from the group itself rather than
+            // re-filtering allAccounts (no need — the group already did).
             const nextKeyIndex =
-                walletAccounts.length > 0
+                group.accounts.length > 0
                     ? Math.max(
-                          ...walletAccounts.map(
+                          ...group.accounts.map(
                               a => a.hdWalletDetails.keyIndex,
                           ),
                       ) + 1
                     : 0
             const newAccount = await createHdWalletAccount({
-                walletId: account.keyPairId,
+                walletId: group.seedKeyId,
                 account: 0,
                 keyIndex: nextKeyIndex,
             })
             navigation.replace('NameAccount', { account: newAccount })
         },
-        [allAccounts, createHdWalletAccount, navigation],
+        [createHdWalletAccount, navigation],
     )
 
     const handleCreateNewWallet = useCallback(() => {

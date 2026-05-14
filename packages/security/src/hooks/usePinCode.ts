@@ -14,7 +14,6 @@ import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useSecurityStore } from '../store'
 import {
     PIN_RECORD_KEY_ID,
-    PIN_RECORD_KEYSTORE_TYPE,
     MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT,
     INITIAL_LOCKOUT_SECONDS,
     AUTO_LOCK_TIMEOUT_MS,
@@ -56,12 +55,8 @@ const calculateLockoutSeconds = (failedAttempts: number): number => {
 
 export const usePinCode = (): UsePinCodeResult => {
     const forceRefresh = useRef(0)
-    const {
-        commitTypedSecret,
-        withTypedSecret,
-        hasTypedSecret,
-        removeTypedSecret,
-    } = useKMSService()
+    const { commitSecret, withSecret, hasSecret, removeSecret } =
+        useKMSService()
     const failedAttempts = useSecurityStore(state => state.failedAttempts)
     const setFailedAttemptsInStore = useSecurityStore(
         state => state.setFailedAttempts,
@@ -94,18 +89,17 @@ export const usePinCode = (): UsePinCodeResult => {
         : 0
 
     const loadRecord = useCallback(async (): Promise<PinRecord | null> => {
-        return withTypedSecret(PIN_RECORD_KEY_ID, parsePinRecord)
-    }, [withTypedSecret])
+        return withSecret(PIN_RECORD_KEY_ID, parsePinRecord)
+    }, [withSecret])
 
     const writeRecord = useCallback(
         async (record: PinRecord): Promise<void> => {
-            await commitTypedSecret({
+            await commitSecret({
                 id: PIN_RECORD_KEY_ID,
-                type: PIN_RECORD_KEYSTORE_TYPE,
                 bytes: serializePinRecord(record),
             })
         },
-        [commitTypedSecret],
+        [commitSecret],
     )
 
     // Hydrate in-memory lockout state from the authoritative secure record.
@@ -125,8 +119,8 @@ export const usePinCode = (): UsePinCodeResult => {
     }, [loadRecord, setFailedAttemptsInStore, setLockoutEndTimeInStore])
 
     const checkPinEnabled = useCallback(async (): Promise<boolean> => {
-        return hasTypedSecret(PIN_RECORD_KEY_ID)
-    }, [hasTypedSecret])
+        return hasSecret(PIN_RECORD_KEY_ID)
+    }, [hasSecret])
 
     const getLockoutDuration = useCallback(
         () => calculateLockoutSeconds(failedAttempts),
@@ -177,7 +171,7 @@ export const usePinCode = (): UsePinCodeResult => {
                 // PBKDF2-hashed record, defeating the hashing.
                 await refreshBiometricsBinding()
             } else {
-                await removeTypedSecret(PIN_RECORD_KEY_ID)
+                await removeSecret(PIN_RECORD_KEY_ID)
                 setFailedAttemptsInStore(0)
                 setLockoutEndTimeInStore(null)
                 if (await checkBiometricsEnabled()) {
@@ -187,7 +181,7 @@ export const usePinCode = (): UsePinCodeResult => {
             forceRefresh.current += 1
         },
         [
-            removeTypedSecret,
+            removeSecret,
             writeRecord,
             setFailedAttemptsInStore,
             setLockoutEndTimeInStore,

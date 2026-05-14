@@ -18,22 +18,23 @@ import {
     type GetPublicKey,
 } from '../account-discovery'
 import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
-import { KEY_DOMAIN } from '../constants'
 
 export const useAccountDiscovery = () => {
-    const { withHDSession, getKeyOrThrow } = useKMS()
+    const { getDerivedPublicKey } = useKMS()
 
     const sessionGetPublicKey = useCallback(
         async (
             walletKeyId: string,
             params: Parameters<GetPublicKey>[0],
         ): Promise<Uint8Array> => {
-            const key = getKeyOrThrow(walletKeyId)
-            return withHDSession(key, KEY_DOMAIN, async session =>
-                session.getPublicKey(params),
+            return getDerivedPublicKey(
+                walletKeyId,
+                params.account,
+                params.keyIndex,
+                params.derivationType,
             )
         },
-        [getKeyOrThrow, withHDSession],
+        [getDerivedPublicKey],
     )
 
     const discoverAccounts = useCallback(
@@ -61,7 +62,7 @@ export const useAccountDiscovery = () => {
             keyIndexGapLimit?: number
             accountAddresses?: string[]
         }) => {
-            // Address-only path doesn't need an HD session.
+            // Address-only path doesn't need to derive anything.
             if (params.accountAddresses && params.accountAddresses.length > 0) {
                 return baseDiscoverRekeyedAccounts({
                     ...params,

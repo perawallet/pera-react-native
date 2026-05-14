@@ -10,39 +10,7 @@
  limitations under the License
  */
 
-export type HDDerivationParams = {
-    account: number
-    keyIndex: number
-    derivationType: number
-}
-
 export type MnemonicWordAtPosition = {
     index: number
     word: string
-}
-
-export type KMSAlgo25Session = {
-    signTransaction: (encodedTx: Uint8Array) => Promise<Uint8Array>
-    signData: (data: Uint8Array) => Promise<Uint8Array>
-    getPublicKey: () => Uint8Array
-    /**
-     * Returns the mnemonic as UTF-8 bytes. Callers should pass the array to
-     * `zeroBytes()` as soon as they're done with it. JS strings are immutable
-     * so we expose bytes instead of a `string`, letting consumers purge the
-     * mnemonic from memory eagerly instead of waiting on GC.
-     */
-    getMnemonic: () => Promise<Uint8Array>
-}
-
-export type KMSHDWalletSession = {
-    getPublicKey: (params: HDDerivationParams) => Promise<Uint8Array>
-    signTransaction: (
-        params: HDDerivationParams,
-        encodedTx: Uint8Array,
-    ) => Promise<Uint8Array>
-    signData: (
-        params: HDDerivationParams,
-        data: Uint8Array,
-    ) => Promise<Uint8Array>
-    getMnemonic: () => Promise<Uint8Array>
 }

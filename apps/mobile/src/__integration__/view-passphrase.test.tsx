@@ -112,7 +112,7 @@ const seedAlgo25Account = async (): Promise<WalletAccount> => {
         id: 'algo25-1',
         type: AccountTypes.algo25,
         address: ALGO25_TEST_ADDRESS,
-        keyPairId: key!.keyPair.id ?? '',
+        keyPairId: key!.seedKey.id ?? '',
         name: 'Algo25 Test',
     }
     useAccountsStore.getState().setAccounts([account])
@@ -143,7 +143,7 @@ const seedHDWalletAccounts = async (): Promise<SeededHDAccounts> => {
         expect(rootKey).not.toBeNull()
     })
 
-    const rootKeyId = rootKey!.keyPair.id ?? ''
+    const rootKeyId = rootKey!.seedKey.id ?? ''
     const derivedAddress = await deriveTestHDAddress(0, 1)
 
     const rootAccount: WalletAccount = {

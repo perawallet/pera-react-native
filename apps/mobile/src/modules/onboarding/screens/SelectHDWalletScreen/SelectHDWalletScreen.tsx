@@ -124,7 +124,7 @@ export const SelectHDWalletScreen = () => {
                         style={styles.list}
                         data={hdWalletGroups}
                         renderItem={renderItem}
-                        keyExtractor={item => item.keyPairId}
+                        keyExtractor={item => item.seedKeyId}
                         extraData={accountBalances}
                         contentContainerStyle={styles.listContent}
                     />

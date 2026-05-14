@@ -122,10 +122,12 @@ export const useAccountInfoCard = ({
 
     const hdWalletGroupIndex = useMemo(() => {
         if (!isHDWallet) return -1
-        return hdWalletGroups.findIndex(
-            group => group.keyPairId === account.keyPairId,
+        // Account.keyPairId is the derived child id; match by membership
+        // rather than by id since the group's `seedKeyId` is the parent.
+        return hdWalletGroups.findIndex(group =>
+            group.accounts.some(a => a.id === account.id),
         )
-    }, [isHDWallet, hdWalletGroups, account.keyPairId])
+    }, [isHDWallet, hdWalletGroups, account.id])
 
     const ledgerDeviceGroup = useMemo(() => {
         if (!isLedgerAccount(account)) return null

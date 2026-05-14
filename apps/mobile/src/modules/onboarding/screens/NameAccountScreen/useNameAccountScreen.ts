@@ -20,6 +20,7 @@ import {
     useSelectedAccountAddress,
     isHDWalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { useKMS } from '@perawallet/wallet-core-kms'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useRoute, RouteProp } from '@react-navigation/native'
@@ -46,6 +47,7 @@ export const useNameAccountScreen = () => {
     const { showToast } = useToast()
     const { setShouldPlayConfetti } = useShouldPlayConfetti()
     const { exitAccountFlow } = useExitAccountFlow()
+    const { seedIdOf } = useKMS()
 
     const routeAccount = route.params?.account
 
@@ -53,20 +55,23 @@ export const useNameAccountScreen = () => {
 
     const numWallets = useMemo(() => {
         // TODO: making sure this is ordered might be important. Come back at this once integrating multiple wallets.
-        const hdWalletIds = new Set<string>()
+        // HD accounts now reference their derived child via `keyPairId`;
+        // collapse siblings into one wallet by walking up to the seed.
+        const hdSeedIds = new Set<string>()
         let otherAccountsCount = 0
 
         accounts.forEach(acc => {
             if (isHDWalletAccount(acc)) {
-                hdWalletIds.add(acc.keyPairId)
+                const seedId = seedIdOf(acc.keyPairId)
+                if (seedId) hdSeedIds.add(seedId)
             } else {
                 otherAccountsCount++
             }
         })
 
         // TODO: otherAccountsCount might not be necessary here. Come back at this once integrating multiple wallets.
-        return hdWalletIds.size + otherAccountsCount
-    }, [accounts])
+        return hdSeedIds.size + otherAccountsCount
+    }, [accounts, seedIdOf])
 
     const initialWalletName = account
         ? getAccountDisplayName(account)

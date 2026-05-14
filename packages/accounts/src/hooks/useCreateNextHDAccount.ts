@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useMemo } from 'react'
+import { useKMS } from '@perawallet/wallet-core-kms'
 import { useAllAccounts } from './useAllAccounts'
 import { useCreateAccount } from './useCreateAccount'
 import { AccountTypes, HDWalletAccount, WalletAccount } from '../models'
@@ -24,6 +25,7 @@ type UseCreateNextHDAccountResult = {
 export const useCreateNextHDAccount = (): UseCreateNextHDAccountResult => {
     const accounts = useAllAccounts()
     const { createHdWalletAccount } = useCreateAccount()
+    const { seedIdOf } = useKMS()
 
     const hdWalletAccounts = useMemo(
         () =>
@@ -39,10 +41,13 @@ export const useCreateNextHDAccount = (): UseCreateNextHDAccountResult => {
         if (hdWalletAccounts.length === 0) return null
 
         const firstHDAccount = hdWalletAccounts[0]
-        const walletId = firstHDAccount.keyPairId
+        // Account.keyPairId is the derived child id; the seed (i.e. the
+        // wallet identifier) is its parent.
+        const walletId = seedIdOf(firstHDAccount.keyPairId)
+        if (!walletId) return null
 
         const sameWalletAccounts = hdWalletAccounts.filter(
-            a => a.keyPairId === walletId,
+            a => seedIdOf(a.keyPairId) === walletId,
         )
         const nextAccountIndex =
             Math.max(
@@ -54,7 +59,7 @@ export const useCreateNextHDAccount = (): UseCreateNextHDAccountResult => {
             account: nextAccountIndex,
             keyIndex: 0,
         })
-    }, [hdWalletAccounts, createHdWalletAccount])
+    }, [hdWalletAccounts, createHdWalletAccount, seedIdOf])
 
     return { createNextHDAccount, hasHDWallet }
 }

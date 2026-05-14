@@ -38,7 +38,7 @@ const mockCreateHdWalletAccount = vi.fn()
 
 const mockHDWalletGroups: HDWalletGroup[] = [
     {
-        keyPairId: 'wallet-1',
+        seedKeyId: 'wallet-1',
         accounts: [],
         firstAccount: {
             id: 'hd-1',
@@ -51,12 +51,12 @@ const mockHDWalletGroups: HDWalletGroup[] = [
                 keyIndex: 0,
                 derivationType: 9 as const,
             },
-            keyPairId: 'wallet-1',
+            keyPairId: 'wallet-1-acc0-idx0-dt9',
         },
         accountCount: 3,
     },
     {
-        keyPairId: 'wallet-2',
+        seedKeyId: 'wallet-2',
         accounts: [],
         firstAccount: {
             id: 'hd-2',
@@ -68,7 +68,7 @@ const mockHDWalletGroups: HDWalletGroup[] = [
                 keyIndex: 0,
                 derivationType: 9 as const,
             },
-            keyPairId: 'wallet-2',
+            keyPairId: 'wallet-2-acc0-idx0-dt9',
         },
         accountCount: 1,
     },
@@ -84,7 +84,7 @@ const mockNewAccount = {
         keyIndex: 1,
         derivationType: 9 as const,
     },
-    keyPairId: 'wallet-1',
+    keyPairId: 'wallet-1-acc0-idx1-dt9',
 }
 
 vi.mock('@perawallet/wallet-core-accounts', async () => {

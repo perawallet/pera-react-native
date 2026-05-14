@@ -12,108 +12,128 @@
 
 import type { Key } from '@algorandfoundation/keystore'
 import { encodeAddress } from '@algorandfoundation/algokit-utils'
-import { KeyType, type AccessControl, type KeyPair } from './models'
-import { ALGO25_KEYSTORE_TYPE } from './constants'
-
-export const makeKeyPair = (source: Partial<KeyPair>): KeyPair => {
-    return {
-        id: source.id ?? '',
-        keystoreKeyId: source.keystoreKeyId,
-        publicKey: source.publicKey ?? '',
-        type: source.type ?? 'unknown',
-        createdAt: source.createdAt ?? new Date(),
-        expiresAt: source.expiresAt,
-        acl: source.acl ?? [],
-    }
-}
-
-// Pera-domain extras (acl, timestamps) round-trip through the keystore Key's
-// `metadata` field under this namespace so they don't collide with
-// keystore-defined fields like `parentKeyId`, `path`, `account`, `index`.
-const PERA_META_KEY = 'pera'
+import nacl from 'tweetnacl'
+import type { AccessControl } from './models'
+import { SeedScheme } from './constants'
 
 /**
- * Wallet-domain discriminator stamped into `pera.kind` on every wallet-root
- * keystore entry. This is the canonical source of truth for what kind of
- * key an entry represents — the keystore's own `type` field can be
- * ambiguous (Algo25 roots sometimes persist as `hd-seed`), so we don't
- * trust it for classification.
+ * Pera-domain extras (acl, timestamps) round-trip through a seed entry's
+ * `metadata.pera`. The keystore reserves top-level metadata keys for its
+ * own use (`parentKeyId`, `path`, `account`, `scheme`, etc.), so we keep
+ * Pera-specific fields in a sub-object.
  */
-export const PeraKeyKind = {
-    HDWalletRoot: 'hd-wallet-root',
-    Algo25Root: 'algo25-root',
-    DeterministicP256Root: 'deterministic-p256-root',
-} as const
-
-export type PeraKeyKind = (typeof PeraKeyKind)[keyof typeof PeraKeyKind]
-
-type PeraMetadata = {
+export type SeedPeraMetadata = {
     acl?: AccessControl[]
     createdAt?: string // ISO 8601 — Dates aren't JSON-safe
     expiresAt?: string
-    kind?: PeraKeyKind
 }
 
-const peraKindToWalletType: Record<PeraKeyKind, KeyType> = {
-    [PeraKeyKind.HDWalletRoot]: KeyType.HDWalletRootKey,
-    [PeraKeyKind.Algo25Root]: KeyType.Algo25Key,
-    [PeraKeyKind.DeterministicP256Root]: KeyType.DeterministicP256Key,
-}
-
-// Legacy fallback for entries committed before `pera.kind` was introduced.
-// Once those entries are gone (or migrated), this map can be deleted.
-const legacyKeystoreTypeToWalletType: Record<string, KeyType> = {
-    'hd-root-key': KeyType.HDWalletRootKey,
-    [ALGO25_KEYSTORE_TYPE]: KeyType.Algo25Key,
-    'hd-derived-p256': KeyType.DeterministicP256Key,
+export type SeedMetadata = {
+    scheme?: SeedScheme
+    /** Hex-encoded BIP39 entropy. Only present when scheme === 'bip39'. */
+    entropy?: string
+    pera?: SeedPeraMetadata
+    [key: string]: unknown
 }
 
 /**
- * Maps a keystore Key into our wallet-domain KeyPair shape. Returns null for
- * keystore entries that aren't wallet-roots (HD-derived children of an HD
- * root, raw entropy/seed entries, etc.).
- *
- * Resolution prefers `pera.kind` (the canonical wallet-domain discriminator
- * stamped at commit time) and only falls back to the keystore `type` field
- * for legacy entries written before the kind tag was introduced.
+ * Builds the metadata payload for `keyStore.import({ type: 'seed', ... })`.
+ * Caller supplies the scheme and (for bip39) the entropy bytes; Pera-domain
+ * extras are nested under `pera` so they don't collide with keystore-defined
+ * fields.
  */
-export const keystoreKeyToKeyPair = (key: Key): KeyPair | null => {
-    const pera = (key.metadata?.[PERA_META_KEY] ?? {}) as PeraMetadata
-    const walletType = pera.kind
-        ? peraKindToWalletType[pera.kind]
-        : legacyKeystoreTypeToWalletType[key.type]
-    if (!walletType) return null
-
-    const publicKey =
-        walletType === KeyType.Algo25Key && key.publicKey
-            ? encodeAddress(new Uint8Array(key.publicKey))
-            : ''
-
+export const buildSeedMetadata = (params: {
+    scheme: SeedScheme
+    entropy?: Uint8Array
+    acl?: AccessControl[]
+    createdAt?: Date
+    expiresAt?: Date
+}): SeedMetadata => {
+    const { scheme, entropy, acl, createdAt, expiresAt } = params
     return {
-        id: key.id,
-        keystoreKeyId: key.id,
-        publicKey,
-        type: walletType,
-        acl: pera.acl ?? [],
-        createdAt: pera.createdAt ? new Date(pera.createdAt) : new Date(),
-        expiresAt: pera.expiresAt ? new Date(pera.expiresAt) : undefined,
+        scheme,
+        ...(entropy ? { entropy: bytesToHex(entropy) } : {}),
+        pera: {
+            acl,
+            createdAt: (createdAt ?? new Date()).toISOString(),
+            expiresAt: expiresAt?.toISOString(),
+        },
     }
 }
 
+const seedMetadata = (key: Key): SeedMetadata =>
+    (key.metadata ?? {}) as SeedMetadata
+
 /**
- * Builds the keystore-metadata payload that carries Pera-domain extras
- * through `keyStore.import` / `keyStore.generate`. Pass the result spread
- * into the `metadata` argument alongside any keystore-defined fields.
+ * Returns the seed scheme of a key, or `null` if the key isn't a recognised
+ * wallet-root seed. Use this for type dispatch on signing/mnemonic flows;
+ * derived ed25519/hd-derived-ed25519 children, secret-key entries, etc.
+ * return null and should not be treated as wallet roots.
  */
-export const peraMetadataFor = (
-    keyPair: Pick<KeyPair, 'acl' | 'createdAt' | 'expiresAt'> & {
-        kind?: PeraKeyKind
-    },
-): { [PERA_META_KEY]: PeraMetadata } => ({
-    [PERA_META_KEY]: {
-        acl: keyPair.acl,
-        createdAt: (keyPair.createdAt ?? new Date()).toISOString(),
-        expiresAt: keyPair.expiresAt?.toISOString(),
-        ...(keyPair.kind ? { kind: keyPair.kind } : {}),
-    },
-})
+export const seedSchemeOf = (key: Key): SeedScheme | null => {
+    if (key.type !== 'seed' && key.type !== 'hd-seed') return null
+    const scheme = seedMetadata(key).scheme
+    if (scheme === SeedScheme.Bip39 || scheme === SeedScheme.Algo25) {
+        return scheme
+    }
+    return null
+}
+
+export const isSeedKey = (key: Key): boolean => seedSchemeOf(key) !== null
+
+/**
+ * Encoded Algorand address for an Algo25 seed entry. The seed's reactive
+ * Key snapshot may carry the Ed25519 public key on `publicKey` (we set it
+ * at commit time via the derived ed25519 child); when absent, returns ''.
+ * For bip39 seeds there is no single address — returns ''.
+ */
+export const algo25AddressOf = (key: Key): string => {
+    if (seedSchemeOf(key) !== SeedScheme.Algo25) return ''
+    if (key.publicKey instanceof Uint8Array) {
+        return encodeAddress(new Uint8Array(key.publicKey))
+    }
+    return ''
+}
+
+export const aclOf = (key: Key): AccessControl[] =>
+    seedMetadata(key).pera?.acl ?? []
+
+export const createdAtOf = (key: Key): Date => {
+    const iso = seedMetadata(key).pera?.createdAt
+    return iso ? new Date(iso) : new Date()
+}
+
+export const expiresAtOf = (key: Key): Date | undefined => {
+    const iso = seedMetadata(key).pera?.expiresAt
+    return iso ? new Date(iso) : undefined
+}
+
+const HEX_LOOKUP = '0123456789abcdef'
+
+const bytesToHex = (bytes: Uint8Array): string => {
+    let out = ''
+    for (let i = 0; i < bytes.length; i++) {
+        const b = bytes[i]
+        out += HEX_LOOKUP[(b >> 4) & 0xf] + HEX_LOOKUP[b & 0xf]
+    }
+    return out
+}
+
+export const hexToBytes = (hex: string): Uint8Array => {
+    const out = new Uint8Array(hex.length / 2)
+    for (let i = 0; i < out.length; i++) {
+        out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16)
+    }
+    return out
+}
+
+/**
+ * Computes the Algorand address (encoded) for a freshly-minted Algo25 seed
+ * without persisting an intermediate ed25519 key. Used by `useAlgo25` so
+ * the caller has the address available before the derived signing key is
+ * committed to the keystore.
+ */
+export const algo25SeedToAddress = (seed: Uint8Array): string => {
+    const naclKeyPair = nacl.sign.keyPair.fromSeed(seed)
+    return encodeAddress(naclKeyPair.publicKey)
+}

@@ -22,6 +22,7 @@ import {
     DerivationTypes,
 } from '@perawallet/wallet-core-accounts'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
+import { useKMS } from '@perawallet/wallet-core-kms'
 import { deferToNextCycle } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -64,6 +65,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
     const { exitAccountFlow } = useExitAccountFlow()
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
     const { setAccounts } = useSetAccounts()
+    const { seedIdOf } = useKMS()
 
     const alreadyImportedAddresses = useMemo(() => {
         return new Set(allAccounts.map(acc => acc.address))
@@ -129,21 +131,34 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
                         setSelectedAccountAddress(accountsToAdd[0].address)
                     }
                     // Re-entering the mnemonic proves possession, so mark the
-                    // wallet's keyPairId as backed up regardless of whether
+                    // wallet's bip39 seed as backed up regardless of whether
                     // any new addresses were actually added — re-imports
                     // (every discovered address already in the store) and
                     // accounts created before this feature shipped both rely
-                    // on this path to clear the backup banner.
+                    // on this path to clear the backup banner. Match on the
+                    // child→seed parent since `account.keyPairId` is now
+                    // the child's id.
                     const accountToMark =
                         accountsToAdd[0] ??
-                        allAccounts.find(a => a.keyPairId === importWalletKeyId)
+                        allAccounts.find(
+                            a => seedIdOf(a.keyPairId) === importWalletKeyId,
+                        )
                     if (accountToMark) markBackupComplete(accountToMark)
                 } else if (accountsToAdd.length > 0) {
                     setAccounts([...allAccounts, ...accountsToAdd])
                     setSelectedAccountAddress(accountsToAdd[0].address)
                 }
 
-                const walletKeyId = accounts[0].keyPairId
+                // Discovery operates against the bip39 seed id (rekey scan
+                // uses it to label results). The discovered candidate
+                // accounts in `accounts` carry derived child ids on
+                // `keyPairId`; resolve the parent for the discovery API.
+                const walletKeyId =
+                    importWalletKeyId ?? seedIdOf(accounts[0].keyPairId)
+                if (!walletKeyId) {
+                    exitAccountFlow()
+                    return
+                }
                 const discoveredRekeyedAccounts = await discoverRekeyedAccounts(
                     {
                         walletKeyId,

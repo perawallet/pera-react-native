@@ -19,6 +19,7 @@ import { HDImportSessionNotFoundError } from '../../errors'
 
 const kmsMock = vi.hoisted(() => ({
     persistHDMasterKey: vi.fn(),
+    generateDerivedKey: vi.fn().mockResolvedValue('derived-id'),
 }))
 const prepareMock = vi.hoisted(() => vi.fn())
 
