@@ -310,6 +310,23 @@ describe('signingMachine', () => {
         expect(state.context.error?.message).toMatch(/signing failure/)
     })
 
+    it('transitions to rejected (terminal) when USER_REJECTED is sent from failed state', async () => {
+        // Red-green: before the fix, USER_REJECTED was not handled in `failed`
+        // and the actor would remain alive, blocking the single-flight queue.
+        const actor = createActor(mockedMachine, {
+            input: makeInput({ allAccounts: [] }), // triggers immediate failed
+        })
+        actor.start()
+
+        await waitFor(actor, s => s.matches('failed'))
+
+        actor.send({ type: 'USER_REJECTED' })
+
+        const state = await waitFor(actor, s => s.matches('rejected'))
+        expect(state.matches('rejected')).toBe(true)
+        expect(actor.getSnapshot().status).toBe('done')
+    })
+
     it('goes to failed when transport throws', async () => {
         const failingMachine = signingMachine.provide({
             actors: {

@@ -26,14 +26,12 @@ const {
     mockHandleContinue,
     mockHandleFindAnother,
     mockHandleOpenInfo,
-    mockHandleCloseInfo,
 } = vi.hoisted(() => ({
     mockToggleSelection: vi.fn(),
     mockToggleSelectAll: vi.fn(),
     mockHandleContinue: vi.fn(),
     mockHandleFindAnother: vi.fn(),
     mockHandleOpenInfo: vi.fn(),
-    mockHandleCloseInfo: vi.fn(),
 }))
 
 vi.mock('@hooks/useLanguage', () => ({
@@ -56,15 +54,11 @@ vi.mock('../useLedgerSelectAccountsScreen', () => ({
         canContinue: false,
         alreadyImportedAddresses: new Set<string>(),
         isFetchingMore: false,
-        infoAddress: null,
         toggleSelection: mockToggleSelection,
         toggleSelectAll: mockToggleSelectAll,
         handleContinue: mockHandleContinue,
         handleFindAnother: mockHandleFindAnother,
         handleOpenInfo: mockHandleOpenInfo,
-        handleCloseInfo: mockHandleCloseInfo,
-        t: (key: string, opts?: { count?: number }) =>
-            opts?.count !== undefined ? `${key}:${opts.count}` : key,
     }),
 }))
 

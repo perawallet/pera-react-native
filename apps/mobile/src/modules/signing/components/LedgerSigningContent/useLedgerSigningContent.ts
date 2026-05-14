@@ -10,47 +10,78 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import {
     useHardwareSigning,
+    useHardwareSigningStore,
     useSigningRequest,
+    type HardwareSigningStatus,
 } from '@perawallet/wallet-core-signing'
-import { type Optional } from '@perawallet/wallet-core-shared'
-
-export type LedgerSigningStatus =
-    | 'connecting'
-    | 'confirming'
-    | 'error'
-    | 'timeout'
+import { useLanguage } from '@hooks/useLanguage'
+import {
+    getLedgerErrorPresetByKind,
+    type LedgerErrorPreset,
+} from '@modules/ledger/utils/ledgerErrorPresets'
 
 export type UseLedgerSigningContentResult = {
-    status: LedgerSigningStatus
-    currentTx: Optional<number>
-    totalTxs: Optional<number>
+    isVisible: boolean
+    status: HardwareSigningStatus
+    deviceName: string | null
+    currentTx: number | null
+    totalTxs: number | null
+    error: LedgerErrorPreset | null
     onCancel: () => void
     onRetry: () => void
+    isTroubleshootingVisible: boolean
+    onOpenTroubleshooting: () => void
+    onCloseTroubleshooting: () => void
 }
 
 /**
- * UI adapter for `LedgerSigningContent`. Combines the store-only
- * `useHardwareSigning` hook with `useSigningRequest` to wire cancel/retry
- * through to the signing machine.
+ * UI adapter combining the store-only `useHardwareSigning` hook with
+ * `useSigningRequest` to wire cancel/retry through to the signing machine,
+ * and managing the local visibility of the troubleshooting bottom sheet.
  *
- * The hardware strategy rejects ARC-60 and arbitrary-data requests before
- * any phase callback fires, so this content is Ledger-transaction-only
- * even though the underlying hook is hardware-agnostic.
- *
- * Cancel resets the hardware signing store, which flips `isActive` to
- * false. The driver in `SigningOverlays` observes that and dismisses the
- * bottom sheet — content never dismisses itself directly.
+ * `isVisible` is derived from status: the silent-scan phase ('searching')
+ * keeps the sheet closed so the user only sees UI once the device responds,
+ * matching Android's native behavior. For BLE-class errors the
+ * troubleshooting sheet is the primary surface; the LedgerSigningContent
+ * sheet stays closed (isVisible is false) because there is no useful state
+ * behind the troubleshooting copy.
  */
 export const useLedgerSigningContent = (): UseLedgerSigningContentResult => {
-    const { status, currentTx, totalTxs, resolveActiveRequest, dismiss } =
-        useHardwareSigning()
+    const {
+        isActive,
+        status,
+        deviceName,
+        currentTx,
+        totalTxs,
+        error: errorPayload,
+        resolveActiveRequest,
+        dismiss,
+    } = useHardwareSigning()
+    const { t } = useLanguage()
     const { pendingSignRequests, rejectRequest, retryRequest } =
         useSigningRequest()
 
-    const handleCancel = useCallback(() => {
+    const manualTroubleshootingOpen = useHardwareSigningStore(
+        s => s.isTroubleshootingVisible,
+    )
+    const openTroubleshooting = useHardwareSigningStore(
+        s => s.openTroubleshooting,
+    )
+    const closeTroubleshooting = useHardwareSigningStore(
+        s => s.closeTroubleshooting,
+    )
+
+    const error = useMemo<LedgerErrorPreset | null>(() => {
+        if (!errorPayload) return null
+        return getLedgerErrorPresetByKind(errorPayload.kind, t)
+    }, [errorPayload, t])
+
+    const isBleClassError = error?.isTroubleshootable ?? false
+
+    const onCancel = useCallback(() => {
         const activeRequest = resolveActiveRequest(pendingSignRequests)
         if (activeRequest) {
             rejectRequest(activeRequest)
@@ -58,26 +89,37 @@ export const useLedgerSigningContent = (): UseLedgerSigningContentResult => {
         dismiss()
     }, [resolveActiveRequest, pendingSignRequests, rejectRequest, dismiss])
 
-    const handleRetry = useCallback(() => {
+    const onOpenTroubleshooting = useCallback(() => {
+        openTroubleshooting()
+    }, [openTroubleshooting])
+
+    const onCloseTroubleshooting = useCallback(() => {
+        if (isBleClassError) {
+            onCancel()
+            return
+        }
+        closeTroubleshooting()
+    }, [isBleClassError, onCancel, closeTroubleshooting])
+
+    const onRetry = useCallback(() => {
+        if (!error?.isRetryable) return
         const activeRequest = resolveActiveRequest(pendingSignRequests)
         if (activeRequest) {
             retryRequest(activeRequest)
         }
-    }, [resolveActiveRequest, pendingSignRequests, retryRequest])
-
-    // Narrow: the content is only mounted while a hardware signing session is
-    // active (driver in SigningOverlays opens it on `isActive`), so the store
-    // status is one of the accepted values. During the dismiss animation the
-    // store may briefly read `idle`; fall back to `connecting` so the cast is
-    // sound and the UI doesn't flicker into an unknown state.
-    const contentStatus: LedgerSigningStatus =
-        status === 'idle' ? 'connecting' : status
+    }, [error, resolveActiveRequest, pendingSignRequests, retryRequest])
 
     return {
-        status: contentStatus,
+        isVisible: isActive && status !== 'searching' && !isBleClassError,
+        status,
+        deviceName,
         currentTx,
         totalTxs,
-        onCancel: handleCancel,
-        onRetry: handleRetry,
+        error,
+        onCancel,
+        onRetry,
+        isTroubleshootingVisible: manualTroubleshootingOpen || isBleClassError,
+        onOpenTroubleshooting,
+        onCloseTroubleshooting,
     }
 }

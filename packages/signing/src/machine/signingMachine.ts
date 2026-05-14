@@ -439,6 +439,7 @@ export const signingMachine = setup({
          */
         failed: {
             on: {
+                USER_REJECTED: 'rejected',
                 RETRY: [
                     {
                         guard: 'canRetryValidating',

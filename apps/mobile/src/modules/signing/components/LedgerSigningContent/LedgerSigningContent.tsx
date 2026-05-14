@@ -11,90 +11,54 @@
  */
 
 import React from 'react'
-import LottieView from 'lottie-react-native'
-import { PWButton, PWText, PWView } from '@components/core'
-import { useLanguage } from '@hooks/useLanguage'
-import { useIsDarkMode } from '@hooks/useIsDarkMode'
-import bluetoothAnimationLight from '@assets/animations/ledger-bluetooth.json'
-import bluetoothAnimationDark from '@assets/animations/ledger-bluetooth.dark.json'
-import {
-    useLedgerSigningContent,
-    type LedgerSigningStatus,
-} from './useLedgerSigningContent'
-import { useStyles } from './styles'
-
-const STATUS_MESSAGE_KEYS: Record<LedgerSigningStatus, string> = {
-    connecting: 'ledger.signing.connect',
-    confirming: 'ledger.signing.confirm',
-    timeout: 'ledger.signing.timeout',
-    error: 'ledger.errors.connection_failed',
-}
+import { LedgerAwaitingApprovalContent } from '../LedgerAwaitingApprovalContent'
+import { LedgerErrorContent } from '../LedgerErrorContent'
+import { useLedgerSigningContent } from './useLedgerSigningContent'
 
 /**
- * Body of the Ledger hardware-wallet signing bottom sheet. Mounted by
- * `useLedgerSigningDriver` in `SigningOverlays` while a hardware signing
- * session is active.
+ * Thin router for the hardware-wallet signing sheet content. Reads the
+ * adapter hook and dispatches to the correct phase-specific content based
+ * on the current signing status. The troubleshooting sheet is mounted as
+ * a peer via the `useLedgerConnectionIssueDriver` in SigningOverlays.
+ *
+ * Intentionally style-less: this is a phase router with no direct visual
+ * output. All visual styles live in the phase-content components
+ * (`LedgerAwaitingApprovalContent`, `LedgerErrorContent`), per CLAUDE.md
+ * convention. The absence of a `styles.ts` is deliberate.
  */
 export const LedgerSigningContent = () => {
-    const styles = useStyles()
-    const { t } = useLanguage()
-    const isDarkMode = useIsDarkMode()
-    const { status, currentTx, totalTxs, onCancel, onRetry } =
-        useLedgerSigningContent()
+    const {
+        status,
+        deviceName,
+        currentTx,
+        totalTxs,
+        error,
+        onCancel,
+        onRetry,
+        onOpenTroubleshooting,
+    } = useLedgerSigningContent()
 
-    const animationSource = isDarkMode
-        ? bluetoothAnimationDark
-        : bluetoothAnimationLight
+    if (status === 'awaitingApproval' || status === 'signing') {
+        return (
+            <LedgerAwaitingApprovalContent
+                deviceName={deviceName}
+                currentTx={currentTx}
+                totalTxs={totalTxs}
+                onCancel={onCancel}
+            />
+        )
+    }
 
-    const showRetry = status === 'error' || status === 'timeout'
-    const showProgress =
-        status === 'confirming' &&
-        typeof currentTx === 'number' &&
-        typeof totalTxs === 'number' &&
-        totalTxs > 1
+    if (status === 'error' && error) {
+        return (
+            <LedgerErrorContent
+                error={error}
+                onRetry={onRetry}
+                onClose={onCancel}
+                onOpenTroubleshooting={onOpenTroubleshooting}
+            />
+        )
+    }
 
-    return (
-        <PWView style={styles.container}>
-            <PWText style={styles.title}>{t('ledger.signing.title')}</PWText>
-
-            {!showRetry && (
-                <LottieView
-                    autoPlay
-                    loop
-                    source={animationSource}
-                    style={styles.lottie}
-                    testID='ledger-signing-content-lottie'
-                />
-            )}
-
-            <PWText style={styles.message}>
-                {t(STATUS_MESSAGE_KEYS[status])}
-            </PWText>
-
-            {showProgress && (
-                <PWText style={styles.progress}>
-                    {t('ledger.signing.progress', {
-                        current: currentTx,
-                        total: totalTxs,
-                    })}
-                </PWText>
-            )}
-
-            <PWView style={styles.actions}>
-                {showRetry && (
-                    <PWButton
-                        variant='primary'
-                        title={t('ledger.fetch_accounts.retry')}
-                        onPress={onRetry}
-                        style={styles.retryButton}
-                    />
-                )}
-                <PWButton
-                    variant='secondary'
-                    title={t('ledger.signing.cancel')}
-                    onPress={onCancel}
-                />
-            </PWView>
-        </PWView>
-    )
+    return null
 }

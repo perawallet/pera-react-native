@@ -10,62 +10,23 @@
  limitations under the License
  */
 
-import React, { useEffect, useRef } from 'react'
 import { ActivityIndicator } from 'react-native'
 import { PWView, PWText, PWResultView } from '@components/core'
-import { useAppNavigation } from '@hooks/useAppNavigation'
-
-import { LedgerConnectingContent } from '../../components/LedgerConnectingContent'
-import { useBottomSheet } from '@modules/bottom-sheet'
-import { generateUniqueId } from '@perawallet/wallet-core-shared'
+import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useLedgerFetchAccountsScreen } from './useLedgerFetchAccountsScreen'
 
 export const LedgerFetchAccountsScreen = () => {
     const styles = useStyles()
-    const navigation = useAppNavigation()
+    const { t } = useLanguage()
     const {
-        connectionStatus,
         isDiscovering,
+        isLoading,
         progress,
         errorPreset,
         handleRetry,
         handleTroubleshoot,
-        t,
     } = useLedgerFetchAccountsScreen()
-
-    const isLoading =
-        connectionStatus === 'connecting' ||
-        connectionStatus === 'connected' ||
-        isDiscovering
-
-    const { request: requestBottomSheet, dismiss } = useBottomSheet()
-    const sheetIdRef = useRef<string | null>(null)
-
-    useEffect(() => {
-        if (isLoading && !sheetIdRef.current) {
-            const id = generateUniqueId()
-            sheetIdRef.current = id
-            void requestBottomSheet<'cancel'>({
-                id,
-                contents: <LedgerConnectingContent />,
-                options: {
-                    size: 'auto',
-                    enablePanDownToClose: false,
-                    enableCloseOnBackdropPress: false,
-                },
-            }).then(result => {
-                sheetIdRef.current = null
-                if (result === 'cancel') {
-                    navigation.goBack()
-                }
-            })
-        } else if (!isLoading && sheetIdRef.current) {
-            const id = sheetIdRef.current
-            sheetIdRef.current = null
-            dismiss(id)
-        }
-    }, [isLoading, requestBottomSheet, dismiss, navigation])
 
     if (errorPreset) {
         return (

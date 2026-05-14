@@ -10,168 +10,93 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@test-utils/render'
+import React from 'react'
+import { describe, it, expect, vi } from 'vitest'
+import { render, screen } from '@test-utils/render'
+import { useLedgerSigningContent } from '../useLedgerSigningContent'
 import type { UseLedgerSigningContentResult } from '../useLedgerSigningContent'
-
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({
-        t: (key: string, params?: Record<string, unknown>) =>
-            params ? `${key}|${JSON.stringify(params)}` : key,
-    }),
-}))
-
-const mockUseIsDarkMode = vi.fn<() => boolean>(() => false)
-vi.mock('@hooks/useIsDarkMode', () => ({
-    useIsDarkMode: () => mockUseIsDarkMode(),
-}))
-
-vi.mock('lottie-react-native', () => ({
-    default: ({
-        testID,
-        source,
-    }: {
-        testID?: string
-        source?: { __variant?: string }
-    }) => (
-        <div
-            data-testid={testID ?? 'lottie-view'}
-            data-variant={source?.__variant ?? ''}
-        />
-    ),
-}))
-
-vi.mock('@assets/animations/ledger-bluetooth.json', () => ({
-    default: { __variant: 'light' },
-}))
-
-vi.mock('@assets/animations/ledger-bluetooth.dark.json', () => ({
-    default: { __variant: 'dark' },
-}))
-
-const defaultHookResult: UseLedgerSigningContentResult = {
-    status: 'connecting',
-    currentTx: undefined,
-    totalTxs: undefined,
-    onCancel: vi.fn(),
-    onRetry: vi.fn(),
-}
-const mockUseLedgerSigningContent = vi.fn<() => UseLedgerSigningContentResult>(
-    () => defaultHookResult,
-)
-vi.mock('../useLedgerSigningContent', () => ({
-    useLedgerSigningContent: () => mockUseLedgerSigningContent(),
-}))
-
 import { LedgerSigningContent } from '../LedgerSigningContent'
 
-const renderWithHook = (overrides: Partial<UseLedgerSigningContentResult>) => {
-    mockUseLedgerSigningContent.mockReturnValue({
-        ...defaultHookResult,
-        ...overrides,
-    })
-    return render(<LedgerSigningContent />)
+vi.mock('../useLedgerSigningContent')
+
+// Mock the child components so we only test routing logic.
+vi.mock('../../LedgerAwaitingApprovalContent', () => ({
+    LedgerAwaitingApprovalContent: () => (
+        <button data-testid='ledger-awaiting-mock' />
+    ),
+}))
+vi.mock('../../LedgerErrorContent', () => ({
+    LedgerErrorContent: () => <button data-testid='ledger-error-mock' />,
+}))
+
+const base: UseLedgerSigningContentResult = {
+    isVisible: true,
+    status: 'awaitingApproval',
+    deviceName: 'Nano X',
+    currentTx: null,
+    totalTxs: null,
+    error: null,
+    onCancel: vi.fn(),
+    onRetry: vi.fn(),
+    isTroubleshootingVisible: false,
+    onOpenTroubleshooting: vi.fn(),
+    onCloseTroubleshooting: vi.fn(),
 }
 
-describe('LedgerSigningContent', () => {
-    beforeEach(() => {
-        vi.clearAllMocks()
-        mockUseIsDarkMode.mockReturnValue(false)
+describe('LedgerSigningContent router', () => {
+    it('renders LedgerAwaitingApprovalContent for awaitingApproval', () => {
+        vi.mocked(useLedgerSigningContent).mockReturnValue({
+            ...base,
+            status: 'awaitingApproval',
+        })
+        render(<LedgerSigningContent />)
+        expect(screen.queryByTestId('ledger-awaiting-mock')).toBeTruthy()
+        expect(screen.queryByTestId('ledger-error-mock')).toBeNull()
     })
 
-    it('renders the connecting message when status is connecting', () => {
-        renderWithHook({ status: 'connecting' })
-
-        expect(screen.getByText('ledger.signing.connect')).toBeTruthy()
+    it('renders LedgerAwaitingApprovalContent for signing status', () => {
+        vi.mocked(useLedgerSigningContent).mockReturnValue({
+            ...base,
+            status: 'signing',
+        })
+        render(<LedgerSigningContent />)
+        expect(screen.queryByTestId('ledger-awaiting-mock')).toBeTruthy()
     })
 
-    it('renders the confirming message when status is confirming', () => {
-        renderWithHook({ status: 'confirming' })
-
-        expect(screen.getByText('ledger.signing.confirm')).toBeTruthy()
+    it('renders LedgerErrorContent for error status with a preset', () => {
+        vi.mocked(useLedgerSigningContent).mockReturnValue({
+            ...base,
+            status: 'error',
+            error: {
+                kind: 'user_rejected',
+                title: 't',
+                body: 'b',
+                isTroubleshootable: false,
+                isRetryable: true,
+            },
+        })
+        render(<LedgerSigningContent />)
+        expect(screen.queryByTestId('ledger-error-mock')).toBeTruthy()
+        expect(screen.queryByTestId('ledger-awaiting-mock')).toBeNull()
     })
 
-    it('shows progress text when signing multiple transactions', () => {
-        renderWithHook({ status: 'confirming', currentTx: 2, totalTxs: 3 })
-
-        expect(
-            screen.getByText('ledger.signing.progress|{"current":2,"total":3}'),
-        ).toBeTruthy()
+    it('renders nothing when status is idle / searching', () => {
+        vi.mocked(useLedgerSigningContent).mockReturnValue({
+            ...base,
+            status: 'idle',
+        })
+        render(<LedgerSigningContent />)
+        expect(screen.queryByTestId('ledger-awaiting-mock')).toBeNull()
+        expect(screen.queryByTestId('ledger-error-mock')).toBeNull()
     })
 
-    it('hides progress text for a single transaction', () => {
-        renderWithHook({ status: 'confirming', currentTx: 1, totalTxs: 1 })
-
-        expect(screen.queryByText(/ledger.signing.progress/)).toBeNull()
-    })
-
-    it('shows the retry button when status is error', () => {
-        renderWithHook({ status: 'error' })
-
-        expect(screen.getByText('ledger.fetch_accounts.retry')).toBeTruthy()
-    })
-
-    it('shows the retry button when status is timeout', () => {
-        renderWithHook({ status: 'timeout' })
-
-        expect(screen.getByText('ledger.fetch_accounts.retry')).toBeTruthy()
-    })
-
-    it('renders the bluetooth Lottie animation while connecting', () => {
-        renderWithHook({ status: 'connecting' })
-
-        expect(screen.getByTestId('ledger-signing-content-lottie')).toBeTruthy()
-    })
-
-    it('uses the light Lottie variant when not in dark mode', () => {
-        mockUseIsDarkMode.mockReturnValue(false)
-        renderWithHook({ status: 'connecting' })
-
-        expect(
-            screen
-                .getByTestId('ledger-signing-content-lottie')
-                .getAttribute('data-variant'),
-        ).toBe('light')
-    })
-
-    it('uses the dark Lottie variant in dark mode', () => {
-        mockUseIsDarkMode.mockReturnValue(true)
-        renderWithHook({ status: 'connecting' })
-
-        expect(
-            screen
-                .getByTestId('ledger-signing-content-lottie')
-                .getAttribute('data-variant'),
-        ).toBe('dark')
-    })
-
-    it('hides the Lottie animation in error state (replaced by retry UI)', () => {
-        renderWithHook({ status: 'error' })
-
-        expect(screen.queryByTestId('ledger-signing-content-lottie')).toBeNull()
-    })
-
-    it('hides the retry button while connecting', () => {
-        renderWithHook({ status: 'connecting' })
-
-        expect(screen.queryByText('ledger.fetch_accounts.retry')).toBeNull()
-    })
-
-    it('calls onCancel when the cancel button is pressed', () => {
-        const onCancel = vi.fn()
-        renderWithHook({ onCancel })
-
-        fireEvent.click(screen.getByText('ledger.signing.cancel'))
-
-        expect(onCancel).toHaveBeenCalledTimes(1)
-    })
-
-    it('calls onRetry when retry is pressed in error state', () => {
-        const onRetry = vi.fn()
-        renderWithHook({ status: 'error', onRetry })
-
-        fireEvent.click(screen.getByText('ledger.fetch_accounts.retry'))
-
-        expect(onRetry).toHaveBeenCalledTimes(1)
+    it('renders nothing for error status with no preset', () => {
+        vi.mocked(useLedgerSigningContent).mockReturnValue({
+            ...base,
+            status: 'error',
+            error: null,
+        })
+        render(<LedgerSigningContent />)
+        expect(screen.queryByTestId('ledger-error-mock')).toBeNull()
     })
 })

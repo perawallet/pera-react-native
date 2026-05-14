@@ -12,8 +12,6 @@
 
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { RouteProp, useRoute } from '@react-navigation/native'
-import { useBottomSheet } from '@modules/bottom-sheet'
-import { LedgerAccountAddressContent } from './LedgerAccountAddressContent/LedgerAccountAddressContent'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import type { LedgerAccount } from '@perawallet/wallet-core-ledger'
@@ -27,7 +25,9 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
+import { useBottomSheet } from '@modules/bottom-sheet'
 import { getLedgerErrorPreset } from '@modules/ledger/utils'
+import { LedgerAccountAddressContent } from './LedgerAccountAddressContent'
 
 type LedgerSelectAccountsRouteProp = RouteProp<
     AddAccountStackParamList,
@@ -47,7 +47,6 @@ type UseLedgerSelectAccountsScreenResult = {
     handleContinue: () => void
     handleFindAnother: () => Promise<void>
     handleOpenInfo: (address: string) => void
-    t: (key: string, options?: Record<string, unknown>) => string
 }
 
 export const useLedgerSelectAccountsScreen =
@@ -64,13 +63,13 @@ export const useLedgerSelectAccountsScreen =
         const navigation = useAppNavigation()
         const allAccounts = useAllAccounts()
         const { errorToast } = useToast()
+        const { request: requestBottomSheet } = useBottomSheet()
 
         const [accounts, setAccounts] = useState<LedgerAccount[]>(routeAccounts)
         const [isFetchingMore, setIsFetchingMore] = useState(false)
         const [selectedAddresses, setSelectedAddresses] = useState<Set<string>>(
             () => new Set(),
         )
-        const { request: requestBottomSheet } = useBottomSheet()
 
         const transportRef = useRef<Nullable<HardwareWalletTransport>>(null)
         const inFlightRef = useRef(false)
@@ -231,6 +230,5 @@ export const useLedgerSelectAccountsScreen =
             handleContinue,
             handleFindAnother,
             handleOpenInfo,
-            t,
         }
     }

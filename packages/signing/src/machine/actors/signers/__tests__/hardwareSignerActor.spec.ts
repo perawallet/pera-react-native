@@ -225,7 +225,9 @@ describe('hardwareSignerActor', () => {
         actor.start()
         await toPromise(actor)
 
-        expect(onPhaseChange).toHaveBeenCalledTimes(2)
+        // 'connecting' + 'awaiting-approval' (connectAndVerify) +
+        // 'awaiting-approval' (signTransactions loop, one per signable tx)
+        expect(onPhaseChange).toHaveBeenCalledTimes(3)
         expect(onSigningStart).toHaveBeenCalledTimes(1)
         expect(onProgress).toHaveBeenCalledTimes(1)
         expect(onSigningComplete).toHaveBeenCalledTimes(1)

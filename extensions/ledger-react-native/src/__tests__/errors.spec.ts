@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
+import { ErrorCategory } from '@perawallet/wallet-core-shared'
 import {
     classifyLedgerError,
     LedgerUserRejectedError,
@@ -18,6 +19,14 @@ import {
     LedgerDisconnectedError,
     LedgerTimeoutError,
     LedgerConnectionError,
+    LedgerBluetoothDisabledError,
+    LedgerPermissionDeniedError,
+    LedgerScanTimeoutError,
+    LedgerSigningFailedError,
+    LedgerTransmissionError,
+    LedgerPublicKeyReadError,
+    LedgerNetworkError,
+    LedgerUnsupportedDeviceError,
 } from '../errors'
 
 const createErrorWithStatus = (statusCode: number): Error => {
@@ -83,5 +92,60 @@ describe('classifyLedgerError', () => {
     it('classifies unknown status codes as LedgerConnectionError', () => {
         const result = classifyLedgerError(createErrorWithStatus(0x1234))
         expect(result).toBeInstanceOf(LedgerConnectionError)
+    })
+})
+
+describe('new typed Ledger errors', () => {
+    it('LedgerBluetoothDisabledError is a retryable AppError with BLOCKCHAIN category', () => {
+        const error = new LedgerBluetoothDisabledError()
+        expect(error.message).toContain('Bluetooth')
+        expect(error.metadata.retryable).toBe(true)
+        expect(error.metadata.category).toBe(ErrorCategory.BLOCKCHAIN)
+    })
+
+    it('LedgerPermissionDeniedError is a retryable AppError', () => {
+        const error = new LedgerPermissionDeniedError()
+        expect(error.message).toContain('permission')
+        expect(error.metadata.retryable).toBe(true)
+    })
+
+    it('LedgerScanTimeoutError carries the timeout reason', () => {
+        const error = new LedgerScanTimeoutError('scan timed out after 15s')
+        expect(error.message).toContain('scan timed out')
+        expect(error.metadata.retryable).toBe(true)
+    })
+
+    it('LedgerSigningFailedError wraps a cause', () => {
+        const cause = new Error('underlying SDK error')
+        const error = new LedgerSigningFailedError(
+            'attachSignature failed',
+            cause,
+        )
+        expect(error.originalError).toBe(cause)
+        expect(error.metadata.retryable).toBe(true)
+    })
+
+    it('LedgerTransmissionError indicates a write characteristic failure', () => {
+        const error = new LedgerTransmissionError('write characteristic failed')
+        expect(error.message).toContain('write')
+        expect(error.metadata.retryable).toBe(true)
+    })
+
+    it('LedgerPublicKeyReadError represents a public-key read failure', () => {
+        const error = new LedgerPublicKeyReadError()
+        expect(error.message.toLowerCase()).toContain('public key')
+        expect(error.metadata.retryable).toBe(true)
+    })
+
+    it('LedgerNetworkError represents an indexer/network failure', () => {
+        const error = new LedgerNetworkError()
+        expect(error.message.toLowerCase()).toContain('network')
+        expect(error.metadata.retryable).toBe(true)
+    })
+
+    it('LedgerUnsupportedDeviceError is not retryable', () => {
+        const error = new LedgerUnsupportedDeviceError()
+        expect(error.message.toLowerCase()).toContain('not supported')
+        expect(error.metadata.retryable).toBe(false)
     })
 })

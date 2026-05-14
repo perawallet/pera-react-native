@@ -23,17 +23,13 @@ const mockDisconnectTransport = vi.fn()
 const mockConnect = vi.fn()
 const mockGetProviderRegistry = vi.fn()
 const mockErrorToast = vi.fn()
-const { mockRequestBottomSheet } = vi.hoisted(() => ({
-    mockRequestBottomSheet: vi.fn(),
+
+const { mockRequest } = vi.hoisted(() => ({
+    mockRequest: vi.fn(),
 }))
 
 vi.mock('@modules/bottom-sheet', () => ({
-    useBottomSheet: () => ({
-        request: mockRequestBottomSheet,
-        requestByType: vi.fn(),
-        dismiss: vi.fn(),
-        dismissAll: vi.fn(),
-    }),
+    useBottomSheet: () => ({ request: mockRequest, dismiss: vi.fn() }),
 }))
 
 vi.mock('@hooks/useAppNavigation', () => ({
@@ -95,6 +91,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 }))
 
 import { useLedgerSelectAccountsScreen } from '../useLedgerSelectAccountsScreen'
+import { LedgerAccountAddressContent } from '../LedgerAccountAddressContent'
 
 const buildTransport = (): HardwareWalletTransport =>
     ({
@@ -120,6 +117,7 @@ describe('useLedgerSelectAccountsScreen', () => {
         mockConnect.mockReset()
         mockGetProviderRegistry.mockReset()
         mockErrorToast.mockReset()
+        mockRequest.mockReset()
 
         const transport = buildTransport()
         mockConnect.mockResolvedValue(transport)
@@ -332,12 +330,20 @@ describe('useLedgerSelectAccountsScreen', () => {
         })
     })
 
-    it('opens the address sheet via handleOpenInfo', () => {
+    it('opens the address content sheet when handleOpenInfo is called', () => {
         const { result } = renderHook(() => useLedgerSelectAccountsScreen())
 
         act(() => {
             result.current.handleOpenInfo('ADDR')
         })
-        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+
+        expect(mockRequest).toHaveBeenCalledTimes(1)
+        const [call] = mockRequest.mock.calls
+        expect(call[0].options).toEqual({
+            size: 'auto',
+            enablePanDownToClose: true,
+        })
+        expect(call[0].contents.type).toBe(LedgerAccountAddressContent)
+        expect(call[0].contents.props.address).toBe('ADDR')
     })
 })

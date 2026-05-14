@@ -13,41 +13,30 @@
 import { makeStyles } from '@rneui/themed'
 import { getTypography } from '@theme/typography'
 
-const LOTTIE_WIDTH = 164
-const LOTTIE_HEIGHT = 48
-
 export const useStyles = makeStyles(theme => ({
     container: {
         padding: theme.spacing.xl,
-        alignItems: 'center',
     },
     title: {
         ...getTypography(theme, 'h3'),
         marginBottom: theme.spacing.lg,
-    },
-    lottie: {
-        // Matches Android dialog_ledger_loading.xml (164dp × 48dp).
-        width: LOTTIE_WIDTH,
-        height: LOTTIE_HEIGHT,
-        marginVertical: theme.spacing.lg,
-    },
-    message: {
-        ...getTypography(theme, 'body'),
-        color: theme.colors.textGray,
         textAlign: 'center',
-        marginBottom: theme.spacing.xl,
     },
-    actions: {
-        width: '100%',
-        gap: theme.spacing.sm,
+    bulletWrapper: {
+        flexDirection: 'row',
+        marginBottom: theme.spacing.sm,
     },
-    retryButton: {
-        marginBottom: theme.spacing.xs,
-    },
-    progress: {
+    bullet: {
         ...getTypography(theme, 'body'),
         color: theme.colors.textMain,
-        textAlign: 'center',
-        marginTop: theme.spacing.sm,
+        marginRight: theme.spacing.sm,
+    },
+    tip: {
+        ...getTypography(theme, 'body'),
+        color: theme.colors.textMain,
+        flex: 1,
+    },
+    closeButton: {
+        marginTop: theme.spacing.xl,
     },
 }))

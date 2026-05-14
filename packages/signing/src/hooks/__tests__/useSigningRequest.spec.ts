@@ -71,12 +71,19 @@ vi.mock('../useMultisigTransportAdapters', () => ({
     })),
 }))
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useAllAccounts: vi.fn(() => [
-        { address: 'ADDR1', type: 'algo25' },
-        { address: 'ADDR2', type: 'algo25' },
-    ]),
-}))
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
+    const original =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-accounts')
+        >()
+    return {
+        ...original,
+        useAllAccounts: vi.fn(() => [
+            { address: 'ADDR1', type: 'algo25' },
+            { address: 'ADDR2', type: 'algo25' },
+        ]),
+    }
+})
 
 vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
     const original =
