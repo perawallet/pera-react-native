@@ -23,7 +23,7 @@ describe('PWPinCircles', () => {
         vi.useRealTimers()
     })
 
-    it('renders correct number of circles', () => {
+    it('renders one circle per slot', () => {
         const { container } = render(
             <PWPinCircles
                 length={6}
@@ -31,58 +31,17 @@ describe('PWPinCircles', () => {
             />,
         )
 
-        // Count the number of View elements (circles) - they are direct children of the animated container
-        const animatedView = container.firstChild
-        expect(animatedView).toBeTruthy()
-        expect(animatedView?.childNodes.length).toBe(6)
+        expect(container.firstChild?.childNodes.length).toBe(6)
     })
 
-    it('renders correct number of filled circles', () => {
-        const { container } = render(
-            <PWPinCircles
-                length={6}
-                filledCount={3}
-            />,
-        )
-
-        const animatedView = container.firstChild
-        expect(animatedView?.childNodes.length).toBe(6)
-    })
-
-    it('renders all circles empty when filledCount is 0', () => {
-        const { container } = render(
-            <PWPinCircles
-                length={6}
-                filledCount={0}
-            />,
-        )
-
-        const animatedView = container.firstChild
-        expect(animatedView?.childNodes.length).toBe(6)
-    })
-
-    it('renders all circles filled when filledCount equals length', () => {
-        const { container } = render(
-            <PWPinCircles
-                length={6}
-                filledCount={6}
-            />,
-        )
-
-        const animatedView = container.firstChild
-        expect(animatedView?.childNodes.length).toBe(6)
-    })
-
-    it('renders correct number of circles for different lengths', () => {
+    it('updates the circle count when length changes', () => {
         const { container, rerender } = render(
             <PWPinCircles
                 length={4}
                 filledCount={0}
             />,
         )
-
-        let animatedView = container.firstChild
-        expect(animatedView?.childNodes.length).toBe(4)
+        expect(container.firstChild?.childNodes.length).toBe(4)
 
         rerender(
             <PWPinCircles
@@ -90,33 +49,11 @@ describe('PWPinCircles', () => {
                 filledCount={0}
             />,
         )
-
-        animatedView = container.firstChild
-        expect(animatedView?.childNodes.length).toBe(8)
+        expect(container.firstChild?.childNodes.length).toBe(8)
     })
 
-    it('updates filled count when prop changes', () => {
-        const { container, rerender } = render(
-            <PWPinCircles
-                length={6}
-                filledCount={0}
-            />,
-        )
-
-        rerender(
-            <PWPinCircles
-                length={6}
-                filledCount={3}
-            />,
-        )
-
-        const animatedView = container.firstChild
-        expect(animatedView?.childNodes.length).toBe(6)
-    })
-
-    it('calls onShakeComplete after error animation', () => {
+    it('calls onShakeComplete after the shake animation completes', () => {
         const onShakeComplete = vi.fn()
-
         render(
             <PWPinCircles
                 length={6}
@@ -127,15 +64,12 @@ describe('PWPinCircles', () => {
         )
 
         expect(onShakeComplete).not.toHaveBeenCalled()
-
         vi.advanceTimersByTime(250)
-
         expect(onShakeComplete).toHaveBeenCalledTimes(1)
     })
 
     it('does not call onShakeComplete when hasError is false', () => {
         const onShakeComplete = vi.fn()
-
         render(
             <PWPinCircles
                 length={6}
@@ -146,11 +80,10 @@ describe('PWPinCircles', () => {
         )
 
         vi.advanceTimersByTime(300)
-
         expect(onShakeComplete).not.toHaveBeenCalled()
     })
 
-    it('calls onShakeComplete when hasError changes to true', () => {
+    it('re-fires the shake each time hasError transitions to true', () => {
         const onShakeComplete = vi.fn()
         const { rerender } = render(
             <PWPinCircles
@@ -169,13 +102,30 @@ describe('PWPinCircles', () => {
                 onShakeComplete={onShakeComplete}
             />,
         )
-
         vi.advanceTimersByTime(250)
-
         expect(onShakeComplete).toHaveBeenCalledTimes(1)
+
+        rerender(
+            <PWPinCircles
+                length={6}
+                filledCount={6}
+                hasError={false}
+                onShakeComplete={onShakeComplete}
+            />,
+        )
+        rerender(
+            <PWPinCircles
+                length={6}
+                filledCount={6}
+                hasError={true}
+                onShakeComplete={onShakeComplete}
+            />,
+        )
+        vi.advanceTimersByTime(250)
+        expect(onShakeComplete).toHaveBeenCalledTimes(2)
     })
 
-    it('handles onShakeComplete being undefined', () => {
+    it('does not throw when onShakeComplete is undefined', () => {
         expect(() => {
             render(
                 <PWPinCircles
@@ -186,150 +136,5 @@ describe('PWPinCircles', () => {
             )
             vi.advanceTimersByTime(250)
         }).not.toThrow()
-    })
-
-    it('renders with default hasError prop as false', () => {
-        const { container } = render(
-            <PWPinCircles
-                length={6}
-                filledCount={0}
-            />,
-        )
-
-        const animatedView = container.firstChild
-        expect(animatedView?.childNodes.length).toBe(6)
-    })
-
-    it('renders partial fill correctly', () => {
-        const testCases = [
-            { length: 6, filledCount: 1 },
-            { length: 6, filledCount: 2 },
-            { length: 6, filledCount: 3 },
-            { length: 6, filledCount: 4 },
-            { length: 6, filledCount: 5 },
-        ]
-
-        testCases.forEach(({ length, filledCount }) => {
-            const { container } = render(
-                <PWPinCircles
-                    length={length}
-                    filledCount={filledCount}
-                />,
-            )
-
-            const animatedView = container.firstChild
-            expect(animatedView?.childNodes.length).toBe(length)
-        })
-    })
-
-    it('handles edge case of filledCount greater than length', () => {
-        const { container } = render(
-            <PWPinCircles
-                length={6}
-                filledCount={10}
-            />,
-        )
-
-        const animatedView = container.firstChild
-        expect(animatedView?.childNodes.length).toBe(6)
-    })
-
-    it('handles edge case of negative filledCount', () => {
-        const { container } = render(
-            <PWPinCircles
-                length={6}
-                filledCount={-1}
-            />,
-        )
-
-        const animatedView = container.firstChild
-        expect(animatedView?.childNodes.length).toBe(6)
-    })
-
-    it('triggers shake animation only when hasError becomes true', () => {
-        const onShakeComplete = vi.fn()
-        const { rerender } = render(
-            <PWPinCircles
-                length={6}
-                filledCount={6}
-                hasError={false}
-                onShakeComplete={onShakeComplete}
-            />,
-        )
-
-        vi.advanceTimersByTime(300)
-        expect(onShakeComplete).not.toHaveBeenCalled()
-
-        rerender(
-            <PWPinCircles
-                length={6}
-                filledCount={6}
-                hasError={true}
-                onShakeComplete={onShakeComplete}
-            />,
-        )
-
-        vi.advanceTimersByTime(250)
-        expect(onShakeComplete).toHaveBeenCalledTimes(1)
-    })
-
-    it('handles multiple hasError toggles', () => {
-        const onShakeComplete = vi.fn()
-        const { rerender } = render(
-            <PWPinCircles
-                length={6}
-                filledCount={6}
-                hasError={false}
-                onShakeComplete={onShakeComplete}
-            />,
-        )
-
-        rerender(
-            <PWPinCircles
-                length={6}
-                filledCount={6}
-                hasError={true}
-                onShakeComplete={onShakeComplete}
-            />,
-        )
-
-        vi.advanceTimersByTime(250)
-        expect(onShakeComplete).toHaveBeenCalledTimes(1)
-
-        rerender(
-            <PWPinCircles
-                length={6}
-                filledCount={6}
-                hasError={false}
-                onShakeComplete={onShakeComplete}
-            />,
-        )
-
-        vi.advanceTimersByTime(250)
-        expect(onShakeComplete).toHaveBeenCalledTimes(1)
-
-        rerender(
-            <PWPinCircles
-                length={6}
-                filledCount={6}
-                hasError={true}
-                onShakeComplete={onShakeComplete}
-            />,
-        )
-
-        vi.advanceTimersByTime(250)
-        expect(onShakeComplete).toHaveBeenCalledTimes(2)
-    })
-
-    it('renders with zero length', () => {
-        const { container } = render(
-            <PWPinCircles
-                length={0}
-                filledCount={0}
-            />,
-        )
-
-        const animatedView = container.firstChild
-        expect(animatedView?.childNodes.length).toBe(0)
     })
 })

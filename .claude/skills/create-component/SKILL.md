@@ -63,11 +63,22 @@ If creating a core component, add export to `apps/mobile/src/components/core/ind
 
 ### 7. Create Test File (`__tests__/[ComponentName].spec.tsx`)
 
-- Import from `@test-utils/render`
-- Test user behavior, not implementation
-- Use `.spec.tsx` extension
+**Whether you write a unit test depends on where the component lives:**
 
-See `references/testing.md` for templates.
+| Location                                           | Write a unit test?                                                                                                                |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/mobile/src/components/core/PW*/`             | **Yes** — behavioral tests + smoke test welcome.                                                                                  |
+| `apps/mobile/src/components/[Name]/`               | **Yes** — same rules.                                                                                                             |
+| `apps/mobile/src/modules/[mod]/components/[Name]/` | **No.** Integration tests cover module screens. If the component has non-trivial logic, extract a `use[Name]` hook and test that. |
+
+For core/shared components:
+
+- Import from `@test-utils/render`
+- Test **interactions, prop wiring, conditional rendering, and formatting** — not static text or styles
+- Avoid render-only tests with no real assertion (`expect(container).toBeTruthy()`)
+- One smoke test per file is fine; don't repeat it with prop variations that don't change observable behavior
+
+See `references/testing.md` for templates and `docs/TESTING.md` for the full policy.
 
 ### 8. Add any necessary internationalization strings
 
