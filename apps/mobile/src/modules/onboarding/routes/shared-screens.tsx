@@ -24,6 +24,11 @@ import { ImportInfoScreen } from '@modules/onboarding/screens/ImportInfoScreen'
 import { ImportSelectAddressesScreen } from '@modules/onboarding/screens/ImportSelectAddressesScreen'
 import { ImportRekeyedAddressesScreen } from '@modules/onboarding/screens/ImportRekeyedAddressesScreen'
 import { SearchAccountsScreen } from '@modules/onboarding/screens/SearchAccountsScreen'
+import { AsbImportInfoScreen } from '@modules/onboarding/screens/AsbImportInfoScreen'
+import { AsbImportBackupScreen } from '@modules/onboarding/screens/AsbImportBackupScreen'
+import { AsbImportKeyScreen } from '@modules/onboarding/screens/AsbImportKeyScreen'
+import { AsbImportSelectAccountsScreen } from '@modules/onboarding/screens/AsbImportSelectAccountsScreen'
+import { AsbImportResultScreen } from '@modules/onboarding/screens/AsbImportResultScreen'
 import {
     LedgerInstructionsScreen,
     LedgerPairScreen,
@@ -84,6 +89,19 @@ const LedgerVerifyScreenWithErrorBoundary =
 const LedgerTroubleshootingScreenWithErrorBoundary = withAccountErrorBoundary(
     LedgerTroubleshootingScreen,
 )
+const AsbImportInfoScreenWithErrorBoundary =
+    withAccountErrorBoundary(AsbImportInfoScreen)
+const AsbImportBackupScreenWithErrorBoundary = withAccountErrorBoundary(
+    AsbImportBackupScreen,
+)
+const AsbImportKeyScreenWithErrorBoundary =
+    withAccountErrorBoundary(AsbImportKeyScreen)
+const AsbImportSelectAccountsScreenWithErrorBoundary = withAccountErrorBoundary(
+    AsbImportSelectAccountsScreen,
+)
+const AsbImportResultScreenWithErrorBoundary = withAccountErrorBoundary(
+    AsbImportResultScreen,
+)
 
 /**
  * Names of every screen registered by `renderImportFlowScreens`. Used by the
@@ -104,6 +122,11 @@ export const IMPORT_FLOW_SCREEN_NAMES = [
     'LedgerSelectAccounts',
     'LedgerVerify',
     'LedgerTroubleshooting',
+    'AsbImportInfo',
+    'AsbImportBackup',
+    'AsbImportKey',
+    'AsbImportSelectAccounts',
+    'AsbImportResult',
 ] as const satisfies ReadonlyArray<keyof ImportFlowParamList>
 
 export type ImportFlowStack = ReturnType<
@@ -194,6 +217,32 @@ export const renderImportFlowScreens = (
             name='LedgerTroubleshooting'
             options={{ title: '' }}
             component={LedgerTroubleshootingScreenWithErrorBoundary}
+        />
+        <Stack.Screen
+            name='AsbImportInfo'
+            options={{ title: '' }}
+            component={AsbImportInfoScreenWithErrorBoundary}
+        />
+        <Stack.Screen
+            name='AsbImportBackup'
+            options={{ title: '' }}
+            component={AsbImportBackupScreenWithErrorBoundary}
+        />
+        <Stack.Screen
+            name='AsbImportKey'
+            options={{ title: '' }}
+            component={AsbImportKeyScreenWithErrorBoundary}
+        />
+        <Stack.Screen
+            name='AsbImportSelectAccounts'
+            options={{ title: '' }}
+            component={AsbImportSelectAccountsScreenWithErrorBoundary}
+        />
+        <Stack.Screen
+            name='AsbImportResult'
+            options={{ headerShown: false }}
+            layout={fullScreenLayout}
+            component={AsbImportResultScreenWithErrorBoundary}
         />
     </>
 )

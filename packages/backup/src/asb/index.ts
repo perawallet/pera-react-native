@@ -10,8 +10,12 @@
  limitations under the License
  */
 
-// Umbrella package for all wallet backup concerns. Subdomains:
-//   - mnemonic: "has the user written down their phrase?" prompt state
-//   - asb:      Algorand Secure Backup (ARC-35) recovery-only support
-export * from './asb'
-export * from './mnemonic'
+// Algorand Secure Backup (ARC-35) — recovery-only subdomain. Pera Wallet no
+// longer produces ASB exports; this code exists so users with legacy backup
+// files can recover their accounts.
+export * from './crypto'
+export * from './errors'
+export * from './hooks'
+export * from './models'
+export * from './parsers'
+export * from './utils'

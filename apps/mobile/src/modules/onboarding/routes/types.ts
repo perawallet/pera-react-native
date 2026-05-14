@@ -86,6 +86,15 @@ export type ImportFlowParamList = {
         selectedAccounts: LedgerAccount[]
     }
     LedgerTroubleshooting: undefined
+    AsbImportInfo: undefined
+    AsbImportBackup: undefined
+    AsbImportKey: undefined
+    AsbImportSelectAccounts: undefined
+    AsbImportResult: {
+        importedCount: number
+        skippedDuplicateCount: number
+        failedCount: number
+    }
 }
 
 export type OnboardingStackParamList = ImportFlowParamList & {

@@ -170,6 +170,10 @@ export const useImportAccountOptionsScreen =
             )
         }, [errorToast, t])
 
+        const handleImportAsb = useCallback(() => {
+            navigation.push('AsbImportInfo')
+        }, [navigation])
+
         const options: AccountOption[] = useMemo(() => {
             const allOptions: AccountOption[] = [
                 {
@@ -229,7 +233,7 @@ export const useImportAccountOptionsScreen =
                     descriptionKey:
                         'onboarding.import_account_options.asb_description',
                     leftIcon: 'shield-check' as IconName,
-                    onPress: handleNotImplemented,
+                    onPress: handleImportAsb,
                 },
             )
 
@@ -240,6 +244,7 @@ export const useImportAccountOptionsScreen =
             handlePairLedgerBle,
             handlePairLedgerUsb,
             handleNotImplemented,
+            handleImportAsb,
         ])
 
         return {

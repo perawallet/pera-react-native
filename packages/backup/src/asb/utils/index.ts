@@ -10,8 +10,4 @@
  limitations under the License
  */
 
-// Umbrella package for all wallet backup concerns. Subdomains:
-//   - mnemonic: "has the user written down their phrase?" prompt state
-//   - asb:      Algorand Secure Backup (ARC-35) recovery-only support
-export * from './asb'
-export * from './mnemonic'
+export * from './partition-importable-accounts'

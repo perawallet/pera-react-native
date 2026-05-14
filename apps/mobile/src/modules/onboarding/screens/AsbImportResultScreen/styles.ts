@@ -10,8 +10,20 @@
  limitations under the License
  */
 
-// Umbrella package for all wallet backup concerns. Subdomains:
-//   - mnemonic: "has the user written down their phrase?" prompt state
-//   - asb:      Algorand Secure Backup (ARC-35) recovery-only support
-export * from './asb'
-export * from './mnemonic'
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(theme => ({
+    root: {
+        flex: 1,
+        backgroundColor: theme.colors.background,
+    },
+    counts: {
+        gap: theme.spacing.sm,
+        alignItems: 'center',
+        marginTop: theme.spacing.md,
+    },
+    countLine: {
+        color: theme.colors.textGray,
+        textAlign: 'center',
+    },
+}))

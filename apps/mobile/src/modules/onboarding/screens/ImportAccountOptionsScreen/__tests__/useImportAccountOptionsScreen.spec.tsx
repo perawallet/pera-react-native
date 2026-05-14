@@ -256,7 +256,7 @@ describe('useImportAccountOptionsScreen', () => {
         )
     })
 
-    it('ASB option shows not implemented toast', () => {
+    it('ASB option navigates to the ASB recovery wizard', () => {
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
         const asbOption = result.current.options.find(
@@ -267,10 +267,7 @@ describe('useImportAccountOptionsScreen', () => {
             asbOption.onPress()
         })
 
-        expect(mockErrorToast).toHaveBeenCalledWith(
-            'common.not_implemented.title',
-            'common.not_implemented.body',
-        )
+        expect(mockPush).toHaveBeenCalledWith('AsbImportInfo')
     })
 
     it('handleCloseQRScanner closes the QR scanner', () => {
