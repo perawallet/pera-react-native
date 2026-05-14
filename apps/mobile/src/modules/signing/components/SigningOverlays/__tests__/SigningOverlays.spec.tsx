@@ -73,8 +73,9 @@ vi.mock('../../TransactionRequestFAQContent', () => ({
 }))
 
 // ----- helpers -----
+const PENDING_REQUEST_ID = 'req-1'
 const PENDING_REQUEST = {
-    id: 'req-1',
+    id: PENDING_REQUEST_ID,
     headless: false,
     type: 'transactions',
     sourceType: 'dapp',
@@ -109,7 +110,7 @@ describe('SigningOverlays — useSignRequestDriver gate', () => {
         render(<SigningOverlays />)
         expect(mockRequestBottomSheet).toHaveBeenCalledOnce()
         expect(mockRequestBottomSheet.mock.calls[0][0]).toMatchObject({
-            id: PENDING_REQUEST.id,
+            id: PENDING_REQUEST_ID,
         })
     })
 
@@ -120,7 +121,7 @@ describe('SigningOverlays — useSignRequestDriver gate', () => {
         render(<SigningOverlays />)
         expect(mockRequestBottomSheet).toHaveBeenCalledOnce()
         expect(mockRequestBottomSheet.mock.calls[0][0]).toMatchObject({
-            id: PENDING_REQUEST.id,
+            id: PENDING_REQUEST_ID,
         })
     })
 
