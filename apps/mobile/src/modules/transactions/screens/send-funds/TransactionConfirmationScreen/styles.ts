@@ -11,8 +11,6 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { StyleSheet } from 'react-native'
-import { defaultTheme } from '@rneui/base'
 
 export const useStyles = makeStyles(theme => {
     return {
@@ -38,11 +36,6 @@ export const useStyles = makeStyles(theme => {
         scrollContent: {
             gap: theme.spacing.xl,
             paddingTop: theme.spacing.lg,
-        },
-        noteRow: {
-            borderTopWidth: StyleSheet.hairlineWidth,
-            borderTopColor: defaultTheme.colors.divider,
-            paddingTop: theme.spacing.xl,
         },
     }
 })
