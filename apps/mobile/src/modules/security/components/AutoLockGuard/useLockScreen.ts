@@ -16,6 +16,7 @@ import { useLanguage } from '@hooks/useLanguage'
 
 type UseLockScreenParams = {
     onUnlock: () => void
+    isLocked: boolean
 }
 
 type UseLockScreenResult = {
@@ -28,6 +29,7 @@ type UseLockScreenResult = {
 
 export const useLockScreen = ({
     onUnlock,
+    isLocked,
 }: UseLockScreenParams): UseLockScreenResult => {
     const { t } = useLanguage()
     const {
@@ -74,6 +76,17 @@ export const useLockScreen = ({
     // After a lockout expires, we still don't auto-prompt biometrics — let
     // the user enter their PIN explicitly.
     const hasAttemptedBiometricsRef = useRef(false)
+    // Reset the flag every time the screen becomes locked so that the
+    // biometric prompt is shown again on the next lock activation.
+    const prevIsLockedRef = useRef(false)
+
+    useEffect(() => {
+        if (isLocked && !prevIsLockedRef.current) {
+            hasAttemptedBiometricsRef.current = false
+        }
+        prevIsLockedRef.current = isLocked
+    }, [isLocked])
+
 
     useEffect(() => {
         if (isLockedOut || hasAttemptedBiometricsRef.current) return
@@ -97,6 +110,7 @@ export const useLockScreen = ({
         }
     }, [
         isLockedOut,
+        isLocked,
         checkBiometricsEnabled,
         authenticateWithBiometrics,
         resetFailedAttempts,
