@@ -34,7 +34,8 @@ export const useStyles = makeStyles(
         },
         innerContainer: {
             flexGrow: 1,
-            paddingBottom: (Platform.OS === 'ios' ? insets.bottom : 0) + theme.spacing.md,
+            paddingBottom:
+                (Platform.OS === 'ios' ? insets.bottom : 0) + theme.spacing.md,
         },
         hidden: {
             display: 'none',
