@@ -18,7 +18,6 @@ import {
     PWView,
 } from '@components/core'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { ViewPassphraseFlow } from '@modules/view-passphrase'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useStyles } from './styles'
 import { AccountOption, useAccountOptions } from './useAccountOptions'
@@ -75,8 +74,11 @@ export const AccountOptionsContent = ({
 }: AccountOptionsContentProps) => {
     const styles = useStyles()
     const { dismiss } = useBottomSheetResult<void>()
-    const { options, isPassphraseFlowVisible, handleClosePassphraseFlow } =
-        useAccountOptions({ account, onClose: dismiss, onShowAddress })
+    const { options } = useAccountOptions({
+        account,
+        onClose: dismiss,
+        onShowAddress,
+    })
 
     const generalOptions = options.filter(
         o =>
@@ -151,12 +153,6 @@ export const AccountOptionsContent = ({
                     ))}
                 </PWView>
             </BottomSheetScrollView>
-
-            <ViewPassphraseFlow
-                isVisible={isPassphraseFlowVisible}
-                address={account.address}
-                onClose={handleClosePassphraseFlow}
-            />
         </>
     )
 }

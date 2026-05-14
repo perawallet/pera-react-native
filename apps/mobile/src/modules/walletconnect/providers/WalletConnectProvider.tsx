@@ -11,9 +11,6 @@
  */
 
 import { PropsWithChildren } from 'react'
-import { PWBottomSheet } from '@components/core'
-import { ConnectionView } from '@modules/walletconnect/components/ConnectionView/ConnectionView'
-
 import { WalletConnectErrorBoundary } from '@modules/walletconnect/components/BaseErrorBoundary/WalletConnectErrorBoundary'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWalletConnectProvider } from './useWalletConnectProvider'
@@ -24,30 +21,13 @@ export function WalletConnectProvider({
     children,
 }: WalletConnectProviderProps) {
     const { t } = useLanguage()
-    const {
-        nextRequest,
-        successRequest,
-        connectionError,
-        handleConnectionError,
-        handleSuccess,
-    } = useWalletConnectProvider()
+    // Effect-driven sheet management lives in the hook; we just need to
+    // initialise it so the lifecycle effects run alongside the provider.
+    useWalletConnectProvider()
 
     return (
         <WalletConnectErrorBoundary t={t}>
             {children}
-            <PWBottomSheet
-                size='lg'
-                isVisible={!!nextRequest && !successRequest && !connectionError}
-                autoCreateContainer={false}
-            >
-                {!!nextRequest && (
-                    <ConnectionView
-                        request={nextRequest}
-                        onSuccess={handleSuccess}
-                        onError={handleConnectionError}
-                    />
-                )}
-            </PWBottomSheet>
         </WalletConnectErrorBoundary>
     )
 }

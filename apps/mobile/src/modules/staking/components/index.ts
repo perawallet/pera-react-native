@@ -12,6 +12,6 @@
 
 export * from './StakingTypeBadge'
 export * from './StakingProjectCard'
-export * from './StakingHelpSheet'
-export * from './StakingDisclaimerSheet'
+export * from './StakingHelpContent'
+export * from './StakingDisclaimerContent'
 export * from './StakingErrorBoundary'

@@ -13,7 +13,7 @@
 export { SwapAmountSection } from './SwapAmountSection'
 export type { SwapAmountSectionProps } from './SwapAmountSection'
 export { SwapForm } from './SwapForm'
-export { SwapIntroduction } from './SwapIntroduction'
+export { SwapIntroductionContent } from './SwapIntroductionContent'
 export { SwapAssetSelectionContent } from './SwapAssetSelectionContent'
 export type { SwapAssetSelectionContentProps } from './SwapAssetSelectionContent'
 export { SwapAssetSelector } from './SwapAssetSelector'

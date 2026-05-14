@@ -11,3 +11,5 @@
  */
 
 export { PinEditView } from './PinEditView'
+export type { PinEditViewProps } from './PinEditView'
+export type { PinEntryMode } from './usePinEditView'

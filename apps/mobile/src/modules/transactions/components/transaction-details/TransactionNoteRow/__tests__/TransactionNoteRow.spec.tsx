@@ -11,28 +11,35 @@
  */
 
 import { render, fireEvent } from '@test-utils/render'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { TransactionNoteRow } from '../TransactionNoteRow'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
-import { useModalState } from '@hooks/useModalState'
 
-vi.mock('@hooks/useModalState', () => ({
-    useModalState: vi.fn(() => ({
-        isOpen: false,
-        open: vi.fn(),
-        close: vi.fn(),
-        toggle: vi.fn(),
-    })),
+const { mockRequestBottomSheet } = vi.hoisted(() => ({
+    mockRequestBottomSheet: vi.fn(),
 }))
 
-vi.mock('../../ViewTextDetailsPanel', () => ({
-    ViewTextDetailsPanel: vi.fn(() => null),
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({
+        request: mockRequestBottomSheet,
+        requestByType: vi.fn(),
+        dismiss: vi.fn(),
+        dismissAll: vi.fn(),
+    }),
+}))
+
+vi.mock('../../ViewTextDetailsContent', () => ({
+    ViewTextDetailsContent: () => null,
 }))
 
 describe('TransactionNoteRow', () => {
     const mockTransaction = {
         note: new Uint8Array(Buffer.from('Hello Pera')),
     } as unknown as PeraDisplayableTransaction
+
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
 
     it('renders view note button when note is present', () => {
         const { getByRole } = render(
@@ -45,21 +52,13 @@ describe('TransactionNoteRow', () => {
         )
     })
 
-    it('calls open modal when button is pressed', () => {
-        const open = vi.fn()
-        vi.mocked(useModalState).mockReturnValue({
-            isOpen: false,
-            open,
-            close: vi.fn(),
-            toggle: vi.fn(),
-        })
-
+    it('opens the bottom sheet when button is pressed', () => {
         const { getByRole } = render(
             <TransactionNoteRow transaction={mockTransaction} />,
         )
 
         fireEvent.click(getByRole('button'))
-        expect(open).toHaveBeenCalled()
+        expect(mockRequestBottomSheet).toHaveBeenCalled()
     })
 
     it('renders null when note is missing', () => {

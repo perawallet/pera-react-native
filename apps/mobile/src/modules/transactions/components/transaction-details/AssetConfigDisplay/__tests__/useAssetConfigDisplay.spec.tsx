@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
+import { renderHook } from '@testing-library/react'
 import { useAssetConfigDisplay } from '../useAssetConfigDisplay'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { Decimal } from 'decimal.js'
@@ -78,35 +78,6 @@ describe('useAssetConfigDisplay', () => {
         const { result } = renderHook(() => useAssetConfigDisplay(baseTx))
 
         expect(result.current.metadataHash).toBeUndefined()
-    })
-
-    it('manages modal state for metadata hash details', () => {
-        const tx = {
-            ...baseTx,
-            assetConfigTransaction: {
-                ...baseTx.assetConfigTransaction,
-                params: {
-                    ...baseTx.assetConfigTransaction!.params,
-                    metadataHash: Buffer.from('hash'),
-                },
-            },
-        } as unknown as PeraDisplayableTransaction
-
-        const { result } = renderHook(() => useAssetConfigDisplay(tx))
-
-        expect(result.current.isMetadataHashDetailsModalVisible).toBe(false)
-
-        act(() => {
-            result.current.openMetadataHashDetailsModal()
-        })
-
-        expect(result.current.isMetadataHashDetailsModalVisible).toBe(true)
-
-        act(() => {
-            result.current.closeMetadataHashDetailsModal()
-        })
-
-        expect(result.current.isMetadataHashDetailsModalVisible).toBe(false)
     })
 
     it('sets showWarnings to true when transaction has no id', () => {

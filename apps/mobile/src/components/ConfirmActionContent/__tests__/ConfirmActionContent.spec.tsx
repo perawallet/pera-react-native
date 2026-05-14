@@ -17,6 +17,7 @@ import {
     BottomSheetIdContext,
     useBottomSheetStore,
 } from '@modules/bottom-sheet'
+import { PWText } from '@components/core'
 import { ConfirmActionContent } from '../ConfirmActionContent'
 
 const baseProps = {
@@ -69,5 +70,23 @@ describe('ConfirmActionContent', () => {
 
         useBottomSheetStore.getState().remove('sheet-1')
         await expect(promise).resolves.toBeUndefined()
+    })
+
+    it('renders a ReactNode message', () => {
+        render(
+            <BottomSheetIdContext.Provider value='sheet-1'>
+                <ConfirmActionContent
+                    {...baseProps}
+                    message={
+                        <>
+                            <PWText>Line one</PWText>
+                            <PWText>Line two</PWText>
+                        </>
+                    }
+                />
+            </BottomSheetIdContext.Provider>,
+        )
+        expect(screen.getByText('Line one')).toBeTruthy()
+        expect(screen.getByText('Line two')).toBeTruthy()
     })
 })

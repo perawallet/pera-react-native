@@ -11,4 +11,12 @@
  */
 
 export { PinEntry, type PinEntryProps } from './components/PinEntry'
-export { PinEditView } from './components/PinEditView'
+export {
+    PinEditView,
+    type PinEditViewProps,
+    type PinEntryMode,
+} from './components/PinEditView'
+export {
+    PinEditContent,
+    type PinEditContentProps,
+} from './components/PinEditContent'

@@ -28,7 +28,6 @@ import { Decimal } from 'decimal.js'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { useStyles } from './styles'
-import { AddNotePanel } from '../../../components/send-funds/AddNotePanel'
 import { ALGO_ASSET, toWholeUnits } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
 import { LoadingView } from '@components/LoadingView'
@@ -50,9 +49,7 @@ export const TransactionConfirmationScreen = () => {
         currentBalance,
         currentBalancePending,
         note,
-        noteOpen,
         openNote,
-        closeNote,
         handleConfirm,
         isCollectible,
         isReady,
@@ -193,12 +190,6 @@ export const TransactionConfirmationScreen = () => {
                         isLoading={isRecipientInfoPending}
                     />
                 </PWView>
-
-                <AddNotePanel
-                    isVisible={noteOpen}
-                    onClose={closeNote}
-                    onDismiss={closeNote}
-                />
             </PWScrollView>
         </PWView>
     )

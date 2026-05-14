@@ -12,19 +12,14 @@
 
 import React from 'react'
 import { type Optional } from '@perawallet/wallet-core-shared'
-import { render, screen } from '@test-utils/render'
+import { render, screen, waitFor } from '@test-utils/render'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { SwapScreen } from '../SwapScreen'
 
 const mockUseSwapIntroduction = vi.hoisted(() => vi.fn())
-const mockUseModalState = vi.hoisted(() =>
-    vi.fn((initialOpen = false) => ({
-        isOpen: initialOpen,
-        open: vi.fn(),
-        close: vi.fn(),
-        toggle: vi.fn(),
-    })),
-)
+const { mockRequestBottomSheet } = vi.hoisted(() => ({
+    mockRequestBottomSheet: vi.fn(),
+}))
 
 const mockSetFromAsset = vi.hoisted(() => vi.fn())
 const mockSetToAsset = vi.hoisted(() => vi.fn())
@@ -68,26 +63,18 @@ vi.mock('@modules/swap/hooks', () => ({
     useSwapIntroduction: mockUseSwapIntroduction,
 }))
 
-vi.mock('@hooks/useModalState', () => ({
-    useModalState: mockUseModalState,
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({
+        request: mockRequestBottomSheet,
+        requestByType: vi.fn(),
+        dismiss: vi.fn(),
+        dismissAll: vi.fn(),
+    }),
 }))
 
 vi.mock('@modules/swap/components', () => ({
     SwapForm: () => <div data-testid='swap-form' />,
-    SwapIntroduction: ({
-        isVisible,
-        onStartSwapping,
-    }: {
-        isVisible: boolean
-        onStartSwapping: () => void
-        onClose: () => void
-    }) =>
-        isVisible ? (
-            <button
-                data-testid='swap-introduction'
-                onClick={onStartSwapping}
-            />
-        ) : null,
+    SwapIntroductionContent: () => null,
 }))
 
 vi.mock('@modules/accounts/components/AccountSelection', () => ({
@@ -98,9 +85,10 @@ describe('SwapScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockRouteParams.current = undefined
+        mockRequestBottomSheet.mockResolvedValue(undefined)
     })
 
-    it('shows introduction when user has not seen it', () => {
+    it('requests the introduction sheet when user has not seen it', async () => {
         mockUseSwapIntroduction.mockReturnValue({
             isIntroductionSeen: false,
             markIntroductionSeen: vi.fn(),
@@ -108,7 +96,9 @@ describe('SwapScreen', () => {
 
         render(<SwapScreen />)
 
-        expect(screen.getByTestId('swap-introduction')).toBeTruthy()
+        await waitFor(() => {
+            expect(mockRequestBottomSheet).toHaveBeenCalled()
+        })
     })
 
     it('renders account selection', () => {
@@ -122,7 +112,7 @@ describe('SwapScreen', () => {
         expect(screen.getByTestId('account-selection')).toBeTruthy()
     })
 
-    it('shows swap form when user has already seen introduction', () => {
+    it('does not request the introduction sheet when user has already seen it', () => {
         mockUseSwapIntroduction.mockReturnValue({
             isIntroductionSeen: true,
             markIntroductionSeen: vi.fn(),
@@ -130,7 +120,7 @@ describe('SwapScreen', () => {
 
         render(<SwapScreen />)
 
-        expect(screen.queryByTestId('swap-introduction')).toBeNull()
+        expect(mockRequestBottomSheet).not.toHaveBeenCalled()
         expect(screen.getByTestId('swap-form')).toBeTruthy()
     })
 

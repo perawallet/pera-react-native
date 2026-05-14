@@ -10,23 +10,16 @@
  limitations under the License
  */
 
-import {
-    PWBottomSheet,
-    PWDivider,
-    PWIcon,
-    PWRoundIcon,
-    PWText,
-    PWToolbar,
-    PWView,
-} from '@components/core'
+import { useCallback } from 'react'
+import { PWDivider, PWView } from '@components/core'
+import { PanelButton } from '@components/PanelButton'
+import { useBottomSheet } from '@modules/bottom-sheet'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useTheme } from '@rneui/themed'
-import { LONG_ADDRESS_FORMAT } from '@constants/ui'
-import { PanelButton } from '@components/PanelButton'
 import { useTransactionWarnings } from './useTransactionWarnings'
+import { TransactionWarningsContent } from './TransactionWarningsContent'
 
 export type TransactionWarningsProps = {
     transaction: PeraDisplayableTransaction
@@ -38,9 +31,16 @@ export const TransactionWarnings = ({
     const styles = useStyles()
     const { t } = useLanguage()
     const { theme } = useTheme()
+    const { request: requestBottomSheet } = useBottomSheet()
 
-    const { warningCount, warningsByType, isModalOpen, openModal, closeModal } =
-        useTransactionWarnings(transaction)
+    const { warningCount } = useTransactionWarnings(transaction)
+
+    const handleOpen = useCallback(() => {
+        void requestBottomSheet({
+            contents: <TransactionWarningsContent transaction={transaction} />,
+            options: { size: 'auto', enablePanDownToClose: true },
+        })
+    }, [requestBottomSheet, transaction])
 
     if (warningCount === 0) {
         return null
@@ -54,7 +54,7 @@ export const TransactionWarnings = ({
             />
             <PWView style={styles.warningContainer}>
                 <PanelButton
-                    onPress={openModal}
+                    onPress={handleOpen}
                     title={t('transactions.warning.title')}
                     titleWeight='h4'
                     description={t('transactions.warning.title_cta', {
@@ -64,117 +64,6 @@ export const TransactionWarnings = ({
                     rightIcon='chevron-right'
                     variant='error'
                 />
-
-                <PWBottomSheet
-                    isVisible={isModalOpen}
-                    onBackdropPress={closeModal}
-                    enablePanDownToClose
-                >
-                    <PWView style={styles.sheetContainer}>
-                        <PWToolbar
-                            left={
-                                <PWIcon
-                                    name='cross'
-                                    variant='secondary'
-                                    onPress={closeModal}
-                                />
-                            }
-                            center={
-                                <PWText variant='h4'>
-                                    {t('transactions.warning.title', {
-                                        count: warningCount,
-                                    })}
-                                </PWText>
-                            }
-                            paddingStyle='dense'
-                        />
-
-                        {warningsByType.close.map((warning, index) => (
-                            <PWView
-                                key={`close-${warning.senderAddress}`}
-                                style={styles.warningSection}
-                            >
-                                {index > 0 && (
-                                    <PWDivider
-                                        style={styles.divider}
-                                        color={theme.colors.layerGray}
-                                    />
-                                )}
-                                <PWView
-                                    style={styles.warningSectionIconContainer}
-                                >
-                                    <PWRoundIcon
-                                        icon='trash'
-                                        size='md'
-                                        variant='secondary'
-                                    />
-                                    <PWText style={styles.warningMessage}>
-                                        {t(
-                                            'transactions.warning.close_warning',
-                                            {
-                                                address:
-                                                    truncateAlgorandAddress(
-                                                        warning.targetAddress,
-                                                        LONG_ADDRESS_FORMAT,
-                                                    ),
-                                            },
-                                        )}
-                                    </PWText>
-                                </PWView>
-                            </PWView>
-                        ))}
-                        {warningsByType.close.length > 0 &&
-                            warningsByType.rekey.length > 0 && (
-                                <PWDivider
-                                    style={styles.divider}
-                                    color={theme.colors.layerGray}
-                                />
-                            )}
-                        {warningsByType.rekey.map((warning, index) => (
-                            <PWView
-                                key={`rekey-${warning.senderAddress}`}
-                                style={styles.warningSection}
-                            >
-                                {index > 0 && (
-                                    <PWDivider
-                                        style={styles.divider}
-                                        color={theme.colors.layerGray}
-                                    />
-                                )}
-                                <PWView
-                                    style={styles.warningSectionIconContainer}
-                                >
-                                    <PWRoundIcon
-                                        icon='rekey'
-                                        size='md'
-                                        variant='secondary'
-                                    />
-                                    <PWView
-                                        style={styles.warningMessageContainer}
-                                    >
-                                        <PWText style={styles.warningMessage}>
-                                            {t(
-                                                'transactions.warning.rekey_warning',
-                                                {
-                                                    address:
-                                                        truncateAlgorandAddress(
-                                                            warning.targetAddress,
-                                                            LONG_ADDRESS_FORMAT,
-                                                        ),
-                                                },
-                                            )}
-                                        </PWText>
-                                        <PWText variant='h4'>
-                                            {t(
-                                                'transactions.warning.rekey_warning_bold',
-                                            )}
-                                        </PWText>
-                                    </PWView>
-                                </PWView>
-                            </PWView>
-                        ))}
-                    </PWView>
-                </PWBottomSheet>
             </PWView>
         </>
     )

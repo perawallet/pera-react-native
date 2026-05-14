@@ -25,6 +25,35 @@ vi.mock('@perawallet/wallet-core-settings', () => ({
     usePreferences: vi.fn(),
 }))
 
+const { mockRequestBottomSheet } = vi.hoisted(() => ({
+    mockRequestBottomSheet: vi.fn(),
+}))
+
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({
+        request: mockRequestBottomSheet,
+        requestByType: vi.fn(),
+        dismiss: vi.fn(),
+        dismissAll: vi.fn(),
+    }),
+}))
+
+vi.mock('@modules/security', () => ({
+    PinEditContent: () => null,
+}))
+
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({
+        t: (key: string) => key,
+    }),
+}))
+
+vi.mock('@hooks/useToast', () => ({
+    useToast: () => ({
+        showToast: vi.fn(),
+    }),
+}))
+
 describe('useSettingsSecurityScreen', () => {
     const mockCheckPinEnabled = vi.fn()
     const mockSavePin = vi.fn()
@@ -51,6 +80,7 @@ describe('useSettingsSecurityScreen', () => {
             setPreference: mockSetPreference,
             getPreference: mockGetPreference,
         })
+        mockRequestBottomSheet.mockResolvedValue(undefined)
     })
 
     it('should return initial state', async () => {
@@ -62,7 +92,6 @@ describe('useSettingsSecurityScreen', () => {
 
         expect(result.current.isBiometricEnabled).toBe(false)
         expect(result.current.isBiometricsAvailable).toBe(false)
-        expect(result.current.pinViewMode).toBeNull()
     })
 
     it('should check pin settings on mount', async () => {
@@ -110,32 +139,52 @@ describe('useSettingsSecurityScreen', () => {
     })
 
     describe('handlePinToggle', () => {
-        it('should set pinViewMode to setup when enabling PIN', async () => {
+        it('opens the PIN sheet when enabling PIN and persists on success', async () => {
+            mockRequestBottomSheet.mockResolvedValue(true)
             const { result } = renderHook(() => useSettingsSecurityScreen())
 
             await waitFor(() => {
                 expect(mockCheckPinEnabled).toHaveBeenCalled()
             })
 
-            act(() => {
-                result.current.handlePinToggle(true)
+            await act(async () => {
+                await result.current.handlePinToggle(true)
             })
 
-            expect(result.current.pinViewMode).toBe('setup')
+            expect(mockRequestBottomSheet).toHaveBeenCalled()
+            expect(mockSavePin).not.toHaveBeenCalled()
+            expect(mockSetPreference).toHaveBeenCalled()
         })
 
-        it('should set pinViewMode to verify when disabling PIN', async () => {
+        it('clears the saved PIN when disabling PIN and the sheet resolves with success', async () => {
+            mockRequestBottomSheet.mockResolvedValue(true)
             const { result } = renderHook(() => useSettingsSecurityScreen())
 
             await waitFor(() => {
                 expect(mockCheckPinEnabled).toHaveBeenCalled()
             })
 
-            act(() => {
-                result.current.handlePinToggle(false)
+            await act(async () => {
+                await result.current.handlePinToggle(false)
             })
 
-            expect(result.current.pinViewMode).toBe('verify')
+            expect(mockSavePin).toHaveBeenCalledWith(null)
+        })
+
+        it('does nothing when the sheet is dismissed', async () => {
+            mockRequestBottomSheet.mockResolvedValue(undefined)
+            const { result } = renderHook(() => useSettingsSecurityScreen())
+
+            await waitFor(() => {
+                expect(mockCheckPinEnabled).toHaveBeenCalled()
+            })
+
+            await act(async () => {
+                await result.current.handlePinToggle(true)
+            })
+
+            expect(mockSavePin).not.toHaveBeenCalled()
+            expect(mockSetPreference).not.toHaveBeenCalled()
         })
     })
 
@@ -223,102 +272,20 @@ describe('useSettingsSecurityScreen', () => {
     })
 
     describe('handleChangePinPress', () => {
-        it('should set pinViewMode to change_old', async () => {
+        it('opens the PIN sheet in change_old mode', async () => {
+            mockRequestBottomSheet.mockResolvedValue(true)
             const { result } = renderHook(() => useSettingsSecurityScreen())
 
             await waitFor(() => {
                 expect(mockCheckPinEnabled).toHaveBeenCalled()
-            })
-
-            act(() => {
-                result.current.handleChangePinPress()
-            })
-
-            expect(result.current.pinViewMode).toBe('change_old')
-        })
-    })
-
-    describe('pinSetSuccess', () => {
-        it('should clear PIN when pinViewMode is verify', async () => {
-            const { result } = renderHook(() => useSettingsSecurityScreen())
-
-            await waitFor(() => {
-                expect(mockCheckPinEnabled).toHaveBeenCalled()
-            })
-
-            act(() => {
-                result.current.handlePinToggle(false)
-            })
-
-            expect(result.current.pinViewMode).toBe('verify')
-
-            await act(async () => {
-                result.current.pinSetSuccess()
-            })
-
-            expect(mockSavePin).toHaveBeenCalledWith(null)
-            expect(result.current.pinViewMode).toBeNull()
-        })
-
-        it('should not clear PIN when pinViewMode is setup', async () => {
-            const { result } = renderHook(() => useSettingsSecurityScreen())
-
-            await waitFor(() => {
-                expect(mockCheckPinEnabled).toHaveBeenCalled()
-            })
-
-            act(() => {
-                result.current.handlePinToggle(true)
-            })
-
-            expect(result.current.pinViewMode).toBe('setup')
-
-            await act(async () => {
-                result.current.pinSetSuccess()
-            })
-
-            expect(mockSavePin).not.toHaveBeenCalled()
-            expect(result.current.pinViewMode).toBeNull()
-        })
-
-        it('should set preference and update settings', async () => {
-            const { result } = renderHook(() => useSettingsSecurityScreen())
-
-            await waitFor(() => {
-                expect(mockCheckPinEnabled).toHaveBeenCalled()
-            })
-
-            act(() => {
-                result.current.handlePinToggle(true)
             })
 
             await act(async () => {
-                result.current.pinSetSuccess()
+                await result.current.handleChangePinPress()
             })
 
+            expect(mockRequestBottomSheet).toHaveBeenCalled()
             expect(mockSetPreference).toHaveBeenCalled()
-        })
-    })
-
-    describe('clearPinViewMode', () => {
-        it('should set pinViewMode to null', async () => {
-            const { result } = renderHook(() => useSettingsSecurityScreen())
-
-            await waitFor(() => {
-                expect(mockCheckPinEnabled).toHaveBeenCalled()
-            })
-
-            act(() => {
-                result.current.handlePinToggle(true)
-            })
-
-            expect(result.current.pinViewMode).toBe('setup')
-
-            act(() => {
-                result.current.clearPinViewMode()
-            })
-
-            expect(result.current.pinViewMode).toBeNull()
         })
     })
 
