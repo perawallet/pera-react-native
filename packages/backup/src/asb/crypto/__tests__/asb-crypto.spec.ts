@@ -11,8 +11,8 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { hmac } from '@noble/hashes/hmac'
-import { sha256 } from '@noble/hashes/sha2'
+import { hmac } from '@noble/hashes/hmac.js'
+import { sha256 } from '@noble/hashes/sha2.js'
 import nacl from 'tweetnacl'
 import {
     asbSecretboxOpen,

@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { hmac } from '@noble/hashes/hmac'
-import { sha256 } from '@noble/hashes/sha2'
+import { hmac } from '@noble/hashes/hmac.js'
+import { sha256 } from '@noble/hashes/sha2.js'
 import { mnemonicToEntropy } from '@scure/bip39'
 // The `.js` suffix matches how `packages/kms` imports the same wordlist;
 // Vite's library build excludes the wordlist entry without it and the

@@ -11,8 +11,8 @@
  */
 
 import nacl from 'tweetnacl'
-import { hmac } from '@noble/hashes/hmac'
-import { sha256 } from '@noble/hashes/sha2'
+import { hmac } from '@noble/hashes/hmac.js'
+import { sha256 } from '@noble/hashes/sha2.js'
 import { mnemonicToEntropy } from '@scure/bip39'
 import { wordlist } from '@scure/bip39/wordlists/english.js'
 import { seedFromMnemonic } from '@algorandfoundation/algokit-utils/algo25'
