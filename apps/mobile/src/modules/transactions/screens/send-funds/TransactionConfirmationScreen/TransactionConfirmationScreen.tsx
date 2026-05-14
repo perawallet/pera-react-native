@@ -145,10 +145,8 @@ export const TransactionConfirmationScreen = () => {
                         )}
                     </KeyValueRow>
                 )}
-                <KeyValueRow
-                    title={t('send_funds.confirmation.note')}
-                    style={styles.noteRow}
-                >
+                <PWDivider />
+                <KeyValueRow title={t('send_funds.confirmation.note')}>
                     {!!note && <PWText>{note}</PWText>}
                     {!!note && (
                         <PWTouchableOpacity
