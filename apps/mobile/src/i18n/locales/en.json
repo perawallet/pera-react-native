@@ -1074,6 +1074,48 @@
                 "done": "Done"
             }
         },
+        "pera_web_import": {
+            "info": {
+                "title": "Import from Pera Web",
+                "body": "Open the Pera Web Wallet on your computer, go to Transfer Accounts, select the accounts you want to import, and scan the QR code that's generated.",
+                "scan_button": "Scan QR code",
+                "scanner_title": "Scan the QR code\non Pera Web",
+                "invalid_qr_title": "QR code could not be read"
+            },
+            "loading": {
+                "title": "Importing accounts from Pera Web…",
+                "fetch_failed_title": "Could not load backup",
+                "decrypt_failed_title": "Backup could not be unlocked"
+            },
+            "result": {
+                "success_title": "Accounts imported",
+                "success_body_one": "{{count}} account was added to your wallet.",
+                "success_body_other": "{{count}} accounts were added to your wallet.",
+                "success_body": "{{count}} accounts were added to your wallet.",
+                "partial_title": "Some accounts imported",
+                "partial_body": "Some accounts from the backup could not be imported. Try generating a new QR code on Pera Web.",
+                "nothing_new_title": "Nothing new to import",
+                "nothing_new_body": "Every account from the backup is already in this wallet.",
+                "failed_title": "Import failed",
+                "failed_body": "No accounts could be imported from the backup.",
+                "imported_count_one": "{{count}} account imported",
+                "imported_count_other": "{{count}} accounts imported",
+                "skipped_count_one": "{{count}} account already in this wallet",
+                "skipped_count_other": "{{count}} accounts already in this wallet",
+                "failed_count_one": "{{count}} account could not be imported",
+                "failed_count_other": "{{count}} accounts could not be imported",
+                "done": "Done"
+            },
+            "errors": {
+                "malformed_qr": "This isn't a valid Pera Web QR code.",
+                "unsupported_version": "This QR code uses an unsupported version. Update Pera Web and try again.",
+                "unsupported_action": "This QR code is not an import code.",
+                "empty_content": "The backup is empty or has expired. Generate a new QR code on Pera Web.",
+                "decryption_failed": "We couldn't unlock this backup. Generate a new QR code on Pera Web and try again.",
+                "malformed_payload": "The backup did not contain any importable accounts.",
+                "network_failed": "We couldn't reach Pera Web. Check your connection and try again."
+            }
+        },
         "select_hd_wallet": {
             "title": "Select Universal Wallet",
             "description": "Create your new account under a Universal Wallet you already have",

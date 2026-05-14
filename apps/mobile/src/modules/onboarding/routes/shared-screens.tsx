@@ -29,6 +29,9 @@ import { AsbImportBackupScreen } from '@modules/onboarding/screens/AsbImportBack
 import { AsbImportKeyScreen } from '@modules/onboarding/screens/AsbImportKeyScreen'
 import { AsbImportSelectAccountsScreen } from '@modules/onboarding/screens/AsbImportSelectAccountsScreen'
 import { AsbImportResultScreen } from '@modules/onboarding/screens/AsbImportResultScreen'
+import { PeraWebImportInfoScreen } from '@modules/onboarding/screens/PeraWebImportInfoScreen'
+import { PeraWebImportLoadingScreen } from '@modules/onboarding/screens/PeraWebImportLoadingScreen'
+import { PeraWebImportResultScreen } from '@modules/onboarding/screens/PeraWebImportResultScreen'
 import {
     LedgerInstructionsScreen,
     LedgerPairScreen,
@@ -102,6 +105,15 @@ const AsbImportSelectAccountsScreenWithErrorBoundary = withAccountErrorBoundary(
 const AsbImportResultScreenWithErrorBoundary = withAccountErrorBoundary(
     AsbImportResultScreen,
 )
+const PeraWebImportInfoScreenWithErrorBoundary = withAccountErrorBoundary(
+    PeraWebImportInfoScreen,
+)
+const PeraWebImportLoadingScreenWithErrorBoundary = withAccountErrorBoundary(
+    PeraWebImportLoadingScreen,
+)
+const PeraWebImportResultScreenWithErrorBoundary = withAccountErrorBoundary(
+    PeraWebImportResultScreen,
+)
 
 /**
  * Names of every screen registered by `renderImportFlowScreens`. Used by the
@@ -127,6 +139,9 @@ export const IMPORT_FLOW_SCREEN_NAMES = [
     'AsbImportKey',
     'AsbImportSelectAccounts',
     'AsbImportResult',
+    'PeraWebImportInfo',
+    'PeraWebImportLoading',
+    'PeraWebImportResult',
 ] as const satisfies ReadonlyArray<keyof ImportFlowParamList>
 
 export type ImportFlowStack = ReturnType<
@@ -243,6 +258,23 @@ export const renderImportFlowScreens = (
             options={{ headerShown: false }}
             layout={fullScreenLayout}
             component={AsbImportResultScreenWithErrorBoundary}
+        />
+        <Stack.Screen
+            name='PeraWebImportInfo'
+            options={{ title: '' }}
+            component={PeraWebImportInfoScreenWithErrorBoundary}
+        />
+        <Stack.Screen
+            name='PeraWebImportLoading'
+            options={{ headerShown: false }}
+            layout={fullScreenLayout}
+            component={PeraWebImportLoadingScreenWithErrorBoundary}
+        />
+        <Stack.Screen
+            name='PeraWebImportResult'
+            options={{ headerShown: false }}
+            layout={fullScreenLayout}
+            component={PeraWebImportResultScreenWithErrorBoundary}
         />
     </>
 )

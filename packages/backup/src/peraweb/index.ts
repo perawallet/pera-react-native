@@ -10,13 +10,12 @@
  limitations under the License
  */
 
-// Umbrella package for all wallet backup concerns. Subdomains:
-//   - mnemonic: "has the user written down their phrase?" prompt state
-//   - asb:      Algorand Secure Backup (ARC-35) recovery-only support
-//   - peraweb:  Pera Web "Transfer Accounts" QR-based import
-//   - shared:   primitives common to ASB + Pera Web (secretbox, seed→
-//               mnemonic import, private_key decoder)
-export * from './asb'
-export * from './mnemonic'
-export * from './peraweb'
-export * from './shared'
+// Pera Web ("Transfer Accounts") import — recovery-only restore from a QR
+// scanned on web.perawallet.app. Mirrors the ASB submodule in shape.
+// Crypto primitives (secretbox open) live in `../shared/` since they're
+// identical to the ones used by ASB.
+export * from './api'
+export * from './errors'
+export * from './hooks'
+export * from './models'
+export * from './parsers'

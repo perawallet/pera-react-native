@@ -11,40 +11,17 @@
  */
 
 import { useCallback } from 'react'
-import { mnemonicFromSeed } from '@algorandfoundation/algokit-utils/algo25'
 import {
     AccountTypes,
     DuplicateAccountError,
     useAccountsStore,
-    useImportAccount,
-    useUpdateAccount,
     type WalletAccount,
     type WatchAccount,
 } from '@perawallet/wallet-core-accounts'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
-import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
-import { useMarkMnemonicBackupComplete } from '../../mnemonic'
+import { useImportAlgo25FromSeed } from '../../shared'
 import { AsbAccountKind, type AsbBackupAccount } from '../models'
-
-// Single accounts (= algo25) encode the 64-byte tweetnacl secret key
-// (seed || pubKey). Take the seed half and let the KMS rebuild the keypair
-// through the regular import path so duplicate detection, keystore commits,
-// and backend sync stay in one place.
-const ALGO25_SEED_LENGTH = 32
-
-/**
- * Return a *copy* of the first 32 bytes of `privateKey`. A `subarray` would
- * share memory with the caller's buffer, so zeroing our local view post-import
- * would wipe `account.privateKey` underneath them. The slice cost is 32 bytes
- * and we get a buffer we can wipe freely in `finally`.
- */
-const seedFromAsbPrivateKey = (privateKey: Uint8Array): Uint8Array => {
-    if (privateKey.length < ALGO25_SEED_LENGTH) {
-        throw new Error('ASB single-account private_key shorter than 32 bytes')
-    }
-    return privateKey.slice(0, ALGO25_SEED_LENGTH)
-}
 
 export type UseAsbAccountImportResult = {
     importAccount: (account: AsbBackupAccount) => Promise<WalletAccount>
@@ -53,10 +30,9 @@ export type UseAsbAccountImportResult = {
 /**
  * Import a single account decrypted from an ARC-35 backup into the wallet.
  *
- * - `single` (algo25): rebuild a 25-word Algorand mnemonic from the seed and
- *   feed it through the standard `useImportAccount` so duplicate detection
- *   and key persistence go through one code path. The imported account is
- *   automatically marked as backed-up — by definition it was, into ASB.
+ * - `single` (algo25): delegates to `useImportAlgo25FromSeed`, which
+ *   rebuilds a 25-word mnemonic from the seed and feeds it through the
+ *   standard import path. Shared with the Pera Web flow.
  * - `watch`: persist directly via the accounts store, mirroring
  *   `useWatchAccountScreen`.
  *
@@ -65,9 +41,7 @@ export type UseAsbAccountImportResult = {
  * is re-thrown for the caller to bucket separately.
  */
 export const useAsbAccountImport = (): UseAsbAccountImportResult => {
-    const importAlgo25 = useImportAccount()
-    const updateAccount = useUpdateAccount()
-    const markBackupComplete = useMarkMnemonicBackupComplete()
+    const { importFromSeed } = useImportAlgo25FromSeed()
     // Watch-account writes read+write the accounts store inside a loop the
     // caller drives (see `useAsbImportSelectAccountsScreen.handleContinue`).
     // Using the hook-subscribed `accounts` would close over the render's
@@ -78,51 +52,17 @@ export const useAsbAccountImport = (): UseAsbAccountImportResult => {
 
     const importAccount = useCallback(
         async (account: AsbBackupAccount): Promise<WalletAccount> => {
-            if (!isValidAlgorandAddress(account.address)) {
-                throw new Error(`Invalid Algorand address: ${account.address}`)
-            }
-
             if (account.kind === AsbAccountKind.Single) {
                 if (!account.privateKey) {
                     throw new Error(
                         'ASB single account missing private_key after parse',
                     )
                 }
-
-                // Take a copy of the seed so we can zero our local buffer
-                // without disturbing `account.privateKey` (the caller still
-                // owns it). The 25-word `mnemonic` string is unfortunately
-                // unwipable — it lives on the JS heap until GC.
-                const seed = seedFromAsbPrivateKey(account.privateKey)
-                try {
-                    const mnemonic = mnemonicFromSeed(seed)
-                    const imported = await importAlgo25({
-                        mnemonic,
-                        type: 'algo25',
-                    })
-
-                    // `useImportAccount` returns `ImportHDPendingResult` only
-                    // for hdWallet imports. Algo25 imports always return a
-                    // WalletAccount.
-                    if (!('address' in imported)) {
-                        throw new Error(
-                            'Unexpected non-account result for algo25 ASB import',
-                        )
-                    }
-
-                    const renamed: WalletAccount = account.name
-                        ? { ...imported, name: account.name }
-                        : imported
-
-                    if (account.name) {
-                        updateAccount(renamed)
-                    }
-
-                    markBackupComplete(renamed)
-                    return renamed
-                } finally {
-                    zeroBytes(seed)
-                }
+                return importFromSeed({
+                    address: account.address,
+                    privateKey: account.privateKey,
+                    name: account.name,
+                })
             }
 
             // Watch path: no KMS interaction, just append to the store.
@@ -130,6 +70,9 @@ export const useAsbAccountImport = (): UseAsbAccountImportResult => {
             // Read from the live store rather than a hook-snapshot — the
             // caller imports accounts in a loop and we must see writes from
             // the previous iteration.
+            if (!isValidAlgorandAddress(account.address)) {
+                throw new Error(`Invalid Algorand address: ${account.address}`)
+            }
             const currentAccounts = useAccountsStore.getState().accounts
             const isDuplicate = currentAccounts.some(
                 a => a.address === account.address,
@@ -148,7 +91,7 @@ export const useAsbAccountImport = (): UseAsbAccountImportResult => {
             setAccounts([...currentAccounts, newWatch])
             return newWatch
         },
-        [importAlgo25, updateAccount, markBackupComplete, setAccounts],
+        [importFromSeed, setAccounts],
     )
 
     return { importAccount }
