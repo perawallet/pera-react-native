@@ -465,7 +465,7 @@ describe('Flow: Onboarding → Import from Algorand Secure Backup', () => {
     )
 
     it(
-        'Given the user successfully imports an account, the flow store is reset (decrypted private keys are wiped)',
+        'Given the user successfully imports an account, decrypted private keys are zeroed in place and the flow store is empty by the time the result screen renders',
         async () => {
             vi.mocked(File.pickFileAsync).mockResolvedValueOnce(
                 fakeFileFor(buildSingleAccountAsbBackup()),
@@ -489,17 +489,16 @@ describe('Flow: Onboarding → Import from Algorand Secure Backup', () => {
                 screen.getByTestId('asb_import_key_continue_button'),
             )
 
-            // After decrypt+select+import, the payload sits in the flow
-            // store; tap Done on the result screen to fire `reset()`.
             await waitForButtonEnabled('asb_import_select_continue_button')
 
             // Capture the decrypted private-key buffer before we kick off
-            // the import + reset. The flow store hands us back the same
-            // Uint8Array reference, so we can check it was zeroed in place.
-            // We duck-type the check on `.length` + `.some` rather than
-            // `instanceof Uint8Array` — under jsdom, base64-js's output may
-            // be from a different Uint8Array realm than the test's, which
-            // breaks the instanceof check even though the bytes are correct.
+            // the import. The flow store hands us back the same Uint8Array
+            // reference, so we can check it was zeroed in place by the
+            // import loop's `finally`. We duck-type on `.length` + `.some`
+            // rather than `instanceof Uint8Array` — under jsdom, base64-js's
+            // output may be from a different Uint8Array realm than the
+            // test's, which breaks the instanceof check even though the
+            // bytes are correct.
             const payload = useAsbImportFlowStore.getState().payload
             const privateKey = payload?.accounts[0]?.privateKey
             expect(privateKey).toBeTruthy()
@@ -518,17 +517,19 @@ describe('Flow: Onboarding → Import from Algorand Secure Backup', () => {
             )
 
             await waitFor(() => screen.getByTestId('asb_import_result'))
-            // Hit Done — the result screen's `handleDone` calls
-            // `useAsbImportFlowStore.reset()`, which zeros every
-            // `account.privateKey` before clearing state. The PWResultView
-            // mock renders the primary action under `${testID}-primary`.
-            fireEvent.click(screen.getByTestId('asb_import_result-primary'))
 
-            // Store reset + privateKey buffer wiped.
-            await waitFor(() => {
-                expect(useAsbImportFlowStore.getState().payload).toBeNull()
-            })
+            // By the time the result screen renders, the loop's per-iteration
+            // wipe + the pre-navigation reset() have already cleared every
+            // decrypted buffer — an attacker who heap-dumps after the flow
+            // completes finds nothing live, no matter when the user gets
+            // around to tapping Done.
+            expect(useAsbImportFlowStore.getState().payload).toBeNull()
             expect(privateKey!.every(b => b === 0)).toBe(true)
+
+            // Tapping Done after the cleanup is a no-op for the store and
+            // still exits the flow.
+            fireEvent.click(screen.getByTestId('asb_import_result-primary'))
+            expect(useAsbImportFlowStore.getState().payload).toBeNull()
         },
         SLOW_TEST_TIMEOUT_MS,
     )

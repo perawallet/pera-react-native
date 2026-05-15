@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { AppState } from 'react-native'
 import {
     DuplicateAccountError,
     useAllAccounts,
@@ -20,6 +21,7 @@ import {
     useAsbAccountImport,
     type AsbBackupAccount,
 } from '@perawallet/wallet-core-backup'
+import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
@@ -52,10 +54,43 @@ export const useAsbImportSelectAccountsScreen =
         const selected = useAsbImportFlowStore(state => state.selectedAddresses)
         const setSelection = useAsbImportFlowStore(state => state.setSelection)
         const toggle = useAsbImportFlowStore(state => state.toggleSelection)
+        const reset = useAsbImportFlowStore(state => state.reset)
         const allAccounts = useAllAccounts()
         const { importAccount } = useAsbAccountImport()
 
         const [isProcessing, setIsProcessing] = useState(false)
+
+        // Refs so the AppState handler and unmount cleanup see the latest
+        // values without re-subscribing on every render.
+        const resetRef = useRef(reset)
+        resetRef.current = reset
+        // Shared across handleContinue's loop and the AppState handler so
+        // a mid-flight background can break the loop before the next
+        // iteration reads a now-wiped privateKey buffer.
+        const cancelledRef = useRef(false)
+
+        // While the user is on this screen the decrypted ASB payload (one
+        // 32- or 64-byte private key per selected account) is live in the
+        // flow store. Backgrounding the app or popping the screen without
+        // confirming must wipe those buffers in place — Android can keep
+        // RN alive for minutes-to-hours, plenty of time for a heap dumper
+        // on a rooted device.
+        useEffect(() => {
+            cancelledRef.current = false
+            const appStateSub = AppState.addEventListener('change', state => {
+                if (state !== 'active') {
+                    cancelledRef.current = true
+                    resetRef.current()
+                }
+            })
+            return () => {
+                appStateSub.remove()
+                // Cleanup covers system back, navigator preemption, and
+                // force-quit recovery. After a successful import the loop
+                // already reset the store, so this is a no-op.
+                resetRef.current()
+            }
+        }, [])
 
         // Partition once per change. `unsupported` is dropped silently to
         // match the iOS/Android flows; surfacing invalid-address rows in the
@@ -123,6 +158,7 @@ export const useAsbImportSelectAccountsScreen =
                 )
 
                 for (const account of toImport) {
+                    if (cancelledRef.current) return
                     try {
                         await importAccount(account)
                         importedCount += 1
@@ -139,9 +175,23 @@ export const useAsbImportSelectAccountsScreen =
                             error: e,
                             address: account.address,
                         })
+                    } finally {
+                        // Wipe the seed bytes the instant we're done with
+                        // them. The shared importFromSeed hook operates on
+                        // its own slice(0, 32) copy, so zeroing the
+                        // original buffer here is safe and bounds the
+                        // in-memory window to a single iteration.
+                        zeroBytes(account.privateKey)
+                        account.privateKey = null
                     }
                 }
 
+                if (cancelledRef.current) return
+                // Wipe whatever the store still holds (the QR-equivalent
+                // envelope reference, plus any unselected accounts' seeds)
+                // before navigating. The result screen only needs aggregate
+                // counts, which are passed via route params.
+                resetRef.current()
                 navigation.replace('AsbImportResult', {
                     importedCount,
                     skippedDuplicateCount,
