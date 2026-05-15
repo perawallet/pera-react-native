@@ -103,7 +103,7 @@ export const MultisigInvitationDetailContent = ({
                             <AddressDisplay
                                 key={address}
                                 address={address}
-                                addressFormat='long'
+                                addressFormat='medium'
                                 iconName={participantIconName}
                                 showSecondaryAddress
                                 style={[

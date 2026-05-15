@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, type ReactNode } from 'react'
+import { type ReactNode } from 'react'
 import {
     PWDivider,
     PWIcon,
@@ -18,13 +18,8 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
-import {
-    getAccountDisplayName,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
-import { useClipboard } from '@hooks/useClipboard'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useAccountInfoCard } from './useAccountInfoCard'
@@ -34,6 +29,7 @@ import { ExpandablePanel } from '@components/ExpandablePanel'
 import { AccountStructureTree } from './AccountStructureTree'
 import { InfoButton, useInfoButton } from '@components/InfoButton'
 import { AccountTypeInfoContent } from './AccountTypeInfoContent'
+import { RekeyedToRow } from './RekeyedToRow'
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated'
 import { EXPANDABLE_PANEL_ANIMATION_DURATION } from '@constants/ui'
 
@@ -231,92 +227,3 @@ export const AccountInfoCard = ({
     )
 }
 
-type RekeyedToRowProps = {
-    authAccount?: WalletAccount
-    authAddress: string
-    onUndoRekey?: () => void
-    styles: ReturnType<typeof useStyles>
-    labelText: string
-    undoLabel: string
-}
-
-const RekeyedToRow = ({
-    authAccount,
-    authAddress,
-    onUndoRekey,
-    styles,
-    labelText,
-    undoLabel,
-}: RekeyedToRowProps) => {
-    const { copyToClipboard } = useClipboard()
-    const address = authAccount?.address ?? authAddress
-    const truncated = truncateAlgorandAddress(address)
-    const hasCustomName = !!authAccount?.name
-    const title = hasCustomName ? getAccountDisplayName(authAccount) : truncated
-
-    const handleCopyAddress = useCallback(() => {
-        void copyToClipboard(address)
-    }, [copyToClipboard, address])
-
-    return (
-        <PWView style={styles.rekeyedSection}>
-            <PWText
-                variant='body'
-                style={styles.labelText}
-            >
-                {labelText}
-            </PWText>
-            <PWView style={styles.rekeyedRow}>
-                {authAccount && (
-                    <AccountIcon
-                        account={authAccount}
-                        size='lg'
-                    />
-                )}
-                <PWTouchableOpacity
-                    style={styles.rekeyedAddressTouchable}
-                    onPress={handleCopyAddress}
-                    onLongPress={handleCopyAddress}
-                    hitSlop={8}
-                >
-                    <PWView style={styles.rekeyedRowText}>
-                        <PWText
-                            variant='bodyLarge'
-                            numberOfLines={1}
-                        >
-                            {title}
-                        </PWText>
-                        {hasCustomName && (
-                            <PWText
-                                variant='caption'
-                                style={styles.rekeyedSubtitle}
-                                numberOfLines={1}
-                            >
-                                {truncated}
-                            </PWText>
-                        )}
-                    </PWView>
-                    <PWIcon
-                        name='copy'
-                        size='sm'
-                        variant='secondary'
-                    />
-                </PWTouchableOpacity>
-                {onUndoRekey && (
-                    <PWTouchableOpacity
-                        style={styles.rekeyedUndo}
-                        onPress={onUndoRekey}
-                        hitSlop={8}
-                    >
-                        <PWText
-                            variant='bodySemibold'
-                            style={styles.rekeyedUndoLink}
-                        >
-                            {undoLabel}
-                        </PWText>
-                    </PWTouchableOpacity>
-                )}
-            </PWView>
-        </PWView>
-    )
-}
