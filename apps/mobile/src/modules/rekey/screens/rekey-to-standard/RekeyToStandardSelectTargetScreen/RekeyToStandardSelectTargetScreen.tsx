@@ -16,7 +16,7 @@ import { EmptyView } from '@components/EmptyView'
 import { ScreenHeader } from '@components/ScreenHeader'
 import { useBottomSafeAreaPadding } from '@hooks/useBottomSafeAreaPadding'
 import { useLanguage } from '@hooks/useLanguage'
-import { RekeyTargetRow } from '../../../shared'
+import { RekeyTargetRow } from '../../../components/RekeyTargetRow'
 import { useRekeyToStandardSelectTargetScreen } from './useRekeyToStandardSelectTargetScreen'
 import { useStyles } from './styles'
 

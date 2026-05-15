@@ -29,7 +29,7 @@ vi.mock('@hooks/useLanguage', () => ({
 }))
 
 import { useHandleRekeyError } from '../useHandleRekeyError'
-import { RekeyError } from '../../../shared/RekeyError'
+import { RekeyError } from '../../../utils/RekeyError'
 
 describe('useHandleRekeyError', () => {
     beforeEach(() => {

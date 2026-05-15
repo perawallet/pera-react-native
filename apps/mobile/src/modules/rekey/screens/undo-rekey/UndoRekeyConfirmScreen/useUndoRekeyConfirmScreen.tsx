@@ -22,10 +22,8 @@ import { config } from '@perawallet/wallet-core-config'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useWebView } from '@modules/webview'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import {
-    useRekeyTransactionFeeQuery,
-    useSubmitRekeyMutation,
-} from '../../../shared'
+import { useRekeyTransactionFeeQuery } from '../../../hooks/useRekeyTransactionFeeQuery'
+import { useSubmitRekeyMutation } from '../../../hooks/useSubmitRekeyMutation'
 import { useHandleRekeyError } from '../../../hooks/useHandleRekeyError'
 import { PreviousRekeyWarningSheet } from '../../../components/PreviousRekeyWarningSheet'
 

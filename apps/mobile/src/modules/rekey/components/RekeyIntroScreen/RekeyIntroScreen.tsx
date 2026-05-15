@@ -21,7 +21,7 @@ import {
 } from '@components/core'
 import { useBottomSafeAreaPadding } from '@hooks/useBottomSafeAreaPadding'
 import { useLanguage } from '@hooks/useLanguage'
-import { NumberedList } from '../../shared/components/NumberedList'
+import { NumberedList } from '../NumberedList'
 import { useRekeyIntroScreen } from './useRekeyIntroScreen'
 import { useStyles } from './styles'
 

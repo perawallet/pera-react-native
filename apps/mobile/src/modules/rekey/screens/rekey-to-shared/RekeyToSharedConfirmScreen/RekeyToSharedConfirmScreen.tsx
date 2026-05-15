@@ -26,8 +26,8 @@ import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { ScreenHeader } from '@components/ScreenHeader'
 import { useWebView } from '@modules/webview'
 import { useLanguage } from '@hooks/useLanguage'
-import { RekeySummaryRow } from '../../../shared/components/RekeySummaryRow'
-import { useConfirmScreenStyles } from '../../../shared/confirmScreenStyles'
+import { RekeySummaryRow } from '../../../components/RekeySummaryRow'
+import { useConfirmScreenStyles } from '../../../hooks/useConfirmScreenStyles'
 import { useRekeyToSharedConfirmScreen } from './useRekeyToSharedConfirmScreen'
 
 export const RekeyToSharedConfirmScreen = () => {

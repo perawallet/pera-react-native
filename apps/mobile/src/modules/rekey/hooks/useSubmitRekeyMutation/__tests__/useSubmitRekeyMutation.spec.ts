@@ -49,7 +49,7 @@ vi.mock('@hooks/useLanguage', () => ({
 }))
 
 import { useSubmitRekeyMutation } from '../useSubmitRekeyMutation'
-import { RekeyError } from '../RekeyError'
+import { RekeyError } from '../../../utils/RekeyError'
 
 type MockSignRequest = {
     txs: unknown[]

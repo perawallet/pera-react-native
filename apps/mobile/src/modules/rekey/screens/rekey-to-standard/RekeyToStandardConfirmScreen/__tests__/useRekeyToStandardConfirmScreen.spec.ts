@@ -82,23 +82,19 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 })
 
 const mockSubmitAsync = vi.fn()
-vi.mock('../../../../shared', async () => {
-    const actual =
-        await vi.importActual<typeof import('../../../../shared')>(
-            '../../../../shared',
-        )
-    return {
-        ...actual,
-        useSubmitRekeyMutation: () => ({
-            submitAsync: mockSubmitAsync,
-            isPending: false,
-        }),
-        useRekeyTransactionFeeQuery: () => ({
-            feeAlgos: new Decimal('0.001'),
-            isPending: false,
-        }),
-    }
-})
+vi.mock('../../../../hooks/useSubmitRekeyMutation', () => ({
+    useSubmitRekeyMutation: () => ({
+        submitAsync: mockSubmitAsync,
+        isPending: false,
+    }),
+}))
+
+vi.mock('../../../../hooks/useRekeyTransactionFeeQuery', () => ({
+    useRekeyTransactionFeeQuery: () => ({
+        feeAlgos: new Decimal('0.001'),
+        isPending: false,
+    }),
+}))
 
 const mockRequestBottomSheet = vi.fn()
 vi.mock('@modules/bottom-sheet', () => ({
@@ -186,7 +182,7 @@ describe('useRekeyToStandardConfirmScreen', () => {
     })
 
     it('shows the user-rejected toast and does not navigate when the signer cancels', async () => {
-        const { RekeyError } = await import('../../../../shared')
+        const { RekeyError } = await import('../../../../utils/RekeyError')
         mockSubmitAsync.mockRejectedValueOnce(new RekeyError('user_rejected'))
         const { result } = renderHook(() => useRekeyToStandardConfirmScreen())
 

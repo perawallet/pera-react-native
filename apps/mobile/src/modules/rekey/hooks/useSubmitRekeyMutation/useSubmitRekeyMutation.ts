@@ -21,7 +21,7 @@ import {
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
 import { useLanguage } from '@hooks/useLanguage'
-import { RekeyError } from './RekeyError'
+import { RekeyError } from '../../utils/RekeyError'
 import { requestRekeySignatures } from './requestRekeySignatures'
 
 import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
