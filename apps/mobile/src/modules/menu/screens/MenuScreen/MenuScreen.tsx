@@ -14,7 +14,6 @@ import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useStyles } from './styles'
 
 import { PanelButton } from '@components/PanelButton'
-import { CardPanel } from '@modules/menu/components/CardPanel/CardPanel'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { QRScannerView } from '@components/QRScannerView'
@@ -24,6 +23,8 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { ReceiveFundsContent } from '@modules/transactions/components/receive-funds/ReceiveFundsContent'
 import { BidaliContent } from '@modules/gift-card/components/BidaliContent'
 import { useCallback } from 'react'
+import { useWebView } from '@modules/webview'
+import { config } from '@perawallet/wallet-core-config'
 
 export const MenuScreen = () => {
     const styles = useStyles()
@@ -31,6 +32,7 @@ export const MenuScreen = () => {
     const scanner = useModalState()
     const { t } = useLanguage()
     const { request: requestBottomSheet } = useBottomSheet()
+    const { pushWebView } = useWebView()
 
     const openReceiveFunds = useCallback(() => {
         void requestBottomSheet({
@@ -53,6 +55,13 @@ export const MenuScreen = () => {
             },
         })
     }, [requestBottomSheet])
+
+    const openHelpCenter = useCallback(() => {
+        pushWebView({
+            url: config.supportBaseUrl,
+            id: 'help-center',
+        })
+    }, [pushWebView, t])
 
     const goToSettings = () => {
         navigation.push('Settings')
@@ -99,7 +108,6 @@ export const MenuScreen = () => {
             </PWView>
 
             <PWView style={styles.menuContainer}>
-                <CardPanel />
                 <PanelButton
                     title={t('menu.staking')}
                     titleWeight='h3'
@@ -128,6 +136,13 @@ export const MenuScreen = () => {
                     leftIcon='person-menu'
                     rightIcon='chevron-right'
                     onPress={goToContacts}
+                />
+                <PanelButton
+                    title={t('menu.get_help')}
+                    titleWeight='h3'
+                    leftIcon='feedback'
+                    rightIcon='chevron-right'
+                    onPress={openHelpCenter}
                 />
             </PWView>
             <QRScannerView

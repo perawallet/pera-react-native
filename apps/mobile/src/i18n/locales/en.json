@@ -680,7 +680,8 @@
         "nfts": "NFTs",
         "buy_gift_card": "Buy Gift Card",
         "receive": "Receive",
-        "contacts": "Contacts"
+        "contacts": "Contacts",
+        "get_help": "Get Help"
     },
     "giftCard": {
         "intro": {
@@ -1423,7 +1424,6 @@
             "currency_title": "Currency",
             "theme_title": "Theme",
             "support_section": "Support",
-            "get_help_title": "Get Help",
             "rate_title": "Rate Pera Wallet",
             "terms_title": "Terms and Services",
             "privacy_title": "Privacy Policy",
