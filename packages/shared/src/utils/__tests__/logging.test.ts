@@ -336,6 +336,27 @@ describe('logging', () => {
                 redactSensitiveUrl('foo://x?MNEMONIC=word1+word2'),
             ).toContain('[REDACTED]')
         })
+
+        test('redacts JSON-embedded sensitive values', () => {
+            // The Pera Web QR deeplink is a raw JSON string, not a URL.
+            // Without JSON-aware redaction the 32-byte cipher key would
+            // pass through to the crash reporter on a deeplink failure.
+            const json =
+                '{"backupId":"abc","encryptionKey":"AAECAwQFBgcICQ==","version":1}'
+            const out = redactSensitiveUrl(json)
+            expect(out).not.toContain('AAECAwQFBgcICQ==')
+            expect(out).toContain('"encryptionKey":"[REDACTED]"')
+            expect(out).toContain('"backupId":"abc"')
+        })
+
+        test('redacts JSON values for any sensitive fragment', () => {
+            const json =
+                '{"mnemonic":"a b c","privateKey":"deadbeef","safe":"ok"}'
+            const out = redactSensitiveUrl(json)
+            expect(out).toContain('"mnemonic":"[REDACTED]"')
+            expect(out).toContain('"privateKey":"[REDACTED]"')
+            expect(out).toContain('"safe":"ok"')
+        })
     })
 
     describe('redactSensitiveContext', () => {
@@ -394,6 +415,25 @@ describe('logging', () => {
             const a: Record<string, unknown> = {}
             a.self = a
             expect(() => redactSensitiveContext({ a })).not.toThrow()
+        })
+
+        test('redacts encryptionKey (Pera Web QR cipher key)', () => {
+            const out = redactSensitiveContext({
+                parsedData: {
+                    type: 'PERA_WEB_IMPORT',
+                    backupId: 'abc',
+                    encryptionKey: new Uint8Array(32).fill(7),
+                },
+            }) as {
+                parsedData: {
+                    type: string
+                    backupId: string
+                    encryptionKey: string
+                }
+            }
+            expect(out.parsedData.encryptionKey).toBe('[REDACTED]')
+            expect(out.parsedData.backupId).toBe('abc')
+            expect(out.parsedData.type).toBe('PERA_WEB_IMPORT')
         })
     })
 })

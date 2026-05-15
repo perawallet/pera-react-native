@@ -284,7 +284,7 @@ describe('Flow: Pera Web Import — Loading → Result pipeline', () => {
     )
 
     it(
-        'Given the user finishes the flow successfully, the flow store is reset and any decrypted private keys are wiped',
+        'Given the user finishes the flow successfully, decrypted private keys are zeroed in place and the flow store is empty by the time the result screen renders',
         async () => {
             installBackupHandler({
                 status: 200,
@@ -292,36 +292,59 @@ describe('Flow: Pera Web Import — Loading → Result pipeline', () => {
             })
             seedQrInFlowStore()
 
-            renderLoadingWithFlowStore()
+            // Hold a reference to the QR encryptionKey before the loading
+            // hook runs. Reset() during the flow wipes this Uint8Array in
+            // place; the test asserts byte-zeroing, not just that the
+            // store reference was dropped.
+            const qrKey = usePeraWebImportFlowStore.getState().qr!.encryptionKey
+            expect(qrKey.some(b => b !== 0)).toBe(true)
 
-            await waitFor(() => screen.getByTestId('pera_web_import_result'), {
-                timeout: 10000,
+            // Subscribe so we capture the decrypted account.privateKey the
+            // instant `setPayload` fires inside the loading hook. By the
+            // time the result screen renders the loop has already wiped
+            // these buffers in place, so we can't fetch them from the
+            // store after the fact.
+            let capturedPrivateKey: Uint8Array | null = null
+            const unsubscribe = usePeraWebImportFlowStore.subscribe(state => {
+                const pk = state.payload?.accounts[0]?.privateKey ?? null
+                if (pk && !capturedPrivateKey) capturedPrivateKey = pk
             })
 
-            // Capture the decrypted private-key buffer before pressing Done.
-            // The flow store hands us back the same Uint8Array reference, so
-            // we can check it was zeroed in place after `handleDone` fires.
-            const payload = usePeraWebImportFlowStore.getState().payload
-            const privateKey = payload?.accounts[0]?.privateKey
-            expect(privateKey).toBeTruthy()
-            expect(privateKey!.length).toBeGreaterThan(0)
-            expect(privateKey!.some(b => b !== 0)).toBe(true)
+            try {
+                renderLoadingWithFlowStore()
 
-            // Same for the encryptionKey on the QR side.
-            const qrKey = usePeraWebImportFlowStore.getState().qr?.encryptionKey
-            expect(qrKey).toBeTruthy()
-            expect(qrKey!.some(b => b !== 0)).toBe(true)
+                await waitFor(
+                    () => screen.getByTestId('pera_web_import_result'),
+                    {
+                        timeout: 10000,
+                    },
+                )
+            } finally {
+                unsubscribe()
+            }
 
+            // By the time the result screen renders, the store is already
+            // empty: the loading hook calls reset() before navigating, so
+            // an attacker who heap-dumps after the flow completes finds
+            // nothing live.
+            expect(usePeraWebImportFlowStore.getState().payload).toBeNull()
+            expect(usePeraWebImportFlowStore.getState().qr).toBeNull()
+
+            // The actual byte buffers we held references to have been
+            // zeroed in place (not just dropped on the floor for GC to
+            // eventually pick up).
+            expect(capturedPrivateKey).not.toBeNull()
+            expect(capturedPrivateKey!.length).toBeGreaterThan(0)
+            expect(capturedPrivateKey!.every(b => b === 0)).toBe(true)
+            expect(qrKey.every(b => b === 0)).toBe(true)
+
+            // Pressing Done after the cleanup is a no-op for the store
+            // and still exits the flow.
             fireEvent.click(
                 screen.getByTestId('pera_web_import_result-primary'),
             )
-
-            await waitFor(() => {
-                expect(usePeraWebImportFlowStore.getState().payload).toBeNull()
-            })
+            expect(usePeraWebImportFlowStore.getState().payload).toBeNull()
             expect(usePeraWebImportFlowStore.getState().qr).toBeNull()
-            expect(privateKey!.every(b => b === 0)).toBe(true)
-            expect(qrKey!.every(b => b === 0)).toBe(true)
         },
         SLOW_TEST_TIMEOUT_MS,
     )

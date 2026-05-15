@@ -406,10 +406,17 @@ export const useDeepLink = () => {
                     break
             }
 
-            logger.debug('Deeplink: Handled successfully', { url, parsedData })
+            logger.debug('Deeplink: Handled successfully', {
+                type: parsedData.type,
+            })
             onSuccess?.()
         } catch (error) {
-            logger.error(error as Error, { url })
+            // Don't log the raw `url` here: for Pera Web QR deeplinks it is
+            // the JSON-encoded backup envelope containing the 32-byte
+            // secretbox `encryptionKey`. The logger's JSON-aware redactor
+            // scrubs it on the way out, but we err on the side of not
+            // shipping the cipher key to the crash reporter at all.
+            logger.error(error as Error, { type: parsedData.type })
             // guardrails-ignore-next-line no-error-toast-in-catch reason: bespoke deeplink-failure copy preserved verbatim
             showToast({
                 title: 'Navigation Error',

@@ -60,4 +60,26 @@ describe('secretboxOpenWithPrependedNonce', () => {
         tampered[30] ^= 0xff
         expect(secretboxOpenWithPrependedNonce(tampered, KEY)).toBeNull()
     })
+
+    it('leaves the caller-owned key and payload buffers untouched', () => {
+        // Defensive copies are wiped internally, but the original buffers
+        // the caller passed in must remain intact so they can still wipe
+        // their own material on their own schedule.
+        const sealed = seal(plaintext, KEY)
+        const keySnapshot = new Uint8Array(KEY)
+        const sealedSnapshot = new Uint8Array(sealed)
+        const opened = secretboxOpenWithPrependedNonce(sealed, KEY)
+        expect(opened).not.toBeNull()
+        expect(Array.from(KEY)).toEqual(Array.from(keySnapshot))
+        expect(Array.from(sealed)).toEqual(Array.from(sealedSnapshot))
+    })
+
+    it('returned plaintext survives the internal wipe of the ciphertext copy', () => {
+        // `nacl.secretbox.open` returns plaintext in a fresh buffer, so the
+        // internal `zeroBytes(normalized)` must not affect the returned bytes.
+        const sealed = seal(plaintext, KEY)
+        const opened = secretboxOpenWithPrependedNonce(sealed, KEY)
+        expect(opened).not.toBeNull()
+        expect(Array.from(opened!)).toEqual(Array.from(plaintext))
+    })
 })

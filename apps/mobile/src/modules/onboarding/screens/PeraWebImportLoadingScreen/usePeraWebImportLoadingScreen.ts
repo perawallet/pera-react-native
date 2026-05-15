@@ -11,6 +11,7 @@
  */
 
 import { useEffect, useRef } from 'react'
+import { AppState } from 'react-native'
 import {
     decryptPeraWebBackupPayload,
     fetchPeraWebBackup,
@@ -20,6 +21,7 @@ import {
 } from '@perawallet/wallet-core-backup'
 import { DuplicateAccountError } from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
@@ -125,7 +127,10 @@ export const usePeraWebImportLoadingScreen = (): void => {
             if (cancelled) return
             setPayloadRef.current(payload)
 
-            // 3. Import every account.
+            // 3. Import every account. Each account's raw 32-byte seed is
+            // wiped as soon as the import returns (or fails non-fatally)
+            // so the in-memory window is bounded by a single iteration
+            // rather than the lifetime of the result screen.
             let imported = 0
             let skipped = 0
             let failed = 0
@@ -144,10 +149,18 @@ export const usePeraWebImportLoadingScreen = (): void => {
                         })
                         failed++
                     }
+                } finally {
+                    zeroBytes(account.privateKey)
+                    account.privateKey = null
                 }
             }
 
             if (cancelled) return
+            // Wipe the QR encryption key and any residual state before
+            // navigating. The result screen only needs aggregate counts
+            // (passed via route params), so no decrypted material needs
+            // to outlive this point in the flow.
+            resetRef.current()
             navigationRef.current.replace('PeraWebImportResult', {
                 importedCount: imported,
                 skippedDuplicateCount: skipped,
@@ -171,8 +184,30 @@ export const usePeraWebImportLoadingScreen = (): void => {
             navigationRef.current.goBack()
         })
 
+        // If the user backgrounds the app mid-flow (Android can keep RN
+        // alive for minutes-to-hours), a heap snapshot would otherwise
+        // catch every decrypted seed live in the store. On the first
+        // non-`active` transition both cancel the loop (so the next
+        // iteration short-circuits before reading a now-wiped buffer)
+        // and reset the store (which zeros the seed bytes in place). The
+        // in-flight `importAccount` call still operates on its own
+        // `.slice(0,32)` copy and finishes cleanly.
+        const appStateSub = AppState.addEventListener('change', state => {
+            if (state !== 'active') {
+                cancelled = true
+                resetRef.current()
+            }
+        })
+
         return () => {
             cancelled = true
+            appStateSub.remove()
+            // Cancel-path safety net: if the screen unmounts before the
+            // run() resolves to `navigation.replace` (system back,
+            // navigator preemption, force-quit recovery), wipe whatever
+            // the store is still holding. After a successful run() this
+            // is a no-op since the state is already at `initialState`.
+            resetRef.current()
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [network])

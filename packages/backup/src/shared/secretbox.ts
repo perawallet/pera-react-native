@@ -11,6 +11,7 @@
  */
 
 import nacl from 'tweetnacl'
+import { zeroBytes } from '@perawallet/wallet-core-kms'
 
 // Shared secretbox primitive used by both the ASB (ARC-35) and Pera Web
 // "Transfer Accounts" import flows.
@@ -34,6 +35,14 @@ const NONCE_LENGTH = 24
  * "decryption failed" to its own typed error — `AsbImportError` for ASB,
  * `PeraWebImportError` for Pera Web — without conflating MAC failures with
  * programmer errors.
+ *
+ * Secure-memory: the two heap copies this function makes (`normalized` of
+ * the ciphertext+nonce and `normalizedKey` of the secretbox key) are zeroed
+ * before return. Callers can wipe their own buffers but have no handle on
+ * these copies, so wiping them here keeps the symmetric cipher key and any
+ * resident plaintext from lingering on the heap until GC. `nacl.secretbox.
+ * open` returns the plaintext in a fresh buffer that is independent of
+ * `normalized`, so wiping `normalized` does not corrupt the return value.
  */
 export const secretboxOpenWithPrependedNonce = (
     payload: Uint8Array,
@@ -49,8 +58,12 @@ export const secretboxOpenWithPrependedNonce = (
     // normalise the realm — production (Hermes) has a single realm so this
     // is effectively free there too.
     const normalized = new Uint8Array(payload)
-    const nonce = normalized.subarray(0, NONCE_LENGTH)
-    const sealed = normalized.subarray(NONCE_LENGTH)
     const normalizedKey = new Uint8Array(key)
-    return nacl.secretbox.open(sealed, nonce, normalizedKey)
+    try {
+        const nonce = normalized.subarray(0, NONCE_LENGTH)
+        const sealed = normalized.subarray(NONCE_LENGTH)
+        return nacl.secretbox.open(sealed, nonce, normalizedKey)
+    } finally {
+        zeroBytes(normalized, normalizedKey)
+    }
 }

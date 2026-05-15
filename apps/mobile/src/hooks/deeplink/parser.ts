@@ -65,7 +65,11 @@ const parsePeraWebJsonQr = (url: string): Nullable<PeraWebImportDeeplink> => {
         const parsed = parsePeraWebQrPayload(trimmed)
         return {
             type: DeeplinkType.PERA_WEB_IMPORT,
-            sourceUrl: url,
+            // The Pera Web QR payload IS the secret: a JSON document
+            // containing the 32-byte secretbox key. Drop it from the
+            // parsed object so no downstream logger or breadcrumb can
+            // accidentally echo it back to a crash reporter.
+            sourceUrl: '',
             backupId: parsed.backupId,
             encryptionKey: parsed.encryptionKey,
         }

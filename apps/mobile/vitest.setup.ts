@@ -1149,7 +1149,10 @@ vi.mock('react-native', () => {
         },
         AppState: {
             currentState: 'active',
-            addEventListener: vi.fn(),
+            // Real RN returns an `EmitterSubscription` with `.remove()`.
+            // Default the mock to the same shape so consumers can call
+            // `.remove()` in an effect cleanup without crashing.
+            addEventListener: vi.fn(() => ({ remove: vi.fn() })),
             removeEventListener: vi.fn(),
         },
         InteractionManager: {

@@ -48,6 +48,8 @@ const SENSITIVE_KEY_FRAGMENTS = [
     'seed',
     'privatekey',
     'private_key',
+    'encryptionkey',
+    'encryption_key',
     'secret',
     'password',
     'pin',
@@ -66,15 +68,33 @@ const SENSITIVE_QUERY_REGEX = new RegExp(
     'gi',
 )
 
+// Some payloads (Pera Web QR deeplinks, structured logs that have been
+// pre-stringified by the caller) reach the logger as raw JSON. The query
+// regex above only matches URL-style `?key=value` syntax, so a JSON-shaped
+// string containing a sensitive field would pass through untouched. Match
+// any `"…sensitive…":"value"` pair so the value is scrubbed regardless of
+// the surrounding format.
+const SENSITIVE_JSON_REGEX = new RegExp(
+    `("[^"]*(?:${SENSITIVE_KEY_FRAGMENTS.join('|')})[^"]*"\\s*:\\s*)"[^"]*"`,
+    'gi',
+)
+
 /**
- * Strip values for any query/hash parameter whose name matches a known
- * sensitive fragment (mnemonic, passphrase, seed, …). Idempotent on plain
- * strings without query syntax.
+ * Strip values for any query/hash parameter or JSON field whose name
+ * matches a known sensitive fragment (mnemonic, passphrase, seed,
+ * encryptionKey, …). Idempotent on plain strings without query/JSON
+ * syntax.
  */
-export const redactSensitiveUrl = (input: string): string =>
-    input.includes('=')
-        ? input.replace(SENSITIVE_QUERY_REGEX, `$1${REDACTED}`)
-        : input
+export const redactSensitiveUrl = (input: string): string => {
+    let out = input
+    if (out.includes('=')) {
+        out = out.replace(SENSITIVE_QUERY_REGEX, `$1${REDACTED}`)
+    }
+    if (out.includes('"')) {
+        out = out.replace(SENSITIVE_JSON_REGEX, `$1"${REDACTED}"`)
+    }
+    return out
+}
 
 // Defense against pathological inputs (circular references, deeply-nested
 // objects). Logger contexts are normally small; anything beyond this depth is
