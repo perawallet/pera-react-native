@@ -12,7 +12,9 @@
 
 import React from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { PWButton, PWRoundIcon, PWText, PWView } from '@components/core'
+import { useTheme } from '@rneui/themed'
+import { PWButton, PWText, PWView } from '@components/core'
+import ShieldCheckImage from '@assets/icons/shield-check.svg'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useAsbImportInfoScreen } from './useAsbImportInfoScreen'
@@ -21,14 +23,16 @@ export const AsbImportInfoScreen = () => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
     const { t } = useLanguage()
+    const { theme } = useTheme()
     const { handleContinue } = useAsbImportInfoScreen()
 
     return (
         <PWView style={styles.root}>
             <PWView style={styles.content}>
-                <PWRoundIcon
-                    icon='shield-check'
-                    size='xxl'
+                <ShieldCheckImage
+                    width={theme.spacing.xxl * 4}
+                    height={theme.spacing.xxl * 4}
+                    color={theme.colors.textMain}
                 />
                 <PWText
                     variant='h1'
