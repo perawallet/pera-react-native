@@ -14,7 +14,9 @@ import { Theme } from '@rneui/themed'
 import { TextStyle } from 'react-native'
 import { fontFamilies } from '@constants/fonts'
 
-export const getFontFamily = (weight: 400 | 500 | 600 | 700) => {
+export type FontWeight = 400 | 500 | 600 | 700
+
+export const getFontFamily = (weight: FontWeight) => {
     return fontFamilies.DMSANS[weight]
 }
 
@@ -161,3 +163,23 @@ export const getTypography = (
 
     return typography[variant]
 }
+
+/**
+ * Returns the given variant with its font weight (and matching family)
+ * overridden. Preferred for one-off weight tweaks instead of adding a new
+ * `*Medium` / `*Semibold` sibling to {@link TypographyVariant}: it keeps the
+ * variant list lean and gives the caller a single knob.
+ *
+ * Example: `getFontWeightVariant(theme, 'bodyLarge', 600)` produces what
+ * an `h4` is today (bodyLarge + 600). Colors / sizes / line-heights are
+ * inherited from the base variant.
+ */
+export const getFontWeightVariant = (
+    theme: Theme,
+    variant: TypographyVariant,
+    weight: FontWeight,
+): TextStyle => ({
+    ...getTypography(theme, variant),
+    fontFamily: getFontFamily(weight),
+    fontWeight: weight,
+})
