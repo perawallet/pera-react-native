@@ -20,7 +20,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import {
     getRekeyLabelI18n,
     splitAccountTypeLabel,
-} from '@modules/accounts/components/AccountInfoCard/rekeyLabels'
+} from '@modules/accounts/utils/rekeyLabels'
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 

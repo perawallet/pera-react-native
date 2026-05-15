@@ -12,6 +12,7 @@
 
 import { createElement } from 'react'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 
 import type {
@@ -27,12 +28,12 @@ type BottomSheetState = {
 }
 
 type BottomSheetActions = {
-    request: <T = unknown>(req: BottomSheetRequest) => Promise<T | undefined>
+    request: <T = unknown>(req: BottomSheetRequest) => Promise<Optional<T>>
     requestByType: <K extends keyof BottomSheetRegistry, T = unknown>(
         type: K,
         props: BottomSheetRegistry[K],
         options?: BottomSheetOptions,
-    ) => Promise<T | undefined>
+    ) => Promise<Optional<T>>
     resolve: <T>(id: string, value: T) => void
     dismiss: (id?: string) => void
     dismissAll: () => void
@@ -54,8 +55,8 @@ export const useBottomSheetStore: UseBoundStore<StoreApi<BottomSheetStore>> =
         ...initialState,
         request: <T>(req: BottomSheetRequest) => {
             const id = req.id ?? generateOrderedUniqueId()
-            let resolver!: (value: T | undefined) => void
-            const promise = new Promise<T | undefined>(res => {
+            let resolver!: (value: Optional<T>) => void
+            const promise = new Promise<Optional<T>>(res => {
                 resolver = res
             })
             set(state => ({

@@ -12,7 +12,6 @@
 
 import { useCallback } from 'react'
 import { useRoute } from '@react-navigation/native'
-import { Trans } from 'react-i18next'
 import {
     AccountLogicalTypes,
     baseTypeFor,
@@ -20,17 +19,15 @@ import {
     useFindAccountByAddress,
 } from '@perawallet/wallet-core-accounts'
 import { config } from '@perawallet/wallet-core-config'
-import { PWText } from '@components/core'
-import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useWebView } from '@modules/webview'
-import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import {
-    useHandleRekeyError,
     useRekeyTransactionFeeQuery,
     useSubmitRekeyMutation,
 } from '../../../shared'
+import { useHandleRekeyError } from '../../../hooks/useHandleRekeyError'
+import { PreviousRekeyWarningSheet } from '../../../components/PreviousRekeyWarningSheet'
 
 import type { Decimal } from 'decimal.js'
 import type { RouteProp } from '@react-navigation/native'
@@ -56,7 +53,6 @@ export const useUndoRekeyConfirmScreen =
         const source = useFindAccountByAddress(sourceAddress)
         const currentAuth = useFindAccountByAddress(source?.rekeyAddress ?? '')
 
-        const { t } = useLanguage()
         const handleRekeyError = useHandleRekeyError()
         const { pushWebView } = useWebView()
         const { request: requestBottomSheet } = useBottomSheet()
@@ -119,42 +115,15 @@ export const useUndoRekeyConfirmScreen =
                 : 'rekey.undo.warning'
             const confirmed = await requestBottomSheet<boolean>({
                 contents: (
-                    <ConfirmActionContent
-                        icon='warning'
-                        iconVariant='error'
-                        title={t(`${i18nPrefix}.title`)}
-                        message={
-                            <PWText variant='body'>
-                                <Trans
-                                    i18nKey={`${i18nPrefix}.body`}
-                                    values={{
-                                        currentAuth: currentAuthName,
-                                        source: sourceName,
-                                    }}
-                                    components={[
-                                        <PWText
-                                            key='auth'
-                                            variant='bodySemibold'
-                                        />,
-                                        <PWText
-                                            key='source'
-                                            variant='bodySemibold'
-                                        />,
-                                        <PWText
-                                            key='learn-more'
-                                            variant='link'
-                                            onPress={handleLearnMore}
-                                        />,
-                                    ]}
-                                />
-                            </PWText>
-                        }
-                        confirmLabel={t(`${i18nPrefix}.confirm`)}
-                        cancelLabel={t(`${i18nPrefix}.cancel`)}
+                    <PreviousRekeyWarningSheet
+                        i18nPrefix={i18nPrefix}
+                        testID='undo-rekey-warning-sheet'
+                        currentAuthName={currentAuthName}
+                        sourceName={sourceName}
+                        onLearnMore={handleLearnMore}
                         confirmVariant={
                             willBecomeNoAuth ? 'destructive' : 'primary'
                         }
-                        testID='undo-rekey-warning-sheet'
                     />
                 ),
                 options: { size: 'auto', enablePanDownToClose: true },
@@ -169,7 +138,6 @@ export const useUndoRekeyConfirmScreen =
             handleRekeyError,
             navigation,
             submit,
-            t,
         ])
 
         return {

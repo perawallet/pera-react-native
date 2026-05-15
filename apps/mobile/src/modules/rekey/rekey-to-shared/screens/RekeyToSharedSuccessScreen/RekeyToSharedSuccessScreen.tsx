@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { RekeySuccessScreen } from '../../../shared/RekeySuccessScreen'
+import { RekeySuccessScreen } from '../../../components/RekeySuccessScreen'
 
 export const RekeyToSharedSuccessScreen = () => (
     <RekeySuccessScreen

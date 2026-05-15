@@ -89,21 +89,10 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     isValidAlgorandAddress: vi.fn(() => false),
 }))
 
-const SIGNING_LOGICAL_TYPES = new Set([
-    'HdKey',
-    'Algo25',
-    'LedgerBle',
-    'LedgerUsb',
-    'Multisig',
-])
-
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     isHDWalletAccount: vi.fn(account => account.type === 'standard'),
     isRekeyedAccount: vi.fn(() => false),
-    isSigningLogicalType: vi.fn((type: string) =>
-        SIGNING_LOGICAL_TYPES.has(type),
-    ),
-    useAllAccounts: vi.fn(() => [
+    useSigningAccounts: vi.fn(() => [
         {
             address: 'addr1',
             name: 'Account 1',
@@ -447,14 +436,23 @@ describe('usePeraWebviewInterface', () => {
     })
 
     describe('getAddresses payload (Android parity)', () => {
+        // useSigningAccounts owns the Watch/NoAuth filtering — the bridge just
+        // maps. These tests pin the mapping (name fallback, order preservation)
+        // and assume the filter behavior is covered by the package's own tests.
         const setupAccountsMock = async (config: {
             accounts: Array<{ address: string; name?: string; type: string }>
             types: Map<string, string>
         }) => {
             const accounts = await import('@perawallet/wallet-core-accounts')
-            vi.mocked(accounts.useAllAccounts).mockReturnValue(
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                config.accounts as any,
+            const signingAddresses = new Set(
+                [...config.types.entries()]
+                    .filter(([, t]) => t !== 'NoAuth' && t !== 'Watch')
+                    .map(([addr]) => addr),
+            )
+            vi.mocked(accounts.useSigningAccounts).mockReturnValue(
+                config.accounts.filter(a =>
+                    signingAddresses.has(a.address),
+                ) as unknown as ReturnType<typeof accounts.useSigningAccounts>,
             )
             vi.mocked(accounts.useAllAccountLogicalTypes).mockReturnValue(
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any

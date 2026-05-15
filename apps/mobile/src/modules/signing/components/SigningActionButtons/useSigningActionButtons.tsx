@@ -25,6 +25,7 @@ import {
     useSigningPipeline,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { bottomSheetNotifier } from '@components/core'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
@@ -43,7 +44,7 @@ export type UseSigningActionButtonsResult = {
     handleReject: () => void
     isLoading: boolean
     hasMultipleTransactions: boolean
-    currentRequest: SignRequest | undefined
+    currentRequest: Optional<SignRequest>
     isMultisigCosign: boolean
     cosignSignerAddress: string
 }

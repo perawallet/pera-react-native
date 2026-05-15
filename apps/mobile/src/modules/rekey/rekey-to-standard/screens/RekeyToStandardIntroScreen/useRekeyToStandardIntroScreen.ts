@@ -14,7 +14,7 @@ import { config } from '@perawallet/wallet-core-config'
 import {
     useRekeyIntroScreen,
     type UseRekeyIntroScreenResult,
-} from '../../../shared/useRekeyIntroScreen'
+} from '../../../components/RekeyIntroScreen/useRekeyIntroScreen'
 
 const STANDARD_INTRO_NAV = {
     parentRoute: 'RekeyToStandard',

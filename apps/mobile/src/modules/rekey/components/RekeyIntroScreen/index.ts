@@ -10,18 +10,10 @@
  limitations under the License
  */
 
-import { config } from '@perawallet/wallet-core-config'
-import { RekeyIntroScreen } from '../../../components/RekeyIntroScreen'
-
-export const RekeyToLedgerIntroScreen = () => (
-    <RekeyIntroScreen
-        i18nBaseKey='rekey.to_ledger.intro'
-        testIdPrefix='rekey-to-ledger'
-        expectationCount={4}
-        navConfig={{
-            parentRoute: 'RekeyToLedger',
-            selectTargetScreen: 'RekeyToLedgerSelectTarget',
-            supportUrl: config.rekeyToLedgerSupportUrl,
-        }}
-    />
-)
+export { RekeyIntroScreen } from './RekeyIntroScreen'
+export type { RekeyIntroScreenProps } from './RekeyIntroScreen'
+export { useRekeyIntroScreen } from './useRekeyIntroScreen'
+export type {
+    RekeyIntroNavConfig,
+    UseRekeyIntroScreenResult,
+} from './useRekeyIntroScreen'

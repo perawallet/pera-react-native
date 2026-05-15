@@ -181,7 +181,7 @@ describe('useUndoRekeyConfirmScreen', () => {
         })
 
         const { contents } = mockRequestBottomSheet.mock.calls[0][0]
-        expect(contents.props.title).toBe('rekey.undo.warning.title')
+        expect(contents.props.i18nPrefix).toBe('rekey.undo.warning')
         expect(contents.props.confirmVariant).toBe('primary')
     })
 
@@ -195,7 +195,7 @@ describe('useUndoRekeyConfirmScreen', () => {
         })
 
         const { contents } = mockRequestBottomSheet.mock.calls[0][0]
-        expect(contents.props.title).toBe('rekey.undo.no_auth_warning.title')
+        expect(contents.props.i18nPrefix).toBe('rekey.undo.no_auth_warning')
         expect(contents.props.confirmVariant).toBe('destructive')
     })
 

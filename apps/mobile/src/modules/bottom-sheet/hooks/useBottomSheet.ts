@@ -16,14 +16,15 @@ import type {
     BottomSheetRegistry,
     BottomSheetRequest,
 } from '../types'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 type UseBottomSheetResult = {
-    request: <T = unknown>(req: BottomSheetRequest) => Promise<T | undefined>
+    request: <T = unknown>(req: BottomSheetRequest) => Promise<Optional<T>>
     requestByType: <K extends keyof BottomSheetRegistry, T = unknown>(
         type: K,
         props: BottomSheetRegistry[K],
         options?: BottomSheetOptions,
-    ) => Promise<T | undefined>
+    ) => Promise<Optional<T>>
     dismiss: (id?: string) => void
     dismissAll: () => void
 }

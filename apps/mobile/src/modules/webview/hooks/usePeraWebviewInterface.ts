@@ -22,9 +22,8 @@ import {
     useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
 import {
-    isSigningLogicalType,
     useAllAccountLogicalTypes,
-    useAllAccounts,
+    useSigningAccounts,
 } from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useCallback } from 'react'
@@ -73,7 +72,7 @@ export const usePeraWebviewInterface = (
     onBackRequested?: () => void,
 ) => {
     const { showToast } = useToast()
-    const accounts = useAllAccounts()
+    const signingAccounts = useSigningAccounts()
     const logicalTypes = useAllAccountLogicalTypes()
     const { network } = useNetwork()
     const deviceID = useDeviceID(network)
@@ -308,8 +307,8 @@ export const usePeraWebviewInterface = (
                 },
                 () => {
                     // Match Android's `GetAuthorizedAddressesInfoWebMessages`:
-                    // 1. Only signable accounts — drops Watch / Rekeyed-no-auth
-                    //    so the user can't pick a non-funding-eligible account.
+                    // 1. `useSigningAccounts` drops Watch / Rekeyed-no-auth so
+                    //    the user can't pick a non-funding-eligible account.
                     // 2. Send raw `account.name` (empty string when none). The
                     //    webapp owns the truncated-address fallback; sending
                     //    the truncated address as both name AND address (via
@@ -317,22 +316,16 @@ export const usePeraWebviewInterface = (
                     //    same string twice in its list rows.
                     // Ordering is the consumer's responsibility — Pera Connect
                     // sorts on its side based on its own UX needs.
-                    const payload = accounts
-                        .map(account => ({
-                            account,
-                            type: logicalTypes.get(account.address) ?? 'NoAuth',
-                        }))
-                        .filter(({ type }) => isSigningLogicalType(type))
-                        .map(({ account, type }) => ({
-                            name: account.name ?? '',
-                            address: account.address,
-                            type,
-                        }))
+                    const payload = signingAccounts.map(account => ({
+                        name: account.name ?? '',
+                        address: account.address,
+                        type: logicalTypes.get(account.address) ?? 'NoAuth',
+                    }))
                     sendMessageToWebview(message.id, payload, webview)
                 },
             )
         },
-        [securedConnection, sourceUrl, accounts, logicalTypes, webview],
+        [securedConnection, sourceUrl, signingAccounts, logicalTypes, webview],
     )
 
     const getSettings = useCallback(

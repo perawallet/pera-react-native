@@ -12,23 +12,20 @@
 
 import { useCallback } from 'react'
 import { useRoute } from '@react-navigation/native'
-import { Trans } from 'react-i18next'
 import {
     getAccountDisplayName,
     useFindAccountByAddress,
 } from '@perawallet/wallet-core-accounts'
 import { config } from '@perawallet/wallet-core-config'
-import { PWText } from '@components/core'
-import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useWebView } from '@modules/webview'
-import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import {
-    useHandleRekeyError,
     useRekeyTransactionFeeQuery,
     useSubmitRekeyMutation,
 } from '../../../shared'
+import { useHandleRekeyError } from '../../../hooks/useHandleRekeyError'
+import { PreviousRekeyWarningSheet } from '../../../components/PreviousRekeyWarningSheet'
 
 import type { Decimal } from 'decimal.js'
 import type { RouteProp } from '@react-navigation/native'
@@ -62,7 +59,6 @@ export const useRekeyToStandardConfirmScreen =
         const target = useFindAccountByAddress(targetAddress)
         const currentAuth = useFindAccountByAddress(source?.rekeyAddress ?? '')
 
-        const { t } = useLanguage()
         const handleRekeyError = useHandleRekeyError()
         const { pushWebView } = useWebView()
         const { request: requestBottomSheet } = useBottomSheet()
@@ -112,45 +108,12 @@ export const useRekeyToStandardConfirmScreen =
                     : ''
                 const confirmed = await requestBottomSheet<boolean>({
                     contents: (
-                        <ConfirmActionContent
-                            icon='warning'
-                            iconVariant='error'
-                            title={t(
-                                'rekey.to_standard.confirm.replace_warning.title',
-                            )}
-                            message={
-                                <PWText variant='body'>
-                                    <Trans
-                                        i18nKey='rekey.to_standard.confirm.replace_warning.body'
-                                        values={{
-                                            currentAuth: currentAuthName,
-                                            source: sourceName,
-                                        }}
-                                        components={[
-                                            <PWText
-                                                key='auth'
-                                                variant='bodySemibold'
-                                            />,
-                                            <PWText
-                                                key='source'
-                                                variant='bodySemibold'
-                                            />,
-                                            <PWText
-                                                key='learn-more'
-                                                variant='link'
-                                                onPress={handleLearnMore}
-                                            />,
-                                        ]}
-                                    />
-                                </PWText>
-                            }
-                            confirmLabel={t(
-                                'rekey.to_standard.confirm.replace_warning.confirm',
-                            )}
-                            cancelLabel={t(
-                                'rekey.to_standard.confirm.replace_warning.cancel',
-                            )}
+                        <PreviousRekeyWarningSheet
+                            i18nPrefix='rekey.to_standard.confirm.replace_warning'
                             testID='rekey-to-standard-previous-rekey-warning-sheet'
+                            currentAuthName={currentAuthName}
+                            sourceName={sourceName}
+                            onLearnMore={handleLearnMore}
                         />
                     ),
                     options: { size: 'auto', enablePanDownToClose: true },
@@ -165,7 +128,6 @@ export const useRekeyToStandardConfirmScreen =
             requestBottomSheet,
             handleLearnMore,
             submit,
-            t,
         ])
 
         return {

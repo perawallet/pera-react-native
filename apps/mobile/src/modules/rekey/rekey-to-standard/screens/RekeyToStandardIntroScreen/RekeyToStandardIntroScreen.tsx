@@ -11,7 +11,7 @@
  */
 
 import { config } from '@perawallet/wallet-core-config'
-import { RekeyIntroScreen } from '../../../shared/RekeyIntroScreen'
+import { RekeyIntroScreen } from '../../../components/RekeyIntroScreen'
 
 export const RekeyToStandardIntroScreen = () => (
     <RekeyIntroScreen

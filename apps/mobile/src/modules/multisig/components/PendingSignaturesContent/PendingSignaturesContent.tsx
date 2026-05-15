@@ -12,6 +12,7 @@
 
 import { ActivityIndicator } from 'react-native'
 import { useTheme } from '@rneui/themed'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { PWButton, PWIcon, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { type SignerRow } from '../../utils/buildSignerRows'
@@ -46,7 +47,7 @@ export const PendingSignaturesContent = () => {
         handleCancel,
     } = usePendingSignaturesContent()
 
-    const getSignerAction = (signer: SignerRow): SignerAction | undefined => {
+    const getSignerAction = (signer: SignerRow): Optional<SignerAction> => {
         if (!signer.canSignAsHardware && !signer.isSigning) return undefined
         return {
             label: t('multisig.pending_signatures.sign'),

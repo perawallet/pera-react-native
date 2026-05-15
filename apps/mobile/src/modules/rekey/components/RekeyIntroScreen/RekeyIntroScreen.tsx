@@ -21,9 +21,9 @@ import {
 } from '@components/core'
 import { useBottomSafeAreaPadding } from '@hooks/useBottomSafeAreaPadding'
 import { useLanguage } from '@hooks/useLanguage'
-import { NumberedList } from './components/NumberedList'
+import { NumberedList } from '../../shared/components/NumberedList'
 import { useRekeyIntroScreen } from './useRekeyIntroScreen'
-import { useRekeyIntroStyles } from './useRekeyIntroStyles'
+import { useStyles } from './styles'
 
 import type { RekeyIntroNavConfig } from './useRekeyIntroScreen'
 
@@ -41,7 +41,7 @@ export const RekeyIntroScreen = ({
     navConfig,
 }: RekeyIntroScreenProps) => {
     const bottomPadding = useBottomSafeAreaPadding()
-    const styles = useRekeyIntroStyles(bottomPadding)
+    const styles = useStyles(bottomPadding)
     const { t } = useLanguage()
 
     const expectations = useMemo(

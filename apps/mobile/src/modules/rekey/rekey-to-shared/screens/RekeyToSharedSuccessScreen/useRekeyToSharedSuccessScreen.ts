@@ -13,7 +13,7 @@
 import {
     useRekeySuccessScreen,
     type UseRekeySuccessScreenResult,
-} from '../../../shared/useRekeySuccessScreen'
+} from '../../../components/RekeySuccessScreen/useRekeySuccessScreen'
 
 export type UseRekeyToSharedSuccessScreenResult = UseRekeySuccessScreenResult
 

@@ -17,7 +17,7 @@ import { PWButton, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSafeAreaPadding } from '@hooks/useBottomSafeAreaPadding'
 import { useRekeySuccessScreen } from './useRekeySuccessScreen'
-import { useRekeySuccessStyles } from './useRekeySuccessStyles'
+import { useStyles } from './styles'
 
 export type RekeySuccessScreenProps = {
     i18nPrefix: string
@@ -29,7 +29,7 @@ export const RekeySuccessScreen = ({
     testIdPrefix,
 }: RekeySuccessScreenProps) => {
     const bottomPadding = useBottomSafeAreaPadding()
-    const styles = useRekeySuccessStyles(bottomPadding)
+    const styles = useStyles(bottomPadding)
     const { theme } = useTheme()
     const { t } = useLanguage()
     const { sourceName, handleDone } = useRekeySuccessScreen()

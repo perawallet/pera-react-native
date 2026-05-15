@@ -20,7 +20,10 @@ import {
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
-import { getRekeyLabelI18n, splitAccountTypeLabel } from '../rekeyLabels'
+import {
+    getRekeyLabelI18n,
+    splitAccountTypeLabel,
+} from '@modules/accounts/utils/rekeyLabels'
 
 type UseAccountTypeInfoParams = {
     account: WalletAccount
