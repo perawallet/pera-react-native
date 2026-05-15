@@ -17,10 +17,14 @@ import {
 } from '@perawallet/wallet-core-shared'
 import {
     createMultisigAccountResponseSchema,
+    getSignRequestsWithSignaturesResponseSchema,
     searchSignRequestsResponseSchema,
     signRequestDetailResponseSchema,
     type CreateMultisigAccountRequest,
     type CreateMultisigAccountResponse,
+    type GetSignRequestsWithSignaturesRequest,
+    type GetSignRequestsWithSignaturesResponse,
+    type MarkSignRequestsConfirmedRequest,
     type ProposeSignRequest,
     type AddSignatureRequest,
     type SearchSignRequestsRequest,
@@ -147,5 +151,49 @@ export const deleteImportInbox = async (
         method: 'DELETE',
         url: `/v1/joint-accounts/inbox/device-import/${deviceId}/${multisigAddress}/`,
         responseType: 'text',
+    })
+}
+
+/**
+ * Bulk-fetch sign requests including per-participant signatures. Used by
+ * the WC-handoff resolver to read the collected sigs once threshold is
+ * met, so the wallet can assemble the composite multisig signed
+ * transaction and deliver it to the dApp.
+ *
+ * Unlike `searchSignRequests` (which strips signatures from its
+ * response), this endpoint returns the raw signature bytes per
+ * participant per transaction.
+ */
+export const getSignRequestsWithSignatures = async (
+    network: Network,
+    params: GetSignRequestsWithSignaturesRequest,
+): Promise<GetSignRequestsWithSignaturesResponse> => {
+    const response = await queryClient<GetSignRequestsWithSignaturesResponse>({
+        backend: 'pera',
+        network,
+        method: 'POST',
+        url: '/v1/joint-accounts/sign-requests/with-signatures/',
+        data: params,
+    })
+    return getSignRequestsWithSignaturesResponseSchema.parse(response.data)
+}
+
+/**
+ * Tell the backend the wallet has delivered the assembled signed
+ * transaction for these sign-request IDs. The backend cleans up the
+ * record and (for `type: "sync"` requests) does NOT attempt its own
+ * broadcast. Best-effort: a failure here is non-fatal because the dApp
+ * has already received the signed bytes.
+ */
+export const markSignRequestsConfirmed = async (
+    network: Network,
+    params: MarkSignRequestsConfirmedRequest,
+): Promise<void> => {
+    await queryClient<void>({
+        backend: 'pera',
+        network,
+        method: 'POST',
+        url: '/v1/joint-accounts/sign-requests/mark-confirmed/',
+        data: params,
     })
 }

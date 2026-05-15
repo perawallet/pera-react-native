@@ -10,12 +10,4 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-walletconnect'
-
-export * from './models'
-export * from './errors'
-export * from './connection'
-export * from './hooks/useWalletConnectSessionRequests'
-export * from './hooks/useWalletConnect'
-export * from './constants'
-export { useWalletConnectStore } from './store'
+export * from './connectorRegistry'

@@ -13,6 +13,7 @@
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { useWalletConnect } from '../useWalletConnect'
+import { __resetRegistryForTests } from '../../connection'
 import { useWalletConnectStore } from '../../store'
 import { useWalletConnectSessionRequests } from '../useWalletConnectSessionRequests'
 import { useWalletConnectHandlers } from '../useWalletConnectHandlers'
@@ -132,11 +133,9 @@ describe('useWalletConnect', () => {
     })
 
     afterEach(() => {
-        // Clear static connectors map in the hook module?
-        // The hook uses a module-level variable `connectors`.
-        // To properly reset it, we might need to rely on `disconnect` or `deleteAllSessions` logic if we assume isolate modules is not full reload.
-        // However, in unit tests, usually modules are cached.
-        // For now, we will just expect new instances of WalletConnect to be created.
+        // The connector registry is module-level state shared across the
+        // whole suite — reset it so each test starts from a clean slate.
+        __resetRegistryForTests()
     })
 
     describe('connect', () => {

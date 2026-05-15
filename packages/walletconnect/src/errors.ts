@@ -69,3 +69,27 @@ export class WalletConnectInvalidNetworkError extends WalletConnectError {
         )
     }
 }
+
+/**
+ * The WalletConnect bridge socket could not be (re)opened in time to
+ * deliver a signed payload to the dApp.
+ *
+ * WalletConnect v1's socket transport silently queues outgoing messages
+ * when its WebSocket is down (no throw, no callback), so a signed
+ * transaction handed back over a dead socket is lost while the UI still
+ * reports success. The connector registry recreates a fresh socket and
+ * throws this error if it cannot open in time — making the signing
+ * pipeline surface an honest failure instead. Marked `retryable` so the
+ * signing machine offers a Retry: a later attempt often lands once the
+ * socket reconnects.
+ */
+export class WalletConnectConnectionTimeoutError extends WalletConnectError {
+    constructor(message?: string, originalError?: Error) {
+        super(
+            message ??
+                "Couldn't reach WalletConnect to deliver your signed transaction. Check your connection and try again.",
+            originalError,
+            { retryable: true },
+        )
+    }
+}
