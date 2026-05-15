@@ -22,5 +22,8 @@ export const useStyles = makeStyles(theme => ({
         // the top rather than centering vertically in a full-screen frame.
         aspectRatio: 1,
         zIndex: theme.zIndex.overlay1,
+        // Confetti is decorative — let taps pass through to the UI below
+        // so buttons remain interactive while the animation plays.
+        pointerEvents: 'none',
     },
 }))
