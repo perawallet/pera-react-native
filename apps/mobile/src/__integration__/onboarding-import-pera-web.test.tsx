@@ -106,13 +106,9 @@ const installBackupHandler = (response: {
  * helper lets the test stand in for the QR scanner.
  */
 const seedQrInFlowStore = (
-    overrides?: Partial<Parameters<typeof parsePeraWebQrPayload>[0]> & {
-        encryptionKey?: Uint8Array
-    },
+    overrides?: Parameters<typeof buildPeraWebQrString>[0],
 ) => {
-    const qrString = buildPeraWebQrString({
-        encryptionKey: overrides?.encryptionKey,
-    })
+    const qrString = buildPeraWebQrString(overrides)
     const parsed = parsePeraWebQrPayload(qrString)
     usePeraWebImportFlowStore.getState().setQr(parsed)
 }
