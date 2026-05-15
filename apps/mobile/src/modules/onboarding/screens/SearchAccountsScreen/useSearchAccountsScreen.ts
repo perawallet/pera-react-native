@@ -162,6 +162,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                     setSelectedAccountAddress(account.address)
                     exitAccountFlow()
                 } else {
+                    setSelectedAccountAddress(account.address)
                     navigation.replace('ImportRekeyedAddresses', {
                         accounts: discoveredRekeyedAccounts,
                     })
