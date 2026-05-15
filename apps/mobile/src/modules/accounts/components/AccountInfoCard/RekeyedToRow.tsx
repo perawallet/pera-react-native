@@ -11,12 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import {
-    PWIcon,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
+import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import {
     getAccountDisplayName,
     type WalletAccount,
@@ -55,11 +50,19 @@ export const RekeyedToRow = ({
 
     return (
         <PWView style={styles.rekeyedSection}>
-            <PWText variant='body' style={styles.labelText}>
+            <PWText
+                variant='body'
+                style={styles.labelText}
+            >
                 {labelText}
             </PWText>
             <PWView style={styles.rekeyedRow}>
-                {authAccount && <AccountIcon account={authAccount} size='lg' />}
+                {authAccount && (
+                    <AccountIcon
+                        account={authAccount}
+                        size='lg'
+                    />
+                )}
                 <PWTouchableOpacity
                     style={styles.rekeyedAddressTouchable}
                     onPress={handleCopyAddress}
@@ -67,7 +70,10 @@ export const RekeyedToRow = ({
                     hitSlop={8}
                 >
                     <PWView style={styles.rekeyedRowText}>
-                        <PWText variant='bodyLarge' numberOfLines={1}>
+                        <PWText
+                            variant='bodyLarge'
+                            numberOfLines={1}
+                        >
                             {title}
                         </PWText>
                         {hasCustomName && (
@@ -80,7 +86,11 @@ export const RekeyedToRow = ({
                             </PWText>
                         )}
                     </PWView>
-                    <PWIcon name='copy' size='sm' variant='secondary' />
+                    <PWIcon
+                        name='copy'
+                        size='sm'
+                        variant='secondary'
+                    />
                 </PWTouchableOpacity>
                 {onUndoRekey && (
                     <PWTouchableOpacity
