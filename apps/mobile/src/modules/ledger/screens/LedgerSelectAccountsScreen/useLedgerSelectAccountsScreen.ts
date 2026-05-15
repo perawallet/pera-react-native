@@ -25,9 +25,7 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
-import { useBottomSheet } from '@modules/bottom-sheet'
 import { getLedgerErrorPreset } from '@modules/ledger/utils'
-import { LedgerAccountAddressContent } from './LedgerAccountAddressContent'
 
 type LedgerSelectAccountsRouteProp = RouteProp<
     AddAccountStackParamList,
@@ -46,7 +44,7 @@ type UseLedgerSelectAccountsScreenResult = {
     toggleSelectAll: () => void
     handleContinue: () => void
     handleFindAnother: () => Promise<void>
-    handleOpenInfo: (address: string) => void
+    t: (key: string, options?: Record<string, unknown>) => string
 }
 
 export const useLedgerSelectAccountsScreen =
@@ -63,7 +61,6 @@ export const useLedgerSelectAccountsScreen =
         const navigation = useAppNavigation()
         const allAccounts = useAllAccounts()
         const { errorToast } = useToast()
-        const { request: requestBottomSheet } = useBottomSheet()
 
         const [accounts, setAccounts] = useState<LedgerAccount[]>(routeAccounts)
         const [isFetchingMore, setIsFetchingMore] = useState(false)
@@ -134,16 +131,6 @@ export const useLedgerSelectAccountsScreen =
                 )
             }
         }, [isAllSelected, newAccounts])
-
-        const handleOpenInfo = useCallback(
-            (address: string) => {
-                void requestBottomSheet({
-                    contents: <LedgerAccountAddressContent address={address} />,
-                    options: { size: 'auto', enablePanDownToClose: true },
-                })
-            },
-            [requestBottomSheet],
-        )
 
         const handleContinue = useCallback(() => {
             const selectedAccounts = accounts.filter(acc =>
@@ -229,6 +216,6 @@ export const useLedgerSelectAccountsScreen =
             toggleSelectAll,
             handleContinue,
             handleFindAnother,
-            handleOpenInfo,
+            t,
         }
     }

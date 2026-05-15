@@ -10,16 +10,8 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => ({
-    container: {
-        paddingHorizontal: theme.spacing.xl,
-        paddingTop: theme.spacing.lg,
-        paddingBottom: theme.spacing.xl,
-        gap: theme.spacing.lg,
-    },
-    address: {
-        color: theme.colors.textMain,
-    },
-}))
+export { RekeyToLedgerStackNavigator } from './routes'
+export type {
+    RekeyToLedgerStackParamList,
+    RekeyToLedgerScreenProps,
+} from './routes'

@@ -10,5 +10,4 @@
  limitations under the License
  */
 
-export { LedgerAccountAddressContent } from './LedgerAccountAddressContent'
-export type { LedgerAccountAddressContentProps } from './LedgerAccountAddressContent'
+export { RekeyToLedgerSelectTargetScreen } from './RekeyToLedgerSelectTargetScreen'

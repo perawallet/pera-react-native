@@ -17,32 +17,10 @@ export const useStyles = makeStyles((theme, bottomPadding: number) => ({
         flex: 1,
         backgroundColor: theme.colors.background,
     },
-    header: {
+    list: {
+        flexGrow: 1,
+        gap: theme.spacing.sm,
         paddingHorizontal: theme.spacing.xl,
-        paddingTop: theme.spacing.lg,
-        paddingBottom: theme.spacing.lg,
-    },
-    icon: {
-        marginBottom: theme.spacing.lg,
-    },
-    title: {
-        marginBottom: theme.spacing.sm,
-    },
-    description: {
-        color: theme.colors.textGray,
-    },
-    listContent: {
-        paddingTop: theme.spacing.md,
         paddingBottom: bottomPadding,
-    },
-    errorContainer: {
-        paddingHorizontal: theme.spacing.xl,
-        paddingTop: theme.spacing.xl,
-        alignItems: 'center',
-        gap: theme.spacing.md,
-    },
-    errorText: {
-        color: theme.colors.textGray,
-        textAlign: 'center',
     },
 }))
