@@ -57,6 +57,10 @@ export const useBiometrics = (): UseBiometricsResult => {
 
     const writeBiometricBlob = useCallback(
         async (code: Uint8Array): Promise<void> => {
+            // `commitSecret` takes a defensive copy of `code` and zeroes its
+            // own copy after the keystore write completes. The caller still
+            // owns `code` itself — callers in this file pass `pinData`
+            // borrowed from `withSecret`, which zeroes it on return.
             await commitSecret({
                 id: BIOMETRIC_BLOB_KEY_ID,
                 bytes: code,

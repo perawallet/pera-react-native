@@ -70,20 +70,15 @@ describe('useSettingsOptions', () => {
 
         // Support Section
         expect(settingsOptions[2].title).toBe('settings.main.support_section')
-        expect(settingsOptions[2].items).toHaveLength(5)
+        expect(settingsOptions[2].items).toHaveLength(4)
 
         // Check external links in Support
-        expect(settingsOptions[2].items[0]).toEqual({
-            icon: 'feedback',
-            title: 'settings.main.get_help_title',
-            url: 'https://support.example.com',
-        })
-        expect(settingsOptions[2].items[2]).toEqual({
+        expect(settingsOptions[2].items[1]).toEqual({
             icon: 'text-document',
             title: 'settings.main.terms_title',
             url: 'https://terms.example.com',
         })
-        expect(settingsOptions[2].items[3]).toEqual({
+        expect(settingsOptions[2].items[2]).toEqual({
             icon: 'text-document',
             title: 'settings.main.privacy_title',
             url: 'https://privacy.example.com',

@@ -29,16 +29,14 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     }
 })
 
-const keyStoreRemoveSpy = vi.fn()
+const deleteKeySpy = vi.fn()
 const removeKeyAndChildrenSpy = vi.fn()
 // child id → seed id mapping shared between tests; reset in beforeEach.
 const parentMap: Map<string, string> = new Map()
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
     useKMS: () => ({
-        keyStore: {
-            remove: keyStoreRemoveSpy,
-        },
+        deleteKey: deleteKeySpy,
         seedIdOf: (childId?: string) =>
             childId ? parentMap.get(childId) : undefined,
         removeKeyAndChildren: removeKeyAndChildrenSpy,
@@ -70,7 +68,7 @@ describe('useRemoveAccountById', () => {
         })
 
         expect(useAccountsStore.getState().accounts).toEqual([])
-        expect(keyStoreRemoveSpy).toHaveBeenCalledWith('kp-alice-ed25519')
+        expect(deleteKeySpy).toHaveBeenCalledWith('kp-alice-ed25519')
         expect(removeKeyAndChildrenSpy).toHaveBeenCalledWith('kp-alice')
     })
 
@@ -98,7 +96,7 @@ describe('useRemoveAccountById', () => {
         })
 
         expect(useAccountsStore.getState().accounts).toEqual([])
-        expect(keyStoreRemoveSpy).toHaveBeenCalledWith('hd-1-acc0-idx0-dt9')
+        expect(deleteKeySpy).toHaveBeenCalledWith('hd-1-acc0-idx0-dt9')
         expect(removeKeyAndChildrenSpy).toHaveBeenCalledWith('hd-1')
     })
 
@@ -144,7 +142,7 @@ describe('useRemoveAccountById', () => {
         expect(useAccountsStore.getState().accounts).toHaveLength(1)
         // The leaving account's child entry is removed, but the shared
         // seed (and the sibling's child) stays put.
-        expect(keyStoreRemoveSpy).toHaveBeenCalledWith('hd-1-acc0-idx0-dt9')
+        expect(deleteKeySpy).toHaveBeenCalledWith('hd-1-acc0-idx0-dt9')
         expect(removeKeyAndChildrenSpy).not.toHaveBeenCalled()
     })
 
@@ -174,7 +172,7 @@ describe('useRemoveAccountById', () => {
         })
 
         expect(useAccountsStore.getState().accounts).toEqual([])
-        expect(keyStoreRemoveSpy).toHaveBeenCalledWith('hd-1-acc0-idx0-dt9')
+        expect(deleteKeySpy).toHaveBeenCalledWith('hd-1-acc0-idx0-dt9')
         expect(removeKeyAndChildrenSpy).toHaveBeenCalledWith('hd-1')
     })
 })
