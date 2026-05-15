@@ -38,8 +38,13 @@ vi.mock('@perawallet/wallet-core-contacts', async () => {
     }
 })
 
+const routeParamsRef: { params: { address?: string; label?: string } } = {
+    params: {},
+}
+
 vi.mock('@react-navigation/native', () => ({
     useNavigation: () => ({ goBack: goBackMock }),
+    useRoute: () => ({ params: routeParamsRef.params }),
 }))
 
 vi.mock('@hooks/useLanguage', () => ({
@@ -62,29 +67,33 @@ vi.mock('@hooks/useNfdResolve', () => ({
 }))
 
 // Stub useContactForm so tests can control `isValid` / observe `setError`
-// without wrestling with react-hook-form internals.
+// without wrestling with react-hook-form internals. The `useContactFormMock`
+// also captures the `initialContact` arg so we can assert that route-param
+// prefill is forwarded.
 const setErrorMock = vi.fn()
 const formState = { isValid: false }
+const useContactFormMock = vi.fn((_initialContact: unknown) => ({
+    control: {} as unknown,
+    handleSubmit: vi.fn(),
+    setError: setErrorMock,
+    errors: {},
+    get isValid() {
+        return formState.isValid
+    },
+    rawAddressInput: '',
+    imageUri: undefined,
+    nfd: {
+        resolvedAddress: '',
+        isNfdResolved: false,
+        isNfdResolving: false,
+        nfdName: undefined,
+    },
+    onAddressInputChange: vi.fn(),
+    onPickImage: vi.fn(),
+}))
 vi.mock('../useContactForm', () => ({
-    useContactForm: () => ({
-        control: {} as unknown,
-        handleSubmit: vi.fn(),
-        setError: setErrorMock,
-        errors: {},
-        get isValid() {
-            return formState.isValid
-        },
-        rawAddressInput: '',
-        imageUri: undefined,
-        nfd: {
-            resolvedAddress: '',
-            isNfdResolved: false,
-            isNfdResolving: false,
-            nfdName: undefined,
-        },
-        onAddressInputChange: vi.fn(),
-        onPickImage: vi.fn(),
-    }),
+    useContactForm: (initialContact: unknown) =>
+        useContactFormMock(initialContact),
 }))
 
 describe('useAddContactForm', () => {
@@ -92,6 +101,24 @@ describe('useAddContactForm', () => {
         vi.clearAllMocks()
         addContactMock.mockReset()
         formState.isValid = false
+        routeParamsRef.params = {}
+    })
+
+    it('forwards address + label route params as the form prefill', () => {
+        routeParamsRef.params = { address: 'PREFILLED', label: 'Alice' }
+
+        renderHook(() => useAddContactForm())
+
+        expect(useContactFormMock).toHaveBeenCalledWith({
+            address: 'PREFILLED',
+            name: 'Alice',
+        })
+    })
+
+    it('passes null when no route params are present', () => {
+        renderHook(() => useAddContactForm())
+
+        expect(useContactFormMock).toHaveBeenCalledWith(null)
     })
 
     it('no-ops save when the form is invalid (default state)', () => {

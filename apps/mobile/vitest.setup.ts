@@ -2360,6 +2360,29 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
                 err instanceof Error ? err : undefined,
             ),
     ),
+    microAlgosToAlgos: vi.fn((microAlgos: bigint | number | string) => {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const { Decimal } = require('decimal.js')
+        return new Decimal(microAlgos.toString()).dividedBy(1_000_000)
+    }),
+    baseUnitsToDisplayUnits: vi.fn(
+        (baseUnits: bigint | number | string, decimals: number) => {
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
+            const { Decimal } = require('decimal.js')
+            return new Decimal(baseUnits.toString()).dividedBy(
+                new Decimal(10).pow(decimals),
+            )
+        },
+    ),
+}))
+
+// Stub lottie-react-native globally. It ships untransformed TSX inside its
+// commonjs build, which Vitest's external module loader can't parse — any
+// transitive import of LottieView throws "Unexpected token 'typeof'" at
+// test collection time. Local mocks in component-specific tests still
+// override this with their own stubs when they need testID wiring.
+vi.mock('lottie-react-native', () => ({
+    default: () => null,
 }))
 
 // Mock @perawallet/wallet-extension-platform

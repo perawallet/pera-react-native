@@ -22,11 +22,20 @@ import {
 export type UseQRScannerViewProps = {
     isVisible: boolean
     onSuccess: (url: string, restartScanning: () => void) => void
+    /**
+     * Called when a recognised deeplink URL fails to dispatch (handler
+     * threw, parser-recognised but unsupported, etc.). Used to dismiss
+     * the camera Modal so any error toast queued by the deeplink handler
+     * becomes visible — toasts render above Modal in the root tree but
+     * are obscured by the Modal's native window while it's open.
+     */
+    onClose?: () => void
 }
 
 export const useQRScannerView = ({
     isVisible,
     onSuccess,
+    onClose,
 }: UseQRScannerViewProps) => {
     const device = useCameraDevice('back')
     const { hasPermission, requestPermission } = useCameraPermission()
@@ -56,11 +65,22 @@ export const useQRScannerView = ({
                     setScanningEnabled(true)
                     return
                 }
+                // Push, don't replace: the QR modal dismisses itself via
+                // `onSuccess`, so the underlying nav already advances. Using
+                // `replace` here would discard the screen the user was on,
+                // leaving destinations like Staking / AssetDetails with no
+                // back path.
                 handleDeepLink(
                     url,
-                    true,
+                    false,
                     'qr',
-                    () => setScanningEnabled(true),
+                    () => {
+                        // Dispatcher already toasted the failure. Close the
+                        // Modal so the toast (rendered behind it via the
+                        // root NotifierRoot) becomes visible.
+                        setScanningEnabled(true)
+                        onClose?.()
+                    },
                     () => {
                         logger.debug(
                             'QRScannerView: Deep link handled successfully',

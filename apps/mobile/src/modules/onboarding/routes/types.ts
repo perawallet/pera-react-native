@@ -96,5 +96,9 @@ export type AddAccountStackParamList = ImportFlowParamList & {
     AddAccountHome: undefined
     SelectHDWallet: undefined
     WatchInfo: undefined
-    WatchAccount: undefined
+    WatchAccount: Optional<{
+        // Set by the watch-account / register-watch-account deeplinks so the
+        // address field starts populated and the user only has to confirm.
+        prefillAddress?: string
+    }>
 }

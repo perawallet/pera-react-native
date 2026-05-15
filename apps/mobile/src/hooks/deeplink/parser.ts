@@ -26,6 +26,12 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
  * Parse Universal Links: https://perawallet.app/...
+ *
+ * Path conventions mirror the pera-android AndroidManifest so QR codes and
+ * shared links resolve identically across native apps and this RN build:
+ *   /qr/perawallet/app/<action>?...  → perawallet://app/<action>?...
+ *   /qr/perawallet/<rest>             → perawallet://<rest>
+ *   /qr/perawallet-wc/<rest>          → perawallet-wc://<rest>
  */
 const parseUniversalLink = (url: string): Nullable<AnyParsedDeeplink> => {
     const normalizedUrl = normalizeUrl(url)
@@ -36,6 +42,12 @@ const parseUniversalLink = (url: string): Nullable<AnyParsedDeeplink> => {
             'perawallet://app/',
         )
         return parsePerawalletAppUri(convertedUrl)
+    } else if (normalizedUrl.includes('/qr/perawallet-wc/')) {
+        const convertedUrl = url.replace(
+            'https://perawallet.app/qr/perawallet-wc/',
+            'perawallet-wc://',
+        )
+        return parseWalletConnectUri(convertedUrl)
     } else if (normalizedUrl.includes('/qr/perawallet/')) {
         const convertedUrl = url.replace(
             'https://perawallet.app/qr/perawallet/',
@@ -45,6 +57,35 @@ const parseUniversalLink = (url: string): Nullable<AnyParsedDeeplink> => {
     }
 
     return null
+}
+
+/**
+ * Legacy recover-account QR format from native pera-android / pera-ios:
+ * the QR encodes a JSON document `{"version":1,"mnemonic":"word1 word2 ..."}`
+ * directly (no scheme). Detect that shape and lift the mnemonic out so the
+ * RECOVER_ADDRESS dispatch path can handle it.
+ */
+const parseLegacyMnemonicJson = (
+    url: string,
+): Nullable<AnyParsedDeeplink> => {
+    const trimmed = url.trim()
+    if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) return null
+    try {
+        const parsed = JSON.parse(trimmed) as {
+            mnemonic?: unknown
+            version?: unknown
+        }
+        if (typeof parsed.mnemonic !== 'string' || !parsed.mnemonic) {
+            return null
+        }
+        return {
+            type: DeeplinkType.RECOVER_ADDRESS,
+            sourceUrl: url,
+            mnemonic: parsed.mnemonic,
+        }
+    } catch {
+        return null
+    }
 }
 
 /**
@@ -60,6 +101,11 @@ export const parseDeeplink = (url: string): Nullable<AnyParsedDeeplink> => {
             address: url,
         } as AddressActionsDeeplink
     }
+
+    // Legacy native recover-account QR codes are raw JSON, no scheme — try
+    // that before any scheme-based parsing.
+    const legacyMnemonic = parseLegacyMnemonicJson(url)
+    if (legacyMnemonic) return legacyMnemonic
 
     const normalizedUrl = normalizeUrl(url)
 

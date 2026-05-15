@@ -103,6 +103,17 @@
         "confirm": "Remove",
         "cancel": "Cancel"
     },
+    "address_actions": {
+        "title": "Scanned Account Address",
+        "send_transaction": "Send Transaction",
+        "send_transaction_subtitle": "Send ALGO or assets to this address",
+        "watch_address": "Watch an Address",
+        "watch_address_subtitle": "Add as a watch-only account",
+        "add_contact": "Add New Contact",
+        "add_contact_subtitle": "Save this address for later",
+        "edit_contact": "Edit Contact",
+        "edit_contact_subtitle": "Update {{name}}"
+    },
     "address_display": {
         "you_suffix": "{{address}} (You)"
     },
