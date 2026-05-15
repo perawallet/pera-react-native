@@ -79,7 +79,7 @@ export const useQRViewScreen = (): UseQRViewScreenResult => {
         if (canSelectAccount) {
             navigation.goBack()
         } else {
-            onFinished()
+            onFinished?.()
         }
     }, [canSelectAccount, navigation, onFinished])
 
