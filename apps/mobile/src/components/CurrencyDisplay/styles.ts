@@ -49,6 +49,7 @@ export const useStyles = makeStyles((theme, props: CurrencyDisplayProps) => {
         algoIcon: {
             width: size,
             height: size,
+            marginBottom: 3,
         },
     }
 })

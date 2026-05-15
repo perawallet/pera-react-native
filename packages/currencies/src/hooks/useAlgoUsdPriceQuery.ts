@@ -12,21 +12,37 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
-import { sql } from 'drizzle-orm'
-import { getDatabase } from '@perawallet/wallet-core-database'
+import { eq, and } from 'drizzle-orm'
+import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import {
+    decimalColumn,
+    getDatabase,
+} from '@perawallet/wallet-core-database'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { currencyQueryKeys } from './querykeys'
 
-const ALGO_ASSET_ID = '0'
+const AssetPricesTable = sqliteTable('asset_prices', {
+    assetId: decimalColumn('asset_id').notNull(),
+    network: text('network').notNull(),
+    usdPrice: decimalColumn('usd_price').notNull(),
+})
 
-async function getAlgoPriceFromDb(network: string): Promise<string> {
+const ALGO_ASSET_ID = new Decimal(0)
+
+async function getAlgoPriceFromDb(network: string): Promise<Decimal> {
     const db = getDatabase()
+    const rows = await db
+        .select({ usdPrice: AssetPricesTable.usdPrice })
+        .from(AssetPricesTable)
+        .where(
+            and(
+                eq(AssetPricesTable.assetId, ALGO_ASSET_ID),
+                eq(AssetPricesTable.network, network),
+            ),
+        )
+        .all()
 
-    const rows = await db.all<{ usd_price: string }>(
-        sql`SELECT usd_price FROM asset_prices WHERE asset_id = ${ALGO_ASSET_ID} AND network = ${network} LIMIT 1`,
-    )
-
-    return rows[0]?.usd_price ?? '0'
+    return rows[0]?.usdPrice ?? new Decimal(0)
 }
 
 export const useAlgoUsdPriceQuery = (enabled: boolean = true) => {
@@ -35,7 +51,6 @@ export const useAlgoUsdPriceQuery = (enabled: boolean = true) => {
     return useQuery({
         queryKey: currencyQueryKeys.algoUsdPrice(network),
         queryFn: () => getAlgoPriceFromDb(network),
-        select: (data: string) => new Decimal(data),
         staleTime: Infinity,
         enabled,
     })
