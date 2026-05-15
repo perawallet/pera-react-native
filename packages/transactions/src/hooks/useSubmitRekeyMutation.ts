@@ -20,8 +20,7 @@ import {
     submitAndAutoRefresh,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
-import { useLanguage } from '@hooks/useLanguage'
-import { RekeyError } from '../../utils/RekeyError'
+import { RekeyError } from '../errors'
 import { requestRekeySignatures } from './requestRekeySignatures'
 
 import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
@@ -31,6 +30,18 @@ export type SubmitRekeyParams = {
     sourceAddress: string
     /** Address that will become the new auth address. */
     rekeyToAddress: string
+}
+
+export type UseSubmitRekeyMutationOptions = {
+    /**
+     * Localized strings shown in the signing pipeline's review UI. The
+     * hook lives in a package and intentionally doesn't know about app
+     * i18n — callers pass already-localized values.
+     */
+    signingMetadata: {
+        name: string
+        description: string
+    }
 }
 
 export type UseSubmitRekeyMutationResult = {
@@ -52,8 +63,9 @@ export type UseSubmitRekeyMutationResult = {
  * that failed (`build_failed`, `signing_failed`, `submission_failed`,
  * `user_rejected`) so confirm screens can show failure-specific copy.
  */
-export const useSubmitRekeyMutation = (): UseSubmitRekeyMutationResult => {
-    const { t } = useLanguage()
+export const useSubmitRekeyMutation = ({
+    signingMetadata,
+}: UseSubmitRekeyMutationOptions): UseSubmitRekeyMutationResult => {
     const algokit = useAlgorandClient()
     const { addSignRequest } = useSigningRequest()
     const { encodeSignedTransactions } = useTransactionEncoder()
@@ -92,10 +104,7 @@ export const useSubmitRekeyMutation = (): UseSubmitRekeyMutationResult => {
             // (`user_rejected` / `signing_failed`), so it is not re-wrapped.
             const signed = await requestRekeySignatures(
                 addSignRequest,
-                {
-                    name: t('rekey.signing.source_name'),
-                    description: t('rekey.signing.source_description'),
-                },
+                signingMetadata,
                 [unsignedTxn],
             )
 

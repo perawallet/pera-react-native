@@ -44,12 +44,13 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
         mockSubmitAndAutoRefresh(...args),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
-
 import { useSubmitRekeyMutation } from '../useSubmitRekeyMutation'
-import { RekeyError } from '../../../utils/RekeyError'
+import { RekeyError } from '../../errors'
+
+const SIGNING_METADATA = {
+    name: 'Source account',
+    description: 'Sign to rekey this account',
+}
 
 type MockSignRequest = {
     txs: unknown[]
@@ -90,9 +91,12 @@ describe('useSubmitRekeyMutation', () => {
         )
         mockSubmitAndAutoRefresh.mockResolvedValueOnce(txIds)
 
-        const { result } = renderHook(() => useSubmitRekeyMutation(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useSubmitRekeyMutation({ signingMetadata: SIGNING_METADATA }),
+            {
+                wrapper,
+            },
+        )
 
         let returned: string[] | undefined
         await act(async () => {
@@ -131,9 +135,12 @@ describe('useSubmitRekeyMutation', () => {
             },
         )
 
-        const { result } = renderHook(() => useSubmitRekeyMutation(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useSubmitRekeyMutation({ signingMetadata: SIGNING_METADATA }),
+            {
+                wrapper,
+            },
+        )
 
         await expect(
             result.current.submitAsync({
@@ -148,9 +155,12 @@ describe('useSubmitRekeyMutation', () => {
         const buildError = new Error('cannot build payment')
         mockPayment.mockRejectedValueOnce(buildError)
 
-        const { result } = renderHook(() => useSubmitRekeyMutation(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useSubmitRekeyMutation({ signingMetadata: SIGNING_METADATA }),
+            {
+                wrapper,
+            },
+        )
 
         await expect(
             result.current.submitAsync({
@@ -174,9 +184,12 @@ describe('useSubmitRekeyMutation', () => {
         )
         mockSubmitAndAutoRefresh.mockRejectedValueOnce(algodError)
 
-        const { result } = renderHook(() => useSubmitRekeyMutation(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useSubmitRekeyMutation({ signingMetadata: SIGNING_METADATA }),
+            {
+                wrapper,
+            },
+        )
 
         const rejection = result.current.submitAsync({
             sourceAddress: 'SRC',
@@ -230,7 +243,7 @@ describe('useSubmitRekeyMutation', () => {
         )
 
         const { result, rerender } = renderHook(
-            () => useSubmitRekeyMutation(),
+            () => useSubmitRekeyMutation({ signingMetadata: SIGNING_METADATA }),
             { wrapper: productionLikeWrapper },
         )
 

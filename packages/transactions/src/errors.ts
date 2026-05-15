@@ -15,6 +15,7 @@ import {
     ErrorCategory,
     ErrorMetadata,
     ErrorSeverity,
+    toError,
 } from '@perawallet/wallet-core-shared'
 
 /**
@@ -77,5 +78,45 @@ export class NonZeroBalanceError extends TransactionError {
 export class CreatorCannotOptOutError extends TransactionError {
     constructor() {
         super('Asset creators cannot opt out of their own assets.')
+    }
+}
+
+/**
+ * The stage of a rekey flow that failed. Confirm screens map this to
+ * failure-specific copy instead of a single generic "something went wrong".
+ *
+ *  - `user_rejected`     — source cancelled signing (Close on the Ledger
+ *                          approval sheet, or rejected on device).
+ *  - `build_failed`      — the unsigned rekey payment could not be built.
+ *  - `signing_failed`    — the signing pipeline errored (Ledger timeout,
+ *                          transport failure, device error).
+ *  - `submission_failed` — algod rejected or could not receive the signed
+ *                          group (fee too low, network, node error).
+ */
+export type RekeyErrorReason =
+    | 'user_rejected'
+    | 'build_failed'
+    | 'signing_failed'
+    | 'submission_failed'
+
+/**
+ * Typed error for every rekey failure. The {@link RekeyErrorReason} lets
+ * callers branch on the failed stage; `originalError` preserves the raw
+ * cause so it can still be routed through the algod error translator.
+ *
+ * The raw cause is accepted as `unknown` and normalized to an `Error` —
+ * caught values are not guaranteed to be `Error` instances, and downstream
+ * consumers rely on it being one.
+ */
+export class RekeyError extends Error {
+    readonly reason: RekeyErrorReason
+    readonly originalError?: Error
+
+    constructor(reason: RekeyErrorReason, originalError?: unknown) {
+        super(`Rekey failed: ${reason}`)
+        this.name = 'RekeyError'
+        this.reason = reason
+        this.originalError =
+            originalError === undefined ? undefined : toError(originalError)
     }
 }

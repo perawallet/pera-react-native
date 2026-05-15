@@ -12,7 +12,7 @@
 
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 
-import { RekeyError } from '../../utils/RekeyError'
+import { RekeyError } from '../errors'
 
 import type {
     PeraSignedTransaction,

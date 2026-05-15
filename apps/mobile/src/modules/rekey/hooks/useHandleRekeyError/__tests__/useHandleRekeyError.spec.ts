@@ -29,7 +29,7 @@ vi.mock('@hooks/useLanguage', () => ({
 }))
 
 import { useHandleRekeyError } from '../useHandleRekeyError'
-import { RekeyError } from '../../../utils/RekeyError'
+import { RekeyError } from '@perawallet/wallet-core-transactions'
 
 describe('useHandleRekeyError', () => {
     beforeEach(() => {

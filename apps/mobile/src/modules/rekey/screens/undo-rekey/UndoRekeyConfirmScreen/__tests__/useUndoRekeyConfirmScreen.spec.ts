@@ -83,14 +83,14 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 })
 
 const mockSubmitAsync = vi.fn()
-vi.mock('../../../../hooks/useSubmitRekeyMutation', () => ({
+vi.mock('@perawallet/wallet-core-transactions', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-transactions')
+    >()),
     useSubmitRekeyMutation: () => ({
         submitAsync: mockSubmitAsync,
         isPending: false,
     }),
-}))
-
-vi.mock('../../../../hooks/useRekeyTransactionFeeQuery', () => ({
     useRekeyTransactionFeeQuery: () => ({
         feeAlgos: new Decimal('0.001'),
         isPending: false,
@@ -196,7 +196,8 @@ describe('useUndoRekeyConfirmScreen', () => {
     })
 
     it('shows the user-rejected toast and does not navigate when the signer cancels', async () => {
-        const { RekeyError } = await import('../../../../utils/RekeyError')
+        const { RekeyError } =
+            await import('@perawallet/wallet-core-transactions')
         mockRequestBottomSheet.mockResolvedValueOnce(true)
         mockSubmitAsync.mockRejectedValueOnce(new RekeyError('user_rejected'))
         const { result } = renderHook(() => useUndoRekeyConfirmScreen())

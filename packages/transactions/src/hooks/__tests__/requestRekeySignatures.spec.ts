@@ -13,7 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 import { requestRekeySignatures } from '../requestRekeySignatures'
-import { RekeyError } from '../../../utils/RekeyError'
+import { RekeyError } from '../../errors'
 
 import type {
     PeraSignedTransaction,

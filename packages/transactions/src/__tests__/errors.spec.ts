@@ -16,7 +16,7 @@ import {
     ErrorCategory,
     ErrorSeverity,
 } from '@perawallet/wallet-core-shared'
-import { TransactionError, InvalidSendParamsError } from '../errors'
+import { TransactionError, InvalidSendParamsError, RekeyError } from '../errors'
 
 describe('TransactionError', () => {
     it('is an instance of AppError and Error', () => {
@@ -141,5 +141,36 @@ describe('InvalidSendParamsError', () => {
         expect(error.metadata.severity).toBe(ErrorSeverity.HIGH)
         expect(error.metadata.category).toBe(ErrorCategory.TRANSACTIONS)
         expect(error.metadata.retryable).toBe(false)
+    })
+})
+
+describe('RekeyError', () => {
+    it('tags the failed stage as the reason', () => {
+        const error = new RekeyError('submission_failed')
+
+        expect(error).toBeInstanceOf(Error)
+        expect(error.name).toBe('RekeyError')
+        expect(error.reason).toBe('submission_failed')
+    })
+
+    it('preserves the original cause for downstream translation', () => {
+        const cause = new Error('algod unreachable')
+        const error = new RekeyError('submission_failed', cause)
+
+        expect(error.originalError).toBe(cause)
+    })
+
+    it('leaves originalError undefined when no cause is given', () => {
+        const error = new RekeyError('user_rejected')
+
+        expect(error.originalError).toBeUndefined()
+    })
+
+    it('normalizes a non-Error cause to an Error', () => {
+        // Caught values are not guaranteed to be Error instances.
+        const error = new RekeyError('build_failed', 'something broke')
+
+        expect(error.originalError).toBeInstanceOf(Error)
+        expect(error.originalError?.message).toBe('something broke')
     })
 })

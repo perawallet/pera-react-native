@@ -19,11 +19,14 @@ import {
     useFindAccountByAddress,
 } from '@perawallet/wallet-core-accounts'
 import { config } from '@perawallet/wallet-core-config'
+import {
+    useRekeyTransactionFeeQuery,
+    useSubmitRekeyMutation,
+} from '@perawallet/wallet-core-transactions'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useWebView } from '@modules/webview'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { useRekeyTransactionFeeQuery } from '../../../hooks/useRekeyTransactionFeeQuery'
-import { useSubmitRekeyMutation } from '../../../hooks/useSubmitRekeyMutation'
+import { useLanguage } from '@hooks/useLanguage'
 import { useHandleRekeyError } from '../../../hooks/useHandleRekeyError'
 import { PreviousRekeyWarningSheet } from '../../../components/PreviousRekeyWarningSheet'
 
@@ -51,11 +54,18 @@ export const useUndoRekeyConfirmScreen =
         const source = useFindAccountByAddress(sourceAddress)
         const currentAuth = useFindAccountByAddress(source?.rekeyAddress ?? '')
 
+        const { t } = useLanguage()
         const handleRekeyError = useHandleRekeyError()
         const { pushWebView } = useWebView()
         const { request: requestBottomSheet } = useBottomSheet()
-        const { submitAsync, isPending: isSubmitting } =
-            useSubmitRekeyMutation()
+        const { submitAsync, isPending: isSubmitting } = useSubmitRekeyMutation(
+            {
+                signingMetadata: {
+                    name: t('rekey.signing.source_name'),
+                    description: t('rekey.signing.source_description'),
+                },
+            },
+        )
         // Undo rekeys the account back to itself, so source and rekey-to
         // address are the same.
         const { feeAlgos, isPending: feePending } = useRekeyTransactionFeeQuery(
