@@ -306,4 +306,62 @@ describe('useSearchAccountsScreen', () => {
             expect(mockGoBack).toHaveBeenCalled()
         })
     })
+
+    it('algo25 account with no rekeyed: selects the imported account and exits', async () => {
+        const algo25Account = {
+            id: '1',
+            address: 'PARENT_ADDRESS',
+            type: AccountTypes.algo25,
+            keyPairId: 'wallet-1',
+        }
+        mockRouteParams.current = {
+            account: algo25Account,
+            createIfEmpty: undefined,
+        } as SearchAccountsParams
+        mockDiscoverRekeyedAccounts.mockResolvedValue([])
+
+        renderHook(() => useSearchAccountsScreen())
+
+        await waitFor(() => {
+            expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith(
+                'PARENT_ADDRESS',
+            )
+            expect(mockExitAccountFlow).toHaveBeenCalled()
+            expect(mockReplace).not.toHaveBeenCalled()
+        })
+    })
+
+    it('algo25 account with rekeyed: selects the parent before navigating to ImportRekeyedAddresses', async () => {
+        const algo25Account = {
+            id: '1',
+            address: 'PARENT_ADDRESS',
+            type: AccountTypes.algo25,
+            keyPairId: 'wallet-1',
+        }
+        const rekeyedAccounts = [
+            {
+                id: 'rekeyed-1',
+                address: 'REKEYED_1',
+                type: AccountTypes.algo25,
+                rekeyAddress: 'PARENT_ADDRESS',
+            },
+        ]
+        mockRouteParams.current = {
+            account: algo25Account,
+            createIfEmpty: undefined,
+        } as SearchAccountsParams
+        mockDiscoverRekeyedAccounts.mockResolvedValue(rekeyedAccounts)
+
+        renderHook(() => useSearchAccountsScreen())
+
+        await waitFor(() => {
+            expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith(
+                'PARENT_ADDRESS',
+            )
+            expect(mockReplace).toHaveBeenCalledWith('ImportRekeyedAddresses', {
+                accounts: rekeyedAccounts,
+            })
+            expect(mockExitAccountFlow).not.toHaveBeenCalled()
+        })
+    })
 })

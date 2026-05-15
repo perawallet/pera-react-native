@@ -112,13 +112,7 @@ export function useImportRekeyedAddressesScreen(): UseImportRekeyedAddressesScre
             exitAccountFlow()
             setIsImporting(false)
         })
-    }, [
-        accounts,
-        selectedAddresses,
-        allAccounts,
-        exitAccountFlow,
-        setAccounts,
-    ])
+    }, [accounts, selectedAddresses, allAccounts, exitAccountFlow, setAccounts])
 
     const handleSkip = useCallback(() => {
         exitAccountFlow()
