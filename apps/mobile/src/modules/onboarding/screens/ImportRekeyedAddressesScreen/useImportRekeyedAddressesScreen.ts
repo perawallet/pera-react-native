@@ -16,7 +16,6 @@ import { OnboardingStackParamList } from '../../routes/types'
 import {
     useAllAccounts,
     useSetAccounts,
-    useSelectedAccountAddress,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
@@ -51,7 +50,6 @@ export function useImportRekeyedAddressesScreen(): UseImportRekeyedAddressesScre
     const allAccounts = useAllAccounts()
 
     const { exitAccountFlow } = useExitAccountFlow()
-    const { setSelectedAccountAddress } = useSelectedAccountAddress()
     const { setAccounts } = useSetAccounts()
 
     const alreadyImportedAddresses = useMemo(() => {
@@ -111,18 +109,10 @@ export function useImportRekeyedAddressesScreen(): UseImportRekeyedAddressesScre
         setIsImporting(true)
         deferToNextCycle(() => {
             setAccounts([...allAccounts, ...accountsToAdd])
-            setSelectedAccountAddress(accountsToAdd[0].address)
             exitAccountFlow()
             setIsImporting(false)
         })
-    }, [
-        accounts,
-        selectedAddresses,
-        allAccounts,
-        exitAccountFlow,
-        setSelectedAccountAddress,
-        setAccounts,
-    ])
+    }, [accounts, selectedAddresses, allAccounts, exitAccountFlow, setAccounts])
 
     const handleSkip = useCallback(() => {
         exitAccountFlow()

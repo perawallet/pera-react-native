@@ -156,7 +156,7 @@ describe('useImportRekeyedAddressesScreen', () => {
         })
 
         expect(mockSetAccounts).toHaveBeenCalledWith(MOCK_ACCOUNTS)
-        expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith('ACC1')
+        expect(mockSetSelectedAccountAddress).not.toHaveBeenCalled()
         expect(mockExitAccountFlow).toHaveBeenCalled()
     })
 
