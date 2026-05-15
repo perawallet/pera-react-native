@@ -1066,4 +1066,76 @@ describe('useDeeplinkListener', () => {
 
         // parseDeeplink returns null, so deeplink is not handled
     })
+
+    describe('PERA_WEB_IMPORT', () => {
+        // Import inside the describe so the top-of-file mocks don't have to
+        // know about the store. The store is a zustand singleton — calling
+        // `.getState().setQr(...)` from the dispatcher mutates this exact
+        // module instance.
+        const importStore = async () =>
+            (
+                (await import('@modules/onboarding/hooks/peraWebImportFlowStore')) as typeof import('@modules/onboarding/hooks/peraWebImportFlowStore')
+            ).usePeraWebImportFlowStore
+
+        const fixtureQr = {
+            type: DeeplinkType.PERA_WEB_IMPORT,
+            backupId: 'backup-id-1',
+            encryptionKey: Uint8Array.from(
+                Array.from({ length: 32 }, (_, i) => i + 1),
+            ),
+            sourceUrl: '{"backupId":"backup-id-1","encryptionKey":"..."}',
+        }
+
+        beforeEach(async () => {
+            const store = await importStore()
+            store.getState().reset()
+        })
+
+        it('stashes the QR payload + navigates when source is "qr"', async () => {
+            ;(parseDeeplink as Mock).mockReturnValue(fixtureQr)
+            const { result } = renderHook(() => useDeepLink())
+
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    fixtureQr.sourceUrl,
+                    true,
+                    'qr',
+                )
+            })
+
+            const store = await importStore()
+            const stored = store.getState().qr
+            expect(stored).not.toBeNull()
+            expect(stored!.backupId).toBe('backup-id-1')
+            expect(Array.from(stored!.encryptionKey)).toEqual(
+                Array.from(fixtureQr.encryptionKey),
+            )
+            expect(vi.mocked(StackActions.replace)).toHaveBeenCalledWith(
+                'AddAccount',
+                expect.objectContaining({ screen: 'PeraWebImportLoading' }),
+            )
+        })
+
+        it('ignores Pera Web payloads that arrive via a deeplink (QR-only entry point)', async () => {
+            ;(parseDeeplink as Mock).mockReturnValue(fixtureQr)
+            const { result } = renderHook(() => useDeepLink())
+
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    fixtureQr.sourceUrl,
+                    true,
+                    'deeplink',
+                )
+            })
+
+            const store = await importStore()
+            // No setQr fired — a malicious page can't push an inbound URL
+            // that auto-triggers an import.
+            expect(store.getState().qr).toBeNull()
+            expect(vi.mocked(StackActions.replace)).not.toHaveBeenCalledWith(
+                'AddAccount',
+                expect.objectContaining({ screen: 'PeraWebImportLoading' }),
+            )
+        })
+    })
 })

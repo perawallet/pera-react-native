@@ -12,7 +12,7 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { sha256 } from '@noble/hashes/sha256'
+import { sha256 } from '@noble/hashes/sha2.js'
 import { canonify } from 'canonify'
 import { encodeToBase64, type Optional } from '@perawallet/wallet-core-shared'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'

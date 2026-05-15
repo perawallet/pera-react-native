@@ -994,6 +994,129 @@
             "asb_title": "Algorand Secure Backup",
             "asb_description": "I want to restore my accounts using an Algorand Secure Backup file and 12-word key"
         },
+        "asb_import": {
+            "info": {
+                "title": "Import from Algorand Secure Backup",
+                "body": "Recover the accounts you saved to an Algorand Secure Backup file. You will need the backup file and the 12-word recovery key that was generated when the backup was created.",
+                "continue": "Continue"
+            },
+            "backup": {
+                "title": "Select your backup file",
+                "body": "To restore your wallet, select or paste your backup file.",
+                "pick_file_button": "Select your backup file",
+                "paste_button": "Paste backup file text",
+                "continue": "Next",
+                "pasted_name": "Pasted backup",
+                "errors": {
+                    "title": "Backup file could not be loaded",
+                    "empty_file": "The file is empty.",
+                    "not_base64": "The file is not in the expected Algorand Secure Backup format.",
+                    "malformed_envelope": "The file is not a valid Algorand Secure Backup.",
+                    "unsupported_version": "This backup file uses an unsupported version.",
+                    "unsupported_suite": "This backup file uses an unsupported encryption suite.",
+                    "invalid_recovery_key": "The recovery key entered is not valid.",
+                    "decryption_failed": "The recovery key did not unlock this backup.",
+                    "malformed_payload": "The backup file does not contain any recoverable accounts.",
+                    "empty_clipboard": "There is nothing on the clipboard to paste.",
+                    "read_failed": "The file could not be read."
+                }
+            },
+            "key": {
+                "title": "Enter your 12-word recovery key",
+                "body": "Enter the 12-word recovery key that was generated when the Algorand Secure Backup file was created.",
+                "continue": "Continue",
+                "decrypting": "Unlocking your backup…",
+                "errors": {
+                    "title": "Backup could not be unlocked",
+                    "empty_file": "The backup file is empty.",
+                    "not_base64": "The backup file is not valid.",
+                    "malformed_envelope": "The backup file is not valid.",
+                    "unsupported_version": "This backup file uses an unsupported version.",
+                    "unsupported_suite": "This backup file uses an unsupported encryption suite.",
+                    "invalid_recovery_key": "The 12-word recovery key is not valid.",
+                    "decryption_failed": "That recovery key does not unlock this backup. Check each word and try again.",
+                    "malformed_payload": "The backup did not contain any recoverable accounts."
+                }
+            },
+            "select": {
+                "title": "Recover accounts",
+                "body_one": "{{count}} account was found in your backup. Choose which ones to recover.",
+                "body_other": "{{count}} accounts were found in your backup. Choose which ones to recover.",
+                "body": "{{count}} accounts were found in your backup. Choose which ones to recover.",
+                "count_one": "{{count}} account available",
+                "count_other": "{{count}} accounts available",
+                "count": "{{count}} accounts available",
+                "select_all": "Select all",
+                "already_imported": "Already imported",
+                "continue": "Recover accounts",
+                "importing": "Recovering accounts…",
+                "errors": {
+                    "title": "Recovery failed",
+                    "body": "Some accounts could not be recovered. Please try again."
+                }
+            },
+            "result": {
+                "success_title": "Accounts recovered",
+                "success_body_one": "{{count}} account was added to your wallet.",
+                "success_body_other": "{{count}} accounts were added to your wallet.",
+                "success_body": "{{count}} accounts were added to your wallet.",
+                "partial_title": "Some accounts recovered",
+                "partial_body": "Some accounts from the backup could not be recovered. You can try again with a fresh backup file.",
+                "nothing_new_title": "Nothing new to recover",
+                "nothing_new_body": "Every account from the backup is already in this wallet.",
+                "failed_title": "Recovery failed",
+                "failed_body": "No accounts could be recovered from the backup.",
+                "imported_count_one": "{{count}} account recovered",
+                "imported_count_other": "{{count}} accounts recovered",
+                "skipped_count_one": "{{count}} account already in this wallet",
+                "skipped_count_other": "{{count}} accounts already in this wallet",
+                "failed_count_one": "{{count}} account could not be recovered",
+                "failed_count_other": "{{count}} accounts could not be recovered",
+                "done": "Done"
+            }
+        },
+        "pera_web_import": {
+            "info": {
+                "title": "Import from Pera Web",
+                "body": "Open the Pera Web Wallet on your computer, go to Transfer Accounts, select the accounts you want to import, and scan the QR code that's generated.",
+                "scan_button": "Scan QR code",
+                "scanner_title": "Scan the QR code\non Pera Web",
+                "invalid_qr_title": "QR code could not be read"
+            },
+            "loading": {
+                "title": "Importing accounts from Pera Web…",
+                "fetch_failed_title": "Could not load backup",
+                "decrypt_failed_title": "Backup could not be unlocked"
+            },
+            "result": {
+                "success_title": "Accounts imported",
+                "success_body_one": "{{count}} account was added to your wallet.",
+                "success_body_other": "{{count}} accounts were added to your wallet.",
+                "success_body": "{{count}} accounts were added to your wallet.",
+                "partial_title": "Some accounts imported",
+                "partial_body": "Some accounts from the backup could not be imported. Try generating a new QR code on Pera Web.",
+                "nothing_new_title": "Nothing new to import",
+                "nothing_new_body": "Every account from the backup is already in this wallet.",
+                "failed_title": "Import failed",
+                "failed_body": "No accounts could be imported from the backup.",
+                "imported_count_one": "{{count}} account imported",
+                "imported_count_other": "{{count}} accounts imported",
+                "skipped_count_one": "{{count}} account already in this wallet",
+                "skipped_count_other": "{{count}} accounts already in this wallet",
+                "failed_count_one": "{{count}} account could not be imported",
+                "failed_count_other": "{{count}} accounts could not be imported",
+                "done": "Done"
+            },
+            "errors": {
+                "malformed_qr": "This isn't a valid Pera Web QR code.",
+                "unsupported_version": "This QR code uses an unsupported version. Update Pera Web and try again.",
+                "unsupported_action": "This QR code is not an import code.",
+                "empty_content": "The backup is empty or has expired. Generate a new QR code on Pera Web.",
+                "decryption_failed": "We couldn't unlock this backup. Generate a new QR code on Pera Web and try again.",
+                "malformed_payload": "The backup did not contain any importable accounts.",
+                "network_failed": "We couldn't reach Pera Web. Check your connection and try again."
+            }
+        },
         "select_hd_wallet": {
             "title": "Select Universal Wallet",
             "description": "Create your new account under a Universal Wallet you already have",

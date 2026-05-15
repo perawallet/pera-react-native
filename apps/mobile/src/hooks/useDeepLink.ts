@@ -25,6 +25,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
+import { usePeraWebImportFlowStore } from '@modules/onboarding/hooks'
 import { useWebView } from '@modules/webview/hooks/useWebViewStore'
 import {
     isSafeBrowserUrl,
@@ -380,6 +381,23 @@ export const useDeepLink = () => {
                     )
                     break
 
+                case DeeplinkType.PERA_WEB_IMPORT:
+                    if (source !== 'qr') {
+                        logger.warn(
+                            'Pera Web import ignored — only supported via QR scan',
+                            { source },
+                        )
+                        break
+                    }
+                    usePeraWebImportFlowStore.getState().setQr({
+                        backupId: parsedData.backupId,
+                        encryptionKey: parsedData.encryptionKey,
+                    })
+                    navigateToScreen(replaceCurrentScreen, 'AddAccount', {
+                        screen: 'PeraWebImportLoading',
+                    })
+                    break
+
                 case DeeplinkType.HOME:
                 default:
                     navigateToScreen(replaceCurrentScreen, 'TabBar', {
@@ -388,10 +406,17 @@ export const useDeepLink = () => {
                     break
             }
 
-            logger.debug('Deeplink: Handled successfully', { url, parsedData })
+            logger.debug('Deeplink: Handled successfully', {
+                type: parsedData.type,
+            })
             onSuccess?.()
         } catch (error) {
-            logger.error(error as Error, { url })
+            // Don't log the raw `url` here: for Pera Web QR deeplinks it is
+            // the JSON-encoded backup envelope containing the 32-byte
+            // secretbox `encryptionKey`. The logger's JSON-aware redactor
+            // scrubs it on the way out, but we err on the side of not
+            // shipping the cipher key to the crash reporter at all.
+            logger.error(error as Error, { type: parsedData.type })
             // guardrails-ignore-next-line no-error-toast-in-catch reason: bespoke deeplink-failure copy preserved verbatim
             showToast({
                 title: 'Navigation Error',
