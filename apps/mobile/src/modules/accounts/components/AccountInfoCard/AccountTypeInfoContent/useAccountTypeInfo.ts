@@ -12,33 +12,28 @@
 
 import { useCallback, useMemo } from 'react'
 import {
-    isSigningLogicalType,
     useAccountLogicalType,
+    useRekeyTransition,
     type AccountLogicalType,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
-import { useToast } from '@hooks/useToast'
 import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
-import { IconName } from '@components/core'
-
-export type AccountTypeAction = {
-    id: string
-    title: string
-    icon: IconName
-    onPress: () => void
-}
+import { getRekeyLabelI18n, splitAccountTypeLabel } from '../rekeyLabels'
 
 type UseAccountTypeInfoParams = {
     account: WalletAccount
-    onClose: () => void
 }
 
 type UseAccountTypeInfoResult = {
     title: string
+    /**
+     * Rekey transition qualifier (e.g. "(Standard to Ledger)"), shown on its
+     * own line below the title. Null for non-rekeyed account types.
+     */
+    titleQualifier: string | null
     description: string
-    actions: AccountTypeAction[]
     handleLearnMore: () => void
 }
 
@@ -60,16 +55,16 @@ const I18N_MAP = {
         description: 'account_type_info.multisig_description',
     },
     Rekeyed: {
-        title: 'account_type_info.rekeyed_standard_title',
-        description: 'account_type_info.rekeyed_standard_description',
+        title: 'account_type_info.no_auth_title',
+        description: 'account_type_info.no_auth_description',
     },
     RekeyedAuth: {
         title: 'account_type_info.rekeyed_standard_title',
         description: 'account_type_info.rekeyed_standard_description',
     },
     NoAuth: {
-        title: 'account_type_info.no_auth_title',
-        description: 'account_type_info.no_auth_description',
+        title: 'account_type_info.watch_title',
+        description: 'account_type_info.watch_description',
     },
 } satisfies Record<AccountLogicalType, { title: string; description: string }>
 
@@ -79,25 +74,32 @@ const LEARN_MORE_URL_MAP: Partial<Record<AccountLogicalType, string>> = {
 
 export const useAccountTypeInfo = ({
     account,
-    onClose,
 }: UseAccountTypeInfoParams): UseAccountTypeInfoResult => {
     const { t } = useLanguage()
-    const { showToast } = useToast()
     const { pushWebView } = useWebView()
     const logicalType: AccountLogicalType =
         useAccountLogicalType(account.address) ?? 'NoAuth'
 
-    const title = t(I18N_MAP[logicalType].title)
-    const description = t(I18N_MAP[logicalType].description)
+    const rekeyTransition = useRekeyTransition(account.address)
 
-    const notImplemented = useCallback(() => {
-        showToast({
-            title: t('common.not_implemented.title'),
-            body: t('common.not_implemented.body'),
-            type: 'error',
-        })
-        onClose()
-    }, [showToast, t, onClose])
+    const { title, titleQualifier, description } = useMemo(() => {
+        if (rekeyTransition) {
+            const { labelKey, fromKey, toKey, descriptionKey } =
+                getRekeyLabelI18n(rekeyTransition)
+            const label = t(labelKey, { from: t(fromKey), to: t(toKey) })
+            const { main, qualifier } = splitAccountTypeLabel(label)
+            return {
+                title: main,
+                titleQualifier: qualifier,
+                description: t(descriptionKey),
+            }
+        }
+        return {
+            title: t(I18N_MAP[logicalType].title),
+            titleQualifier: null,
+            description: t(I18N_MAP[logicalType].description),
+        }
+    }, [rekeyTransition, logicalType, t])
 
     const handleLearnMore = useCallback(() => {
         const url =
@@ -105,49 +107,10 @@ export const useAccountTypeInfo = ({
         pushWebView({ url })
     }, [pushWebView, logicalType])
 
-    const actions = useMemo(() => {
-        const items: AccountTypeAction[] = []
-
-        if (isSigningLogicalType(logicalType)) {
-            items.push({
-                id: 'rekey-to-ledger',
-                title: t('account_type_info.rekey_to_ledger'),
-                icon: 'rekey',
-                onPress: notImplemented,
-            })
-            items.push({
-                id: 'rekey-to-standard',
-                title: t('account_type_info.rekey_to_standard'),
-                icon: 'rekey',
-                onPress: notImplemented,
-            })
-        }
-
-        if (logicalType === 'RekeyedAuth') {
-            items.push({
-                id: 'undo-rekey',
-                title: t('account_type_info.undo_rekey'),
-                icon: 'undo',
-                onPress: notImplemented,
-            })
-        }
-
-        if (logicalType === 'Rekeyed' || logicalType === 'RekeyedAuth') {
-            items.push({
-                id: 'rescan-rekeyed',
-                title: t('account_type_info.rescan_rekeyed'),
-                icon: 'reload',
-                onPress: notImplemented,
-            })
-        }
-
-        return items
-    }, [logicalType, t, notImplemented])
-
     return {
         title,
+        titleQualifier,
         description,
-        actions,
         handleLearnMore,
     }
 }

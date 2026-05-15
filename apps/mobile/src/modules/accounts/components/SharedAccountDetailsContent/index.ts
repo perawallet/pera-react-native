@@ -10,23 +10,8 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => {
-    return {
-        trigger: {
-            flexShrink: 1,
-            minWidth: 0,
-        },
-        container: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            paddingVertical: theme.spacing.xs,
-            paddingRight: theme.spacing.md,
-            paddingLeft: theme.spacing.xs,
-            gap: theme.spacing.sm,
-            borderRadius: theme.spacing.xl,
-            backgroundColor: theme.colors.background,
-        },
-    }
-})
+export { SharedAccountDetailsContent } from './SharedAccountDetailsContent'
+export type {
+    SharedAccountDetails,
+    SharedAccountDetailsContentProps,
+} from './SharedAccountDetailsContent'

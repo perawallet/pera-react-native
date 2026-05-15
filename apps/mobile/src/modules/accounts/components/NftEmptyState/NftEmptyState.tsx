@@ -17,7 +17,11 @@ import { useStyles } from './styles'
 import NftEmptyIllustration from '@assets/images/nft-empty-state.svg'
 
 type NftEmptyStateProps = {
-    onOptInPress: () => void
+    /**
+     * Hides the opt-in CTA when omitted. Watch / NoAuth accounts can't
+     * sign opt-in transactions, so the button would be a dead-end.
+     */
+    onOptInPress?: () => void
 }
 
 export const NftEmptyState = ({ onOptInPress }: NftEmptyStateProps) => {
@@ -41,13 +45,15 @@ export const NftEmptyState = ({ onOptInPress }: NftEmptyStateProps) => {
             <PWText style={styles.body}>
                 {t('account_details.nfts.empty_body')}
             </PWText>
-            <PWButton
-                title={t('account_details.nfts.empty_optin')}
-                icon='plus'
-                variant='primary'
-                style={styles.button}
-                onPress={onOptInPress}
-            />
+            {onOptInPress && (
+                <PWButton
+                    title={t('account_details.nfts.empty_optin')}
+                    icon='plus'
+                    variant='primary'
+                    style={styles.button}
+                    onPress={onOptInPress}
+                />
+            )}
         </PWView>
     )
 }

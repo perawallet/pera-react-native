@@ -58,6 +58,7 @@ export const ConfettiAnimation = ({
             onAnimationFinish={handleAnimationFinish}
             source={confettiAnimation}
             style={styles.container}
+            resizeMode='cover'
         />
     )
 }

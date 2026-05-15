@@ -16,8 +16,13 @@ import { AddressDisplay } from '@components/AddressDisplay'
 import { ParticipantCount } from '@components/ParticipantCount'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
-import type { SharedAccountDetails } from '../useAccountInfoCard'
 import { useStyles } from './styles'
+
+export type SharedAccountDetails = {
+    participantCount: number
+    threshold: number
+    addresses: string[]
+}
 
 export type SharedAccountDetailsContentProps = {
     details: SharedAccountDetails

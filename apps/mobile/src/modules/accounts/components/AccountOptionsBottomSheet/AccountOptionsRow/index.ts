@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { SharedAccountDetailsContent } from './SharedAccountDetailsContent'
-export type { SharedAccountDetailsContentProps } from './SharedAccountDetailsContent'
+export { AccountOptionsRow } from './AccountOptionsRow'
+export type { AccountOptionsRowProps } from './AccountOptionsRow'

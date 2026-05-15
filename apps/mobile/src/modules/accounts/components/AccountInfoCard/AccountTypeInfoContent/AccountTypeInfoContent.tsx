@@ -10,13 +10,7 @@
  limitations under the License
  */
 
-import {
-    PWDivider,
-    PWIcon,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
+import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
@@ -25,27 +19,40 @@ import { AccountIcon } from '../../AccountIcon'
 
 export type AccountTypeInfoContentProps = {
     account: WalletAccount
-    onClose: () => void
 }
 
 export const AccountTypeInfoContent = ({
     account,
-    onClose,
 }: AccountTypeInfoContentProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { title, description, actions, handleLearnMore } = useAccountTypeInfo(
-        { account, onClose },
-    )
+    const { title, titleQualifier, description, handleLearnMore } =
+        useAccountTypeInfo({
+            account,
+        })
 
     return (
         <PWView style={styles.container}>
             <PWView style={styles.header}>
                 <AccountIcon
                     account={account}
-                    size='md'
+                    size='xl'
                 />
-                <PWText variant='h3'>{title}</PWText>
+                <PWText
+                    variant='h3'
+                    style={styles.title}
+                >
+                    {title}
+                    {titleQualifier && (
+                        <PWText
+                            variant='body'
+                            style={styles.titleQualifier}
+                        >
+                            {'\n'}
+                            {titleQualifier}
+                        </PWText>
+                    )}
+                </PWText>
             </PWView>
 
             <PWText style={styles.description}>{description}</PWText>
@@ -64,29 +71,6 @@ export const AccountTypeInfoContent = ({
                     {t('account_type_info.learn_more')}
                 </PWText>
             </PWTouchableOpacity>
-
-            {actions.length > 0 && (
-                <>
-                    <PWDivider />
-                    <PWView style={styles.actionsContainer}>
-                        {actions.map(action => (
-                            <PWTouchableOpacity
-                                key={action.id}
-                                onPress={action.onPress}
-                                style={styles.actionRow}
-                                testID={`account-type-action-${action.id}`}
-                            >
-                                <PWIcon
-                                    name={action.icon}
-                                    size='sm'
-                                    variant='secondary'
-                                />
-                                <PWText variant='body'>{action.title}</PWText>
-                            </PWTouchableOpacity>
-                        ))}
-                    </PWView>
-                </>
-            )}
         </PWView>
     )
 }

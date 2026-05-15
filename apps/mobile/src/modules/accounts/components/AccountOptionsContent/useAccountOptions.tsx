@@ -19,6 +19,7 @@ import {
     isWatchAccount,
     useAccountLogicalType,
     useAllAccounts,
+    useFindAccountByAddress,
     useRemoveAccountById,
     useUpdateAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -31,9 +32,12 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useViewPassphraseFlow } from '@modules/view-passphrase'
 import { ExportShareAccountContent } from '@modules/multisig/components/ExportShareAccountContent'
+import { SharedAccountDetailsContent } from '../SharedAccountDetailsContent'
 import { IconName } from '@components/core'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { RenameAccountContent } from './RenameAccountContent'
+
+import type { SharedAccountDetails } from '../SharedAccountDetailsContent'
 
 export type AccountOption = {
     id: string
@@ -52,6 +56,11 @@ export type UseAccountOptionsParams = {
 
 export type UseAccountOptionsResult = {
     options: AccountOption[]
+    isRekeyed: boolean
+    canUndoRekey: boolean
+    authAccount: WalletAccount | undefined
+    authAddress: string | undefined
+    handleUndoRekey: () => void
 }
 
 export const useAccountOptions = ({
@@ -64,7 +73,7 @@ export const useAccountOptions = ({
     const { copyToClipboard } = useClipboard()
     const { isAccountEnabled, setAccountEnabled } = useNotificationPreferences()
     const accounts = useAllAccounts()
-    const removeAccountById = useRemoveAccountById()
+    const removeAccount = useRemoveAccountById()
     const updateAccount = useUpdateAccount()
     const navigation = useAppNavigation()
     const { request: requestBottomSheet } = useBottomSheet()
@@ -73,19 +82,16 @@ export const useAccountOptions = ({
     const logicalType = useAccountLogicalType(account.address) ?? 'NoAuth'
     const showPassphrase = logicalType === 'Algo25' || logicalType === 'HdKey'
     const isRekeyed = logicalType === 'Rekeyed' || logicalType === 'RekeyedAuth'
-    const showUndoRekey = logicalType === 'RekeyedAuth'
+    const canUndoRekey = logicalType === 'RekeyedAuth'
+    const showUndoRekey = canUndoRekey
     const isHdWallet = logicalType === 'HdKey'
     const canSign = isSigningLogicalType(logicalType)
     const isSharedAccount = isMultisigAccount(account)
+    const participantCount = isMultisigAccount(account)
+        ? account.multisigDetails.addresses.length
+        : 0
 
-    const notImplemented = useCallback(() => {
-        showToast({
-            title: t('common.not_implemented.title'),
-            body: t('common.not_implemented.body'),
-            type: 'error',
-        })
-        onClose()
-    }, [showToast, t, onClose])
+    const authAccount = useFindAccountByAddress(account.rekeyAddress ?? '')
 
     const handleCopyAddress = useCallback(() => {
         copyToClipboard(account.address)
@@ -104,28 +110,37 @@ export const useAccountOptions = ({
         void openViewPassphraseFlow(account.address)
     }, [onClose, openViewPassphraseFlow, account.address])
 
-    const handleAuthAddress = useCallback(() => {
-        if (account.rekeyAddress) {
-            copyToClipboard(account.rekeyAddress)
-        }
-        onClose()
-    }, [copyToClipboard, account.rekeyAddress, onClose])
-
     const handleUndoRekey = useCallback(() => {
-        notImplemented()
-    }, [notImplemented])
+        onClose()
+        navigation.navigate('UndoRekey', {
+            screen: 'UndoRekeyConfirm',
+            params: { sourceAddress: account.address },
+        })
+    }, [onClose, navigation, account.address])
 
     const handleRekeyToLedger = useCallback(() => {
-        notImplemented()
-    }, [notImplemented])
+        onClose()
+        navigation.navigate('RekeyToLedger', {
+            screen: 'RekeyToLedgerIntro',
+            params: { sourceAddress: account.address },
+        })
+    }, [onClose, navigation, account.address])
 
     const handleRekeyToStandard = useCallback(() => {
-        notImplemented()
-    }, [notImplemented])
+        onClose()
+        navigation.navigate('RekeyToStandard', {
+            screen: 'RekeyToStandardIntro',
+            params: { sourceAddress: account.address },
+        })
+    }, [onClose, navigation, account.address])
 
     const handleRekeyToShared = useCallback(() => {
-        notImplemented()
-    }, [notImplemented])
+        onClose()
+        navigation.navigate('RekeyToShared', {
+            screen: 'RekeyToSharedIntro',
+            params: { sourceAddress: account.address },
+        })
+    }, [onClose, navigation, account.address])
 
     const handleExportShareAccount = useCallback(async () => {
         onClose()
@@ -137,11 +152,28 @@ export const useAccountOptions = ({
         })
     }, [onClose, requestBottomSheet, account.address])
 
+    const handleOpenSharedAccountDetail = useCallback(async () => {
+        if (!isMultisigAccount(account)) return
+        onClose()
+        const details: SharedAccountDetails = {
+            participantCount: account.multisigDetails.addresses.length,
+            threshold: account.multisigDetails.threshold,
+            addresses: account.multisigDetails.addresses,
+        }
+        await requestBottomSheet<void>({
+            contents: <SharedAccountDetailsContent details={details} />,
+            options: {
+                size: 'lg',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
+        })
+    }, [onClose, requestBottomSheet, account])
+
     const handleOpenRename = useCallback(async () => {
-        if (!account.id) return
         onClose()
         const newName = await requestBottomSheet<string>({
-            contents: <RenameAccountContent accountId={account.id} />,
+            contents: <RenameAccountContent accountAddress={account.address} />,
             options: { size: 'auto', enablePanDownToClose: true },
         })
         if (!newName) return
@@ -193,7 +225,7 @@ export const useAccountOptions = ({
         }
         const hasOtherAccounts = accounts.length > 1
         if (account.id) {
-            removeAccountById(account.id)
+            void removeAccount(account.id)
         }
         showToast(
             {
@@ -211,7 +243,7 @@ export const useAccountOptions = ({
         accounts,
         account.address,
         account.id,
-        removeAccountById,
+        removeAccount,
         navigation,
         showToast,
         t,
@@ -267,6 +299,17 @@ export const useAccountOptions = ({
     const options = useMemo(() => {
         const items: AccountOption[] = []
 
+        if (isSharedAccount) {
+            items.push({
+                id: 'shared-account-detail',
+                icon: 'people',
+                title: t('account_options.shared_account_detail', {
+                    count: participantCount,
+                }),
+                onPress: handleOpenSharedAccountDetail,
+            })
+        }
+
         items.push({
             id: 'copy-address',
             icon: 'copy',
@@ -295,24 +338,6 @@ export const useAccountOptions = ({
             })
         }
 
-        if (isRekeyed) {
-            items.push({
-                id: 'auth-address',
-                icon: 'account-rekeyed',
-                title: t('account_options.auth_address'),
-                onPress: handleAuthAddress,
-            })
-        }
-
-        if (showUndoRekey) {
-            items.push({
-                id: 'undo-rekey',
-                icon: 'undo',
-                title: t('account_options.undo_rekey'),
-                onPress: handleUndoRekey,
-            })
-        }
-
         if (canSign && !isSharedAccount) {
             items.push({
                 id: 'rekey-to-ledger',
@@ -330,12 +355,17 @@ export const useAccountOptions = ({
         }
 
         if (isSharedAccount) {
-            items.push({
-                id: 'rekey-to-shared',
-                icon: 'rekey',
-                title: t('account_options.rekey_to_shared'),
-                onPress: handleRekeyToShared,
-            })
+            // Rekeying needs a signature from the source account, so only
+            // offer it when this wallet can actually sign for the multisig.
+            // Export stays available regardless — it only reads metadata.
+            if (canSign) {
+                items.push({
+                    id: 'rekey-to-shared',
+                    icon: 'rekey',
+                    title: t('account_options.rekey_to_shared'),
+                    onPress: handleRekeyToShared,
+                })
+            }
 
             items.push({
                 id: 'export-share-account',
@@ -373,8 +403,8 @@ export const useAccountOptions = ({
     }, [
         t,
         account.address,
+        participantCount,
         showPassphrase,
-        isRekeyed,
         showUndoRekey,
         canSign,
         isSharedAccount,
@@ -382,12 +412,12 @@ export const useAccountOptions = ({
         handleCopyAddress,
         handleShowAddress,
         handleViewPassphrase,
-        handleAuthAddress,
         handleUndoRekey,
         handleRekeyToLedger,
         handleRekeyToStandard,
         handleRekeyToShared,
         handleExportShareAccount,
+        handleOpenSharedAccountDetail,
         handleOpenRename,
         handleToggleNotifications,
         handleOpenRemoveConfirm,
@@ -395,5 +425,10 @@ export const useAccountOptions = ({
 
     return {
         options,
+        isRekeyed,
+        canUndoRekey,
+        authAccount: authAccount ?? undefined,
+        authAddress: account.rekeyAddress,
+        handleUndoRekey,
     }
 }

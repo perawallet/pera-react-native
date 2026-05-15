@@ -18,7 +18,9 @@ export const useStyles = makeStyles(theme => ({
         top: 0,
         left: 0,
         right: 0,
-        bottom: 0,
+        // Anchor to the top half of the screen so the confetti bursts from
+        // the top rather than centering vertically in a full-screen frame.
+        aspectRatio: 1,
         zIndex: theme.zIndex.overlay1,
     },
 }))

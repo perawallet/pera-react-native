@@ -10,5 +10,23 @@
  limitations under the License
  */
 
-export { AccountIconBadge } from './AccountIconBadge'
-export type { AccountIconBadgeProps } from './AccountIconBadge'
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(theme => ({
+    row: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: theme.spacing.lg,
+        paddingHorizontal: theme.spacing.xl,
+        gap: theme.spacing.lg,
+    },
+    textContainer: {
+        flexDirection: 'column',
+    },
+    subtitle: {
+        color: theme.colors.textGray,
+    },
+    dangerText: {
+        color: theme.colors.negative,
+    },
+}))

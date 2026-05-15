@@ -29,7 +29,7 @@ export const useStyles = makeStyles(theme => {
             margin: 0,
             flex: 1,
             overflow: 'hidden',
-            gap: theme.spacing.xl,
+            gap: theme.spacing.md,
         },
         mainContent: {
             flex: 1,

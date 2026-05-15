@@ -74,14 +74,18 @@ export const AccountOptionsContent = ({
 }: AccountOptionsContentProps) => {
     const styles = useStyles()
     const { dismiss } = useBottomSheetResult<void>()
-    const { options } = useAccountOptions({
-        account,
-        onClose: dismiss,
-        onShowAddress,
-    })
+    const {
+        options,
+        isRekeyed,
+        canUndoRekey,
+        authAccount,
+        authAddress,
+        handleUndoRekey,
+    } = useAccountOptions({ account, onClose: dismiss, onShowAddress })
 
     const generalOptions = options.filter(
         o =>
+            o.id === 'shared-account-detail' ||
             o.id === 'copy-address' ||
             o.id === 'show-address' ||
             o.id === 'view-passphrase' ||
@@ -114,6 +118,17 @@ export const AccountOptionsContent = ({
                     <AccountInfoCard
                         account={account}
                         onClose={dismiss}
+                        rekeyedTo={
+                            isRekeyed && authAddress
+                                ? {
+                                      authAccount,
+                                      authAddress,
+                                      onUndoRekey: canUndoRekey
+                                          ? handleUndoRekey
+                                          : undefined,
+                                  }
+                                : undefined
+                        }
                     />
                 </PWView>
 

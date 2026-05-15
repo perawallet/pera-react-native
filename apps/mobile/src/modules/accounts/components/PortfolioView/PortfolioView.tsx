@@ -201,12 +201,28 @@ export const PortfolioView = (props: PortfolioViewProps) => {
                 )}
 
                 {selectedPoint && (
-                    <PWView style={styles.rightColumn}>
+                    <PWView style={styles.dateTimeColumn}>
                         <PWText
                             variant='h4'
                             style={styles.dateDisplay}
                         >
-                            {formatDatetime(selectedPoint.datetime)}
+                            {formatDatetime(
+                                selectedPoint.datetime,
+                                undefined,
+                                'long',
+                                'date',
+                            )}
+                        </PWText>
+                        <PWText
+                            variant='h4'
+                            style={styles.dateDisplay}
+                        >
+                            {formatDatetime(
+                                selectedPoint.datetime,
+                                undefined,
+                                'long',
+                                'time',
+                            )}
                         </PWText>
                     </PWView>
                 )}

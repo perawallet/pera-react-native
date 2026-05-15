@@ -21,6 +21,12 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         gap: theme.spacing.md,
     },
+    title: {
+        flexShrink: 1,
+    },
+    titleQualifier: {
+        color: theme.colors.textGray,
+    },
     description: {
         color: theme.colors.textGray,
     },
@@ -29,15 +35,5 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         alignSelf: 'flex-start',
         gap: theme.spacing.sm,
-    },
-    actionsContainer: {
-        width: '100%',
-        gap: theme.spacing.xs,
-    },
-    actionRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.md,
-        paddingVertical: theme.spacing.md,
     },
 }))

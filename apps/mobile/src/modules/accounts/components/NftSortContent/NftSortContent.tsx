@@ -61,7 +61,7 @@ export const NftSortContent = (_: NftSortContentProps = {}) => {
                 }
                 right={
                     <PWButton
-                        variant='link'
+                        variant='linkPositive'
                         title={t('account_details.nfts.filter_done')}
                         onPress={dismiss}
                         paddingStyle='none'
