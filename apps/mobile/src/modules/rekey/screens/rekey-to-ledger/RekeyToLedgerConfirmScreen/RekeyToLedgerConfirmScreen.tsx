@@ -26,11 +26,11 @@ import { ScreenHeader } from '@components/ScreenHeader'
 import { useWebView } from '@modules/webview'
 import { useLanguage } from '@hooks/useLanguage'
 import { RekeySummaryRow } from '../../../components/RekeySummaryRow'
-import { useConfirmScreenStyles } from '../../../hooks/useConfirmScreenStyles'
+import { useStyles } from './styles'
 import { useRekeyToLedgerConfirmScreen } from './useRekeyToLedgerConfirmScreen'
 
 export const RekeyToLedgerConfirmScreen = () => {
-    const styles = useConfirmScreenStyles()
+    const styles = useStyles()
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
     const {

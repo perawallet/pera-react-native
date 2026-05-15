@@ -10,4 +10,7 @@
  limitations under the License
  */
 
-export { useConfirmScreenStyles } from './useConfirmScreenStyles'
+import { makeStyles } from '@rneui/themed'
+import { getConfirmScreenStyles } from '../../../utils/confirmScreenStyles'
+
+export const useStyles = makeStyles(getConfirmScreenStyles)

@@ -10,10 +10,33 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
+import type { Theme } from '@rneui/themed'
+import type { TextStyle, ViewStyle } from 'react-native'
 
-/** Shared layout styles for all rekey confirm screens (standard / ledger / shared / undo). */
-export const useConfirmScreenStyles = makeStyles(theme => ({
+/**
+ * Shared layout primitives for the rekey confirm screens (standard / ledger /
+ * shared / undo). Each screen owns its own `styles.ts` that wraps this in a
+ * `makeStyles` factory — that way every style key the screen uses is declared
+ * in its own file and stays visible to the no-unused-style-keys check.
+ */
+export const getConfirmScreenStyles = (
+    theme: Theme,
+): Record<
+    | 'container'
+    | 'scrollContent'
+    | 'summarySection'
+    | 'spacer'
+    | 'summaryLabel'
+    | 'learnMore'
+    | 'summaryCard'
+    | 'arrowRow'
+    | 'currentAuthRow'
+    | 'row'
+    | 'rowLabel'
+    | 'footer'
+    | 'cta',
+    ViewStyle | TextStyle
+> => ({
     container: {
         flex: 1,
         backgroundColor: theme.colors.background,
@@ -66,4 +89,4 @@ export const useConfirmScreenStyles = makeStyles(theme => ({
     cta: {
         paddingVertical: theme.spacing.lg,
     },
-}))
+})
