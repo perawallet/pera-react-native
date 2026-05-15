@@ -25,6 +25,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
+import { usePeraWebImportFlowStore } from '@modules/onboarding/hooks'
 import { useWebView } from '@modules/webview/hooks/useWebViewStore'
 import {
     isSafeBrowserUrl,
@@ -378,6 +379,23 @@ export const useDeepLink = () => {
                         'Shared Account Import',
                         'Shared account import not implemented yet',
                     )
+                    break
+
+                case DeeplinkType.PERA_WEB_IMPORT:
+                    if (source !== 'qr') {
+                        logger.warn(
+                            'Pera Web import ignored — only supported via QR scan',
+                            { source },
+                        )
+                        break
+                    }
+                    usePeraWebImportFlowStore.getState().setQr({
+                        backupId: parsedData.backupId,
+                        encryptionKey: parsedData.encryptionKey,
+                    })
+                    navigateToScreen(replaceCurrentScreen, 'AddAccount', {
+                        screen: 'PeraWebImportLoading',
+                    })
                     break
 
                 case DeeplinkType.HOME:

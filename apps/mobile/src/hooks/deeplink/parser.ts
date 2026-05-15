@@ -14,6 +14,7 @@ import {
     AddressActionsDeeplink,
     AnyParsedDeeplink,
     DeeplinkType,
+    PeraWebImportDeeplink,
 } from './types'
 import { parsePerawalletAppUri } from './new-parser'
 import { parsePerawalletUri } from './old-parser'
@@ -22,7 +23,11 @@ import { parseAlgorandUri } from './algorand-parser'
 import { parseWalletConnectUri } from './walletconnect-parser'
 import { parseCoinbaseFormat } from './coinbase-parser'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import {
+    parsePeraWebQrPayload,
+    PeraWebImportError,
+} from '@perawallet/wallet-core-backup'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 
 /**
  * Parse Universal Links: https://perawallet.app/...
@@ -48,6 +53,34 @@ const parseUniversalLink = (url: string): Nullable<AnyParsedDeeplink> => {
 }
 
 /**
+ * Detect the Pera Web "Transfer Accounts" QR shape. The QR is raw JSON
+ * (`{backupId, encryptionKey, ...}`) rather than a perawallet:// URI, so it
+ * doesn't fit any of the URL-based parsers. We sniff for a leading `{` to
+ * avoid running JSON.parse on every scanned barcode.
+ */
+const parsePeraWebJsonQr = (url: string): Nullable<PeraWebImportDeeplink> => {
+    const trimmed = url.trim()
+    if (!trimmed.startsWith('{')) return null
+    try {
+        const parsed = parsePeraWebQrPayload(trimmed)
+        return {
+            type: DeeplinkType.PERA_WEB_IMPORT,
+            sourceUrl: url,
+            backupId: parsed.backupId,
+            encryptionKey: parsed.encryptionKey,
+        }
+    } catch (error) {
+        // JSON-shaped but not a Pera Web QR (wrong fields, unsupported
+        // version, malformed key). Fall back to the other parsers — they'll
+        // also return null, so the caller still sees "unrecognized QR".
+        if (!(error instanceof PeraWebImportError)) {
+            logger.warn('parsePeraWebJsonQr: unexpected error', { error })
+        }
+        return null
+    }
+}
+
+/**
  * Main deeplink parser - determines format and calls appropriate parser
  */
 export const parseDeeplink = (url: string): Nullable<AnyParsedDeeplink> => {
@@ -60,6 +93,11 @@ export const parseDeeplink = (url: string): Nullable<AnyParsedDeeplink> => {
             address: url,
         } as AddressActionsDeeplink
     }
+
+    // Pera Web QRs are JSON, not URIs — check before the URL-based parsers
+    // so we don't fall through to "unrecognized" on a valid Pera Web scan.
+    const peraWebResult = parsePeraWebJsonQr(url)
+    if (peraWebResult) return peraWebResult
 
     const normalizedUrl = normalizeUrl(url)
 

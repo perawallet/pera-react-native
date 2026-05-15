@@ -35,6 +35,7 @@ export const DeeplinkType = {
     ACCOUNT_DETAIL: 'ACCOUNT_DETAIL',
     INTERNAL_BROWSER: 'INTERNAL_BROWSER',
     SHARED_ACCOUNT_IMPORT: 'SHARED_ACCOUNT_IMPORT',
+    PERA_WEB_IMPORT: 'PERA_WEB_IMPORT',
     HOME: 'HOME',
 } as const
 
@@ -203,6 +204,14 @@ export interface SharedAccountImportDeeplink extends ParsedDeeplink {
     address: string
 }
 
+export interface PeraWebImportDeeplink extends ParsedDeeplink {
+    type: typeof DeeplinkType.PERA_WEB_IMPORT
+    /** Server-side id of the encrypted backup row. */
+    backupId: string
+    /** 32-byte secretbox key, already decoded from the on-wire encoding. */
+    encryptionKey: Uint8Array
+}
+
 export type AnyParsedDeeplink =
     | AddContactDeeplink
     | EditContactDeeplink
@@ -228,4 +237,5 @@ export type AnyParsedDeeplink =
     | AccountDetailDeeplink
     | InternalBrowserDeeplink
     | SharedAccountImportDeeplink
+    | PeraWebImportDeeplink
     | HomeDeeplink

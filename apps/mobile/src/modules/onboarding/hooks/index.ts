@@ -17,3 +17,4 @@ export {
 } from './useOnboardingStore'
 export { useExitAccountFlow } from './useExitAccountFlow'
 export { useAsbImportFlowStore } from './asbImportFlowStore'
+export { usePeraWebImportFlowStore } from './peraWebImportFlowStore'

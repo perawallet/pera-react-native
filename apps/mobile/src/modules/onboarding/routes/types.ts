@@ -95,6 +95,13 @@ export type ImportFlowParamList = {
         skippedDuplicateCount: number
         failedCount: number
     }
+    PeraWebImportInfo: undefined
+    PeraWebImportLoading: undefined
+    PeraWebImportResult: {
+        importedCount: number
+        skippedDuplicateCount: number
+        failedCount: number
+    }
 }
 
 export type OnboardingStackParamList = ImportFlowParamList & {

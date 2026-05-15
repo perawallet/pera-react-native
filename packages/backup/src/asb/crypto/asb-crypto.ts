@@ -17,23 +17,15 @@ import { mnemonicToEntropy } from '@scure/bip39'
 // Vite's library build excludes the wordlist entry without it and the
 // downstream consumer (vitest, RN bundler) fails to resolve.
 import { wordlist } from '@scure/bip39/wordlists/english.js'
-import nacl from 'tweetnacl'
 
-// ARC-35 (Algorand Offline Wallet Backup Protocol) primitives.
-//
-// Mirrors the Go reference implementation in algorand-go-mobile-sdk:
+// ARC-35 (Algorand Offline Wallet Backup Protocol) primitives. The
+// secretbox open is shared with the Pera Web flow — see
+// `../../shared/secretbox.ts`. What's left here is ARC-35-specific:
 //   - sdk/backup.go      BackupMnemonicToKey, GenerateBackupCipherKey
 //   - sdk/encryption.go  Encrypt / Decrypt (nacl/secretbox; nonce prepended)
-//
-// Tweetnacl's `secretbox` is wire-compatible with Go's `nacl/secretbox` and
-// libsodium's `crypto_secretbox_easy`: XSalsa20-Poly1305, 24-byte nonce,
-// 16-byte MAC prepended to the ciphertext. The on-disk layout here is
-// `nonce (24) || sealed (mac || ciphertext)`.
 
 /** UTF-8 bytes of the HMAC key string fixed by ARC-35. */
 const CIPHER_KEY_CONTEXT = new TextEncoder().encode('Algorand export 1.0')
-
-const NONCE_LENGTH = 24
 
 /**
  * Recover the 16-byte BIP-39 entropy that seeds the backup key.
@@ -59,33 +51,3 @@ export const backupMnemonicToKey = (mnemonic: string): Uint8Array => {
  */
 export const generateBackupCipherKey = (seed: Uint8Array): Uint8Array =>
     hmac(sha256, CIPHER_KEY_CONTEXT, seed)
-
-/**
- * Decrypt an ARC-35 ciphertext blob: `nonce (24) || sealed`.
- *
- * Returns null when the MAC fails (wrong key) or the input is too short.
- * Throwing would conflate "wrong recovery phrase" with programmer error;
- * the caller decides how to surface the failure.
- */
-export const asbSecretboxOpen = (
-    payload: Uint8Array,
-    key: Uint8Array,
-): Uint8Array | null => {
-    if (payload.length <= NONCE_LENGTH) {
-        return null
-    }
-    // tweetnacl's `checkArrayTypes` uses a strict `instanceof Uint8Array`
-    // against its own lexically-bound `Uint8Array`. When the input came from
-    // a library that captured a *different* realm's constructor (jsdom is
-    // the only environment where this happens in practice), the check
-    // throws even though the bytes are correct. Copying into a fresh
-    // `Uint8Array` here normalizes the realm. The 16 + ciphertext-length
-    // copy is negligible compared to the secretbox MAC + decrypt that
-    // follows, and production (React Native / Hermes) has a single realm
-    // so the copy is effectively free there too.
-    const normalized = new Uint8Array(payload)
-    const nonce = normalized.subarray(0, NONCE_LENGTH)
-    const sealed = normalized.subarray(NONCE_LENGTH)
-    const normalizedKey = new Uint8Array(key)
-    return nacl.secretbox.open(sealed, nonce, normalizedKey)
-}

@@ -145,9 +145,7 @@ describe('useAsbAccountImport', () => {
             result.current.importAccount(
                 singleAccount({ privateKey: new Uint8Array(16) }),
             ),
-        ).rejects.toThrow(
-            'ASB single-account private_key shorter than 32 bytes',
-        )
+        ).rejects.toThrow('Algo25 private_key shorter than 32 bytes')
 
         expect(mockImportAlgo25).not.toHaveBeenCalled()
     })
@@ -212,7 +210,9 @@ describe('useAsbAccountImport', () => {
 
         await expect(
             result.current.importAccount(singleAccount()),
-        ).rejects.toThrow('Unexpected non-account result for algo25 ASB import')
+        ).rejects.toThrow(
+            'Unexpected non-account result for algo25 seed import',
+        )
 
         expect(mockMarkBackupComplete).not.toHaveBeenCalled()
         // The finally block must still wipe the seed buffer.

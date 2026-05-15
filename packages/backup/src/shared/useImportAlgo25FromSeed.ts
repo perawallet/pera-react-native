@@ -1,0 +1,124 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { useCallback } from 'react'
+import { mnemonicFromSeed } from '@algorandfoundation/algokit-utils/algo25'
+import {
+    useImportAccount,
+    useUpdateAccount,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import { zeroBytes } from '@perawallet/wallet-core-kms'
+import { useMarkMnemonicBackupComplete } from '../mnemonic'
+
+// Some legacy producers (ASB, older Pera Web) emit the full 64-byte
+// tweetnacl secret key (seed || pubKey); modern Pera Web emits the 32-byte
+// seed alone. The leading 32 bytes are always the seed in either case.
+const ALGO25_SEED_LENGTH = 32
+
+/**
+ * Copy the first 32 bytes off `privateKey` so the caller's buffer is left
+ * intact. `subarray` would share memory and our `finally` `zeroBytes(seed)`
+ * would wipe `account.privateKey` underneath the caller.
+ */
+const sliceSeed = (privateKey: Uint8Array): Uint8Array => {
+    if (privateKey.length < ALGO25_SEED_LENGTH) {
+        throw new Error(
+            `Algo25 private_key shorter than ${ALGO25_SEED_LENGTH} bytes`,
+        )
+    }
+    return privateKey.slice(0, ALGO25_SEED_LENGTH)
+}
+
+export type UseImportAlgo25FromSeedResult = {
+    importFromSeed: (params: {
+        /** Encoded Algorand address — validated before any keystore work. */
+        address: string
+        /** 32- or 64-byte private key from the backup. */
+        privateKey: Uint8Array
+        /** Optional user-supplied account name; persisted post-import. */
+        name?: string | null
+    }) => Promise<WalletAccount>
+}
+
+/**
+ * Import a single algo25 account given its raw seed bytes. Used by both the
+ * ASB and Pera Web import flows for `single`-kind accounts.
+ *
+ * Approach: rebuild a 25-word Algorand mnemonic from the seed via
+ * `mnemonicFromSeed` and feed it through the standard `useImportAccount` so
+ * duplicate detection, keystore commits, backend device-sync, and
+ * mark-as-backed-up all stay in one code path. Both legacy callers do the
+ * same dance — `useAsbAccountImport` (Single kind) and
+ * `usePeraWebAccountImport` — so the shared hook absorbs the round-trip,
+ * the defensive seed copy, and the zeroize-in-finally lifecycle.
+ *
+ * Security: the seed bytes live in the local `seed` buffer for the duration
+ * of the import and are wiped in `finally`. The 25-word mnemonic string is
+ * unfortunately unwipable (immutable JS string), but its reference is
+ * dropped immediately after the import call returns.
+ *
+ * `DuplicateAccountError` from the underlying import path is re-thrown so
+ * the caller (the loading / select-accounts screen) can bucket duplicates
+ * separately from real failures.
+ */
+export const useImportAlgo25FromSeed = (): UseImportAlgo25FromSeedResult => {
+    const importAlgo25 = useImportAccount()
+    const updateAccount = useUpdateAccount()
+    const markBackupComplete = useMarkMnemonicBackupComplete()
+
+    const importFromSeed = useCallback(
+        async (params: {
+            address: string
+            privateKey: Uint8Array
+            name?: string | null
+        }): Promise<WalletAccount> => {
+            if (!isValidAlgorandAddress(params.address)) {
+                throw new Error(`Invalid Algorand address: ${params.address}`)
+            }
+
+            const seed = sliceSeed(params.privateKey)
+            try {
+                const mnemonic = mnemonicFromSeed(seed)
+                const imported = await importAlgo25({
+                    mnemonic,
+                    type: 'algo25',
+                })
+
+                // Algo25 imports always return a WalletAccount; the HD
+                // branch only fires for `type: 'hdWallet'`.
+                if (!('address' in imported)) {
+                    throw new Error(
+                        'Unexpected non-account result for algo25 seed import',
+                    )
+                }
+
+                const renamed: WalletAccount = params.name
+                    ? { ...imported, name: params.name }
+                    : imported
+
+                if (params.name) {
+                    updateAccount(renamed)
+                }
+
+                markBackupComplete(renamed)
+                return renamed
+            } finally {
+                zeroBytes(seed)
+            }
+        },
+        [importAlgo25, updateAccount, markBackupComplete],
+    )
+
+    return { importFromSeed }
+}

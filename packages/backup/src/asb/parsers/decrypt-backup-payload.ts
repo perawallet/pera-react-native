@@ -12,11 +12,11 @@
 
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
+import { backupMnemonicToKey, generateBackupCipherKey } from '../crypto'
 import {
-    asbSecretboxOpen,
-    backupMnemonicToKey,
-    generateBackupCipherKey,
-} from '../crypto'
+    decodePrivateKeyBytes,
+    secretboxOpenWithPrependedNonce,
+} from '../../shared'
 import { AsbImportError, AsbErrorReason } from '../errors'
 import {
     AsbAccountKind,
@@ -52,11 +52,11 @@ const parseAccount = (raw: unknown): AsbBackupAccount | null => {
     let privateKey: Uint8Array | null = null
     if (account_type === AsbAccountKind.Single) {
         if (!isNonEmptyString(private_key)) return null
-        try {
-            privateKey = decodeFromBase64(private_key)
-        } catch {
-            return null
-        }
+        // ARC-35 always emits base64; we don't pass
+        // `allowCommaSeparated: true` since that legacy format was
+        // Pera-Web-specific.
+        privateKey = decodePrivateKeyBytes(private_key)
+        if (!privateKey) return null
     }
 
     return {
@@ -110,7 +110,7 @@ export const decryptBackupPayload = (
             throw new AsbImportError(AsbErrorReason.MalformedEnvelope)
         }
 
-        plaintext = asbSecretboxOpen(ciphertext, cipherKey)
+        plaintext = secretboxOpenWithPrependedNonce(ciphertext, cipherKey)
         if (!plaintext) {
             throw new AsbImportError(AsbErrorReason.DecryptionFailed)
         }

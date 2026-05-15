@@ -14,11 +14,7 @@ import { describe, it, expect } from 'vitest'
 import { hmac } from '@noble/hashes/hmac.js'
 import { sha256 } from '@noble/hashes/sha2.js'
 import nacl from 'tweetnacl'
-import {
-    asbSecretboxOpen,
-    backupMnemonicToKey,
-    generateBackupCipherKey,
-} from '../asb-crypto'
+import { backupMnemonicToKey, generateBackupCipherKey } from '../asb-crypto'
 
 // BIP-39 well-known zero-entropy vector. The 12-word phrase
 // "abandon abandon abandon abandon abandon abandon abandon abandon
@@ -27,17 +23,6 @@ const ZERO_MNEMONIC =
     'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'
 
 const ZERO_ENTROPY = new Uint8Array(16)
-
-const seal = (plaintext: Uint8Array, key: Uint8Array): Uint8Array => {
-    const nonce = nacl.randomBytes(24)
-    // Re-wrap to handle the jsdom-realm Uint8Array mismatch (tweetnacl uses
-    // `instanceof Uint8Array`, which fails across realms).
-    const box = nacl.secretbox(Uint8Array.from(plaintext), nonce, key)
-    const out = new Uint8Array(24 + box.length)
-    out.set(nonce, 0)
-    out.set(box, 24)
-    return out
-}
 
 describe('backupMnemonicToKey', () => {
     it('returns the 16-byte BIP-39 entropy for the zero-vector phrase', () => {
@@ -92,42 +77,5 @@ describe('generateBackupCipherKey', () => {
     })
 })
 
-describe('asbSecretboxOpen', () => {
-    const plaintext = Uint8Array.from(
-        new TextEncoder().encode(
-            JSON.stringify({ accounts: [], provider_name: 'test' }),
-        ),
-    )
-
-    it('decrypts a payload produced by tweetnacl.secretbox with prepended nonce', () => {
-        const key = generateBackupCipherKey(ZERO_ENTROPY)
-        const sealed = seal(plaintext, key)
-
-        const opened = asbSecretboxOpen(sealed, key)
-        expect(opened).not.toBeNull()
-        expect(Array.from(opened!)).toEqual(Array.from(plaintext))
-    })
-
-    it('returns null when the recovery key is wrong (MAC fails)', () => {
-        const realKey = generateBackupCipherKey(ZERO_ENTROPY)
-        const fakeKey = generateBackupCipherKey(new Uint8Array(16).fill(1))
-
-        const sealed = seal(plaintext, realKey)
-        expect(asbSecretboxOpen(sealed, fakeKey)).toBeNull()
-    })
-
-    it('returns null when the ciphertext is shorter than the nonce', () => {
-        const key = generateBackupCipherKey(ZERO_ENTROPY)
-        expect(asbSecretboxOpen(new Uint8Array(10), key)).toBeNull()
-        expect(asbSecretboxOpen(new Uint8Array(24), key)).toBeNull()
-    })
-
-    it('returns null when the ciphertext has been tampered with', () => {
-        const key = generateBackupCipherKey(ZERO_ENTROPY)
-        const sealed = seal(plaintext, key)
-        // Flip a byte in the sealed region (past the 24-byte nonce).
-        const tampered = sealed.slice()
-        tampered[30] ^= 0xff
-        expect(asbSecretboxOpen(tampered, key)).toBeNull()
-    })
-})
+// Secretbox open is now a shared primitive — see
+// `packages/backup/src/shared/__tests__/secretbox.spec.ts`.
