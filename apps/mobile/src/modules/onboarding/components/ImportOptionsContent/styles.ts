@@ -43,7 +43,7 @@ export const useStyles = makeStyles(theme => ({
     optionContent: {
         flex: 1,
         justifyContent: 'space-between',
-        gap: theme.spacing.lg,
+        gap: theme.spacing.sm,
     },
     optionTopContent: {
         gap: theme.spacing.xs,
@@ -58,7 +58,7 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textGray,
     },
     optionLink: {
-        color: theme.colors.linkPrimary,
+        color: theme.colors.positive,
     },
     rightIconContainer: {
         width: theme.spacing.xxl,

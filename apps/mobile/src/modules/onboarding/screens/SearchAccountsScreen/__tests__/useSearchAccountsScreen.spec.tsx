@@ -13,7 +13,6 @@
 import { renderHook, waitFor } from '@test-utils/render'
 import { vi } from 'vitest'
 import { AccountTypes } from '@perawallet/wallet-core-accounts'
-import type { Optional } from '@perawallet/wallet-core-shared'
 import { useSearchAccountsScreen } from '../useSearchAccountsScreen'
 import type { SearchAccountsParams } from '../../../routes/types'
 
@@ -56,7 +55,8 @@ const {
                     derivationType: 9,
                 },
             },
-            createIfEmpty: undefined as Optional<boolean>,
+            createIfEmpty: undefined as boolean | undefined,
+            notifyOnEmpty: undefined as boolean | undefined,
         } as SearchAccountsParams,
     },
 }))
@@ -76,10 +76,6 @@ vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
         showToast: mockShowToast,
     }),
-}))
-
-vi.mock('@perawallet/wallet-core-kms', () => ({
-    useKMS: () => ({}),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
@@ -148,6 +144,7 @@ describe('useSearchAccountsScreen', () => {
                 },
             },
             createIfEmpty: undefined,
+            notifyOnEmpty: undefined,
         } as SearchAccountsParams
     })
 
@@ -190,10 +187,10 @@ describe('useSearchAccountsScreen', () => {
         renderHook(() => useSearchAccountsScreen())
 
         await waitFor(() => {
-            expect(mockReplace).toHaveBeenCalledWith('ImportSelectAddresses', {
-                accounts: [singleAccount],
-            })
-            expect(mockExitAccountFlow).not.toHaveBeenCalled()
+            expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith(
+                'MOCK_ADDRESS',
+            )
+            expect(mockExitAccountFlow).toHaveBeenCalled()
         })
     })
 
@@ -217,9 +214,185 @@ describe('useSearchAccountsScreen', () => {
         renderHook(() => useSearchAccountsScreen())
 
         await waitFor(() => {
-            expect(mockReplace).toHaveBeenCalledWith('ImportSelectAddresses', {
-                accounts: [singleAccount],
+            expect(mockReplace).toHaveBeenCalledWith('ImportRekeyedAddresses', {
+                accounts: rekeyedAccounts,
             })
+        })
+    })
+
+    it('creates next derivation and navigates to NameAccount when createIfEmpty without scanning for rekeys', async () => {
+        mockRouteParams.current = {
+            account: {
+                id: '1',
+                address: 'MOCK_ADDRESS',
+                type: 'hdWallet' as const,
+                keyPairId: 'wallet-1',
+                hdWalletDetails: {
+                    account: 0,
+                    change: 0,
+                    keyIndex: 0,
+                    derivationType: 9,
+                },
+            },
+            createIfEmpty: true,
+        } as SearchAccountsParams
+        mockAllAccounts.current = [
+            {
+                id: '1',
+                address: 'MOCK_ADDRESS',
+                type: 'hdWallet' as const,
+                keyPairId: 'wallet-1',
+                hdWalletDetails: {
+                    account: 0,
+                    change: 0,
+                    keyIndex: 0,
+                    derivationType: 9,
+                },
+            },
+        ]
+
+        const singleAccount = {
+            id: '1',
+            address: 'MOCK_ADDRESS',
+            type: AccountTypes.hdWallet,
+        }
+        mockDiscoverAccounts.mockResolvedValue([singleAccount])
+
+        const newAccount = {
+            id: 'new-id',
+            address: 'NEW_ADDRESS',
+            type: 'hdWallet' as const,
+        }
+        mockCreateHdWalletAccount.mockResolvedValue(newAccount)
+
+        renderHook(() => useSearchAccountsScreen())
+
+        await waitFor(() => {
+            expect(mockCreateHdWalletAccount).toHaveBeenCalledWith({
+                walletId: 'wallet-1',
+                account: 0,
+                keyIndex: 1,
+            })
+            expect(mockDiscoverRekeyedAccounts).not.toHaveBeenCalled()
+            expect(mockReplace).toHaveBeenCalledWith('NameAccount', {
+                account: newAccount,
+            })
+        })
+
+        expect(mockExitAccountFlow).not.toHaveBeenCalled()
+    })
+
+    it('shows "no new addresses" toast and exits when notifyOnEmpty is true and only the master HD account is discovered with no rekeys', async () => {
+        ;(
+            mockRouteParams.current as Extract<
+                SearchAccountsParams,
+                { account: unknown }
+            >
+        ).notifyOnEmpty = true
+        const singleAccount = {
+            id: '1',
+            address: 'MOCK_ADDRESS',
+            type: AccountTypes.hdWallet,
+        }
+        mockDiscoverAccounts.mockResolvedValue([singleAccount])
+        mockDiscoverRekeyedAccounts.mockResolvedValue([])
+
+        renderHook(() => useSearchAccountsScreen())
+
+        await waitFor(() => {
+            expect(mockShowToast).toHaveBeenCalledWith({
+                type: 'info',
+                title: 'onboarding.searching_accounts.no_new_addresses_title',
+                body: 'onboarding.searching_accounts.no_new_addresses_body',
+            })
+            expect(mockExitAccountFlow).toHaveBeenCalled()
+            expect(mockCreateHdWalletAccount).not.toHaveBeenCalled()
+            expect(mockReplace).not.toHaveBeenCalled()
+        })
+    })
+
+    it('does not show "no new addresses" toast when notifyOnEmpty is true but rekeyed accounts are found', async () => {
+        ;(
+            mockRouteParams.current as Extract<
+                SearchAccountsParams,
+                { account: unknown }
+            >
+        ).notifyOnEmpty = true
+        const singleAccount = {
+            id: '1',
+            address: 'MOCK_ADDRESS',
+            type: AccountTypes.hdWallet,
+        }
+        const rekeyedAccounts = [
+            {
+                id: 'rekeyed-1',
+                address: 'REKEYED_ADDRESS',
+                type: AccountTypes.watch,
+                rekeyAddress: 'MOCK_ADDRESS',
+            },
+        ]
+        mockDiscoverAccounts.mockResolvedValue([singleAccount])
+        mockDiscoverRekeyedAccounts.mockResolvedValue(rekeyedAccounts)
+
+        renderHook(() => useSearchAccountsScreen())
+
+        await waitFor(() => {
+            expect(mockReplace).toHaveBeenCalledWith('ImportRekeyedAddresses', {
+                accounts: rekeyedAccounts,
+            })
+        })
+        expect(mockShowToast).not.toHaveBeenCalled()
+        expect(mockExitAccountFlow).not.toHaveBeenCalled()
+    })
+
+    it('shows error toast and goes back when createIfEmpty account creation fails', async () => {
+        mockRouteParams.current = {
+            account: {
+                id: '1',
+                address: 'MOCK_ADDRESS',
+                type: 'hdWallet' as const,
+                keyPairId: 'wallet-1',
+                hdWalletDetails: {
+                    account: 0,
+                    change: 0,
+                    keyIndex: 0,
+                    derivationType: 9,
+                },
+            },
+            createIfEmpty: true,
+        } as SearchAccountsParams
+        mockAllAccounts.current = [
+            {
+                id: '1',
+                address: 'MOCK_ADDRESS',
+                type: 'hdWallet' as const,
+                keyPairId: 'wallet-1',
+                hdWalletDetails: {
+                    account: 0,
+                    change: 0,
+                    keyIndex: 0,
+                    derivationType: 9,
+                },
+            },
+        ]
+
+        const singleAccount = {
+            id: '1',
+            address: 'MOCK_ADDRESS',
+            type: AccountTypes.hdWallet,
+        }
+        mockDiscoverAccounts.mockResolvedValue([singleAccount])
+        mockCreateHdWalletAccount.mockRejectedValue(
+            new Error('Creation failed'),
+        )
+
+        renderHook(() => useSearchAccountsScreen())
+
+        await waitFor(() => {
+            expect(mockShowToast).toHaveBeenCalledWith(
+                expect.objectContaining({ type: 'error' }),
+            )
+            expect(mockGoBack).toHaveBeenCalled()
         })
     })
 

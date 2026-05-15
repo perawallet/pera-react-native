@@ -193,6 +193,44 @@ describe('useImportSelectAddressesScreen — import mode', () => {
         expect(mockMarkBackupComplete).toHaveBeenCalledWith(existingSibling)
     })
 
+    test('inherits entropyKeyId from a store sibling under the same keyPairId', async () => {
+        const storeSibling = {
+            id: 'existing',
+            address: 'ADDR_EXISTING',
+            type: AccountTypes.hdWallet,
+            hdWalletDetails: {
+                account: 0,
+                change: 0,
+                keyIndex: 0,
+                derivationType: 9,
+            },
+            keyPairId: 'w-1',
+            entropyKeyId: 'entropy-from-store',
+        }
+        mockAllAccounts.current = [storeSibling as unknown as WalletAccount]
+        mockRouteParams.current = {
+            accounts: sampleDiscovered,
+        }
+
+        const { result } = renderHook(() => useImportSelectAddressesScreen())
+
+        await act(async () => {
+            await result.current.handleContinue()
+        })
+
+        await vi.waitFor(() => {
+            expect(mockSetAccounts).toHaveBeenCalled()
+        })
+
+        const persisted = mockSetAccounts.mock.calls[0][0] as Array<{
+            address: string
+            entropyKeyId?: string
+        }>
+        const newlyAdded = persisted.filter(a => a.address === 'ADDR-A')
+        expect(newlyAdded).toHaveLength(1)
+        expect(newlyAdded[0].entropyKeyId).toBe('entropy-from-store')
+    })
+
     test('cancelImport runs when navigation beforeRemove fires (back/swipe)', async () => {
         let beforeRemoveCallback: Optional<() => void>
         const addListenerSpy = vi.fn((eventName: string, cb: () => void) => {

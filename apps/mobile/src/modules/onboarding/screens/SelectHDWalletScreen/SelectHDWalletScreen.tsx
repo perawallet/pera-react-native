@@ -25,12 +25,13 @@ import { ALGO_ASSET, ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 import { Decimal } from 'decimal.js'
+import { useBottomSafeAreaPadding } from '@hooks/useBottomSafeAreaPadding'
 import { useStyles } from './styles'
 import { useSelectHDWalletScreen } from './useSelectHDWalletScreen'
-import { SafeAreaView } from 'react-native-safe-area-context'
 
 export const SelectHDWalletScreen = () => {
-    const styles = useStyles()
+    const bottomPadding = useBottomSafeAreaPadding()
+    const styles = useStyles(bottomPadding)
     const {
         hdWalletGroups,
         accountBalances,
@@ -129,10 +130,7 @@ export const SelectHDWalletScreen = () => {
                         contentContainerStyle={styles.listContent}
                     />
                 </PWView>
-                <SafeAreaView
-                    edges={['bottom']}
-                    style={styles.footer}
-                >
+                <PWView style={styles.footer}>
                     <PWButton
                         title={t(
                             'onboarding.select_hd_wallet.create_new_wallet',
@@ -143,7 +141,7 @@ export const SelectHDWalletScreen = () => {
                         icon='plus'
                         testID='select_hd_wallet_create_new'
                     />
-                </SafeAreaView>
+                </PWView>
             </PWView>
 
             <PWLoadingOverlay

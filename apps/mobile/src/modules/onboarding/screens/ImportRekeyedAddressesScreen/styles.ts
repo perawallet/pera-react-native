@@ -57,7 +57,7 @@ export const useStyles = makeStyles((theme, insets?: EdgeInsets) => {
             flexDirection: 'row',
             alignItems: 'center',
             padding: theme.spacing.lg,
-            marginBottom: theme.spacing.sm,
+            marginBottom: theme.spacing.md,
             backgroundColor: theme.colors.background,
             borderRadius: theme.spacing.lg,
             borderWidth: theme.borders.sm,

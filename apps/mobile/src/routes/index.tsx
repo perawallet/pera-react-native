@@ -40,6 +40,11 @@ import { fullScreenLayout } from '@layouts/index'
 import { MessagesStackNavigator } from '@modules/messages/routes'
 import { MultisigStackNavigator } from '@modules/multisig'
 import { BackupStackNavigator } from '@modules/backup'
+import { RekeyToLedgerStackNavigator } from '@modules/rekey/rekey-to-ledger'
+import { RekeyToSharedStackNavigator } from '@modules/rekey/rekey-to-shared'
+import { RekeyToStandardStackNavigator } from '@modules/rekey/rekey-to-standard'
+import { RescanRekeyedStackNavigator } from '@modules/rekey/rescan-rekeyed'
+import { UndoRekeyStackNavigator } from '@modules/rekey/undo-rekey'
 import { SearchStackNavigator } from '@modules/search'
 import { navigationRef } from './navigationRef'
 export type { RootStackParamList } from './types'
@@ -59,100 +64,118 @@ export const MainRoutes = () => {
             theme={navTheme}
         >
             <BottomSheetManager />
-            {
-                <RootStack.Navigator
-                    screenOptions={{
-                        headerShown: false,
-                        statusBarStyle: isDarkMode ? 'light' : 'dark',
-                        ...SCREEN_ANIMATION_CONFIG,
-                    }}
-                    screenListeners={screenListeners}
-                >
-                    {showOnboarding && (
+            <RootStack.Navigator
+                screenOptions={{
+                    headerShown: false,
+                    statusBarStyle: isDarkMode ? 'light' : 'dark',
+                    ...SCREEN_ANIMATION_CONFIG,
+                }}
+                screenListeners={screenListeners}
+            >
+                {showOnboarding && (
+                    <RootStack.Screen
+                        name='Onboarding'
+                        component={OnboardingStackNavigator}
+                    />
+                )}
+                {hasAccounts && !isOnboarding && (
+                    <>
                         <RootStack.Screen
-                            name='Onboarding'
-                            component={OnboardingStackNavigator}
+                            name='TabBar'
+                            component={TabBarStackNavigator}
                         />
-                    )}
-                    {hasAccounts && !isOnboarding && (
-                        <>
-                            <RootStack.Screen
-                                name='TabBar'
-                                component={TabBarStackNavigator}
-                            />
-                            <RootStack.Screen
-                                name='Messages'
-                                options={{
-                                    headerShown: false,
-                                }}
-                                layout={fullScreenLayout}
-                                component={MessagesStackNavigator}
-                            />
-                            <RootStack.Screen
-                                name='Settings'
-                                component={SettingsStackNavigator}
-                            />
-                            <RootStack.Screen
-                                name='Contacts'
-                                component={ContactsStackNavigator}
-                            />
-                            <RootStack.Screen
-                                name='Search'
-                                component={SearchStackNavigator}
-                            />
-                            <RootStack.Screen
-                                name='AddAccount'
-                                component={AddAccountStackNavigator}
-                            />
-                            <RootStack.Screen
-                                name='Multisig'
-                                component={MultisigStackNavigator}
-                            />
-                            <RootStack.Screen
-                                name='BackupWallet'
-                                component={BackupStackNavigator}
-                                options={{ headerShown: false }}
-                            />
-                            <RootStack.Screen
-                                name='Staking'
-                                options={{
-                                    headerShown: true,
-                                    title: 'staking.title',
-                                    header: (props: NativeStackHeaderProps) => (
-                                        <NavigationHeader {...props} />
-                                    ),
-                                }}
-                                layout={fullScreenLayout}
-                                component={StakingScreen}
-                            />
-                            <RootStack.Screen
-                                name='GroupTransactionList'
-                                layout={fullScreenLayout}
-                                component={GroupTransactionListScreen}
-                                options={{
-                                    headerShown: true,
-                                    header: (props: NativeStackHeaderProps) => (
-                                        <NavigationHeader {...props} />
-                                    ),
-                                    title: 'transactions.group.group_number',
-                                }}
-                            />
-                            <RootStack.Screen
-                                name='TransactionDetails'
-                                layout={fullScreenLayout}
-                                component={TransactionDetailsScreen}
-                                options={{
-                                    headerShown: true,
-                                    header: (props: NativeStackHeaderProps) => (
-                                        <NavigationHeader {...props} />
-                                    ),
-                                    title: 'signing.transactions.details',
-                                }}
-                            />
-                        </>
-                    )}
-                </RootStack.Navigator>
-            }
+                        <RootStack.Screen
+                            name='Messages'
+                            options={{
+                                headerShown: false,
+                            }}
+                            layout={fullScreenLayout}
+                            component={MessagesStackNavigator}
+                        />
+                        <RootStack.Screen
+                            name='Settings'
+                            component={SettingsStackNavigator}
+                        />
+                        <RootStack.Screen
+                            name='Contacts'
+                            component={ContactsStackNavigator}
+                        />
+                        <RootStack.Screen
+                            name='Search'
+                            component={SearchStackNavigator}
+                        />
+                        <RootStack.Screen
+                            name='AddAccount'
+                            component={AddAccountStackNavigator}
+                        />
+                        <RootStack.Screen
+                            name='Multisig'
+                            component={MultisigStackNavigator}
+                        />
+                        <RootStack.Screen
+                            name='BackupWallet'
+                            component={BackupStackNavigator}
+                            options={{ headerShown: false }}
+                        />
+                        <RootStack.Screen
+                            name='RekeyToStandard'
+                            component={RekeyToStandardStackNavigator}
+                        />
+                        <RootStack.Screen
+                            name='UndoRekey'
+                            component={UndoRekeyStackNavigator}
+                        />
+                        <RootStack.Screen
+                            name='RekeyToLedger'
+                            component={RekeyToLedgerStackNavigator}
+                        />
+                        <RootStack.Screen
+                            name='RekeyToShared'
+                            component={RekeyToSharedStackNavigator}
+                        />
+                        <RootStack.Screen
+                            name='RescanRekeyed'
+                            component={RescanRekeyedStackNavigator}
+                        />
+                        <RootStack.Screen
+                            name='Staking'
+                            options={{
+                                headerShown: true,
+                                title: 'staking.title',
+                                header: (props: NativeStackHeaderProps) => (
+                                    <NavigationHeader {...props} />
+                                ),
+                            }}
+                            layout={fullScreenLayout}
+                            component={StakingScreen}
+                        />
+                        <RootStack.Screen
+                            name='GroupTransactionList'
+                            layout={fullScreenLayout}
+                            component={GroupTransactionListScreen}
+                            options={{
+                                headerShown: true,
+                                header: (props: NativeStackHeaderProps) => (
+                                    <NavigationHeader {...props} />
+                                ),
+                                title: 'transactions.group.group_number',
+                            }}
+                        />
+                        <RootStack.Screen
+                            name='TransactionDetails'
+                            layout={fullScreenLayout}
+                            component={TransactionDetailsScreen}
+                            options={{
+                                headerShown: true,
+                                header: (props: NativeStackHeaderProps) => (
+                                    <NavigationHeader {...props} />
+                                ),
+                                title: 'signing.transactions.details',
+                            }}
+                        />
+                    </>
+                )}
+            </RootStack.Navigator>
         </NavigationContainer>
     )
 }

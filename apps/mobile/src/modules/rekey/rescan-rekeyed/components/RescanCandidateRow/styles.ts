@@ -12,30 +12,27 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles((theme, bottomPadding: number) => ({
-    rootContainer: {
-        flex: 1,
-        flexDirection: 'column',
-    },
-    contentContainer: {
-        flex: 1,
-        paddingHorizontal: theme.spacing.xl,
-        paddingTop: theme.spacing.xl,
-        gap: theme.spacing.xl,
-    },
-    description: {
-        color: theme.colors.textGray,
-    },
-    footerContainer: {
-        paddingHorizontal: theme.spacing.xl,
-        paddingBottom: bottomPadding,
-    },
-    nfdStatus: {
+export const useStyles = makeStyles(theme => ({
+    row: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: theme.spacing.sm,
+        justifyContent: 'space-between',
+        paddingVertical: theme.spacing.md,
+        paddingHorizontal: theme.spacing.lg,
+        borderWidth: theme.borders.md,
+        borderColor: 'transparent',
+        borderRadius: theme.borderRadius.md,
+        backgroundColor: theme.colors.layerGrayLighter,
     },
-    nfdStatusText: {
-        color: theme.colors.textGray,
+    rowSelected: {
+        borderColor: theme.colors.positive,
+        backgroundColor: 'transparent',
+    },
+    checkboxContainer: {
+        padding: 0,
+        margin: 0,
+        marginLeft: 0,
+        marginRight: 0,
+        backgroundColor: 'transparent',
     },
 }))

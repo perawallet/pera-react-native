@@ -12,7 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
+export const useStyles = makeStyles((theme, bottomPadding: number) => ({
     rootContainer: {
         flex: 1,
         flexDirection: 'column',
@@ -26,7 +26,7 @@ export const useStyles = makeStyles(theme => ({
         paddingLeft: theme.spacing.xl,
     },
     scrollContent: {
-        paddingBottom: theme.spacing['3xl'],
+        paddingBottom: bottomPadding,
     },
     mainContainer: {
         paddingHorizontal: theme.spacing.xl,

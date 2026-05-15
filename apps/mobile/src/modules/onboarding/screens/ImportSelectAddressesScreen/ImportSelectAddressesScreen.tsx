@@ -22,6 +22,7 @@ import {
     PWLoadingOverlay,
 } from '@components/core'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { EmptyView } from '@components/EmptyView'
 
 import { useStyles } from './styles'
 import { useImportSelectAddressesScreen } from './useImportSelectAddressesScreen'
@@ -94,59 +95,73 @@ export const ImportSelectAddressesScreen = () => {
                 >
                     {t('onboarding.import_select_addresses.title')}
                 </PWText>
-                <PWText
-                    variant='h4'
-                    style={styles.description}
-                >
-                    {t('onboarding.import_select_addresses.description', {
-                        count: accounts.length,
-                    })}
-                </PWText>
-
-                <PWView style={styles.headerRow}>
+                {!areAllImported && (
                     <PWText
-                        variant='bodySemibold'
-                        style={styles.headerCount}
+                        variant='h4'
+                        style={styles.description}
                     >
-                        {t(
-                            'onboarding.import_select_addresses.addresses_count',
-                            {
-                                count: accounts.length,
-                            },
-                        )}
+                        {t('onboarding.import_select_addresses.description', {
+                            count: accounts.length,
+                        })}
                     </PWText>
+                )}
 
-                    {!areAllImported && (
-                        <PWTouchableOpacity
-                            onPress={toggleSelectAll}
-                            style={styles.selectAllContainer}
-                        >
+                {areAllImported ? (
+                    <EmptyView
+                        style={styles.emptyState}
+                        title={t(
+                            'onboarding.searching_accounts.no_new_addresses_title',
+                        )}
+                        body={t(
+                            'onboarding.searching_accounts.no_new_addresses_body',
+                        )}
+                    />
+                ) : (
+                    <>
+                        <PWView style={styles.headerRow}>
                             <PWText
-                                variant='link'
-                                style={styles.selectAllText}
+                                variant='bodySemibold'
+                                style={styles.headerCount}
                             >
                                 {t(
-                                    'onboarding.import_select_addresses.select_all',
+                                    'onboarding.import_select_addresses.addresses_count',
+                                    {
+                                        count: accounts.length,
+                                    },
                                 )}
                             </PWText>
-                            <PWCheckbox
-                                checked={isAllSelected}
-                                onPress={toggleSelectAll}
-                                containerStyle={styles.checkboxContainer}
-                                testID='import_select_addresses_select_all_checkbox'
-                            />
-                        </PWTouchableOpacity>
-                    )}
-                </PWView>
 
-                <PWFlatList
-                    data={accounts}
-                    renderItem={renderItem}
-                    keyExtractor={item => item.address}
-                    extraData={selectedAddresses}
-                    contentContainerStyle={styles.listContent}
-                    showsVerticalScrollIndicator={false}
-                />
+                            <PWTouchableOpacity
+                                onPress={toggleSelectAll}
+                                style={styles.selectAllContainer}
+                            >
+                                <PWText
+                                    variant='link'
+                                    style={styles.selectAllText}
+                                >
+                                    {t(
+                                        'onboarding.import_select_addresses.select_all',
+                                    )}
+                                </PWText>
+                                <PWCheckbox
+                                    checked={isAllSelected}
+                                    onPress={toggleSelectAll}
+                                    containerStyle={styles.checkboxContainer}
+                                    testID='import_select_addresses_select_all_checkbox'
+                                />
+                            </PWTouchableOpacity>
+                        </PWView>
+
+                        <PWFlatList
+                            data={accounts}
+                            renderItem={renderItem}
+                            keyExtractor={item => item.address}
+                            extraData={selectedAddresses}
+                            contentContainerStyle={styles.listContent}
+                            showsVerticalScrollIndicator={false}
+                        />
+                    </>
+                )}
             </PWView>
 
             <SafeAreaView

@@ -24,6 +24,11 @@ import { MessagesStackParamList } from '@modules/messages/routes'
 import { MultisigStackParamList } from '@modules/multisig'
 import type { BackupStackParamList } from '@modules/backup/routes/types'
 import { SearchStackParamsList } from '@modules/search'
+import type { RekeyToLedgerStackParamList } from '@modules/rekey/rekey-to-ledger'
+import type { RekeyToSharedStackParamList } from '@modules/rekey/rekey-to-shared'
+import type { RekeyToStandardStackParamList } from '@modules/rekey/rekey-to-standard'
+import type { RescanRekeyedStackParamList } from '@modules/rekey/rescan-rekeyed'
+import type { UndoRekeyStackParamList } from '@modules/rekey/undo-rekey'
 
 export type RootStackParamList = {
     Onboarding: NavigatorScreenParams<OnboardingStackParamList>
@@ -35,6 +40,11 @@ export type RootStackParamList = {
     Search: NavigatorScreenParams<SearchStackParamsList>
     Multisig: NavigatorScreenParams<MultisigStackParamList>
     BackupWallet: NavigatorScreenParams<BackupStackParamList>
+    RekeyToStandard: NavigatorScreenParams<RekeyToStandardStackParamList>
+    RekeyToLedger: NavigatorScreenParams<RekeyToLedgerStackParamList>
+    RekeyToShared: NavigatorScreenParams<RekeyToSharedStackParamList>
+    RescanRekeyed: NavigatorScreenParams<RescanRekeyedStackParamList>
+    UndoRekey: NavigatorScreenParams<UndoRekeyStackParamList>
     Staking: undefined
     GroupTransactionList: {
         groupId: string
@@ -55,4 +65,9 @@ export type AppStackParamList = RootStackParamList &
     AccountStackParamsList &
     MultisigStackParamList &
     BackupStackParamList &
+    RekeyToStandardStackParamList &
+    RekeyToLedgerStackParamList &
+    RekeyToSharedStackParamList &
+    RescanRekeyedStackParamList &
+    UndoRekeyStackParamList &
     SearchStackParamsList
