@@ -271,8 +271,9 @@ describe('Flow: View transactions → tap into details', () => {
                     confirmedRound: 1000 - i,
                     // Same day so they all land in one section — keeps the
                     // grouping check trivial; the test cares about pagination,
-                    // not date bucketing.
-                    roundTime: 1_700_000_000 - i * 60,
+                    // not date bucketing. Base is noon UTC so the 25-minute
+                    // span doesn't cross midnight in any reasonable TZ.
+                    roundTime: 1_700_049_600 - i * 60,
                     swapGroupDetail: null,
                     interpretedMeaning: null,
                     fee: new Decimal(1000),
