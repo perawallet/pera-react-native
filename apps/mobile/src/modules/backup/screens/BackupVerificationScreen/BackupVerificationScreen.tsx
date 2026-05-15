@@ -12,11 +12,15 @@
 
 import { PWButton, PWScrollView, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
 import { BackupQuizItem } from '../../components/BackupQuizItem'
 import { useBackupVerificationScreen } from './useBackupVerificationScreen'
 import { useStyles } from './styles'
 
+const SCREEN_CAPTURE_TAG = 'backup-verification'
+
 export const BackupVerificationScreen = () => {
+    usePreventScreenCapture(SCREEN_CAPTURE_TAG)
     const styles = useStyles()
     const { t } = useLanguage()
     const { items, onSelect, onSubmit, isFilled } =
