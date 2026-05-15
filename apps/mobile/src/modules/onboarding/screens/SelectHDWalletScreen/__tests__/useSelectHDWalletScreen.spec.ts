@@ -38,7 +38,7 @@ const mockCreateHdWalletAccount = vi.fn()
 
 const mockHDWalletGroups: HDWalletGroup[] = [
     {
-        keyPairId: 'wallet-1',
+        seedKeyId: 'wallet-1',
         accounts: [
             {
                 id: 'hd-1',
@@ -51,7 +51,7 @@ const mockHDWalletGroups: HDWalletGroup[] = [
                     keyIndex: 0,
                     derivationType: 9 as const,
                 },
-                keyPairId: 'wallet-1',
+                keyPairId: 'wallet-1-acc0-idx0-dt9',
             },
         ],
         firstAccount: {
@@ -65,12 +65,12 @@ const mockHDWalletGroups: HDWalletGroup[] = [
                 keyIndex: 0,
                 derivationType: 9 as const,
             },
-            keyPairId: 'wallet-1',
+            keyPairId: 'wallet-1-acc0-idx0-dt9',
         },
         accountCount: 1,
     },
     {
-        keyPairId: 'wallet-2',
+        seedKeyId: 'wallet-2',
         accounts: [
             {
                 id: 'hd-2',
@@ -82,7 +82,7 @@ const mockHDWalletGroups: HDWalletGroup[] = [
                     keyIndex: 0,
                     derivationType: 9 as const,
                 },
-                keyPairId: 'wallet-2',
+                keyPairId: 'wallet-2-acc0-idx0-dt9',
             },
         ],
         firstAccount: {
@@ -95,7 +95,7 @@ const mockHDWalletGroups: HDWalletGroup[] = [
                 keyIndex: 0,
                 derivationType: 9 as const,
             },
-            keyPairId: 'wallet-2',
+            keyPairId: 'wallet-2-acc0-idx0-dt9',
         },
         accountCount: 1,
     },
@@ -144,8 +144,8 @@ describe('useSelectHDWalletScreen', () => {
     it('returns HD wallet groups', () => {
         const { result } = renderHook(() => useSelectHDWalletScreen())
         expect(result.current.hdWalletGroups).toHaveLength(2)
-        expect(result.current.hdWalletGroups[0].keyPairId).toBe('wallet-1')
-        expect(result.current.hdWalletGroups[1].keyPairId).toBe('wallet-2')
+        expect(result.current.hdWalletGroups[0].seedKeyId).toBe('wallet-1')
+        expect(result.current.hdWalletGroups[1].seedKeyId).toBe('wallet-2')
     })
 
     it('returns account balances', () => {

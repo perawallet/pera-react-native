@@ -21,32 +21,35 @@ import { logger } from '@perawallet/wallet-core-shared'
 import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import {
+    algo25SignKeyId,
+    hdDerivedKeyId,
     KeyNotFoundError,
     useKMS,
-    type KeyPair,
 } from '@perawallet/wallet-core-kms'
 import { NoHDWalletError } from '../errors'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { isHDWalletAccount } from '../utils'
+
+export type Algo25SeedReference = {
+    /** Keystore id of the algo25 seed entry. */
+    seedKeyId: string
+    /** Encoded Algorand address derived from the seed. */
+    address: string
+}
 
 export const useCreateAccount = () => {
     const { network } = useNetwork()
     const deviceID = useDeviceID(network)
-    const accounts = useAccountsStore(state => state.accounts)
     const setAccounts = useAccountsStore(state => state.setAccounts)
     const deviceInfo = getProvider().deviceInfo
     const { mutateAsync: updateDeviceOnBackend } = useUpdateDeviceMutation()
-    const {
-        getKey,
-        createHDWalletKey,
-        createAlgo25Key,
-        generateDerivedKey,
-        withExportedKey,
-    } = useKMS()
+    const { getKey, createHDWalletKey, createAlgo25Key, getDerivedPublicKey } =
+        useKMS()
 
     const saveAndUpdateAccounts = async (newAccount: WalletAccount) => {
-        const nextAccounts = [...accounts, newAccount]
+        // We get the state fresh to avoid stale captures
+        const currentAccounts = useAccountsStore.getState().accounts
+        const nextAccounts = [...currentAccounts, newAccount]
         setAccounts(nextAccounts)
 
         if (deviceID) {
@@ -68,115 +71,94 @@ export const useCreateAccount = () => {
         walletId,
         account,
         keyIndex,
-        entropyKeyId: providedEntropyKeyId,
     }: {
         walletId?: string
         account: number
         keyIndex: number
-        /**
-         * Pass through when the caller already created the root key and has
-         * the entropyKeyId in hand (e.g. mnemonic import). Required because
-         * the import flow creates the root in `useImportAccount` *before*
-         * calling here — by the time we run, `getKey` returns the existing
-         * root and there's no store sibling to inherit from.
-         */
-        entropyKeyId?: string
     }) => {
         const rootWalletId = walletId ?? generateOrderedUniqueId()
-        let rootKey = getKey(rootWalletId)
-        let entropyKeyId = providedEntropyKeyId
+        let seedKeyId: string | undefined = getKey(rootWalletId)?.id
 
-        if (!rootKey) {
+        if (!seedKeyId) {
             const result = await createHDWalletKey({ id: rootWalletId })
-            rootKey = result.keyPair
-            entropyKeyId = entropyKeyId ?? result.entropyKeyId
-        } else if (!entropyKeyId) {
-            // Adding a new address to an existing HD wallet: createHDWalletKey
-            // is the only path that surfaces entropyKeyId from KMS, so when
-            // the root key already exists we recover it from a sibling HD
-            // account in the store. All siblings under the same keyPairId
-            // share the same entropyKeyId by construction; missing it would
-            // break mnemonic-backup grouping (each sibling deduped separately).
-            const sibling = accounts
-                .filter(isHDWalletAccount)
-                .find(a => a.keyPairId === rootWalletId && !!a.entropyKeyId)
-            entropyKeyId = sibling?.entropyKeyId
+            seedKeyId = result.seedKey.id
         }
 
-        if (!rootKey?.id || !rootKey.keystoreKeyId) {
+        if (!seedKeyId) {
             throw new NoHDWalletError(rootWalletId)
         }
 
-        const derivedKeystoreKeyId = await generateDerivedKey(
-            rootKey.keystoreKeyId,
+        const derivationType = BIP32DerivationType.Peikert
+        const publicKey = await getDerivedPublicKey(
+            seedKeyId,
             account,
             keyIndex,
-            BIP32DerivationType.Peikert,
+            derivationType,
         )
 
-        const newAccount = await withExportedKey(
-            derivedKeystoreKeyId,
-            keyData => {
-                if (!keyData.publicKey) {
-                    throw new NoHDWalletError(rootWalletId)
-                }
+        if (!publicKey) {
+            throw new NoHDWalletError(rootWalletId)
+        }
 
-                return {
-                    id: generateOrderedUniqueId(),
-                    address: encodeAlgorandAddress(keyData.publicKey),
-                    type: AccountTypes.hdWallet,
-                    hdWalletDetails: {
-                        account,
-                        change: 0,
-                        keyIndex,
-                        derivationType: BIP32DerivationType.Peikert,
-                        keystoreKeyId: derivedKeystoreKeyId,
-                    },
-                    keyPairId: rootWalletId,
-                    entropyKeyId,
-                } satisfies WalletAccount
+        const newAccount: WalletAccount = {
+            id: generateOrderedUniqueId(),
+            address: encodeAlgorandAddress(publicKey),
+            type: AccountTypes.hdWallet,
+            hdWalletDetails: {
+                account,
+                change: 0,
+                keyIndex,
+                derivationType,
             },
-        )
+            keyPairId: hdDerivedKeyId(
+                seedKeyId,
+                account,
+                keyIndex,
+                derivationType,
+            ),
+        }
 
         await saveAndUpdateAccounts(newAccount)
         return newAccount
     }
 
     const createAlgo25WalletAccount = async ({
-        keyPair,
+        seed,
         id,
     }: {
-        keyPair?: KeyPair
+        seed?: Algo25SeedReference
         id?: string
     }) => {
-        // When the caller has just minted the key (e.g. import flow), passing
-        // `keyPair` directly avoids `getKey()`. `getKey` reads a `useMemo`
-        // bound to the *previous render's* keystore snapshot, so a key
-        // committed earlier in the same async handler isn't visible yet — we
-        // would otherwise fall through to the no-mnemonic branch below and
-        // mint an algo25 key from a fresh random seed, surfacing a
-        // different (random) address each import.
-        let rootKey: KeyPair | null | undefined = keyPair
+        let resolved: Algo25SeedReference | null = seed ?? null
 
-        if (!rootKey) {
+        if (!resolved) {
             const keyId = id ?? generateOrderedUniqueId()
-            rootKey = getKey(keyId)
-
-            if (!rootKey) {
+            const existing = getKey(keyId)
+            if (existing) {
+                resolved = {
+                    seedKeyId: existing.id,
+                    address: encodeAlgorandAddress(
+                        existing.publicKey ?? new Uint8Array(),
+                    ),
+                }
+            } else {
                 const result = await createAlgo25Key({ id: keyId })
-                rootKey = result.keyPair
+                resolved = {
+                    seedKeyId: result.seedKey.id,
+                    address: result.address,
+                }
             }
         }
 
-        if (!rootKey?.id) {
+        if (!resolved?.seedKeyId) {
             throw new KeyNotFoundError(id ?? '')
         }
 
         const newAccount: WalletAccount = {
             id: generateOrderedUniqueId(),
-            address: rootKey.publicKey,
+            address: resolved.address,
             type: AccountTypes.algo25,
-            keyPairId: rootKey.id,
+            keyPairId: algo25SignKeyId(resolved.seedKeyId),
         }
 
         await saveAndUpdateAccounts(newAccount)

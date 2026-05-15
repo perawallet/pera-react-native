@@ -16,18 +16,18 @@ import { renderHook, act, waitFor } from '@testing-library/react'
 const kmsMocks = vi.hoisted(() => ({
     pinBytes: null as Uint8Array | null,
     biometricBytes: null as Uint8Array | null,
-    commitTypedSecret: vi.fn(),
-    withTypedSecret: vi.fn(),
-    hasTypedSecret: vi.fn(),
-    removeTypedSecret: vi.fn(),
+    commitSecret: vi.fn(),
+    withSecret: vi.fn(),
+    hasSecret: vi.fn(),
+    removeSecret: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
     useKMSService: () => ({
-        commitTypedSecret: kmsMocks.commitTypedSecret,
-        withTypedSecret: kmsMocks.withTypedSecret,
-        hasTypedSecret: kmsMocks.hasTypedSecret,
-        removeTypedSecret: kmsMocks.removeTypedSecret,
+        commitSecret: kmsMocks.commitSecret,
+        withSecret: kmsMocks.withSecret,
+        hasSecret: kmsMocks.hasSecret,
+        removeSecret: kmsMocks.removeSecret,
     }),
 }))
 
@@ -47,20 +47,16 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 }))
 
 import { useBiometrics } from '../useBiometrics'
-import {
-    PIN_RECORD_KEY_ID,
-    BIOMETRIC_BLOB_KEY_ID,
-    BIOMETRIC_BLOB_KEYSTORE_TYPE,
-} from '../../constants'
+import { PIN_RECORD_KEY_ID, BIOMETRIC_BLOB_KEY_ID } from '../../constants'
 
 const wireBlobMocks = () => {
-    kmsMocks.commitTypedSecret.mockImplementation(
+    kmsMocks.commitSecret.mockImplementation(
         async ({ id, bytes }: { id: string; bytes: Uint8Array }) => {
             if (id === PIN_RECORD_KEY_ID) kmsMocks.pinBytes = bytes
             else kmsMocks.biometricBytes = bytes
         },
     )
-    kmsMocks.withTypedSecret.mockImplementation(
+    kmsMocks.withSecret.mockImplementation(
         async (id: string, handler: (bytes: Uint8Array) => unknown) => {
             const bytes =
                 id === PIN_RECORD_KEY_ID
@@ -74,12 +70,12 @@ const wireBlobMocks = () => {
             }
         },
     )
-    kmsMocks.hasTypedSecret.mockImplementation((id: string) =>
+    kmsMocks.hasSecret.mockImplementation((id: string) =>
         id === PIN_RECORD_KEY_ID
             ? kmsMocks.pinBytes !== null
             : kmsMocks.biometricBytes !== null,
     )
-    kmsMocks.removeTypedSecret.mockImplementation(async (id: string) => {
+    kmsMocks.removeSecret.mockImplementation(async (id: string) => {
         if (id === PIN_RECORD_KEY_ID) kmsMocks.pinBytes = null
         else kmsMocks.biometricBytes = null
     })
@@ -141,9 +137,7 @@ describe('useBiometrics', () => {
         })
 
         expect(isEnabled).toBe(true)
-        expect(kmsMocks.hasTypedSecret).toHaveBeenCalledWith(
-            BIOMETRIC_BLOB_KEY_ID,
-        )
+        expect(kmsMocks.hasSecret).toHaveBeenCalledWith(BIOMETRIC_BLOB_KEY_ID)
     })
 
     test('checkBiometricsEnabled returns false when no biometric data', async () => {
@@ -155,9 +149,7 @@ describe('useBiometrics', () => {
         })
 
         expect(isEnabled).toBe(false)
-        expect(kmsMocks.hasTypedSecret).toHaveBeenCalledWith(
-            BIOMETRIC_BLOB_KEY_ID,
-        )
+        expect(kmsMocks.hasSecret).toHaveBeenCalledWith(BIOMETRIC_BLOB_KEY_ID)
     })
 
     test('checkBiometricsAvailable returns true when available', async () => {
@@ -200,7 +192,7 @@ describe('useBiometrics', () => {
         })
 
         // Should not have written anything to the biometric blob.
-        expect(kmsMocks.commitTypedSecret).not.toHaveBeenCalled()
+        expect(kmsMocks.commitSecret).not.toHaveBeenCalled()
         expect(kmsMocks.biometricBytes).toBeNull()
     })
 
@@ -217,9 +209,8 @@ describe('useBiometrics', () => {
             await result.current.refreshBiometricsBinding()
         })
 
-        expect(kmsMocks.commitTypedSecret).toHaveBeenCalledWith({
+        expect(kmsMocks.commitSecret).toHaveBeenCalledWith({
             id: BIOMETRIC_BLOB_KEY_ID,
-            type: BIOMETRIC_BLOB_KEYSTORE_TYPE,
             bytes: pinRecordBytes,
         })
     })
@@ -233,7 +224,7 @@ describe('useBiometrics', () => {
         })
 
         expect(success).toBe(false)
-        expect(kmsMocks.withTypedSecret).toHaveBeenCalledWith(
+        expect(kmsMocks.withSecret).toHaveBeenCalledWith(
             PIN_RECORD_KEY_ID,
             expect.any(Function),
         )
@@ -249,7 +240,7 @@ describe('useBiometrics', () => {
         })
 
         expect(success).toBe(false)
-        expect(kmsMocks.withTypedSecret).toHaveBeenCalledWith(
+        expect(kmsMocks.withSecret).toHaveBeenCalledWith(
             PIN_RECORD_KEY_ID,
             expect.any(Function),
         )
@@ -298,15 +289,14 @@ describe('useBiometrics', () => {
         })
 
         expect(success).toBe(true)
-        expect(kmsMocks.withTypedSecret).toHaveBeenCalledWith(
+        expect(kmsMocks.withSecret).toHaveBeenCalledWith(
             PIN_RECORD_KEY_ID,
             expect.any(Function),
         )
         expect(mockCheckBiometricsAvailable).toHaveBeenCalled()
         expect(mockAuthenticate).toHaveBeenCalled()
-        expect(kmsMocks.commitTypedSecret).toHaveBeenCalledWith({
+        expect(kmsMocks.commitSecret).toHaveBeenCalledWith({
             id: BIOMETRIC_BLOB_KEY_ID,
-            type: BIOMETRIC_BLOB_KEYSTORE_TYPE,
             bytes: pinData,
         })
         expect(result.current.isEnabled).toBe(true)
@@ -356,7 +346,7 @@ describe('useBiometrics', () => {
 
         expect(success).toBe(false)
         // The biometric blob must not be committed when auth fails.
-        const commits = kmsMocks.commitTypedSecret.mock.calls.filter(
+        const commits = kmsMocks.commitSecret.mock.calls.filter(
             call => call[0].id === BIOMETRIC_BLOB_KEY_ID,
         )
         expect(commits).toHaveLength(0)
@@ -379,7 +369,7 @@ describe('useBiometrics', () => {
             await result.current.disableBiometrics()
         })
 
-        expect(kmsMocks.removeTypedSecret).toHaveBeenCalledWith(
+        expect(kmsMocks.removeSecret).toHaveBeenCalledWith(
             BIOMETRIC_BLOB_KEY_ID,
         )
         expect(result.current.isEnabled).toBe(false)

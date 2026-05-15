@@ -28,15 +28,11 @@ import {
 import { SIWA_CHAIN_ID } from '../../utils/siwa'
 import type { Arc60Metadata, Arc60StdSigData } from '../../pipeline/types'
 
-const mockGetKeyOrThrow = vi.fn()
-const mockWithHDSession = vi.fn()
-const mockWithAlgo25Session = vi.fn()
+const mockSignDataWithKey = vi.fn()
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
     useKMS: () => ({
-        getKeyOrThrow: (...args: any[]) => mockGetKeyOrThrow(...args),
-        withHDSession: (...args: any[]) => mockWithHDSession(...args),
-        withAlgo25Session: (...args: any[]) => mockWithAlgo25Session(...args),
+        signDataWithKey: (...args: any[]) => mockSignDataWithKey(...args),
     }),
 }))
 
@@ -62,11 +58,9 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     }
 })
 
-const mockKey = { id: 'key-1', type: 'HDWalletRootKey', publicKey: '' }
-
 const hdAccount = {
     address: 'HD_ADDR',
-    keyPairId: 'key-1',
+    keyPairId: 'key-hd-child',
     type: 'hdWallet',
     hdWalletDetails: {
         account: 0,
@@ -78,7 +72,7 @@ const hdAccount = {
 
 const algo25Account = {
     address: 'ALGO25_ADDR',
-    keyPairId: 'key-1',
+    keyPairId: 'key-algo25-ed25519',
     type: 'algo25',
 } as unknown as WalletAccount
 
@@ -118,10 +112,10 @@ describe('useArc60Signer', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockAccounts = []
-        mockGetKeyOrThrow.mockReturnValue(mockKey)
         mockIsHDWalletAccount.mockReturnValue(false)
         mockIsAlgo25Account.mockReturnValue(false)
         mockIsHardwareWalletAccount.mockReturnValue(false)
+        mockSignDataWithKey.mockResolvedValue([new Uint8Array([0])])
     })
 
     test('rejects unsupported scope', async () => {
@@ -166,14 +160,10 @@ describe('useArc60Signer', () => {
         ).rejects.toBeInstanceOf(Arc60DomainMismatchError)
     })
 
-    test('signs with HD session using sha256(data)||sha256(authenticatorData) payload', async () => {
+    test('signs an HD account via signDataWithKey with sha256(data)||sha256(authenticatorData) payload', async () => {
         mockIsHDWalletAccount.mockReturnValue(true)
         const sigBytes = new Uint8Array([1, 2, 3])
-        const mockSignData = vi.fn().mockResolvedValue(sigBytes)
-        mockWithHDSession.mockImplementation(
-            async (_key: any, _domain: string, handler: any) =>
-                handler({ signData: mockSignData }),
-        )
+        mockSignDataWithKey.mockResolvedValue([sigBytes])
 
         const { result } = renderHook(() => useArc60Signer())
         let signature: Optional<Uint8Array>
@@ -186,20 +176,15 @@ describe('useArc60Signer', () => {
         })
 
         expect(signature).toEqual(sigBytes)
-        expect(mockSignData).toHaveBeenCalledTimes(1)
-        const [derivation, payload] = mockSignData.mock.calls[0]
-        expect(derivation).toEqual({
-            account: 0,
-            keyIndex: 1,
-            derivationType: 9,
-        })
+        expect(mockSignDataWithKey).toHaveBeenCalledTimes(1)
+        const [childId, _domain, items] = mockSignDataWithKey.mock.calls[0]
+        expect(childId).toBe('key-hd-child')
+        const payload = items[0] as Uint8Array
         // First 32 bytes = sha256(decoded data)
-        expect((payload as Uint8Array).slice(0, 32)).toEqual(
-            sha256(samplePayload),
-        )
+        expect(payload.slice(0, 32)).toEqual(sha256(samplePayload))
         // Last 32 bytes = sha256(authenticatorData)
-        expect((payload as Uint8Array).slice(32)).toEqual(sha256(validAuthData))
-        expect((payload as Uint8Array).length).toBe(64)
+        expect(payload.slice(32)).toEqual(sha256(validAuthData))
+        expect(payload.length).toBe(64)
     })
 
     test('rejects when hdPath does not match the signer derivation', async () => {
@@ -222,12 +207,7 @@ describe('useArc60Signer', () => {
 
     test('accepts a matching hdPath', async () => {
         mockIsHDWalletAccount.mockReturnValue(true)
-        mockWithHDSession.mockImplementation(
-            async (_key: any, _domain: string, handler: any) =>
-                handler({
-                    signData: vi.fn().mockResolvedValue(new Uint8Array([1])),
-                }),
-        )
+        mockSignDataWithKey.mockResolvedValue([new Uint8Array([1])])
         const { result } = renderHook(() => useArc60Signer())
         await expect(
             act(async () => {
@@ -262,13 +242,9 @@ describe('useArc60Signer', () => {
         ).rejects.toBeInstanceOf(Arc60FailedHdPathError)
     })
 
-    test('signs with Algo25 session and no MX prefix', async () => {
+    test('signs an Algo25 account via signDataWithKey with no MX prefix', async () => {
         mockIsAlgo25Account.mockReturnValue(true)
-        const mockSignData = vi.fn().mockResolvedValue(new Uint8Array([7]))
-        mockWithAlgo25Session.mockImplementation(
-            async (_key: any, _domain: string, handler: any) =>
-                handler({ signData: mockSignData }),
-        )
+        mockSignDataWithKey.mockResolvedValue([new Uint8Array([7])])
         const algo25Siwa = new TextEncoder().encode(
             buildSiwa({ account_address: 'ALGO25_ADDR' }),
         )
@@ -286,7 +262,9 @@ describe('useArc60Signer', () => {
             )
         })
 
-        const payload = mockSignData.mock.calls[0][0] as Uint8Array
+        const [childId, _domain, items] = mockSignDataWithKey.mock.calls[0]
+        expect(childId).toBe('key-algo25-ed25519')
+        const payload = items[0] as Uint8Array
         // Must NOT start with "MX"
         expect(payload[0]).not.toBe('M'.charCodeAt(0))
         expect(payload[1]).not.toBe('X'.charCodeAt(0))
@@ -355,11 +333,7 @@ describe('useArc60Signer', () => {
         } as unknown as WalletAccount
         mockAccounts = [rekeyed]
         mockIsAlgo25Account.mockReturnValue(true)
-        const mockSignData = vi.fn().mockResolvedValue(new Uint8Array([1]))
-        mockWithAlgo25Session.mockImplementation(
-            async (_key: any, _domain: string, handler: any) =>
-                handler({ signData: mockSignData }),
-        )
+        mockSignDataWithKey.mockResolvedValue([new Uint8Array([1])])
 
         const { result } = renderHook(() => useArc60Signer())
         await act(async () => {
@@ -370,6 +344,6 @@ describe('useArc60Signer', () => {
             )
         })
 
-        expect(mockSignData).toHaveBeenCalled()
+        expect(mockSignDataWithKey).toHaveBeenCalled()
     })
 })

@@ -22,10 +22,7 @@ import ErrorBoundary from 'react-native-error-boundary'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useDeviceRegistration } from '@perawallet/wallet-core-device'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import {
-    useAllAccounts,
-    useBackfillEntropyKeyId,
-} from '@perawallet/wallet-core-accounts'
+import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { useNetworkStatus, useNetworkStatusListener } from '@modules/network'
 import { WebViewOverlay } from '@modules/webview'
@@ -98,10 +95,6 @@ const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
 export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     const { network } = useNetwork()
     const accounts = useAllAccounts()
-
-    // One-shot data migration for HD accounts created before entropyKeyId was
-    // reliably propagated through the discover-and-import flow.
-    useBackfillEntropyKeyId()
 
     const appState = useRef(AppState.currentState)
     const appStatePlatform = useRef(getAppStatePlatform()).current

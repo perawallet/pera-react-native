@@ -14,96 +14,112 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import type { Key } from '@algorandfoundation/keystore'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import { useKMS } from '../useKMS'
-import { KeyPair, KeyType } from '../../models'
-import { InvalidKeyError } from '../../errors'
+import { InvalidKeyError, KeyNotFoundError } from '../../errors'
+import { SeedScheme } from '../../constants'
 
 // Source-of-truth keystore Key list mocked at the module that bridges to
-// the platform keystore. useKMS reads from this via useKeystoreKeys().
+// the platform keystore. useKMS reads from this via useKeystoreKeys() AND
+// directly via getKeystoreStore().state.keys for live (non-React) lookups.
 let mockKeystoreKeys: Key[] = []
 
 vi.mock('../useKeystoreState', () => ({
     useKeystoreKeys: () => mockKeystoreKeys,
 }))
 
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getKeystoreStore: () => ({
+        get state() {
+            return { keys: mockKeystoreKeys, status: 'idle' as const }
+        },
+    }),
+}))
+
 const mockDeleteKey = vi.fn()
 const mockKeyStoreRemove = vi.fn()
+const mockKeyStoreSign = vi.fn()
+const mockKeyStoreExport = vi.fn()
 vi.mock('../useKMSServices', () => ({
     useKMSService: () => ({
         deleteKey: (...args: any[]) => mockDeleteKey(...args),
         keyStore: {
             remove: (...args: any[]) => mockKeyStoreRemove(...args),
+            sign: (...args: any[]) => mockKeyStoreSign(...args),
+            export: (...args: any[]) => mockKeyStoreExport(...args),
         },
-        withExportedKey: vi.fn(),
+        withExportedKey: async (
+            keyId: string,
+            handler: (keyData: any) => any,
+        ) => {
+            const keyData = await mockKeyStoreExport(keyId)
+            return handler(keyData)
+        },
         checkAccess: vi.fn(),
     }),
 }))
 
 const mockCreateHDWalletKey = vi.fn()
-const mockWithHDSession = vi.fn()
 vi.mock('../useHDWallet', () => ({
     useHDWallet: () => ({
         createHDWalletKey: (...args: any[]) => mockCreateHDWalletKey(...args),
-        withHDSession: (...args: any[]) => mockWithHDSession(...args),
         generateDerivedKey: vi.fn(),
+        getDerivedPublicKey: vi.fn(),
+        persistHDMasterKey: vi.fn(),
     }),
 }))
 
 const mockCreateAlgo25Key = vi.fn()
-const mockWithAlgo25Session = vi.fn()
 vi.mock('../useAlgo25', () => ({
     useAlgo25: () => ({
         createAlgo25Key: (...args: any[]) => mockCreateAlgo25Key(...args),
-        withAlgo25Session: (...args: any[]) => mockWithAlgo25Session(...args),
     }),
 }))
 
-const seedHDRoot = (id: string): KeyPair => {
-    mockKeystoreKeys.push({
+const mockEntropyToMnemonic = vi.fn()
+vi.mock('../../crypto/hdwallet-utils', () => ({
+    entropyToMnemonic: (...args: any[]) => mockEntropyToMnemonic(...args),
+}))
+
+const mockMnemonicFromSeed = vi.fn()
+vi.mock('@algorandfoundation/algokit-utils/algo25', () => ({
+    mnemonicFromSeed: (...args: any[]) => mockMnemonicFromSeed(...args),
+}))
+
+import { useKMS } from '../useKMS'
+
+const seedBip39Root = (id: string, entropy = '00ff'): Key => {
+    const key: Key = {
         id,
-        type: 'hd-root-key',
+        type: 'seed',
         algorithm: 'raw',
         extractable: true,
-    } as Key)
-    // The shape `keystoreKeyToKeyPair` will produce — useful for assertions
-    // that need to match what `withHDSession`/`withAlgo25Session` were called
-    // with as their `key` argument.
-    return expect.objectContaining({
-        id,
-        keystoreKeyId: id,
-        publicKey: '',
-        type: KeyType.HDWalletRootKey,
-    }) as unknown as KeyPair
+        metadata: { scheme: SeedScheme.Bip39, entropy, pera: {} },
+    }
+    mockKeystoreKeys.push(key)
+    return key
 }
 
-const seedAlgo25Root = (id: string): KeyPair => {
-    mockKeystoreKeys.push({
+const seedAlgo25Root = (id: string): Key => {
+    const key: Key = {
         id,
-        type: 'algo25',
-        algorithm: 'EdDSA',
+        type: 'seed',
+        algorithm: 'raw',
         extractable: true,
-    } as Key)
-    return expect.objectContaining({
-        id,
-        keystoreKeyId: id,
-        publicKey: '',
-        type: KeyType.Algo25Key,
-    }) as unknown as KeyPair
+        metadata: { scheme: SeedScheme.Algo25, pera: {} },
+    }
+    mockKeystoreKeys.push(key)
+    return key
 }
 
-const seedP256Root = (id: string): KeyPair => {
-    mockKeystoreKeys.push({
-        id,
-        type: 'hd-derived-p256',
-        algorithm: 'P256',
+const childOf = (childId: string, parentId: string, type = 'ed25519'): Key => {
+    const key: Key = {
+        id: childId,
+        type,
+        algorithm: 'EdDSA',
         extractable: false,
-    } as Key)
-    return expect.objectContaining({
-        id,
-        keystoreKeyId: id,
-        publicKey: '',
-        type: KeyType.DeterministicP256Key,
-    }) as unknown as KeyPair
+        metadata: { parentKeyId: parentId },
+    }
+    mockKeystoreKeys.push(key)
+    return key
 }
 
 describe('useKMS', () => {
@@ -112,456 +128,230 @@ describe('useKMS', () => {
         mockKeystoreKeys = []
     })
 
-    it('should delete a key via deleteKey from useKMSService', async () => {
+    it('exposes deleteKey from useKMSService', async () => {
         const { result } = renderHook(() => useKMS())
-
         await act(async () => {
             await result.current.deleteKey('test-id')
         })
-
         expect(mockDeleteKey).toHaveBeenCalledWith('test-id')
     })
 
-    it('should expose createHDWalletKey from useHDWallet', async () => {
-        const mockResult = {
-            keyPair: {
-                id: 'wallet-1',
-                publicKey: '',
-                type: KeyType.HDWalletRootKey,
-            },
-            entropyKeyId: 'wallet-1-entropy',
-        }
+    it('exposes createHDWalletKey from useHDWallet', async () => {
+        const mockResult = { seedKey: { id: 'wallet-1', type: 'seed' } }
         mockCreateHDWalletKey.mockResolvedValue(mockResult)
-
         const { result } = renderHook(() => useKMS())
-
         let keyResult: any
         await act(async () => {
             keyResult = await result.current.createHDWalletKey({
                 id: 'wallet-1',
             })
         })
-
         expect(mockCreateHDWalletKey).toHaveBeenCalledWith({ id: 'wallet-1' })
         expect(keyResult).toEqual(mockResult)
     })
 
-    it('should expose createAlgo25Key from useAlgo25', async () => {
-        const mockKey: KeyPair = {
-            id: 'algo25-1',
-            publicKey: 'ALGO25_ADDR',
-            type: KeyType.Algo25Key,
-        }
-        mockCreateAlgo25Key.mockResolvedValue(mockKey)
-
+    it('getKeyOrThrow throws when the key is not in the reactive store', () => {
         const { result } = renderHook(() => useKMS())
-
-        let keyResult: any
-        await act(async () => {
-            keyResult = await result.current.createAlgo25Key({
-                id: 'algo25-1',
-                mnemonic: 'test mnemonic',
-            })
-        })
-
-        expect(mockCreateAlgo25Key).toHaveBeenCalledWith({
-            id: 'algo25-1',
-            mnemonic: 'test mnemonic',
-        })
-        expect(keyResult).toEqual(mockKey)
-    })
-
-    it('should getKeyOrThrow and throw if not found', () => {
-        const { result } = renderHook(() => useKMS())
-
-        expect(() => result.current.getKeyOrThrow('missing-id')).toThrow()
-    })
-
-    it('should getKeyOrThrow successfully when key exists in the keystore', () => {
-        seedHDRoot('test-id')
-
-        const { result } = renderHook(() => useKMS())
-
-        const kp = result.current.getKeyOrThrow('test-id')
-        expect(kp.id).toBe('test-id')
-        expect(kp.type).toBe(KeyType.HDWalletRootKey)
-        expect(kp.keystoreKeyId).toBe('test-id')
-    })
-
-    it('should signTransactionsWithKey for multiple HD transactions', async () => {
-        const expectedKey = seedHDRoot('hd-key')
-        let callCount = 0
-        mockWithHDSession.mockImplementation(
-            async (_key: any, _domain: string, handler: any) => {
-                const mockSession = {
-                    signTransaction: vi.fn(async () =>
-                        new Uint8Array(64).fill(++callCount),
-                    ),
-                }
-                return handler(mockSession)
-            },
+        expect(() => result.current.getKeyOrThrow('missing-id')).toThrow(
+            KeyNotFoundError,
         )
+    })
+
+    it('getKeyOrThrow returns the keystore Key when present', () => {
+        seedBip39Root('hd-1')
+        const { result } = renderHook(() => useKMS())
+        const key = result.current.getKeyOrThrow('hd-1')
+        expect(key.id).toBe('hd-1')
+        expect(key.type).toBe('seed')
+    })
+
+    it('keys map contains only seed entries with a recognised scheme', () => {
+        seedBip39Root('hd-1')
+        seedAlgo25Root('algo-1')
+        childOf('child-1', 'hd-1', 'hd-derived-ed25519')
+        mockKeystoreKeys.push({
+            id: 'pin',
+            type: 'secret-key',
+            algorithm: 'raw',
+            extractable: true,
+        })
 
         const { result } = renderHook(() => useKMS())
 
+        expect(result.current.keys.size).toBe(2)
+        expect(result.current.keys.get('hd-1')?.type).toBe('seed')
+        expect(result.current.keys.get('algo-1')?.type).toBe('seed')
+        expect(result.current.keys.get('child-1')).toBeUndefined()
+        expect(result.current.keys.get('pin')).toBeUndefined()
+    })
+
+    it('seedIdOf walks metadata.parentKeyId to the seed', () => {
+        seedBip39Root('hd-1')
+        childOf('hd-1-acc0-idx0-dt9', 'hd-1', 'hd-derived-ed25519')
+
+        const { result } = renderHook(() => useKMS())
+
+        expect(result.current.seedIdOf('hd-1-acc0-idx0-dt9')).toBe('hd-1')
+        // Seeds themselves don't have parents.
+        expect(result.current.seedIdOf('hd-1')).toBeUndefined()
+        expect(result.current.seedIdOf('unknown')).toBeUndefined()
+    })
+
+    it('signTransactionsWithKey calls keyStore.sign(childId) once per item', async () => {
+        seedBip39Root('hd-1')
+        const child = childOf('hd-1-c0', 'hd-1', 'hd-derived-ed25519')
+        mockKeyStoreSign
+            .mockResolvedValueOnce(new Uint8Array(64).fill(1))
+            .mockResolvedValueOnce(new Uint8Array(64).fill(2))
+
+        const { result } = renderHook(() => useKMS())
         let signed: Optional<Uint8Array[]>
         await act(async () => {
             signed = await result.current.signTransactionsWithKey(
-                'hd-key',
+                child.id,
                 'test-domain',
                 [new Uint8Array([1]), new Uint8Array([2])],
-                { account: 0, keyIndex: 0, derivationType: 9 },
             )
         })
-
         expect(signed).toHaveLength(2)
-        expect(mockWithHDSession).toHaveBeenCalledWith(
-            expectedKey,
-            'test-domain',
-            expect.any(Function),
+        expect(mockKeyStoreSign).toHaveBeenNthCalledWith(
+            1,
+            child.id,
+            new Uint8Array([1]),
+        )
+        expect(mockKeyStoreSign).toHaveBeenNthCalledWith(
+            2,
+            child.id,
+            new Uint8Array([2]),
         )
     })
 
-    it('should not expose saveKey or executeWithKey', () => {
+    it('signTransactionsWithKey accepts a seed id directly (legacy callers)', async () => {
+        seedAlgo25Root('algo-1')
+        mockKeyStoreSign.mockResolvedValueOnce(new Uint8Array(64))
         const { result } = renderHook(() => useKMS())
-
-        expect(result.current).not.toHaveProperty('saveKey')
-        expect(result.current).not.toHaveProperty('executeWithKey')
-    })
-
-    it('should expose getKey from the keystore', () => {
-        seedAlgo25Root('test-key')
-
-        const { result } = renderHook(() => useKMS())
-
-        const kp = result.current.getKey('test-key')
-        expect(kp?.id).toBe('test-key')
-        expect(kp?.type).toBe(KeyType.Algo25Key)
-    })
-
-    it('should signTransactionsWithKey using Algo25 session', async () => {
-        const expectedKey = seedAlgo25Root('algo-key')
-        let callCount = 0
-        mockWithAlgo25Session.mockImplementation(
-            async (_key: any, _domain: string, handler: any) => {
-                const mockSession = {
-                    signTransaction: vi.fn(async () =>
-                        new Uint8Array(64).fill(++callCount),
-                    ),
-                }
-                return handler(mockSession)
-            },
-        )
-
-        const { result } = renderHook(() => useKMS())
-
-        let signed: Optional<Uint8Array[]>
         await act(async () => {
-            signed = await result.current.signTransactionsWithKey(
-                'algo-key',
-                'test-domain',
-                [new Uint8Array([1]), new Uint8Array([2])],
-            )
+            await result.current.signTransactionsWithKey('algo-1', 'd', [
+                new Uint8Array([1]),
+            ])
         })
-
-        expect(signed).toHaveLength(2)
-        expect(mockWithAlgo25Session).toHaveBeenCalledWith(
-            expectedKey,
-            'test-domain',
-            expect.any(Function),
+        expect(mockKeyStoreSign).toHaveBeenCalledWith(
+            'algo-1',
+            new Uint8Array([1]),
         )
     })
 
-    it('should throw for signTransactionsWithKey with HD key without derivationParams', async () => {
-        seedHDRoot('hd-key')
-
+    it('signDataWithKey calls keyStore.sign(childId) once per item', async () => {
+        seedBip39Root('hd-1')
+        childOf('child-1', 'hd-1', 'hd-derived-ed25519')
+        mockKeyStoreSign.mockResolvedValue(new Uint8Array(64).fill(3))
         const { result } = renderHook(() => useKMS())
+        await act(async () => {
+            await result.current.signDataWithKey('child-1', 'd', [
+                new Uint8Array([1]),
+                new Uint8Array([2]),
+            ])
+        })
+        expect(mockKeyStoreSign).toHaveBeenCalledTimes(2)
+    })
 
+    it('signTransactionsWithKey throws InvalidKeyError when the resolved entry is neither a seed nor a known child', async () => {
+        // No seed and no child registered — but the id exists as some
+        // other kind of top-level entry. seedIdOf returns undefined and
+        // direct lookup finds a non-seed entry, so we error out.
+        mockKeystoreKeys.push({
+            id: 'rsa-1',
+            type: 'rsa',
+            algorithm: 'RS256',
+            extractable: true,
+        })
+        const { result } = renderHook(() => useKMS())
         await expect(
             act(async () => {
-                await result.current.signTransactionsWithKey(
-                    'hd-key',
-                    'test-domain',
-                    [new Uint8Array([1])],
-                )
-            }),
-        ).rejects.toThrow()
-    })
-
-    it('should signDataWithKey using HD session', async () => {
-        const expectedKey = seedHDRoot('hd-key')
-        let callCount = 0
-        mockWithHDSession.mockImplementation(
-            async (_key: any, _domain: string, handler: any) => {
-                const mockSession = {
-                    signData: vi.fn(async () =>
-                        new Uint8Array(64).fill(++callCount),
-                    ),
-                }
-                return handler(mockSession)
-            },
-        )
-
-        const { result } = renderHook(() => useKMS())
-
-        let signed: Optional<Uint8Array[]>
-        await act(async () => {
-            signed = await result.current.signDataWithKey(
-                'hd-key',
-                'test-domain',
-                [new Uint8Array([1]), new Uint8Array([2])],
-                { account: 0, keyIndex: 0, derivationType: 9 },
-            )
-        })
-
-        expect(signed).toHaveLength(2)
-        expect(mockWithHDSession).toHaveBeenCalledWith(
-            expectedKey,
-            'test-domain',
-            expect.any(Function),
-        )
-    })
-
-    it('should signDataWithKey using Algo25 session', async () => {
-        const expectedKey = seedAlgo25Root('algo-key')
-        let callCount = 0
-        mockWithAlgo25Session.mockImplementation(
-            async (_key: any, _domain: string, handler: any) => {
-                const mockSession = {
-                    signData: vi.fn(async () =>
-                        new Uint8Array(64).fill(++callCount),
-                    ),
-                }
-                return handler(mockSession)
-            },
-        )
-
-        const { result } = renderHook(() => useKMS())
-
-        let signed: Optional<Uint8Array[]>
-        await act(async () => {
-            signed = await result.current.signDataWithKey(
-                'algo-key',
-                'test-domain',
-                [new Uint8Array([1]), new Uint8Array([2])],
-            )
-        })
-
-        expect(signed).toHaveLength(2)
-        expect(mockWithAlgo25Session).toHaveBeenCalledWith(
-            expectedKey,
-            'test-domain',
-            expect.any(Function),
-        )
-    })
-
-    it('should throw for signDataWithKey with HD key without derivationParams', async () => {
-        seedHDRoot('hd-key')
-
-        const { result } = renderHook(() => useKMS())
-
-        await expect(
-            act(async () => {
-                await result.current.signDataWithKey('hd-key', 'test-domain', [
+                await result.current.signTransactionsWithKey('rsa-1', 'd', [
                     new Uint8Array([1]),
                 ])
             }),
-        ).rejects.toThrow()
-    })
-
-    it('should throw InvalidKeyError for signTransactionsWithKey when the key is a P256 wallet root (unsupported here)', async () => {
-        seedP256Root('p256-key')
-        const { result } = renderHook(() => useKMS())
-
-        await expect(
-            act(async () => {
-                await result.current.signTransactionsWithKey(
-                    'p256-key',
-                    'test-domain',
-                    [new Uint8Array([1])],
-                )
-            }),
         ).rejects.toThrow(InvalidKeyError)
     })
 
-    it('should throw InvalidKeyError for signDataWithKey when the key is a P256 wallet root', async () => {
-        seedP256Root('p256-key')
-        const { result } = renderHook(() => useKMS())
-
-        await expect(
-            act(async () => {
-                await result.current.signDataWithKey(
-                    'p256-key',
-                    'test-domain',
-                    [new Uint8Array([1])],
-                )
-            }),
-        ).rejects.toThrow(InvalidKeyError)
-    })
-
-    it('should throw KeyNotFoundError for signTransactionsWithKey when no key exists with that id', async () => {
-        const { result } = renderHook(() => useKMS())
-
-        await expect(
-            act(async () => {
-                await result.current.signTransactionsWithKey(
-                    'missing-id',
-                    'test-domain',
-                    [new Uint8Array([1])],
-                )
-            }),
-        ).rejects.toThrow()
-    })
-
-    it('should executeWithMnemonic via HD session and zero bytes after', async () => {
-        const expectedKey = seedHDRoot('hd-key')
-        const capturedBytes: Uint8Array[] = []
-        mockWithHDSession.mockImplementation(
-            async (_key: any, _domain: string, handler: any) => {
-                const bytes = new TextEncoder().encode('alpha bravo charlie')
-                capturedBytes.push(bytes)
-                return handler({
-                    getMnemonic: async () => bytes,
-                })
-            },
-        )
-
-        const { result } = renderHook(() => useKMS())
-
-        let received: Optional<string[]>
-        await act(async () => {
-            received = await result.current.executeWithMnemonic(
-                'hd-key',
-                'backup-flow',
-                words => {
-                    return [...words]
-                },
-            )
+    it('executeWithMnemonic for a bip39 seed exports + decodes via entropyToMnemonic', async () => {
+        seedBip39Root('hd-1', 'abcdef01')
+        const child = childOf('hd-1-c0', 'hd-1', 'hd-derived-ed25519')
+        mockEntropyToMnemonic.mockReturnValue('alpha bravo charlie')
+        mockKeyStoreExport.mockResolvedValueOnce({
+            metadata: { scheme: SeedScheme.Bip39, entropy: 'abcdef01' },
         })
 
-        expect(received).toEqual(['alpha', 'bravo', 'charlie'])
-        expect(capturedBytes[0].every(byte => byte === 0)).toBe(true)
-        expect(mockWithHDSession).toHaveBeenCalledWith(
-            expectedKey,
-            'backup-flow',
-            expect.any(Function),
-        )
-    })
-
-    it('should executeWithMnemonic via Algo25 session', async () => {
-        const expectedKey = seedAlgo25Root('algo-key')
-        mockWithAlgo25Session.mockImplementation(
-            async (_key: any, _domain: string, handler: any) => {
-                return handler({
-                    getMnemonic: async () =>
-                        new TextEncoder().encode('one two three'),
-                })
-            },
-        )
-
         const { result } = renderHook(() => useKMS())
-
         let received: Optional<string[]>
         await act(async () => {
             received = await result.current.executeWithMnemonic(
-                'algo-key',
-                'backup-flow',
+                child.id,
+                'backup',
                 words => [...words],
             )
         })
-
-        expect(received).toEqual(['one', 'two', 'three'])
-        expect(mockWithAlgo25Session).toHaveBeenCalledWith(
-            expectedKey,
-            'backup-flow',
-            expect.any(Function),
-        )
+        expect(mockKeyStoreExport).toHaveBeenCalledWith('hd-1')
+        expect(received).toEqual(['alpha', 'bravo', 'charlie'])
     })
 
-    it('should throw InvalidKeyError for executeWithMnemonic when the key is a P256 wallet root', async () => {
-        seedP256Root('p256-key')
+    it('executeWithMnemonic for an algo25 seed exports + decodes via mnemonicFromSeed', async () => {
+        seedAlgo25Root('algo-1')
+        const child = childOf('algo-1-ed25519', 'algo-1', 'ed25519')
+        mockMnemonicFromSeed.mockReturnValue('one two three')
+        mockKeyStoreExport.mockResolvedValueOnce({
+            privateKey: new Uint8Array(32).fill(7),
+        })
+
         const { result } = renderHook(() => useKMS())
-
-        await expect(
-            act(async () => {
-                await result.current.executeWithMnemonic(
-                    'p256-key',
-                    'backup-flow',
-                    () => undefined,
-                )
-            }),
-        ).rejects.toThrow(InvalidKeyError)
+        let received: Optional<string[]>
+        await act(async () => {
+            received = await result.current.executeWithMnemonic(
+                child.id,
+                'backup',
+                words => [...words],
+            )
+        })
+        expect(mockKeyStoreExport).toHaveBeenCalledWith('algo-1')
+        expect(received).toEqual(['one', 'two', 'three'])
     })
 
-    it('getKey returns null and triggers async keystore.remove when the key is expired', async () => {
-        // Seed an expired HD root with `pera.expiresAt` in the past.
+    it('getKey returns null and triggers async keystore.remove when expiresAt is in the past', () => {
         const past = new Date(Date.now() - 60_000).toISOString()
         mockKeystoreKeys.push({
             id: 'expired-key',
-            type: 'hd-root-key',
+            type: 'seed',
             algorithm: 'raw',
             extractable: true,
-            metadata: { pera: { expiresAt: past } },
-        } as unknown as Key)
-
+            metadata: {
+                scheme: SeedScheme.Bip39,
+                pera: { expiresAt: past },
+            },
+        })
         const { result } = renderHook(() => useKMS())
-
         expect(result.current.getKey('expired-key')).toBeNull()
         expect(mockKeyStoreRemove).toHaveBeenCalledWith('expired-key')
     })
 
-    it('getKeyOrThrow throws when the key has expired', async () => {
-        const past = new Date(Date.now() - 60_000).toISOString()
-        mockKeystoreKeys.push({
-            id: 'expired-key',
-            type: 'hd-root-key',
-            algorithm: 'raw',
-            extractable: true,
-            metadata: { pera: { expiresAt: past } },
-        } as unknown as Key)
+    it('removeKeyAndChildren removes the seed and any keys whose parentKeyId points to it', async () => {
+        seedBip39Root('hd-1')
+        childOf('child-a', 'hd-1', 'hd-derived-ed25519')
+        childOf('child-b', 'hd-1', 'hd-derived-ed25519')
+        seedBip39Root('hd-2')
+        childOf('child-c', 'hd-2', 'hd-derived-ed25519')
 
         const { result } = renderHook(() => useKMS())
+        await act(async () => {
+            await result.current.removeKeyAndChildren('hd-1')
+        })
 
-        expect(() => result.current.getKeyOrThrow('expired-key')).toThrow()
-    })
-
-    it('should zero mnemonic bytes even when handler throws', async () => {
-        seedHDRoot('hd-key')
-        let captured: Optional<Uint8Array>
-        mockWithHDSession.mockImplementation(
-            async (_key: any, _domain: string, handler: any) => {
-                captured = new TextEncoder().encode('alpha bravo')
-                return handler({
-                    getMnemonic: async () => captured!,
-                })
-            },
-        )
-
-        const { result } = renderHook(() => useKMS())
-
-        await expect(
-            act(async () => {
-                await result.current.executeWithMnemonic(
-                    'hd-key',
-                    'backup-flow',
-                    () => {
-                        throw new Error('boom')
-                    },
-                )
-            }),
-        ).rejects.toThrow('boom')
-
-        expect(captured!.every(byte => byte === 0)).toBe(true)
-    })
-
-    it('should expose the keys map sourced from the keystore', () => {
-        seedAlgo25Root('test-key')
-
-        const { result } = renderHook(() => useKMS())
-
-        expect(result.current.keys.size).toBe(1)
-        const kp = result.current.keys.get('test-key')
-        expect(kp?.id).toBe('test-key')
-        expect(kp?.type).toBe(KeyType.Algo25Key)
+        // child-a and child-b removed first, then the seed
+        expect(mockKeyStoreRemove).toHaveBeenCalledWith('child-a')
+        expect(mockKeyStoreRemove).toHaveBeenCalledWith('child-b')
+        expect(mockKeyStoreRemove).toHaveBeenCalledWith('hd-1')
+        // child-c (under hd-2) is left alone
+        expect(mockKeyStoreRemove).not.toHaveBeenCalledWith('child-c')
+        expect(mockKeyStoreRemove).not.toHaveBeenCalledWith('hd-2')
     })
 })

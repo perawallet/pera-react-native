@@ -17,11 +17,7 @@ import {
 } from '@perawallet/wallet-extension-platform'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useKMSService } from '@perawallet/wallet-core-kms'
-import {
-    BIOMETRIC_BLOB_KEY_ID,
-    BIOMETRIC_BLOB_KEYSTORE_TYPE,
-    PIN_RECORD_KEY_ID,
-} from '../constants'
+import { BIOMETRIC_BLOB_KEY_ID, PIN_RECORD_KEY_ID } from '../constants'
 
 type UseBiometricsResult = {
     isEnabled: boolean
@@ -40,19 +36,15 @@ type UseBiometricsResult = {
 
 export const useBiometrics = (): UseBiometricsResult => {
     const biometricsService = getProvider().biometrics
-    const {
-        commitTypedSecret,
-        withTypedSecret,
-        hasTypedSecret,
-        removeTypedSecret,
-    } = useKMSService()
+    const { commitSecret, withSecret, hasSecret, removeSecret } =
+        useKMSService()
 
     const [isEnabled, setIsEnabled] = useState(false)
     const [isAvailable, setIsAvailable] = useState(false)
 
     const checkBiometricsEnabled = useCallback(async (): Promise<boolean> => {
-        return hasTypedSecret(BIOMETRIC_BLOB_KEY_ID)
-    }, [hasTypedSecret])
+        return hasSecret(BIOMETRIC_BLOB_KEY_ID)
+    }, [hasSecret])
 
     const checkBiometricsAvailable = useCallback(async (): Promise<boolean> => {
         return biometricsService.checkBiometricsAvailable()
@@ -65,20 +57,23 @@ export const useBiometrics = (): UseBiometricsResult => {
 
     const writeBiometricBlob = useCallback(
         async (code: Uint8Array): Promise<void> => {
-            await commitTypedSecret({
+            // `commitSecret` takes a defensive copy of `code` and zeroes its
+            // own copy after the keystore write completes. The caller still
+            // owns `code` itself — callers in this file pass `pinData`
+            // borrowed from `withSecret`, which zeroes it on return.
+            await commitSecret({
                 id: BIOMETRIC_BLOB_KEY_ID,
-                type: BIOMETRIC_BLOB_KEYSTORE_TYPE,
                 bytes: code,
             })
             setIsEnabled(true)
         },
-        [commitTypedSecret],
+        [commitSecret],
     )
 
     const enableBiometrics = useCallback(
         async (prompt?: BiometricsAuthenticatePrompt): Promise<boolean> => {
             try {
-                const result = await withTypedSecret(
+                const result = await withSecret(
                     PIN_RECORD_KEY_ID,
                     async pinData => {
                         const available =
@@ -91,7 +86,7 @@ export const useBiometrics = (): UseBiometricsResult => {
 
                         // `writeBiometricBlob` copies the bytes into the keystore;
                         // the original `pinData` here is zeroed by
-                        // `withTypedSecret`'s finally after this resolves.
+                        // `withSecret`'s finally after this resolves.
                         await writeBiometricBlob(pinData)
                         return true
                     },
@@ -101,7 +96,7 @@ export const useBiometrics = (): UseBiometricsResult => {
                 return false
             }
         },
-        [biometricsService, withTypedSecret, writeBiometricBlob],
+        [biometricsService, withSecret, writeBiometricBlob],
     )
 
     // Re-bind the biometric blob to the current PIN_RECORD bytes. Called by
@@ -109,16 +104,16 @@ export const useBiometrics = (): UseBiometricsResult => {
     // already enabled; never re-prompts the OS biometric sheet (we already
     // have the user authenticated via PIN at the call site).
     const refreshBiometricsBinding = useCallback(async (): Promise<void> => {
-        if (!hasTypedSecret(BIOMETRIC_BLOB_KEY_ID)) return
-        await withTypedSecret(PIN_RECORD_KEY_ID, async pinData => {
+        if (!hasSecret(BIOMETRIC_BLOB_KEY_ID)) return
+        await withSecret(PIN_RECORD_KEY_ID, async pinData => {
             await writeBiometricBlob(pinData)
         })
-    }, [hasTypedSecret, withTypedSecret, writeBiometricBlob])
+    }, [hasSecret, withSecret, writeBiometricBlob])
 
     const disableBiometrics = useCallback(async () => {
-        await removeTypedSecret(BIOMETRIC_BLOB_KEY_ID)
+        await removeSecret(BIOMETRIC_BLOB_KEY_ID)
         setIsEnabled(false)
-    }, [removeTypedSecret])
+    }, [removeSecret])
 
     const authenticateWithBiometrics = useCallback(
         async (prompt?: BiometricsAuthenticatePrompt): Promise<boolean> => {

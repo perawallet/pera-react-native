@@ -15,12 +15,9 @@ export const MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT = 5
 export const INITIAL_LOCKOUT_SECONDS = 30
 export const AUTO_LOCK_TIMEOUT_MS = 2 * 60 * 1000
 
-// Keystore lookup ids. The PIN record (a hashed PinRecord JSON) and the
-// biometric blob (the same PinRecord bytes, stored separately so biometric
-// auth can confirm a PIN exists without re-prompting) are both written to
-// the platform keystore as custom-typed entries via `commitTypedSecret`.
+// Keystore lookup ids. Both entries are stored as canonical `secret-key`
+// keystore records via `commitSecret`; the id disambiguates which slot
+// (hashed PIN record vs. biometric blob — the PinRecord bytes mirrored so
+// biometric auth can confirm a PIN exists without re-prompting).
 export const PIN_RECORD_KEY_ID = 'pera.pinCode'
 export const BIOMETRIC_BLOB_KEY_ID = 'pera.biometricPinCode'
-
-export const PIN_RECORD_KEYSTORE_TYPE = 'pera.pin-record'
-export const BIOMETRIC_BLOB_KEYSTORE_TYPE = 'pera.biometric-blob'

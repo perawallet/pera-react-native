@@ -78,7 +78,7 @@ const seedRekeyAccounts = async (): Promise<{
         id: 'rekey-ledger-source',
         type: AccountTypes.algo25,
         address: ALGO25_TEST_ADDRESS,
-        keyPairId: key!.keyPair.id ?? '',
+        keyPairId: key!.seedKey.id ?? '',
         name: 'Source',
     }
     const target: WalletAccount = {

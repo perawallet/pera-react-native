@@ -10,24 +10,25 @@
  limitations under the License
  */
 
-import type { KMSHDWalletSession } from '../models/session'
-import { KeyContext } from '@algorandfoundation/xhd-wallet-api'
-import { KeyPair, KeyType } from '../models'
-import { makeKeyPair, peraMetadataFor, PeraKeyKind } from '../utils'
+import type { Key, KeyId, Seed } from '@algorandfoundation/keystore'
+import {
+    BIP32DerivationType,
+    KeyContext,
+} from '@algorandfoundation/xhd-wallet-api'
+import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
+import { buildSeedMetadata } from '../utils'
 import { KeyManagementError } from '../errors'
 import { useKMSService } from './useKMSServices'
-import { entropyToMnemonic } from '../crypto/hdwallet-utils'
 import { prepareHDMasterKey } from '../crypto/prepare-hd-master-key'
 import { zeroBytes } from '../crypto/secure-memory'
-import type { KeyData, KeyId } from '@algorandfoundation/keystore'
+import { SeedScheme } from '../constants'
 
 export type HDWalletKeyResult = {
-    keyPair: KeyPair
-    entropyKeyId: KeyId
+    seedKey: Key
 }
 
 export const useHDWallet = () => {
-    const { checkAccess, keyStore, withExportedKey } = useKMSService()
+    const { keyStore } = useKMSService()
 
     const createHDWalletKey = async (params?: {
         id?: string
@@ -48,152 +49,146 @@ export const useHDWallet = () => {
     }): Promise<HDWalletKeyResult> => {
         const { keyId, rootKey, entropy } = prepared
 
-        const keystoreKeyId = await keyStore.import(
-            {
+        const metadata = buildSeedMetadata({
+            scheme: SeedScheme.Bip39,
+            entropy,
+        })
+
+        try {
+            // The seed entry holds the 96-byte XHD root in `privateKey`.
+            const seed: Omit<Seed, 'id'> & { id: string } = {
                 id: keyId,
-                type: 'hd-root-key',
+                type: 'seed',
                 algorithm: 'raw',
                 extractable: true,
                 keyUsages: ['deriveKey', 'deriveBits'],
                 privateKey: rootKey,
-                metadata: {
-                    name: keyId,
-                    ...peraMetadataFor({
-                        createdAt: new Date(),
-                        kind: PeraKeyKind.HDWalletRoot,
-                    }),
-                },
-            } as unknown as Omit<KeyData, 'id'>,
-            'raw',
-        )
+                metadata,
+            }
 
-        let entropyKeyId: KeyId
-        try {
-            entropyKeyId = await keyStore.import(
-                {
-                    id: `${keyId}-entropy`,
-                    type: 'hd-seed',
-                    algorithm: 'raw',
-                    extractable: true,
-                    privateKey: entropy,
-                } as unknown as Omit<KeyData, 'id'>,
-                'raw',
-            )
-        } catch (e) {
-            await keyStore.remove(keystoreKeyId)
-            throw e
+            await keyStore.import(seed, 'raw')
+        } finally {
+            zeroBytes(rootKey, entropy)
         }
 
-        zeroBytes(rootKey, entropy)
-
-        const keyPair = makeKeyPair({
-            id: keyId,
-            keystoreKeyId,
-            type: KeyType.HDWalletRootKey,
-        })
-
-        return { keyPair, entropyKeyId }
+        return {
+            seedKey: {
+                id: keyId,
+                type: 'seed',
+                algorithm: 'raw',
+                extractable: true,
+                metadata,
+            },
+        }
     }
 
+    /**
+     * Derives an `hd-derived-ed25519` child of the seed at the given XHD
+     * coordinates and persists it to the keystore under a deterministic id
+     * (see {@link hdDerivedKeyId}). Repeated calls with the same coords
+     * re-use the same entry — the underlying MMKV commit overwrites under
+     * the same key. The returned id is what callers persist on
+     * `account.keyPairId`.
+     */
     const generateDerivedKey = async (
-        keystoreRootKeyId: string,
+        seedKeyId: KeyId,
         account: number,
         keyIndex: number,
-        derivationType: number,
-    ): Promise<string> => {
-        return keyStore.generate({
-            type: 'hd-derived-ed25519',
+        derivationType: BIP32DerivationType,
+    ): Promise<KeyId> => {
+        if (!keyStore.deriveFromSeed) {
+            throw new KeyManagementError(
+                'Keystore backend does not implement deriveFromSeed',
+            )
+        }
+        const path = buildAddressPath(account, keyIndex)
+        return keyStore.deriveFromSeed(seedKeyId, path, {
+            id: hdDerivedKeyId(seedKeyId, account, keyIndex, derivationType),
             algorithm: 'EdDSA',
-            extractable: false,
-            keyUsages: ['sign'],
-            params: {
-                parentKeyId: keystoreRootKeyId,
+            mode:
+                derivationType === BIP32DerivationType.Khovratovich
+                    ? 'standard'
+                    : 'peikert',
+            // Stamp the full canonical metadata `signXHDEd25519` reads:
+            // `path / context / account / index / derivation`. The
+            // rn-keystore happens to set `account`, `context`, and
+            // `keyIndex` (NOT `index`) on its own and never sets
+            // `derivation`, so without this the signing path silently
+            // builds a BIP44 path with `undefined` keyIndex/derivation
+            // and the resulting signature fails dApp verification.
+            // `rn-keystore.deriveFromSeed` spreads our metadata into
+            // the persisted entry first, so every field survives
+            // alongside the keystore's own additions.
+            metadata: {
+                path,
+                context: KeyContext.Address,
                 account,
                 index: keyIndex,
-                context: KeyContext.Address,
                 derivation: derivationType,
             },
         })
     }
 
-    const withHDSession = async <T>(
-        key: KeyPair,
-        domain: string,
-        handler: (session: KMSHDWalletSession) => Promise<T>,
-    ): Promise<T> => {
-        checkAccess(key, domain)
-
-        const keystoreKeyId = key.keystoreKeyId
-
-        if (!keystoreKeyId) {
-            throw new KeyManagementError('Key does not have a keystore key ID')
+    /**
+     * Derives an `hd-derived-ed25519` child at the given coords and returns
+     * its public-key bytes — used by the HD account-discovery flow to scan
+     * candidate addresses without having to commit each one to the account
+     * list. The child is persisted as a side effect (under the same
+     * deterministic id `generateDerivedKey` would use), which is fine: if
+     * the user later commits an account at those coords the id is reused.
+     *
+     * Reads the publicKey from the live reactive store rather than calling
+     * `keyStore.export`: the rn-keystore stamps `extractable: false` on
+     * derived keys, so `export` would throw. The reactive snapshot keeps
+     * `publicKey` (only `privateKey` gets stripped at commit time), which
+     * is all we need here.
+     */
+    const getDerivedPublicKey = async (
+        seedKeyId: KeyId,
+        account: number,
+        keyIndex: number,
+        derivationType: BIP32DerivationType,
+    ): Promise<Uint8Array> => {
+        const derivedKeyId = await generateDerivedKey(
+            seedKeyId,
+            account,
+            keyIndex,
+            derivationType,
+        )
+        const derived = getKeystoreStore().state.keys.find(
+            k => k.id === derivedKeyId,
+        )
+        if (!derived?.publicKey) {
+            throw new KeyManagementError(
+                'Derived key does not have a public key',
+            )
         }
-
-        // The entropy key id is deterministic from the root key id — it's set
-        // to `${key.id}-entropy` at creation time (see createHDWalletKey above).
-        const entropyKeyId = `${key.id}-entropy`
-
-        const resolveMnemonicWords = async (): Promise<string[]> => {
-            return withExportedKey(entropyKeyId, entropyKeyData => {
-                if (!entropyKeyData.privateKey) {
-                    throw new KeyManagementError(
-                        'Entropy key not found in keystore',
-                    )
-                }
-                return entropyToMnemonic(
-                    Buffer.from(entropyKeyData.privateKey),
-                ).split(' ')
-            })
-        }
-
-        const session: KMSHDWalletSession = {
-            getPublicKey: async params => {
-                const derivedKeyId = await generateDerivedKey(
-                    keystoreKeyId,
-                    params.account,
-                    params.keyIndex,
-                    params.derivationType,
-                )
-                return withExportedKey(derivedKeyId, keyData => {
-                    if (!keyData.publicKey) {
-                        throw new KeyManagementError(
-                            'Derived key does not have a public key',
-                        )
-                    }
-                    return keyData.publicKey
-                })
-            },
-            signTransaction: async (params, encodedTx) => {
-                const derivedKeyId = await generateDerivedKey(
-                    keystoreKeyId,
-                    params.account,
-                    params.keyIndex,
-                    params.derivationType,
-                )
-                return keyStore.sign(derivedKeyId, encodedTx)
-            },
-            signData: async (params, data) => {
-                const derivedKeyId = await generateDerivedKey(
-                    keystoreKeyId,
-                    params.account,
-                    params.keyIndex,
-                    params.derivationType,
-                )
-                return keyStore.sign(derivedKeyId, data)
-            },
-            getMnemonic: async () => {
-                const words = await resolveMnemonicWords()
-                return new TextEncoder().encode(words.join(' '))
-            },
-        }
-
-        return handler(session)
+        return new Uint8Array(derived.publicKey)
     }
 
     return {
         createHDWalletKey,
         persistHDMasterKey,
         generateDerivedKey,
-        withHDSession,
+        getDerivedPublicKey,
     }
 }
+
+// BIP44 Algorand address path (coin type 283). The rn-keystore's `parsePath`
+// adds the hardened bit (0x80000000) to apostrophe-suffixed components, so
+// the raw numbers are passed through here.
+const buildAddressPath = (account: number, keyIndex: number): string =>
+    `m/44'/283'/${account}'/0/${keyIndex}`
+
+/**
+ * Deterministic keystore id for an `hd-derived-ed25519` child of a bip39
+ * seed at the given XHD coords. Exported so consumers can compute the id
+ * up-front (e.g. account-discovery wants to stamp `account.keyPairId`
+ * before the child is actually committed).
+ */
+export const hdDerivedKeyId = (
+    seedKeyId: KeyId,
+    account: number,
+    keyIndex: number,
+    derivationType: BIP32DerivationType,
+): string => `${seedKeyId}-acc${account}-idx${keyIndex}-dt${derivationType}`

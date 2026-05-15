@@ -23,6 +23,7 @@ import {
     isHDWalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
+import { useKMS } from '@perawallet/wallet-core-kms'
 import { deferToNextCycle, logger } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -65,6 +66,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
     const { exitAccountFlow } = useExitAccountFlow()
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
     const { setAccounts } = useSetAccounts()
+    const { seedIdOf } = useKMS()
 
     const alreadyImportedAddresses = useMemo(() => {
         return new Set(allAccounts.map(acc => acc.address))
@@ -114,33 +116,9 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
         setIsProcessing(true)
 
         deferToNextCycle(async () => {
-            const selected = accounts.filter(acc =>
+            const accountsToAdd = accounts.filter(acc =>
                 selectedAddresses.has(acc.address),
             )
-
-            // Discovery returns HDWalletAccount objects without entropyKeyId.
-            // Stamp each one from a sibling under the SAME keyPairId — either
-            // one already in the store or another selected account. Looking
-            // up per account (rather than off accounts[0]) keeps mixed-wallet
-            // imports correct: each address only inherits from its own group.
-            // Store siblings are scanned first so they take priority over
-            // selected ones (single Map, first writer wins).
-            const entropyByWalletId = new Map<string, string>()
-            const sources = [
-                ...allAccounts.filter(isHDWalletAccount),
-                ...selected,
-            ]
-            for (const a of sources) {
-                if (a.entropyKeyId && !entropyByWalletId.has(a.keyPairId)) {
-                    entropyByWalletId.set(a.keyPairId, a.entropyKeyId)
-                }
-            }
-
-            const accountsToAdd = selected.map(acc => {
-                if (acc.entropyKeyId) return acc
-                const inherited = entropyByWalletId.get(acc.keyPairId)
-                return inherited ? { ...acc, entropyKeyId: inherited } : acc
-            })
 
             try {
                 if (isImportMode && importWalletKeyId) {
@@ -162,33 +140,45 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
                         hasCommittedRef.current = true
                     }
                     // Re-entering the mnemonic proves possession, so mark the
-                    // wallet's keyPairId as backed up regardless of whether
+                    // wallet's bip39 seed as backed up regardless of whether
                     // any new addresses were actually added — re-imports
                     // (every discovered address already in the store) and
                     // accounts created before this feature shipped both rely
-                    // on this path to clear the backup banner.
+                    // on this path to clear the backup banner. Match on the
+                    // child→seed parent since `account.keyPairId` is now
+                    // the child's id.
                     const accountToMark =
                         accountsToAdd[0] ??
-                        allAccounts.find(a => a.keyPairId === importWalletKeyId)
+                        allAccounts.find(
+                            a => seedIdOf(a.keyPairId) === importWalletKeyId,
+                        )
                     if (accountToMark) markBackupComplete(accountToMark)
                 } else if (accountsToAdd.length > 0) {
                     setAccounts([...allAccounts, ...accountsToAdd])
                     setSelectedAccountAddress(accountsToAdd[0].address)
                 }
 
-                const walletKeyId = accounts[0].keyPairId
+                // Discovery operates against the bip39 seed id (rekey scan
+                // uses it to label results). The discovered candidate
+                // accounts in `accounts` carry derived child ids on
+                // `keyPairId`; resolve the parent for the discovery API.
+                const walletKeyId =
+                    importWalletKeyId ?? seedIdOf(accounts[0].keyPairId)
+                if (!walletKeyId) {
+                    exitAccountFlow()
+                    return
+                }
                 // Only scan addresses the wallet actually holds after this
                 // step: the freshly imported selection plus HD siblings
                 // already in the store. Scanning unselected discovered
                 // addresses would let the user persist watch accounts
-                // rekeyed to an auth address we don't hold — non-signable
-                // accounts produced by a possession-proven flow.
+                // rekeyed to an auth address we don't hold.
                 const scanAddresses = [
                     ...new Set([
                         ...accountsToAdd.map(a => a.address),
                         ...allAccounts
                             .filter(isHDWalletAccount)
-                            .filter(a => a.keyPairId === walletKeyId)
+                            .filter(a => seedIdOf(a.keyPairId) === walletKeyId)
                             .map(a => a.address),
                     ]),
                 ]

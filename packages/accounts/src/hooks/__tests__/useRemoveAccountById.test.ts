@@ -30,13 +30,16 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
 })
 
 const deleteKeySpy = vi.fn()
-const keyStoreRemoveSpy = vi.fn()
+const removeKeyAndChildrenSpy = vi.fn()
+// child id → seed id mapping shared between tests; reset in beforeEach.
+const parentMap: Map<string, string> = new Map()
+
 vi.mock('@perawallet/wallet-core-kms', () => ({
     useKMS: () => ({
         deleteKey: deleteKeySpy,
-        keyStore: {
-            remove: keyStoreRemoveSpy,
-        },
+        seedIdOf: (childId?: string) =>
+            childId ? parentMap.get(childId) : undefined,
+        removeKeyAndChildren: removeKeyAndChildrenSpy,
     }),
 }))
 
@@ -44,15 +47,17 @@ describe('useRemoveAccountById', () => {
     beforeEach(() => {
         useAccountsStore.setState({ accounts: [] })
         vi.clearAllMocks()
+        parentMap.clear()
     })
 
-    test('removeAccountById deletes the algo25 root key and seed keystore entry when no sibling references it', async () => {
+    test('removes the child key and sweeps the seed when no other account references it', async () => {
+        parentMap.set('kp-alice-ed25519', 'kp-alice')
         const a: WalletAccount = {
             id: '1',
             name: 'Alice',
             type: 'algo25',
             address: 'ALICE',
-            keyPairId: 'kp-alice',
+            keyPairId: 'kp-alice-ed25519',
         }
         useAccountsStore.setState({ accounts: [a] })
 
@@ -63,17 +68,18 @@ describe('useRemoveAccountById', () => {
         })
 
         expect(useAccountsStore.getState().accounts).toEqual([])
-        expect(deleteKeySpy).toHaveBeenCalledWith('kp-alice')
-        expect(keyStoreRemoveSpy).toHaveBeenCalledWith('kp-alice-seed')
+        expect(deleteKeySpy).toHaveBeenCalledWith('kp-alice-ed25519')
+        expect(removeKeyAndChildrenSpy).toHaveBeenCalledWith('kp-alice')
     })
 
-    test('removeAccountById deletes the HD root key and entropy keystore entry when no sibling references it', async () => {
+    test('removes the child + sweeps the seed for an HD account when no sibling remains', async () => {
+        parentMap.set('hd-1-acc0-idx0-dt9', 'hd-1')
         const a: WalletAccount = {
             id: '1',
             name: 'Bob',
             type: 'hdWallet',
             address: 'BOB',
-            keyPairId: 'hd-1',
+            keyPairId: 'hd-1-acc0-idx0-dt9',
             hdWalletDetails: {
                 account: 0,
                 change: 0,
@@ -90,18 +96,20 @@ describe('useRemoveAccountById', () => {
         })
 
         expect(useAccountsStore.getState().accounts).toEqual([])
-        expect(deleteKeySpy).toHaveBeenCalledWith('hd-1')
-        expect(keyStoreRemoveSpy).toHaveBeenCalledWith('hd-1-entropy')
+        expect(deleteKeySpy).toHaveBeenCalledWith('hd-1-acc0-idx0-dt9')
+        expect(removeKeyAndChildrenSpy).toHaveBeenCalledWith('hd-1')
     })
 
-    test('removeAccountById preserves the entropy keystore entry when a sibling HD account still references the same root', async () => {
+    test('only removes the child (not the seed) when a sibling HD account still references the same seed', async () => {
+        parentMap.set('hd-1-acc0-idx0-dt9', 'hd-1')
+        parentMap.set('hd-1-acc1-idx0-dt9', 'hd-1')
         const accounts: WalletAccount[] = [
             {
                 id: '1',
                 name: 'HD-1',
                 type: 'hdWallet',
                 address: 'ADDR1',
-                keyPairId: 'hd-1',
+                keyPairId: 'hd-1-acc0-idx0-dt9',
                 hdWalletDetails: {
                     account: 0,
                     change: 0,
@@ -114,7 +122,7 @@ describe('useRemoveAccountById', () => {
                 name: 'HD-2',
                 type: 'hdWallet',
                 address: 'ADDR2',
-                keyPairId: 'hd-1',
+                keyPairId: 'hd-1-acc1-idx0-dt9',
                 hdWalletDetails: {
                     account: 1,
                     change: 0,
@@ -132,18 +140,21 @@ describe('useRemoveAccountById', () => {
         })
 
         expect(useAccountsStore.getState().accounts).toHaveLength(1)
-        expect(deleteKeySpy).toHaveBeenCalledWith('hd-1')
-        expect(keyStoreRemoveSpy).not.toHaveBeenCalled()
+        // The leaving account's child entry is removed, but the shared
+        // seed (and the sibling's child) stays put.
+        expect(deleteKeySpy).toHaveBeenCalledWith('hd-1-acc0-idx0-dt9')
+        expect(removeKeyAndChildrenSpy).not.toHaveBeenCalled()
     })
 
-    test('removeAccountById deletes the entropy keystore entry when the last HD account on the root is removed', async () => {
+    test('sweeps the seed when the last HD account on it is removed', async () => {
+        parentMap.set('hd-1-acc0-idx0-dt9', 'hd-1')
         const accounts: WalletAccount[] = [
             {
                 id: '1',
                 name: 'HD-1',
                 type: 'hdWallet',
                 address: 'ADDR1',
-                keyPairId: 'hd-1',
+                keyPairId: 'hd-1-acc0-idx0-dt9',
                 hdWalletDetails: {
                     account: 0,
                     change: 0,
@@ -161,37 +172,7 @@ describe('useRemoveAccountById', () => {
         })
 
         expect(useAccountsStore.getState().accounts).toEqual([])
-        expect(deleteKeySpy).toHaveBeenCalledWith('hd-1')
-        expect(keyStoreRemoveSpy).toHaveBeenCalledWith('hd-1-entropy')
-    })
-
-    test('removeAccountById preserves the seed keystore entry when a sibling algo25 account still references the same root', async () => {
-        const accounts: WalletAccount[] = [
-            {
-                id: '1',
-                name: 'A25-1',
-                type: 'algo25',
-                address: 'ADDR1',
-                keyPairId: 'kp-shared',
-            },
-            {
-                id: '2',
-                name: 'A25-2',
-                type: 'algo25',
-                address: 'ADDR2',
-                keyPairId: 'kp-shared',
-            },
-        ]
-        useAccountsStore.setState({ accounts })
-
-        const { result } = renderHook(() => useRemoveAccountById())
-
-        await act(async () => {
-            await result.current('1')
-        })
-
-        expect(useAccountsStore.getState().accounts).toHaveLength(1)
-        expect(deleteKeySpy).toHaveBeenCalledWith('kp-shared')
-        expect(keyStoreRemoveSpy).not.toHaveBeenCalled()
+        expect(deleteKeySpy).toHaveBeenCalledWith('hd-1-acc0-idx0-dt9')
+        expect(removeKeyAndChildrenSpy).toHaveBeenCalledWith('hd-1')
     })
 })

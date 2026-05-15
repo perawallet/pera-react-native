@@ -21,6 +21,17 @@ vi.mock('../useAllAccounts', () => ({
     useAllAccounts: () => mockUseAllAccounts(),
 }))
 
+// child id → seed id. Reset in beforeEach. The grouping logic walks
+// account.keyPairId (a child id) up to the parent seed via this map.
+const parentMap: Map<string, string> = new Map()
+
+vi.mock('@perawallet/wallet-core-kms', () => ({
+    useKMS: () => ({
+        seedIdOf: (childId?: string) =>
+            childId ? parentMap.get(childId) : undefined,
+    }),
+}))
+
 const HD_ACCOUNT_WALLET_1 = {
     id: 'hd-1',
     address: 'HD_ADDRESS_1',
@@ -32,7 +43,7 @@ const HD_ACCOUNT_WALLET_1 = {
         keyIndex: 0,
         derivationType: 9 as const,
     },
-    keyPairId: 'wallet-1',
+    keyPairId: 'wallet-1-acc0-idx0-dt9',
 }
 
 const HD_ACCOUNT_WALLET_1_B = {
@@ -45,7 +56,7 @@ const HD_ACCOUNT_WALLET_1_B = {
         keyIndex: 1,
         derivationType: 9 as const,
     },
-    keyPairId: 'wallet-1',
+    keyPairId: 'wallet-1-acc0-idx1-dt9',
 }
 
 const HD_ACCOUNT_WALLET_2 = {
@@ -59,14 +70,14 @@ const HD_ACCOUNT_WALLET_2 = {
         keyIndex: 0,
         derivationType: 9 as const,
     },
-    keyPairId: 'wallet-2',
+    keyPairId: 'wallet-2-acc0-idx0-dt9',
 }
 
 const ALGO25_ACCOUNT = {
     id: 'algo25-1',
     address: 'ALGO25_ADDRESS',
     type: 'algo25' as const,
-    keyPairId: 'algo25-key-1',
+    keyPairId: 'algo25-key-1-ed25519',
 }
 
 const WATCH_ACCOUNT = {
@@ -75,10 +86,19 @@ const WATCH_ACCOUNT = {
     type: 'watch' as const,
 }
 
+const seedHDChildren = () => {
+    parentMap.set(HD_ACCOUNT_WALLET_1.keyPairId, 'wallet-1')
+    parentMap.set(HD_ACCOUNT_WALLET_1_B.keyPairId, 'wallet-1')
+    parentMap.set(HD_ACCOUNT_WALLET_2.keyPairId, 'wallet-2')
+    parentMap.set(ALGO25_ACCOUNT.keyPairId, 'algo25-key-1')
+}
+
 describe('useHDWalletGroups', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockUseAllAccounts.mockReturnValue([])
+        parentMap.clear()
+        seedHDChildren()
     })
 
     test('returns empty groups when no accounts exist', () => {
@@ -106,7 +126,7 @@ describe('useHDWalletGroups', () => {
         const { result } = renderHook(() => useHDWalletGroups())
 
         expect(result.current.hdWalletGroups).toHaveLength(1)
-        expect(result.current.hdWalletGroups[0].keyPairId).toBe('wallet-1')
+        expect(result.current.hdWalletGroups[0].seedKeyId).toBe('wallet-1')
         expect(result.current.hdWalletGroups[0].accountCount).toBe(2)
         expect(result.current.hdWalletGroups[0].firstAccount).toBe(
             HD_ACCOUNT_WALLET_1,
@@ -127,13 +147,13 @@ describe('useHDWalletGroups', () => {
         expect(result.current.hasMultipleHDWallets).toBe(true)
 
         const group1 = result.current.hdWalletGroups.find(
-            g => g.keyPairId === 'wallet-1',
+            g => g.seedKeyId === 'wallet-1',
         )!
         expect(group1.accountCount).toBe(2)
         expect(group1.firstAccount).toBe(HD_ACCOUNT_WALLET_1)
 
         const group2 = result.current.hdWalletGroups.find(
-            g => g.keyPairId === 'wallet-2',
+            g => g.seedKeyId === 'wallet-2',
         )!
         expect(group2.accountCount).toBe(1)
         expect(group2.firstAccount).toBe(HD_ACCOUNT_WALLET_2)

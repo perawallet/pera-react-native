@@ -98,7 +98,7 @@ const seedRekeyedSource = async (): Promise<{
         id: 'undo-auth',
         type: AccountTypes.algo25,
         address: ALGO25_TEST_ADDRESS,
-        keyPairId: key!.keyPair.id ?? '',
+        keyPairId: key!.seedKey.id ?? '',
         name: 'Auth',
     }
     const source: WalletAccount = {

@@ -26,6 +26,7 @@ import {
     AccountTypes,
     DerivationTypes,
 } from '@perawallet/wallet-core-accounts'
+import { useKMS } from '@perawallet/wallet-core-kms'
 import { logger } from '@perawallet/wallet-core-shared'
 import { OnboardingStackParamList } from '../../routes/types'
 import { useExitAccountFlow } from '../../hooks'
@@ -54,6 +55,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
     const { createHdWalletAccount } = useCreateAccount()
     const allAccounts = useAllAccounts()
+    const { seedIdOf } = useKMS()
 
     const dotOpacities = useRef(
         Array.from(
@@ -125,7 +127,15 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
             const account = existingParams.account
             const createIfEmpty = existingParams.createIfEmpty
             const notifyOnEmpty = existingParams.notifyOnEmpty
-            const walletKeyId = account.keyPairId
+            // account.keyPairId is the derived child id; discovery
+            // operates against the bip39 seed parent. For algo25 the
+            // rekey scan goes through the address-only path and never
+            // actually derives, so its walletKeyId is just a label —
+            // we fall back to the keyPairId itself when the kms
+            // reactive map hasn't observed the freshly-committed seed
+            // yet (race between createAlgo25Key and useKeystoreKeys
+            // re-render).
+            const walletKeyId = seedIdOf(account.keyPairId) ?? account.keyPairId
             if (!walletKeyId) return
 
             if (account.type === AccountTypes.hdWallet) {
@@ -242,6 +252,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
         setSelectedAccountAddress,
         createHdWalletAccount,
         allAccounts,
+        seedIdOf,
     ])
 
     useEffect(() => {

@@ -34,14 +34,21 @@ const mockAccounts: WalletAccount[] = [
 ]
 const mockSetAccounts = vi.fn()
 
+// useUpdateAccount reads `accounts` via `useAccountsStore.getState()`
+// inside the handler (to avoid stale closures over a captured snapshot).
+// The mock therefore needs to expose getState() in addition to the
+// selector-style hook call.
+const mockStore = {
+    getState: () => ({
+        accounts: mockAccounts,
+        setAccounts: mockSetAccounts,
+    }),
+}
 vi.mock('../../store', () => ({
-    useAccountsStore: (selector: any) => {
-        const state = {
-            accounts: mockAccounts,
-            setAccounts: mockSetAccounts,
-        }
-        return selector(state)
-    },
+    useAccountsStore: Object.assign(
+        (selector: any) => selector(mockStore.getState()),
+        { getState: () => mockStore.getState() },
+    ),
 }))
 
 // Mock platform integration

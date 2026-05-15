@@ -24,7 +24,6 @@ describe('prepareHDMasterKey', () => {
         expect(result.entropy.byteLength).toBe(32)
         expect(typeof result.keyId).toBe('string')
         expect(result.keyId.length).toBeGreaterThan(0)
-        expect(result.mnemonic).toBe(USER_MNEMONIC)
     })
 
     test('uses the supplied id when given', async () => {
@@ -35,11 +34,17 @@ describe('prepareHDMasterKey', () => {
         expect(result.keyId).toBe('fixed-id-123')
     })
 
-    test('generates a fresh mnemonic when none provided', async () => {
+    test('generates fresh entropy on each call when no mnemonic provided', async () => {
         const a = await prepareHDMasterKey()
         const b = await prepareHDMasterKey()
-        expect(a.mnemonic.split(' ').length).toBe(24)
-        expect(b.mnemonic.split(' ').length).toBe(24)
-        expect(a.mnemonic).not.toBe(b.mnemonic)
+        expect(a.entropy.byteLength).toBe(32)
+        expect(b.entropy.byteLength).toBe(32)
+        const aHex = Array.from(a.entropy)
+            .map(byte => byte.toString(16).padStart(2, '0'))
+            .join('')
+        const bHex = Array.from(b.entropy)
+            .map(byte => byte.toString(16).padStart(2, '0'))
+            .join('')
+        expect(aHex).not.toBe(bHex)
     })
 })

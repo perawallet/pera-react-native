@@ -10,16 +10,6 @@
  limitations under the License
  */
 
-import type { KeyId } from '@algorandfoundation/keystore'
-
-export const KeyType = {
-    HDWalletRootKey: 'hdwallet-root-key',
-    DeterministicP256Key: 'deterministic-p256-key',
-    Algo25Key: 'algo25-key',
-}
-
-export type KeyType = (typeof KeyType)[keyof typeof KeyType]
-
 export const AccessControlPermission = {
     ReadPublic: 'read-public',
     ReadPrivate: 'read-private',
@@ -35,12 +25,9 @@ export type AccessControl = {
     permissions: AccessControlPermission[]
 }
 
-export type KeyPair = {
-    id?: string
-    keystoreKeyId?: KeyId
-    publicKey: string
-    createdAt?: Date
-    expiresAt?: Date // optional key expiry. KMS will autodelete keys when accessed after this date
-    acl?: AccessControl[] // who can access this key or what can be done with it
-    type: KeyType
-}
+/**
+ * Deterministic keystore id for the Ed25519 signing child of an Algo25 seed.
+ * One child per seed is created at seed-commit time; signing/lookup always
+ * hits this id, so accounts never need to track it separately.
+ */
+export const algo25SignKeyId = (seedId: string): string => `${seedId}-ed25519`

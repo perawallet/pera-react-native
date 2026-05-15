@@ -13,7 +13,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useAccountDiscovery } from '../useAccountDiscovery'
-import { KEY_DOMAIN } from '../../constants'
 
 const mockBaseDiscoverAccounts = vi.fn()
 const mockBaseDiscoverRekeyedAccounts = vi.fn()
@@ -28,11 +27,8 @@ vi.mock('@algorandfoundation/xhd-wallet-api', () => ({
     BIP32DerivationType: { Peikert: 9 },
 }))
 
-const sessionGetPublicKeyMock = vi.fn()
-
 const kmsMock = vi.hoisted(() => ({
-    withHDSession: vi.fn(),
-    getKeyOrThrow: vi.fn(),
+    getDerivedPublicKey: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
@@ -42,18 +38,15 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
 describe('useAccountDiscovery', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        sessionGetPublicKeyMock.mockResolvedValue(new Uint8Array(32).fill(7))
-        kmsMock.withHDSession.mockImplementation(
-            async (_key, _domain, handler) =>
-                handler({ getPublicKey: sessionGetPublicKeyMock }),
+        kmsMock.getDerivedPublicKey.mockResolvedValue(
+            new Uint8Array(32).fill(7),
         )
-        kmsMock.getKeyOrThrow.mockReturnValue('KEY')
         mockBaseDiscoverAccounts.mockResolvedValue(['acc'])
         mockBaseDiscoverRekeyedAccounts.mockResolvedValue(['rekeyed'])
     })
 
     describe('discoverAccounts', () => {
-        it('passes a getPublicKey callback that lazily opens an HD session', async () => {
+        it('passes a getPublicKey callback that delegates to kms.getDerivedPublicKey', async () => {
             const { result } = renderHook(() => useAccountDiscovery())
 
             let discovered: unknown
@@ -67,9 +60,9 @@ describe('useAccountDiscovery', () => {
                 })
             })
 
-            // No session is opened just by calling the hook — sessions open lazily.
-            expect(kmsMock.getKeyOrThrow).not.toHaveBeenCalled()
-            expect(kmsMock.withHDSession).not.toHaveBeenCalled()
+            // Lazy: getDerivedPublicKey isn't invoked until the discovery
+            // callback fires.
+            expect(kmsMock.getDerivedPublicKey).not.toHaveBeenCalled()
 
             const baseCall = mockBaseDiscoverAccounts.mock.calls[0]?.[0]
             expect(baseCall).toMatchObject({
@@ -80,16 +73,17 @@ describe('useAccountDiscovery', () => {
             })
             expect(typeof baseCall.getPublicKey).toBe('function')
 
-            // Invoking getPublicKey opens the HD session for the resolved key.
-            const params = { account: 1, keyIndex: 0, derivationType: 9 }
-            const pubKey = await baseCall.getPublicKey(params)
-            expect(kmsMock.getKeyOrThrow).toHaveBeenCalledWith('WALLET1')
-            expect(kmsMock.withHDSession).toHaveBeenCalledWith(
-                'KEY',
-                KEY_DOMAIN,
-                expect.any(Function),
+            const pubKey = await baseCall.getPublicKey({
+                account: 1,
+                keyIndex: 0,
+                derivationType: 9,
+            })
+            expect(kmsMock.getDerivedPublicKey).toHaveBeenCalledWith(
+                'WALLET1',
+                1,
+                0,
+                9,
             )
-            expect(sessionGetPublicKeyMock).toHaveBeenCalledWith(params)
             expect(pubKey).toBeInstanceOf(Uint8Array)
 
             expect(discovered).toEqual(['acc'])
@@ -109,22 +103,19 @@ describe('useAccountDiscovery', () => {
                 })
             })
 
-            expect(kmsMock.withHDSession).not.toHaveBeenCalled()
-            expect(kmsMock.getKeyOrThrow).not.toHaveBeenCalled()
+            expect(kmsMock.getDerivedPublicKey).not.toHaveBeenCalled()
             const baseCall = mockBaseDiscoverRekeyedAccounts.mock.calls[0]?.[0]
             expect(baseCall).toMatchObject({
                 walletKeyId: 'WALLET1',
                 accountAddresses: ['A', 'B'],
             })
             expect(typeof baseCall.getPublicKey).toBe('function')
-            // The address-only path should never invoke getPublicKey, but if
-            // something does, it must throw a clear error.
             expect(() => baseCall.getPublicKey()).toThrow(
                 'getPublicKey unused for address-only rekey scan',
             )
         })
 
-        it('passes a session-backed getPublicKey when no addresses are provided', async () => {
+        it('uses kms.getDerivedPublicKey when no addresses are provided', async () => {
             const { result } = renderHook(() => useAccountDiscovery())
 
             await act(async () => {
@@ -139,17 +130,20 @@ describe('useAccountDiscovery', () => {
             expect(baseCall).toMatchObject({ walletKeyId: 'WALLET1' })
             expect(typeof baseCall.getPublicKey).toBe('function')
 
-            // Invoking getPublicKey opens the HD session.
             await baseCall.getPublicKey({
                 account: 0,
                 keyIndex: 0,
                 derivationType: 9,
             })
-            expect(kmsMock.getKeyOrThrow).toHaveBeenCalledWith('WALLET1')
-            expect(kmsMock.withHDSession).toHaveBeenCalled()
+            expect(kmsMock.getDerivedPublicKey).toHaveBeenCalledWith(
+                'WALLET1',
+                0,
+                0,
+                9,
+            )
         })
 
-        it('passes a session-backed getPublicKey when addresses array is empty', async () => {
+        it('uses kms.getDerivedPublicKey when addresses array is empty', async () => {
             const { result } = renderHook(() => useAccountDiscovery())
 
             await act(async () => {
@@ -168,7 +162,7 @@ describe('useAccountDiscovery', () => {
                 keyIndex: 0,
                 derivationType: 9,
             })
-            expect(kmsMock.withHDSession).toHaveBeenCalled()
+            expect(kmsMock.getDerivedPublicKey).toHaveBeenCalled()
         })
     })
 })

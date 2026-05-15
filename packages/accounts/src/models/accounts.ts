@@ -40,7 +40,6 @@ export type HDWalletDetails = {
     change: number
     keyIndex: number
     derivationType: DerivationType
-    keystoreKeyId?: string
 }
 
 export type MultiSigDetails = {
@@ -85,17 +84,6 @@ export type HDWalletAccount = BaseWalletAccount & {
     type: typeof AccountTypes.hdWallet
     hdWalletDetails: HDWalletDetails
     keyPairId: string
-    /**
-     * KMS keystore id of the BIP-39 entropy used to derive this wallet.
-     *
-     * Required at the contract level — every HD account created today must
-     * carry it (mnemonic-backup grouping uses it as the per-wallet dedup
-     * key). Typed as optional ONLY so legacy data persisted before the
-     * field existed can deserialize. The `useBackfillEntropyKeyId` mount
-     * hook repairs those older entries on app start; create paths must
-     * never write `undefined`.
-     */
-    entropyKeyId?: string
 }
 
 export type MultiSigAccount = BaseWalletAccount & {
