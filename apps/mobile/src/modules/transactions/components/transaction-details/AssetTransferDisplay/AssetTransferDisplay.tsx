@@ -152,7 +152,7 @@ export const AssetTransferDisplay = ({
                         title={t('transactions.asset_config.metadata_hash')}
                     >
                         <PWButton
-                            variant='link'
+                            variant='linkPositive'
                             paddingStyle='none'
                             title={t('transactions.common.view_metadata')}
                             onPress={openMetadataHashDetails}

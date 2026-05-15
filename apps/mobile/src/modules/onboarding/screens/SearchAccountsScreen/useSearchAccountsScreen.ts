@@ -22,10 +22,12 @@ import {
     useSelectedAccountAddress,
     useCreateAccount,
     useAllAccounts,
+    isHDWalletAccount,
     AccountTypes,
     DerivationTypes,
 } from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
+import { logger } from '@perawallet/wallet-core-shared'
 import { OnboardingStackParamList } from '../../routes/types'
 import { useExitAccountFlow } from '../../hooks'
 
@@ -123,6 +125,8 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                 { account: unknown }
             >
             const account = existingParams.account
+            const createIfEmpty = existingParams.createIfEmpty
+            const notifyOnEmpty = existingParams.notifyOnEmpty
             // account.keyPairId is the derived child id; discovery
             // operates against the bip39 seed parent. For algo25 the
             // rekey scan goes through the address-only path and never
@@ -144,9 +148,62 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
 
                 if (!discoveredAccounts) return
 
-                navigation.replace('ImportSelectAddresses', {
-                    accounts: discoveredAccounts,
-                })
+                if (discoveredAccounts.length === 1) {
+                    if (createIfEmpty) {
+                        const walletAccounts = allAccounts
+                            .filter(isHDWalletAccount)
+                            .filter(a => a.keyPairId === account.keyPairId)
+                        const nextKeyIndex =
+                            walletAccounts.length > 0
+                                ? Math.max(
+                                      ...walletAccounts.map(
+                                          a => a.hdWalletDetails.keyIndex,
+                                      ),
+                                  ) + 1
+                                : 0
+
+                        const newAccount = await createHdWalletAccount({
+                            walletId: account.keyPairId,
+                            account: 0,
+                            keyIndex: nextKeyIndex,
+                        })
+
+                        navigation.replace('NameAccount', {
+                            account: newAccount,
+                        })
+                    } else {
+                        setSelectedAccountAddress(account.address)
+
+                        const rekeyedAccounts = await discoverRekeyedAccounts({
+                            walletKeyId,
+                            derivationType,
+                            accountAddresses: [account.address],
+                        })
+
+                        if (rekeyedAccounts && rekeyedAccounts.length > 0) {
+                            navigation.replace('ImportRekeyedAddresses', {
+                                accounts: rekeyedAccounts,
+                            })
+                        } else {
+                            if (notifyOnEmpty) {
+                                showToast({
+                                    type: 'info',
+                                    title: t(
+                                        'onboarding.searching_accounts.no_new_addresses_title',
+                                    ),
+                                    body: t(
+                                        'onboarding.searching_accounts.no_new_addresses_body',
+                                    ),
+                                })
+                            }
+                            exitAccountFlow()
+                        }
+                    }
+                } else {
+                    navigation.replace('ImportSelectAddresses', {
+                        accounts: discoveredAccounts,
+                    })
+                }
             } else if (account.type === AccountTypes.algo25) {
                 const discoveredRekeyedAccounts = await discoverRekeyedAccounts(
                     {
@@ -168,7 +225,8 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                     })
                 }
             }
-        } catch {
+        } catch (error) {
+            logger.error('Failed during scan-new-addresses', { error })
             // In import mode, abandon the in-memory session so we don't leak
             // root key material if the user retries.
             if ('mode' in params && params.mode === 'import') {

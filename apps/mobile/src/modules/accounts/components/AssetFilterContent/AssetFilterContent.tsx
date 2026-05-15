@@ -44,7 +44,7 @@ export const AssetFilterContent = (_: AssetFilterContentProps = {}) => {
                 center={<PWText variant='h4'>{t('asset_filter.title')}</PWText>}
                 right={
                     <PWButton
-                        variant='link'
+                        variant='linkPositive'
                         title={t('asset_filter.done')}
                         onPress={dismiss}
                         paddingStyle='none'

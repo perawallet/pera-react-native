@@ -19,6 +19,11 @@ export const useStyles = makeStyles(theme => ({
         height: theme.spacing.xl,
         width: theme.spacing.xl,
     },
+    triggerContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xs,
+    },
 }))
 
 export const useContentStyles = makeStyles(theme => ({

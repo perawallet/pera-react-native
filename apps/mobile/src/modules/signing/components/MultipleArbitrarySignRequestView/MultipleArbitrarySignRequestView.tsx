@@ -52,7 +52,7 @@ export const MultipleArbitrarySignRequestView = ({
                     <PWText>{request.message}</PWText>
                     <PWButton
                         title={t('signing.arbitrary_data_view.show_details')}
-                        variant='link'
+                        variant='linkPositive'
                         paddingStyle='none'
                         onPress={() => onDetailsPress(request)}
                     />

@@ -12,6 +12,7 @@
 
 import { PWButton, PWText, PWView } from '@components/core'
 import { ParticipantCount } from '@components/ParticipantCount'
+import { useBottomSafeAreaPadding } from '@hooks/useBottomSafeAreaPadding'
 import { useLanguage } from '@hooks/useLanguage'
 import { ThresholdStepper } from '../../components/ThresholdStepper'
 import { useSetThresholdScreen } from './useSetThresholdScreen'
@@ -21,7 +22,8 @@ import { useMemo } from 'react'
 import { TypographyVariant } from '@theme/typography'
 
 export const SetThresholdScreen = () => {
-    const styles = useStyles()
+    const bottomPadding = useBottomSafeAreaPadding()
+    const styles = useStyles(bottomPadding)
     const { t } = useLanguage()
     const {
         threshold,

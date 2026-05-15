@@ -73,6 +73,19 @@ const logResponse = ({ response }: AfterResponseState) => {
     })
 }
 
+/**
+ * True for transient connectivity-class failures (timeouts, generic network
+ * errors, 5xx responses) that the request layer already logged at warn. Use
+ * this at higher layers (TanStack Query cache.onError, etc.) to avoid
+ * double-logging the same failure at error level — those edges are flaky by
+ * nature and the error-level RedBox they trigger in dev is pure noise.
+ */
+export const isTransientNetworkError = (error: unknown): boolean => {
+    if (isTimeoutError(error) || isNetworkError(error)) return true
+    if (isHTTPError(error) && (error.response?.status ?? 0) >= 500) return true
+    return false
+}
+
 const logError = ({ request, options, error }: BeforeErrorState): Error => {
     const context = options.context as DiagnosticContext
     const durationMs =

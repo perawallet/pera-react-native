@@ -91,7 +91,7 @@ export const useStyles = makeStyles(theme => {
             width: '100%' as const,
         },
         doneButton: {
-            color: theme.colors.linkPrimary,
+            color: theme.colors.positive,
         },
         closeButton: {
             marginTop: theme.spacing.lg,

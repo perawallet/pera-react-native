@@ -34,6 +34,9 @@ export const useStyles = makeStyles(theme => {
             alignItems: 'flex-end',
             gap: theme.spacing.md,
         },
+        dateTimeColumn: {
+            alignItems: 'flex-end',
+        },
         trendTitle: {
             color: theme.colors.textGray,
         },

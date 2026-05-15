@@ -14,11 +14,12 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
-        paddingVertical: theme.spacing.xxl,
+        paddingTop: theme.spacing.md,
+        paddingBottom: theme.spacing.lg,
     },
     accountInfoContainer: {
         paddingHorizontal: theme.spacing.xl,
-        marginBottom: theme.spacing.sm,
+        marginBottom: theme.spacing.lg,
     },
     divider: {
         marginVertical: theme.spacing.sm,
@@ -27,7 +28,7 @@ export const useStyles = makeStyles(theme => ({
     optionRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: theme.spacing.lg,
+        minHeight: theme.spacing['3xl'] + theme.spacing.lg,
         paddingHorizontal: theme.spacing.xl,
         gap: theme.spacing.lg,
     },

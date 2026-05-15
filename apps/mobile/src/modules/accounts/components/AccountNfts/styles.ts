@@ -46,7 +46,7 @@ export const useStyles = makeStyles(theme => ({
         paddingVertical: theme.spacing.sm,
     },
     manageText: {
-        color: theme.colors.linkPrimary,
+        color: theme.colors.positive,
     },
     searchRow: {
         flexDirection: 'row',

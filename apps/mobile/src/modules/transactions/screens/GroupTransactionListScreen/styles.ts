@@ -20,6 +20,6 @@ export const useStyles = makeStyles(theme => ({
         paddingHorizontal: theme.spacing.xl,
     },
     itemSeparator: {
-        height: theme.spacing.sm,
+        height: theme.spacing.md,
     },
 }))

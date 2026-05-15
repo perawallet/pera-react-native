@@ -41,6 +41,7 @@ export const useStyles = makeStyles(theme => ({
     },
     selectAllText: {
         color: theme.colors.linkPrimary,
+        marginRight: theme.spacing.xs,
     },
     listContent: {
         paddingBottom: theme.spacing.xl,

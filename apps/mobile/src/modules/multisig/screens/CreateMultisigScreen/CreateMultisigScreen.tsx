@@ -10,14 +10,16 @@
  limitations under the License
  */
 
-import { PWButton, PWText, PWView } from '@components/core'
+import { PWButton, PWScrollView, PWText, PWView } from '@components/core'
+import { useBottomSafeAreaPadding } from '@hooks/useBottomSafeAreaPadding'
 import { useLanguage } from '@hooks/useLanguage'
 import { ParticipantListItem } from '../../components/ParticipantListItem'
 import { useCreateMultisigScreen } from './useCreateMultisigScreen'
 import { useStyles } from './styles'
 
 export const CreateMultisigScreen = () => {
-    const styles = useStyles()
+    const bottomPadding = useBottomSafeAreaPadding()
+    const styles = useStyles(bottomPadding)
     const { t } = useLanguage()
     const {
         participants,
@@ -44,7 +46,10 @@ export const CreateMultisigScreen = () => {
                     {t('multisig.create.accounts_subtitle')}
                 </PWText>
 
-                <PWView style={styles.spacer}>
+                <PWScrollView
+                    style={styles.scrollArea}
+                    contentContainerStyle={styles.scrollContent}
+                >
                     {participants.map(participant => (
                         <ParticipantListItem
                             key={participant.address}
@@ -61,7 +66,7 @@ export const CreateMultisigScreen = () => {
                         paddingStyle='none'
                         style={styles.addButton}
                     />
-                </PWView>
+                </PWScrollView>
 
                 <PWButton
                     variant='primary'

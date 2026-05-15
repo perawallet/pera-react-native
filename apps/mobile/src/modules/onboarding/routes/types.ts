@@ -24,7 +24,21 @@ export type SearchAccountsParams =
     | {
           mode?: 'existing'
           account: WalletAccount
+          /**
+           * If discovery finds only the master account, create the next
+           * sequential HD address as a fallback. Used by the "Add account from
+           * existing HD wallet" flow where the user explicitly wants to add a
+           * new address.
+           */
           createIfEmpty?: boolean
+          /**
+           * If discovery finds only the master account and no rekeyed accounts,
+           * surface a "No new addresses found" toast before exiting. Used by
+           * the AccountInfoCard "Scan new addresses" entry point so the user
+           * gets feedback that the scan completed without results. Mutually
+           * exclusive with `createIfEmpty`.
+           */
+          notifyOnEmpty?: boolean
       }
     | {
           mode: 'import'

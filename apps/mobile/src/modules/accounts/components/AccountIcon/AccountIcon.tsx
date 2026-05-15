@@ -15,14 +15,12 @@ import { IconName, PWIcon, PWView } from '@components/core'
 import { useMemo } from 'react'
 import {
     AccountTypes,
-    isMultisigAccount,
     useAccountLogicalType,
     type AccountLogicalType,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { SvgProps } from 'react-native-svg'
-import { AccountIconBadge } from './AccountIconBadge'
 import { AccountIconSize, useStyles } from './styles'
 
 const THEME_TOKEN = '__theme__'
@@ -31,6 +29,12 @@ const FALLBACK_ASSET = `accounts/${THEME_TOKEN}/unknown-account`
 export type AccountIconProps = {
     account?: WalletAccount
     size?: AccountIconSize
+    logicalTypeOverride?: AccountLogicalType
+    /**
+     * Override the resolved logical type. Useful when projecting a different
+     * state than what's currently stored — e.g. showing a post-undo-rekey
+     * preview where the source should appear as its base type.
+     */
 } & SvgProps
 
 const iconNames = {
@@ -38,28 +42,31 @@ const iconNames = {
     HdKey: `accounts/${THEME_TOKEN}/hdwallet-account`,
     LedgerBle: `accounts/${THEME_TOKEN}/ledger-account`,
     Multisig: `accounts/${THEME_TOKEN}/multisig-account`,
-    Rekeyed: `accounts/${THEME_TOKEN}/rekeyed-standard`,
+    Rekeyed: `accounts/${THEME_TOKEN}/noauth-account`,
     RekeyedAuth: `accounts/${THEME_TOKEN}/rekeyed-standard`,
-    NoAuth: `accounts/${THEME_TOKEN}/noauth-account`,
+    NoAuth: `accounts/${THEME_TOKEN}/watch-account`,
 } satisfies Record<AccountLogicalType, string>
 
 const resolveIconAsset = (
     logicalType: AccountLogicalType,
     account: WalletAccount,
 ): string => {
-    const isRekeyedHardware =
-        (logicalType === 'Rekeyed' || logicalType === 'RekeyedAuth') &&
-        account.type === AccountTypes.hardware
-    if (isRekeyedHardware) {
-        return `accounts/${THEME_TOKEN}/rekeyed-ledger`
+    if (logicalType === 'RekeyedAuth') {
+        if (account.type === AccountTypes.hardware) {
+            return `accounts/${THEME_TOKEN}/rekeyed-ledger`
+        }
+        if (account.type === AccountTypes.multisig) {
+            return `accounts/${THEME_TOKEN}/rekeyed-multisig`
+        }
     }
     return iconNames[logicalType] ?? FALLBACK_ASSET
 }
 
 export const AccountIcon = (props: AccountIconProps) => {
-    const { account, size = 'md', ...rest } = props
+    const { account, size = 'md', logicalTypeOverride, ...rest } = props
     const darkmode = useIsDarkMode()
-    const logicalType = useAccountLogicalType(account?.address)
+    const resolvedType = useAccountLogicalType(account?.address)
+    const logicalType = logicalTypeOverride ?? resolvedType
     const styles = useStyles({ size })
 
     const icon = useMemo(() => {
@@ -82,20 +89,5 @@ export const AccountIcon = (props: AccountIconProps) => {
 
     if (!icon) return <></>
 
-    const isBadgeVisible =
-        !!account &&
-        isMultisigAccount(account) &&
-        (size === 'lg' || size === 'xl')
-
-    return (
-        <PWView style={styles.container}>
-            {icon}
-            {isBadgeVisible && (
-                <AccountIconBadge
-                    count={account.multisigDetails.addresses.length}
-                    size={size}
-                />
-            )}
-        </PWView>
-    )
+    return <PWView style={styles.container}>{icon}</PWView>
 }

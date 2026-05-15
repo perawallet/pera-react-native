@@ -13,7 +13,6 @@
 import {
     IconName,
     PWIcon,
-    PWRoundIcon,
     PWText,
     PWTouchableOpacity,
     PWView,
@@ -46,45 +45,54 @@ export const AccountStructureTree = ({
     return (
         <PWView style={styles.treeContainer}>
             <PWView style={styles.walletRow}>
-                <PWRoundIcon
-                    icon={icon}
-                    variant='secondary'
-                    size='lg'
-                />
-                <PWText variant='body'>{label}</PWText>
+                <PWView style={styles.walletCircle}>
+                    <PWIcon
+                        name={icon}
+                        size='md'
+                        variant='primary'
+                    />
+                </PWView>
+                <PWText variant='bodyLarge'>{label}</PWText>
             </PWView>
 
-            {accounts.map(account => {
+            {accounts.map((account, index) => {
                 const isMain = account.address === mainAccountAddress
+                const truncated = truncateAlgorandAddress(account.address)
+                const hasRealName = !!account.name && account.name !== truncated
                 const fallbackLabel = isMain
                     ? t('account_info.main_address')
                     : t('account_info.sub_address')
+                const isLast = index === accounts.length - 1
+
                 return (
                     <PWView
                         key={account.address}
                         style={styles.accountRowWithConnector}
                     >
                         <PWView style={styles.connectorContainer}>
-                            <PWView style={styles.connectorVertical} />
+                            <PWView
+                                style={[
+                                    styles.connectorVertical,
+                                    isLast && styles.connectorVerticalLast,
+                                ]}
+                            />
                             <PWView style={styles.connectorHorizontal} />
                         </PWView>
                         <PWView style={styles.accountRow}>
                             <AccountIcon
                                 account={account}
-                                size='md'
+                                size='lg'
                             />
                             <PWView style={styles.accountInfo}>
-                                <PWText variant='body'>
-                                    {account.name ?? fallbackLabel}
+                                <PWText variant='bodyLarge'>
+                                    {hasRealName ? account.name : fallbackLabel}
                                 </PWText>
                                 <CopyableText copyValue={account.address}>
                                     <PWText
                                         variant='body'
                                         style={styles.addressText}
                                     >
-                                        {truncateAlgorandAddress(
-                                            account.address,
-                                        )}
+                                        {truncated}
                                     </PWText>
                                 </CopyableText>
                             </PWView>
@@ -98,7 +106,7 @@ export const AccountStructureTree = ({
                 onPress={onScanAddresses}
             >
                 <PWIcon
-                    name='magnifying-glass'
+                    name='scan'
                     size='sm'
                     variant='helper'
                 />

@@ -12,8 +12,8 @@
 
 import type { ComponentType } from 'react'
 
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { BottomSheetRegistry } from '../types'
-import { Optional } from '@perawallet/wallet-core-shared'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const entries = new Map<string, ComponentType<any>>()

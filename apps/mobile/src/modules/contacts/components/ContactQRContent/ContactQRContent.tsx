@@ -18,7 +18,6 @@ import { Contact } from '@perawallet/wallet-core-contacts'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 
 import { PWButton, PWText, PWView } from '@components/core'
-import { SHORT_ADDRESS_FORMAT } from '@constants/ui'
 import { useClipboard } from '@hooks/useClipboard'
 import { useLanguage } from '@hooks/useLanguage'
 import { shareText } from '@utils/shareText'
@@ -80,10 +79,7 @@ export const ContactQRContent = ({ contact }: ContactQRContentProps) => {
                     variant='h3'
                     style={styles.shortAddress}
                 >
-                    {truncateAlgorandAddress(
-                        contact.address,
-                        SHORT_ADDRESS_FORMAT,
-                    )}
+                    {truncateAlgorandAddress(contact.address)}
                 </PWText>
                 <PWText
                     variant='body'

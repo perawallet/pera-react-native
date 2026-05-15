@@ -13,13 +13,19 @@
 import { Text as RNEText } from '@rneui/themed'
 import { useStyles } from './styles'
 import { StyleProp, TextStyle, TextProps } from 'react-native'
-import { TypographyVariant } from '@theme/typography'
+import { type FontWeight, type TypographyVariant } from '@theme/typography'
 import { DEFAULT_MINIMUM_FONT_SCALE } from '../constants'
 
 export type PWTextProps = {
     children?: React.ReactNode
     style?: StyleProp<TextStyle>
     variant?: TypographyVariant
+    /**
+     * Overrides the variant's font weight (and matching family). Use this
+     * instead of adding a dedicated `*Medium` / `*Semibold` sibling variant
+     * for one-off weight tweaks.
+     */
+    weight?: FontWeight
     numberOfLines?: number
     ellipsizeMode?: TextProps['ellipsizeMode']
     adjustsFontSizeToFit?: TextProps['adjustsFontSizeToFit']
@@ -33,6 +39,7 @@ export const PWText = ({
     children,
     style,
     variant = 'body',
+    weight,
     numberOfLines,
     ellipsizeMode,
     adjustsFontSizeToFit,
@@ -41,7 +48,7 @@ export const PWText = ({
     onPress,
     ...props
 }: PWTextProps) => {
-    const styles = useStyles({ variant })
+    const styles = useStyles({ variant, weight })
 
     const resolvedMinimumFontScale =
         minimumFontScale ??

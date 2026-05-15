@@ -29,13 +29,15 @@ import {
     StakingProjectCard,
 } from '@modules/staking/components'
 import type { StakingProject } from '@modules/staking/models'
+import { useBottomSafeAreaPadding } from '@hooks/useBottomSafeAreaPadding'
 import { useStakingScreen } from './useStakingScreen'
 import { useStyles } from './styles'
 
 const SKELETON_COUNT = 5
 
 export const StakingScreen = () => {
-    const styles = useStyles()
+    const bottomPadding = useBottomSafeAreaPadding()
+    const styles = useStyles(bottomPadding)
     const { t } = useLanguage()
     const navigation = useNavigation()
     const {

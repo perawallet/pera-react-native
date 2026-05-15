@@ -12,7 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => {
+export const useStyles = makeStyles((theme, bottomPadding: number) => {
     const algoBalance = {
         lineHeight: theme.spacing.lg,
     }
@@ -45,7 +45,7 @@ export const useStyles = makeStyles(theme => {
         walletItem: {
             flexDirection: 'row',
             alignItems: 'center',
-            paddingVertical: theme.spacing.lg,
+            paddingVertical: theme.spacing.md,
             borderBottomWidth: theme.borders.sm,
             borderBottomColor: theme.colors.layerGrayLighter,
         },
@@ -72,6 +72,7 @@ export const useStyles = makeStyles(theme => {
         footer: {
             paddingHorizontal: theme.spacing.xl,
             paddingTop: theme.spacing.md,
+            paddingBottom: bottomPadding,
         },
     }
 })

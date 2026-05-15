@@ -42,7 +42,7 @@ export const AssetSortContent = (_: AssetSortContentProps = {}) => {
                 center={<PWText variant='h4'>{t('asset_sort.title')}</PWText>}
                 right={
                     <PWButton
-                        variant='link'
+                        variant='linkPositive'
                         title={t('asset_sort.done')}
                         onPress={dismiss}
                         paddingStyle='none'

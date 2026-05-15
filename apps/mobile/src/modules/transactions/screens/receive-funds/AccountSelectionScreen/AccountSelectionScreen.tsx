@@ -49,6 +49,7 @@ export const AccountSelectionScreen = () => {
 
     return (
         <PWFlatList
+            inBottomSheet
             contentContainerStyle={styles.container}
             data={accounts}
             renderItem={renderItem}

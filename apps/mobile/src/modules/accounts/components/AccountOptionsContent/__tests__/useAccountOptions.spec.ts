@@ -242,37 +242,12 @@ describe('useAccountOptions', () => {
             expect(optionIds).toEqual([
                 'copy-address',
                 'show-address',
-                'auth-address',
-                'undo-rekey',
                 'rekey-to-ledger',
                 'rekey-to-standard',
                 'rename-account',
                 'toggle-notifications',
                 'remove-account',
             ])
-        })
-
-        it('shows undo-rekey for a rekeyed watch account whose auth account we hold', () => {
-            mockAllAccounts.mockReturnValue([
-                algo25Account,
-                rekeyedWatchAccount,
-            ])
-
-            const { result } = renderHook(() =>
-                useAccountOptions({
-                    account: rekeyedWatchAccount,
-                    onClose: mockOnClose,
-                    onShowAddress: mockOnShowAddress,
-                }),
-            )
-
-            const optionIds = result.current.options.map(o => o.id)
-            expect(optionIds).toContain('auth-address')
-            expect(optionIds).toContain('rekey-to-ledger')
-            expect(optionIds).toContain('rekey-to-standard')
-            expect(optionIds).toContain('undo-rekey')
-            expect(optionIds).not.toContain('view-passphrase')
-            expect(optionIds).not.toContain('rekey-to-shared')
         })
 
         it('shows rekey options but hides passphrase for a hardware account', () => {
@@ -307,6 +282,7 @@ describe('useAccountOptions', () => {
 
             const optionIds = result.current.options.map(o => o.id)
             expect(optionIds).toEqual([
+                'shared-account-detail',
                 'copy-address',
                 'show-address',
                 'rekey-to-shared',
@@ -600,27 +576,6 @@ describe('useAccountOptions', () => {
             })
         })
 
-        it('copies rekey auth address when auth address option is pressed', () => {
-            const { result } = renderHook(() =>
-                useAccountOptions({
-                    account: rekeyedAccount,
-                    onClose: mockOnClose,
-                    onShowAddress: mockOnShowAddress,
-                }),
-            )
-
-            const authOption = result.current.options.find(
-                o => o.id === 'auth-address',
-            )
-
-            act(() => {
-                authOption?.onPress()
-            })
-
-            expect(mockCopyToClipboard).toHaveBeenCalledWith('AUTHADDRESS')
-            expect(mockOnClose).toHaveBeenCalled()
-        })
-
         it('shows notification mute label when notifications are enabled', () => {
             mockIsAccountEnabled.mockReturnValue(true)
 
@@ -709,7 +664,7 @@ describe('useAccountOptions', () => {
             )
         })
 
-        it('shows not implemented toast for rekey-to-ledger', () => {
+        it('navigates to RekeyToLedger intro for rekey-to-ledger', () => {
             const { result } = renderHook(() =>
                 useAccountOptions({
                     account: algo25Account,
@@ -726,14 +681,14 @@ describe('useAccountOptions', () => {
                 rekeyOption?.onPress()
             })
 
-            expect(mockShowToast).toHaveBeenCalledWith({
-                title: 'common.not_implemented.title',
-                body: 'common.not_implemented.body',
-                type: 'error',
+            expect(mockOnClose).toHaveBeenCalled()
+            expect(mockNavigate).toHaveBeenCalledWith('RekeyToLedger', {
+                screen: 'RekeyToLedgerIntro',
+                params: { sourceAddress: algo25Account.address },
             })
         })
 
-        it('shows not implemented toast for rekey-to-standard', () => {
+        it('navigates to RekeyToStandard intro for rekey-to-standard', () => {
             const { result } = renderHook(() =>
                 useAccountOptions({
                     account: algo25Account,
@@ -750,14 +705,14 @@ describe('useAccountOptions', () => {
                 rekeyOption?.onPress()
             })
 
-            expect(mockShowToast).toHaveBeenCalledWith({
-                title: 'common.not_implemented.title',
-                body: 'common.not_implemented.body',
-                type: 'error',
+            expect(mockOnClose).toHaveBeenCalled()
+            expect(mockNavigate).toHaveBeenCalledWith('RekeyToStandard', {
+                screen: 'RekeyToStandardIntro',
+                params: { sourceAddress: algo25Account.address },
             })
         })
 
-        it('shows not implemented toast for rekey-to-shared', () => {
+        it('navigates to RekeyToShared intro for rekey-to-shared', () => {
             const { result } = renderHook(() =>
                 useAccountOptions({
                     account: multisigAccount,
@@ -774,10 +729,38 @@ describe('useAccountOptions', () => {
                 rekeyOption?.onPress()
             })
 
-            expect(mockShowToast).toHaveBeenCalledWith({
-                title: 'common.not_implemented.title',
-                body: 'common.not_implemented.body',
-                type: 'error',
+            expect(mockOnClose).toHaveBeenCalled()
+            expect(mockNavigate).toHaveBeenCalledWith('RekeyToShared', {
+                screen: 'RekeyToSharedIntro',
+                params: { sourceAddress: multisigAccount.address },
+            })
+        })
+
+        it('closes the options sheet and requests shared account details when shared-account-detail is pressed', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: multisigAccount,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const detailOption = result.current.options.find(
+                o => o.id === 'shared-account-detail',
+            )
+
+            await act(async () => {
+                await detailOption?.onPress()
+            })
+
+            expect(mockOnClose).toHaveBeenCalled()
+            expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+            const arg = mockRequestBottomSheet.mock.calls[0][0]
+            expect(arg.options).toEqual({
+                size: 'lg',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
             })
         })
 
@@ -805,30 +788,6 @@ describe('useAccountOptions', () => {
             expect(arg.options).toEqual({
                 size: 'auto',
                 enablePanDownToClose: true,
-            })
-        })
-
-        it('shows not implemented toast for undo-rekey', () => {
-            const { result } = renderHook(() =>
-                useAccountOptions({
-                    account: rekeyedAccount,
-                    onClose: mockOnClose,
-                    onShowAddress: mockOnShowAddress,
-                }),
-            )
-
-            const undoOption = result.current.options.find(
-                o => o.id === 'undo-rekey',
-            )
-
-            act(() => {
-                undoOption?.onPress()
-            })
-
-            expect(mockShowToast).toHaveBeenCalledWith({
-                title: 'common.not_implemented.title',
-                body: 'common.not_implemented.body',
-                type: 'error',
             })
         })
 

@@ -115,8 +115,18 @@ export const useSigningStore: UseBoundStore<
             // still leave them in storage. Always boot with a clean
             // last-completed/last-failed slate so a stale id doesn't ghost
             // the next request through SignRequestView's id-equality guard.
+            //
+            // pendingSignRequests is also cleared on rehydration: the
+            // lifecycle effect auto-starts an actor for whatever's queued
+            // on mount (incl. rehydration). For hardware-targeted
+            // requests, that wakes a Ledger session the user never
+            // initiated and surfaces a 10s timeout as a render error via
+            // the root error boundary. Anything mid-flight at app close
+            // is effectively abandoned anyway — the originating UI
+            // (rekey, send, swap) is gone.
             onRehydrateStorage: () => state => {
                 if (state) {
+                    state.pendingSignRequests = []
                     state.lastCompletedRequest = null
                     state.lastFailedRequest = null
                     state.lastTransportResult = null

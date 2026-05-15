@@ -283,6 +283,13 @@ describe('env-loader', () => {
             recoveryPassphraseSupportUrl:
                 'https://recovery-passphrase-support.example.com',
             watchAccountSupportUrl: 'https://watch-account-support.example.com',
+            rekeyToStandardSupportUrl:
+                'https://rekey-to-standard-support.example.com',
+            rekeyToSharedSupportUrl:
+                'https://rekey-to-shared-support.example.com',
+            rekeyToLedgerSupportUrl:
+                'https://rekey-to-ledger-support.example.com',
+            undoRekeySupportUrl: 'https://undo-rekey-support.example.com',
             debugEnabled: false,
             profilingEnabled: false,
             pollingEnabled: true,

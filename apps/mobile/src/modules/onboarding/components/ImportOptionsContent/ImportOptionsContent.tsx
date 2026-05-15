@@ -115,7 +115,9 @@ export const ImportOptionsContent = () => {
                             variant='link'
                             style={styles.optionLink}
                         >
-                            {t('onboarding.import_options.mnemonic_info')}
+                            {t(
+                                'onboarding.import_options.algo25.mnemonic_info',
+                            )}
                         </PWText>
                     </PWView>
 

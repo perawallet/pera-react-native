@@ -50,7 +50,7 @@ export const AccountSortContent = (_: AccountSortContentProps = {}) => {
                 center={<PWText variant='h4'>{t('account_sort.title')}</PWText>}
                 right={
                     <PWButton
-                        variant='link'
+                        variant='linkPositive'
                         title={t('account_sort.done')}
                         onPress={dismiss}
                         paddingStyle='none'

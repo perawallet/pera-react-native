@@ -30,7 +30,7 @@ export const useStyles = makeStyles(theme => ({
         marginHorizontal: -theme.spacing.sm,
     },
     listContent: {
-        gap: theme.spacing.sm,
+        gap: theme.spacing.md,
         paddingHorizontal: theme.spacing.lg,
     },
     chip: {

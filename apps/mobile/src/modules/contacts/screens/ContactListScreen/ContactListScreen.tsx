@@ -27,7 +27,6 @@ import {
 import { ContactAvatar } from '@components/ContactAvatar'
 import { EmptyView } from '@components/EmptyView'
 import { SearchInput } from '@components/SearchInput'
-import { SHORT_ADDRESS_FORMAT } from '@constants/ui'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
@@ -73,10 +72,7 @@ const ContactRow = ({ contact, onShowQR, onSelect }: ContactRowProps) => {
                     variant='body'
                     style={styles.contactAddress}
                 >
-                    {truncateAlgorandAddress(
-                        contact.address,
-                        SHORT_ADDRESS_FORMAT,
-                    )}
+                    {truncateAlgorandAddress(contact.address)}
                 </PWText>
             </PWView>
             <PWIcon

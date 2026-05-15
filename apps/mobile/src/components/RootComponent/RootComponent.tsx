@@ -99,10 +99,15 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     const appState = useRef(AppState.currentState)
     const appStatePlatform = useRef(getAppStatePlatform()).current
 
+    // The Zustand `accounts` array gets a new reference on every store write
+    // (incl. background sync ticks). Effects that only care about the *set* of
+    // accounts must depend on a stable scalar, otherwise they re-fire on every
+    // tick and the sync service re-arms in a tight loop.
     const addresses = useMemo(
         () => accounts?.map(account => account.address) ?? [],
         [accounts],
     )
+    const hasAccounts = addresses.length > 0
 
     useDeviceRegistration(addresses)
 
@@ -123,8 +128,6 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
         }
     }, [])
 
-    // Re-read synced queries from the DB when the network changes so the UI
-    // reflects the new network's data.
     useEffect(() => {
         try {
             getSyncService().invalidateQueries()
@@ -133,39 +136,40 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
         }
     }, [network])
 
-    // Sync lifecycle — NOT dependent on network so switching networks won't restart the sync
     useEffect(() => {
-        if (!addresses.length) {
+        if (!hasAccounts) {
             runSyncAction('stop')
-        } else if (config.pollingEnabled) {
-            runSyncAction('start')
-
-            const subscription = AppState.addEventListener(
-                'change',
-                nextAppState => {
-                    const previousState = appState.current
-                    const action = getPollingTransitionAction(
-                        previousState,
-                        nextAppState,
-                        appStatePlatform,
-                    )
-
-                    if (action === 'start') {
-                        runSyncAction('start')
-                    } else if (action === 'stop') {
-                        runSyncAction('stop')
-                    }
-
-                    appState.current = nextAppState
-                },
-            )
-
-            return () => {
-                runSyncAction('stop')
-                subscription.remove()
-            }
+            return
         }
-    }, [appStatePlatform, addresses, runSyncAction])
+        if (!config.pollingEnabled) return
+
+        runSyncAction('start')
+
+        const subscription = AppState.addEventListener(
+            'change',
+            nextAppState => {
+                const previousState = appState.current
+                const action = getPollingTransitionAction(
+                    previousState,
+                    nextAppState,
+                    appStatePlatform,
+                )
+
+                if (action === 'start') {
+                    runSyncAction('start')
+                } else if (action === 'stop') {
+                    runSyncAction('stop')
+                }
+
+                appState.current = nextAppState
+            },
+        )
+
+        return () => {
+            runSyncAction('stop')
+            subscription.remove()
+        }
+    }, [appStatePlatform, hasAccounts, runSyncAction])
 
     return (
         <BottomSheetModalProvider>

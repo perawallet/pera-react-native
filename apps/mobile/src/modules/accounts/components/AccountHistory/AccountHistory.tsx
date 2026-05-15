@@ -82,10 +82,7 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
         }
 
         return (
-            <EmptyView
-                title={t('asset_details.transaction_list.empty_title')}
-                body={t('asset_details.transaction_list.empty_body')}
-            />
+            <EmptyView body={t('asset_details.transaction_list.empty_body')} />
         )
     }
 

@@ -14,6 +14,10 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => {
     return {
+        trigger: {
+            flexShrink: 1,
+            minWidth: 0,
+        },
         container: {
             flexDirection: 'row',
             alignItems: 'center',

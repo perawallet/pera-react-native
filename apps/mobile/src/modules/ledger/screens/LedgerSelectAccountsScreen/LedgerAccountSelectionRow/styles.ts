@@ -36,14 +36,15 @@ export const useStyles = makeStyles((theme, { isImported }: StyleProps) => ({
     },
     textContainer: {
         flex: 1,
+        gap: theme.spacing.xxs,
+    },
+    addressTouchable: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xxs,
+        alignSelf: 'flex-start',
     },
     title: {
         color: theme.colors.textMain,
-    },
-    subtitle: {
-        color: theme.colors.textGray,
-    },
-    infoButton: {
-        padding: theme.spacing.xs,
     },
 }))

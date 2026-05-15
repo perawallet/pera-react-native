@@ -31,7 +31,7 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textMain,
     },
     readMoreText: {
-        color: theme.colors.linkPrimary,
+        color: theme.colors.positive,
     },
     row: {
         flexDirection: 'row',

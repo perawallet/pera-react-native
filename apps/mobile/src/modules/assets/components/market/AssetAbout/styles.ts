@@ -17,6 +17,7 @@ export const useStyles = makeStyles(theme => ({
         paddingVertical: theme.spacing.md,
         borderBottomWidth: theme.borders.sm,
         borderBottomColor: theme.colors.divider,
+        gap: theme.spacing.sm,
     },
     sectionTitle: {
         color: theme.colors.textGray,

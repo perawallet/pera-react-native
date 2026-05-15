@@ -155,6 +155,11 @@ export const PWBottomSheet = ({
             ref={bottomSheetModalRef}
             snapPoints={defaults.snapPoints}
             enableDynamicSizing={defaults.enableDynamicSizing}
+            // Never let the sheet rise above the status bar, even when its
+            // dynamically-sized content (e.g. an expanded HD wallet tree)
+            // would otherwise push it past the configured snap point. Skip
+            // for `full`-size sheets which intentionally cover everything.
+            topInset={size === 'full' ? 0 : insets.top}
             backdropComponent={renderBackdrop}
             onDismiss={handleDismiss}
             onAnimate={handleAnimate}
