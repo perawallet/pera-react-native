@@ -44,7 +44,10 @@ export const ManageAssetsContent = ({
                     />
                 }
                 center={
-                    <PWText variant='bodyLargeMedium'>
+                    <PWText
+                        variant='bodyLarge'
+                        weight={500}
+                    >
                         {t('manage_assets.title')}
                     </PWText>
                 }

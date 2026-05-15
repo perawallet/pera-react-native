@@ -155,7 +155,8 @@ export const AccountInfoCard = ({
                                 showSymbol
                                 symbolPosition='start'
                                 isLoading={isMinBalanceLoading}
-                                variant='bodyLargeMedium'
+                                variant='bodyLarge'
+                                weight={500}
                             />
                         }
                     >

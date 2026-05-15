@@ -53,7 +53,10 @@ export const RenameAccountContent = ({
         <>
             <PWToolbar
                 center={
-                    <PWText variant='bodyLargeMedium'>
+                    <PWText
+                        variant='bodyLarge'
+                        weight={500}
+                    >
                         {t('account_options.rename_title')}
                     </PWText>
                 }
