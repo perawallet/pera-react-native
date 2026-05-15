@@ -31,11 +31,16 @@ import {
 import {
     generateOrderedUniqueId,
     fetchAccountFastLookup,
+    logger,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 
 const ACCOUNT_GAP_LIMIT = 5
 const KEY_INDEX_GAP_LIMIT = 5
+// Cap on indexer pages when scanning for accounts rekeyed to an address.
+// The indexer returns ~100 accounts per page; very few accounts are ever
+// rekeyed to a single auth address, so this is a generous safety bound.
+const MAX_REKEYED_SCAN_PAGES = 20
 
 export type GetPublicKey = (params: {
     account: number
@@ -79,7 +84,18 @@ async function checkActivityBatch(
             activityMap.set(result.address, result.accountExists)
         }
         return activityMap
-    } catch {
+    } catch (error) {
+        // Fast-lookup is best-effort: a transient indexer failure marks the
+        // batch as inactive so HD scanning advances via the gap limit
+        // instead of stalling. The user can re-import to pick up addresses
+        // missed this way. The rekeyed-account scan (`checkRekeyed`) chose
+        // the opposite trade-off and surfaces failures — this path is the
+        // hot one during onboarding and degrading silently is intentional.
+        logger.warn('fastLookup failed; treating batch as inactive', {
+            source: 'account-discovery.checkActivityBatch',
+            batchSize: addresses.length,
+            error,
+        })
         const activityMap = new Map<string, boolean>()
         for (const address of addresses) {
             activityMap.set(address, false)
@@ -244,20 +260,49 @@ export async function discoverAccounts({
     })
 }
 
+/**
+ * Asks the indexer for every account whose auth-addr is `address`.
+ *
+ * Throws on indexer failure rather than swallowing it — a network error
+ * must not be indistinguishable from "no rekeyed accounts found". Every
+ * caller already runs inside a try/catch that surfaces the failure (the
+ * rescan screen's error state, the import flow's error logging).
+ */
 async function checkRekeyed(
     algorandClient: AlgorandClient,
     address: string,
 ): Promise<Account[]> {
-    try {
+    const accounts: Account[] = []
+    let next: string | undefined
+    let pages = 0
+
+    // Follow the indexer's pagination token so accounts beyond the first
+    // page are not silently dropped.
+    do {
         const result = await algorandClient.client.indexer.searchForAccounts({
             authAddr: address,
+            next,
         })
+        accounts.push(...result.accounts)
+        next = result.nextToken
+        pages += 1
+    } while (next && pages < MAX_REKEYED_SCAN_PAGES)
 
-        return result.accounts
-    } catch (error) {
-        console.error('Failed to check rekeyed accounts', error)
-        return []
-    }
+    return accounts
+}
+
+/**
+ * Public helper for the rescan-rekeyed flow: ask the indexer for every
+ * on-chain account whose auth-addr is `address`. Used to surface accounts
+ * the user could re-import as watch entries after a rekey was performed
+ * outside the wallet. Mirrors Android's `fetchRekeyedAddresses`.
+ */
+export async function fetchRekeyedAddresses(
+    address: string,
+): Promise<string[]> {
+    const algorandClient = getAlgorandClient()
+    const accounts = await checkRekeyed(algorandClient, address)
+    return accounts.map(a => a.address)
 }
 
 type ScanRekeyedKeysParams = {
@@ -268,6 +313,10 @@ type ScanRekeyedKeysParams = {
     algorandClient: AlgorandClient
 }
 
+// Performance note: this issues one indexer `searchForAccounts` call per
+// derived key (and `checkRekeyed` itself may paginate). For large imports
+// that is an N+1 against the indexer — acceptable for the gap-limited scan
+// here, but batch/cache if the scan window ever grows.
 async function scanRekeyedKeys({
     accountIdx,
     keyIndexGapLimit,

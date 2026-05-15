@@ -193,6 +193,94 @@ describe('useCreateAccount', () => {
         expect(created.hdWalletDetails.account).toBe(1)
     })
 
+    test('inherits entropyKeyId from a sibling HD account when adding to an existing wallet', async () => {
+        useAccountsStore.setState({
+            accounts: [
+                {
+                    id: 'EXISTING_ACC',
+                    address: 'EXISTING_ADDRESS',
+                    type: 'hdWallet',
+                    keyPairId: 'EXISTING_WALLET',
+                    entropyKeyId: 'sibling-entropy',
+                    hdWalletDetails: {
+                        account: 0,
+                        change: 0,
+                        keyIndex: 0,
+                        derivationType: 9,
+                        keystoreKeyId: 'ks-derived-existing',
+                    },
+                } as any,
+            ],
+        })
+
+        kmsMock.getKey.mockReturnValueOnce({
+            id: 'EXISTING_WALLET',
+            type: KeyType.HDWalletRootKey,
+            publicKey: '',
+            keystoreKeyId: 'ks-existing-root',
+        })
+
+        uuidSpies.v7.mockImplementationOnce(() => 'ACC2')
+
+        const { result } = renderHook(() => useCreateAccount())
+
+        let created: any
+        await act(async () => {
+            created = await result.current.createHdWalletAccount({
+                walletId: 'EXISTING_WALLET',
+                account: 0,
+                keyIndex: 1,
+            })
+        })
+
+        expect(kmsMock.createHDWalletKey).not.toHaveBeenCalled()
+        expect(created.keyPairId).toBe('EXISTING_WALLET')
+        expect(created.entropyKeyId).toBe('sibling-entropy')
+    })
+
+    test('does not inherit entropyKeyId from a sibling in a different wallet group', async () => {
+        useAccountsStore.setState({
+            accounts: [
+                {
+                    id: 'OTHER_ACC',
+                    address: 'OTHER_ADDRESS',
+                    type: 'hdWallet',
+                    keyPairId: 'OTHER_WALLET',
+                    entropyKeyId: 'other-entropy',
+                    hdWalletDetails: {
+                        account: 0,
+                        change: 0,
+                        keyIndex: 0,
+                        derivationType: 9,
+                        keystoreKeyId: 'ks-derived-other',
+                    },
+                } as any,
+            ],
+        })
+
+        kmsMock.getKey.mockReturnValueOnce({
+            id: 'EXISTING_WALLET',
+            type: KeyType.HDWalletRootKey,
+            publicKey: '',
+            keystoreKeyId: 'ks-existing-root',
+        })
+
+        uuidSpies.v7.mockImplementationOnce(() => 'ACC1')
+
+        const { result } = renderHook(() => useCreateAccount())
+
+        let created: any
+        await act(async () => {
+            created = await result.current.createHdWalletAccount({
+                walletId: 'EXISTING_WALLET',
+                account: 0,
+                keyIndex: 0,
+            })
+        })
+
+        expect(created.entropyKeyId).toBeUndefined()
+    })
+
     test('throws error when key derivation fails', async () => {
         kmsMock.getKey.mockReturnValueOnce({
             id: 'WALLET1',

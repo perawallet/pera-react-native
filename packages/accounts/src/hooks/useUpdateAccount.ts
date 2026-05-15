@@ -17,6 +17,7 @@ import {
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useAccountsStore } from '../store'
 import { WalletAccount } from '../models'
+import { matchesAccountKey } from '../utils'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
 export const useUpdateAccount = () => {
@@ -28,9 +29,11 @@ export const useUpdateAccount = () => {
     const { mutateAsync: updateDeviceOnBackend } = useUpdateDeviceMutation()
 
     return (account: WalletAccount) => {
-        const updated = accounts.map(a =>
-            a.address === account.address ? account : a,
-        )
+        const matches = matchesAccountKey({
+            address: account.address,
+            id: account.id,
+        })
+        const updated = accounts.map(a => (matches(a) ? account : a))
         setAccounts(updated)
 
         if (deviceID) {

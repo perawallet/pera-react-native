@@ -11,7 +11,11 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { AccountLogicalTypes, deriveAccountLogicalType } from '../logical-type'
+import {
+    AccountLogicalTypes,
+    deriveAccountLogicalType,
+    rekeyTransitionFor,
+} from '../logical-type'
 import {
     AccountTypes,
     type Algo25Account,
@@ -120,18 +124,125 @@ describe('deriveAccountLogicalType', () => {
         )
     })
 
-    it('returns NoAuth when original was a watch account and auth is not in the wallet', () => {
+    it('returns Rekeyed when a watch account is rekeyed and auth is not in the wallet', () => {
         const a = watch('A', 'S')
         expect(deriveAccountLogicalType(a, [a])).toBe(
-            AccountLogicalTypes.NoAuth,
+            AccountLogicalTypes.Rekeyed,
         )
     })
 
-    it('returns NoAuth when auth account is in the wallet but cannot sign (watch → watch)', () => {
+    it('returns Rekeyed when auth account is in the wallet but cannot sign (watch → watch)', () => {
         const authWatch = watch('S')
         const rekeyed = watch('A', 'S')
         expect(deriveAccountLogicalType(rekeyed, [rekeyed, authWatch])).toBe(
-            AccountLogicalTypes.NoAuth,
+            AccountLogicalTypes.Rekeyed,
         )
+    })
+
+    it('returns RekeyedAuth when a shared account is rekeyed to a multisig with a local signable participant', () => {
+        // A shared account can only be rekeyed to another shared account; it
+        // is signable when the wallet holds at least one signable participant
+        // of the auth multisig — multisig signing is propose-based.
+        const participant = algo25('P1')
+        const ms: MultiSigAccount = {
+            ...multisig('M'),
+            multisigDetails: { threshold: 2, addresses: ['P1', 'P2'] },
+        }
+        const rekeyed: MultiSigAccount = {
+            ...multisig('A'),
+            rekeyAddress: 'M',
+        }
+        expect(
+            deriveAccountLogicalType(rekeyed, [rekeyed, ms, participant]),
+        ).toBe(AccountLogicalTypes.RekeyedAuth)
+    })
+
+    it('returns Rekeyed when rekeyed to a multisig with no local signable participant', () => {
+        const ms: MultiSigAccount = {
+            ...multisig('M'),
+            multisigDetails: { threshold: 2, addresses: ['P1', 'P2'] },
+        }
+        const rekeyed: MultiSigAccount = {
+            ...multisig('A'),
+            rekeyAddress: 'M',
+        }
+        expect(deriveAccountLogicalType(rekeyed, [rekeyed, ms])).toBe(
+            AccountLogicalTypes.Rekeyed,
+        )
+    })
+
+    it('counts a rekeyed participant as signable — multisig participants sign with their own key', () => {
+        // P1 is itself rekeyed away, but a multisig slot is bound to the
+        // participant's own pubkey, so P1 still signs and still counts.
+        const participant: Algo25Account = {
+            ...algo25('P1'),
+            rekeyAddress: 'ELSEWHERE',
+        }
+        const ms: MultiSigAccount = {
+            ...multisig('M'),
+            multisigDetails: { threshold: 2, addresses: ['P1', 'P2'] },
+        }
+        const rekeyed: MultiSigAccount = {
+            ...multisig('A'),
+            rekeyAddress: 'M',
+        }
+        expect(
+            deriveAccountLogicalType(rekeyed, [rekeyed, ms, participant]),
+        ).toBe(AccountLogicalTypes.RekeyedAuth)
+    })
+
+    it('does not follow the auth account’s own rekey to find a signer (single hop)', () => {
+        // A -> B, B -> A, neither holds a key. Single-hop classification
+        // only consults B's own key, so A is Rekeyed (not signable).
+        const a: Algo25Account = { ...algo25('A'), rekeyAddress: 'B' }
+        const b: Algo25Account = { ...algo25('B'), rekeyAddress: 'A' }
+        const aNoKey = { ...a, keyPairId: '' } as Algo25Account
+        const bNoKey = { ...b, keyPairId: '' } as Algo25Account
+        expect(deriveAccountLogicalType(aNoKey, [aNoKey, bNoKey])).toBe(
+            AccountLogicalTypes.Rekeyed,
+        )
+    })
+})
+
+describe('rekeyTransitionFor', () => {
+    it('returns null for a non-rekeyed account', () => {
+        const a = algo25('A')
+        expect(rekeyTransitionFor(a, [a])).toBeNull()
+    })
+
+    it('returns null for a Rekeyed account whose auth is not in the wallet', () => {
+        const original: Algo25Account = { ...algo25('A'), rekeyAddress: 'S' }
+        expect(rekeyTransitionFor(original, [original])).toBeNull()
+    })
+
+    it('returns from/to base types for a standard account rekeyed to a ledger', () => {
+        const signer = ledger('S')
+        const original: Algo25Account = { ...algo25('A'), rekeyAddress: 'S' }
+        expect(rekeyTransitionFor(original, [original, signer])).toEqual({
+            from: AccountLogicalTypes.Algo25,
+            to: AccountLogicalTypes.LedgerBle,
+        })
+    })
+
+    it('returns from/to base types for a ledger account rekeyed to a standard account', () => {
+        const signer = algo25('S')
+        const original: HardwareWalletAccount = {
+            ...ledger('A'),
+            rekeyAddress: 'S',
+        }
+        expect(rekeyTransitionFor(original, [original, signer])).toEqual({
+            from: AccountLogicalTypes.LedgerBle,
+            to: AccountLogicalTypes.Algo25,
+        })
+    })
+
+    it('reports the immediate auth account for a multi-hop chain', () => {
+        const signer = algo25('S')
+        const mid: Algo25Account = { ...algo25('B'), rekeyAddress: 'S' }
+        const original: Algo25Account = { ...algo25('A'), rekeyAddress: 'B' }
+        expect(rekeyTransitionFor(original, [original, mid, signer])).toEqual({
+            from: AccountLogicalTypes.Algo25,
+            to: AccountLogicalTypes.Algo25,
+        })
     })
 })

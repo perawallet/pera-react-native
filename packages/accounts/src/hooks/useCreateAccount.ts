@@ -28,6 +28,7 @@ import {
 import { NoHDWalletError } from '../errors'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { isHDWalletAccount } from '../utils'
 
 export const useCreateAccount = () => {
     const { network } = useNetwork()
@@ -45,8 +46,8 @@ export const useCreateAccount = () => {
     } = useKMS()
 
     const saveAndUpdateAccounts = async (newAccount: WalletAccount) => {
-        accounts.push(newAccount)
-        setAccounts([...accounts])
+        const nextAccounts = [...accounts, newAccount]
+        setAccounts(nextAccounts)
 
         if (deviceID) {
             try {
@@ -54,7 +55,7 @@ export const useCreateAccount = () => {
                     deviceId: deviceID,
                     data: {
                         platform: deviceInfo.getDevicePlatform(),
-                        accounts: accounts.map(a => a.address),
+                        accounts: nextAccounts.map(a => a.address),
                     },
                 })
             } catch (e) {
@@ -67,17 +68,39 @@ export const useCreateAccount = () => {
         walletId,
         account,
         keyIndex,
+        entropyKeyId: providedEntropyKeyId,
     }: {
         walletId?: string
         account: number
         keyIndex: number
+        /**
+         * Pass through when the caller already created the root key and has
+         * the entropyKeyId in hand (e.g. mnemonic import). Required because
+         * the import flow creates the root in `useImportAccount` *before*
+         * calling here — by the time we run, `getKey` returns the existing
+         * root and there's no store sibling to inherit from.
+         */
+        entropyKeyId?: string
     }) => {
         const rootWalletId = walletId ?? generateOrderedUniqueId()
         let rootKey = getKey(rootWalletId)
+        let entropyKeyId = providedEntropyKeyId
 
         if (!rootKey) {
             const result = await createHDWalletKey({ id: rootWalletId })
             rootKey = result.keyPair
+            entropyKeyId = entropyKeyId ?? result.entropyKeyId
+        } else if (!entropyKeyId) {
+            // Adding a new address to an existing HD wallet: createHDWalletKey
+            // is the only path that surfaces entropyKeyId from KMS, so when
+            // the root key already exists we recover it from a sibling HD
+            // account in the store. All siblings under the same keyPairId
+            // share the same entropyKeyId by construction; missing it would
+            // break mnemonic-backup grouping (each sibling deduped separately).
+            const sibling = accounts
+                .filter(isHDWalletAccount)
+                .find(a => a.keyPairId === rootWalletId && !!a.entropyKeyId)
+            entropyKeyId = sibling?.entropyKeyId
         }
 
         if (!rootKey?.id || !rootKey.keystoreKeyId) {
@@ -110,6 +133,7 @@ export const useCreateAccount = () => {
                         keystoreKeyId: derivedKeystoreKeyId,
                     },
                     keyPairId: rootWalletId,
+                    entropyKeyId,
                 } satisfies WalletAccount
             },
         )
