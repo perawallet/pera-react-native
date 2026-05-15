@@ -70,6 +70,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
             algoValue: new Decimal(100),
         },
     })),
+    isRekeyedAccount: vi.fn(() => false),
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({

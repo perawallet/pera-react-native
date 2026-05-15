@@ -47,7 +47,7 @@ export const EditContactScreen = () => {
         enabled: true,
         right: (
             <PWButton
-                variant='link'
+                variant='linkPositive'
                 title={t('contacts.edit_contact.done')}
                 onPress={handleSubmit(save)}
                 isDisabled={!isValid}

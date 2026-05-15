@@ -25,6 +25,15 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         software: 'software',
         hardware: 'hardware',
     },
+    AccountLogicalTypes: {
+        Algo25: 'Algo25',
+        HdKey: 'HdKey',
+        LedgerBle: 'LedgerBle',
+        Multisig: 'Multisig',
+        Rekeyed: 'Rekeyed',
+        RekeyedAuth: 'RekeyedAuth',
+        NoAuth: 'NoAuth',
+    },
     isMultisigAccount: () => false,
 }))
 

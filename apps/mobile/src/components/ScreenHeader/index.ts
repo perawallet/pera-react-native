@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { SwapConfigurationContent } from './SwapConfigurationContent'
-export type { SwapConfigurationContentProps } from './SwapConfigurationContent'
+export { ScreenHeader } from './ScreenHeader'
+export type { ScreenHeaderProps } from './ScreenHeader'

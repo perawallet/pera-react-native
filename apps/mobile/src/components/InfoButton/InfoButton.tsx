@@ -11,7 +11,7 @@
  */
 
 import { PWIcon, PWIconSize, PWTouchableOpacity } from '@components/core'
-import { PropsWithChildren } from 'react'
+import { ReactNode, PropsWithChildren } from 'react'
 import { useStyles } from './styles'
 import { useInfoButton } from './useInfoButton'
 
@@ -19,12 +19,20 @@ export type InfoButtonProps = {
     variant?: 'primary' | 'secondary' | 'error'
     size?: PWIconSize
     title?: string
+    /**
+     * Optional content rendered inside the trigger touchable, before the
+     * info icon. Use this to extend the tappable hit area to wrap adjacent
+     * label/value content (e.g. an "Account type — Universal Wallet (i)"
+     * cluster where the whole row should open the explainer sheet).
+     */
+    trigger?: ReactNode
 } & PropsWithChildren
 
 export const InfoButton = ({
     variant = 'secondary',
     size = 'sm',
     title,
+    trigger,
     children,
 }: InfoButtonProps) => {
     const styles = useStyles()
@@ -32,10 +40,11 @@ export const InfoButton = ({
 
     return (
         <PWTouchableOpacity
-            style={styles.iconContainer}
+            style={trigger ? styles.triggerContainer : styles.iconContainer}
             onPress={openInfo}
             testID='info-button'
         >
+            {trigger}
             <PWIcon
                 name='info'
                 variant={variant}

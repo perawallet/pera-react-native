@@ -12,7 +12,6 @@
 
 import { useCallback, useLayoutEffect } from 'react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type { Optional } from '@perawallet/wallet-core-shared'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useReceiveFunds } from '@modules/transactions/hooks'
 
@@ -21,7 +20,7 @@ type UseReceiveFundsContentResult = {
 }
 
 export const useReceiveFundsContent = (
-    account: Optional<WalletAccount>,
+    account: WalletAccount | undefined,
 ): UseReceiveFundsContentResult => {
     const {
         canSelectAccount,

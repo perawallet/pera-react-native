@@ -22,7 +22,7 @@ import {
     useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
 import {
-    getAccountDisplayName,
+    isSigningLogicalType,
     useAllAccountLogicalTypes,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
@@ -307,16 +307,32 @@ export const usePeraWebviewInterface = (
                     webview,
                 },
                 () => {
-                    const payload = accounts.map(a => ({
-                        name: getAccountDisplayName(a),
-                        address: a.address,
-                        type: logicalTypes.get(a.address) ?? 'NoAuth',
-                    }))
+                    // Match Android's `GetAuthorizedAddressesInfoWebMessages`:
+                    // 1. Only signable accounts — drops Watch / Rekeyed-no-auth
+                    //    so the user can't pick a non-funding-eligible account.
+                    // 2. Send raw `account.name` (empty string when none). The
+                    //    webapp owns the truncated-address fallback; sending
+                    //    the truncated address as both name AND address (via
+                    //    getAccountDisplayName) made the webapp render the
+                    //    same string twice in its list rows.
+                    // Ordering is the consumer's responsibility — Pera Connect
+                    // sorts on its side based on its own UX needs.
+                    const payload = accounts
+                        .map(account => ({
+                            account,
+                            type: logicalTypes.get(account.address) ?? 'NoAuth',
+                        }))
+                        .filter(({ type }) => isSigningLogicalType(type))
+                        .map(({ account, type }) => ({
+                            name: account.name ?? '',
+                            address: account.address,
+                            type,
+                        }))
                     sendMessageToWebview(message.id, payload, webview)
                 },
             )
         },
-        [securedConnection, sourceUrl, accounts, webview],
+        [securedConnection, sourceUrl, accounts, logicalTypes, webview],
     )
 
     const getSettings = useCallback(
@@ -445,7 +461,17 @@ export const usePeraWebviewInterface = (
                 },
             )
         },
-        [securedConnection, sourceUrl, webview],
+        [
+            securedConnection,
+            sourceUrl,
+            webview,
+            hadRequiredParams,
+            decodeTransactions,
+            encodeSignedTransaction,
+            addSignRequest,
+            showToast,
+            t,
+        ],
     )
 
     //TODO handle arc60 here
@@ -535,7 +561,15 @@ export const usePeraWebviewInterface = (
                 },
             )
         },
-        [securedConnection, sourceUrl, webview],
+        [
+            securedConnection,
+            sourceUrl,
+            webview,
+            hadRequiredParams,
+            addSignRequest,
+            showToast,
+            t,
+        ],
     )
 
     const getPublicSettings = useCallback(
@@ -686,6 +720,11 @@ export const usePeraWebviewInterface = (
             onBackPressed,
             logAnalyticsEvent,
             closeWebView,
+            requestTransactionSigning,
+            requestDataSigning,
+            openWalletConnect,
+            webview,
+            t,
         ],
     )
 

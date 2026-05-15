@@ -82,7 +82,7 @@ export const Arc60DataSigningSummaryView = ({
             <PWView style={styles.detailsContainer}>
                 <PWButton
                     title={t('signing.arc60_view.show_details')}
-                    variant='link'
+                    variant='linkPositive'
                     paddingStyle='dense'
                     onPress={onDetailsPress}
                 />

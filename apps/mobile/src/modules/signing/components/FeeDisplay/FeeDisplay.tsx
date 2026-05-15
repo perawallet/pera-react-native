@@ -72,7 +72,7 @@ export const FeeDisplay = ({ transaction, label }: FeeDisplayProps) => {
             </PWView>
             {!!transaction && (
                 <PWButton
-                    variant='link'
+                    variant='linkPositive'
                     style={styles.transactionDetails}
                     paddingStyle='none'
                     title={t('signing.view_details')}

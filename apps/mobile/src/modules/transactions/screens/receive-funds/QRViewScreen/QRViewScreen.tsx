@@ -14,7 +14,7 @@ import { useWindowDimensions } from 'react-native'
 import { useTheme } from '@rneui/themed'
 import QRCode from 'react-native-qrcode-svg'
 
-import { PWButton, PWIcon, PWText, PWView } from '@components/core'
+import { PWButton, PWText, PWView } from '@components/core'
 import { CopyableText } from '@components/CopyableText'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
@@ -30,23 +30,22 @@ export const QRViewScreen = () => {
     const styles = useStyles()
     const { width } = useWindowDimensions()
     const { theme } = useTheme()
-    const { canSelectAccount, onFinished } = useReceiveFunds()
-    const {
-        account,
-        deeplink,
-        handleCopyAddress,
-        handleShareAddress,
-        handleBack,
-    } = useQRViewScreen(onFinished)
+    const { onFinished } = useReceiveFunds()
+    const { account, deeplink, handleCopyAddress, handleShareAddress } =
+        useQRViewScreen()
 
     useNavigationHeader({
-        left: (
-            <PWIcon
-                name={canSelectAccount ? 'chevron-left' : 'cross'}
-                onPress={handleBack}
-            />
+        left: null,
+        title: account ? (
+            <PWText
+                variant='h3'
+                numberOfLines={1}
+            >
+                {getAccountDisplayName(account)}
+            </PWText>
+        ) : (
+            ''
         ),
-        title: account ? getAccountDisplayName(account) : '',
     })
 
     if (!account) {
@@ -76,9 +75,6 @@ export const QRViewScreen = () => {
                     />
                 </PWView>
                 <PWView style={styles.addressContainer}>
-                    <PWText variant='h3'>
-                        {getAccountDisplayName(account)}
-                    </PWText>
                     <CopyableText copyValue={account.address}>
                         <PWText style={styles.address}>
                             {account.address}

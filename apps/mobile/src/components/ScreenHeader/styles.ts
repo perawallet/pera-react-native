@@ -10,5 +10,15 @@
  limitations under the License
  */
 
-export { SwapConfigurationContent } from './SwapConfigurationContent'
-export type { SwapConfigurationContentProps } from './SwapConfigurationContent'
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(theme => ({
+    container: {
+        gap: theme.spacing.md,
+        paddingHorizontal: theme.spacing.xl,
+        paddingBottom: theme.spacing.xl,
+    },
+    description: {
+        color: theme.colors.textGray,
+    },
+}))

@@ -28,9 +28,14 @@ export type TypographyVariant =
     | 'h3'
     | 'h4'
     | 'body'
+    | 'bodyLarge'
+    | 'bodyLargeMedium'
     | 'bodyCompact'
     | 'bodySemibold'
+    | 'footnoteMedium'
     | 'caption'
+    | 'captionMedium'
+    | 'captionSmall'
     | 'link'
     | 'linkPositive'
     | 'mono'
@@ -75,6 +80,20 @@ export const getTypography = (
             color: theme.colors.textMain,
             fontWeight: 400,
         },
+        bodyLarge: {
+            fontFamily: getFontFamily(400),
+            fontSize: 15,
+            lineHeight: 24,
+            color: theme.colors.textMain,
+            fontWeight: 400,
+        },
+        bodyLargeMedium: {
+            fontFamily: getFontFamily(500),
+            fontSize: 15,
+            lineHeight: 24,
+            color: theme.colors.textMain,
+            fontWeight: 500,
+        },
         bodyCompact: {
             fontFamily: getFontFamily(400),
             fontSize: 13,
@@ -89,12 +108,33 @@ export const getTypography = (
             color: theme.colors.textMain,
             fontWeight: 600,
         },
+        footnoteMedium: {
+            fontFamily: getFontFamily(500),
+            fontSize: 13,
+            lineHeight: 20,
+            color: theme.colors.textMain,
+            fontWeight: 500,
+        },
         caption: {
             fontFamily: getFontFamily(400),
             fontSize: 11,
             lineHeight: 24,
             color: theme.colors.textMain,
             fontWeight: 400,
+        },
+        captionMedium: {
+            fontFamily: getFontFamily(500),
+            fontSize: 11,
+            lineHeight: 16,
+            color: theme.colors.textMain,
+            fontWeight: 500,
+        },
+        captionSmall: {
+            fontFamily: getFontFamily(500),
+            fontSize: 9,
+            lineHeight: 12,
+            color: theme.colors.textMain,
+            fontWeight: 500,
         },
         link: {
             fontFamily: getFontFamily(500),

@@ -13,7 +13,6 @@
 import type { ComponentType } from 'react'
 
 import type { BottomSheetRegistry } from '../types'
-import { Optional } from '@perawallet/wallet-core-shared'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const entries = new Map<string, ComponentType<any>>()
@@ -28,7 +27,7 @@ export const registerBottomSheet = <K extends keyof BottomSheetRegistry>(
 export const getRegisteredBottomSheet = (
     type: string,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-): Optional<ComponentType<any>> => {
+): ComponentType<any> | undefined => {
     return entries.get(type)
 }
 

@@ -1962,6 +1962,9 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     formatNumber: vi.fn(value => String(value)),
     generateUniqueId: vi.fn(() => 'mock-uuid'),
     generateOrderedUniqueId: vi.fn(() => 'mock-time-uuid'),
+    toError: vi.fn((e: unknown) =>
+        e instanceof Error ? e : new Error(String(e)),
+    ),
     AppError: class AppError extends Error {
         constructor(message: string) {
             super(message)
@@ -2243,6 +2246,15 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             hardware: 'hardware',
             multisig: 'multisig',
             watch: 'watch',
+        },
+        AccountLogicalTypes: {
+            Algo25: 'Algo25',
+            HdKey: 'HdKey',
+            LedgerBle: 'LedgerBle',
+            Multisig: 'Multisig',
+            Rekeyed: 'Rekeyed',
+            RekeyedAuth: 'RekeyedAuth',
+            NoAuth: 'NoAuth',
         },
         useOwnedAssets: vi.fn(() => ({
             assets: [],

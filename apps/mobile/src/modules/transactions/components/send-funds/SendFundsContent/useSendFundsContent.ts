@@ -18,7 +18,6 @@ import {
     isPureNft,
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
-import type { Optional } from '@perawallet/wallet-core-shared'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useSendFunds } from '@modules/transactions/hooks'
 
@@ -28,7 +27,7 @@ type UseSendFundsContentResult = {
 }
 
 export const useSendFundsContent = (
-    assetId: Optional<string>,
+    assetId: string | undefined,
 ): UseSendFundsContentResult => {
     const selectedAccount = useSelectedAccount()
     const {

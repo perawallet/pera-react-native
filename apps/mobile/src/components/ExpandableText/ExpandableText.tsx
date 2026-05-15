@@ -43,7 +43,7 @@ export const ExpandableText = ({
                 <PWButton
                     title={isExpanded ? 'Show less' : 'Show more'}
                     onPress={() => setIsExpanded(!isExpanded)}
-                    variant='link'
+                    variant='linkPositive'
                 />
             )}
         </>

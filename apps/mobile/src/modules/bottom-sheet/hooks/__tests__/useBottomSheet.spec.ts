@@ -12,7 +12,6 @@
 
 import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, beforeEach } from 'vitest'
-import type { Optional } from '@perawallet/wallet-core-shared'
 import { useBottomSheetStore } from '../../store/bottomSheetStore'
 import { useBottomSheet } from '../useBottomSheet'
 
@@ -31,7 +30,7 @@ describe('useBottomSheet', () => {
 
     it('request() pushes onto the store and returns a promise', () => {
         const { result } = renderHook(() => useBottomSheet())
-        let promise: Optional<Promise<unknown>>
+        let promise: Promise<unknown> | undefined
         act(() => {
             promise = result.current.request({ contents: 'A' })
         })

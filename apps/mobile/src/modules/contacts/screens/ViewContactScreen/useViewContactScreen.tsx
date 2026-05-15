@@ -18,11 +18,10 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { ContactQRContent } from '@modules/contacts/components/ContactQRContent'
 import { shareText } from '@utils/shareText'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { Maybe, Optional } from '@perawallet/wallet-core-shared'
 
 export type UseViewContactScreenResult = {
-    selectedContact: Maybe<Contact>
-    nfdName: Optional<string>
+    selectedContact: Contact | null | undefined
+    nfdName: string | undefined
     openQR: () => void
     goToEdit: () => void
     handleShare: () => Promise<void>

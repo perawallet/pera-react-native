@@ -132,6 +132,14 @@ vi.mock('@assets/images/eye-inverted.svg', () => {
             React.createElement('div', { ...props, 'data-testid': 'SvgIcon' }),
     }
 })
+// Check glyph rendered on the rekey success screens.
+vi.mock('@assets/icons/check.svg', () => {
+    const React = require('react')
+    return {
+        default: (props: Record<string, unknown>) =>
+            React.createElement('div', { ...props, 'data-testid': 'SvgIcon' }),
+    }
+})
 
 // `expo-modules-core` references the React-Native `__DEV__` global at
 // module-load time (in `setUpJsLogger.fx.ts`). Under jsdom this is

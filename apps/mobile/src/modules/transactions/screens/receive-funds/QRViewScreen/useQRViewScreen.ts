@@ -23,28 +23,20 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useReceiveFunds } from '@modules/transactions/hooks'
-import { ReceiveFundsStackParamList } from '@modules/transactions/routes/receive-funds/types'
-import { StackNavigationProp } from '@react-navigation/stack'
-import { useNavigation } from '@react-navigation/native'
 
 type UseQRViewScreenResult = {
     account?: WalletAccount
     deeplink: string
-    handleBack: () => void
     handleCopyAddress: () => void
     handleShareAddress: () => Promise<void>
 }
 
-export const useQRViewScreen = (
-    onFinished?: () => void,
-): UseQRViewScreenResult => {
-    const { selectedAccount, canSelectAccount } = useReceiveFunds()
+export const useQRViewScreen = (): UseQRViewScreenResult => {
+    const { selectedAccount } = useReceiveFunds()
     const { t } = useLanguage()
     const { showError } = useErrorToast()
     const { copyToClipboard } = useClipboard()
     const { buildAccountDeeplink } = useDeepLink()
-    const navigation =
-        useNavigation<StackNavigationProp<ReceiveFundsStackParamList>>()
 
     const deeplink = useMemo(() => {
         if (!selectedAccount) {
@@ -56,14 +48,6 @@ export const useQRViewScreen = (
     const handleCopyAddress = useCallback(() => {
         copyToClipboard(selectedAccount?.address ?? '')
     }, [copyToClipboard, selectedAccount?.address])
-
-    const handleBack = useCallback(() => {
-        if (canSelectAccount) {
-            navigation.goBack()
-        } else {
-            onFinished?.()
-        }
-    }, [canSelectAccount, navigation, onFinished])
 
     const handleShareAddress = useCallback(async () => {
         try {
@@ -84,7 +68,6 @@ export const useQRViewScreen = (
     return {
         account: selectedAccount,
         deeplink,
-        handleBack,
         handleCopyAddress,
         handleShareAddress,
     }

@@ -10,5 +10,11 @@
  limitations under the License
  */
 
-export { SwapConfigurationContent } from './SwapConfigurationContent'
-export type { SwapConfigurationContentProps } from './SwapConfigurationContent'
+import { useTheme } from '@rneui/themed'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+
+export const useBottomSafeAreaPadding = (): number => {
+    const insets = useSafeAreaInsets()
+    const { theme } = useTheme()
+    return insets.bottom + theme.spacing.lg
+}

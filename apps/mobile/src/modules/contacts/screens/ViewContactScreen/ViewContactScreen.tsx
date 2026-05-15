@@ -16,7 +16,6 @@ import { PWText, PWTouchableIcon, PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { ContactAvatar } from '@components/ContactAvatar'
 import { EmptyView } from '@components/EmptyView'
-import { SHORT_ADDRESS_FORMAT } from '@constants/ui'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { useViewContactScreen } from './useViewContactScreen'
@@ -73,10 +72,7 @@ export const ViewContactScreen = () => {
                     variant='body'
                     style={styles.shortAddress}
                 >
-                    {truncateAlgorandAddress(
-                        selectedContact.address,
-                        SHORT_ADDRESS_FORMAT,
-                    )}
+                    {truncateAlgorandAddress(selectedContact.address)}
                 </PWText>
             </PWView>
             <PWView style={styles.divider} />

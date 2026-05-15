@@ -89,10 +89,20 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     isValidAlgorandAddress: vi.fn(() => false),
 }))
 
+const SIGNING_LOGICAL_TYPES = new Set([
+    'HdKey',
+    'Algo25',
+    'LedgerBle',
+    'LedgerUsb',
+    'Multisig',
+])
+
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    getAccountDisplayName: vi.fn(account => account.name),
     isHDWalletAccount: vi.fn(account => account.type === 'standard'),
     isRekeyedAccount: vi.fn(() => false),
+    isSigningLogicalType: vi.fn((type: string) =>
+        SIGNING_LOGICAL_TYPES.has(type),
+    ),
     useAllAccounts: vi.fn(() => [
         {
             address: 'addr1',
@@ -434,6 +444,131 @@ describe('usePeraWebviewInterface', () => {
         expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
             expect.stringContaining('"address":"addr1"'),
         )
+    })
+
+    describe('getAddresses payload (Android parity)', () => {
+        const setupAccountsMock = async (config: {
+            accounts: Array<{ address: string; name?: string; type: string }>
+            types: Map<string, string>
+        }) => {
+            const accounts = await import('@perawallet/wallet-core-accounts')
+            vi.mocked(accounts.useAllAccounts).mockReturnValue(
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                config.accounts as any,
+            )
+            vi.mocked(accounts.useAllAccountLogicalTypes).mockReturnValue(
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                config.types as any,
+            )
+        }
+
+        const getPayload = (): Array<{
+            name: string
+            address: string
+            type: string
+        }> => {
+            const calls = mockWebview.injectJavaScript.mock.calls as Array<
+                [string]
+            >
+            const last = calls[calls.length - 1][0]
+            const match = last.match(/"result":(\[[^\]]*\])/)
+            if (!match) {
+                throw new Error(`No result payload in: ${last}`)
+            }
+            return JSON.parse(match[1])
+        }
+
+        it('drops non-signing accounts (Watch, NoAuth)', async () => {
+            await setupAccountsMock({
+                accounts: [
+                    { address: 'signer', name: 'Signer', type: 'standard' },
+                    { address: 'watch', name: 'Watch', type: 'standard' },
+                    { address: 'noauth', name: 'NoAuth', type: 'standard' },
+                ],
+                types: new Map([
+                    ['signer', 'HdKey'],
+                    ['watch', 'NoAuth'],
+                    ['noauth', 'NoAuth'],
+                ]),
+            })
+
+            const { result } = renderHook(() =>
+                usePeraWebviewInterface(mockWebview, true, null),
+            )
+
+            act(() => {
+                result.current.handleMessage({
+                    id: 'ga-filter',
+                    jsonrpc: '2.0',
+                    method: 'getAddresses',
+                    params: {},
+                })
+            })
+
+            const payload = getPayload()
+            expect(payload).toHaveLength(1)
+            expect(payload[0].address).toBe('signer')
+        })
+
+        it('preserves store order — ordering is the consumer-side concern', async () => {
+            await setupAccountsMock({
+                accounts: [
+                    { address: 'first', name: 'First', type: 'standard' },
+                    { address: 'second', name: 'Second', type: 'standard' },
+                    { address: 'third', name: 'Third', type: 'standard' },
+                ],
+                types: new Map([
+                    ['first', 'HdKey'],
+                    ['second', 'HdKey'],
+                    ['third', 'HdKey'],
+                ]),
+            })
+
+            const { result } = renderHook(() =>
+                usePeraWebviewInterface(mockWebview, true, null),
+            )
+
+            act(() => {
+                result.current.handleMessage({
+                    id: 'ga-order',
+                    jsonrpc: '2.0',
+                    method: 'getAddresses',
+                    params: {},
+                })
+            })
+
+            const payload = getPayload()
+            expect(payload.map(p => p.address)).toEqual([
+                'first',
+                'second',
+                'third',
+            ])
+        })
+
+        it('sends empty name string when account has no name', async () => {
+            await setupAccountsMock({
+                accounts: [{ address: 'nameless', type: 'standard' }],
+                types: new Map([['nameless', 'HdKey']]),
+            })
+
+            const { result } = renderHook(() =>
+                usePeraWebviewInterface(mockWebview, true, null),
+            )
+
+            act(() => {
+                result.current.handleMessage({
+                    id: 'ga-name',
+                    jsonrpc: '2.0',
+                    method: 'getAddresses',
+                    params: {},
+                })
+            })
+
+            const payload = getPayload()
+            expect(payload).toEqual([
+                { name: '', address: 'nameless', type: 'HdKey' },
+            ])
+        })
     })
 
     it('should handle onBackPressed action', () => {

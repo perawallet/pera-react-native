@@ -77,6 +77,7 @@ import ReloadIcon from '@assets/icons/reload.svg'
 import PhoneIcon from '@assets/icons/phone.svg'
 import PhoneBluetoothIcon from '@assets/icons/phone-bluetooth.svg'
 import SaveIcon from '@assets/icons/save.svg'
+import ScanIcon from '@assets/icons/scan.svg'
 import ShareIcon from '@assets/icons/share.svg'
 import ShieldCheckIcon from '@assets/icons/shield-check.svg'
 import SlidersIcon from '@assets/icons/sliders.svg'
@@ -108,6 +109,7 @@ import DarkLedgerAccountIcon from '@assets/icons/accounts/dark/ledger-account.sv
 import DarkMultisigAccountIcon from '@assets/icons/accounts/dark/multisig-account.svg'
 import DarkRekeyedStandardIcon from '@assets/icons/accounts/dark/rekeyed-standard.svg'
 import DarkRekeyedLedgerIcon from '@assets/icons/accounts/dark/rekeyed-ledger.svg'
+import DarkRekeyedMultisigIcon from '@assets/icons/accounts/dark/rekeyed-multisig.svg'
 import DarkNoAuthIcon from '@assets/icons/accounts/dark/noauth-account.svg'
 import DarkUnknownAccountIcon from '@assets/icons/accounts/dark/unknown-account.svg'
 import DarkWatchAccountIcon from '@assets/icons/accounts/dark/watch-account.svg'
@@ -117,6 +119,7 @@ import LightLedgerAccountIcon from '@assets/icons/accounts/light/ledger-account.
 import LightMultisigAccountIcon from '@assets/icons/accounts/light/multisig-account.svg'
 import LightRekeyedStandardIcon from '@assets/icons/accounts/light/rekeyed-standard.svg'
 import LightRekeyedLedgerIcon from '@assets/icons/accounts/light/rekeyed-ledger.svg'
+import LightRekeyedMultisigIcon from '@assets/icons/accounts/light/rekeyed-multisig.svg'
 import LightNoAuthIcon from '@assets/icons/accounts/light/noauth-account.svg'
 import LightUnknownAccountIcon from '@assets/icons/accounts/light/unknown-account.svg'
 import LightWatchAccountIcon from '@assets/icons/accounts/light/watch-account.svg'
@@ -214,6 +217,7 @@ export const ICON_LIBRARY = {
     phone: PhoneIcon,
     'phone-bluetooth': PhoneBluetoothIcon,
     save: SaveIcon,
+    scan: ScanIcon,
     share: ShareIcon,
     'shield-check': ShieldCheckIcon,
     sliders: SlidersIcon,
@@ -242,6 +246,7 @@ export const ICON_LIBRARY = {
     'accounts/dark/multisig-account': DarkMultisigAccountIcon,
     'accounts/dark/rekeyed-standard': DarkRekeyedStandardIcon,
     'accounts/dark/rekeyed-ledger': DarkRekeyedLedgerIcon,
+    'accounts/dark/rekeyed-multisig': DarkRekeyedMultisigIcon,
     'accounts/dark/noauth-account': DarkNoAuthIcon,
     'accounts/dark/unknown-account': DarkUnknownAccountIcon,
     'accounts/dark/watch-account': DarkWatchAccountIcon,
@@ -251,6 +256,7 @@ export const ICON_LIBRARY = {
     'accounts/light/multisig-account': LightMultisigAccountIcon,
     'accounts/light/rekeyed-standard': LightRekeyedStandardIcon,
     'accounts/light/rekeyed-ledger': LightRekeyedLedgerIcon,
+    'accounts/light/rekeyed-multisig': LightRekeyedMultisigIcon,
     'accounts/light/noauth-account': LightNoAuthIcon,
     'accounts/light/unknown-account': LightUnknownAccountIcon,
     'accounts/light/watch-account': LightWatchAccountIcon,

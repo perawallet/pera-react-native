@@ -31,7 +31,6 @@ import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SigningStackParamList } from '@modules/signing/routes'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { usePreferences } from '@perawallet/wallet-core-settings'
-import { type Optional } from '@perawallet/wallet-core-shared'
 import { UserPreferences } from '@constants/user-preferences'
 import {
     SecurityGuardContent,
@@ -44,7 +43,7 @@ export type UseSigningActionButtonsResult = {
     handleReject: () => void
     isLoading: boolean
     hasMultipleTransactions: boolean
-    currentRequest: Optional<SignRequest>
+    currentRequest: SignRequest | undefined
     isMultisigCosign: boolean
     cosignSignerAddress: string
 }

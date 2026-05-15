@@ -21,7 +21,6 @@ import {
 } from '../SignerStatusListItem'
 import { usePendingSignaturesContent } from './usePendingSignaturesContent'
 import { useStyles } from './styles'
-import { Optional } from '@perawallet/wallet-core-shared'
 
 export type PendingSignaturesContentProps = Record<string, never>
 
@@ -47,7 +46,7 @@ export const PendingSignaturesContent = () => {
         handleCancel,
     } = usePendingSignaturesContent()
 
-    const getSignerAction = (signer: SignerRow): Optional<SignerAction> => {
+    const getSignerAction = (signer: SignerRow): SignerAction | undefined => {
         if (!signer.canSignAsHardware && !signer.isSigning) return undefined
         return {
             label: t('multisig.pending_signatures.sign'),
