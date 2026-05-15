@@ -22,6 +22,7 @@ import type {
 import { HardwareWalletError } from '../../../pipeline/errors'
 import { createHardwareStrategy } from '../../../pipeline/signing/createHardwareStrategy'
 import type { EncodeTransactionFunction } from '../../../pipeline/signing/createHardwareStrategy'
+import { resolveSigningAccount } from '../../utils/resolveSigningAccount'
 
 export type HardwareSignerActorInput = {
     groups: AnalyzedSignableGroup[]
@@ -57,13 +58,29 @@ export const hardwareSignerActor = fromPromise<
             a => a.address === group.signerAddress,
         )
 
-        if (!signerAccount || !isHardwareWalletAccount(signerAccount)) {
+        if (!signerAccount) {
+            throw new HardwareWalletError('signer_not_found')
+        }
+
+        // Resolve the account whose key actually produces the signature.
+        // For a rekeyed account this follows the rekey chain to the auth
+        // account (so Ledger→Ledger rekeys sign with the AUTH device, not
+        // the now-unauthorized source), while multisig-cosign participants
+        // keep signing with their own key. Shared with localKeySignerActor
+        // via resolveSigningAccount so signer routing stays in lockstep.
+        const accountForSigning = resolveSigningAccount(
+            signerAccount,
+            group.source,
+            allAccounts,
+        )
+
+        if (!isHardwareWalletAccount(accountForSigning)) {
             throw new HardwareWalletError('signer_not_found')
         }
 
         const result = await strategy.sign(
             group,
-            signerAccount,
+            accountForSigning,
             input.callbacks,
         )
         results.push(result)
