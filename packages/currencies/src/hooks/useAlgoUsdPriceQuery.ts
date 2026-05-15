@@ -14,10 +14,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import { eq, and } from 'drizzle-orm'
 import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
-import {
-    decimalColumn,
-    getDatabase,
-} from '@perawallet/wallet-core-database'
+import { decimalColumn, getDatabase } from '@perawallet/wallet-core-database'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { currencyQueryKeys } from './querykeys'
 
