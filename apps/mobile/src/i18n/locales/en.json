@@ -1037,6 +1037,10 @@
                 "body": "Enter the 12-word recovery key that was generated when the Algorand Secure Backup file was created.",
                 "continue": "Continue",
                 "decrypting": "Unlocking your backup…",
+                "too_many_words_title": "Invalid recovery key",
+                "too_many_words_body": "The recovery key you pasted contains too many words.",
+                "insufficient_slots_title": "Invalid recovery key",
+                "insufficient_slots_body": "The recovery key you pasted does not fit in the remaining slots.",
                 "errors": {
                     "title": "Backup could not be unlocked",
                     "empty_file": "The backup file is empty.",

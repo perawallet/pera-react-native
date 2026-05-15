@@ -14,6 +14,7 @@ import React from 'react'
 
 import { useTheme } from '@rneui/themed'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useHeaderHeight } from '@react-navigation/elements'
 
 import {
     PWButton,
@@ -25,16 +26,21 @@ import {
     PWView,
 } from '@components/core'
 
-import { KeyboardAvoidingView } from 'react-native'
+import { KeyboardAvoidingView, Platform } from 'react-native'
 import { useStyles } from './styles'
 import { useImportAccountScreen } from './useImportAccountScreen'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
+import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
 import { QRScannerView } from '@components/QRScannerView'
-import { WordSuggestionDropdown } from './WordSuggestionDropdown'
+import { MnemonicSuggestionBar } from '@modules/onboarding/components/MnemonicSuggestionBar'
+
+const SCREEN_CAPTURE_TAG = 'import-account-mnemonic'
 
 export const ImportAccountScreen = () => {
+    usePreventScreenCapture(SCREEN_CAPTURE_TAG)
     const { theme } = useTheme()
     const insets = useSafeAreaInsets()
+    const headerHeight = useHeaderHeight()
     const {
         words,
         focused,
@@ -45,8 +51,6 @@ export const ImportAccountScreen = () => {
         handleImportAccount,
         mnemonicLength,
         t,
-        isKeyboardVisible,
-        keyboardHeight,
         handleOpenSupportOptions,
         isQRScannerVisible,
         handleCloseQRScanner,
@@ -55,7 +59,7 @@ export const ImportAccountScreen = () => {
         handleSelectSuggestion,
         refCallbacks,
     } = useImportAccountScreen()
-    const styles = useStyles({ insets, isKeyboardVisible, keyboardHeight })
+    const styles = useStyles(insets)
 
     const wordsPerColumn = Math.ceil(mnemonicLength / 2)
 
@@ -70,7 +74,11 @@ export const ImportAccountScreen = () => {
 
     return (
         <PWView style={styles.mainContainer}>
-            <KeyboardAvoidingView style={styles.mainContainer}>
+            <KeyboardAvoidingView
+                style={styles.mainContainer}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={headerHeight}
+            >
                 <PWScrollView
                     style={styles.scrollContainer}
                     contentContainerStyle={styles.scrollView}
@@ -173,16 +181,6 @@ export const ImportAccountScreen = () => {
                                                             />
                                                         </PWView>
                                                     </PWView>
-                                                    {isFocused && (
-                                                        <WordSuggestionDropdown
-                                                            suggestions={
-                                                                suggestions
-                                                            }
-                                                            onSelectSuggestion={
-                                                                handleSelectSuggestion
-                                                            }
-                                                        />
-                                                    )}
                                                 </React.Fragment>
                                             )
                                         })}
@@ -191,6 +189,12 @@ export const ImportAccountScreen = () => {
                         })}
                     </PWView>
                 </PWScrollView>
+
+                <MnemonicSuggestionBar
+                    suggestions={suggestions}
+                    onSelectSuggestion={handleSelectSuggestion}
+                    testIDPrefix='suggestion'
+                />
 
                 <PWView style={styles.footer}>
                     <PWButton

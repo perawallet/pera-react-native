@@ -24,8 +24,6 @@ export type UseImportAccountScreenResult = {
     handleImportAccount: () => void
     mnemonicLength: number
     t: (key: string) => string
-    isKeyboardVisible: boolean
-    keyboardHeight: number
     handleOpenSupportOptions: () => void
     isQRScannerVisible: boolean
     handleCloseQRScanner: () => void

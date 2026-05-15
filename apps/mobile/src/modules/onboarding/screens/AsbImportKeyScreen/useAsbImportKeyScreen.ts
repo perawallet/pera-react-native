@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
     ASB_RECOVERY_MNEMONIC_WORD_COUNT,
     AsbErrorReason,
@@ -22,7 +22,10 @@ import { MNEMONIC_WORDLIST } from '@perawallet/wallet-core-kms'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
-import { useAsbImportFlowStore } from '@modules/onboarding/hooks'
+import {
+    useAsbImportFlowStore,
+    useMnemonicWordEntry,
+} from '@modules/onboarding/hooks'
 
 type UseAsbImportKeyScreenResult = {
     words: string[]
@@ -32,13 +35,12 @@ type UseAsbImportKeyScreenResult = {
     suggestions: string[]
     wordCount: number
     setFocused: (index: number) => void
-    handleWordChange: (value: string, index: number) => void
+    handleWordChange: (value: string, index: number) => Promise<void>
     handleSelectSuggestion: (suggestion: string) => void
     handleContinue: () => Promise<void>
 }
 
 const WORDLIST_SET = new Set(MNEMONIC_WORDLIST)
-const MAX_SUGGESTIONS = 4
 
 export const useAsbImportKeyScreen = (): UseAsbImportKeyScreenResult => {
     const navigation = useAppNavigation()
@@ -47,11 +49,46 @@ export const useAsbImportKeyScreen = (): UseAsbImportKeyScreenResult => {
     const envelope = useAsbImportFlowStore(state => state.envelope)
     const setPayload = useAsbImportFlowStore(state => state.setPayload)
 
-    const [words, setWords] = useState<string[]>(
-        new Array(ASB_RECOVERY_MNEMONIC_WORD_COUNT).fill(''),
-    )
-    const [focused, setFocused] = useState(0)
     const [isProcessing, setIsProcessing] = useState(false)
+
+    // The flow store is wiped after a successful import (and on backgrounding,
+    // for the decrypted payload). If the user navigates back into this screen
+    // afterwards — Android system back from the Result screen, for example —
+    // there's no envelope to decrypt against, so the screen is non-functional.
+    // Redirect them back to the file-pick step instead of leaving Continue
+    // silently no-op'ing.
+    useEffect(() => {
+        if (!envelope) {
+            navigation.replace('AsbImportBackup')
+        }
+    }, [envelope, navigation])
+
+    const onTooManyWords = useCallback(() => {
+        errorToast(
+            t('onboarding.asb_import.key.too_many_words_title'),
+            t('onboarding.asb_import.key.too_many_words_body'),
+        )
+    }, [errorToast, t])
+
+    const onInsufficientSlots = useCallback(() => {
+        errorToast(
+            t('onboarding.asb_import.key.insufficient_slots_title'),
+            t('onboarding.asb_import.key.insufficient_slots_body'),
+        )
+    }, [errorToast, t])
+
+    const {
+        words,
+        focused,
+        suggestions,
+        setFocused,
+        handleWordChange,
+        handleSelectSuggestion,
+    } = useMnemonicWordEntry({
+        wordCount: ASB_RECOVERY_MNEMONIC_WORD_COUNT,
+        onTooManyWords,
+        onInsufficientSlots,
+    })
 
     const trimmedWords = useMemo(
         () => words.map(w => w.trim().toLowerCase()),
@@ -63,37 +100,6 @@ export const useAsbImportKeyScreen = (): UseAsbImportKeyScreenResult => {
             trimmedWords.every(w => w.length > 0 && WORDLIST_SET.has(w)) &&
             !isProcessing,
         [trimmedWords, isProcessing],
-    )
-
-    const suggestions = useMemo(() => {
-        const current = trimmedWords[focused]
-        if (!current || current.length < 2) return []
-        return MNEMONIC_WORDLIST.filter(w => w.startsWith(current)).slice(
-            0,
-            MAX_SUGGESTIONS,
-        )
-    }, [trimmedWords, focused])
-
-    const handleWordChange = useCallback((value: string, index: number) => {
-        setWords(prev => {
-            const next = [...prev]
-            next[index] = value
-            return next
-        })
-    }, [])
-
-    const handleSelectSuggestion = useCallback(
-        (suggestion: string) => {
-            setWords(prev => {
-                const next = [...prev]
-                next[focused] = suggestion
-                return next
-            })
-            if (focused < ASB_RECOVERY_MNEMONIC_WORD_COUNT - 1) {
-                setFocused(focused + 1)
-            }
-        },
-        [focused],
     )
 
     const handleContinue = useCallback(async () => {
@@ -108,7 +114,12 @@ export const useAsbImportKeyScreen = (): UseAsbImportKeyScreenResult => {
             await Promise.resolve()
             const payload = decryptBackupPayload(envelope, mnemonic)
             setPayload(payload)
-            navigation.push('AsbImportSelectAccounts')
+            // `replace` (not `push`) so the Key screen unmounts and the
+            // typed recovery mnemonic stored in the input hook is dropped
+            // for GC. Strings can't be zeroed in JS, but the reference goes
+            // away. Bonus: back-navigating from SelectAccounts / Result no
+            // longer lands on a stale Key screen with prefilled words.
+            navigation.replace('AsbImportSelectAccounts')
         } catch (e) {
             const reason =
                 e instanceof AsbImportError

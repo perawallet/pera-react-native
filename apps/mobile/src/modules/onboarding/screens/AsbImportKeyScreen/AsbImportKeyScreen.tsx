@@ -11,23 +11,29 @@
  */
 
 import React from 'react'
-import { KeyboardAvoidingView } from 'react-native'
+import { KeyboardAvoidingView, Platform } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useHeaderHeight } from '@react-navigation/elements'
 import {
     PWButton,
     PWInput,
     PWLoadingOverlay,
     PWScrollView,
     PWText,
-    PWTouchableOpacity,
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
+import { MnemonicSuggestionBar } from '@modules/onboarding/components/MnemonicSuggestionBar'
 import { useStyles } from './styles'
 import { useAsbImportKeyScreen } from './useAsbImportKeyScreen'
 
+const SCREEN_CAPTURE_TAG = 'asb-import-key'
+
 export const AsbImportKeyScreen = () => {
+    usePreventScreenCapture(SCREEN_CAPTURE_TAG)
     const insets = useSafeAreaInsets()
+    const headerHeight = useHeaderHeight()
     const styles = useStyles(insets)
     const { t } = useLanguage()
     const {
@@ -47,7 +53,11 @@ export const AsbImportKeyScreen = () => {
 
     return (
         <PWView style={styles.root}>
-            <KeyboardAvoidingView style={styles.root}>
+            <KeyboardAvoidingView
+                style={styles.root}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={headerHeight}
+            >
                 <PWScrollView
                     style={styles.scroll}
                     contentContainerStyle={styles.scrollContent}
@@ -84,7 +94,11 @@ export const AsbImportKeyScreen = () => {
                                                 >
                                                     <PWText
                                                         variant='h4'
-                                                        style={styles.label}
+                                                        style={
+                                                            isFocused
+                                                                ? styles.labelFocused
+                                                                : styles.label
+                                                        }
                                                     >
                                                         {globalIndex + 1}
                                                     </PWText>
@@ -122,6 +136,9 @@ export const AsbImportKeyScreen = () => {
                                                                     ? styles.inputContainerFocused
                                                                     : styles.inputContainer
                                                             }
+                                                            inputStyle={
+                                                                styles.input
+                                                            }
                                                         />
                                                     </PWView>
                                                 </PWView>
@@ -131,22 +148,13 @@ export const AsbImportKeyScreen = () => {
                             )
                         })}
                     </PWView>
-
-                    {suggestions.length > 0 && (
-                        <PWView style={styles.suggestionsRow}>
-                            {suggestions.map(s => (
-                                <PWTouchableOpacity
-                                    key={s}
-                                    onPress={() => handleSelectSuggestion(s)}
-                                    style={styles.suggestionPill}
-                                    testID={`asb_import_key_suggestion_${s}`}
-                                >
-                                    <PWText variant='h4'>{s}</PWText>
-                                </PWTouchableOpacity>
-                            ))}
-                        </PWView>
-                    )}
                 </PWScrollView>
+
+                <MnemonicSuggestionBar
+                    suggestions={suggestions}
+                    onSelectSuggestion={handleSelectSuggestion}
+                    testIDPrefix='asb_import_key_suggestion'
+                />
 
                 <PWView style={styles.footer}>
                     <PWButton

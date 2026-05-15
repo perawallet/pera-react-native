@@ -23,7 +23,6 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
-import { MNEMONIC_WORDLIST as WORDLIST } from '@perawallet/wallet-core-kms'
 import { config } from '@perawallet/wallet-core-config'
 
 import type { PWInputRef } from '@components/core'
@@ -37,16 +36,14 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { useModalState } from '@hooks/useModalState'
-import { useKeyboardHeight } from '@hooks/useKeyboardHeight'
 import { useDeepLink } from '@hooks/useDeepLink'
 import { DeeplinkType } from '@hooks/deeplink/types'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { useMnemonicWordEntry } from '@modules/onboarding/hooks'
 import {
     ImportAccountSupportOptionsContent,
     type ImportAccountSupportOptionsContentResult,
 } from './ImportAccountSupportOptionsContent'
-
-const MAX_SUGGESTIONS = 4
 
 export function useImportAccountScreen(): UseImportAccountScreenResult {
     const {
@@ -60,16 +57,38 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     const { parseDeeplink } = useDeepLink()
     const { request: requestBottomSheet } = useBottomSheet()
 
-    const { isKeyboardVisible, keyboardHeight } = useKeyboardHeight()
-
     const mnemonicLength = MNEMONIC_WORD_COUNT[accountType]
 
-    const [words, setWords] = useState<string[]>(
-        new Array(mnemonicLength).fill(''),
-    )
-    const wordsRef = useRef(words)
-    wordsRef.current = words
-    const [focused, setFocused] = useState(0)
+    const onTooManyWords = useCallback(() => {
+        showToast({
+            title: t('onboarding.import_account.invalid_mnemonic_title'),
+            body: t('onboarding.import_account.invalid_mnemonic_body'),
+            type: 'error',
+        })
+    }, [showToast, t])
+
+    const onInsufficientSlots = useCallback(() => {
+        showToast({
+            title: t('onboarding.import_account.insufficient_slots_title'),
+            body: t('onboarding.import_account.insufficient_slots_body'),
+            type: 'error',
+        })
+    }, [showToast, t])
+
+    const {
+        words,
+        focused,
+        suggestions,
+        setFocused,
+        updateWord,
+        handleWordChange,
+        handleSelectSuggestion,
+    } = useMnemonicWordEntry({
+        wordCount: mnemonicLength,
+        onTooManyWords,
+        onInsufficientSlots,
+    })
+
     const [processing, setProcessing] = useState(false)
     const {
         isOpen: isQRScannerVisible,
@@ -102,146 +121,6 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
 
     const canImport = useMemo(() => words.every(w => w.length > 0), [words])
 
-    const suggestions = useMemo(() => {
-        const currentWord = words[focused]?.toLowerCase() ?? ''
-
-        if (currentWord.length === 0) {
-            return []
-        }
-
-        const matches: string[] = []
-
-        for (const word of WORDLIST) {
-            if (word.startsWith(currentWord)) {
-                matches.push(word)
-
-                if (matches.length >= MAX_SUGGESTIONS) {
-                    break
-                }
-            }
-        }
-
-        // If the only match is an exact match, no suggestions needed
-        if (matches.length === 1 && matches[0] === currentWord) {
-            return []
-        }
-
-        return matches
-    }, [words, focused])
-
-    const handleSelectSuggestion = useCallback(
-        (word: string) => {
-            setWords(prev => {
-                const next = [...prev]
-
-                next[focused] = word
-                return next
-            })
-
-            const nextIndex = focused + 1
-
-            if (nextIndex < mnemonicLength) {
-                setFocused(nextIndex)
-            }
-        },
-        [focused, mnemonicLength],
-    )
-
-    const updateWord = useCallback(
-        (word: string, index: number) => {
-            const trimmedValue = word.trim()
-            const splitWords = trimmedValue.split(/\s+/).filter(Boolean)
-
-            if (splitWords.length > 1) {
-                // Case: Pasted content is a full mnemonic of the expected length
-                if (splitWords.length === mnemonicLength) {
-                    setWords(splitWords)
-                    return
-                }
-
-                // Case: Pasted content is larger than the total expected mnemonic length
-                if (splitWords.length > mnemonicLength) {
-                    showToast({
-                        title: t(
-                            'onboarding.import_account.invalid_mnemonic_title',
-                        ),
-                        body: t(
-                            'onboarding.import_account.invalid_mnemonic_body',
-                        ),
-                        type: 'error',
-                    })
-                    return
-                }
-
-                // Case: Pasted content is smaller than the total expected length
-                const remainingSlots = mnemonicLength - index
-
-                if (splitWords.length <= remainingSlots) {
-                    setWords(prev => {
-                        const next = [...prev]
-
-                        splitWords.forEach((w, i) => {
-                            next[index + i] = w
-                        })
-                        return next
-                    })
-                } else {
-                    showToast({
-                        title: t(
-                            'onboarding.import_account.insufficient_slots_title',
-                        ),
-                        body: t(
-                            'onboarding.import_account.insufficient_slots_body',
-                        ),
-                        type: 'error',
-                    })
-                }
-                return
-            }
-
-            setWords(prev => {
-                const next = [...prev]
-
-                next[index] = word.trim()
-                return next
-            })
-        },
-        [mnemonicLength, showToast, t],
-    )
-
-    const handleWordChange = useCallback(
-        async (text: string, index: number) => {
-            const currentWord = wordsRef.current[index] ?? ''
-
-            if (text.length - currentWord.length > 1) {
-                try {
-                    const clipboardContent = await Clipboard.getStringAsync()
-
-                    if (clipboardContent) {
-                        const clipboardWords = clipboardContent
-                            .trim()
-                            .split(/\s+/)
-                            .filter(Boolean)
-                        const receivedWords = text
-                            .trim()
-                            .split(/\s+/)
-                            .filter(Boolean)
-
-                        if (clipboardWords.length > receivedWords.length) {
-                            updateWord(clipboardContent, index)
-                            return
-                        }
-                    }
-                } catch {
-                    // Clipboard read failed; fall through
-                }
-            }
-
-            updateWord(text, index)
-        },
-        [updateWord],
-    )
-
     const handleImportAccount = useCallback(() => {
         setProcessing(true)
         deferToNextCycle(async () => {
@@ -253,11 +132,16 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
                     type: accountType,
                 })
 
+                // `replace` (not `push`) so this screen unmounts and the typed
+                // mnemonic held in the input hook is dropped for GC. Strings
+                // can't be zeroed in JS, but the reference goes away — and
+                // back-navigating from later steps no longer lands on a
+                // stale Import screen with prefilled words.
                 if (result.type === 'hdWallet' && 'walletKeyId' in result) {
                     // HD import: jump into the discovery flow. Backup is marked
                     // only after the user commits a selection (see
                     // ImportSelectAddressesScreen).
-                    navigation.push('SearchAccounts', {
+                    navigation.replace('SearchAccounts', {
                         mode: 'import',
                         walletKeyId: result.walletKeyId,
                         derivationType: result.derivationType,
@@ -266,7 +150,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
                     // algo25 import: the account already exists. Mark backup and
                     // route through the existing post-create discovery.
                     markBackupComplete(result as WalletAccount)
-                    navigation.push('SearchAccounts', {
+                    navigation.replace('SearchAccounts', {
                         account: result as WalletAccount,
                     })
                 }
@@ -372,8 +256,6 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         handleImportAccount,
         mnemonicLength,
         t,
-        isKeyboardVisible,
-        keyboardHeight,
         handleOpenSupportOptions,
         isQRScannerVisible,
         handleCloseQRScanner,
