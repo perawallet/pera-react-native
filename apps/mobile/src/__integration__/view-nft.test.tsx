@@ -107,7 +107,7 @@ const seedSigningHolder = async (): Promise<WalletAccount> => {
         id: 'holder-1',
         type: AccountTypes.algo25,
         address: ALGO25_TEST_ADDRESS,
-        keyPairId: key!.keyPair.id ?? '',
+        keyPairId: key!.seedKey.id ?? '',
         name: 'NFT Holder',
     }
     useAccountsStore.getState().setAccounts([holder])

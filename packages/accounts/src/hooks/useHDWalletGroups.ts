@@ -11,12 +11,14 @@
  */
 
 import { useMemo } from 'react'
+import { useKMS } from '@perawallet/wallet-core-kms'
 import { useAllAccounts } from './useAllAccounts'
 import { HDWalletAccount } from '../models'
 import { isHDWalletAccount } from '../utils'
 
 export type HDWalletGroup = {
-    keyPairId: string
+    /** Keystore id of the bip39 seed that backs every account in the group. */
+    seedKeyId: string
     accounts: HDWalletAccount[]
     firstAccount: HDWalletAccount
     accountCount: number
@@ -29,26 +31,33 @@ type UseHDWalletGroupsResult = {
 
 export const useHDWalletGroups = (): UseHDWalletGroupsResult => {
     const accounts = useAllAccounts()
+    const { seedIdOf } = useKMS()
 
     const hdWalletGroups = useMemo(() => {
         const hdAccounts = accounts.filter(isHDWalletAccount)
 
+        // Each HD account's `keyPairId` is its own derived child key id.
+        // The seed parent is reachable via `seedIdOf` (which walks
+        // `metadata.parentKeyId`); group by seed so sibling accounts on
+        // the same wallet land together.
         const groupMap = new Map<string, HDWalletAccount[]>()
         for (const account of hdAccounts) {
-            const existing = groupMap.get(account.keyPairId) ?? []
+            const seedKeyId = seedIdOf(account.keyPairId)
+            if (!seedKeyId) continue
+            const existing = groupMap.get(seedKeyId) ?? []
             existing.push(account)
-            groupMap.set(account.keyPairId, existing)
+            groupMap.set(seedKeyId, existing)
         }
 
         return Array.from(groupMap.entries()).map(
-            ([keyPairId, groupAccounts]): HDWalletGroup => ({
-                keyPairId,
+            ([seedKeyId, groupAccounts]): HDWalletGroup => ({
+                seedKeyId,
                 accounts: groupAccounts,
                 firstAccount: groupAccounts[0],
                 accountCount: groupAccounts.length,
             }),
         )
-    }, [accounts])
+    }, [accounts, seedIdOf])
 
     return {
         hdWalletGroups,

@@ -82,7 +82,7 @@ const seedAlgo25Sender = async (): Promise<WalletAccount> => {
         id: 'sender-1',
         type: AccountTypes.algo25,
         address: ALGO25_TEST_ADDRESS,
-        keyPairId: key!.keyPair.id ?? '',
+        keyPairId: key!.seedKey.id ?? '',
         name: 'Sender',
     }
     useAccountsStore.getState().setAccounts([sender])

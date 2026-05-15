@@ -28,12 +28,11 @@ import {
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 
-const ACCOUNTS_STORE_NAME = 'accounts-store'
 const REACT_QUERY_PERSIST_KEY = 'reactQuery'
 
 export const clearAccountsStore = () => {
-    useAccountsStore.getState().resetState()
     useAccountsStore.persist.clearStorage()
+    useAccountsStore.getState().resetState()
 }
 
 type UseDeleteAllDataResult = {
@@ -101,7 +100,8 @@ export const useDeleteAllData = (): UseDeleteAllDataResult => {
             logger.error('Failed to delete database', { error: e })
         }
 
-        clearAllStores({ skip: [ACCOUNTS_STORE_NAME] })
+        // 8. Clear all registered stores (this will redirect to onboarding, then show the success popup)
+        clearAllStores()
     }, [
         queryClient,
         keys,

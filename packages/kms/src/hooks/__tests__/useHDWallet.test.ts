@@ -13,35 +13,27 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import { useHDWallet } from '../useHDWallet'
-import type { HDWalletKeyResult } from '../useHDWallet'
-import { KeyType, KeyPair } from '../../models'
-import { KeyManagementError } from '../../errors'
 
 const mockGenerateHDMasterKey = vi.fn()
-const mockEntropyToMnemonic = vi.fn()
 
 vi.mock('../../crypto/hdwallet-utils', () => ({
     generateHDMasterKey: (...args: any[]) => mockGenerateHDMasterKey(...args),
-    entropyToMnemonic: (...args: any[]) => mockEntropyToMnemonic(...args),
+    entropyToMnemonic: vi.fn(),
 }))
 
 const mockFromSeed = vi.fn()
 
 vi.mock('@algorandfoundation/xhd-wallet-api', () => ({
-    BIP32DerivationType: { Peikert: 9, Khovratovich: 0 },
+    BIP32DerivationType: { Peikert: 9, Khovratovich: 32 },
     KeyContext: { Address: 0, Identity: 1 },
     fromSeed: (...args: any[]) => mockFromSeed(...args),
 }))
 
-const mockSaveKey = vi.fn()
-const mockCheckAccess = vi.fn()
 const mockKeyStoreImport = vi.fn()
-const mockKeyStoreGenerate = vi.fn()
+const mockKeyStoreDeriveFromSeed = vi.fn()
 const mockKeyStoreSign = vi.fn()
 const mockKeyStoreExport = vi.fn()
 const mockKeyStoreRemove = vi.fn()
-
 const mockClearKeyData = vi.fn()
 
 vi.mock('@algorandfoundation/keystore', () => ({
@@ -50,513 +42,186 @@ vi.mock('@algorandfoundation/keystore', () => ({
 
 vi.mock('../useKMSServices', () => ({
     useKMSService: () => ({
-        saveKey: (...args: any[]) => mockSaveKey(...args),
-        checkAccess: (...args: any[]) => mockCheckAccess(...args),
         keyStore: {
             import: (...args: any[]) => mockKeyStoreImport(...args),
-            generate: (...args: any[]) => mockKeyStoreGenerate(...args),
+            deriveFromSeed: (...args: any[]) =>
+                mockKeyStoreDeriveFromSeed(...args),
             sign: (...args: any[]) => mockKeyStoreSign(...args),
             export: (...args: any[]) => mockKeyStoreExport(...args),
             remove: (...args: any[]) => mockKeyStoreRemove(...args),
         },
-        withExportedKey: async (
-            keyId: string,
-            handler: (keyData: any) => any,
-        ) => {
-            const keyData = await mockKeyStoreExport(keyId)
-            try {
-                return await handler(keyData)
-            } finally {
-                mockClearKeyData(keyData)
-            }
+    }),
+}))
+
+// `getDerivedPublicKey` reads the publicKey from the live reactive store
+// (rather than calling `keyStore.export`, since the rn-keystore stamps
+// derived keys `extractable: false`).
+const mockReactiveKeys: { id: string; publicKey?: Uint8Array }[] = []
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getKeystoreStore: () => ({
+        get state() {
+            return { keys: mockReactiveKeys, status: 'idle' as const }
         },
     }),
 }))
 
-const mockAddKey = vi.fn()
-const mockStoreKeys = new Map<string, KeyPair>()
-
-vi.mock('../../store', () => ({
-    useKeyManagerStore: (selector: any) => {
-        const state = {
-            addKey: mockAddKey,
-            keys: mockStoreKeys,
-        }
-        return selector(state)
-    },
-}))
-
-vi.mock('@perawallet/wallet-core-shared', async () => {
-    const actual = await vi.importActual<object>(
-        '@perawallet/wallet-core-shared',
-    )
-    return {
-        ...actual,
-        generateOrderedUniqueId: () => 'mock-uuid-v7',
-    }
-})
+import { useHDWallet, type HDWalletKeyResult } from '../useHDWallet'
+import { SeedScheme } from '../../constants'
 
 describe('useHDWallet', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockStoreKeys.clear()
+        mockReactiveKeys.length = 0
     })
 
     describe('createHDWalletKey', () => {
-        const mockRootKey = new Uint8Array(96).fill(42)
+        const rootBytes = new Uint8Array(96).fill(42)
 
         beforeEach(() => {
             mockGenerateHDMasterKey.mockResolvedValue({
-                mnemonic: 'generated mnemonic',
-                seed: Buffer.from('seed-data'),
+                mnemonic: 'mnemonic words here',
+                seed: Buffer.from(new Uint8Array(64).fill(7)),
                 entropy: new Uint8Array([0xab, 0xcd, 0xef, 0x01]),
             })
-            mockFromSeed.mockReturnValue(mockRootKey)
-            mockKeyStoreImport
-                .mockResolvedValueOnce('ks-root-1')
-                .mockResolvedValueOnce('ks-root-1-entropy')
-            mockSaveKey.mockImplementation(async (key: KeyPair) => key)
+            mockFromSeed.mockReturnValue(new Uint8Array(rootBytes))
+            mockKeyStoreImport.mockResolvedValue('hd-1')
         })
 
-        test('creates an HD wallet root key and returns entropyKeyId', async () => {
+        test('returns the persisted seed Key with bip39 scheme + entropy hex', async () => {
             const { result } = renderHook(() => useHDWallet())
 
             let keyResult: Optional<HDWalletKeyResult>
             await act(async () => {
                 keyResult = await result.current.createHDWalletKey({
                     id: 'hd-1',
-                    mnemonic: 'my mnemonic',
+                    mnemonic: 'mnemonic words here',
                 })
             })
 
-            expect(keyResult!.keyPair.id).toBe('hd-1')
-            expect(keyResult!.keyPair.publicKey).toBe('')
-            expect(keyResult!.keyPair.type).toBe(KeyType.HDWalletRootKey)
-            expect(keyResult!.keyPair.keystoreKeyId).toBe('ks-root-1')
-            expect(keyResult!.entropyKeyId).toBe('ks-root-1-entropy')
+            expect(keyResult!.seedKey.id).toBe('hd-1')
+            expect(keyResult!.seedKey.type).toBe('seed')
+            const meta = keyResult!.seedKey.metadata as {
+                scheme: string
+                entropy: string
+            }
+            expect(meta.scheme).toBe(SeedScheme.Bip39)
+            expect(meta.entropy).toBe('abcdef01')
         })
 
-        test('imports root key with deterministic id and pera metadata; entropy as separate key', async () => {
+        test('imports the seed entry as a single keystore key (no separate entropy entry)', async () => {
             const { result } = renderHook(() => useHDWallet())
-
             await act(async () => {
                 await result.current.createHDWalletKey({
                     id: 'hd-1',
-                    mnemonic: 'my mnemonic',
+                    mnemonic: 'mnemonic words here',
                 })
             })
 
-            expect(mockFromSeed).toHaveBeenCalledTimes(1)
-            expect(mockKeyStoreImport).toHaveBeenCalledTimes(2)
-
-            // First call: root key forced to id `hd-1`, with pera metadata
-            // namespaced under `pera`. No entropy in root key metadata.
-            const rootKeyArg = mockKeyStoreImport.mock.calls[0][0]
-            expect(rootKeyArg).toMatchObject({
+            expect(mockKeyStoreImport).toHaveBeenCalledTimes(1)
+            const arg = mockKeyStoreImport.mock.calls[0][0]
+            expect(arg).toMatchObject({
                 id: 'hd-1',
-                type: 'hd-root-key',
+                type: 'seed',
                 algorithm: 'raw',
                 extractable: true,
                 keyUsages: ['deriveKey', 'deriveBits'],
-                privateKey: mockRootKey,
-                metadata: { name: 'hd-1' },
             })
-            expect(rootKeyArg.metadata?.entropy).toBeUndefined()
-            expect(rootKeyArg.metadata?.pera).toMatchObject({
-                createdAt: expect.any(String),
-            })
-
-            // Second call: entropy key with raw entropy bytes
-            expect(mockKeyStoreImport).toHaveBeenNthCalledWith(
-                2,
-                expect.objectContaining({
-                    id: 'hd-1-entropy',
-                    type: 'hd-seed',
-                    algorithm: 'raw',
-                    extractable: true,
-                    privateKey: expect.any(Uint8Array),
-                }),
-                'raw',
-            )
-        })
-
-        test('generates uuid when id is not provided', async () => {
-            const { result } = renderHook(() => useHDWallet())
-
-            let keyResult: Optional<HDWalletKeyResult>
-            await act(async () => {
-                keyResult = await result.current.createHDWalletKey()
-            })
-
-            expect(keyResult!.keyPair.id).toBe('mock-uuid-v7')
-        })
-
-        test('zeros out the master seed and root key after saving', async () => {
-            const fakeSeed = Buffer.from('seed-data-to-clear')
-            const fakeRootKey = new Uint8Array(96).fill(99)
-            mockGenerateHDMasterKey.mockResolvedValue({
-                mnemonic: 'test mnemonic',
-                seed: fakeSeed,
-                entropy: new Uint8Array([0xab, 0xcd, 0xef, 0x01]),
-            })
-            mockFromSeed.mockReturnValue(fakeRootKey)
-
-            const { result } = renderHook(() => useHDWallet())
-
-            await act(async () => {
-                await result.current.createHDWalletKey({ mnemonic: 'test' })
-            })
-
-            expect(fakeSeed.every(byte => byte === 0)).toBe(true)
-            expect(fakeRootKey.every(byte => byte === 0)).toBe(true)
-        })
-
-        test('uses provided mnemonic via generateHDMasterKey', async () => {
-            const { result } = renderHook(() => useHDWallet())
-
-            await act(async () => {
-                await result.current.createHDWalletKey({
-                    mnemonic: 'provided mnemonic words',
-                })
-            })
-
-            expect(mockGenerateHDMasterKey).toHaveBeenCalledWith(
-                'provided mnemonic words',
-            )
-        })
-
-        test('generates a new mnemonic when none is provided', async () => {
-            const { result } = renderHook(() => useHDWallet())
-
-            await act(async () => {
-                await result.current.createHDWalletKey()
-            })
-
-            expect(mockGenerateHDMasterKey).toHaveBeenCalledWith(undefined)
-        })
-
-        test('rolls back root key if entropy key import fails', async () => {
-            mockKeyStoreImport
-                .mockReset()
-                .mockResolvedValueOnce('ks-root-1')
-                .mockRejectedValueOnce(new Error('Entropy import failed'))
-
-            const { result } = renderHook(() => useHDWallet())
-
-            let caughtError: Optional<Error>
-            await act(async () => {
-                try {
-                    await result.current.createHDWalletKey({
-                        id: 'hd-1',
-                        mnemonic: 'my mnemonic',
-                    })
-                } catch (e) {
-                    caughtError = e as Error
-                }
-            })
-
-            expect(caughtError?.message).toBe('Entropy import failed')
-            expect(mockKeyStoreRemove).toHaveBeenCalledWith('ks-root-1')
+            // The 96-byte XHD root from `fromSeed` is what gets persisted
+            // as the seed's privateKey — that's what `deriveFromSeed` and
+            // `sign` need at signing time.
+            expect(arg.privateKey).toBeInstanceOf(Uint8Array)
+            expect(arg.privateKey.length).toBe(96)
+            expect(arg.metadata.scheme).toBe(SeedScheme.Bip39)
+            expect(arg.metadata.entropy).toBe('abcdef01')
+            expect(arg.metadata.pera.createdAt).toBeDefined()
         })
     })
 
     describe('generateDerivedKey', () => {
-        test('generates a derived key via keystore', async () => {
-            mockKeyStoreGenerate.mockResolvedValue('ks-derived-1')
+        beforeEach(() => {
+            mockKeyStoreDeriveFromSeed.mockResolvedValue('derived-id-1')
+        })
 
+        test('calls deriveFromSeed with the BIP44 path, deterministic id, and sign-ready metadata', async () => {
             const { result } = renderHook(() => useHDWallet())
 
-            let derivedKeyId: Optional<string>
             await act(async () => {
-                derivedKeyId = await result.current.generateDerivedKey(
-                    'ks-root-1',
-                    0,
-                    0,
-                    9,
-                )
+                await result.current.generateDerivedKey('hd-1', 7, 3, 9)
             })
 
-            expect(derivedKeyId).toBe('ks-derived-1')
-            expect(mockKeyStoreGenerate).toHaveBeenCalledWith({
-                type: 'hd-derived-ed25519',
+            expect(mockKeyStoreDeriveFromSeed).toHaveBeenCalledTimes(1)
+            const [seedId, path, opts] =
+                mockKeyStoreDeriveFromSeed.mock.calls[0]
+            expect(seedId).toBe('hd-1')
+            expect(path).toBe("m/44'/283'/7'/0/3")
+            expect(opts).toMatchObject({
+                id: 'hd-1-acc7-idx3-dt9',
                 algorithm: 'EdDSA',
-                extractable: false,
-                keyUsages: ['sign'],
-                params: {
-                    parentKeyId: 'ks-root-1',
-                    account: 0,
-                    index: 0,
+                mode: 'peikert',
+                // The full canonical path metadata signXHDEd25519 reads.
+                // path/context/account/index/derivation all need to be on
+                // the persisted child or the BIP44 path resolves wrong and
+                // verification fails dApp-side.
+                metadata: {
+                    path: "m/44'/283'/7'/0/3",
                     context: 0, // KeyContext.Address
+                    account: 7,
+                    index: 3,
                     derivation: 9,
                 },
             })
         })
+
+        test('passes mode="standard" for Khovratovich derivation', async () => {
+            const { result } = renderHook(() => useHDWallet())
+            await act(async () => {
+                await result.current.generateDerivedKey('hd-1', 0, 0, 32)
+            })
+            expect(mockKeyStoreDeriveFromSeed.mock.calls[0][2].mode).toBe(
+                'standard',
+            )
+        })
     })
 
-    describe('withHDSession', () => {
-        const mockKey: KeyPair = {
-            id: 'hd-key-1',
-            publicKey: '',
-            type: KeyType.HDWalletRootKey,
-            keystoreKeyId: 'ks-root-1',
-        }
-
-        const derivationParams = {
-            account: 0,
-            keyIndex: 0,
-            derivationType: 9, // BIP32DerivationType.Peikert
-        }
-
+    describe('getDerivedPublicKey', () => {
         beforeEach(() => {
-            mockKeyStoreGenerate.mockResolvedValue('ks-derived-1')
-            mockKeyStoreSign.mockResolvedValue(new Uint8Array(64).fill(1))
-            mockKeyStoreExport.mockResolvedValue({
-                publicKey: new Uint8Array(32).fill(3),
+            // deriveFromSeed commits the entry to the reactive store as a
+            // side effect; the hook then reads the publicKey back from
+            // that snapshot. Mirror both halves here.
+            mockKeyStoreDeriveFromSeed.mockImplementation(async () => {
+                mockReactiveKeys.push({
+                    id: 'hd-1-acc0-idx1-dt9',
+                    publicKey: new Uint8Array(32).fill(0x77),
+                })
+                return 'hd-1-acc0-idx1-dt9'
             })
         })
 
-        test('session signTransaction signs via keyStore.sign with derived key', async () => {
-            const mockSig = new Uint8Array(64).fill(1)
-            mockKeyStoreSign.mockResolvedValue(mockSig)
-
+        test('derives the child and returns its publicKey from the reactive store', async () => {
             const { result } = renderHook(() => useHDWallet())
-
-            const encodedTx = new Uint8Array([84, 88, 1, 2, 3])
-            let signResult: Optional<Uint8Array>
+            let pub: Optional<Uint8Array>
             await act(async () => {
-                signResult = await result.current.withHDSession(
-                    mockKey,
-                    'test-domain',
-                    async session => {
-                        return session.signTransaction(
-                            derivationParams,
-                            encodedTx,
-                        )
-                    },
-                )
+                pub = await result.current.getDerivedPublicKey('hd-1', 0, 1, 9)
             })
-
-            expect(signResult).toBe(mockSig)
-            expect(mockKeyStoreGenerate).toHaveBeenCalled()
-            expect(mockKeyStoreSign).toHaveBeenCalledWith(
-                'ks-derived-1',
-                encodedTx,
-            )
+            expect(mockKeyStoreDeriveFromSeed).toHaveBeenCalledTimes(1)
+            // We do NOT call keyStore.export — derived keys are
+            // committed `extractable: false`, so we read the live
+            // reactive snapshot instead.
+            expect(mockKeyStoreExport).not.toHaveBeenCalled()
+            expect(pub).toEqual(new Uint8Array(32).fill(0x77))
         })
 
-        test('session signData signs via keyStore.sign without prefix', async () => {
-            const mockSig = new Uint8Array(64).fill(2)
-            mockKeyStoreSign.mockResolvedValue(mockSig)
-
+        test('throws when the derived key has no publicKey on the reactive snapshot', async () => {
+            mockKeyStoreDeriveFromSeed.mockImplementationOnce(async () => {
+                mockReactiveKeys.push({ id: 'hd-1-acc0-idx1-dt9' })
+                return 'hd-1-acc0-idx1-dt9'
+            })
             const { result } = renderHook(() => useHDWallet())
-
-            let signResult: Optional<Uint8Array>
-            await act(async () => {
-                signResult = await result.current.withHDSession(
-                    mockKey,
-                    'test-domain',
-                    async session => {
-                        return session.signData(
-                            derivationParams,
-                            new Uint8Array([4, 5, 6]),
-                        )
-                    },
-                )
-            })
-
-            expect(signResult).toBe(mockSig)
-            expect(mockKeyStoreSign).toHaveBeenCalledWith(
-                'ks-derived-1',
-                new Uint8Array([4, 5, 6]),
-            )
-        })
-
-        test('session getPublicKey derives key and exports public key', async () => {
-            const mockPubKey = new Uint8Array(32).fill(3)
-            mockKeyStoreExport.mockResolvedValue({
-                publicKey: mockPubKey,
-            })
-
-            const { result } = renderHook(() => useHDWallet())
-
-            let pubKeyResult: Optional<Uint8Array>
-            await act(async () => {
-                pubKeyResult = await result.current.withHDSession(
-                    mockKey,
-                    'test-domain',
-                    async session => {
-                        return session.getPublicKey(derivationParams)
-                    },
-                )
-            })
-
-            expect(pubKeyResult).toBe(mockPubKey)
-            expect(mockKeyStoreGenerate).toHaveBeenCalled()
-            expect(mockKeyStoreExport).toHaveBeenCalledWith('ks-derived-1')
-        })
-
-        test('getMnemonic derives the entropy keystore id from the root key id', async () => {
-            const entropyBytes = Buffer.from('abcdef01', 'hex')
-            mockKeyStoreExport.mockResolvedValueOnce({
-                privateKey: new Uint8Array(entropyBytes),
-            })
-            mockEntropyToMnemonic.mockReturnValue('recovered mnemonic words')
-
-            const { result } = renderHook(() => useHDWallet())
-
-            let mnemonic: Optional<Uint8Array>
-            await act(async () => {
-                mnemonic = await result.current.withHDSession(
-                    mockKey,
-                    'test-domain',
-                    async session => {
-                        return session.getMnemonic()
-                    },
-                )
-            })
-
-            expect(ArrayBuffer.isView(mnemonic)).toBe(true)
-            expect(new TextDecoder().decode(mnemonic)).toBe(
-                'recovered mnemonic words',
-            )
-            expect(mockKeyStoreExport).toHaveBeenCalledWith('hd-key-1-entropy')
-            expect(mockEntropyToMnemonic).toHaveBeenCalled()
-        })
-
-        test('getMnemonic throws when entropy keystore entry has no privateKey', async () => {
-            mockKeyStoreExport.mockResolvedValueOnce({})
-
-            const { result } = renderHook(() => useHDWallet())
-
             await expect(
                 act(async () => {
-                    await result.current.withHDSession(
-                        mockKey,
-                        'test-domain',
-                        async session => {
-                            return session.getMnemonic()
-                        },
-                    )
+                    await result.current.getDerivedPublicKey('hd-1', 0, 1, 9)
                 }),
-            ).rejects.toThrow(KeyManagementError)
-        })
-
-        test('getPublicKey clears exported key data after use', async () => {
-            const mockKeyData = {
-                publicKey: new Uint8Array(32).fill(3),
-                privateKey: new Uint8Array(64).fill(9),
-            }
-            mockKeyStoreExport.mockResolvedValue(mockKeyData)
-
-            const { result } = renderHook(() => useHDWallet())
-
-            await act(async () => {
-                await result.current.withHDSession(
-                    mockKey,
-                    'test-domain',
-                    async session => session.getPublicKey(derivationParams),
-                )
-            })
-
-            expect(mockClearKeyData).toHaveBeenCalledWith(mockKeyData)
-        })
-
-        test('getMnemonic clears exported entropy key data after use', async () => {
-            const mockEntropyKeyData = {
-                privateKey: new Uint8Array(Buffer.from('abcdef01', 'hex')),
-            }
-            mockKeyStoreExport.mockResolvedValue(mockEntropyKeyData)
-            mockEntropyToMnemonic.mockReturnValue('recovered mnemonic')
-
-            const { result } = renderHook(() => useHDWallet())
-
-            await act(async () => {
-                await result.current.withHDSession(
-                    mockKey,
-                    'test-domain',
-                    async session => session.getMnemonic(),
-                )
-            })
-
-            expect(mockClearKeyData).toHaveBeenCalledWith(mockEntropyKeyData)
-        })
-
-        test('calls checkAccess with key and domain', async () => {
-            const { result } = renderHook(() => useHDWallet())
-
-            await act(async () => {
-                await result.current.withHDSession(
-                    mockKey,
-                    'my-domain',
-                    async () => 'ok',
-                )
-            })
-
-            expect(mockCheckAccess).toHaveBeenCalledWith(mockKey, 'my-domain')
-        })
-
-        test('throws when keystoreKeyId is missing', async () => {
-            const keyWithoutKeystoreId: KeyPair = {
-                id: 'hd-key-1',
-                publicKey: '',
-                type: KeyType.HDWalletRootKey,
-            }
-
-            const { result } = renderHook(() => useHDWallet())
-
-            await expect(
-                act(async () => {
-                    await result.current.withHDSession(
-                        keyWithoutKeystoreId,
-                        'test-domain',
-                        async () => 'ok',
-                    )
-                }),
-            ).rejects.toThrow(KeyManagementError)
-        })
-
-        test('passes derivation params correctly for different derivation types', async () => {
-            const mockSig = new Uint8Array(64).fill(5)
-            mockKeyStoreSign.mockResolvedValue(mockSig)
-            mockKeyStoreGenerate.mockResolvedValue('ks-derived-khov')
-
-            const khovratovichParams = {
-                account: 1,
-                keyIndex: 2,
-                derivationType: 0, // BIP32DerivationType.Khovratovich
-            }
-
-            const { result } = renderHook(() => useHDWallet())
-
-            await act(async () => {
-                await result.current.withHDSession(
-                    mockKey,
-                    'test-domain',
-                    async session => {
-                        await session.signTransaction(
-                            khovratovichParams,
-                            new Uint8Array([1]),
-                        )
-                    },
-                )
-            })
-
-            // Verify keyStore.generate received correct derivation params
-            expect(mockKeyStoreGenerate).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    params: expect.objectContaining({
-                        parentKeyId: 'ks-root-1',
-                        account: 1,
-                        index: 2,
-                        context: 0, // KeyContext.Address
-                        derivation: 0, // Khovratovich
-                    }),
-                }),
-            )
-            expect(mockKeyStoreSign).toHaveBeenCalledWith(
-                'ks-derived-khov',
-                new Uint8Array([1]),
-            )
+            ).rejects.toThrow()
         })
     })
 })

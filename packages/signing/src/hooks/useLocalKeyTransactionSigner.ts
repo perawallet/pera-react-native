@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { KeyType, useKMS, type KeyPair } from '@perawallet/wallet-core-kms'
+import { useKMS } from '@perawallet/wallet-core-kms'
 import { useCallback } from 'react'
 import {
     Address,
@@ -24,11 +24,7 @@ import {
     isAlgo25Account,
     isHDWalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type {
-    Algo25Account,
-    HDWalletAccount,
-    WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { SIGNING_KEY_DOMAIN } from '../constants'
 
 export type UseLocalKeyTransactionSignerResult = {
@@ -55,121 +51,47 @@ export type UseLocalKeyTransactionSignerResult = {
 
 export const useLocalKeyTransactionSigner =
     (): UseLocalKeyTransactionSignerResult => {
-        const { getKeyOrThrow, withHDSession, withAlgo25Session } = useKMS()
+        const { signTransactionsWithKey } = useKMS()
         const { encodeTransaction } = useTransactionEncoder()
 
-        const signHDWalletTransactions = useCallback(
-            async (
-                account: HDWalletAccount,
-                txns: PeraTransactionGroup,
-            ): Promise<PeraSignedTransaction[]> => {
-                const hdWalletDetails = account.hdWalletDetails
-                const key = getKeyOrThrow(account.keyPairId)
-
-                return await withHDSession(
-                    key,
-                    SIGNING_KEY_DOMAIN,
-                    async session => {
-                        const signedTxns = txns.map(async txn => {
-                            const encodedTransaction = encodeTransaction(txn)
-
-                            const signature = await session.signTransaction(
-                                {
-                                    account: hdWalletDetails.account,
-                                    keyIndex: hdWalletDetails.keyIndex,
-                                    derivationType:
-                                        hdWalletDetails.derivationType,
-                                },
-                                encodedTransaction,
-                            )
-
-                            const senderPublicKey = encodeAlgorandAddress(
-                                txn.sender.publicKey,
-                            )
-                            const signedTxn: PeraSignedTransaction = {
-                                txn,
-                                sig: signature,
-                                authAddress:
-                                    account.address !== senderPublicKey
-                                        ? Address.fromString(account.address)
-                                        : undefined,
-                            }
-                            return signedTxn
-                        })
-                        return Promise.all(signedTxns)
-                    },
-                )
-            },
-            [getKeyOrThrow, encodeTransaction, withHDSession],
-        )
-
-        const signAlgo25Transactions = useCallback(
-            async (
-                account: Algo25Account,
-                txns: PeraTransactionGroup,
-            ): Promise<PeraSignedTransaction[]> => {
-                const key: KeyPair = {
-                    id: account.keyPairId,
-                    keystoreKeyId: account.keyPairId,
-                    publicKey: account.address,
-                    type: KeyType.Algo25Key,
-                    acl: [],
-                }
-                return await withAlgo25Session(
-                    key,
-                    SIGNING_KEY_DOMAIN,
-                    async session => {
-                        const signedTxns = txns.map(async txn => {
-                            const encodedTransaction = encodeTransaction(txn)
-                            const signature =
-                                await session.signTransaction(
-                                    encodedTransaction,
-                                )
-
-                            const senderPublicKey = encodeAlgorandAddress(
-                                txn.sender.publicKey,
-                            )
-                            const signedTxn: PeraSignedTransaction = {
-                                txn,
-                                sig: signature,
-                                authAddress:
-                                    account.address !== senderPublicKey
-                                        ? Address.fromString(account.address)
-                                        : undefined,
-                            }
-                            return signedTxn
-                        })
-                        return Promise.all(signedTxns)
-                    },
-                )
-            },
-            [encodeTransaction, withAlgo25Session],
-        )
-
+        // Both HD and algo25 accounts now reference their derived child
+        // signing key directly via `keyPairId`. The keystore's own `sign`
+        // walks `metadata.parentKeyId` and routes correctly per child type
+        // (subtle for `ed25519`, XHD for `hd-derived-ed25519`), so this
+        // hook is type-agnostic — no per-flow branching needed.
         const signSingleAccountTransactions = useCallback(
             async (
                 account: WalletAccount,
                 txns: PeraTransactionGroup,
             ): Promise<PeraSignedTransaction[]> => {
-                if (isHDWalletAccount(account)) {
-                    return signHDWalletTransactions(
-                        account as HDWalletAccount,
-                        txns,
+                if (!isAlgo25Account(account) && !isHDWalletAccount(account)) {
+                    return Promise.reject(
+                        `Unsupported account type ${account.type} for ${account.address}`,
                     )
                 }
 
-                if (isAlgo25Account(account)) {
-                    return signAlgo25Transactions(
-                        account as Algo25Account,
-                        txns,
-                    )
-                }
-
-                return Promise.reject(
-                    `Unsupported account type ${account.type} for ${account.address}`,
+                const encoded = txns.map(txn => encodeTransaction(txn))
+                const signatures = await signTransactionsWithKey(
+                    account.keyPairId,
+                    SIGNING_KEY_DOMAIN,
+                    encoded,
                 )
+
+                return txns.map((txn, idx) => {
+                    const senderPublicKey = encodeAlgorandAddress(
+                        txn.sender.publicKey,
+                    )
+                    return {
+                        txn,
+                        sig: signatures[idx],
+                        authAddress:
+                            account.address !== senderPublicKey
+                                ? Address.fromString(account.address)
+                                : undefined,
+                    }
+                })
             },
-            [signHDWalletTransactions, signAlgo25Transactions],
+            [signTransactionsWithKey, encodeTransaction],
         )
 
         const signTransactions = useCallback(

@@ -18,7 +18,7 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { getTestProps } from '@utils/test-id-helper'
 import { useTranslation } from 'react-i18next'
 import { useStyles } from './styles'
@@ -30,27 +30,11 @@ export type ImportOptionsContentProps = Record<string, never>
 export const ImportOptionsContent = () => {
     const styles = useStyles()
     const { t } = useTranslation()
-    const { resolve, dismiss } =
-        useBottomSheetResult<ImportOptionsContentResult>()
+    const { resolve } = useBottomSheetResult<ImportOptionsContentResult>()
 
     return (
         <>
-            <PWView style={styles.header}>
-                <PWTouchableOpacity
-                    onPress={dismiss}
-                    style={styles.closeButton}
-                    {...getTestProps('import_options_close_button')}
-                >
-                    <PWIcon
-                        name='cross'
-                        variant='secondary'
-                    />
-                </PWTouchableOpacity>
-
-                <PWText variant='h4'>
-                    {t('onboarding.import_options.title')}
-                </PWText>
-            </PWView>
+            <SheetHeader title={t('onboarding.import_options.title')} />
 
             <PWView style={styles.optionsContainer}>
                 <PWTouchableOpacity

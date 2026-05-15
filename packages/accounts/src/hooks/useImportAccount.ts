@@ -27,7 +27,7 @@ export type ImportHDPendingResult = {
 export type ImportAccountResult = WalletAccount | ImportHDPendingResult
 
 export const useImportAccount = () => {
-    const { createAlgo25Key, deleteKey } = useKMS()
+    const { createAlgo25Key, removeKeyAndChildren } = useKMS()
     const { createAlgo25WalletAccount } = useCreateAccount()
     const { prepareImport } = useHDImportSession()
     const allAccounts = useAllAccounts()
@@ -53,19 +53,21 @@ export const useImportAccount = () => {
         // HD imports get the same protection at the selection screen — see
         // useImportSelectAddressesScreen, which filters already-imported
         // addresses out of the selectable set.
-        const { keyPair } = await createAlgo25Key({ mnemonic })
-        const isDuplicate = allAccounts.some(
-            a => a.address === keyPair.publicKey,
-        )
-        if (isDuplicate && keyPair.id) {
+        const { seedKey, address } = await createAlgo25Key({ mnemonic })
+        const isDuplicate = allAccounts.some(a => a.address === address)
+        if (isDuplicate) {
             try {
-                await deleteKey(keyPair.id)
+                // `createAlgo25Key` mints both the seed and its Ed25519
+                // signing child; we need to sweep both, not just the seed.
+                await removeKeyAndChildren(seedKey.id)
             } catch {
                 // Best-effort cleanup; don't shadow the duplicate error
                 // with a keystore-removal failure.
             }
-            throw new DuplicateAccountError(keyPair.publicKey)
+            throw new DuplicateAccountError(address)
         }
-        return await createAlgo25WalletAccount({ keyPair })
+        return await createAlgo25WalletAccount({
+            seed: { seedKeyId: seedKey.id, address },
+        })
     }
 }

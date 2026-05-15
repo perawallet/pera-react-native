@@ -196,7 +196,7 @@ describe('Flow: Opt into an asset', () => {
             id: 'sender-1',
             type: AccountTypes.algo25,
             address: ALGO25_TEST_ADDRESS,
-            keyPairId: key!.keyPair.id ?? '',
+            keyPairId: key!.seedKey.id ?? '',
             name: 'Sender',
         }
         useAccountsStore.getState().setAccounts([sender])
@@ -360,7 +360,7 @@ describe('Flow: Opt out of an asset', () => {
             id: 'sender-1',
             type: AccountTypes.algo25,
             address: ALGO25_TEST_ADDRESS,
-            keyPairId: key!.keyPair.id ?? '',
+            keyPairId: key!.seedKey.id ?? '',
             name: 'Sender',
         }
         useAccountsStore.getState().setAccounts([sender])

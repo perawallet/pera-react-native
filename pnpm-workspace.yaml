@@ -6,8 +6,8 @@ packages:
 catalog:
   "@algorandfoundation/algokit-transact": ^10.0.0-beta.1
   "@algorandfoundation/algokit-utils": ^10.0.0-beta.1
-  "@algorandfoundation/keystore": 1.0.0-canary.12
-  "@algorandfoundation/react-native-keystore": 1.0.0-canary.6
+  "@algorandfoundation/keystore": 1.0.0-canary.16
+  "@algorandfoundation/react-native-keystore": 1.0.0-canary.12
   "@algorandfoundation/wallet-provider": 1.0.0-canary.5
   "@algorandfoundation/xhd-wallet-api": ^2.0.0-canary.1
   "@babel/runtime": ^7.29.2
@@ -62,7 +62,7 @@ onlyBuiltDependencies:
   - simple-git-hooks
 
 overrides:
-  "@algorandfoundation/keystore": 1.0.0-canary.12
+  "@algorandfoundation/keystore": 1.0.0-canary.16
   "@expo/dom-webview": ^55.0.5
   "@xmldom/xmldom": 0.8.13
   bn.js@4: 4.12.3
@@ -111,8 +111,13 @@ minimumReleaseAge: 10080
 # GHSA-v39h-62p7-jpjc (host confusion, <=3.1.1). Both fixes shipped in the
 # same week so neither has aged into the 7-day window yet; skip the gate
 # rather than ship a vulnerable transitive (only path: ajv → fast-uri).
+# @algorandfoundation/keystore + @algorandfoundation/react-native-keystore:
+# in-progress upstream canary releases consumed during the keystore upgrade
+# work; pinned to specific canary versions in the catalog above.
 minimumReleaseAgeExclude:
   - protobufjs
   - "@xmldom/xmldom"
   - uuid
   - fast-uri
+  - "@algorandfoundation/keystore"
+  - "@algorandfoundation/react-native-keystore"

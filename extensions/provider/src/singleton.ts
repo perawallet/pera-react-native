@@ -99,7 +99,7 @@ export const clearKeystore = async (): Promise<void> => {
  * app bootstrap — the underlying `react-native-keystore` package only mutates
  * `state.keys` on `commit` / `removeKey`, so without this step persisted
  * entries from previous sessions are invisible to the synchronous lookups
- * (`hasTypedSecret`, `useKMS.getKey`, etc.) until a session-local mutation
+ * (`hasSecret`, `useKMS.getKey`, etc.) until a session-local mutation
  * happens to add them.
  *
  * The reactive store holds metadata only — `privateKey` and `seed` bytes are

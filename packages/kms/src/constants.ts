@@ -11,10 +11,14 @@
  */
 
 /**
- * Pera-specific keystore type for flat Algo25 (Ed25519) wallet keys. The
- * platform keystore's KeyType union accepts arbitrary strings, so we use a
- * dedicated value rather than overloading `'hd-derived-ed25519'` (which
- * implies HD-derived semantics) or `'ecc'` (which the default importEd25519Key
- * handler silently rewrites to).
+ * Wallet-domain scheme stamped into a seed's `metadata.scheme` at commit
+ * time. The keystore stores every wallet root as `type: 'seed'`; the scheme
+ * distinguishes a BIP39/XHD HD wallet from a flat Algo25 keypair so the
+ * scheme drives the dispatch in `signTransactionsWithKey` (HD vs Algo25).
  */
-export const ALGO25_KEYSTORE_TYPE = 'algo25' as const
+export const SeedScheme = {
+    Bip39: 'bip39',
+    Algo25: 'algo25',
+} as const
+
+export type SeedScheme = (typeof SeedScheme)[keyof typeof SeedScheme]

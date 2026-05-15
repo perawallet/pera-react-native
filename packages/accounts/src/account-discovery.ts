@@ -33,6 +33,7 @@ import {
     fetchAccountFastLookup,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
+import { hdDerivedKeyId } from '@perawallet/wallet-core-kms'
 
 const ACCOUNT_GAP_LIMIT = 5
 const KEY_INDEX_GAP_LIMIT = 5
@@ -133,7 +134,12 @@ async function scanAccountKeys({
                 id: generateOrderedUniqueId(),
                 address,
                 type: AccountTypes.hdWallet,
-                keyPairId: walletKeyId,
+                keyPairId: hdDerivedKeyId(
+                    walletKeyId,
+                    accountIdx,
+                    currentKeyIdx,
+                    derivationType,
+                ),
                 hdWalletDetails: {
                     account: accountIdx,
                     change: 0,

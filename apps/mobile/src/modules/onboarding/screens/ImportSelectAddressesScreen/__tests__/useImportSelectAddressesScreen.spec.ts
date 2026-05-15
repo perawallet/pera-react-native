@@ -82,6 +82,15 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
 vi.mock('@perawallet/wallet-core-backup', () => ({
     useMarkMnemonicBackupComplete: () => mockMarkBackupComplete,
 }))
+// Test fixtures stamp `keyPairId` with the seed id directly (legacy
+// shape), so map identity → identity here. Production accounts stamp
+// keyPairId with the derived child id and the kms hook walks the
+// metadata.parentKeyId chain to resolve the seed.
+vi.mock('@perawallet/wallet-core-kms', () => ({
+    useKMS: () => ({
+        seedIdOf: (childId?: string) => childId,
+    }),
+}))
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-shared')
