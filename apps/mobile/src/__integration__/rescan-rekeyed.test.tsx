@@ -43,7 +43,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { mockIndexerSearchForAccounts } from '@perawallet/wallet-core-blockchain/test-handlers'
-import { RescanRekeyedSelectScreen } from '@modules/rekey/rescan-rekeyed/screens/RescanRekeyedSelectScreen'
+import { RescanRekeyedSelectScreen } from '@modules/rekey/screens/rescan-rekeyed/RescanRekeyedSelectScreen'
 
 import {
     ALGO25_TEST_ADDRESS,

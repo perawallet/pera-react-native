@@ -49,10 +49,10 @@ import {
     mockAlgodTransactionParams,
     mockIndexerSearchForAccounts,
 } from '@perawallet/wallet-core-blockchain/test-handlers'
-import { RekeyToLedgerIntroScreen } from '@modules/rekey/rekey-to-ledger/screens/RekeyToLedgerIntroScreen'
-import { RekeyToLedgerSelectTargetScreen } from '@modules/rekey/rekey-to-ledger/screens/RekeyToLedgerSelectTargetScreen'
-import { RekeyToLedgerConfirmScreen } from '@modules/rekey/rekey-to-ledger/screens/RekeyToLedgerConfirmScreen'
-import { RekeyToLedgerSuccessScreen } from '@modules/rekey/rekey-to-ledger/screens/RekeyToLedgerSuccessScreen'
+import { RekeyToLedgerIntroScreen } from '@modules/rekey/screens/rekey-to-ledger/RekeyToLedgerIntroScreen'
+import { RekeyToLedgerSelectTargetScreen } from '@modules/rekey/screens/rekey-to-ledger/RekeyToLedgerSelectTargetScreen'
+import { RekeyToLedgerConfirmScreen } from '@modules/rekey/screens/rekey-to-ledger/RekeyToLedgerConfirmScreen'
+import { RekeyToLedgerSuccessScreen } from '@modules/rekey/screens/rekey-to-ledger/RekeyToLedgerSuccessScreen'
 
 import {
     ALGO25_TEST_ADDRESS,

@@ -49,10 +49,10 @@ import {
     mockAlgodTransactionParams,
     mockIndexerSearchForAccounts,
 } from '@perawallet/wallet-core-blockchain/test-handlers'
-import { RekeyToSharedIntroScreen } from '@modules/rekey/rekey-to-shared/screens/RekeyToSharedIntroScreen'
-import { RekeyToSharedSelectTargetScreen } from '@modules/rekey/rekey-to-shared/screens/RekeyToSharedSelectTargetScreen'
-import { RekeyToSharedConfirmScreen } from '@modules/rekey/rekey-to-shared/screens/RekeyToSharedConfirmScreen'
-import { RekeyToSharedSuccessScreen } from '@modules/rekey/rekey-to-shared/screens/RekeyToSharedSuccessScreen'
+import { RekeyToSharedIntroScreen } from '@modules/rekey/screens/rekey-to-shared/RekeyToSharedIntroScreen'
+import { RekeyToSharedSelectTargetScreen } from '@modules/rekey/screens/rekey-to-shared/RekeyToSharedSelectTargetScreen'
+import { RekeyToSharedConfirmScreen } from '@modules/rekey/screens/rekey-to-shared/RekeyToSharedConfirmScreen'
+import { RekeyToSharedSuccessScreen } from '@modules/rekey/screens/rekey-to-shared/RekeyToSharedSuccessScreen'
 
 import {
     ALGO25_TEST_ADDRESS,

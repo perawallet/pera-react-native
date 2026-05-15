@@ -24,11 +24,11 @@ import { MessagesStackParamList } from '@modules/messages/routes'
 import { MultisigStackParamList } from '@modules/multisig'
 import type { BackupStackParamList } from '@modules/backup/routes/types'
 import { SearchStackParamsList } from '@modules/search'
-import type { RekeyToLedgerStackParamList } from '@modules/rekey/rekey-to-ledger'
-import type { RekeyToSharedStackParamList } from '@modules/rekey/rekey-to-shared'
-import type { RekeyToStandardStackParamList } from '@modules/rekey/rekey-to-standard'
-import type { RescanRekeyedStackParamList } from '@modules/rekey/rescan-rekeyed'
-import type { UndoRekeyStackParamList } from '@modules/rekey/undo-rekey'
+import type { RekeyToLedgerStackParamList } from '@modules/rekey/routes/rekey-to-ledger'
+import type { RekeyToSharedStackParamList } from '@modules/rekey/routes/rekey-to-shared'
+import type { RekeyToStandardStackParamList } from '@modules/rekey/routes/rekey-to-standard'
+import type { RescanRekeyedStackParamList } from '@modules/rekey/routes/rescan-rekeyed'
+import type { UndoRekeyStackParamList } from '@modules/rekey/routes/undo-rekey'
 
 export type RootStackParamList = {
     Onboarding: NavigatorScreenParams<OnboardingStackParamList>

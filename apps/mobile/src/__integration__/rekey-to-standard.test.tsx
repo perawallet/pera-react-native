@@ -59,10 +59,10 @@ import {
     mockAlgodTransactionParams,
     mockIndexerSearchForAccounts,
 } from '@perawallet/wallet-core-blockchain/test-handlers'
-import { RekeyToStandardIntroScreen } from '@modules/rekey/rekey-to-standard/screens/RekeyToStandardIntroScreen'
-import { RekeyToStandardSelectTargetScreen } from '@modules/rekey/rekey-to-standard/screens/RekeyToStandardSelectTargetScreen'
-import { RekeyToStandardConfirmScreen } from '@modules/rekey/rekey-to-standard/screens/RekeyToStandardConfirmScreen'
-import { RekeyToStandardSuccessScreen } from '@modules/rekey/rekey-to-standard/screens/RekeyToStandardSuccessScreen'
+import { RekeyToStandardIntroScreen } from '@modules/rekey/screens/rekey-to-standard/RekeyToStandardIntroScreen'
+import { RekeyToStandardSelectTargetScreen } from '@modules/rekey/screens/rekey-to-standard/RekeyToStandardSelectTargetScreen'
+import { RekeyToStandardConfirmScreen } from '@modules/rekey/screens/rekey-to-standard/RekeyToStandardConfirmScreen'
+import { RekeyToStandardSuccessScreen } from '@modules/rekey/screens/rekey-to-standard/RekeyToStandardSuccessScreen'
 
 import {
     ALGO25_TEST_ADDRESS,

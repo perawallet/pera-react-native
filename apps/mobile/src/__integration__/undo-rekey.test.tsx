@@ -62,8 +62,8 @@ import {
     mockAlgodTransactionParams,
     mockIndexerSearchForAccounts,
 } from '@perawallet/wallet-core-blockchain/test-handlers'
-import { UndoRekeyConfirmScreen } from '@modules/rekey/undo-rekey/screens/UndoRekeyConfirmScreen'
-import { UndoRekeySuccessScreen } from '@modules/rekey/undo-rekey/screens/UndoRekeySuccessScreen'
+import { UndoRekeyConfirmScreen } from '@modules/rekey/screens/undo-rekey/UndoRekeyConfirmScreen'
+import { UndoRekeySuccessScreen } from '@modules/rekey/screens/undo-rekey/UndoRekeySuccessScreen'
 
 import {
     ALGO25_TEST_ADDRESS,
