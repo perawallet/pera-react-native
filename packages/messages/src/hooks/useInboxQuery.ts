@@ -58,6 +58,13 @@ export const useInboxQuery = (): UseQueryResult<InboxItem[], Error> => {
             )
             return hasInFlight ? INBOX_IN_FLIGHT_POLL_INTERVAL_MS : false
         },
+        // Belt-and-suspenders against the global default (`retry: 0` in
+        // QueryProvider). Inbox is best-effort: the sibling notification-
+        // status poll (useInboxStatus) is what keeps it fresh, so a single
+        // failure can simply propagate. This avoids retry-storming
+        // TimeoutErrors, which on some Hermes builds have been observed to
+        // trip ky's Error subclass via Babel's `_construct` helper.
+        retry: false,
         select: useCallback(
             (data: InboxResponse) =>
                 mapInboxResponse(data)

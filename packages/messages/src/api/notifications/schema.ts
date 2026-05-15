@@ -13,7 +13,7 @@
 import { z } from 'zod'
 
 export const notificationStatusResponseSchema = z.object({
-    has_new_notification: z.boolean(),
+    has_new_notification: z.boolean().optional().default(false),
 })
 
 export const notificationResponseSchema = z.object({

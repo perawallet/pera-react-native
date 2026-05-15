@@ -30,8 +30,9 @@ describe('notificationStatusResponseSchema', () => {
         expect(result.has_new_notification).toBe(false)
     })
 
-    test('rejects missing has_new_notification', () => {
-        expect(() => notificationStatusResponseSchema.parse({})).toThrow()
+    test('defaults has_new_notification to false when missing', () => {
+        const result = notificationStatusResponseSchema.parse({})
+        expect(result.has_new_notification).toBe(false)
     })
 
     test('rejects non-boolean has_new_notification', () => {

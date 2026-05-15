@@ -158,6 +158,7 @@ export const formatDatetime = (
     datetime?: string | Date,
     locale: string = 'en-US',
     style: 'short' | 'medium' | 'long' = 'long',
+    part: 'both' | 'date' | 'time' = 'both',
 ) => {
     if (!datetime) {
         return ''
@@ -171,10 +172,11 @@ export const formatDatetime = (
         date = datetime.getTime()
     }
 
-    return Intl.DateTimeFormat(locale, {
-        dateStyle: style,
-        timeStyle: 'short',
-    }).format(date)
+    const options: Intl.DateTimeFormatOptions = {}
+    if (part !== 'time') options.dateStyle = style
+    if (part !== 'date') options.timeStyle = 'short'
+
+    return Intl.DateTimeFormat(locale, options).format(date)
 }
 
 export const getInitials = (label: string, maxLetters: number = 2): string => {

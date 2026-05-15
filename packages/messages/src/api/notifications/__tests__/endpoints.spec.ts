@@ -179,7 +179,7 @@ describe('updateNotificationEnabled', () => {
     })
 
     test('throws when response data fails schema validation', async () => {
-        const invalidData = { unexpected: 'data' }
+        const invalidData = { has_new_notification: 'not-a-boolean' }
         ;(queryClient as Mock).mockResolvedValue({ data: invalidData })
 
         await expect(
