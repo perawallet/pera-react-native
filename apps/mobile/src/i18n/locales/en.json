@@ -282,22 +282,28 @@
     },
     "account_options": {
         "copy_address": "Copy Address",
+        "shared_account_detail": "Shared Account Detail ({{count}})",
         "show_address": "Show Address",
+        "copy_auth_address": "Copy Auth Address",
         "view_passphrase_hd": "View root wallet passphrase",
         "view_passphrase_algo25": "View wallet passphrase",
-        "auth_address": "Auth Account Address",
         "undo_rekey": "Undo Rekey",
+        "undo_rekey_subtitle": "Rekeyed to {{authAccount}}",
+        "rekeyed_to": "Rekeyed to",
         "rekey_to_ledger": "Rekey to Ledger Account",
         "rekey_to_standard": "Rekey to Standard Account",
         "rekey_to_shared": "Rekey to Shared Account",
         "export_share_account": "Export/Share Account",
+        "rescan_rekeyed": "Rescan Rekeyed Accounts",
+        "rescan_rekeyed_subtitle": "Import any rekeyed accounts",
         "rename_account": "Rename Account",
         "mute_notifications": "Mute Notifications",
         "unmute_notifications": "Unmute Notifications",
         "remove_account": "Remove Account",
         "rename_title": "Rename Account",
-        "rename_placeholder": "Account name",
-        "rename_save": "Save",
+        "rename_label": "Account name",
+        "rename_placeholder": "",
+        "rename_save": "Done",
         "rename_success": "Account renamed",
         "remove_title": "Remove Account",
         "remove_message": "Are you sure you want to remove this account? You can always re-add it later.",
@@ -315,7 +321,6 @@
         "remove_rekey_error_message": "You can't remove this account before removing its {{count}} rekeyed account(s)"
     },
     "account_info": {
-        "account_type": "Account type",
         "min_balance": "Min Balance",
         "see_wallet_structure": "See wallet structure",
         "hide_wallet_structure": "Hide wallet structure",
@@ -327,31 +332,34 @@
         "type_algo25": "Algo25 Account",
         "type_watch": "Watch Account",
         "type_ledger": "Ledger Account",
-        "type_multisig": "Shared Account ({{count}})",
+        "type_multisig": "Shared Account",
+        "type_rekeyed": "Rekeyed Account",
+        "type_rekeyed_transition": "Rekeyed ({{from}} to {{to}})",
+        "rekey_part_standard": "Standard",
+        "rekey_part_ledger": "Ledger",
+        "rekey_part_watch": "Watch",
+        "rekey_part_shared": "Shared Account",
+        "type_no_auth": "No Auth",
         "type_unknown": "Unknown Account"
     },
     "account_type_info": {
-        "standard_title": "Standard account",
+        "standard_title": "Algo25 Account",
         "standard_description": "Your account is a standard Algorand account. It has not been rekeyed and it is not associated with a Ledger device. It was added to your wallet with its keys.",
         "ledger_title": "Ledger account",
         "ledger_description": "Your account is a Ledger account. It was added to your wallet directly from the hardware device. All transactions for this account must be confirmed on your Ledger.",
         "watch_title": "Watch account",
         "watch_description": "This account was not added to your wallet with its keys. It is read-only and cannot interact with other accounts or authorize transactions.",
-        "no_auth_title": "No auth account",
+        "no_auth_title": "No Auth",
         "no_auth_description": "Your account is rekeyed to an Algorand account that is not in your wallet. You can't send assets or sign transactions.",
         "rekeyed_standard_title": "Rekeyed account",
         "rekeyed_standard_description": "Your account is rekeyed to another standard Algorand account. Transactions for this account will be authorized by the other account.",
-        "rekeyed_ledger_title": "Rekeyed account",
         "rekeyed_ledger_description": "Your account is rekeyed to an account on a Ledger hardware device. Transactions for this account must be authorized on the Ledger device.",
-        "hd_wallet_title": "Wallet address",
+        "rekeyed_ledger_to_ledger_description": "Your Ledger account is rekeyed to an account on another Ledger hardware device. Transactions for this account will be authorized by the other Ledger device.",
+        "hd_wallet_title": "Universal Wallet",
         "hd_wallet_description": "Wallet that lets you derive new accounts, all using same key.",
         "multisig_title": "Shared Account",
-        "multisig_description": "Create a shared account with enhanced security that requires multiple signers.",
-        "learn_more": "Learn More",
-        "rekey_to_ledger": "Rekey to Ledger",
-        "rekey_to_standard": "Rekey to Standard",
-        "undo_rekey": "Undo Rekey",
-        "rescan_rekeyed": "Rescan Rekeyed Accounts"
+        "multisig_description": "Your account is a shared account. Transactions for this account must be approved by multiple signers.",
+        "learn_more": "Learn More"
     },
     "min_balance_info": {
         "title": "Minimum Balance",
@@ -878,7 +886,8 @@
             "algo25": {
                 "title": "ALGO25",
                 "description": "Legacy format that is specific to Algorand ecosystem",
-                "chip": "legacy"
+                "chip": "legacy",
+                "mnemonic_info": "25 words mnemonic keys"
             },
             "mnemonic_info": "24 words mnemonic keys"
         },
@@ -907,7 +916,9 @@
             }
         },
         "searching_accounts": {
-            "title": "Searching your accounts"
+            "title": "Searching your accounts",
+            "no_new_addresses_title": "No new addresses found",
+            "no_new_addresses_body": "We didn't find any additional addresses associated with this wallet."
         },
         "create_account": {
             "processing": "Setting up your wallet...",
@@ -975,7 +986,7 @@
             "pair_ledger_option_title": "Pair Ledger Device",
             "pair_ledger_option_description": "Connect a Ledger hardware wallet via Bluetooth to import accounts",
             "create_multisig_option_title": "Add Shared Account",
-            "create_multisig_option_description": "Create a new multi-sig account with enhanced security that requires multiple signers",
+            "create_multisig_option_description": "Create a new shared account with enhanced security that requires multiple signers",
             "see_other_options": "See other options"
         },
         "import_account_options": {
@@ -1032,6 +1043,179 @@
             "pin_description": "This 6-digit PIN will be required to use the Pera Wallet. We highly recommend creating a PIN to help increase wallet security in the event your phone is stolen.",
             "pin_setpin": "Set PIN Code",
             "pin_notnow": "Not now"
+        }
+    },
+    "rekey": {
+        "signing": {
+            "source_name": "Rekey Account",
+            "source_description": "Rekey transaction",
+            "user_rejected_title": "Signing cancelled",
+            "user_rejected_body": "You cancelled the rekey signing. No changes were made."
+        },
+        "errors": {
+            "build_failed": {
+                "title": "Couldn't prepare the rekey"
+            },
+            "signing_failed": {
+                "title": "Couldn't sign the rekey"
+            },
+            "submission_failed": {
+                "title": "Couldn't submit the rekey"
+            }
+        },
+        "to_standard": {
+            "intro": {
+                "title": "Rekey to standard account",
+                "body": "Use another account's private key to sign transactions for this account.",
+                "learn_more": "Learn more",
+                "expect_label": "What to expect",
+                "expect_1": "Future transactions can only be signed by the delegated account.",
+                "expect_2": "This account will no longer be able to sign transactions.",
+                "expect_3": "Your account's public key, balances, and configuration will not change.",
+                "cta": "Start process"
+            },
+            "select": {
+                "title": "Select account",
+                "subtitle": "Choose the account you would like to rekey to. The account you select here will be responsible for signing all transactions for the source account.",
+                "empty": "No accounts found"
+            },
+            "confirm": {
+                "title": "Confirm rekeying",
+                "body": "You are about to rekey this account to another authorized address. The new address will be able to sign transactions on its behalf. <0>Learn more</0>",
+                "summary_label": "Summary of rekey",
+                "current_auth_label": "Currently rekeyed to",
+                "fee_label": "Transaction Fee",
+                "cta": "Confirm",
+                "replace_warning": {
+                    "title": "Your previous rekey will be replaced",
+                    "body": "<0>{{currentAuth}}</0> will no longer be authorized to sign transactions for <1>{{source}}</1>. Ensure you understand the implications of this before continuing. <2>Learn more</2>",
+                    "confirm": "Confirm",
+                    "cancel": "Cancel"
+                }
+            },
+            "success": {
+                "title": "Account successfully rekeyed",
+                "body": "The account <0>{{source}}</0> was successfully rekeyed.",
+                "cta": "Done"
+            }
+        },
+        "to_shared": {
+            "intro": {
+                "title": "Rekey to shared account",
+                "body": "Use another shared account's signers to authorize transactions for this account.",
+                "learn_more": "Learn more",
+                "expect_label": "What to expect",
+                "expect_1": "Future transactions will be signed by the chosen shared account's signers.",
+                "expect_2": "This account will no longer be able to sign transactions on its own.",
+                "expect_3": "Your account's public key, balances, and configuration will not change.",
+                "cta": "Start process"
+            },
+            "select": {
+                "title": "Select shared account",
+                "subtitle": "Choose the shared account you would like to rekey to. The account you select here will be responsible for signing all transactions for the source account.",
+                "empty": "No shared accounts found. Create a shared account first."
+            },
+            "confirm": {
+                "title": "Confirm rekeying",
+                "body": "You are about to rekey this shared account to another shared account. <0>Learn more</0>",
+                "summary_label": "Summary of rekey",
+                "current_auth_label": "Currently rekeyed to",
+                "fee_label": "Transaction Fee",
+                "cta": "Confirm",
+                "replace_warning": {
+                    "title": "Your previous rekey will be replaced",
+                    "body": "<0>{{currentAuth}}</0> will no longer be authorized to sign transactions for <1>{{source}}</1>. Ensure you understand the implications of this before continuing. <2>Learn more</2>",
+                    "confirm": "Confirm",
+                    "cancel": "Cancel"
+                }
+            },
+            "success": {
+                "title": "Account successfully rekeyed",
+                "body": "The account <0>{{source}}</0> was successfully rekeyed.",
+                "cta": "Done"
+            }
+        },
+        "to_ledger": {
+            "intro": {
+                "title": "Rekey to Ledger",
+                "body": "Change the ledger account signing for your wallet.",
+                "learn_more": "Learn more",
+                "expect_label": "What to expect",
+                "expect_1": "Future transactions will be signed by your new Ledger Device.",
+                "expect_2": "If you already have a Ledger device keyed to this account, your old Ledger will no longer be connected to it.",
+                "expect_3": "Your account's public key, balances, and configuration will not change.",
+                "expect_4": "Make sure Bluetooth is enabled on your smartphone",
+                "cta": "Start Process"
+            },
+            "select": {
+                "title": "Select Ledger account",
+                "subtitle": "Choose the Ledger account you would like to rekey to. The account you select here will be responsible for signing all transactions for the source account.",
+                "empty": "No Ledger accounts found. Import a Ledger account first."
+            },
+            "confirm": {
+                "title": "Confirm rekeying",
+                "body": "You are about to rekey this account. It will no longer be able to sign transactions for itself.",
+                "learn_more": "Learn more",
+                "summary_label": "Summary of rekey",
+                "current_auth_label": "Currently rekeyed to",
+                "fee_label": "Transaction Fee",
+                "cta": "Confirm",
+                "replace_warning": {
+                    "title": "Your previous rekey will be replaced",
+                    "body": "<0>{{currentAuth}}</0> will no longer be authorized to sign transactions for <1>{{source}}</1>. Ensure you understand the implications of this before continuing. <2>Learn more</2>",
+                    "confirm": "Confirm",
+                    "cancel": "Cancel"
+                }
+            },
+            "success": {
+                "title": "Account successfully rekeyed",
+                "body": "The account <0>{{source}}</0> was successfully rekeyed.",
+                "cta": "Done"
+            }
+        },
+        "rescan": {
+            "title": "Rekeyed Accounts",
+            "subtitle": "Select the accounts you would like to import as rekeyed accounts.",
+            "fetching": "Searching for rekeyed accounts…",
+            "empty_title": "No Rekeyed Accounts Found",
+            "empty_body": "We have scanned the blockchain and were not able to find any accounts that have not been imported.",
+            "empty_cta": "Continue",
+            "imported_section": "Already in your wallet",
+            "candidates_section": "Available to import",
+            "select_all": "Select all",
+            "cta_add": "Add accounts",
+            "cta_skip": "Not now",
+            "error_title": "Failed to scan",
+            "error_body": "Couldn't fetch rekeyed accounts. Please check your connection and try again.",
+            "nothing_imported_title": "Nothing imported",
+            "nothing_imported_body": "The selected accounts couldn't be added. They may already be in your wallet."
+        },
+        "undo": {
+            "confirm": {
+                "title": "Undo rekey",
+                "body": "You are about to undo this account's rekey operation. You will rekey the account back to itself using its authorized address. <0>Learn more</0>",
+                "summary_label": "Undo rekey",
+                "current_auth_label": "Currently rekeyed to",
+                "fee_label": "Transaction Fee",
+                "cta": "Continue"
+            },
+            "warning": {
+                "title": "Your previous rekey will be undone",
+                "body": "<0>{{currentAuth}}</0> will no longer be authorized to sign transactions for <1>{{source}}</1>. Ensure you understand the implications of this before continuing. <2>Learn more</2>",
+                "confirm": "Confirm",
+                "cancel": "Cancel"
+            },
+            "no_auth_warning": {
+                "title": "You will lose the ability to sign",
+                "body": "<1>{{source}}</1> will become a watch-only account. You will no longer be able to sign transactions for it from this wallet, and this can only be undone if you import the original private key. <2>Learn more</2>",
+                "confirm": "Yes, undo rekey",
+                "cancel": "Cancel"
+            },
+            "success": {
+                "title": "Rekey successfully undone",
+                "body": "The account <0>{{source}}</0> has been reverted to its original state",
+                "cta": "Done"
+            }
         }
     },
     "receive_funds": {
@@ -1144,7 +1328,10 @@
             "exceeds_max_body": "The amount exceeds your available balance.",
             "min_balance_title": "Min Balance",
             "min_balance_amount": "Based on your account configuration, your minimum balance is {{minBalance}}.",
-            "min_balance_body": "By hitting continue, your transaction amount will be updated to maintain the Algorand Blockchain's minimum required balance. You'll be able to preview this change in the next step."
+            "min_balance_body": "By hitting continue, your transaction amount will be updated to maintain the Algorand Blockchain's minimum required balance. You'll be able to preview this change in the next step.",
+            "rekeyed_min_balance_title": "Min Balance",
+            "rekeyed_min_balance_amount": "This account is rekeyed and must keep its minimum balance of {{minBalance}}.",
+            "rekeyed_min_balance_body": "By hitting continue, your transaction amount will be updated to keep the required minimum balance. A rekeyed account can't be closed."
         },
         "destination": {
             "error_title": "Something went wrong",
@@ -1788,7 +1975,7 @@
             "cta_other": "Verify selected accounts",
             "address_sheet_title": "Account address",
             "no_new_accounts": "All accounts on this device are already imported.",
-            "find_another_wallet": "Find another wallet"
+            "find_another_wallet": "Find another account"
         },
         "verify": {
             "title": "Verify Account Addresses via Ledger",
