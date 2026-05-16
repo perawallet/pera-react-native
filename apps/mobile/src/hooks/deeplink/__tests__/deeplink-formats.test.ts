@@ -21,7 +21,6 @@
  * same way. We test every variant.
  *
  * Skipped (per product owner — coming soon):
- *   - Web Import           (CSV row 11)
  *   - Joint/Shared account (CSV rows 36-44)
  */
 
@@ -57,6 +56,7 @@ const {
     mockOfflineKeyRegistration,
     mockErrorToast,
     mockInfoToast,
+    mockPeraWebSetQr,
 } = vi.hoisted(() => ({
     mockNavigate: vi.fn(),
     mockDispatch: vi.fn(),
@@ -78,6 +78,7 @@ const {
     mockOfflineKeyRegistration: vi.fn(async () => ({ mock: 'offline-keyreg' })),
     mockErrorToast: vi.fn(),
     mockInfoToast: vi.fn(),
+    mockPeraWebSetQr: vi.fn(),
 }))
 
 vi.mock('@routes/navigationRef', () => ({
@@ -139,6 +140,33 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 
 vi.mock('@perawallet/wallet-core-backup', () => ({
     useMarkMnemonicBackupComplete: vi.fn(),
+    // parser.ts imports these to detect Pera Web "Transfer Accounts" QR
+    // payloads. The parser shape-checks via try/catch — return a parsed
+    // payload for JSON that looks like a Pera Web QR (backupId +
+    // encryptionKey), throw otherwise so the parser falls through to the
+    // legacy mnemonic JSON detector.
+    PeraWebImportError: class PeraWebImportError extends Error {},
+    parsePeraWebQrPayload: vi.fn((raw: string) => {
+        const parsed = JSON.parse(raw)
+        if (
+            typeof parsed?.backupId !== 'string' ||
+            typeof parsed?.encryptionKey !== 'string'
+        ) {
+            throw new Error('not a pera web qr')
+        }
+        return {
+            backupId: parsed.backupId,
+            encryptionKey: Uint8Array.from(
+                Buffer.from(parsed.encryptionKey, 'base64'),
+            ),
+        }
+    }),
+}))
+
+vi.mock('@modules/onboarding/hooks', () => ({
+    usePeraWebImportFlowStore: {
+        getState: () => ({ setQr: mockPeraWebSetQr }),
+    },
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
@@ -210,10 +238,9 @@ vi.mock('../../useToast', () => ({
 }))
 
 // Avoid pulling the heavy SendFundsContent navigator chain.
-vi.mock(
-    '@modules/transactions/components/send-funds/SendFundsContent',
-    () => ({ SendFundsContent: vi.fn() }),
-)
+vi.mock('@modules/transactions/components/send-funds/SendFundsContent', () => ({
+    SendFundsContent: vi.fn(),
+}))
 vi.mock('@modules/gift-card/components/BidaliContent', () => ({
     BidaliContent: vi.fn(),
 }))
@@ -252,6 +279,17 @@ const MNEMONIC =
     'twenty,effort,goddess,rabbit,help,main,behind,ankle,disease,often,define,fine,shy,excuse,segment,truth,canoe,bus,hammer,object,edge,scare,father,about,super'
 const MNEMONIC_25 =
     'sample soap trip gasp bracket hint wool lend syrup elbow tip gesture moral lion elegant disease scissors tragic goddess guess burger brand card absorb know'
+const PERA_WEB_BACKUP_ID = 'backup-id-fmt-test'
+// 32 deterministic bytes (1..32), b64-encoded. Production sends the key
+// b64-encoded inside the JSON QR.
+const PERA_WEB_KEY_BYTES = Uint8Array.from(
+    Array.from({ length: 32 }, (_, i) => i + 1),
+)
+const PERA_WEB_KEY_B64 = Buffer.from(PERA_WEB_KEY_BYTES).toString('base64')
+const PERA_WEB_QR_JSON = JSON.stringify({
+    backupId: PERA_WEB_BACKUP_ID,
+    encryptionKey: PERA_WEB_KEY_B64,
+})
 
 type Channel =
     | { kind: 'navigate'; screen: string; params?: unknown }
@@ -260,6 +298,7 @@ type Channel =
     | { kind: 'connect'; uri: string }
     | { kind: 'addSignRequest' }
     | { kind: 'sendFunds' }
+    | { kind: 'peraWebImport' }
     | { kind: 'errorToast' }
 
 type Case = {
@@ -269,43 +308,6 @@ type Case = {
     /** Optional extra assertions to run on the spies. */
     extra?: () => void
 }
-
-const sendFundsCase = (
-    name: string,
-    url: string,
-    extra: () => void,
-): Case => ({
-    name,
-    url,
-    expect: { kind: 'sendFunds' },
-    extra,
-})
-
-const navCase = (
-    name: string,
-    url: string,
-    screen: string,
-    params?: unknown,
-): Case => ({ name, url, expect: { kind: 'navigate', screen, params } })
-
-const requestByTypeCase = (
-    name: string,
-    url: string,
-    type: string,
-    matchProps?: unknown,
-): Case => ({ name, url, expect: { kind: 'requestByType', type, matchProps } })
-
-const browserCase = (name: string, url: string, decoded: string): Case => ({
-    name,
-    url,
-    expect: { kind: 'pushWebView', url: decoded },
-})
-
-const wcCase = (name: string, url: string, normalizedUri: string): Case => ({
-    name,
-    url,
-    expect: { kind: 'connect', uri: normalizedUri },
-})
 
 const newDeeplink = (path: string) => `perawallet://app/${path}`
 const newApplink = (path: string) =>
@@ -763,6 +765,30 @@ const cases: Case[] = [
         expect: { kind: 'navigate', screen: 'TabBar' },
     },
 
+    // -- Pera Web Import (QR-only) -----------------------------------
+    {
+        name: 'Pera Web Import (JSON QR with backupId + b64 encryptionKey)',
+        url: PERA_WEB_QR_JSON,
+        expect: { kind: 'peraWebImport' },
+        extra: () => {
+            // The handler stashes the parsed payload in the flow store and
+            // navigates to the loading screen which kicks off fetch +
+            // decrypt + account import.
+            expect(mockPeraWebSetQr).toHaveBeenCalledTimes(1)
+            const call = mockPeraWebSetQr.mock.calls[0][0] as {
+                backupId: string
+                encryptionKey: Uint8Array
+            }
+            expect(call.backupId).toBe(PERA_WEB_BACKUP_ID)
+            expect(Array.from(call.encryptionKey)).toEqual(
+                Array.from(PERA_WEB_KEY_BYTES),
+            )
+            expect(mockNavigate).toHaveBeenCalledWith('AddAccount', {
+                screen: 'PeraWebImportLoading',
+            })
+        },
+    },
+
     // -- Recover Address ---------------------------------------------
     {
         name: 'Recover Address (legacy JSON-wrapped QR, space-separated)',
@@ -856,6 +882,18 @@ describe('deeplink format coverage', () => {
                     expect.any(Object),
                 )
                 break
+            case 'peraWebImport':
+                // QR-only path: parsed payload lands in the flow store and
+                // the dispatcher navigates to the loading screen. The
+                // `extra` callback asserts the exact backupId + key bytes.
+                expect(mockPeraWebSetQr).toHaveBeenCalledTimes(1)
+                expect(mockNavigate).toHaveBeenCalledWith(
+                    'AddAccount',
+                    expect.objectContaining({
+                        screen: 'PeraWebImportLoading',
+                    }),
+                )
+                break
             case 'errorToast':
                 // Catch-all for unimplemented handlers that fall back to
                 // info/error toasts (Cards, etc.).
@@ -876,4 +914,3 @@ describe('deeplink format coverage', () => {
         }
     })
 })
-

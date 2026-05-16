@@ -33,22 +33,21 @@ export type PeraWebImportDeeplinkHandler = (params: {
  * non-QR source would let a malicious URL pre-stage an attacker's
  * backup decryption.
  */
-export const usePeraWebImportDeeplink =
-    (): PeraWebImportDeeplinkHandler => {
-        return useCallback(({ data, source, replaceCurrentScreen }) => {
-            if (source !== 'qr') {
-                logger.warn(
-                    '[deeplink/pera-web-import] ignored — only supported via QR scan',
-                    { source },
-                )
-                return
-            }
-            usePeraWebImportFlowStore.getState().setQr({
-                backupId: data.backupId,
-                encryptionKey: data.encryptionKey,
-            })
-            navigateToScreen(replaceCurrentScreen, 'AddAccount', {
-                screen: 'PeraWebImportLoading',
-            })
-        }, [])
-    }
+export const usePeraWebImportDeeplink = (): PeraWebImportDeeplinkHandler => {
+    return useCallback(({ data, source, replaceCurrentScreen }) => {
+        if (source !== 'qr') {
+            logger.warn(
+                '[deeplink/pera-web-import] ignored — only supported via QR scan',
+                { source },
+            )
+            return
+        }
+        usePeraWebImportFlowStore.getState().setQr({
+            backupId: data.backupId,
+            encryptionKey: data.encryptionKey,
+        })
+        navigateToScreen(replaceCurrentScreen, 'AddAccount', {
+            screen: 'PeraWebImportLoading',
+        })
+    }, [])
+}

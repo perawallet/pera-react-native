@@ -146,7 +146,22 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 
 vi.mock('@perawallet/wallet-core-backup', () => ({
     useMarkMnemonicBackupComplete: vi.fn(),
+    // parser.ts imports these to detect Pera Web "Transfer Accounts" QR
+    // payloads — stub so the parser doesn't crash on JSON-shaped URLs.
+    PeraWebImportError: class PeraWebImportError extends Error {},
+    parsePeraWebQrPayload: vi.fn(() => {
+        throw new Error('not a pera web qr')
+    }),
 }))
+
+// Forward to the real store so the dispatcher's `setQr` lands on the same
+// instance the tests below assert against (imported via the deep path).
+vi.mock('@modules/onboarding/hooks', async () => {
+    const actual = (await vi.importActual(
+        '@modules/onboarding/hooks/peraWebImportFlowStore',
+    )) as typeof import('@modules/onboarding/hooks/peraWebImportFlowStore')
+    return { usePeraWebImportFlowStore: actual.usePeraWebImportFlowStore }
+})
 
 const { mockPushWebView } = vi.hoisted(() => ({
     mockPushWebView: vi.fn(),

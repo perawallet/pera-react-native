@@ -19,7 +19,10 @@ export const DEEPLINK_TIMEOUT_TAG = 'DEEPLINK_TIMEOUT'
 
 export class DeeplinkTimeoutError extends Error {
     readonly tag = DEEPLINK_TIMEOUT_TAG
-    constructor(public readonly stage: string, public readonly ms: number) {
+    constructor(
+        public readonly stage: string,
+        public readonly ms: number,
+    ) {
         super(`Deeplink stage "${stage}" exceeded ${ms}ms`)
         this.name = 'DeeplinkTimeoutError'
     }

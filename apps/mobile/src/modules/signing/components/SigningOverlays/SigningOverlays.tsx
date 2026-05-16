@@ -133,10 +133,10 @@ const useSignRequestDriver = () => {
                     sheetId,
                 })
             } catch (err) {
-                logger.error(
-                    '[signing/overlay] sheet promise rejected',
-                    { sheetId, err },
-                )
+                logger.error('[signing/overlay] sheet promise rejected', {
+                    sheetId,
+                    err,
+                })
             }
             if (cancelled) return
             if (openIdRef.current === sheetId) {

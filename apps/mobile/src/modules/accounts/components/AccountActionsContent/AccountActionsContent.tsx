@@ -44,8 +44,12 @@ export const AccountActionsContent = ({
     const styles = useStyles()
     const { t } = useLanguage()
     const { dismiss } = useBottomSheetResult<void>()
-    const { existingContact, openSendTransaction, openWatchAddress, openContact } =
-        useAccountActions({ address, label, onClose: dismiss })
+    const {
+        existingContact,
+        openSendTransaction,
+        openWatchAddress,
+        openContact,
+    } = useAccountActions({ address, label, onClose: dismiss })
 
     const contactAction: ActionRow = existingContact
         ? {

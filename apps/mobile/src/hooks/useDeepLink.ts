@@ -94,7 +94,7 @@ type UseDeepLinkResult = {
 }
 
 export const useDeepLink = (): UseDeepLinkResult => {
-    const { showToast, errorToast, infoToast } = useToast()
+    const { errorToast, infoToast } = useToast()
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
     const { network } = useNetwork()
     const { t } = useLanguage()
@@ -254,8 +254,10 @@ export const useDeepLink = (): UseDeepLinkResult => {
                             .getState()
                             .sessionRequests.map(r => r.clientId),
                     )
-                    const sawNewSessionRequest =
-                        await waitForNewSessionRequest(beforeIds, 8_000)
+                    const sawNewSessionRequest = await waitForNewSessionRequest(
+                        beforeIds,
+                        8_000,
+                    )
                     if (!sawNewSessionRequest) {
                         logger.warn(
                             '[deeplink/wc] no session_request after connect — bridge likely unreachable',
@@ -265,8 +267,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
                             variant: 'walletconnect',
                             sourceUrl: parsedData.sourceUrl,
                             parsedType: 'WALLET_CONNECT',
-                            error:
-                                'No response from the dApp. The session may be expired or the WalletConnect bridge may be unreachable.',
+                            error: 'No response from the dApp. The session may be expired or the WalletConnect bridge may be unreachable.',
                         })
                         onError?.()
                         return
