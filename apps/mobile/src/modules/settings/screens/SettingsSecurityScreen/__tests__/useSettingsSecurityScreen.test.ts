@@ -25,6 +25,16 @@ vi.mock('@perawallet/wallet-core-settings', () => ({
     usePreferences: vi.fn(),
 }))
 
+vi.mock('@perawallet/wallet-core-remote-config', () => ({
+    useRemoteConfig: () => ({
+        getBooleanValue: (_key: string, fallback: boolean) => fallback,
+    }),
+    RemoteConfigKeys: {
+        enable_motion_lock: 'enable-motion-lock',
+        enable_duress_pin: 'enable-duress-pin',
+    },
+}))
+
 const { mockRequestBottomSheet } = vi.hoisted(() => ({
     mockRequestBottomSheet: vi.fn(),
 }))
@@ -61,14 +71,22 @@ describe('useSettingsSecurityScreen', () => {
     const mockDisableBiometrics = vi.fn()
     const mockSetPreference = vi.fn()
     const mockGetPreference = vi.fn()
+    const mockVerifyPin = vi.fn()
+    const mockSaveDuressPin = vi.fn()
+    const mockCheckDuressPinEnabled = vi.fn()
 
     beforeEach(() => {
         vi.clearAllMocks()
         mockCheckPinEnabled.mockResolvedValue(false)
+        mockCheckDuressPinEnabled.mockResolvedValue(false)
         mockGetPreference.mockReturnValue(undefined)
+        mockVerifyPin.mockResolvedValue({ kind: 'fail' })
         ;(usePinCode as Mock).mockReturnValue({
             checkPinEnabled: mockCheckPinEnabled,
             savePin: mockSavePin,
+            verifyPin: mockVerifyPin,
+            saveDuressPin: mockSaveDuressPin,
+            checkDuressPinEnabled: mockCheckDuressPinEnabled,
         })
         ;(useBiometrics as Mock).mockReturnValue({
             isEnabled: false,

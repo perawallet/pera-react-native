@@ -173,18 +173,24 @@ describe('Flow: PIN lifecycle from Settings → Security', () => {
             expect(await pinHook.current.checkPinEnabled()).toBe(true)
 
             // Verify with the correct PIN succeeds.
-            expect(await pinHook.current.verifyPin(TEST_PIN)).toBe(true)
+            expect(await pinHook.current.verifyPin(TEST_PIN)).toEqual({
+                kind: 'ok',
+            })
             // Verify with the wrong PIN fails. This is the gate
             // production code uses to reject disable / change /
             // unlock attempts.
-            expect(await pinHook.current.verifyPin('000000')).toBe(false)
+            expect(await pinHook.current.verifyPin('000000')).toEqual({
+                kind: 'fail',
+            })
 
             // Disable: save null → flag flips back, no record.
             await pinHook.current.savePin(null)
             expect(await pinHook.current.checkPinEnabled()).toBe(false)
             // After disable, even verifying the previously-correct
-            // PIN returns false (the record is gone, not just hidden).
-            expect(await pinHook.current.verifyPin(TEST_PIN)).toBe(false)
+            // PIN returns fail (the record is gone, not just hidden).
+            expect(await pinHook.current.verifyPin(TEST_PIN)).toEqual({
+                kind: 'fail',
+            })
         },
         SLOW_TEST_TIMEOUT_MS,
     )

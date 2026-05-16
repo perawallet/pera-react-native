@@ -18,9 +18,20 @@ import { useErrorToast } from '@hooks/useErrorToast'
 
 export type PinEntryMode = 'setup' | 'confirm' | 'verify' | 'change_old'
 
+export type SavePinHandlerResult =
+    | { ok: true }
+    | { ok: false; reason: 'matches-regular-pin' }
+
 type UsePinEditViewParams = {
     mode: PinEntryMode
     onSuccess?: () => void
+    /**
+     * Overrides the default `savePin(pin)` call at the end of a setup→confirm
+     * flow. Use to set up a secondary PIN (e.g. the duress PIN) that needs
+     * additional validation. Returning `{ ok: false }` shows the standard
+     * error animation and resets the flow back to `setup`.
+     */
+    savePinHandler?: (pin: string) => Promise<SavePinHandlerResult>
 }
 
 type UsePinEditViewResult = {
@@ -37,6 +48,7 @@ const isVerifyMode = (mode: Nullable<PinEntryMode>): boolean =>
 export const usePinEditView = ({
     mode,
     onSuccess,
+    savePinHandler,
 }: UsePinEditViewParams): UsePinEditViewResult => {
     const { t } = useLanguage()
     const {
@@ -127,17 +139,33 @@ export const usePinEditView = ({
                     break
                 case 'confirm':
                     if (pin === storedPin) {
-                        await savePin(pin)
-                        setHasError(false)
-                        onSuccess?.()
+                        if (savePinHandler) {
+                            const result = await savePinHandler(pin)
+                            if (result.ok) {
+                                setHasError(false)
+                                onSuccess?.()
+                            } else {
+                                // Save was rejected by the handler — most
+                                // common case is the duress PIN matching the
+                                // regular PIN. Reset back to setup so the
+                                // user re-enters from scratch.
+                                setStoredPin('')
+                                setCurrentMode('setup')
+                                setHasError(true)
+                            }
+                        } else {
+                            await savePin(pin)
+                            setHasError(false)
+                            onSuccess?.()
+                        }
                     } else {
                         setHasError(true)
                     }
                     break
                 case 'change_old':
                 case 'verify': {
-                    const isValid = await verifyPin(pin)
-                    if (isValid) {
+                    const result = await verifyPin(pin)
+                    if (result.kind === 'ok') {
                         resetFailedAttempts()
                         setHasError(false)
                         if (currentMode === 'change_old') {
@@ -145,6 +173,14 @@ export const usePinEditView = ({
                         } else {
                             onSuccess?.()
                         }
+                    } else if (result.kind === 'duress') {
+                        // The user is already unlocked here (settings, view-
+                        // passphrase, etc.) so wiping would be wrong; the
+                        // duress branch is only honoured at the lock screen.
+                        // Show the same error as a wrong PIN but do not
+                        // increment the failed-attempt counter — a stray
+                        // duress entry should not contribute to lockout.
+                        setHasError(true)
                     } else {
                         handleFailedAttempt()
                         setHasError(true)
@@ -161,6 +197,7 @@ export const usePinEditView = ({
             handleFailedAttempt,
             resetFailedAttempts,
             onSuccess,
+            savePinHandler,
         ],
     )
 

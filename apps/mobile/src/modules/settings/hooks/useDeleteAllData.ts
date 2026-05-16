@@ -37,6 +37,13 @@ export const clearAccountsStore = () => {
 
 type UseDeleteAllDataResult = {
     deleteAllData: () => Promise<void>
+    /**
+     * Same destructive sequence as `deleteAllData`, exposed without the
+     * settings-flow modal coupling so other paths (notably the duress wipe)
+     * can reuse it. Skips no steps — caller is responsible for any post-wipe
+     * routing (e.g. clearAccountsStore + provisioning a decoy account).
+     */
+    wipeAllUserData: () => Promise<void>
 }
 
 export const useDeleteAllData = (): UseDeleteAllDataResult => {
@@ -47,14 +54,16 @@ export const useDeleteAllData = (): UseDeleteAllDataResult => {
     const { network } = useNetwork()
     const { deleteAllSessions } = useWalletConnect(network)
 
-    const deleteAllData = useCallback(async () => {
+    const wipeAllUserData = useCallback(async () => {
         // 1. Clear React Query — both in-memory and persisted cache
         if (queryClient) {
             queryClient.removeQueries()
         }
         getProvider().keyValueStorage.removeItem(REACT_QUERY_PERSIST_KEY)
 
-        // 2. Delete all cryptographic keys from keystore
+        // 2. Delete all cryptographic keys from keystore (this includes both
+        // the regular PIN record and the duress PIN record, since both are
+        // stored as canonical secret-key entries).
         if (keys) {
             await Promise.allSettled(
                 Array.from(keys.values()).map(async k => {
@@ -111,5 +120,5 @@ export const useDeleteAllData = (): UseDeleteAllDataResult => {
         deleteAllSessions,
     ])
 
-    return { deleteAllData }
+    return { deleteAllData: wipeAllUserData, wipeAllUserData }
 }
