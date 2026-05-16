@@ -105,9 +105,6 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
     return useCallback(
         async (data: KeyregDeeplink) => {
             if (!isValidAlgorandAddress(data.senderAddress)) {
-                logger.warn('[deeplink/keyreg] invalid sender address', {
-                    sender: data.senderAddress,
-                })
                 showError({
                     variant: 'keyreg',
                     sourceUrl: data.sourceUrl,
@@ -126,10 +123,6 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
                 allAccounts,
             )
             if (ineligible) {
-                logger.warn('[deeplink/keyreg] sender not signable here', {
-                    sender: data.senderAddress,
-                    reason: ineligible.reason,
-                })
                 showError({
                     variant: 'keyreg-unknown-account',
                     sourceUrl: data.sourceUrl,
@@ -169,17 +162,6 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
                         !data.votelst ||
                         !data.votekd
                     ) {
-                        logger.warn(
-                            '[deeplink/keyreg] missing required online fields',
-                            {
-                                hasVoteKey: !!data.voteKey,
-                                hasSelkey: !!data.selkey,
-                                hasSprfkey: !!data.sprfkey,
-                                hasVotefst: !!data.votefst,
-                                hasVotelst: !!data.votelst,
-                                hasVotekd: !!data.votekd,
-                            },
-                        )
                         showError({
                             variant: 'keyreg',
                             sourceUrl: data.sourceUrl,

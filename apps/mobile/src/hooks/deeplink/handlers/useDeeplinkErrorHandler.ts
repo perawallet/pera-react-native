@@ -11,7 +11,6 @@
  */
 
 import { useCallback } from 'react'
-import { logger } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { DEEPLINK_TIMEOUT_TAG } from './timeout'
@@ -65,17 +64,6 @@ const MESSAGE_KEYS: Record<Variant, { title: string; body: string }> = {
     },
 }
 
-const errorMessage = (error: unknown): string | undefined => {
-    if (!error) return undefined
-    if (error instanceof Error) return error.message
-    if (typeof error === 'string') return error
-    try {
-        return JSON.stringify(error)
-    } catch {
-        return String(error)
-    }
-}
-
 /**
  * Surfaces a deeplink failure to the user via the in-app toast notifier.
  *
@@ -86,10 +74,6 @@ const errorMessage = (error: unknown): string | undefined => {
  * the dispatcher's `onSuccess` / `onError` callback has already
  * triggered `props.onClose` on the scanner, the Modal is dismissing,
  * and the toast lands on the screen the user came from.
- *
- * Tradeoffs vs the prior `'deeplink-error'` bottom sheet: less screen
- * real estate so we can't show the full debug payload — we still log it
- * to `logger.warn` so it's grep-able.
  */
 const TOAST_DEFER_MS = 400
 
@@ -98,21 +82,13 @@ export const useDeeplinkErrorHandler = (): ShowDeeplinkError => {
     const { errorToast } = useToast()
 
     return useCallback(
-        ({ variant, sourceUrl, parsedType, error }) => {
+        ({ variant, error }) => {
             const isTimeout =
                 error instanceof Error &&
                 'tag' in error &&
                 (error as { tag?: string }).tag === DEEPLINK_TIMEOUT_TAG
             const effectiveVariant: Variant = isTimeout ? 'timeout' : variant
             const { title, body } = MESSAGE_KEYS[effectiveVariant]
-            const errMsg = errorMessage(error)
-
-            logger.warn('[deeplink/error-sheet] showError called', {
-                variant: effectiveVariant,
-                sourceUrl,
-                parsedType,
-                errorMessage: errMsg,
-            })
 
             setTimeout(() => {
                 errorToast(t(title), t(body))

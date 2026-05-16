@@ -11,7 +11,6 @@
  */
 
 import { useCallback } from 'react'
-import { logger } from '@perawallet/wallet-core-shared'
 import { usePeraWebImportFlowStore } from '@modules/onboarding/hooks'
 import { navigateToScreen } from '../navigateToScreen'
 import type { PeraWebImportDeeplink } from '../types'
@@ -35,13 +34,7 @@ export type PeraWebImportDeeplinkHandler = (params: {
  */
 export const usePeraWebImportDeeplink = (): PeraWebImportDeeplinkHandler => {
     return useCallback(({ data, source, replaceCurrentScreen }) => {
-        if (source !== 'qr') {
-            logger.warn(
-                '[deeplink/pera-web-import] ignored — only supported via QR scan',
-                { source },
-            )
-            return
-        }
+        if (source !== 'qr') return
         usePeraWebImportFlowStore.getState().setQr({
             backupId: data.backupId,
             encryptionKey: data.encryptionKey,

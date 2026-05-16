@@ -132,8 +132,6 @@ export const useDeepLink = (): UseDeepLinkResult => {
             return
         }
 
-        logger.debug('Parsed deeplink data:', { parsedData })
-
         try {
             switch (parsedData.type) {
                 case DeeplinkType.ADD_CONTACT:
@@ -224,9 +222,6 @@ export const useDeepLink = (): UseDeepLinkResult => {
                     // snapshot the session-request store before connect,
                     // wait briefly for a NEW request to land, and toast
                     // a clear error if it never does.
-                    logger.debug('[deeplink/wc] connecting', {
-                        uri: parsedData.uri,
-                    })
                     try {
                         await withTimeout(
                             'walletConnect.connect',
@@ -259,10 +254,6 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         8_000,
                     )
                     if (!sawNewSessionRequest) {
-                        logger.warn(
-                            '[deeplink/wc] no session_request after connect — bridge likely unreachable',
-                            { uri: parsedData.uri },
-                        )
                         showError({
                             variant: 'walletconnect',
                             sourceUrl: parsedData.sourceUrl,
@@ -272,7 +263,6 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         onError?.()
                         return
                     }
-                    logger.debug('[deeplink/wc] session_request received')
                     break
                 }
 
@@ -433,9 +423,6 @@ export const useDeepLink = (): UseDeepLinkResult => {
                     break
             }
 
-            logger.debug('Deeplink: Handled successfully', {
-                type: parsedData.type,
-            })
             onSuccess?.()
         } catch (error) {
             // Don't log the raw `url` here: for Pera Web QR deeplinks it is

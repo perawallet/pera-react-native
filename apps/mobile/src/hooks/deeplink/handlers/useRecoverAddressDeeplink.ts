@@ -55,21 +55,11 @@ export const useRecoverAddressDeeplink = (): RecoverAddressDeeplinkHandler => {
 
     return useCallback(
         async ({ mnemonic, source, replaceCurrentScreen, sourceUrl }) => {
-            logger.debug('[deeplink/recover] start', {
-                source,
-                wordCountRaw: mnemonic.trim().split(/[,\s]+/).length,
-            })
-            if (source !== 'qr') {
-                logger.debug('[deeplink/recover] skipped (source !== qr)')
-                return
-            }
+            if (source !== 'qr') return
 
             const normalized = normalizeMnemonic(mnemonic)
             const resolved = resolveImportAccountType(normalized)
             if (!resolved.success) {
-                logger.warn('[deeplink/recover] unrecognised mnemonic length', {
-                    wordCount: 'wordCount' in resolved ? resolved.wordCount : 0,
-                })
                 showError({
                     variant: 'recover',
                     sourceUrl,
@@ -80,16 +70,12 @@ export const useRecoverAddressDeeplink = (): RecoverAddressDeeplinkHandler => {
             }
 
             try {
-                logger.debug('[deeplink/recover] importing', {
-                    accountType: resolved.accountType,
-                })
                 const result = await importAccount({
                     mnemonic: normalized,
                     type: resolved.accountType,
                 })
 
                 if (result.type === 'hdWallet' && 'walletKeyId' in result) {
-                    logger.debug('[deeplink/recover] hdWallet import OK')
                     navigateToScreen(replaceCurrentScreen, 'AddAccount', {
                         screen: 'SearchAccounts',
                         params: {
@@ -99,7 +85,6 @@ export const useRecoverAddressDeeplink = (): RecoverAddressDeeplinkHandler => {
                         },
                     })
                 } else {
-                    logger.debug('[deeplink/recover] algo25 import OK')
                     markBackupComplete(result as WalletAccount)
                     navigateToScreen(replaceCurrentScreen, 'AddAccount', {
                         screen: 'SearchAccounts',
