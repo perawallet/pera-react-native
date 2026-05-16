@@ -15,17 +15,33 @@ import { microAlgo } from '@algorandfoundation/algokit-utils'
 import {
     isValidAlgorandAddress,
     useAlgorandClient,
+    useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import {
+    resolveAuthAccount,
+    useAllAccounts,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import {
     decodeFromBase64,
     generateOrderedUniqueId,
+    logger,
 } from '@perawallet/wallet-core-shared'
-import { useToast } from '@hooks/useToast'
-import { useLanguage } from '@hooks/useLanguage'
+import { useDeeplinkErrorHandler } from './useDeeplinkErrorHandler'
+import { withTimeout } from './timeout'
 import type { KeyregDeeplink } from '../types'
 
 export type KeyregDeeplinkHandler = (data: KeyregDeeplink) => Promise<void>
+
+/**
+ * Cap the algokit createTransaction call. It internally fetches
+ * `algod.suggestedParams()` to compute firstValid/lastValid rounds, which
+ * can hang indefinitely if algod is unreachable. Without a bound the
+ * dispatcher's `await` never resolves and the QR scanner Modal stays open
+ * with no visible feedback.
+ */
+const KEYREG_BUILD_TIMEOUT_MS = 12_000
 
 /**
  * Native pera QR generators emit unpadded base64 (a 32-byte key encodes to
@@ -50,19 +66,76 @@ const decodeKeyregBase64 = (key: string): Uint8Array => {
  * Online keyreg requires every participation key field to be present —
  * partial deeplinks are rejected rather than producing a malformed txn.
  */
+/**
+ * Preflight: returns a reason string the deeplink error sheet should
+ * surface if the user can't sign for `senderAddress`, or null if they can.
+ * Mirrors what the signing pipeline's resolveInitialContext checks but at
+ * the deeplink layer so we never queue a doomed sign request that lands
+ * the user on a useless review/error sheet.
+ */
+const checkSigningEligibility = (
+    senderAddress: string,
+    accounts: WalletAccount[],
+): { reason: string } | null => {
+    const account = accounts.find(a => a.address === senderAddress)
+    if (!account) {
+        return {
+            reason: `Account ${senderAddress} is not in this wallet`,
+        }
+    }
+    try {
+        // Throws RekeyTargetNotFoundError when the account is rekeyed
+        // and the rekey target is also missing.
+        resolveAuthAccount(account, accounts)
+        return null
+    } catch (err) {
+        return {
+            reason: err instanceof Error ? err.message : String(err),
+        }
+    }
+}
+
 export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
     const algorandClient = useAlgorandClient()
+    const { encodeTransaction, decodeTransaction } = useTransactionEncoder()
     const { addSignRequest } = useSigningRequest()
-    const { errorToast } = useToast()
-    const { t } = useLanguage()
+    const allAccounts = useAllAccounts()
+    const showError = useDeeplinkErrorHandler()
 
     return useCallback(
         async (data: KeyregDeeplink) => {
             if (!isValidAlgorandAddress(data.senderAddress)) {
-                errorToast(
-                    t('errors.deeplink.invalid_url_title'),
-                    t('errors.deeplink.invalid_url_body'),
-                )
+                logger.warn('[deeplink/keyreg] invalid sender address', {
+                    sender: data.senderAddress,
+                })
+                showError({
+                    variant: 'keyreg',
+                    sourceUrl: data.sourceUrl,
+                    parsedType: 'KEYREG',
+                    error: 'Invalid sender address',
+                })
+                return
+            }
+
+            // Preflight signing eligibility before queueing — otherwise the
+            // user sees the signing sheet open with a cryptic pipeline
+            // error ("No signable transactions found", "Rekey target not
+            // found in local accounts") and has to dismiss multiple times.
+            const ineligible = checkSigningEligibility(
+                data.senderAddress,
+                allAccounts,
+            )
+            if (ineligible) {
+                logger.warn('[deeplink/keyreg] sender not signable here', {
+                    sender: data.senderAddress,
+                    reason: ineligible.reason,
+                })
+                showError({
+                    variant: 'keyreg-unknown-account',
+                    sourceUrl: data.sourceUrl,
+                    parsedType: 'KEYREG',
+                    error: ineligible.reason,
+                })
                 return
             }
 
@@ -73,34 +146,52 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
             const noteBytes = note ? new TextEncoder().encode(note) : undefined
             const staticFee = data.fee ? microAlgo(BigInt(data.fee)) : undefined
 
-            let tx
-            if (data.keyregType === 'offline') {
-                tx =
-                    await algorandClient.createTransaction.offlineKeyRegistration(
-                        {
-                            sender: data.senderAddress,
-                            note: noteBytes,
-                            staticFee,
-                        },
+            try {
+                let tx
+                if (data.keyregType === 'offline') {
+                    tx = await withTimeout(
+                        'offlineKeyRegistration',
+                        KEYREG_BUILD_TIMEOUT_MS,
+                        algorandClient.createTransaction.offlineKeyRegistration(
+                            {
+                                sender: data.senderAddress,
+                                note: noteBytes,
+                                staticFee,
+                            },
+                        ),
                     )
-            } else {
-                if (
-                    !data.voteKey ||
-                    !data.selkey ||
-                    !data.sprfkey ||
-                    !data.votefst ||
-                    !data.votelst ||
-                    !data.votekd
-                ) {
-                    errorToast(
-                        t('errors.deeplink.invalid_url_title'),
-                        t('errors.deeplink.invalid_url_body'),
-                    )
-                    return
-                }
-                tx =
-                    await algorandClient.createTransaction.onlineKeyRegistration(
-                        {
+                } else {
+                    if (
+                        !data.voteKey ||
+                        !data.selkey ||
+                        !data.sprfkey ||
+                        !data.votefst ||
+                        !data.votelst ||
+                        !data.votekd
+                    ) {
+                        logger.warn(
+                            '[deeplink/keyreg] missing required online fields',
+                            {
+                                hasVoteKey: !!data.voteKey,
+                                hasSelkey: !!data.selkey,
+                                hasSprfkey: !!data.sprfkey,
+                                hasVotefst: !!data.votefst,
+                                hasVotelst: !!data.votelst,
+                                hasVotekd: !!data.votekd,
+                            },
+                        )
+                        showError({
+                            variant: 'keyreg',
+                            sourceUrl: data.sourceUrl,
+                            parsedType: 'KEYREG',
+                            error: 'Missing required participation key fields',
+                        })
+                        return
+                    }
+                    tx = await withTimeout(
+                        'onlineKeyRegistration',
+                        KEYREG_BUILD_TIMEOUT_MS,
+                        algorandClient.createTransaction.onlineKeyRegistration({
                             sender: data.senderAddress,
                             voteKey: decodeKeyregBase64(data.voteKey),
                             selectionKey: decodeKeyregBase64(data.selkey),
@@ -110,18 +201,49 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
                             voteKeyDilution: BigInt(data.votekd),
                             note: noteBytes,
                             staticFee,
-                        },
+                        }),
                     )
-            }
+                }
 
-            addSignRequest({
-                id: generateOrderedUniqueId(),
-                type: 'transactions',
-                transport: 'algod',
-                sourceType: 'local',
-                txs: [tx],
-            })
+                // Algokit's createTransaction returns a Transaction whose
+                // sender is an `Address` instance (and several fields are
+                // typed objects). The signing pipeline / display layer is
+                // built around the shape produced by `decodeTransaction(bytes)`
+                // — sender becomes a plain string, byte fields are
+                // Uint8Array — so a raw algokit txn crashes with
+                // `Buffer.from(...) received type object`. Encode then
+                // decode to normalize.
+                const normalizedTx = decodeTransaction(encodeTransaction(tx))
+                // sourceType MUST be 'deeplink' (not 'local') so
+                // SigningOverlays' interactive-source filter picks the
+                // request up and shows the review sheet. 'local' is
+                // headless — the originating screen owns its own
+                // confirmation UI and the request would silently auto-sign
+                // (or silently fail if no signer is available).
+                addSignRequest({
+                    id: generateOrderedUniqueId(),
+                    type: 'transactions',
+                    transport: 'algod',
+                    sourceType: 'deeplink',
+                    txs: [normalizedTx],
+                })
+            } catch (error) {
+                logger.error('[deeplink/keyreg] failed', { error })
+                showError({
+                    variant: 'keyreg',
+                    sourceUrl: data.sourceUrl,
+                    parsedType: 'KEYREG',
+                    error,
+                })
+            }
         },
-        [addSignRequest, algorandClient, errorToast, t],
+        [
+            addSignRequest,
+            algorandClient,
+            allAccounts,
+            decodeTransaction,
+            encodeTransaction,
+            showError,
+        ],
     )
 }

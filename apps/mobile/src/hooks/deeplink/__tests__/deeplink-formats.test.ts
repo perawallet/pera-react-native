@@ -116,6 +116,17 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
             selectedAccountAddress: mockSelectedAccountAddress.current,
         }),
     }),
+    useAllAccounts: () => [
+        // Include the keyreg test sender so the preflight passes.
+        { address: 'A'.repeat(58), id: 'mock-a', type: 'algo25' },
+        {
+            address:
+                '5CYNWZY5JO7RWAPEQLWOTDULMDSSKJ55PHXNRTGZXUR62B7PR7JIDJGHEA',
+            id: 'mock-csv',
+            type: 'algo25',
+        },
+    ],
+    resolveAuthAccount: (account: unknown) => account,
     resolveImportAccountType: (mnemonic: string) => {
         const wordCount = mnemonic.trim().split(/[,\s]+/).length
         if (wordCount === 24) return { success: true, accountType: 'hdWallet' }
@@ -123,6 +134,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         return { success: false, wordCount }
     },
     useImportAccount: vi.fn(),
+    DuplicateAccountError: class DuplicateAccountError extends Error {},
 }))
 
 vi.mock('@perawallet/wallet-core-backup', () => ({
@@ -182,6 +194,10 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
             onlineKeyRegistration: mockOnlineKeyRegistration,
             offlineKeyRegistration: mockOfflineKeyRegistration,
         },
+    }),
+    useTransactionEncoder: () => ({
+        encodeTransaction: (tx: unknown) => tx,
+        decodeTransaction: (tx: unknown) => tx,
     }),
 }))
 

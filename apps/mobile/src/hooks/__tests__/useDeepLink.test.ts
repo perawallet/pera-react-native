@@ -115,6 +115,13 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
             offlineKeyRegistration: mockOfflineKeyRegistration,
         },
     }),
+    // Identity encode/decode pair for the keyreg shape-normalization
+    // step. Real impl encodes to msgpack bytes then decodes back to a
+    // string-sender txn; the tests don't care about byte representation.
+    useTransactionEncoder: () => ({
+        encodeTransaction: (tx: unknown) => tx,
+        decodeTransaction: (tx: unknown) => tx,
+    }),
 }))
 
 const mockImportAccount = vi.fn()
@@ -123,6 +130,10 @@ const mockMarkBackupComplete = vi.fn()
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: () => ({ address: 'addr1' }),
     useSelectedAccountAddress: () => ({ setSelectedAccountAddress: vi.fn() }),
+    useAllAccounts: () => [
+        { address: 'A'.repeat(58), id: 'mock', type: 'algo25' },
+    ],
+    resolveAuthAccount: (account: unknown) => account,
     resolveImportAccountType: (mnemonic: string) => {
         const wordCount = mnemonic.trim().split(/\s+/).length
         if (wordCount === 24) return { success: true, accountType: 'hdWallet' }
@@ -130,6 +141,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         return { success: false, wordCount }
     },
     useImportAccount: vi.fn(),
+    DuplicateAccountError: class DuplicateAccountError extends Error {},
 }))
 
 vi.mock('@perawallet/wallet-core-backup', () => ({
@@ -1039,7 +1051,9 @@ describe('useDeepLink', () => {
             )
         })
 
-        expect(mockErrorToast).toHaveBeenCalled()
+        // Deeplink errors surface via the in-app toast notifier,
+        // deferred by ~400ms to let the QR Modal close first.
+        await vi.waitFor(() => expect(mockErrorToast).toHaveBeenCalled())
         expect(mockAddSignRequest).not.toHaveBeenCalled()
     })
 
@@ -1090,7 +1104,7 @@ describe('useDeepLink', () => {
             )
         })
 
-        expect(mockErrorToast).toHaveBeenCalled()
+        await vi.waitFor(() => expect(mockErrorToast).toHaveBeenCalled())
         expect(mockOnlineKeyRegistration).not.toHaveBeenCalled()
         expect(mockAddSignRequest).not.toHaveBeenCalled()
     })

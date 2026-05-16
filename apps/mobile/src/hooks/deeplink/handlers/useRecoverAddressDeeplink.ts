@@ -12,15 +12,15 @@
 
 import { useCallback } from 'react'
 import {
+    DuplicateAccountError,
     resolveImportAccountType,
     useImportAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 import { logger } from '@perawallet/wallet-core-shared'
-import { useToast } from '@hooks/useToast'
-import { useLanguage } from '@hooks/useLanguage'
 import { navigateToScreen } from '../navigateToScreen'
+import { useDeeplinkErrorHandler } from './useDeeplinkErrorHandler'
 
 type LinkSource = 'qr' | 'deeplink'
 
@@ -28,6 +28,8 @@ export type RecoverAddressDeeplinkHandler = (params: {
     mnemonic: string
     source: LinkSource
     replaceCurrentScreen: boolean
+    /** Forwarded into the error sheet's debug payload when present. */
+    sourceUrl?: string
 }) => Promise<void>
 
 /**
@@ -49,33 +51,45 @@ const normalizeMnemonic = (raw: string): string =>
 export const useRecoverAddressDeeplink = (): RecoverAddressDeeplinkHandler => {
     const importAccount = useImportAccount()
     const markBackupComplete = useMarkMnemonicBackupComplete()
-    const { errorToast } = useToast()
-    const { t } = useLanguage()
+    const showError = useDeeplinkErrorHandler()
 
     return useCallback(
-        async ({ mnemonic, source, replaceCurrentScreen }) => {
-            if (source !== 'qr') return
+        async ({ mnemonic, source, replaceCurrentScreen, sourceUrl }) => {
+            logger.debug('[deeplink/recover] start', {
+                source,
+                wordCountRaw: mnemonic.trim().split(/[,\s]+/).length,
+            })
+            if (source !== 'qr') {
+                logger.debug('[deeplink/recover] skipped (source !== qr)')
+                return
+            }
 
             const normalized = normalizeMnemonic(mnemonic)
             const resolved = resolveImportAccountType(normalized)
             if (!resolved.success) {
-                logger.warn('Recover address: unrecognised mnemonic length', {
+                logger.warn('[deeplink/recover] unrecognised mnemonic length', {
                     wordCount: 'wordCount' in resolved ? resolved.wordCount : 0,
                 })
-                errorToast(
-                    t('errors.deeplink.invalid_url_title'),
-                    t('errors.deeplink.invalid_url_body'),
-                )
+                showError({
+                    variant: 'recover',
+                    sourceUrl,
+                    parsedType: 'RECOVER_ADDRESS',
+                    error: 'Invalid mnemonic length (need 24 or 25 words)',
+                })
                 return
             }
 
             try {
+                logger.debug('[deeplink/recover] importing', {
+                    accountType: resolved.accountType,
+                })
                 const result = await importAccount({
                     mnemonic: normalized,
                     type: resolved.accountType,
                 })
 
                 if (result.type === 'hdWallet' && 'walletKeyId' in result) {
+                    logger.debug('[deeplink/recover] hdWallet import OK')
                     navigateToScreen(replaceCurrentScreen, 'AddAccount', {
                         screen: 'SearchAccounts',
                         params: {
@@ -85,6 +99,7 @@ export const useRecoverAddressDeeplink = (): RecoverAddressDeeplinkHandler => {
                         },
                     })
                 } else {
+                    logger.debug('[deeplink/recover] algo25 import OK')
                     markBackupComplete(result as WalletAccount)
                     navigateToScreen(replaceCurrentScreen, 'AddAccount', {
                         screen: 'SearchAccounts',
@@ -94,14 +109,16 @@ export const useRecoverAddressDeeplink = (): RecoverAddressDeeplinkHandler => {
                     })
                 }
             } catch (error) {
-                logger.error('Deeplink import failed', { error })
-                // guardrails-ignore-next-line no-error-toast-in-catch reason: deeplink import failure must surface to the user
-                errorToast(
-                    t('errors.deeplink.invalid_url_title'),
-                    t('errors.deeplink.invalid_url_body'),
-                )
+                logger.error('[deeplink/recover] import failed', { error })
+                const isDuplicate = error instanceof DuplicateAccountError
+                showError({
+                    variant: isDuplicate ? 'recover_duplicate' : 'recover',
+                    sourceUrl,
+                    parsedType: 'RECOVER_ADDRESS',
+                    error,
+                })
             }
         },
-        [errorToast, importAccount, markBackupComplete, t],
+        [importAccount, markBackupComplete, showError],
     )
 }

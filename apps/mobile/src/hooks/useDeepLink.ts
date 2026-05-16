@@ -19,7 +19,10 @@ import {
     useSelectedAccountAddress,
 } from '@perawallet/wallet-core-accounts'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
-import { useWalletConnect } from '@perawallet/wallet-core-walletconnect'
+import {
+    useWalletConnect,
+    useWalletConnectStore,
+} from '@perawallet/wallet-core-walletconnect'
 import {
     isValidAlgorandAddress,
     microAlgosToAlgos,
@@ -39,8 +42,39 @@ import {
     useRecoverAddressDeeplink,
     useSendFundsDeeplink,
 } from './deeplink/handlers'
+import { useDeeplinkErrorHandler } from './deeplink/handlers/useDeeplinkErrorHandler'
+import { withTimeout } from './deeplink/handlers/timeout'
 
 export type { BuildDeeplinkInput } from './deeplink/builders'
+
+/**
+ * Subscribe to the WalletConnect store and resolve `true` as soon as a
+ * session_request lands whose `clientId` wasn't in `beforeIds`. Resolves
+ * `false` if none arrives within `timeoutMs`. Used by the WC deeplink
+ * dispatcher to detect dead bridges (no event ever fires) and surface
+ * an actionable error instead of silently leaving the user staring at
+ * the screen they came from.
+ */
+const waitForNewSessionRequest = (
+    beforeIds: Set<string>,
+    timeoutMs: number,
+): Promise<boolean> =>
+    new Promise(resolve => {
+        const timer = setTimeout(() => {
+            unsub()
+            resolve(false)
+        }, timeoutMs)
+        const unsub = useWalletConnectStore.subscribe(state => {
+            const nowNew = state.sessionRequests.find(
+                r => !beforeIds.has(r.clientId),
+            )
+            if (nowNew) {
+                clearTimeout(timer)
+                unsub()
+                resolve(true)
+            }
+        })
+    })
 
 type LinkSource = 'qr' | 'deeplink'
 
@@ -71,6 +105,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
     const submitKeyreg = useKeyregDeeplink()
     const openBrowser = useBrowserDeeplink()
     const openDiscoverPath = useDiscoverPathDeeplink()
+    const showError = useDeeplinkErrorHandler()
 
     const isValidDeepLink = (url: string): boolean => {
         if (isValidAlgorandAddress(url)) return true
@@ -169,32 +204,74 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         mnemonic: parsedData.mnemonic,
                         source,
                         replaceCurrentScreen,
+                        sourceUrl: parsedData.sourceUrl,
                     })
                     break
 
-                case DeeplinkType.WALLET_CONNECT:
-                    // `connect` registers listeners + opens the bridge socket
-                    // synchronously; the dApp's session_request lands on the
-                    // listener and triggers WalletConnectProvider's overlay.
-                    // Awaited so any handshake errors surface here rather
-                    // than vanishing into an unhandled promise rejection.
+                case DeeplinkType.WALLET_CONNECT: {
+                    // `connect` constructs the WC v1 client + registers
+                    // listeners synchronously; the actual bridge handshake
+                    // (and subsequent `session_request` from the dApp)
+                    // happens asynchronously after `connect` returns.
+                    //
+                    // WC v1 bridges were sunset by the WalletConnect
+                    // Foundation in mid-2024 — most public bridges 404,
+                    // including the legacy pera bridge that older QR
+                    // codes embed. The client doesn't surface this as a
+                    // sync throw, so we have to detect it ourselves:
+                    // snapshot the session-request store before connect,
+                    // wait briefly for a NEW request to land, and toast
+                    // a clear error if it never does.
+                    logger.debug('[deeplink/wc] connecting', {
+                        uri: parsedData.uri,
+                    })
                     try {
-                        await connect({
-                            connection: { uri: parsedData.uri },
-                        })
+                        await withTimeout(
+                            'walletConnect.connect',
+                            10_000,
+                            connect({
+                                connection: { uri: parsedData.uri },
+                            }),
+                        )
                     } catch (error) {
-                        logger.error('WalletConnect deeplink connect failed', {
+                        logger.error('[deeplink/wc] connect failed', {
                             error,
                             uri: parsedData.uri,
                         })
-                        errorToast(
-                            t('errors.deeplink.invalid_url_title'),
-                            t('errors.deeplink.invalid_url_body'),
-                        )
+                        showError({
+                            variant: 'walletconnect',
+                            sourceUrl: parsedData.sourceUrl,
+                            parsedType: 'WALLET_CONNECT',
+                            error,
+                        })
                         onError?.()
                         return
                     }
+                    const beforeIds = new Set(
+                        useWalletConnectStore
+                            .getState()
+                            .sessionRequests.map(r => r.clientId),
+                    )
+                    const sawNewSessionRequest =
+                        await waitForNewSessionRequest(beforeIds, 8_000)
+                    if (!sawNewSessionRequest) {
+                        logger.warn(
+                            '[deeplink/wc] no session_request after connect — bridge likely unreachable',
+                            { uri: parsedData.uri },
+                        )
+                        showError({
+                            variant: 'walletconnect',
+                            sourceUrl: parsedData.sourceUrl,
+                            parsedType: 'WALLET_CONNECT',
+                            error:
+                                'No response from the dApp. The session may be expired or the WalletConnect bridge may be unreachable.',
+                        })
+                        onError?.()
+                        return
+                    }
+                    logger.debug('[deeplink/wc] session_request received')
                     break
+                }
 
                 case DeeplinkType.ASSET_OPT_IN: {
                     // Prefer the address explicitly carried by the deep link;
@@ -349,11 +426,12 @@ export const useDeepLink = (): UseDeepLinkResult => {
             onSuccess?.()
         } catch (error) {
             logger.error(error as Error, { url, parsedType: parsedData.type })
-            // guardrails-ignore-next-line no-error-toast-in-catch reason: deeplink-failure surface to user is required for visibility
-            errorToast(
-                t('errors.deeplink.invalid_url_title'),
-                t('errors.deeplink.invalid_url_body'),
-            )
+            showError({
+                variant: 'generic',
+                sourceUrl: url,
+                parsedType: String(parsedData.type),
+                error,
+            })
             onError?.()
         }
     }

@@ -29,7 +29,7 @@ import { TransactionDisplay } from '@modules/transactions/components/Transaction
 import { GroupTransactionsPanel } from '@modules/transactions/components/transaction-details'
 import type { SigningStackParamList } from '@modules/signing/routes'
 import { useStyles } from './styles'
-import { PWScrollView } from '@components/core'
+import { PWScrollView, PWView } from '@components/core'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 type NavigationProp = StackNavigationProp<

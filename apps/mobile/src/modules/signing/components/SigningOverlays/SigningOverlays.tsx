@@ -11,6 +11,7 @@
  */
 
 import React, { useEffect, useRef } from 'react'
+import { logger } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import {
     isInteractiveSource,
@@ -63,6 +64,17 @@ const useSignRequestDriver = () => {
         isInteractiveSource(r.sourceType),
     )
 
+    // Snapshot every queue tick so we can correlate "addSignRequest fired"
+    // with "driver picked it up" (or didn't) when debugging deeplinks.
+    logger.debug('[signing/overlay] driver tick', {
+        pendingCount: pendingSignRequests.length,
+        pendingSourceTypes: pendingSignRequests.map(r => r.sourceType),
+        nextRequestId: nextRequest?.id,
+        nextRequestSource: nextRequest?.sourceType,
+        isHardwareSigningInFlight,
+        currentlyOpenId: openIdRef.current,
+    })
+
     useEffect(() => {
         const sheetId =
             !isHardwareSigningInFlight && nextRequest ? nextRequest.id : null
@@ -72,30 +84,60 @@ const useSignRequestDriver = () => {
         // request data after the queue drains (e.g. WC tx signing completes).
         if (!sheetId) {
             if (openIdRef.current) {
+                logger.debug(
+                    '[signing/overlay] no pending; dismissing open sheet',
+                    { dismissedId: openIdRef.current },
+                )
                 dismiss(openIdRef.current)
                 openIdRef.current = null
             }
             return
         }
-        if (openIdRef.current === sheetId) return
+        if (openIdRef.current === sheetId) {
+            logger.debug(
+                '[signing/overlay] sheet already open for this request',
+                { sheetId },
+            )
+            return
+        }
 
         if (openIdRef.current) {
+            logger.debug(
+                '[signing/overlay] dismissing previous sheet before opening new',
+                { previousId: openIdRef.current, newId: sheetId },
+            )
             dismiss(openIdRef.current)
         }
         openIdRef.current = sheetId
 
+        logger.debug('[signing/overlay] opening sign-request sheet', {
+            sheetId,
+            sourceType: nextRequest!.sourceType,
+            requestType: nextRequest!.type,
+        })
+
         let cancelled = false
         void (async () => {
-            await requestBottomSheet<void>({
-                id: sheetId,
-                contents: <SignRequestContent request={nextRequest!} />,
-                options: {
-                    size: 'lg',
-                    enablePanDownToClose: false,
-                    enableCloseOnBackdropPress: false,
-                    autoCreateContainer: false,
-                },
-            })
+            try {
+                await requestBottomSheet<void>({
+                    id: sheetId,
+                    contents: <SignRequestContent request={nextRequest!} />,
+                    options: {
+                        size: 'lg',
+                        enablePanDownToClose: false,
+                        enableCloseOnBackdropPress: false,
+                        autoCreateContainer: false,
+                    },
+                })
+                logger.debug('[signing/overlay] sheet promise resolved', {
+                    sheetId,
+                })
+            } catch (err) {
+                logger.error(
+                    '[signing/overlay] sheet promise rejected',
+                    { sheetId, err },
+                )
+            }
             if (cancelled) return
             if (openIdRef.current === sheetId) {
                 openIdRef.current = null

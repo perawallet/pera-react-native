@@ -103,6 +103,25 @@
         "confirm": "Remove",
         "cancel": "Cancel"
     },
+    "deeplink": {
+        "error": {
+            "title_generic": "Couldn't open link",
+            "body_generic": "We couldn't process the link. Please try again.",
+            "title_walletconnect": "WalletConnect failed",
+            "body_walletconnect": "We couldn't connect to the dApp. The session may be expired or the bridge may be unreachable.",
+            "title_keyreg": "Couldn't prepare key registration",
+            "body_keyreg": "We couldn't build the key-registration transaction.",
+            "body_keyreg_unknown_account": "This key registration is for an account you don't have in this wallet. Add the account first, then scan again.",
+            "title_recover": "Couldn't import account",
+            "body_recover": "We couldn't import the account from this QR.",
+            "body_recover_duplicate": "This account is already in your wallet.",
+            "title_timeout": "Took too long",
+            "body_timeout": "The request didn't complete in time. Check your network and try again.",
+            "show_details": "Show details",
+            "hide_details": "Hide details",
+            "copy_details": "Copy details"
+        }
+    },
     "address_actions": {
         "title": "Scanned Account Address",
         "send_transaction": "Send Transaction",
@@ -1505,7 +1524,9 @@
             "key_dilution": "Key Dilution",
             "participation_key": "Participation Key",
             "selection_key": "Selection Key",
-            "status": "Registration Status"
+            "status": "Registration Status",
+            "online": "Online",
+            "offline": "Offline"
         },
         "app_call": {
             "app_id": "Application ID",
