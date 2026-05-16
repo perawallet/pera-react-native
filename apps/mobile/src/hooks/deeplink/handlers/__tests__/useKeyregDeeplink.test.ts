@@ -59,8 +59,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => mockAllAccounts.current,
-    resolveAuthAccount: (account: unknown, accounts: unknown) =>
-        mockResolveAuthAccount(account, accounts),
+    resolveAuthAccount: (account: unknown) => mockResolveAuthAccount(account),
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
