@@ -13,6 +13,7 @@
 import { Decimal } from 'decimal.js'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
+    isRekeyedAccount,
     useAccountAssetBalanceQuery,
     useAccountBalancesQuery,
     useAccountInformationQuery,
@@ -160,9 +161,16 @@ export const useInputScreen = () => {
         return '0'
     }, [selectedAssetId, accountInformation])
 
+    // A rekeyed account can never close out or spend below its minimum
+    // balance — the rekey would be lost and the account left unusable. So
+    // MAX is the spendable amount, and the close-account path is suppressed.
+    const isRekeyedSender = selectedAccount
+        ? isRekeyedAccount(selectedAccount)
+        : false
+
     const setMax = useCallback(() => {
-        setValueAndRef(totalBalance.toString())
-    }, [totalBalance, setValueAndRef])
+        setValueAndRef((isRekeyedSender ? maxAmount : totalBalance).toString())
+    }, [isRekeyedSender, maxAmount, totalBalance, setValueAndRef])
 
     const hasNoOptedInAssets = useMemo(() => {
         return (
@@ -203,6 +211,34 @@ export const useInputScreen = () => {
                             </PWText>
                             <PWText variant='body'>
                                 {t('send_funds.input.min_balance_body')}
+                            </PWText>
+                        </PWView>
+                    }
+                    confirmLabel={t('common.continue.label')}
+                    cancelLabel={t('common.cancel.label')}
+                />
+            ),
+            options: { size: 'auto', enablePanDownToClose: true },
+        })
+    }, [requestBottomSheet, t, minBalanceDisplay])
+
+    const requestRekeyedMinBalanceConfirm = useCallback(async () => {
+        return requestBottomSheet<boolean>({
+            contents: (
+                <ConfirmActionContent
+                    icon='warning'
+                    iconVariant='error'
+                    title={t('send_funds.input.rekeyed_min_balance_title')}
+                    message={
+                        <PWView style={{ alignItems: 'center', gap: 8 }}>
+                            <PWText variant='body'>
+                                {t(
+                                    'send_funds.input.rekeyed_min_balance_amount',
+                                    { minBalance: minBalanceDisplay },
+                                )}
+                            </PWText>
+                            <PWText variant='body'>
+                                {t('send_funds.input.rekeyed_min_balance_body')}
                             </PWText>
                         </PWView>
                     }
@@ -266,7 +302,14 @@ export const useInputScreen = () => {
         }
 
         if (new Decimal(value).gt(maxAmount)) {
-            if (hasNoOptedInAssets) {
+            if (isRekeyedSender) {
+                // No close-account path for a rekeyed account — clamp to the
+                // spendable max instead.
+                const confirmed = await requestRekeyedMinBalanceConfirm()
+                if (confirmed) {
+                    continuePastMbr()
+                }
+            } else if (hasNoOptedInAssets) {
                 const confirmed = await requestCloseAccountConfirm()
                 if (confirmed) {
                     confirmCloseAccount()
@@ -291,10 +334,12 @@ export const useInputScreen = () => {
         showToast,
         t,
         hasNoOptedInAssets,
+        isRekeyedSender,
         setIsCloseAccount,
         setAmount,
         requestCloseAccountConfirm,
         requestInsufficientBalanceConfirm,
+        requestRekeyedMinBalanceConfirm,
         confirmCloseAccount,
         continuePastMbr,
     ])

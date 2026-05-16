@@ -34,7 +34,7 @@ export const useStyles = makeStyles(theme => ({
         paddingTop: theme.spacing.md,
     },
     itemSeparator: {
-        height: theme.spacing.sm,
+        height: theme.spacing.md,
     },
     groupPreviewContainer: {
         flexDirection: 'row',

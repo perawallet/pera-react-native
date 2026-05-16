@@ -22,7 +22,11 @@ import type {
     SourceCallbacks,
     SourceMetadata,
 } from '../pipeline/types'
-import { CannotSignError, HardwareWalletError } from '../pipeline/errors'
+import {
+    CannotSignError,
+    HardwareWalletError,
+    SigningError,
+} from '../pipeline/errors'
 import { validateTransactionGroupIntegrity } from '../utils/validateTransactionGroupIntegrity'
 import { resolveSigningAccount } from './utils/resolveSigningAccount'
 import type {
@@ -45,7 +49,9 @@ import {
 
 /**
  * Determines the signing strategy type based on the signer and auth accounts.
- * - multisig: the original signer account is a multisig account
+ * - multisig: the original signer account is a multisig account (a shared
+ *   account can only ever be rekeyed to another shared account, so the
+ *   multisig signer covers the rekeyed-multisig case too)
  * - hardware: the auth account (after rekey resolution) is a hardware wallet
  * - localKey: the auth account has local signing keys (Algo25 / HDWallet)
  */
@@ -90,7 +96,10 @@ export const buildGroupSignerTypeMap = (
             a => a.address === group.signerAddress,
         )
         if (!signerAccount) {
-            throw new Error(`Signer account not found: ${group.signerAddress}`)
+            throw new CannotSignError(
+                group.signerAddress,
+                'signer account not found in wallet',
+            )
         }
         const authAccount = resolveSigningAccount(
             signerAccount,
@@ -136,7 +145,7 @@ const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
 
     if (sourceType === 'multisig-cosign') {
         if (!request.signRequestId) {
-            throw new Error(
+            throw new SigningError(
                 'multisig-cosign request requires signRequestId on the SignRequest',
             )
         }

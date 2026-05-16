@@ -64,11 +64,6 @@ export const useSettingsOptions = () => {
                 title: t('settings.main.support_section'),
                 items: [
                     {
-                        icon: 'feedback',
-                        title: t('settings.main.get_help_title'),
-                        url: config.supportBaseUrl,
-                    },
-                    {
                         icon: 'star',
                         title: t('settings.main.rate_title'),
                     },

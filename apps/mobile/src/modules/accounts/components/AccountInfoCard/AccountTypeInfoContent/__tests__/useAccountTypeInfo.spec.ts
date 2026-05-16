@@ -15,19 +15,19 @@ import { renderHook, act } from '@testing-library/react'
 import { useAccountTypeInfo } from '../useAccountTypeInfo'
 import type {
     AccountLogicalType,
+    RekeyTransition,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
-        t: (key: string) => key,
-    }),
-}))
-
-const mockShowToast = vi.fn()
-vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({
-        showToast: mockShowToast,
+        t: (key: string, params?: Record<string, unknown>) => {
+            if (key === 'account_info.type_rekeyed_transition')
+                return `Rekeyed (${params?.from} to ${params?.to})`
+            if (key === 'account_info.rekey_part_standard') return 'Standard'
+            if (key === 'account_info.rekey_part_ledger') return 'Ledger'
+            return key
+        },
     }),
 }))
 
@@ -48,6 +48,7 @@ vi.mock('@perawallet/wallet-core-config', () => ({
 }))
 
 const mockUseAccountLogicalType = vi.fn<() => AccountLogicalType | null>()
+const mockUseRekeyTransition = vi.fn<() => RekeyTransition | null>()
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
         await importOriginal<
@@ -56,6 +57,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     return {
         ...actual,
         useAccountLogicalType: () => mockUseAccountLogicalType(),
+        useRekeyTransition: () => mockUseRekeyTransition(),
     }
 })
 
@@ -66,17 +68,16 @@ const algo25Account: WalletAccount = {
 }
 
 describe('useAccountTypeInfo', () => {
-    const onClose = vi.fn()
-
     beforeEach(() => {
         vi.clearAllMocks()
         mockUseAccountLogicalType.mockReturnValue('Algo25')
+        mockUseRekeyTransition.mockReturnValue(null)
     })
 
     it('resolves Algo25 account type', () => {
         mockUseAccountLogicalType.mockReturnValue('Algo25')
         const { result } = renderHook(() =>
-            useAccountTypeInfo({ account: algo25Account, onClose }),
+            useAccountTypeInfo({ account: algo25Account }),
         )
 
         expect(result.current.title).toBe('account_type_info.standard_title')
@@ -88,7 +89,7 @@ describe('useAccountTypeInfo', () => {
     it('resolves LedgerBle account type', () => {
         mockUseAccountLogicalType.mockReturnValue('LedgerBle')
         const { result } = renderHook(() =>
-            useAccountTypeInfo({ account: algo25Account, onClose }),
+            useAccountTypeInfo({ account: algo25Account }),
         )
 
         expect(result.current.title).toBe('account_type_info.ledger_title')
@@ -100,7 +101,7 @@ describe('useAccountTypeInfo', () => {
     it('resolves HdKey account type', () => {
         mockUseAccountLogicalType.mockReturnValue('HdKey')
         const { result } = renderHook(() =>
-            useAccountTypeInfo({ account: algo25Account, onClose }),
+            useAccountTypeInfo({ account: algo25Account }),
         )
 
         expect(result.current.title).toBe('account_type_info.hd_wallet_title')
@@ -112,7 +113,7 @@ describe('useAccountTypeInfo', () => {
     it('resolves Multisig account type', () => {
         mockUseAccountLogicalType.mockReturnValue('Multisig')
         const { result } = renderHook(() =>
-            useAccountTypeInfo({ account: algo25Account, onClose }),
+            useAccountTypeInfo({ account: algo25Account }),
         )
 
         expect(result.current.title).toBe('account_type_info.multisig_title')
@@ -121,10 +122,11 @@ describe('useAccountTypeInfo', () => {
         )
     })
 
-    it('resolves RekeyedAuth account type', () => {
+    it('resolves RekeyedAuth account type without a known auth account as generic rekeyed', () => {
         mockUseAccountLogicalType.mockReturnValue('RekeyedAuth')
+        mockUseRekeyTransition.mockReturnValue(null)
         const { result } = renderHook(() =>
-            useAccountTypeInfo({ account: algo25Account, onClose }),
+            useAccountTypeInfo({ account: algo25Account }),
         )
 
         expect(result.current.title).toBe(
@@ -135,93 +137,63 @@ describe('useAccountTypeInfo', () => {
         )
     })
 
-    it('resolves Rekeyed account type', () => {
-        mockUseAccountLogicalType.mockReturnValue('Rekeyed')
+    it('resolves a standard-to-ledger rekey with the split transition title', () => {
+        mockUseAccountLogicalType.mockReturnValue('RekeyedAuth')
+        mockUseRekeyTransition.mockReturnValue({
+            from: 'Algo25',
+            to: 'LedgerBle',
+        })
         const { result } = renderHook(() =>
-            useAccountTypeInfo({ account: algo25Account, onClose }),
+            useAccountTypeInfo({ account: algo25Account }),
         )
 
-        expect(result.current.title).toBe(
-            'account_type_info.rekeyed_standard_title',
+        expect(result.current.title).toBe('Rekeyed')
+        expect(result.current.titleQualifier).toBe('(Standard to Ledger)')
+        expect(result.current.description).toBe(
+            'account_type_info.rekeyed_ledger_description',
         )
     })
 
-    it('resolves NoAuth account type', () => {
-        mockUseAccountLogicalType.mockReturnValue('NoAuth')
+    it('resolves a ledger-to-ledger rekey with the ledger-to-ledger description', () => {
+        mockUseAccountLogicalType.mockReturnValue('RekeyedAuth')
+        mockUseRekeyTransition.mockReturnValue({
+            from: 'LedgerBle',
+            to: 'LedgerBle',
+        })
         const { result } = renderHook(() =>
-            useAccountTypeInfo({ account: algo25Account, onClose }),
+            useAccountTypeInfo({ account: algo25Account }),
+        )
+
+        expect(result.current.description).toBe(
+            'account_type_info.rekeyed_ledger_to_ledger_description',
+        )
+    })
+
+    it('resolves Rekeyed account type as No Auth (locked-out)', () => {
+        mockUseAccountLogicalType.mockReturnValue('Rekeyed')
+        const { result } = renderHook(() =>
+            useAccountTypeInfo({ account: algo25Account }),
         )
 
         expect(result.current.title).toBe('account_type_info.no_auth_title')
-        expect(result.current.description).toBe(
-            'account_type_info.no_auth_description',
-        )
     })
 
-    it('returns rekey actions for signing accounts', () => {
-        mockUseAccountLogicalType.mockReturnValue('Algo25')
-        const { result } = renderHook(() =>
-            useAccountTypeInfo({ account: algo25Account, onClose }),
-        )
-
-        expect(result.current.actions).toHaveLength(2)
-        expect(result.current.actions[0].id).toBe('rekey-to-ledger')
-        expect(result.current.actions[1].id).toBe('rekey-to-standard')
-    })
-
-    it('returns undo-rekey + rescan for RekeyedAuth', () => {
-        mockUseAccountLogicalType.mockReturnValue('RekeyedAuth')
-        const { result } = renderHook(() =>
-            useAccountTypeInfo({ account: algo25Account, onClose }),
-        )
-
-        const ids = result.current.actions.map(a => a.id)
-        expect(ids).toContain('undo-rekey')
-        expect(ids).toContain('rescan-rekeyed')
-    })
-
-    it('returns rescan only for Rekeyed (no undo-rekey)', () => {
-        mockUseAccountLogicalType.mockReturnValue('Rekeyed')
-        const { result } = renderHook(() =>
-            useAccountTypeInfo({ account: algo25Account, onClose }),
-        )
-
-        const ids = result.current.actions.map(a => a.id)
-        expect(ids).toContain('rescan-rekeyed')
-        expect(ids).not.toContain('undo-rekey')
-    })
-
-    it('returns no actions for NoAuth accounts', () => {
+    it('resolves NoAuth account type as Watch', () => {
         mockUseAccountLogicalType.mockReturnValue('NoAuth')
         const { result } = renderHook(() =>
-            useAccountTypeInfo({ account: algo25Account, onClose }),
+            useAccountTypeInfo({ account: algo25Account }),
         )
 
-        expect(result.current.actions).toHaveLength(0)
-    })
-
-    it('calls notImplemented toast and onClose when action is pressed', () => {
-        mockUseAccountLogicalType.mockReturnValue('Algo25')
-        const { result } = renderHook(() =>
-            useAccountTypeInfo({ account: algo25Account, onClose }),
+        expect(result.current.title).toBe('account_type_info.watch_title')
+        expect(result.current.description).toBe(
+            'account_type_info.watch_description',
         )
-
-        act(() => {
-            result.current.actions[0].onPress()
-        })
-
-        expect(mockShowToast).toHaveBeenCalledWith({
-            title: 'common.not_implemented.title',
-            body: 'common.not_implemented.body',
-            type: 'error',
-        })
-        expect(onClose).toHaveBeenCalled()
     })
 
     it('opens webview with support URL when learn more is pressed', () => {
         mockUseAccountLogicalType.mockReturnValue('Algo25')
         const { result } = renderHook(() =>
-            useAccountTypeInfo({ account: algo25Account, onClose }),
+            useAccountTypeInfo({ account: algo25Account }),
         )
 
         act(() => {
@@ -236,7 +208,7 @@ describe('useAccountTypeInfo', () => {
     it('opens webview with rekey article when learn more is pressed for Ledger', () => {
         mockUseAccountLogicalType.mockReturnValue('LedgerBle')
         const { result } = renderHook(() =>
-            useAccountTypeInfo({ account: algo25Account, onClose }),
+            useAccountTypeInfo({ account: algo25Account }),
         )
 
         act(() => {

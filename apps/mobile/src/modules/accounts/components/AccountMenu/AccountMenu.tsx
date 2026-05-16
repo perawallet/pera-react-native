@@ -58,7 +58,7 @@ export const AccountMenu = (props: AccountMenuProps) => {
                         </PWText>
                         <PWView style={styles.titleBarButtonContainer}>
                             <PWButton
-                                variant='link'
+                                variant='linkPositive'
                                 icon='list-arrow-down'
                                 title={t('account_menu.sort')}
                                 paddingStyle='dense'

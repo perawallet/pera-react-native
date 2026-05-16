@@ -11,3 +11,4 @@
  */
 
 export { SwapConfigurationContent } from './SwapConfigurationContent'
+export type { SwapConfigurationContentProps } from './SwapConfigurationContent'

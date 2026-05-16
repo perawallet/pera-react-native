@@ -47,6 +47,13 @@ const watch = (address: string, rekeyAddress?: string): WalletAccount =>
         rekeyAddress,
     }) as unknown as WalletAccount
 
+const multisig = (address: string, addresses: string[] = []): WalletAccount =>
+    ({
+        type: 'multisig',
+        address,
+        multisigDetails: { threshold: 1, addresses },
+    }) as unknown as WalletAccount
+
 const buildGroup = (
     overrides: Partial<SignableGroup> & Pick<SignableGroup, 'source'>,
 ): SignableGroup => ({
@@ -154,6 +161,19 @@ describe('buildGroupSignerTypeMap', () => {
             const map = buildGroupSignerTypeMap([group], [sender, auth])
 
             expect(map.get(PARTICIPANT)).toBe('localKey')
+        })
+
+        it('classifies a multisig sender rekeyed to another multisig as multisig', () => {
+            // A shared account can only be rekeyed to another shared account,
+            // so the multisig signer check covers the rekeyed-multisig case.
+            const sender = multisig(PARTICIPANT, ['P1', 'P2'])
+            sender.rekeyAddress = AUTH
+            const auth = multisig(AUTH, ['P1', 'P2'])
+            const group = buildGroup({ source: { type: 'local' } })
+
+            const map = buildGroupSignerTypeMap([group], [sender, auth])
+
+            expect(map.get(PARTICIPANT)).toBe('multisig')
         })
     })
 

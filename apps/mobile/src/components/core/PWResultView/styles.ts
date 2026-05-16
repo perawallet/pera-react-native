@@ -49,7 +49,6 @@ export const useStyles = makeStyles((theme, { variant }: StyleProps) => {
             textAlign: 'center',
         },
         footer: {
-            paddingBottom: theme.spacing.xl,
             gap: theme.spacing.md,
         },
     }

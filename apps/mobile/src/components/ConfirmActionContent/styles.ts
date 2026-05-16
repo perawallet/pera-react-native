@@ -14,7 +14,7 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
-        paddingVertical: theme.spacing.xxl,
+        paddingVertical: theme.spacing.lg,
         alignItems: 'center',
     },
     icon: {
@@ -23,13 +23,13 @@ export const useStyles = makeStyles(theme => ({
     message: {
         textAlign: 'center',
         paddingHorizontal: theme.spacing.lg,
-        paddingVertical: theme.spacing.md,
+        paddingVertical: theme.spacing.lg,
         color: theme.colors.textGray,
     },
     actions: {
         width: '100%',
         paddingHorizontal: theme.spacing.lg,
         paddingTop: theme.spacing.md,
-        gap: theme.spacing.sm,
+        gap: theme.spacing.md,
     },
 }))

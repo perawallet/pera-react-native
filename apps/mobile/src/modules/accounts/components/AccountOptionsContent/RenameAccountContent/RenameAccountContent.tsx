@@ -26,15 +26,15 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
 export type RenameAccountContentProps = {
-    accountId: string
+    accountAddress: string
 }
 
 export const RenameAccountContent = ({
-    accountId,
+    accountAddress,
 }: RenameAccountContentProps) => {
     const { t } = useLanguage()
     const account = useAccountsStore(s =>
-        s.accounts.find(a => a.id === accountId),
+        s.accounts.find(a => a.address === accountAddress),
     )
     const initialName = account?.name ?? ''
     const [name, setName] = useState(initialName)
@@ -52,8 +52,11 @@ export const RenameAccountContent = ({
     return (
         <>
             <PWToolbar
-                left={
-                    <PWText variant='h3'>
+                center={
+                    <PWText
+                        variant='bodyLarge'
+                        weight={500}
+                    >
                         {t('account_options.rename_title')}
                     </PWText>
                 }
@@ -69,7 +72,7 @@ export const RenameAccountContent = ({
                 <PWInput
                     value={name}
                     onChangeText={setName}
-                    placeholder={t('account_options.rename_placeholder')}
+                    placeholder={t('account_options.rename_label')}
                     autoFocus
                     inputStyle={styles.input}
                     InputComponent={BottomSheetTextInput}

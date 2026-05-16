@@ -32,7 +32,7 @@ describe('useMnemonicForAddress', () => {
         mockExecuteWithMnemonic.mockResolvedValue('result')
     })
 
-    test('forwards keyPairId to KMS for an HD account (no entropyKeyId field needed)', async () => {
+    test('forwards keyPairId to KMS for an HD account', async () => {
         const account: WalletAccount = {
             type: AccountTypes.hdWallet,
             address: 'HD_ADDR',

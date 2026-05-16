@@ -14,6 +14,7 @@ import {
     AddressActionsDeeplink,
     AnyParsedDeeplink,
     DeeplinkType,
+    PeraWebImportDeeplink,
 } from './types'
 import { parsePerawalletAppUri } from './new-parser'
 import { parsePerawalletUri } from './old-parser'
@@ -22,7 +23,11 @@ import { parseAlgorandUri } from './algorand-parser'
 import { parseWalletConnectUri } from './walletconnect-parser'
 import { parseCoinbaseFormat } from './coinbase-parser'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import {
+    parsePeraWebQrPayload,
+    PeraWebImportError,
+} from '@perawallet/wallet-core-backup'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 
 /**
  * Parse Universal Links: https://perawallet.app/...
@@ -60,16 +65,61 @@ const parseUniversalLink = (url: string): Nullable<AnyParsedDeeplink> => {
 }
 
 /**
+ * Both supported JSON QR formats start with `{`, so we sniff the first
+ * character to avoid running JSON.parse on every scanned barcode.
+ *
+ * Try the Pera Web import shape first (more specific — keyed `{backupId,
+ * encryptionKey, ...}`); if that doesn't recognise the payload, fall back
+ * to the legacy recover-account JSON shape (`{"version":1,"mnemonic":"..."}`)
+ * emitted by older pera-android / pera-ios builds.
+ */
+const parseJsonQr = (url: string): Nullable<AnyParsedDeeplink> => {
+    const trimmed = url.trim()
+    if (!trimmed.startsWith('{')) return null
+
+    const peraWeb = parsePeraWebJsonQr(trimmed)
+    if (peraWeb) return peraWeb
+
+    return parseLegacyMnemonicJson(trimmed)
+}
+
+/**
+ * Pera Web "Transfer Accounts" QR. Raw JSON document with `backupId` +
+ * 32-byte secretbox `encryptionKey`. The payload IS the secret — we drop
+ * `sourceUrl` rather than echoing it back so a downstream logger /
+ * breadcrumb can't leak the cipher key to a crash reporter.
+ */
+const parsePeraWebJsonQr = (
+    trimmed: string,
+): Nullable<PeraWebImportDeeplink> => {
+    try {
+        const parsed = parsePeraWebQrPayload(trimmed)
+        return {
+            type: DeeplinkType.PERA_WEB_IMPORT,
+            sourceUrl: '',
+            backupId: parsed.backupId,
+            encryptionKey: parsed.encryptionKey,
+        }
+    } catch (error) {
+        // Not a Pera Web QR (wrong shape, unsupported version, malformed
+        // key). Caller falls back to the legacy mnemonic JSON parser.
+        if (!(error instanceof PeraWebImportError)) {
+            logger.warn('parsePeraWebJsonQr: unexpected error', { error })
+        }
+        return null
+    }
+}
+
+/**
  * Legacy recover-account QR format from native pera-android / pera-ios:
  * the QR encodes a JSON document `{"version":1,"mnemonic":"word1 word2 ..."}`
- * directly (no scheme). Detect that shape and lift the mnemonic out so the
- * RECOVER_ADDRESS dispatch path can handle it.
+ * directly (no scheme). Lifts the mnemonic out so the RECOVER_ADDRESS
+ * dispatch path can handle it.
  */
 const parseLegacyMnemonicJson = (
-    url: string,
+    trimmed: string,
 ): Nullable<AnyParsedDeeplink> => {
-    const trimmed = url.trim()
-    if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) return null
+    if (!trimmed.endsWith('}')) return null
     try {
         const parsed = JSON.parse(trimmed) as {
             mnemonic?: unknown
@@ -80,7 +130,7 @@ const parseLegacyMnemonicJson = (
         }
         return {
             type: DeeplinkType.RECOVER_ADDRESS,
-            sourceUrl: url,
+            sourceUrl: trimmed,
             mnemonic: parsed.mnemonic,
         }
     } catch {
@@ -102,10 +152,10 @@ export const parseDeeplink = (url: string): Nullable<AnyParsedDeeplink> => {
         } as AddressActionsDeeplink
     }
 
-    // Legacy native recover-account QR codes are raw JSON, no scheme — try
-    // that before any scheme-based parsing.
-    const legacyMnemonic = parseLegacyMnemonicJson(url)
-    if (legacyMnemonic) return legacyMnemonic
+    // JSON-shaped QRs (Pera Web import + legacy recover-account) — try
+    // before the URL-based parsers since they're raw JSON, not URIs.
+    const jsonResult = parseJsonQr(url)
+    if (jsonResult) return jsonResult
 
     const normalizedUrl = normalizeUrl(url)
 

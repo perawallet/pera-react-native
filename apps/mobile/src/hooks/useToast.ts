@@ -17,6 +17,7 @@ import {
     NotifierRoot,
     ShowNotificationParams,
 } from 'react-native-notifier'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
     SHORT_PROMPT_DISPLAY_DELAY,
     LONG_PROMPT_DISPLAY_DELAY,
@@ -28,11 +29,16 @@ export interface ToastMessage {
     type: 'error' | 'warning' | 'info' | 'success'
 }
 
-const useStyles = makeStyles(theme => {
+type StyleProps = { topInset: number }
+
+const useStyles = makeStyles((theme, { topInset }: StyleProps) => {
     return {
         baseStyle: {
             zIndex: theme.zIndex.max,
-            marginTop: theme.spacing.xl,
+            // Push the toast below the status bar / notch — `topInset` covers
+            // the system status-bar height (or safe-area inset on iOS) so the
+            // toast doesn't overlap battery / clock / camera cutout.
+            marginTop: topInset + theme.spacing.sm,
             borderWidth: theme.borders.none,
         },
         successStyle: {
@@ -74,7 +80,8 @@ type ToastOptions = ShowNotificationParams & {
 }
 
 export const useToast = () => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles({ topInset: insets.top })
 
     const showToast = useCallback(
         (message: ToastMessage, options?: ToastOptions) => {

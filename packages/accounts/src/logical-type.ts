@@ -28,17 +28,24 @@ export type AccountLogicalType =
 const canSignDirectly = (account: WalletAccount): boolean =>
     !!account.keyPairId || account.type === AccountTypes.hardware
 
-const canSignAccount = (
+/**
+ * True when `account` is a multisig the wallet can sign for: it holds at
+ * least one participant that can sign with its own key. Multisig signing is
+ * propose-based, so a single local participant is enough — mirrors the
+ * `getLocalParticipants` rule in the signing pipeline.
+ */
+const canSignViaMultisig = (
     account: WalletAccount,
     accounts: WalletAccount[],
 ): boolean => {
-    if (canSignDirectly(account)) return true
-    if (!account.rekeyAddress) return false
-    const next = accounts.find(a => a.address === account.rekeyAddress)
-    return next ? canSignAccount(next, accounts) : false
+    if (account.type !== AccountTypes.multisig) return false
+    return account.multisigDetails.addresses.some(participantAddress => {
+        const participant = accounts.find(a => a.address === participantAddress)
+        return !!participant && canSignDirectly(participant)
+    })
 }
 
-const baseTypeFor = (account: WalletAccount): AccountLogicalType => {
+export const baseTypeFor = (account: WalletAccount): AccountLogicalType => {
     switch (account.type) {
         case AccountTypes.hdWallet:
             return AccountLogicalTypes.HdKey
@@ -58,15 +65,19 @@ const baseTypeFor = (account: WalletAccount): AccountLogicalType => {
  * account's `rekeyAddress` is kept in sync by `fetchAndPersistAccount`, so
  * it reflects the current on-chain auth address.
  *
- * Classification follows the Android `GetAccountTypeUseCase` rules with one
- * difference: the signing-capability check for the auth account is recursive
- * across the rekey chain, not single-hop.
- *   1. If rekeyed and the auth account resolves (through the chain) to a
- *      signer we hold → RekeyedAuth.
- *   2. If rekeyed and the auth account cannot sign:
- *        - original was watch → NoAuth
- *        - otherwise          → Rekeyed
- *   3. Otherwise → map from stored account type.
+ * Classification:
+ *   1. If rekeyed and the immediate auth account is one we can sign with —
+ *      a key we hold, or a multisig we hold a signable participant of →
+ *      RekeyedAuth.
+ *   2. If rekeyed but we can't sign with the immediate auth account →
+ *      Rekeyed. (Applies regardless of whether the original account was a
+ *      watch — what matters visually is that the account IS rekeyed; the
+ *      "can we sign?" answer surfaces at submission time via algod.)
+ *   3. Otherwise → map from stored account type. Watch accounts that are
+ *      not rekeyed still classify as NoAuth.
+ *
+ * The signing-capability check is a single rekey hop: rekey indirection is
+ * not transitive, so we only consult the immediate auth account.
  */
 export const deriveAccountLogicalType = (
     account: WalletAccount,
@@ -80,18 +91,13 @@ export const deriveAccountLogicalType = (
 
     const authAccount = accounts.find(a => a.address === authAddress)
     const authCanSign = authAccount
-        ? canSignAccount(authAccount, accounts)
+        ? canSignDirectly(authAccount) ||
+          canSignViaMultisig(authAccount, accounts)
         : false
 
-    if (authCanSign) {
-        return AccountLogicalTypes.RekeyedAuth
-    }
-
-    if (account.type === AccountTypes.watch) {
-        return AccountLogicalTypes.NoAuth
-    }
-
-    return AccountLogicalTypes.Rekeyed
+    return authCanSign
+        ? AccountLogicalTypes.RekeyedAuth
+        : AccountLogicalTypes.Rekeyed
 }
 
 /**
@@ -101,3 +107,38 @@ export const deriveAccountLogicalType = (
  */
 export const isSigningLogicalType = (type: AccountLogicalType): boolean =>
     type !== AccountLogicalTypes.NoAuth && type !== AccountLogicalTypes.Rekeyed
+
+export type RekeyTransition = {
+    /** Base type of the rekeyed account itself. */
+    from: AccountLogicalType
+    /** Base type of the account it is now rekeyed to. */
+    to: AccountLogicalType
+}
+
+/**
+ * For a signable rekeyed account (`RekeyedAuth`), returns the base type of the
+ * account and of its immediate auth account, so the UI can render a
+ * "Rekeyed (<from> to <to>)" label. Returns null when the account is not a
+ * signable rekey, or when the auth account is not held in this wallet (e.g. a
+ * multi-hop chain where the immediate auth address is unknown locally).
+ */
+export const rekeyTransitionFor = (
+    account: WalletAccount,
+    accounts: WalletAccount[],
+): RekeyTransition | null => {
+    if (
+        deriveAccountLogicalType(account, accounts) !==
+        AccountLogicalTypes.RekeyedAuth
+    ) {
+        return null
+    }
+    if (!account.rekeyAddress) return null
+
+    const authAccount = accounts.find(a => a.address === account.rekeyAddress)
+    if (!authAccount) return null
+
+    return {
+        from: baseTypeFor(account),
+        to: baseTypeFor(authAccount),
+    }
+}

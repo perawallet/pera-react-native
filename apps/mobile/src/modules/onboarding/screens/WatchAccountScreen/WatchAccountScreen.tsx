@@ -14,13 +14,15 @@ import React from 'react'
 import { ActivityIndicator } from 'react-native'
 import { PWButton, PWText, PWView } from '@components/core'
 import { AddressEntryField } from '@components/AddressEntryField'
+import { useBottomSafeAreaPadding } from '@hooks/useBottomSafeAreaPadding'
 import { useWatchAccountScreen } from './useWatchAccountScreen'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 
 export const WatchAccountScreen = () => {
-    const styles = useStyles()
+    const bottomPadding = useBottomSafeAreaPadding()
+    const styles = useStyles(bottomPadding)
     const { t } = useLanguage()
     const {
         address,

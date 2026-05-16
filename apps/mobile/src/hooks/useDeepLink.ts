@@ -39,6 +39,7 @@ import {
     useBrowserDeeplink,
     useDiscoverPathDeeplink,
     useKeyregDeeplink,
+    usePeraWebImportDeeplink,
     useRecoverAddressDeeplink,
     useSendFundsDeeplink,
 } from './deeplink/handlers'
@@ -105,6 +106,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
     const submitKeyreg = useKeyregDeeplink()
     const openBrowser = useBrowserDeeplink()
     const openDiscoverPath = useDiscoverPathDeeplink()
+    const handlePeraWebImport = usePeraWebImportDeeplink()
     const showError = useDeeplinkErrorHandler()
 
     const isValidDeepLink = (url: string): boolean => {
@@ -414,6 +416,14 @@ export const useDeepLink = (): UseDeepLinkResult => {
                     )
                     break
 
+                case DeeplinkType.PERA_WEB_IMPORT:
+                    handlePeraWebImport({
+                        data: parsedData,
+                        source,
+                        replaceCurrentScreen,
+                    })
+                    break
+
                 case DeeplinkType.HOME:
                 default:
                     navigateToScreen(replaceCurrentScreen, 'TabBar', {
@@ -422,13 +432,24 @@ export const useDeepLink = (): UseDeepLinkResult => {
                     break
             }
 
-            logger.debug('Deeplink: Handled successfully', { url, parsedData })
+            logger.debug('Deeplink: Handled successfully', {
+                type: parsedData.type,
+            })
             onSuccess?.()
         } catch (error) {
-            logger.error(error as Error, { url, parsedType: parsedData.type })
+            // Don't log the raw `url` here: for Pera Web QR deeplinks it is
+            // the JSON-encoded backup envelope containing the 32-byte
+            // secretbox `encryptionKey`. The logger's JSON-aware redactor
+            // scrubs it on the way out, but we err on the side of not
+            // shipping the cipher key to the crash reporter at all. For
+            // the same reason, only forward `sourceUrl` to the error sheet
+            // when the parsed deeplink isn't PERA_WEB_IMPORT.
+            logger.error(error as Error, { type: parsedData.type })
+            const isPeraWebImport =
+                parsedData.type === DeeplinkType.PERA_WEB_IMPORT
             showError({
                 variant: 'generic',
-                sourceUrl: url,
+                sourceUrl: isPeraWebImport ? undefined : url,
                 parsedType: String(parsedData.type),
                 error,
             })

@@ -25,13 +25,13 @@ import {
     useSigningPipeline,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { bottomSheetNotifier } from '@components/core'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SigningStackParamList } from '@modules/signing/routes'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { usePreferences } from '@perawallet/wallet-core-settings'
-import { type Optional } from '@perawallet/wallet-core-shared'
 import { UserPreferences } from '@constants/user-preferences'
 import {
     SecurityGuardContent,

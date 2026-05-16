@@ -34,6 +34,7 @@ export const useStyles = makeStyles((theme, { isHighlighted }: StyleProps) => ({
     balanceContainer: {
         gap: theme.spacing.xs,
         alignItems: 'flex-end',
+        flexShrink: 0,
     },
     fiatBalance: {
         color: theme.colors.textGray,

@@ -55,7 +55,7 @@ export const TransactionNoteRow = ({
         <PWView style={styles.container}>
             <KeyValueRow title={t('transactions.common.note')}>
                 <PWButton
-                    variant='link'
+                    variant='linkPositive'
                     title={t('transactions.common.view_note')}
                     onPress={handleOpen}
                     paddingStyle='none'

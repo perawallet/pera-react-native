@@ -14,6 +14,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
     discoverAccounts,
     discoverRekeyedAccounts,
+    fetchRekeyedAddresses,
     type GetPublicKey,
 } from '../account-discovery'
 import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
@@ -279,5 +280,48 @@ describe('discoverRekeyedAccounts', () => {
         expect(accounts).toHaveLength(1)
         expect(accounts[0].address).toBe('REKEYED_FROM_EXPLICIT')
         expect(accounts[0].rekeyAddress).toBe('EXPLICIT_ADDRESS')
+    })
+
+    it('follows the indexer pagination token across pages', async () => {
+        const mockSearchForAccounts = vi
+            .fn()
+            .mockResolvedValueOnce({
+                accounts: [{ address: 'REKEYED_PAGE_1' }],
+                nextToken: 'token-1',
+            })
+            .mockResolvedValueOnce({
+                accounts: [{ address: 'REKEYED_PAGE_2' }],
+            })
+
+        vi.mocked(getAlgorandClient).mockReturnValue({
+            client: {
+                indexer: {
+                    searchForAccounts: mockSearchForAccounts,
+                },
+            },
+        } as any)
+
+        const addresses = await fetchRekeyedAddresses('AUTH_ADDRESS')
+
+        expect(addresses).toEqual(['REKEYED_PAGE_1', 'REKEYED_PAGE_2'])
+        expect(mockSearchForAccounts).toHaveBeenCalledTimes(2)
+        expect(mockSearchForAccounts.mock.calls[1][0]).toMatchObject({
+            next: 'token-1',
+        })
+    })
+
+    it('propagates indexer errors instead of returning an empty result', async () => {
+        const indexerError = new Error('indexer unreachable')
+        vi.mocked(getAlgorandClient).mockReturnValue({
+            client: {
+                indexer: {
+                    searchForAccounts: vi.fn().mockRejectedValue(indexerError),
+                },
+            },
+        } as any)
+
+        await expect(fetchRekeyedAddresses('AUTH_ADDRESS')).rejects.toThrow(
+            'indexer unreachable',
+        )
     })
 })

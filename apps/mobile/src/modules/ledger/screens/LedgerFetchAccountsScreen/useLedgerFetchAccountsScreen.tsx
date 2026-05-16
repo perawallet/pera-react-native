@@ -195,6 +195,19 @@ export const useLedgerFetchAccountsScreen =
             }
         }, [isLoading, requestBottomSheet, dismiss, navigation])
 
+        // On success the screen unmounts via `navigation.replace` while
+        // `connectionStatus` is still `connected` (so `isLoading` never flips
+        // to false) — dismiss the connecting sheet on unmount so it doesn't
+        // linger over the next screen.
+        useEffect(() => {
+            return () => {
+                if (openIdRef.current) {
+                    dismiss(openIdRef.current)
+                    openIdRef.current = null
+                }
+            }
+        }, [dismiss])
+
         return {
             connectionStatus,
             isDiscovering,

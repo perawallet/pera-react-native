@@ -102,13 +102,7 @@ export const useSigningStore: UseBoundStore<
         {
             name: STORE_NAME,
             storage: signingStoreStorage(),
-            // v2: stop persisting deeplink-originated requests. A failed
-            // deeplink request with transport='algod' would otherwise
-            // rehydrate after every app restart and lock the user into a
-            // permanently broken signing sheet (no clean way to dismiss
-            // since the render itself crashes). Bumping the version also
-            // discards any stuck v1 state on first launch.
-            version: 2,
+            version: 1,
             partialize: state => ({
                 // Persist only non-callback, non-deeplink requests:
                 //   - callback transports (WalletConnect, webview) carry
@@ -128,8 +122,9 @@ export const useSigningStore: UseBoundStore<
             // still leave them in storage. Always boot with a clean
             // last-completed/last-failed slate so a stale id doesn't ghost
             // the next request through SignRequestView's id-equality guard.
-            // Also strip any rehydrated deeplink request — covers the
-            // window between v1 install and v2 rehydrate.
+            // Also strip any rehydrated deeplink request — covers the case
+            // where an older partialize persisted them, and matches the
+            // partialize filter above so the two stay in lockstep.
             onRehydrateStorage: () => state => {
                 if (state) {
                     state.lastCompletedRequest = null

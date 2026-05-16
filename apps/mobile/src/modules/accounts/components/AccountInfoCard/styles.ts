@@ -12,30 +12,50 @@
 
 import { makeStyles } from '@rneui/themed'
 
-const CONNECTOR_INDENT = 20
-const CONNECTOR_VERTICAL_HEIGHT = 32
-const CONNECTOR_HORIZONTAL_WIDTH = 22
+// Sizes pulled directly from Figma node 20016913:342592.
+const WALLET_CIRCLE_SIZE = 36
+const CONNECTOR_INDENT = 18
+const CONNECTOR_HORIZONTAL_WIDTH = 16
+const CONNECTOR_COLUMN_WIDTH = 24
 const SCAN_BUTTON_HEIGHT = 40
-const SCAN_BUTTON_INDENT = 56
 
 export const useStyles = makeStyles(theme => ({
     card: {
         borderWidth: theme.borders.sm,
         borderColor: theme.colors.layerGray,
         borderRadius: theme.borderRadius.lg,
-        paddingHorizontal: theme.spacing.xl,
-        paddingVertical: theme.spacing.lg,
-        gap: theme.spacing.lg,
+        padding: theme.spacing.md,
+        gap: theme.spacing.md,
     },
     infoRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
     },
+    accountTypeRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.sm,
+    },
     infoRowValue: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.sm,
+        flexShrink: 1,
+    },
+    accountTypeBlock: {
+        flexShrink: 1,
+    },
+    accountTypeMainRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.sm,
+    },
+    accountTypeText: {
+        flexShrink: 1,
+    },
+    accountTypeQualifier: {
+        color: theme.colors.textGray,
     },
     labelText: {
         color: theme.colors.textGray,
@@ -58,28 +78,51 @@ export const useStyles = makeStyles(theme => ({
     // Wallet structure tree styles
     treeContainer: {
         gap: theme.spacing.lg,
+        paddingTop: theme.spacing.md,
+        paddingBottom: theme.spacing.md,
     },
     walletRow: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.lg,
     },
+    walletCircle: {
+        width: WALLET_CIRCLE_SIZE,
+        height: WALLET_CIRCLE_SIZE,
+        borderRadius: WALLET_CIRCLE_SIZE / 2,
+        backgroundColor: theme.colors.layerGrayLighter,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
     connectorContainer: {
-        flexDirection: 'row',
-        alignItems: 'flex-end',
-        marginLeft: CONNECTOR_INDENT,
+        position: 'relative',
+        alignSelf: 'stretch',
+        width: CONNECTOR_INDENT + CONNECTOR_COLUMN_WIDTH,
     },
     connectorVertical: {
-        width: 0,
-        height: CONNECTOR_VERTICAL_HEIGHT,
-        borderLeftWidth: theme.borders.sm,
-        borderLeftColor: theme.colors.layerGray,
+        position: 'absolute',
+        top: 0,
+        left: CONNECTOR_INDENT,
+        width: theme.borders.sm,
+        // Default for non-last rows: extends from the top of the row through
+        // its bottom and into the inter-row gap below, so consecutive verticals
+        // visually merge into one continuous line down the tree. The next row's
+        // vertical starts at top: 0 of its container, meeting this one
+        // mid-gap. Bottom is negative the gap value used on `treeContainer`.
+        bottom: -theme.spacing.lg,
+        backgroundColor: theme.colors.layerGray,
+    },
+    connectorVerticalLast: {
+        bottom: undefined,
+        height: '50%',
     },
     connectorHorizontal: {
+        position: 'absolute',
+        top: '50%',
+        left: CONNECTOR_INDENT,
         width: CONNECTOR_HORIZONTAL_WIDTH,
-        height: 0,
-        borderTopWidth: theme.borders.sm,
-        borderTopColor: theme.colors.layerGray,
+        height: theme.borders.sm,
+        backgroundColor: theme.colors.layerGray,
     },
     accountRow: {
         flexDirection: 'row',
@@ -98,18 +141,47 @@ export const useStyles = makeStyles(theme => ({
     },
     scanButton: {
         backgroundColor: theme.colors.buttonSquareBg,
-        borderRadius: theme.spacing.sm,
+        borderRadius: theme.borderRadius.sm,
         height: SCAN_BUTTON_HEIGHT,
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
+        alignSelf: 'flex-start',
         gap: theme.spacing.sm,
-        marginLeft: SCAN_BUTTON_INDENT,
+        paddingHorizontal: theme.spacing.md,
+        marginLeft: CONNECTOR_INDENT + CONNECTOR_COLUMN_WIDTH,
     },
     scanButtonText: {
         color: theme.colors.buttonSquareIcon,
     },
     minBalanceDescription: {
         color: theme.colors.textGray,
+    },
+    rekeyedSection: {
+        gap: theme.spacing.sm,
+        paddingBottom: theme.spacing.md,
+    },
+    rekeyedRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.md,
+    },
+    rekeyedAddressTouchable: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xxs,
+        flexShrink: 1,
+        flexGrow: 0,
+    },
+    rekeyedRowText: {
+        flexShrink: 1,
+    },
+    rekeyedSubtitle: {
+        color: theme.colors.textGrayLighter,
+    },
+    rekeyedUndo: {
+        marginLeft: 'auto',
+    },
+    rekeyedUndoLink: {
+        color: theme.colors.positive,
     },
 }))

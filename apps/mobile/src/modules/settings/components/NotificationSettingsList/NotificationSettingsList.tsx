@@ -86,6 +86,7 @@ export const NotificationSettingsList = ({
         isSystemNotificationEnabled,
         isSystemNotificationLoading,
         accounts,
+        disabledAccounts,
         handleSystemNotificationToggle,
         handleAccountNotificationToggle,
         isAccountNotificationEnabled,
@@ -94,6 +95,7 @@ export const NotificationSettingsList = ({
     return (
         <PWFlatList
             data={accounts}
+            extraData={disabledAccounts}
             keyExtractor={item => item.address}
             style={style}
             scrollEnabled={scrollEnabled}

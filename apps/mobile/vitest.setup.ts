@@ -727,6 +727,21 @@ vi.mock('expo-clipboard', () => ({
     getStringAsync: vi.fn(),
 }))
 
+// `expo-file-system` transitively imports `expo-modules-core`, which probes
+// `__DEV__` at module init and crashes under jsdom. Stub the `File` class
+// to the surface the ASB import screen actually uses (the static picker +
+// the `.text()` reader).
+vi.mock('expo-file-system', () => {
+    class FileMock {
+        name = 'mock-file.txt'
+        async text() {
+            return ''
+        }
+        static pickFileAsync = vi.fn(async () => new FileMock())
+    }
+    return { File: FileMock }
+})
+
 vi.mock('expo-haptics', () => ({
     notificationAsync: vi.fn(),
     impactAsync: vi.fn(),
@@ -1134,7 +1149,10 @@ vi.mock('react-native', () => {
         },
         AppState: {
             currentState: 'active',
-            addEventListener: vi.fn(),
+            // Real RN returns an `EmitterSubscription` with `.remove()`.
+            // Default the mock to the same shape so consumers can call
+            // `.remove()` in an effect cleanup without crashing.
+            addEventListener: vi.fn(() => ({ remove: vi.fn() })),
             removeEventListener: vi.fn(),
         },
         InteractionManager: {
@@ -1962,6 +1980,9 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     formatNumber: vi.fn(value => String(value)),
     generateUniqueId: vi.fn(() => 'mock-uuid'),
     generateOrderedUniqueId: vi.fn(() => 'mock-time-uuid'),
+    toError: vi.fn((e: unknown) =>
+        e instanceof Error ? e : new Error(String(e)),
+    ),
     AppError: class AppError extends Error {
         constructor(message: string) {
             super(message)
@@ -2117,6 +2138,11 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
             if (buf) buf.fill(0)
         }
     },
+    // ASB key entry needs the BIP-39 wordlist to validate user input. Tests
+    // don't exercise the full 2048-word list — a small placeholder is enough
+    // to satisfy `new Set(MNEMONIC_WORDLIST)` at import time without dragging
+    // the real wordlist into the test bundle.
+    MNEMONIC_WORDLIST: ['abandon', 'ability', 'able', 'about'],
 }))
 
 // Mock @perawallet/wallet-core-assets
@@ -2266,6 +2292,15 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             hardware: 'hardware',
             multisig: 'multisig',
             watch: 'watch',
+        },
+        AccountLogicalTypes: {
+            Algo25: 'Algo25',
+            HdKey: 'HdKey',
+            LedgerBle: 'LedgerBle',
+            Multisig: 'Multisig',
+            Rekeyed: 'Rekeyed',
+            RekeyedAuth: 'RekeyedAuth',
+            NoAuth: 'NoAuth',
         },
         useOwnedAssets: vi.fn(() => ({
             assets: [],

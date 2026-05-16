@@ -15,7 +15,6 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     container: {
         paddingHorizontal: theme.spacing.xl,
-        paddingBottom: theme.spacing.xl,
         flex: 1,
     },
     title: {

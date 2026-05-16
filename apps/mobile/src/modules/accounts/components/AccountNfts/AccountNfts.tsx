@@ -94,7 +94,9 @@ export const AccountNfts = () => {
     return (
         <PWView style={styles.container}>
             {showEmptyState ? (
-                <NftEmptyState onOptInPress={openAddNftSheet} />
+                <NftEmptyState
+                    onOptInPress={canOptIn ? openAddNftSheet : undefined}
+                />
             ) : (
                 <>
                     <PWView style={styles.headerContainer}>
@@ -112,7 +114,7 @@ export const AccountNfts = () => {
                                     <PWIcon
                                         name='sliders'
                                         size='sm'
-                                        variant='link'
+                                        variant='positive'
                                     />
                                     <PWText style={styles.manageText}>
                                         {t('account_details.nfts.manage')}

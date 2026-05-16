@@ -24,6 +24,13 @@ type UseSettingsNotificationsScreenResult = {
     isSystemNotificationEnabled: boolean
     isSystemNotificationLoading: boolean
     accounts: WalletAccount[]
+    /**
+     * The raw list of addresses with notifications disabled. Exposed so the
+     * consuming `<FlatList>` can pass it as `extraData` and re-render rows
+     * when the toggle state changes — otherwise items stay cached and the
+     * switch appears not to update.
+     */
+    disabledAccounts: string[]
     handleSystemNotificationToggle: () => void
     handleAccountNotificationToggle: (
         account: WalletAccount,
@@ -38,7 +45,7 @@ export const useSettingsNotificationsScreen =
         const { isEnabled, isLoading, openSettings } =
             useSystemNotificationPermission()
         const accounts = useAllAccounts()
-        const { setAccountEnabled, isAccountEnabled } =
+        const { setAccountEnabled, isAccountEnabled, disabledAccounts } =
             useNotificationPreferences()
         const { mutateAsync } = useAccountNotificationEnabledMutation()
         const { t } = useLanguage()
@@ -49,9 +56,6 @@ export const useSettingsNotificationsScreen =
 
         const handleAccountNotificationToggle = useCallback(
             (account: WalletAccount, enabled: boolean) => {
-                if (!account.id) {
-                    return
-                }
                 setAccountEnabled(account.address, enabled)
                 mutateAsync({
                     accountID: account.address,
@@ -66,13 +70,14 @@ export const useSettingsNotificationsScreen =
                     })
                 })
             },
-            [setAccountEnabled, mutateAsync],
+            [setAccountEnabled, mutateAsync, showToast, t],
         )
 
         return {
             isSystemNotificationEnabled: isEnabled,
             isSystemNotificationLoading: isLoading,
             accounts,
+            disabledAccounts,
             handleSystemNotificationToggle,
             handleAccountNotificationToggle,
             isAccountNotificationEnabled: isAccountEnabled,

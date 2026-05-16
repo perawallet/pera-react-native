@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 import {
     PWDivider,
     PWIcon,
@@ -73,7 +73,6 @@ export const SwapConfirmationContent = ({
         if (!success) return
         successCloseTimer.schedule(() => {
             resolve('confirm')
-            swapExecution.reset()
         }, SUCCESS_DISPLAY_MS)
     }, [quote.quoteIdStr, swapExecution, successCloseTimer, resolve])
 
@@ -82,6 +81,12 @@ export const SwapConfirmationContent = ({
         successCloseTimer.flush()
         dismiss()
     }, [isProcessing, successCloseTimer, dismiss])
+
+    // Reset execution state once on mount so a re-opened sheet starts clean.
+    useEffect(() => {
+        swapExecution.reset()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
 
     return (
         <PWView style={styles.container}>

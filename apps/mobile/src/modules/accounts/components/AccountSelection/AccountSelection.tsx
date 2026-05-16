@@ -108,6 +108,7 @@ export const AccountSelection = ({
     return (
         <PWTouchableOpacity
             {...props}
+            style={[styles.trigger, props.style]}
             activeOpacity={0.8}
             onPress={() => {
                 void openAccountMenu()

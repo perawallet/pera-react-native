@@ -12,7 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
+export const useStyles = makeStyles((theme, bottomPadding: number) => ({
     container: {
         flex: 1,
         backgroundColor: theme.colors.background,
@@ -33,7 +33,7 @@ export const useStyles = makeStyles(theme => ({
     },
     listContent: {
         paddingTop: theme.spacing.md,
-        paddingBottom: theme.spacing.xl,
+        paddingBottom: bottomPadding,
     },
     errorContainer: {
         paddingHorizontal: theme.spacing.xl,

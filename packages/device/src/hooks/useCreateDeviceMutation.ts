@@ -24,6 +24,11 @@ export const useCreateDeviceMutation = (
 ) => {
     const { network } = useNetwork()
     return useMutation({
+        // Device registration is best-effort and handled by
+        // `useDeviceRegistration` (logs and swallows). Opt out of the global
+        // `throwOnError: true` so a failed registration doesn't re-throw on
+        // the next render and crash the app.
+        throwOnError: false,
         mutationFn: ({ data }: { data: DeviceRequest }) =>
             createDevice(network, data),
         ...options,

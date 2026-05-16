@@ -26,11 +26,10 @@ import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useLanguage } from '@hooks/useLanguage'
 import type { IconName } from '@components/core'
 
-export type AddressFormat = 'short' | 'medium' | 'long' | 'full'
+export type AddressFormat = 'short' | 'long' | 'full'
 export type AddressDisplayType = 'full' | 'simple' | 'address-only'
 
 const LONG_ADDRESS_FORMAT = 20
-const MEDIUM_ADDRESS_FORMAT = 12
 
 type UseAddressDisplayProps = {
     address: string
@@ -95,8 +94,6 @@ const formatAddress = (address: string, format: AddressFormat): string => {
             return address
         case 'long':
             return truncateAlgorandAddress(address, LONG_ADDRESS_FORMAT)
-        case 'medium':
-            return truncateAlgorandAddress(address, MEDIUM_ADDRESS_FORMAT)
         case 'short':
         default:
             return truncateAlgorandAddress(address)

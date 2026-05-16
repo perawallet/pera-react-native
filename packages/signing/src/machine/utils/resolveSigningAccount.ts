@@ -22,8 +22,9 @@ import type { SourceMetadata } from '../../pipeline/types'
  * - `multisig-cosign` source: the participant slot is bound to its ORIGINAL
  *   pubkey at multisig creation. Rekey indirection MUST NOT be followed —
  *   the participant signs with its own key.
- * - Any other source: standard rekey rule — follow the rekey chain to the
- *   auth account, which holds the signing key.
+ * - Any other source: standard rekey rule — resolve the single rekey hop to
+ *   the auth account, which holds the signing key. Rekey indirection is not
+ *   transitive, so this is one hop, not a chain.
  *
  * This is the single canonical statement of the rule. Both the machine
  * dispatcher (which classifies each group's signer type) and the local-key

@@ -43,6 +43,7 @@ export const AccountWithBalance = ({
             <AccountDisplay
                 account={account}
                 showChevron={false}
+                showAccountType
             />
             <PWView style={styles.balanceContainer}>
                 <CurrencyDisplay

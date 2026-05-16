@@ -43,7 +43,6 @@ export const LedgerSelectAccountsScreen = () => {
         toggleSelectAll,
         handleContinue,
         handleFindAnother,
-        handleOpenInfo,
     } = useLedgerSelectAccountsScreen()
 
     const showSelectAll = accounts.length > 1 && !areAllImported
@@ -57,7 +56,6 @@ export const LedgerSelectAccountsScreen = () => {
                 isSelected={isSelected}
                 isImported={isImported}
                 onToggle={() => toggleSelection(item.address)}
-                onInfoPress={() => handleOpenInfo(item.address)}
                 testID={`ledger_select_row_${item.address}`}
             />
         )
