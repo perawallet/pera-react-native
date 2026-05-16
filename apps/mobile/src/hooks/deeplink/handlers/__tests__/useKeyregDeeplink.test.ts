@@ -203,9 +203,7 @@ describe('useKeyregDeeplink', () => {
 
             // sprfkey omitted → online keyreg requires every key field.
             await act(async () => {
-                await result.current(
-                    baseOnlineDeeplink({ sprfkey: undefined }),
-                )
+                await result.current(baseOnlineDeeplink({ sprfkey: undefined }))
             })
 
             expect(mockShowError).toHaveBeenCalledExactlyOnceWith(
