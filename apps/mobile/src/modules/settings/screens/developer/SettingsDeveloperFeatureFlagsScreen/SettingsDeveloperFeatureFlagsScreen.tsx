@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWScrollView, PWView } from '@components/core'
+import { PWScrollView } from '@components/core'
 import { FeatureFlagOverrides } from '@modules/settings/components/FeatureFlagOverrides/FeatureFlagOverrides'
 import { useStyles } from './styles'
 import { SafeAreaView } from 'react-native-safe-area-context'
