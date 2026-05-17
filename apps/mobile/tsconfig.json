@@ -74,6 +74,9 @@
       ],
       "@perawallet/wallet-core-blockchain/test-handlers": [
         "../../packages/blockchain/src/test-handlers.ts"
+      ],
+      "@perawallet/wallet-core-banners/test-handlers": [
+        "../../packages/banners/src/test-handlers.ts"
       ]
     },
     "lib": [

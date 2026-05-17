@@ -16,7 +16,20 @@ export const useStyles = makeStyles(theme => {
     return {
         container: {
             flex: 1,
+            // Dark bg shows through the rounded corners of `contentWithBanner`
+            // when the home banner is visible; otherwise the content fills 100%
+            // and this color is hidden.
+            backgroundColor: theme.colors.bannerBg,
+        },
+        content: {
+            flex: 1,
             backgroundColor: theme.colors.background,
+        },
+        // Clips the content under the animated rounded corners while the
+        // home banner is visible. The radius itself is driven by a
+        // Reanimated shared value on AccountScreen.
+        contentClipped: {
+            overflow: 'hidden',
         },
         iconBar: {
             paddingVertical: 0,

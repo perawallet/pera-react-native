@@ -11,6 +11,7 @@
  */
 
 import { useInboxStatus } from '@perawallet/wallet-core-messages'
+import { useSpotBannersQuery } from '@perawallet/wallet-core-banners'
 import { SvgProps } from 'react-native-svg'
 import { PWBadge, PWIcon, PWTouchableOpacity, PWView } from '@components/core'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
@@ -24,6 +25,11 @@ const MAX_INBOX_COUNT_DISPLAY = 9
 export const NotificationsIcon = (props: NotificationsIconProps) => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { hasUnreadInboxItems, hasUnreadNotifications } = useInboxStatus()
+    // Spot banners live on the Messages screen above the tabs, so any
+    // outstanding spot banner is also an "unread" signal the icon should
+    // surface.
+    const { spotBanners } = useSpotBannersQuery()
+    const hasSpotBanners = spotBanners.length > 0
     const styles = useStyles()
 
     const goToNotifications = () => {
@@ -32,7 +38,8 @@ export const NotificationsIcon = (props: NotificationsIconProps) => {
 
     const inboxCount = hasUnreadInboxItems ?? 0
     const showCountBadge = inboxCount > 0
-    const showDotBadge = !showCountBadge && hasUnreadNotifications
+    const showDotBadge =
+        !showCountBadge && (hasUnreadNotifications || hasSpotBanners)
     const countLabel =
         inboxCount > MAX_INBOX_COUNT_DISPLAY
             ? `${MAX_INBOX_COUNT_DISPLAY}+`

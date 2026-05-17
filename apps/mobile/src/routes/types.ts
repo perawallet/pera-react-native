@@ -46,6 +46,7 @@ export type RootStackParamList = {
     RescanRekeyed: NavigatorScreenParams<RescanRekeyedStackParamList>
     UndoRekey: NavigatorScreenParams<UndoRekeyStackParamList>
     Staking: undefined
+    BannersCarouselModal: { bannerId?: number } | undefined
     GroupTransactionList: {
         groupId: string
     }

@@ -384,6 +384,9 @@
             "error_body": "Something went wrong. Please try again."
         }
     },
+    "banners": {
+        "dismiss": "Don't show again"
+    },
     "backup": {
         "banner": {
             "text": "You need to backup the passphrase",
