@@ -20,5 +20,8 @@ export const useStyles = makeStyles(theme => {
             gap: theme.spacing.md,
             marginHorizontal: theme.spacing.md,
         },
+        scrollContainer: {
+            flexGrow: 1,
+        },
     }
 })
