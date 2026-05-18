@@ -41,6 +41,7 @@ type UseLedgerAccountInfoContentResult = {
 export const useLedgerAccountInfoContent = (
     address: string,
     accountIndex: number,
+    titleOverride?: string,
 ): UseLedgerAccountInfoContentResult => {
     const { t } = useLanguage()
     const { preview, isLoading, isError, refetch } =
@@ -108,7 +109,7 @@ export const useLedgerAccountInfoContent = (
     }, [preview, t])
 
     return {
-        title: `Ledger #${accountIndex}`,
+        title: titleOverride ?? `Ledger #${accountIndex}`,
         items,
         isLoading,
         isError,

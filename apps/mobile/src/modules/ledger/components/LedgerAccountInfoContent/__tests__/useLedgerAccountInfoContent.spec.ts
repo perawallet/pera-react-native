@@ -136,6 +136,21 @@ describe('useLedgerAccountInfoContent', () => {
         expect(rekeyAddresses).toEqual(['R1', 'R2'])
     })
 
+    it('uses the title override when provided, ignoring the index', () => {
+        mocks.useLedgerAccountPreview.mockReturnValue({
+            preview: undefined,
+            isLoading: true,
+            isError: false,
+            refetch: vi.fn(),
+        })
+
+        const { result } = renderHook(() =>
+            useLedgerAccountInfoContent('ADDR', 7, 'Rekeyed account'),
+        )
+
+        expect(result.current.title).toBe('Rekeyed account')
+    })
+
     it('carries Decimal instances for algoBalance and fiatValue on the account item', () => {
         mocks.useLedgerAccountPreview.mockReturnValue({
             preview: {

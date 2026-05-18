@@ -38,18 +38,20 @@ import { useStyles } from './styles'
 export type LedgerAccountInfoContentProps = {
     address: string
     accountIndex: number
+    title?: string
 }
 
 export const LedgerAccountInfoContent = ({
     address,
     accountIndex,
+    title,
 }: LedgerAccountInfoContentProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
     const { dismiss } = useBottomSheetResult<void>()
     const { preferredCurrency } = useCurrency()
-    const { title, items, isLoading, isError, refetch } =
-        useLedgerAccountInfoContent(address, accountIndex)
+    const { title: resolvedTitle, items, isLoading, isError, refetch } =
+        useLedgerAccountInfoContent(address, accountIndex, title)
 
     const renderItem = useCallback(
         ({ item }: { item: LedgerInfoListItem }) => {
@@ -92,7 +94,7 @@ export const LedgerAccountInfoContent = ({
                         testID='ledger_account_info_close'
                     />
                 }
-                center={<PWText variant='h3'>{title}</PWText>}
+                center={<PWText variant='h3'>{resolvedTitle}</PWText>}
             />
 
             {isLoading && (
