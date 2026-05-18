@@ -14,34 +14,73 @@ import { describe, it, expect } from 'vitest'
 import { mapOnChainAccountInformation } from '../mappers'
 import type { OnChainAccountInformationResponse } from '../endpoints'
 
-const baseResponse = {
-    address: 'ADDR',
-    amount: 1_000_000n,
-    minBalance: 100_000n,
-    status: 'Offline',
-    rewards: 0n,
-    assets: [{ assetId: 10n, amount: 5n, isFrozen: false }],
-}
+const buildResponse = (
+    overrides: Partial<OnChainAccountInformationResponse> = {},
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): OnChainAccountInformationResponse =>
+    ({
+        address: 'ADDR1',
+        amount: 1000n,
+        minBalance: 100n,
+        status: 'Online',
+        rewards: 0n,
+        assets: [],
+        ...overrides,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    }) as any
 
 describe('mapOnChainAccountInformation', () => {
-    it('maps balance, assets and omits authAddress when not rekeyed', () => {
-        const result = mapOnChainAccountInformation(
-            baseResponse as unknown as OnChainAccountInformationResponse,
+    it('maps top-level fields and empty asset list', () => {
+        const mapped = mapOnChainAccountInformation(buildResponse())
+
+        expect(mapped).toEqual({
+            address: 'ADDR1',
+            amount: 1000n,
+            minBalance: 100n,
+            status: 'Online',
+            rewards: 0n,
+            assets: [],
+        })
+    })
+
+    it('maps assets array preserving assetId/amount/isFrozen', () => {
+        const mapped = mapOnChainAccountInformation(
+            buildResponse({
+                assets: [
+                    { assetId: 1n, amount: 50n, isFrozen: false },
+                    { assetId: 2n, amount: 0n, isFrozen: true },
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                ] as any,
+            }),
         )
 
-        expect(result.amount).toBe(1_000_000n)
-        expect(result.assets).toEqual([
-            { assetId: 10n, amount: 5n, isFrozen: false },
+        expect(mapped.assets).toEqual([
+            { assetId: 1n, amount: 50n, isFrozen: false },
+            { assetId: 2n, amount: 0n, isFrozen: true },
         ])
-        expect(result.authAddress).toBeUndefined()
+    })
+
+    it('returns an empty array when assets is undefined', () => {
+        const mapped = mapOnChainAccountInformation(
+            buildResponse({ assets: undefined }),
+        )
+
+        expect(mapped.assets).toEqual([])
+    })
+
+    it('omits authAddress when the account is not rekeyed', () => {
+        const mapped = mapOnChainAccountInformation(buildResponse())
+
+        expect(mapped.authAddress).toBeUndefined()
     })
 
     it('surfaces authAddress as a string when the account is rekeyed', () => {
-        const result = mapOnChainAccountInformation({
-            ...baseResponse,
-            authAddr: { toString: () => 'AUTHADDR' },
-        } as unknown as OnChainAccountInformationResponse)
+        const mapped = mapOnChainAccountInformation(
+            buildResponse({
+                authAddr: { toString: () => 'AUTHADDR' },
+            } as any),
+        )
 
-        expect(result.authAddress).toBe('AUTHADDR')
+        expect(mapped.authAddress).toBe('AUTHADDR')
     })
 })
