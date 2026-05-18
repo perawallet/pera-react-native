@@ -47,6 +47,8 @@ export const AsbImportKeyScreen = () => {
         handleWordChange,
         handleSelectSuggestion,
         handleContinue,
+        refCallbacks,
+        handleSubmitEditing,
     } = useAsbImportKeyScreen()
 
     const wordsPerColumn = Math.ceil(wordCount / 2)
@@ -106,6 +108,11 @@ export const AsbImportKeyScreen = () => {
                                                         style={styles.inputWrap}
                                                     >
                                                         <PWInput
+                                                            ref={
+                                                                refCallbacks[
+                                                                    globalIndex
+                                                                ]
+                                                            }
                                                             testID={`asb_import_key_word_${globalIndex}`}
                                                             value={word}
                                                             onChangeText={text =>
@@ -118,6 +125,21 @@ export const AsbImportKeyScreen = () => {
                                                                 setFocused(
                                                                     globalIndex,
                                                                 )
+                                                            }
+                                                            onSubmitEditing={() =>
+                                                                handleSubmitEditing(
+                                                                    globalIndex,
+                                                                )
+                                                            }
+                                                            returnKeyType={
+                                                                globalIndex ===
+                                                                wordCount - 1
+                                                                    ? 'done'
+                                                                    : 'next'
+                                                            }
+                                                            blurOnSubmit={
+                                                                globalIndex ===
+                                                                wordCount - 1
                                                             }
                                                             autoCapitalize='none'
                                                             autoCorrect={false}

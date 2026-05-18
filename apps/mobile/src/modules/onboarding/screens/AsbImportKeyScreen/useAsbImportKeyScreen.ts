@@ -17,8 +17,9 @@ import {
     AsbImportError,
     decryptBackupPayload,
 } from '@perawallet/wallet-core-backup'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { MNEMONIC_WORDLIST } from '@perawallet/wallet-core-kms'
+import type { PWInputRef } from '@components/core'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -38,6 +39,8 @@ type UseAsbImportKeyScreenResult = {
     handleWordChange: (value: string, index: number) => Promise<void>
     handleSelectSuggestion: (suggestion: string) => void
     handleContinue: () => Promise<void>
+    refCallbacks: ((ref: Nullable<PWInputRef>) => void)[]
+    handleSubmitEditing: (index: number) => void
 }
 
 const WORDLIST_SET = new Set(MNEMONIC_WORDLIST)
@@ -84,6 +87,8 @@ export const useAsbImportKeyScreen = (): UseAsbImportKeyScreenResult => {
         setFocused,
         handleWordChange,
         handleSelectSuggestion,
+        refCallbacks,
+        handleSubmitEditing,
     } = useMnemonicWordEntry({
         wordCount: ASB_RECOVERY_MNEMONIC_WORD_COUNT,
         onTooManyWords,
@@ -156,5 +161,7 @@ export const useAsbImportKeyScreen = (): UseAsbImportKeyScreenResult => {
         handleWordChange,
         handleSelectSuggestion,
         handleContinue,
+        refCallbacks,
+        handleSubmitEditing,
     }
 }

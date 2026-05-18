@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react'
+import React, { useState, useCallback, useMemo } from 'react'
 import { Linking } from 'react-native'
 import * as Clipboard from 'expo-clipboard'
 
@@ -25,16 +25,11 @@ import {
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 import { config } from '@perawallet/wallet-core-config'
 
-import type { PWInputRef } from '@components/core'
 import type { UseImportAccountScreenResult } from './types'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import {
-    deferToNextCycle,
-    logger,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import { deferToNextCycle, logger } from '@perawallet/wallet-core-shared'
 import { useModalState } from '@hooks/useModalState'
 import { useDeepLink } from '@hooks/useDeepLink'
 import { DeeplinkType } from '@hooks/deeplink/types'
@@ -83,6 +78,8 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         updateWord,
         handleWordChange,
         handleSelectSuggestion,
+        refCallbacks,
+        handleSubmitEditing,
     } = useMnemonicWordEntry({
         wordCount: mnemonicLength,
         onTooManyWords,
@@ -95,29 +92,6 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         open: openQRScanner,
         close: handleCloseQRScanner,
     } = useModalState()
-
-    const inputRefs = useRef<Nullable<PWInputRef>[]>(
-        new Array(mnemonicLength).fill(null),
-    )
-
-    const refCallbacks = useMemo(
-        () =>
-            Array.from(
-                { length: mnemonicLength },
-                (_, i) => (ref: Nullable<PWInputRef>) => {
-                    inputRefs.current[i] = ref
-                },
-            ),
-        [mnemonicLength],
-    )
-
-    const focusInput = useCallback((index: number) => {
-        inputRefs.current[index]?.focus()
-    }, [])
-
-    useEffect(() => {
-        focusInput(focused)
-    }, [focused, focusInput])
 
     const canImport = useMemo(() => words.every(w => w.length > 0), [words])
 
@@ -263,5 +237,6 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         suggestions,
         handleSelectSuggestion,
         refCallbacks,
+        handleSubmitEditing,
     }
 }

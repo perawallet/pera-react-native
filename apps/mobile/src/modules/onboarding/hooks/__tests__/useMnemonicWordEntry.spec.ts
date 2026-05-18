@@ -280,3 +280,29 @@ describe('useMnemonicWordEntry — handleSelectSuggestion', () => {
         expect(result.current.focused).toBe(11)
     })
 })
+
+describe('useMnemonicWordEntry — handleSubmitEditing', () => {
+    it('advances focus to the next slot when called for any non-last index', () => {
+        const { result } = renderEntry()
+
+        act(() => {
+            result.current.handleSubmitEditing(5)
+        })
+
+        expect(result.current.focused).toBe(6)
+    })
+
+    it('does not advance past the last slot', () => {
+        const { result } = renderEntry()
+
+        act(() => {
+            result.current.setFocused(11)
+        })
+
+        act(() => {
+            result.current.handleSubmitEditing(11)
+        })
+
+        expect(result.current.focused).toBe(11)
+    })
+})

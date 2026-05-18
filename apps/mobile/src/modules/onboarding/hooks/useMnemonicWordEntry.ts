@@ -10,10 +10,13 @@
  limitations under the License
  */
 
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import * as Clipboard from 'expo-clipboard'
 
 import { MNEMONIC_WORDLIST } from '@perawallet/wallet-core-kms'
+import { type Nullable } from '@perawallet/wallet-core-shared'
+
+import type { PWInputRef } from '@components/core'
 
 import { splitMnemonic } from '../utils'
 
@@ -46,6 +49,12 @@ export type UseMnemonicWordEntryResult = {
     handleWordChange: (value: string, index: number) => Promise<void>
     /** Sets the focused slot to the picked suggestion and advances focus. */
     handleSelectSuggestion: (word: string) => void
+    /** Per-slot `ref` callbacks. Attach to each input so the hook can
+     * imperatively move focus on suggestion select / keyboard Next. */
+    refCallbacks: ((ref: Nullable<PWInputRef>) => void)[]
+    /** Wire to `<TextInput onSubmitEditing>`. Advances focus to the next
+     * slot unless the user is already on the last one. */
+    handleSubmitEditing: (index: number) => void
 }
 
 /**
@@ -191,6 +200,42 @@ export const useMnemonicWordEntry = ({
         [focused, wordCount],
     )
 
+    const inputRefs = useRef<Nullable<PWInputRef>[]>(
+        new Array(wordCount).fill(null),
+    )
+
+    const refCallbacks = useMemo(
+        () =>
+            Array.from(
+                { length: wordCount },
+                (_, i) => (ref: Nullable<PWInputRef>) => {
+                    inputRefs.current[i] = ref
+                },
+            ),
+        [wordCount],
+    )
+
+    // Skip the mount run so we don't fight the consumer's `autoFocus` on the
+    // first input. Only subsequent `focused` changes (suggestion select,
+    // keyboard Next) drive imperative focus.
+    const isInitialFocusRunRef = useRef(true)
+    useEffect(() => {
+        if (isInitialFocusRunRef.current) {
+            isInitialFocusRunRef.current = false
+            return
+        }
+        inputRefs.current[focused]?.focus()
+    }, [focused])
+
+    const handleSubmitEditing = useCallback(
+        (index: number) => {
+            if (index < wordCount - 1) {
+                setFocused(index + 1)
+            }
+        },
+        [wordCount],
+    )
+
     return {
         words,
         focused,
@@ -199,5 +244,7 @@ export const useMnemonicWordEntry = ({
         updateWord,
         handleWordChange,
         handleSelectSuggestion,
+        refCallbacks,
+        handleSubmitEditing,
     }
 }

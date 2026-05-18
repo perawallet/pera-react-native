@@ -58,6 +58,7 @@ export const ImportAccountScreen = () => {
         suggestions,
         handleSelectSuggestion,
         refCallbacks,
+        handleSubmitEditing,
     } = useImportAccountScreen()
     const styles = useStyles(insets)
 
@@ -168,6 +169,23 @@ export const ImportAccountScreen = () => {
                                                                     setFocused(
                                                                         offsetIndex,
                                                                     )
+                                                                }
+                                                                onSubmitEditing={() =>
+                                                                    handleSubmitEditing(
+                                                                        offsetIndex,
+                                                                    )
+                                                                }
+                                                                returnKeyType={
+                                                                    offsetIndex ===
+                                                                    mnemonicLength -
+                                                                        1
+                                                                        ? 'done'
+                                                                        : 'next'
+                                                                }
+                                                                blurOnSubmit={
+                                                                    offsetIndex ===
+                                                                    mnemonicLength -
+                                                                        1
                                                                 }
                                                                 autoFocus={
                                                                     column ===
