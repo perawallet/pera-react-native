@@ -494,7 +494,7 @@ describe('useImportAccountScreen', () => {
             })
 
             expect(mockImportAccount).toHaveBeenCalled()
-            expect(mockPush).toHaveBeenCalledWith('SearchAccounts', {
+            expect(mockReplace).toHaveBeenCalledWith('SearchAccounts', {
                 mode: 'import',
                 walletKeyId: 'WALLET1',
                 derivationType: 9,
