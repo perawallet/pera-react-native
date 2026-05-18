@@ -11,14 +11,17 @@
  */
 
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet'
-import { PWDivider, PWIcon, PWText, PWToolbar, PWView } from '@components/core'
+import { PWText, PWToolbar, PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
-import { ParticipantCount } from '@components/ParticipantCount'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { MultisigInfoCard } from '@components/MultisigInfoCard'
+import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
+import { useSharedAccountDetailsContent } from './useSharedAccountDetailsContent'
 import { useStyles } from './styles'
 
 export type SharedAccountDetails = {
+    name: string
+    address: string
     participantCount: number
     threshold: number
     addresses: string[]
@@ -33,19 +36,20 @@ export const SharedAccountDetailsContent = ({
 }: SharedAccountDetailsContentProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { dismiss } = useBottomSheetResult<void>()
+    const { isUserIncluded } = useSharedAccountDetailsContent(details.addresses)
 
     return (
         <>
             <PWToolbar
-                left={
-                    <PWIcon
-                        name='cross'
-                        onPress={dismiss}
-                    />
-                }
                 center={
-                    <PWText variant='h3'>{t('multisig.detail.title')}</PWText>
+                    <PWView style={styles.headerTitle}>
+                        {!!details.name && (
+                            <PWText variant='h4'>{details.name}</PWText>
+                        )}
+                        <PWText style={styles.headerAddress}>
+                            {truncateAlgorandAddress(details.address)}
+                        </PWText>
+                    </PWView>
                 }
                 paddingStyle='dense'
             />
@@ -57,46 +61,13 @@ export const SharedAccountDetailsContent = ({
                     style={styles.details}
                     testID='shared_account_details_content'
                 >
-                    <PWView
-                        style={styles.summaryRow}
-                        testID='shared_account_participant_count_row'
-                    >
-                        <PWText
-                            variant='body'
-                            style={styles.labelText}
-                        >
-                            {t('multisig.detail.number_of_accounts')}
-                        </PWText>
-                        <PWView style={styles.summaryValue}>
-                            <ParticipantCount
-                                count={details.participantCount}
-                                size='h2'
-                                testID='shared_account_participant_count'
-                            />
-                        </PWView>
-                    </PWView>
-
-                    <PWView
-                        style={styles.summaryRow}
-                        testID='shared_account_threshold_row'
-                    >
-                        <PWText
-                            variant='body'
-                            style={styles.labelText}
-                        >
-                            {t('multisig.detail.threshold')}
-                        </PWText>
-                        <PWView style={styles.summaryValue}>
-                            <PWText
-                                variant='h2'
-                                testID='shared_account_threshold'
-                            >
-                                {details.threshold}
-                            </PWText>
-                        </PWView>
-                    </PWView>
-
-                    <PWDivider />
+                    <MultisigInfoCard
+                        totalParticipants={details.participantCount}
+                        threshold={details.threshold}
+                        isUserIncluded={isUserIncluded}
+                        participantCountTestID='shared_account_participant_count'
+                        thresholdTestID='shared_account_threshold'
+                    />
 
                     <PWView style={styles.participants}>
                         <PWText variant='h4'>
@@ -104,16 +75,24 @@ export const SharedAccountDetailsContent = ({
                                 count: details.participantCount,
                             })}
                         </PWText>
-                        {details.addresses.map(address => (
-                            <AddressDisplay
-                                key={address}
-                                address={address}
-                                forceShowIcon
-                                textProps={{ variant: 'h4' }}
-                                style={styles.participant}
-                                testID={`shared_account_participant_${address}`}
-                            />
-                        ))}
+                        <PWView>
+                            {details.addresses.map(
+                                (participantAddress, index, arr) => (
+                                    <AddressDisplay
+                                        key={participantAddress}
+                                        address={participantAddress}
+                                        forceShowIcon
+                                        textProps={{ variant: 'h4' }}
+                                        style={[
+                                            styles.participant,
+                                            index === arr.length - 1 &&
+                                                styles.participantLast,
+                                        ]}
+                                        testID={`shared_account_participant_${participantAddress}`}
+                                    />
+                                ),
+                            )}
+                        </PWView>
                     </PWView>
                 </PWView>
             </BottomSheetScrollView>

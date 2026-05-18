@@ -34,25 +34,6 @@ export const useStyles = makeStyles(theme => ({
     headerBackButton: {
         marginLeft: theme.spacing.md,
     },
-    infoCard: {
-        borderWidth: theme.borders.sm,
-        borderColor: theme.colors.layerGray,
-        borderRadius: theme.borderRadius.lg,
-        padding: theme.spacing.md,
-        gap: theme.spacing.md,
-    },
-    infoRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    infoRowLabels: {
-        flexShrink: 1,
-        gap: theme.spacing.xxs,
-    },
-    infoRowSubLabel: {
-        color: theme.colors.textGray,
-    },
     sectionHeading: {
         color: theme.colors.textGray,
         marginTop: theme.spacing.sm,

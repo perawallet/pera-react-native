@@ -21,25 +21,23 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.lg,
         marginTop: theme.spacing.lg,
     },
-    summaryRow: {
-        flexDirection: 'row',
+    headerTitle: {
         alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: theme.spacing.lg,
+        gap: theme.spacing.xxs,
     },
-    summaryValue: {
-        flex: 1,
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-        alignItems: 'flex-end',
+    headerAddress: {
+        color: theme.colors.textGray,
     },
     participants: {
         gap: theme.spacing.md,
     },
     participant: {
-        paddingVertical: theme.spacing.xs,
+        paddingVertical: theme.spacing.md,
+        borderBottomWidth: theme.borders.sm,
+        borderBottomColor: theme.colors.divider,
+        justifyContent: 'space-between',
     },
-    labelText: {
-        color: theme.colors.textGray,
+    participantLast: {
+        borderBottomWidth: 0,
     },
 }))
