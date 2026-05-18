@@ -2132,6 +2132,15 @@
             "no_new_accounts": "All accounts on this device are already imported.",
             "find_another_wallet": "Find another account"
         },
+        "account_info": {
+            "account_details": "Account details",
+            "assets": "Assets",
+            "ledger_account_label": "Ledger Account",
+            "can_be_signed_by": "Can be signed by",
+            "can_sign_for": "Can sign for these",
+            "error": "Couldn't load account information.",
+            "retry": "Try again"
+        },
         "verify": {
             "title": "Verify Account Addresses via Ledger",
             "description": "The following account addresses will display on your Ledger device. Please carefully compare and verify each address in order to finalize device pairing.",
