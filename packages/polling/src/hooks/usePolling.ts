@@ -36,7 +36,7 @@ export const usePolling = (options?: UsePollingOptions) => {
         if (!onlineManager.isOnline) {
             return
         }
-        
+
         try {
             const response = await mutateAsync()
 
