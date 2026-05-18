@@ -160,10 +160,14 @@ export const useMnemonicWordEntry = ({
             // through the clipboard check, which only takes effect when
             // the clipboard has more separable words than the received
             // value.
-            const trimmedValue = value.trim().toLowerCase()
+            // Derive the candidate token from splitMnemonic, not value.trim(),
+            // so trailing punctuation a keyboard may append ("abandon,",
+            // "abandon.") still classifies as autocomplete. Stripping only
+            // whitespace would leave the comma attached, fail the wordlist
+            // check, and let a clipboard mnemonic overwrite every slot.
+            const tokens = splitMnemonic(value)
             const looksLikeAutocomplete =
-                splitMnemonic(value).length === 1 &&
-                WORDLIST_SET.has(trimmedValue)
+                tokens.length === 1 && WORDLIST_SET.has(tokens[0].toLowerCase())
 
             if (delta > 1 && !looksLikeAutocomplete) {
                 try {

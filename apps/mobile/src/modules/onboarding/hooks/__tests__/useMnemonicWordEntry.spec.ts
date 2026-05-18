@@ -135,6 +135,29 @@ describe('useMnemonicWordEntry — paste distribution', () => {
         expect(result.current.words.slice(1).every(w => w === '')).toBe(true)
     })
 
+    it('treats a single wordlist token with trailing punctuation as autocomplete, not a paste', async () => {
+        // Regression: some keyboards append a trailing comma/period when
+        // accepting a suggestion. Without normalizing through splitMnemonic,
+        // the wordlist check missed the trailing punctuation, the clipboard
+        // fallback engaged, and a copied mnemonic overwrote every slot.
+        vi.mocked(Clipboard.getStringAsync).mockResolvedValue(
+            TWELVE_WORDS.join(' '),
+        )
+
+        const { result } = renderEntry()
+
+        await act(async () => {
+            await result.current.handleWordChange('abandon,', 0)
+        })
+
+        expect(Clipboard.getStringAsync).not.toHaveBeenCalled()
+        // The slot keeps the raw input (the user will tidy the trailing
+        // comma themselves); the important guarantee is that the other
+        // 11 slots were NOT clobbered by the clipboard mnemonic.
+        expect(result.current.words[0]).toBe('abandon,')
+        expect(result.current.words.slice(1).every(w => w === '')).toBe(true)
+    })
+
     it('fills sequential slots when a partial paste fits in the remaining inputs', async () => {
         const { result } = renderEntry()
 
