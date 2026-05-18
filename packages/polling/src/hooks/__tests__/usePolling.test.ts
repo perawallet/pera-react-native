@@ -300,28 +300,30 @@ describe('services/polling/usePolling', () => {
 
     test('does not call mutateAsync when device is offline', async () => {
         vi.resetModules()
-        
+
         vi.doMock('@tanstack/react-query', () => ({
             onlineManager: {
-                isOnline: false
-            }
+                isOnline: false,
+            },
         }))
-        
+
         const mockOnRefresh = vi.fn()
         mockMutateAsync.mockResolvedValue({ refresh: true, round: 99 })
-        
+
         const { usePolling } = await import('../usePolling')
-        const { result } = renderHook(() => usePolling({ onRefresh: mockOnRefresh }))
-        
+        const { result } = renderHook(() =>
+            usePolling({ onRefresh: mockOnRefresh }),
+        )
+
         await act(async () => {
             await result.current.startPolling()
             vi.advanceTimersByTime(3000)
             await flush()
         })
-        
+
         expect(mockMutateAsync).not.toHaveBeenCalled()
         expect(mockOnRefresh).not.toHaveBeenCalled()
-        
+
         await act(async () => {
             await result.current.stopPolling()
         })
@@ -329,33 +331,35 @@ describe('services/polling/usePolling', () => {
 
     test('handles online status change from offline to online', async () => {
         vi.resetModules()
-        
+
         let isOnline = false
         vi.doMock('@tanstack/react-query', () => ({
             onlineManager: {
-                get isOnline() { return isOnline }
-            }
+                get isOnline() {
+                    return isOnline
+                },
+            },
         }))
-        
+
         mockMutateAsync.mockResolvedValue({ refresh: true, round: 99 })
-        
+
         const { usePolling } = await import('../usePolling')
         const { result } = renderHook(() => usePolling())
-        
+
         await act(async () => {
             await result.current.startPolling()
             vi.advanceTimersByTime(3000)
             await flush()
         })
-        
+
         expect(mockMutateAsync).not.toHaveBeenCalled()
-        
+
         isOnline = true
         vi.advanceTimersByTime(3000)
         await flush()
-        
+
         expect(mockMutateAsync).toHaveBeenCalled()
-        
+
         await act(async () => {
             await result.current.stopPolling()
         })
