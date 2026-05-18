@@ -90,17 +90,32 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    isHDWalletAccount: vi.fn(account => account.type === 'standard'),
+    AccountTypes: {
+        algo25: 'algo25',
+        hdWallet: 'hdWallet',
+        hardware: 'hardware',
+        multisig: 'multisig',
+        watch: 'watch',
+    },
+    isHDWalletAccount: vi.fn(account => account.type === 'hdWallet'),
     isRekeyedAccount: vi.fn(() => false),
+    canSignWith: vi.fn(() => true),
     useSigningAccounts: vi.fn(() => [
         {
             address: 'addr1',
             name: 'Account 1',
-            type: 'standard',
+            type: 'hdWallet',
             hdWalletDetails: { hdWalletAddress: 'addr1' },
         },
     ]),
-    useAllAccountLogicalTypes: vi.fn(() => new Map([['addr1', 'HdKey']])),
+    useAllAccounts: vi.fn(() => [
+        {
+            address: 'addr1',
+            name: 'Account 1',
+            type: 'hdWallet',
+            hdWalletDetails: { hdWalletAddress: 'addr1' },
+        },
+    ]),
     useSelectedAccountAddress: vi.fn(() => ({
         setSelectedAccountAddress: vi.fn(),
     })),
@@ -436,27 +451,37 @@ describe('usePeraWebviewInterface', () => {
     })
 
     describe('getAddresses payload (Android parity)', () => {
-        // useSigningAccounts owns the Watch/NoAuth filtering — the bridge just
-        // maps. These tests pin the mapping (name fallback, order preservation)
-        // and assume the filter behavior is covered by the package's own tests.
+        // useSigningAccounts owns the Watch/Unsignable filtering — the bridge
+        // just maps. These tests pin the mapping (name fallback, order
+        // preservation) and assume the filter behavior is covered by the
+        // package's own tests.
         const setupAccountsMock = async (config: {
-            accounts: Array<{ address: string; name?: string; type: string }>
-            types: Map<string, string>
+            accounts: Array<{
+                address: string
+                name?: string
+                type: string
+                rekeyAddress?: string
+            }>
+            signableAddresses?: Set<string>
+            signers?: Set<string>
         }) => {
             const accounts = await import('@perawallet/wallet-core-accounts')
-            const signingAddresses = new Set(
-                [...config.types.entries()]
-                    .filter(([, t]) => t !== 'NoAuth' && t !== 'Watch')
-                    .map(([addr]) => addr),
-            )
+            const signers = config.signers ?? new Set(config.signableAddresses)
             vi.mocked(accounts.useSigningAccounts).mockReturnValue(
                 config.accounts.filter(a =>
-                    signingAddresses.has(a.address),
+                    signers.has(a.address),
                 ) as unknown as ReturnType<typeof accounts.useSigningAccounts>,
             )
-            vi.mocked(accounts.useAllAccountLogicalTypes).mockReturnValue(
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                config.types as any,
+            vi.mocked(accounts.useAllAccounts).mockReturnValue(
+                config.accounts as unknown as ReturnType<
+                    typeof accounts.useAllAccounts
+                >,
+            )
+            vi.mocked(accounts.canSignWith).mockImplementation(
+                (account: unknown) => {
+                    const a = account as { address: string }
+                    return signers.has(a.address)
+                },
             )
         }
 
@@ -476,18 +501,18 @@ describe('usePeraWebviewInterface', () => {
             return JSON.parse(match[1])
         }
 
-        it('drops non-signing accounts (Watch, NoAuth)', async () => {
+        it('drops non-signing accounts (Watch, Unsignable)', async () => {
             await setupAccountsMock({
                 accounts: [
-                    { address: 'signer', name: 'Signer', type: 'standard' },
-                    { address: 'watch', name: 'Watch', type: 'standard' },
-                    { address: 'noauth', name: 'NoAuth', type: 'standard' },
+                    { address: 'signer', name: 'Signer', type: 'hdWallet' },
+                    { address: 'watch', name: 'Watch', type: 'watch' },
+                    {
+                        address: 'unsignable',
+                        name: 'Unsignable',
+                        type: 'watch',
+                    },
                 ],
-                types: new Map([
-                    ['signer', 'HdKey'],
-                    ['watch', 'NoAuth'],
-                    ['noauth', 'NoAuth'],
-                ]),
+                signers: new Set(['signer']),
             })
 
             const { result } = renderHook(() =>
@@ -511,15 +536,11 @@ describe('usePeraWebviewInterface', () => {
         it('preserves store order — ordering is the consumer-side concern', async () => {
             await setupAccountsMock({
                 accounts: [
-                    { address: 'first', name: 'First', type: 'standard' },
-                    { address: 'second', name: 'Second', type: 'standard' },
-                    { address: 'third', name: 'Third', type: 'standard' },
+                    { address: 'first', name: 'First', type: 'hdWallet' },
+                    { address: 'second', name: 'Second', type: 'hdWallet' },
+                    { address: 'third', name: 'Third', type: 'hdWallet' },
                 ],
-                types: new Map([
-                    ['first', 'HdKey'],
-                    ['second', 'HdKey'],
-                    ['third', 'HdKey'],
-                ]),
+                signers: new Set(['first', 'second', 'third']),
             })
 
             const { result } = renderHook(() =>
@@ -545,8 +566,8 @@ describe('usePeraWebviewInterface', () => {
 
         it('sends empty name string when account has no name', async () => {
             await setupAccountsMock({
-                accounts: [{ address: 'nameless', type: 'standard' }],
-                types: new Map([['nameless', 'HdKey']]),
+                accounts: [{ address: 'nameless', type: 'hdWallet' }],
+                signers: new Set(['nameless']),
             })
 
             const { result } = renderHook(() =>
@@ -564,7 +585,7 @@ describe('usePeraWebviewInterface', () => {
 
             const payload = getPayload()
             expect(payload).toEqual([
-                { name: '', address: 'nameless', type: 'HdKey' },
+                { name: '', address: 'nameless', type: 'HDWallet' },
             ])
         })
     })

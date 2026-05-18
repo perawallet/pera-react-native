@@ -26,7 +26,6 @@ import {
 } from './models'
 import { MNEMONIC_WORD_COUNT } from './constants'
 import { RekeyTargetNotFoundError } from './errors'
-import { deriveAccountLogicalType, isSigningLogicalType } from './logical-type'
 
 export const getAccountDisplayName = (account: Nullable<WalletAccount>) => {
     if (!account) return 'No Account'
@@ -83,26 +82,122 @@ export const hasSigningKeys = (account: WalletAccount): boolean => {
 }
 
 /**
- * True when the wallet can sign for `account`: it holds the account's own
- * key, or the account is rekeyed and the wallet holds the immediate auth
- * account's key.
- *
- * Resolves a single rekey hop only — rekey indirection is not transitive
- * (consistent with `resolveAuthAccount`). A non-recursive check also cannot
- * infinite-loop on a cyclic auth chain (A → B → A).
+ * True iff the wallet holds key material that produces a signature for
+ * `account` directly: either its own key, or a Ledger device for hardware
+ * accounts. Used by `getSignerFor` to test signing capability on a single
+ * account without following rekeys.
  */
-export const canSignWithAccount = (
+const canSignDirectly = (account: WalletAccount): boolean =>
+    hasSigningKeys(account) || isHardwareWalletAccount(account)
+
+/**
+ * True iff `multisig` has at least one participant in `accounts` that can
+ * sign with its own key. Multisig signing is propose-based, so a single
+ * local signable participant is enough.
+ */
+const canSignViaMultisig = (
+    multisig: MultiSigAccount,
+    accounts: WalletAccount[],
+): boolean =>
+    multisig.multisigDetails.addresses.some(addr => {
+        const participant = accounts.find(a => a.address === addr)
+        return !!participant && canSignDirectly(participant)
+    })
+
+/**
+ * Returns the auth account `address` is rekeyed to. Null when `address` is
+ * not in the wallet, is not rekeyed, or its rekey target is not held locally.
+ *
+ * Use this for the immediate auth-addr relationship; for "who actually signs",
+ * use `getSignerFor` which also accounts for multisig participant resolution
+ * and signability.
+ */
+export const getRekeyAccount = (
+    address: string,
+    accounts: WalletAccount[],
+): WalletAccount | null => {
+    const account = accounts.find(a => a.address === address)
+    if (!account?.rekeyAddress) return null
+    return accounts.find(a => a.address === account.rekeyAddress) ?? null
+}
+
+/**
+ * Returns the account that will produce signatures for `address` in this
+ * wallet. Resolves a single rekey hop and multisig participation.
+ *
+ * - Address not in wallet → null
+ * - Rekeyed, auth account locally signable → the auth account
+ * - Rekeyed, auth account missing or not signable → null
+ * - Multisig with at least one local signable participant → the multisig
+ * - Standard/HD with its own key, or Hardware → the account itself
+ * - Watch (not rekeyed) → null
+ *
+ * Single-hop only: cyclic and multi-hop auth chains are not followed.
+ */
+export const getSignerFor = (
+    address: string,
+    accounts: WalletAccount[],
+): WalletAccount | null => {
+    const account = accounts.find(a => a.address === address)
+    if (!account) return null
+
+    if (account.rekeyAddress) {
+        const auth = accounts.find(a => a.address === account.rekeyAddress)
+        if (!auth) return null
+        if (canSignDirectly(auth)) return auth
+        if (isMultisigAccount(auth) && canSignViaMultisig(auth, accounts))
+            return auth
+        return null
+    }
+
+    if (isMultisigAccount(account)) {
+        return canSignViaMultisig(account, accounts) ? account : null
+    }
+    return canSignDirectly(account) ? account : null
+}
+
+/**
+ * True when the wallet can produce signatures for `account`. Unlike
+ * `getSignerFor`, this does not require `account` to be present in
+ * `accounts` — pass the account in hand.
+ */
+export const canSignWith = (
     account: WalletAccount,
     accounts: WalletAccount[],
 ): boolean => {
-    if (hasSigningKeys(account)) return true
     if (account.rekeyAddress) {
-        const authAccount = accounts.find(
-            a => a.address === account.rekeyAddress,
-        )
-        return !!authAccount && hasSigningKeys(authAccount)
+        const auth = accounts.find(a => a.address === account.rekeyAddress)
+        if (!auth) return false
+        if (canSignDirectly(auth)) return true
+        if (isMultisigAccount(auth)) return canSignViaMultisig(auth, accounts)
+        return false
     }
-    return false
+    if (isMultisigAccount(account)) return canSignViaMultisig(account, accounts)
+    return canSignDirectly(account)
+}
+
+export type RekeyTransition = {
+    /** Raw type of the rekeyed account itself. */
+    from: WalletAccount['type']
+    /** Raw type of the account it is now rekeyed to. */
+    to: WalletAccount['type']
+}
+
+/**
+ * For a rekeyed account whose auth we can sign with, returns the types of the
+ * rekeyed account and its immediate auth account, so the UI can render a
+ * "Rekeyed (<from> to <to>)" label. Returns null when the account is not a
+ * signable rekey, or when the auth account is not held locally.
+ */
+export const rekeyTransitionFor = (
+    account: WalletAccount,
+    accounts: WalletAccount[],
+): RekeyTransition | null => {
+    if (!account.rekeyAddress) return null
+    const auth = accounts.find(a => a.address === account.rekeyAddress)
+    if (!auth) return null
+    if (!canSignWith(account, accounts)) return null
+    return { from: account.type, to: auth.type }
 }
 
 /**
@@ -186,16 +281,6 @@ export const isEligibleSharedRekeyTarget = (
 
     return true
 }
-
-/**
- * Returns true if the account can sign transactions in this wallet. Delegates
- * to `deriveAccountLogicalType` — the single source of truth — so the result
- * is consistent with UI classification and the webview bridge payload.
- */
-export const isSigningAccount = (
-    account: WalletAccount,
-    accounts: WalletAccount[],
-): boolean => isSigningLogicalType(deriveAccountLogicalType(account, accounts))
 
 /**
  * Resolves the auth account that signs for `account` — a single rekey hop.

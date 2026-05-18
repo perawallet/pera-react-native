@@ -23,8 +23,7 @@ import { ReceiveFundsContent } from '@modules/transactions/components/receive-fu
 import { useBottomSheet } from '@modules/bottom-sheet'
 import {
     useSelectedAccount,
-    useAccountLogicalType,
-    isSigningLogicalType,
+    useCanSignWith,
     AssetWithAccountBalance,
 } from '@perawallet/wallet-core-accounts'
 import { useSendFunds } from '@modules/transactions/hooks'
@@ -46,11 +45,10 @@ export const AssetActionButtons = ({
     const { t } = useLanguage()
     const account = useSelectedAccount()
     const { request: requestBottomSheet } = useBottomSheet()
-    const logicalType = useAccountLogicalType(account?.address)
+    const isWatch = !useCanSignWith(account)
     const { setSelectedAssetId, setCanSelectAsset } = useSendFunds()
     const { copyToClipboard } = useClipboard()
     const { showToast } = useToast()
-    const isWatch = !logicalType || !isSigningLogicalType(logicalType)
 
     const openReceiveFunds = useCallback(() => {
         void requestBottomSheet({

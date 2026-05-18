@@ -12,9 +12,11 @@
 
 import { describe, test, expect } from 'vitest'
 import {
-    canSignWithAccount,
+    canSignWith,
     findAccountByKey,
     getAccountDisplayName,
+    getRekeyAccount,
+    getSignerFor,
     hasSigningKeys,
     isAlgo25Account,
     isEligibleLedgerRekeyTarget,
@@ -23,10 +25,10 @@ import {
     isHDWalletAccount,
     isLedgerAccount,
     isMultisigAccount,
-    isSigningAccount,
     isRekeyedAccount,
     isWatchAccount,
     matchesAccountKey,
+    rekeyTransitionFor,
     resolveAuthAccount,
     resolveImportAccountType,
 } from '../utils'
@@ -216,20 +218,17 @@ describe('services/accounts/utils - account type checks', () => {
         ).toBe(false)
     })
 
-    test('canSignWithAccount returns true for account with keyPairId', () => {
-        expect(canSignWithAccount(baseAccount, [])).toBe(true)
+    test('canSignWith returns true for account with keyPairId', () => {
+        expect(canSignWith(baseAccount, [])).toBe(true)
     })
 
-    test('canSignWithAccount returns false for account without keyPairId', () => {
+    test('canSignWith returns false for account without keyPairId', () => {
         expect(
-            canSignWithAccount(
-                { ...baseAccount, keyPairId: undefined } as any,
-                [],
-            ),
+            canSignWith({ ...baseAccount, keyPairId: undefined } as any, []),
         ).toBe(false)
     })
 
-    test('canSignWithAccount returns true for rekeyed account when auth account has keys', () => {
+    test('canSignWith returns true for rekeyed account when auth account has keys', () => {
         const authAccount = {
             id: '2',
             type: 'algo25',
@@ -244,10 +243,10 @@ describe('services/accounts/utils - account type checks', () => {
             rekeyAddress: 'AUTH_ADDR',
         } as any
 
-        expect(canSignWithAccount(rekeyedAccount, [authAccount])).toBe(true)
+        expect(canSignWith(rekeyedAccount, [authAccount])).toBe(true)
     })
 
-    test('canSignWithAccount returns false for rekeyed account when auth account has no keys', () => {
+    test('canSignWith returns false for rekeyed account when auth account has no keys', () => {
         const authAccount = {
             id: '2',
             type: 'watch',
@@ -261,10 +260,10 @@ describe('services/accounts/utils - account type checks', () => {
             rekeyAddress: 'AUTH_ADDR',
         } as any
 
-        expect(canSignWithAccount(rekeyedAccount, [authAccount])).toBe(false)
+        expect(canSignWith(rekeyedAccount, [authAccount])).toBe(false)
     })
 
-    test('canSignWithAccount returns false for rekeyed account when auth account is not in list', () => {
+    test('canSignWith returns false for rekeyed account when auth account is not in list', () => {
         const rekeyedAccount = {
             id: '3',
             type: 'watch',
@@ -272,10 +271,10 @@ describe('services/accounts/utils - account type checks', () => {
             rekeyAddress: 'AUTH_ADDR',
         } as any
 
-        expect(canSignWithAccount(rekeyedAccount, [])).toBe(false)
+        expect(canSignWith(rekeyedAccount, [])).toBe(false)
     })
 
-    test('canSignWithAccount resolves a single rekey hop only, not a chain', () => {
+    test('canSignWith resolves a single rekey hop only, not a chain', () => {
         const rootAccount = {
             id: '1',
             type: 'algo25',
@@ -300,12 +299,12 @@ describe('services/accounts/utils - account type checks', () => {
         const accounts = [rootAccount, middleAccount, leafAccount]
         // LEAF -> MIDDLE -> ROOT. MIDDLE holds no key, so LEAF cannot sign —
         // the hop from MIDDLE to ROOT is not followed.
-        expect(canSignWithAccount(leafAccount, accounts)).toBe(false)
+        expect(canSignWith(leafAccount, accounts)).toBe(false)
         // MIDDLE -> ROOT, and ROOT holds a key, so MIDDLE can sign (one hop).
-        expect(canSignWithAccount(middleAccount, accounts)).toBe(true)
+        expect(canSignWith(middleAccount, accounts)).toBe(true)
     })
 
-    test('canSignWithAccount does not recurse on a cyclic auth chain', () => {
+    test('canSignWith does not recurse on a cyclic auth chain', () => {
         const a = {
             id: '1',
             type: 'watch',
@@ -321,40 +320,27 @@ describe('services/accounts/utils - account type checks', () => {
 
         // Single-hop: A's immediate auth B holds no key — false, no infinite
         // recursion.
-        expect(canSignWithAccount(a, [a, b])).toBe(false)
+        expect(canSignWith(a, [a, b])).toBe(false)
     })
 })
 
-describe('services/accounts/utils - isSigningAccount', () => {
-    test('returns false for true watch account', () => {
-        const account = { type: 'watch', address: 'ADDR' } as any
-        expect(isSigningAccount(account, [])).toBe(false)
-    })
-
-    test('returns false for rekeyed account without auth in wallet (noAuth)', () => {
+describe('services/accounts/utils - canSignWith (hardware + multisig)', () => {
+    test('returns true for a non-rekeyed hardware account (no keyPairId)', () => {
         const account = {
-            type: 'watch',
-            address: 'ADDR',
-            rekeyAddress: 'MISSING_AUTH',
+            type: 'hardware',
+            address: 'HW',
+            hardwareDetails: {
+                manufacturer: 'ledger',
+                deviceId: 'test-device',
+                deviceName: 'Ledger Nano X',
+                accountIndex: 0,
+                transportType: 'ble',
+            },
         } as any
-        expect(isSigningAccount(account, [])).toBe(false)
+        expect(canSignWith(account, [account])).toBe(true)
     })
 
-    test('returns true for rekeyed account with auth present (rekeyedStandard)', () => {
-        const authAccount = {
-            type: 'algo25',
-            address: 'AUTH',
-            keyPairId: 'pk1',
-        } as any
-        const account = {
-            type: 'watch',
-            address: 'ADDR',
-            rekeyAddress: 'AUTH',
-        } as any
-        expect(isSigningAccount(account, [authAccount])).toBe(true)
-    })
-
-    test('returns true for rekeyed account with ledger auth present (rekeyedLedger)', () => {
+    test('returns true for rekeyed account whose auth is a hardware account', () => {
         const authAccount = {
             type: 'hardware',
             address: 'AUTH',
@@ -371,16 +357,172 @@ describe('services/accounts/utils - isSigningAccount', () => {
             address: 'ADDR',
             rekeyAddress: 'AUTH',
         } as any
-        expect(isSigningAccount(account, [authAccount])).toBe(true)
+        expect(canSignWith(account, [account, authAccount])).toBe(true)
     })
 
-    test('returns true for standard account', () => {
-        const account = {
+    test('returns true for a multisig with a local signable participant', () => {
+        const participant = {
             type: 'algo25',
-            address: 'ADDR',
+            address: 'P1',
             keyPairId: 'pk1',
         } as any
-        expect(isSigningAccount(account, [])).toBe(true)
+        const multisig = {
+            type: 'multisig',
+            address: 'MS',
+            multisigDetails: { threshold: 2, addresses: ['P1', 'P2'] },
+        } as any
+        expect(canSignWith(multisig, [multisig, participant])).toBe(true)
+    })
+
+    test('returns false for a multisig with no local signable participants', () => {
+        const multisig = {
+            type: 'multisig',
+            address: 'MS',
+            multisigDetails: { threshold: 2, addresses: ['P1', 'P2'] },
+        } as any
+        expect(canSignWith(multisig, [multisig])).toBe(false)
+    })
+})
+
+describe('services/accounts/utils - getRekeyAccount', () => {
+    test('returns the auth account when rekeyed and target is in the wallet', () => {
+        const auth = {
+            type: 'algo25',
+            address: 'AUTH',
+            keyPairId: 'pk1',
+        } as any
+        const rekeyed = {
+            type: 'algo25',
+            address: 'A',
+            keyPairId: 'pk2',
+            rekeyAddress: 'AUTH',
+        } as any
+        expect(getRekeyAccount('A', [rekeyed, auth])).toBe(auth)
+    })
+
+    test('returns null when the address is not rekeyed', () => {
+        const account = {
+            type: 'algo25',
+            address: 'A',
+            keyPairId: 'pk1',
+        } as any
+        expect(getRekeyAccount('A', [account])).toBeNull()
+    })
+
+    test('returns null when the rekey target is not in the wallet', () => {
+        const rekeyed = {
+            type: 'watch',
+            address: 'A',
+            rekeyAddress: 'MISSING',
+        } as any
+        expect(getRekeyAccount('A', [rekeyed])).toBeNull()
+    })
+
+    test('returns null when the address is unknown', () => {
+        expect(getRekeyAccount('UNKNOWN', [])).toBeNull()
+    })
+})
+
+describe('services/accounts/utils - getSignerFor', () => {
+    test('returns the account itself when it holds its own key', () => {
+        const account = {
+            type: 'algo25',
+            address: 'A',
+            keyPairId: 'pk1',
+        } as any
+        expect(getSignerFor('A', [account])).toBe(account)
+    })
+
+    test('returns the immediate auth account when rekeyed and we can sign', () => {
+        const auth = {
+            type: 'algo25',
+            address: 'AUTH',
+            keyPairId: 'pk1',
+        } as any
+        const rekeyed = {
+            type: 'algo25',
+            address: 'A',
+            keyPairId: 'pk2',
+            rekeyAddress: 'AUTH',
+        } as any
+        expect(getSignerFor('A', [rekeyed, auth])).toBe(auth)
+    })
+
+    test('returns null for an unsignable rekeyed account', () => {
+        const rekeyed = {
+            type: 'watch',
+            address: 'A',
+            rekeyAddress: 'MISSING',
+        } as any
+        expect(getSignerFor('A', [rekeyed])).toBeNull()
+    })
+
+    test('returns null for a non-rekeyed watch account', () => {
+        const account = { type: 'watch', address: 'A' } as any
+        expect(getSignerFor('A', [account])).toBeNull()
+    })
+
+    test('returns the multisig itself when at least one participant is local and signable', () => {
+        const participant = {
+            type: 'algo25',
+            address: 'P1',
+            keyPairId: 'pk1',
+        } as any
+        const multisig = {
+            type: 'multisig',
+            address: 'MS',
+            multisigDetails: { threshold: 2, addresses: ['P1', 'P2'] },
+        } as any
+        expect(getSignerFor('MS', [multisig, participant])).toBe(multisig)
+    })
+
+    test('returns null when address is not in the wallet', () => {
+        expect(getSignerFor('UNKNOWN', [])).toBeNull()
+    })
+})
+
+describe('services/accounts/utils - rekeyTransitionFor', () => {
+    test('returns null for a non-rekeyed account', () => {
+        const account = {
+            type: 'algo25',
+            address: 'A',
+            keyPairId: 'pk1',
+        } as any
+        expect(rekeyTransitionFor(account, [account])).toBeNull()
+    })
+
+    test('returns null for a rekeyed account whose auth is not in the wallet', () => {
+        const rekeyed = {
+            type: 'algo25',
+            address: 'A',
+            keyPairId: 'pk1',
+            rekeyAddress: 'MISSING',
+        } as any
+        expect(rekeyTransitionFor(rekeyed, [rekeyed])).toBeNull()
+    })
+
+    test('returns from/to raw types for a signable rekey', () => {
+        const auth = {
+            type: 'hardware',
+            address: 'AUTH',
+            hardwareDetails: {
+                manufacturer: 'ledger',
+                deviceId: 'd',
+                deviceName: 'Ledger',
+                accountIndex: 0,
+                transportType: 'ble',
+            },
+        } as any
+        const rekeyed = {
+            type: 'algo25',
+            address: 'A',
+            keyPairId: 'pk1',
+            rekeyAddress: 'AUTH',
+        } as any
+        expect(rekeyTransitionFor(rekeyed, [rekeyed, auth])).toEqual({
+            from: 'algo25',
+            to: 'hardware',
+        })
     })
 })
 

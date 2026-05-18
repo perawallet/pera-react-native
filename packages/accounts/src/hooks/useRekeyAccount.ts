@@ -11,26 +11,16 @@
  */
 
 import { useMemo } from 'react'
-import {
-    deriveAccountLogicalType,
-    type AccountLogicalType,
-} from '../logical-type'
+import { getRekeyAccount } from '../utils'
 import { useAccountsStore } from '../store'
+import type { WalletAccount } from '../models'
 
-export const useAllAccountLogicalTypes = (): Map<
-    string,
-    AccountLogicalType
-> => {
+export const useRekeyAccount = (
+    address: string | undefined | null,
+): WalletAccount | null => {
     const accounts = useAccountsStore(state => state.accounts)
-
-    return useMemo(() => {
-        const map = new Map<string, AccountLogicalType>()
-        for (const account of accounts) {
-            map.set(
-                account.address,
-                deriveAccountLogicalType(account, accounts),
-            )
-        }
-        return map
-    }, [accounts])
+    return useMemo(
+        () => (address ? getRekeyAccount(address, accounts) : null),
+        [address, accounts],
+    )
 }

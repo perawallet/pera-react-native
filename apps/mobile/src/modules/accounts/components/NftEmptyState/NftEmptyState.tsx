@@ -18,8 +18,8 @@ import NftEmptyIllustration from '@assets/images/nft-empty-state.svg'
 
 type NftEmptyStateProps = {
     /**
-     * Hides the opt-in CTA when omitted. Watch / NoAuth accounts can't
-     * sign opt-in transactions, so the button would be a dead-end.
+     * Hides the opt-in CTA when omitted. Unsignable accounts can't sign
+     * opt-in transactions, so the button would be a dead-end.
      */
     onOptInPress?: () => void
 }

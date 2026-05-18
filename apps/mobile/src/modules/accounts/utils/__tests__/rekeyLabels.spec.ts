@@ -22,7 +22,7 @@ import { getRekeyLabelI18n, splitAccountTypeLabel } from '../rekeyLabels'
 
 describe('getRekeyLabelI18n', () => {
     it('maps a standard-to-ledger rekey to standard/ledger parts and ledger description', () => {
-        expect(getRekeyLabelI18n({ from: 'Algo25', to: 'LedgerBle' })).toEqual({
+        expect(getRekeyLabelI18n({ from: 'algo25', to: 'hardware' })).toEqual({
             labelKey: 'account_info.type_rekeyed_transition',
             fromKey: 'account_info.rekey_part_standard',
             toKey: 'account_info.rekey_part_ledger',
@@ -31,19 +31,19 @@ describe('getRekeyLabelI18n', () => {
     })
 
     it('maps a ledger-to-ledger rekey to the ledger-to-ledger description', () => {
-        expect(
-            getRekeyLabelI18n({ from: 'LedgerBle', to: 'LedgerBle' }),
-        ).toEqual({
-            labelKey: 'account_info.type_rekeyed_transition',
-            fromKey: 'account_info.rekey_part_ledger',
-            toKey: 'account_info.rekey_part_ledger',
-            descriptionKey:
-                'account_type_info.rekeyed_ledger_to_ledger_description',
-        })
+        expect(getRekeyLabelI18n({ from: 'hardware', to: 'hardware' })).toEqual(
+            {
+                labelKey: 'account_info.type_rekeyed_transition',
+                fromKey: 'account_info.rekey_part_ledger',
+                toKey: 'account_info.rekey_part_ledger',
+                descriptionKey:
+                    'account_type_info.rekeyed_ledger_to_ledger_description',
+            },
+        )
     })
 
     it('maps a rekey to a standard auth account to the standard description', () => {
-        expect(getRekeyLabelI18n({ from: 'LedgerBle', to: 'Algo25' })).toEqual({
+        expect(getRekeyLabelI18n({ from: 'hardware', to: 'algo25' })).toEqual({
             labelKey: 'account_info.type_rekeyed_transition',
             fromKey: 'account_info.rekey_part_ledger',
             toKey: 'account_info.rekey_part_standard',
@@ -52,7 +52,7 @@ describe('getRekeyLabelI18n', () => {
     })
 
     it('maps multisig and watch base types to their parts', () => {
-        expect(getRekeyLabelI18n({ from: 'Multisig', to: 'NoAuth' })).toEqual({
+        expect(getRekeyLabelI18n({ from: 'multisig', to: 'watch' })).toEqual({
             labelKey: 'account_info.type_rekeyed_transition',
             fromKey: 'account_info.rekey_part_shared',
             toKey: 'account_info.rekey_part_watch',

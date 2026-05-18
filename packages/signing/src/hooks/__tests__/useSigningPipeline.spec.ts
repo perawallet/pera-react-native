@@ -26,17 +26,24 @@ vi.mock('../useSigningRequest', () => ({
     useSigningRequest: () => mockSigningRequest,
 }))
 
+const mockAllAccounts = vi.fn<() => Array<{ address: string; type: string }>>(
+    () => [
+        { address: 'ADDR_A', type: 'algo25' },
+        { address: 'ADDR_B', type: 'algo25' },
+    ],
+)
+const mockCanSignWith = vi.fn<(account: { address: string }) => boolean>(
+    () => true,
+)
+
 vi.mock('@perawallet/wallet-core-accounts', async () => {
     const actual = await vi.importActual<object>(
         '@perawallet/wallet-core-accounts',
     )
     return {
         ...actual,
-        useAllAccounts: () => [
-            { address: 'ADDR_A', type: 'algo25' },
-            { address: 'ADDR_B', type: 'algo25' },
-        ],
-        canSignWithAccount: () => true,
+        useAllAccounts: () => mockAllAccounts(),
+        canSignWith: (account: { address: string }) => mockCanSignWith(account),
     }
 })
 
@@ -58,6 +65,11 @@ beforeEach(() => {
     mockSigningRequest.signAndSendRequest.mockReset()
     mockSigningRequest.rejectRequest.mockReset()
     mockSigningRequest.retryRequest.mockReset()
+    mockAllAccounts.mockReturnValue([
+        { address: 'ADDR_A', type: 'algo25' },
+        { address: 'ADDR_B', type: 'algo25' },
+    ])
+    mockCanSignWith.mockReturnValue(true)
 })
 
 describe('useSigningPipeline', () => {
@@ -143,6 +155,64 @@ describe('useSigningPipeline', () => {
 
         expect(result.current.stage).toBe('rejected')
         expect(onEvent).toHaveBeenCalledWith({ type: 'signing_rejected' })
+    })
+
+    test('signableAddresses contains only accounts where canSignWith returns true', () => {
+        mockAllAccounts.mockReturnValue([
+            { address: 'SIGNER', type: 'algo25' },
+            { address: 'WATCH', type: 'watch' },
+            { address: 'REKEYED_UNSIGNABLE', type: 'watch' },
+        ])
+        mockCanSignWith.mockImplementation(a => a.address === 'SIGNER')
+
+        const request: TransactionSignRequest = {
+            id: 'req-1',
+            type: 'transactions',
+            transport: 'algod',
+            txs: [],
+        }
+        mockSigningRequest.currentRequest = request
+
+        const { result } = renderHook(() => useSigningPipeline())
+
+        expect(result.current.signableAddresses.has('SIGNER')).toBe(true)
+        expect(result.current.signableAddresses.has('WATCH')).toBe(false)
+        expect(result.current.signableAddresses.has('REKEYED_UNSIGNABLE')).toBe(
+            false,
+        )
+        expect(result.current.signableAddresses.size).toBe(1)
+    })
+
+    test('signableAddresses is empty when no accounts pass canSignWith', () => {
+        mockAllAccounts.mockReturnValue([
+            { address: 'A', type: 'watch' },
+            { address: 'B', type: 'watch' },
+        ])
+        mockCanSignWith.mockReturnValue(false)
+
+        mockSigningRequest.currentRequest = {
+            id: 'req-1',
+            type: 'transactions',
+            transport: 'algod',
+            txs: [],
+        } as TransactionSignRequest
+
+        const { result } = renderHook(() => useSigningPipeline())
+        expect(result.current.signableAddresses.size).toBe(0)
+    })
+
+    test('signableAddresses is empty when there are no accounts at all', () => {
+        mockAllAccounts.mockReturnValue([])
+
+        mockSigningRequest.currentRequest = {
+            id: 'req-1',
+            type: 'transactions',
+            transport: 'algod',
+            txs: [],
+        } as TransactionSignRequest
+
+        const { result } = renderHook(() => useSigningPipeline())
+        expect(result.current.signableAddresses.size).toBe(0)
     })
 
     test('isLoading is true during signing stage', () => {

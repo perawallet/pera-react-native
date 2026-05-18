@@ -10,21 +10,19 @@
  limitations under the License
  */
 
-import { AccountLogicalTypes } from '@perawallet/wallet-core-accounts'
+import { AccountTypes } from '@perawallet/wallet-core-accounts'
 
 import type {
-    AccountLogicalType,
+    AccountType,
     RekeyTransition,
 } from '@perawallet/wallet-core-accounts'
 
-const PART_KEY: Record<AccountLogicalType, string> = {
-    [AccountLogicalTypes.Algo25]: 'account_info.rekey_part_standard',
-    [AccountLogicalTypes.HdKey]: 'account_info.rekey_part_standard',
-    [AccountLogicalTypes.LedgerBle]: 'account_info.rekey_part_ledger',
-    [AccountLogicalTypes.Multisig]: 'account_info.rekey_part_shared',
-    [AccountLogicalTypes.NoAuth]: 'account_info.rekey_part_watch',
-    [AccountLogicalTypes.Rekeyed]: 'account_info.rekey_part_standard',
-    [AccountLogicalTypes.RekeyedAuth]: 'account_info.rekey_part_standard',
+const PART_KEY: Record<AccountType, string> = {
+    [AccountTypes.algo25]: 'account_info.rekey_part_standard',
+    [AccountTypes.hdWallet]: 'account_info.rekey_part_standard',
+    [AccountTypes.hardware]: 'account_info.rekey_part_ledger',
+    [AccountTypes.multisig]: 'account_info.rekey_part_shared',
+    [AccountTypes.watch]: 'account_info.rekey_part_watch',
 }
 
 export type RekeyLabelI18n = {
@@ -40,13 +38,10 @@ export type RekeyLabelI18n = {
 
 const descriptionKeyFor = (transition: RekeyTransition): string => {
     const { from, to } = transition
-    if (
-        from === AccountLogicalTypes.LedgerBle &&
-        to === AccountLogicalTypes.LedgerBle
-    ) {
+    if (from === AccountTypes.hardware && to === AccountTypes.hardware) {
         return 'account_type_info.rekeyed_ledger_to_ledger_description'
     }
-    if (to === AccountLogicalTypes.LedgerBle) {
+    if (to === AccountTypes.hardware) {
         return 'account_type_info.rekeyed_ledger_description'
     }
     return 'account_type_info.rekeyed_standard_description'

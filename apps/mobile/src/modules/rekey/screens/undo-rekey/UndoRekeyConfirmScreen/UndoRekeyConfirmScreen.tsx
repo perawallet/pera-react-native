@@ -14,7 +14,6 @@ import { useCallback, useMemo } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Trans } from 'react-i18next'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
-import { baseTypeFor } from '@perawallet/wallet-core-accounts'
 import { config } from '@perawallet/wallet-core-config'
 import {
     PWButton,
@@ -96,7 +95,7 @@ export const UndoRekeyConfirmScreen = () => {
                         </PWView>
                         <RekeySummaryRow
                             account={source}
-                            logicalTypeOverride={baseTypeFor(source)}
+                            ignoreRekey
                         />
                     </PWView>
                 </PWView>

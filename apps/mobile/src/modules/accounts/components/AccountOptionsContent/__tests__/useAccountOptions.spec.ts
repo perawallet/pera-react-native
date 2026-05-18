@@ -33,9 +33,9 @@ const { mockAllAccounts } = vi.hoisted(() => ({
 const { mockUpdateAccount } = vi.hoisted(() => ({
     mockUpdateAccount: vi.fn(),
 }))
-const { mockUseAccountLogicalType } = vi.hoisted(() => ({
-    mockUseAccountLogicalType: vi.fn<(address?: string) => string | null>(
-        () => 'Algo25',
+const { mockUseCanSignWith } = vi.hoisted(() => ({
+    mockUseCanSignWith: vi.fn<(account?: WalletAccount | null) => boolean>(
+        () => true,
     ),
 }))
 const { mockRequestBottomSheet } = vi.hoisted(() => ({
@@ -102,8 +102,8 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         useRemoveAccountById: () => mockRemoveAccountById,
         useUpdateAccount: () => mockUpdateAccount,
         useAllAccounts: () => mockAllAccounts(),
-        useAccountLogicalType: (address?: string) =>
-            mockUseAccountLogicalType(address),
+        useCanSignWith: (account?: WalletAccount | null) =>
+            mockUseCanSignWith(account),
     }
 })
 
@@ -167,22 +167,16 @@ describe('useAccountOptions', () => {
         vi.clearAllMocks()
         mockIsAccountEnabled.mockReturnValue(true)
         mockAllAccounts.mockReturnValue([algo25Account, watchAccount])
-        mockUseAccountLogicalType.mockImplementation((address?: string) => {
-            switch (address) {
+        mockUseCanSignWith.mockImplementation(account => {
+            switch (account?.address) {
                 case algo25Account.address:
-                    return 'Algo25'
-                case watchAccount.address:
-                    return 'NoAuth'
                 case rekeyedAccount.address:
-                    return 'RekeyedAuth'
                 case rekeyedWatchAccount.address:
-                    return 'RekeyedAuth'
                 case hardwareAccount.address:
-                    return 'LedgerBle'
                 case multisigAccount.address:
-                    return 'Multisig'
+                    return true
                 default:
-                    return null
+                    return false
             }
         })
     })

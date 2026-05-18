@@ -51,7 +51,7 @@ import {
 import { MAX_DATA_SIGN_REQUESTS } from '../constants'
 import { arc60PayloadSchema } from '../schema'
 import {
-    canSignWithAccount,
+    canSignWith,
     isHardwareWalletAccount,
     useAllAccounts,
     useSigningAccounts,
@@ -145,7 +145,7 @@ const validateDataSignRequest = (
         const account = accounts.find(
             account => account.address === item.signer,
         )
-        if (!account || !canSignWithAccount(account, accounts)) {
+        if (!account || !canSignWith(account, accounts)) {
             throw new WalletConnectInvalidSessionError('Invalid signer')
         }
 
@@ -209,7 +209,7 @@ const validateArc60Request = (
         throw new WalletConnectInvalidSessionError('Invalid signer')
     }
     const account = accounts.find(a => a.address === signer)
-    if (!account || !canSignWithAccount(account, accounts)) {
+    if (!account || !canSignWith(account, accounts)) {
         throw new WalletConnectInvalidSessionError('Invalid signer')
     }
     if (isHardwareWalletAccount(account)) {

@@ -22,9 +22,8 @@ import {
 } from '@perawallet/wallet-core-assets'
 import {
     useSelectedAccount,
-    useAccountLogicalType,
+    useCanSignWith,
     useAccountAssetBalanceQuery,
-    isSigningLogicalType,
     type AssetWithAccountBalance,
 } from '@perawallet/wallet-core-accounts'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
@@ -85,7 +84,7 @@ export const useCollectibleDetail = (
     )
     const account = useSelectedAccount()
     const { network } = useNetwork()
-    const logicalType = useAccountLogicalType(account?.address)
+    const isWatch = !useCanSignWith(account)
     const { t } = useLanguage()
     const { data: assetBalance } = useAccountAssetBalanceQuery(
         account ?? undefined,
@@ -98,7 +97,6 @@ export const useCollectibleDetail = (
     const navigation = useNavigation()
 
     const collectible = asset?.peraMetadata?.collectible
-    const isWatch = !logicalType || !isSigningLogicalType(logicalType)
     const traits = collectible?.traits ?? []
     const media = collectible?.media ?? []
 
