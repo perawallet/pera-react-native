@@ -44,6 +44,7 @@ import {
     normalizeUrl,
     parseQueryParams,
 } from './utils'
+import { PERAWALLET_SCHEME } from './constants'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
@@ -56,7 +57,7 @@ export function parsePerawalletAppUri(
 
     if (
         !normalizedUrl.includes('/app/') &&
-        !normalizedUrl.startsWith('perawallet://app')
+        !normalizedUrl.startsWith(`${PERAWALLET_SCHEME}://app`)
     ) {
         return null
     }

@@ -11,7 +11,7 @@
  */
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { ALGORAND_SCHEME } from './arc90-parser'
+import { ALGORAND_SCHEME, PERAWALLET_SCHEME } from './constants'
 import { DeeplinkType } from './types'
 
 export type BuildDeeplinkInput = {
@@ -20,13 +20,13 @@ export type BuildDeeplinkInput = {
 }
 
 export const buildAccountDeeplink = (account: WalletAccount): string =>
-    `${ALGORAND_SCHEME}${account.address}`
+    `${ALGORAND_SCHEME}://${account.address}`
 
 export const buildDeeplink = (input: BuildDeeplinkInput): string => {
     switch (input.type) {
         case DeeplinkType.SHARED_ACCOUNT_IMPORT: {
             const encodedAddress = encodeURIComponent(input.address)
-            return `perawallet://app/shared-account-import/?address=${encodedAddress}`
+            return `${PERAWALLET_SCHEME}://app/shared-account-import/?address=${encodedAddress}`
         }
     }
 }

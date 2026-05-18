@@ -22,6 +22,14 @@ import { normalizeUrl } from './utils'
 import { parseAlgorandUri } from './algorand-parser'
 import { parseWalletConnectUri } from './walletconnect-parser'
 import { parseCoinbaseFormat } from './coinbase-parser'
+import {
+    ALGO_SCHEME,
+    ALGORAND_SCHEME,
+    PERAWALLET_SCHEME,
+    PERAWALLET_UNIVERSAL_LINK_HOST,
+    PERAWALLET_WC_SCHEME,
+    WC_SCHEME,
+} from './constants'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import {
     parsePeraWebQrPayload,
@@ -41,22 +49,22 @@ import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 const parseUniversalLink = (url: string): Nullable<AnyParsedDeeplink> => {
     const normalizedUrl = normalizeUrl(url)
 
-    if (normalizedUrl.includes('/qr/perawallet/app/')) {
+    if (normalizedUrl.includes(`/qr/${PERAWALLET_SCHEME}/app/`)) {
         const convertedUrl = url.replace(
-            'https://perawallet.app/qr/perawallet/app/',
-            'perawallet://app/',
+            `${PERAWALLET_UNIVERSAL_LINK_HOST}/qr/${PERAWALLET_SCHEME}/app/`,
+            `${PERAWALLET_SCHEME}://app/`,
         )
         return parsePerawalletAppUri(convertedUrl)
-    } else if (normalizedUrl.includes('/qr/perawallet-wc/')) {
+    } else if (normalizedUrl.includes(`/qr/${PERAWALLET_WC_SCHEME}/`)) {
         const convertedUrl = url.replace(
-            'https://perawallet.app/qr/perawallet-wc/',
-            'perawallet-wc://',
+            `${PERAWALLET_UNIVERSAL_LINK_HOST}/qr/${PERAWALLET_WC_SCHEME}/`,
+            `${PERAWALLET_WC_SCHEME}://`,
         )
         return parseWalletConnectUri(convertedUrl)
-    } else if (normalizedUrl.includes('/qr/perawallet/')) {
+    } else if (normalizedUrl.includes(`/qr/${PERAWALLET_SCHEME}/`)) {
         const convertedUrl = url.replace(
-            'https://perawallet.app/qr/perawallet/',
-            'perawallet://',
+            `${PERAWALLET_UNIVERSAL_LINK_HOST}/qr/${PERAWALLET_SCHEME}/`,
+            `${PERAWALLET_SCHEME}://`,
         )
         return parsePerawalletUri(convertedUrl)
     }
@@ -160,21 +168,21 @@ export const parseDeeplink = (url: string): Nullable<AnyParsedDeeplink> => {
     const normalizedUrl = normalizeUrl(url)
 
     if (
-        normalizedUrl.startsWith('wc:') ||
-        normalizedUrl.startsWith('perawallet-wc:')
+        normalizedUrl.startsWith(`${WC_SCHEME}:`) ||
+        normalizedUrl.startsWith(`${PERAWALLET_WC_SCHEME}:`)
     ) {
         return parseWalletConnectUri(url)
     }
 
-    if (normalizedUrl.startsWith('algorand://')) {
+    if (normalizedUrl.startsWith(`${ALGORAND_SCHEME}://`)) {
         return parseAlgorandUri(url)
     }
 
-    if (normalizedUrl.startsWith('algo:')) {
+    if (normalizedUrl.startsWith(`${ALGO_SCHEME}:`)) {
         return parseCoinbaseFormat(url)
     }
 
-    if (normalizedUrl.startsWith('https://perawallet.app/')) {
+    if (normalizedUrl.startsWith(`${PERAWALLET_UNIVERSAL_LINK_HOST}/`)) {
         return parseUniversalLink(url)
     }
 
@@ -183,7 +191,7 @@ export const parseDeeplink = (url: string): Nullable<AnyParsedDeeplink> => {
         if (result) return result
     }
 
-    if (normalizedUrl.startsWith('perawallet://')) {
+    if (normalizedUrl.startsWith(`${PERAWALLET_SCHEME}://`)) {
         const result = parsePerawalletUri(url)
         if (result) return result
     }
