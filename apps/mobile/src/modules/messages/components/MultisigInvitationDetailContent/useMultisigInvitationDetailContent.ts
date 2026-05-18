@@ -94,16 +94,12 @@ export const useMultisigInvitationDetailContent = ({
         t,
     ])
 
-    const handleAccept = useCallback(() => {
-        onAccepted()
-    }, [onAccepted])
-
     return {
         renderedInvitation,
         totalParticipants,
         isIgnoring,
         isUserIncluded,
         handleIgnore,
-        handleAccept,
+        handleAccept: onAccepted,
     }
 }
