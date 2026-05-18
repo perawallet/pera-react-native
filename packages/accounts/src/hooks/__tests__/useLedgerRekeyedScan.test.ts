@@ -73,9 +73,7 @@ describe('useLedgerRekeyedScan', () => {
 
     it('reports isScanning while any query is pending and tolerates missing data', () => {
         const d0 = derived('LEDGER0', 0)
-        mocks.useQueries.mockReturnValue([
-            { data: undefined, isPending: true },
-        ])
+        mocks.useQueries.mockReturnValue([{ data: undefined, isPending: true }])
 
         const { result } = renderHook(() => useLedgerRekeyedScan([d0]))
 

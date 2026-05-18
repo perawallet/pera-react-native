@@ -45,9 +45,7 @@ export const useLedgerRekeyedScan = (
     })
 
     return useMemo(() => {
-        const derivedAddresses = new Set(
-            derivedAccounts.map(a => a.address),
-        )
+        const derivedAddresses = new Set(derivedAccounts.map(a => a.address))
         const importedAddresses = new Set(allAccounts.map(a => a.address))
         const seen = new Set<string>()
         const rekeyed: LedgerSelectableAccount[] = []

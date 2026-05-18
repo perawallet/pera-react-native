@@ -460,7 +460,9 @@ describe('useLedgerSelectAccountsScreen', () => {
             accountIndex: 0,
         }
         mockRekeyedScan.mockReturnValue({
-            rekeyed: [{ kind: 'rekeyed', address: 'REKEYED_A', authAccount: auth }],
+            rekeyed: [
+                { kind: 'rekeyed', address: 'REKEYED_A', authAccount: auth },
+            ],
             isScanning: false,
         })
 
@@ -489,7 +491,9 @@ describe('useLedgerSelectAccountsScreen', () => {
             accountIndex: 0,
         }
         mockRekeyedScan.mockReturnValue({
-            rekeyed: [{ kind: 'rekeyed', address: 'REKEYED_A', authAccount: auth }],
+            rekeyed: [
+                { kind: 'rekeyed', address: 'REKEYED_A', authAccount: auth },
+            ],
             isScanning: false,
         })
 
@@ -510,8 +514,8 @@ describe('useLedgerSelectAccountsScreen', () => {
         )?.[1] as { selectedAccounts: unknown[] }
         const authDerivedCount = arg.selectedAccounts.filter(
             (s: unknown) =>
-                (s as { kind: string; account?: { address: string } })
-                    .kind === 'derived' &&
+                (s as { kind: string; account?: { address: string } }).kind ===
+                    'derived' &&
                 (s as { account: { address: string } }).account.address ===
                     'AAA111',
         ).length

@@ -214,9 +214,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
 
         setAccounts([...current, ...batch])
 
-        const firstDerived = selectedAccounts.find(
-            s => s.kind === 'derived',
-        )
+        const firstDerived = selectedAccounts.find(s => s.kind === 'derived')
         const selectedAddress = firstDerived
             ? firstDerived.account.address
             : batch[0].address

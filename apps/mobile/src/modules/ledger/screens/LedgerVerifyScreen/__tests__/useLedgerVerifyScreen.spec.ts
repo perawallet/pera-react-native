@@ -20,25 +20,22 @@ import {
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
-        await importOriginal<typeof import('@perawallet/wallet-core-accounts')>()
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-accounts')
+        >()
     return { ...actual }
 })
 
 import { useLedgerVerifyScreen } from '../useLedgerVerifyScreen'
 
-const {
-    mockVerify,
-    mockExit,
-    mockSetConfetti,
-    mockConnect,
-    mockDisconnect,
-} = vi.hoisted(() => ({
-    mockVerify: vi.fn(),
-    mockExit: vi.fn(),
-    mockSetConfetti: vi.fn(),
-    mockConnect: vi.fn(),
-    mockDisconnect: vi.fn(),
-}))
+const { mockVerify, mockExit, mockSetConfetti, mockConnect, mockDisconnect } =
+    vi.hoisted(() => ({
+        mockVerify: vi.fn(),
+        mockExit: vi.fn(),
+        mockSetConfetti: vi.fn(),
+        mockConnect: vi.fn(),
+        mockDisconnect: vi.fn(),
+    }))
 
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({ navigate: vi.fn() }),
@@ -71,7 +68,9 @@ vi.mock('@perawallet/wallet-core-ledger', () => ({
     classifyLedgerError: (e: unknown) => e as Error,
 }))
 
-const routeParams = vi.hoisted(() => ({ current: {} as Record<string, unknown> }))
+const routeParams = vi.hoisted(() => ({
+    current: {} as Record<string, unknown>,
+}))
 vi.mock('@react-navigation/native', () => ({
     useRoute: () => ({ params: routeParams.current }),
 }))
@@ -113,9 +112,7 @@ describe('useLedgerVerifyScreen', () => {
 
         const { result } = renderHook(() => useLedgerVerifyScreen())
 
-        await waitFor(() =>
-            expect(result.current.areAllVerified).toBe(true),
-        )
+        await waitFor(() => expect(result.current.areAllVerified).toBe(true))
         expect(mockVerify).toHaveBeenCalledTimes(1)
         expect(mockVerify).toHaveBeenCalledWith(expect.anything(), 0)
         expect(result.current.verifyTargets).toEqual([d0])
@@ -123,11 +120,12 @@ describe('useLedgerVerifyScreen', () => {
 
     it('handleAdd imports derived as hardware, rekeyed as watch+rekeyAddress, auto-includes auth, skips already-imported and invalid', async () => {
         const d0 = derived('LEDGER0', 0)
-        useAccountsStore
-            .getState()
-            .setAccounts([
-                { type: AccountTypes.watch, address: 'ALREADY' } as WalletAccount,
-            ])
+        useAccountsStore.getState().setAccounts([
+            {
+                type: AccountTypes.watch,
+                address: 'ALREADY',
+            } as WalletAccount,
+        ])
         routeParams.current = {
             deviceId: 'dev',
             deviceName: 'Nano',
@@ -140,9 +138,7 @@ describe('useLedgerVerifyScreen', () => {
         }
 
         const { result } = renderHook(() => useLedgerVerifyScreen())
-        await waitFor(() =>
-            expect(result.current.areAllVerified).toBe(true),
-        )
+        await waitFor(() => expect(result.current.areAllVerified).toBe(true))
 
         act(() => {
             result.current.handleAdd()
@@ -154,9 +150,7 @@ describe('useLedgerVerifyScreen', () => {
         expect(hw?.type).toBe(AccountTypes.hardware)
         expect(watch?.type).toBe(AccountTypes.watch)
         expect(watch?.rekeyAddress).toBe('LEDGER0')
-        expect(
-            accounts.filter(a => a.address === 'ALREADY'),
-        ).toHaveLength(1)
+        expect(accounts.filter(a => a.address === 'ALREADY')).toHaveLength(1)
         expect(accounts.find(a => a.address === '!!bad')).toBeUndefined()
         expect(mockExit).toHaveBeenCalledTimes(1)
         expect(mockSetConfetti).toHaveBeenCalledWith(true)
@@ -186,6 +180,8 @@ describe('useLedgerVerifyScreen', () => {
 
         const accounts = useAccountsStore.getState().accounts
         expect(accounts.find(a => a.address === 'REKEYED_X')).toBeUndefined()
-        expect(accounts.find(a => a.address === '!!invalidauth')).toBeUndefined()
+        expect(
+            accounts.find(a => a.address === '!!invalidauth'),
+        ).toBeUndefined()
     })
 })

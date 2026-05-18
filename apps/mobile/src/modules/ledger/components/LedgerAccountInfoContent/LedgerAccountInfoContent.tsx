@@ -50,8 +50,13 @@ export const LedgerAccountInfoContent = ({
     const { t } = useLanguage()
     const { dismiss } = useBottomSheetResult<void>()
     const { preferredCurrency } = useCurrency()
-    const { title: resolvedTitle, items, isLoading, isError, refetch } =
-        useLedgerAccountInfoContent(address, accountIndex, title)
+    const {
+        title: resolvedTitle,
+        items,
+        isLoading,
+        isError,
+        refetch,
+    } = useLedgerAccountInfoContent(address, accountIndex, title)
 
     const renderItem = useCallback(
         ({ item }: { item: LedgerInfoListItem }) => {

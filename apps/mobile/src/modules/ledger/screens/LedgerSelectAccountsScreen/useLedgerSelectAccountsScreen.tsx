@@ -140,10 +140,7 @@ export const useLedgerSelectAccountsScreen =
         const selectableByAddress = useMemo(() => {
             const m = new Map<string, LedgerSelectableAccount>()
             for (const s of selectableAccounts) {
-                m.set(
-                    s.kind === 'derived' ? s.account.address : s.address,
-                    s,
-                )
+                m.set(s.kind === 'derived' ? s.account.address : s.address, s)
             }
             return m
         }, [selectableAccounts])
