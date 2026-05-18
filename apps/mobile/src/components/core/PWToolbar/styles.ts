@@ -42,7 +42,6 @@ export const useStyles = makeStyles(
             flexShrink: 1,
             minWidth: 0,
             maxWidth: '60%',
-            overflow: 'hidden',
         },
     }),
 )

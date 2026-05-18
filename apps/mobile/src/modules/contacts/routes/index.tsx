@@ -26,8 +26,10 @@ import { screenListeners } from '@routes/listeners'
 export type ContactsStackParamsList = {
     ContactsList: undefined
     ViewContact: undefined
-    EditContact: undefined
-    AddContact: undefined
+    // Forwarded by ADD_CONTACT / EDIT_CONTACT deeplinks and by the
+    // AccountActions sheet so the form can prefill the address+label.
+    EditContact: { address?: string; label?: string } | undefined
+    AddContact: { address?: string; label?: string } | undefined
 }
 
 const ContactsStack = createNativeStackNavigator<ContactsStackParamsList>()

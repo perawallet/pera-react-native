@@ -21,6 +21,14 @@ type SendFundsState = {
     selectedAssetId?: string
     canSelectAsset: boolean
     amount?: Decimal
+    /**
+     * Raw base-unit amount carried by an ASSET_TRANSFER deeplink. The
+     * deeplink can't convert to display units up front because that needs
+     * the asset's `decimals` (only known after the asset query resolves).
+     * InputScreen reads this once `asset` is loaded, converts to display
+     * units, populates `amount`, and clears this field.
+     */
+    pendingAmountBaseUnits?: string
     note?: string
     destination?: string
     onFinished?: () => void
@@ -33,6 +41,7 @@ type SendFundsActions = {
     setSelectedAssetId: (id?: string) => void
     setCanSelectAsset: (canSelect: boolean) => void
     setAmount: (amount?: Decimal) => void
+    setPendingAmountBaseUnits: (raw?: string) => void
     setNote: (note?: string) => void
     setDestination: (address?: string) => void
     setOnFinished: (fn: () => void) => void
@@ -49,6 +58,7 @@ const initialState: SendFundsState = {
     selectedAssetId: undefined,
     canSelectAsset: true,
     amount: undefined,
+    pendingAmountBaseUnits: undefined,
     note: undefined,
     destination: undefined,
     onFinished: undefined,
@@ -62,6 +72,7 @@ export const useSendFundsStore = create<SendFundsStore>()(set => ({
     setSelectedAssetId: id => set({ selectedAssetId: id }),
     setCanSelectAsset: canSelect => set({ canSelectAsset: canSelect }),
     setAmount: amount => set({ amount }),
+    setPendingAmountBaseUnits: raw => set({ pendingAmountBaseUnits: raw }),
     setNote: note => set({ note }),
     setDestination: address => set({ destination: address }),
     setOnFinished: fn => set({ onFinished: fn }),
@@ -85,6 +96,7 @@ type UseSendFundsResult = {
     selectedAssetId?: string
     canSelectAsset: boolean
     amount?: Decimal
+    pendingAmountBaseUnits?: string
     note?: string
     destination?: string
     onFinished?: () => void
@@ -94,6 +106,7 @@ type UseSendFundsResult = {
     setSelectedAssetId: (id?: string) => void
     setCanSelectAsset: (canSelect: boolean) => void
     setAmount: (amount?: Decimal) => void
+    setPendingAmountBaseUnits: (raw?: string) => void
     setNote: (note?: string) => void
     setDestination: (address?: string) => void
     setOnFinished: (fn: () => void) => void
@@ -107,6 +120,9 @@ export const useSendFunds = (): UseSendFundsResult => {
     const selectedAssetId = useSendFundsStore(state => state.selectedAssetId)
     const canSelectAsset = useSendFundsStore(state => state.canSelectAsset)
     const amount = useSendFundsStore(state => state.amount)
+    const pendingAmountBaseUnits = useSendFundsStore(
+        state => state.pendingAmountBaseUnits,
+    )
     const note = useSendFundsStore(state => state.note)
     const destination = useSendFundsStore(state => state.destination)
     const onFinished = useSendFundsStore(state => state.onFinished)
@@ -119,6 +135,9 @@ export const useSendFunds = (): UseSendFundsResult => {
         state => state.setCanSelectAsset,
     )
     const setAmount = useSendFundsStore(state => state.setAmount)
+    const setPendingAmountBaseUnits = useSendFundsStore(
+        state => state.setPendingAmountBaseUnits,
+    )
     const setNote = useSendFundsStore(state => state.setNote)
     const setDestination = useSendFundsStore(state => state.setDestination)
     const setOnFinished = useSendFundsStore(state => state.setOnFinished)
@@ -134,6 +153,7 @@ export const useSendFunds = (): UseSendFundsResult => {
         selectedAssetId,
         canSelectAsset,
         amount,
+        pendingAmountBaseUnits,
         note,
         destination,
         onFinished,
@@ -143,6 +163,7 @@ export const useSendFunds = (): UseSendFundsResult => {
         setSelectedAssetId,
         setCanSelectAsset,
         setAmount,
+        setPendingAmountBaseUnits,
         setNote,
         setDestination,
         setOnFinished,

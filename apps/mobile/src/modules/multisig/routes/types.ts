@@ -10,9 +10,23 @@
  limitations under the License
  */
 
+/**
+ * Params passed to `NameMultisig` when naming an imported shared account
+ * (scanned via QR) rather than one built through the in-app creation flow.
+ * When absent, `NameMultisig` reads the participants/threshold from the
+ * multisig creation store instead.
+ */
+export type NameMultisigImportParams = {
+    address: string
+    threshold: number
+    addresses: string[]
+    version: number
+}
+
 export type MultisigStackParamList = {
     CreateMultisig: undefined
     EditParticipant: { address: string }
     SetThreshold: undefined
-    NameMultisig: undefined
+    NameMultisig: NameMultisigImportParams | undefined
+    ImportSharedAccount: { address: string }
 }

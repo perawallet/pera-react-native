@@ -44,6 +44,7 @@ import {
     normalizeUrl,
     parseQueryParams,
 } from './utils'
+import { PERAWALLET_SCHEME } from './constants'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
@@ -56,7 +57,7 @@ export function parsePerawalletAppUri(
 
     if (
         !normalizedUrl.includes('/app/') &&
-        !normalizedUrl.startsWith('perawallet://app')
+        !normalizedUrl.startsWith(`${PERAWALLET_SCHEME}://app`)
     ) {
         return null
     }
@@ -93,7 +94,13 @@ export function parsePerawalletAppUri(
         } as EditContactDeeplink
     }
 
-    if (cleanPath === 'register-watch-account') {
+    // Native pera apps accept both spellings (iOS AppEndpoint cases
+    // `addWatchAccount` and `registerWatchAccount` route to the same flow;
+    // android `CreateNewDeepLinkImpl` uses `add-watch-account`).
+    if (
+        cleanPath === 'register-watch-account' ||
+        cleanPath === 'add-watch-account'
+    ) {
         if (!params.address) return null
         return {
             type: DeeplinkType.ADD_WATCH_ACCOUNT,

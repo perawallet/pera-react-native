@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { PERAWALLET_WC_SCHEME, WC_SCHEME } from '@hooks/deeplink/constants'
+
 export const baseJS = `var css = '*{-webkit-touch-callout:none;-webkit-user-select:none}textarea,input{user-select:text;-webkit-user-select:text;}';
 var head = document.head || document.getElementsByTagName('head')[0];
 var style = document.createElement('style'); style.type = 'text/css';
@@ -65,7 +67,7 @@ export const peraConnectJS = `
             return typeof s === 'string'
                 && s.length > 0
                 && s.length <= MAX_URI_LENGTH
-                && (s.indexOf('wc:') === 0 || s.indexOf('perawallet-wc:') === 0);
+                && (s.indexOf('${WC_SCHEME}:') === 0 || s.indexOf('${PERAWALLET_WC_SCHEME}:') === 0);
         }
         function sendUri(uri) {
             if (!isWcUri(uri)) return false;

@@ -42,6 +42,7 @@ export const QRScannerView = (props: QRScannerViewProps) => {
     } = useQRScannerView({
         isVisible: props.isVisible,
         onSuccess: props.onSuccess,
+        onClose: props.onClose,
     })
 
     return (

@@ -727,6 +727,20 @@ vi.mock('expo-clipboard', () => ({
     getStringAsync: vi.fn(),
 }))
 
+// `expo-modules-core` references `__DEV__` at module-load time in
+// `setUpJsLogger.fx.ts`; under jsdom this is undefined and any expo-* package
+// that transitively imports it crashes during import. Define the global up
+// front so consumers that aren't separately mocked (e.g. expo-screen-capture)
+// can be loaded by the routes barrel under unit tests.
+;(globalThis as { __DEV__?: boolean }).__DEV__ = false
+
+vi.mock('expo-screen-capture', () => ({
+    preventScreenCaptureAsync: vi.fn().mockResolvedValue(undefined),
+    allowScreenCaptureAsync: vi.fn().mockResolvedValue(undefined),
+    addScreenshotListener: vi.fn(() => ({ remove: vi.fn() })),
+    removeScreenshotListener: vi.fn(),
+}))
+
 // `expo-file-system` transitively imports `expo-modules-core`, which probes
 // `__DEV__` at module init and crashes under jsdom. Stub the `File` class
 // to the surface the ASB import screen actually uses (the static picker +
@@ -2395,6 +2409,29 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
                 err instanceof Error ? err : undefined,
             ),
     ),
+    microAlgosToAlgos: vi.fn((microAlgos: bigint | number | string) => {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const { Decimal } = require('decimal.js')
+        return new Decimal(microAlgos.toString()).dividedBy(1_000_000)
+    }),
+    baseUnitsToDisplayUnits: vi.fn(
+        (baseUnits: bigint | number | string, decimals: number) => {
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
+            const { Decimal } = require('decimal.js')
+            return new Decimal(baseUnits.toString()).dividedBy(
+                new Decimal(10).pow(decimals),
+            )
+        },
+    ),
+}))
+
+// Stub lottie-react-native globally. It ships untransformed TSX inside its
+// commonjs build, which Vitest's external module loader can't parse — any
+// transitive import of LottieView throws "Unexpected token 'typeof'" at
+// test collection time. Local mocks in component-specific tests still
+// override this with their own stubs when they need testID wiring.
+vi.mock('lottie-react-native', () => ({
+    default: () => null,
 }))
 
 // Mock @perawallet/wallet-extension-platform

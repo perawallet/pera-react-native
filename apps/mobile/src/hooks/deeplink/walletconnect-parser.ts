@@ -12,6 +12,7 @@
 
 import { DeeplinkType, WalletConnectDeeplink } from './types'
 import { normalizeUrl } from './utils'
+import { PERAWALLET_WC_SCHEME, WC_SCHEME } from './constants'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
@@ -24,8 +25,8 @@ export const parseWalletConnectUri = (
     const normalizedUrl = normalizeUrl(url)
 
     if (
-        !normalizedUrl.startsWith('wc:') &&
-        !normalizedUrl.startsWith('perawallet-wc:')
+        !normalizedUrl.startsWith(`${WC_SCHEME}:`) &&
+        !normalizedUrl.startsWith(`${PERAWALLET_WC_SCHEME}:`)
     ) {
         return null
     }
@@ -40,15 +41,18 @@ export const parseWalletConnectUri = (
         } catch {
             return null
         }
-    } else if (normalizedUrl.startsWith('perawallet-wc:')) {
+    } else if (normalizedUrl.startsWith(`${PERAWALLET_WC_SCHEME}:`)) {
         // Legacy format: perawallet-wc:topic@1?...  →  wc:topic@1?...
-        wcUri = normalizedUrl.replace('perawallet-wc:', 'wc:')
+        wcUri = normalizedUrl.replace(
+            `${PERAWALLET_WC_SCHEME}:`,
+            `${WC_SCHEME}:`,
+        )
     }
 
     // Re-validate after unwrap/rewrite so a wrapper like
     // perawallet-wc://wc?uri=javascript%3Aalert(1) cannot smuggle through
     // a non-wc scheme.
-    if (!wcUri.startsWith('wc:')) {
+    if (!wcUri.startsWith(`${WC_SCHEME}:`)) {
         return null
     }
 
