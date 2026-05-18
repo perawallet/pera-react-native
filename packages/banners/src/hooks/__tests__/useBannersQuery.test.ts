@@ -15,6 +15,7 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { createWrapper } from '@perawallet/wallet-extension-platform'
 import { useBannersQuery } from '../useBannersQuery'
 import { fetchBanners } from '../../api/banners'
+import { useDeviceID } from '@perawallet/wallet-core-device'
 
 vi.mock('../../api/banners', () => ({
     fetchBanners: vi.fn(),
@@ -30,6 +31,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 
 beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(useDeviceID).mockReturnValue('test-device-id')
 })
 
 describe('useBannersQuery', () => {
@@ -111,5 +113,21 @@ describe('useBannersQuery', () => {
 
         await waitFor(() => expect(result.current.isError).toBe(true))
         expect(result.current.banners).toEqual([])
+    })
+
+    it('stays disabled and returns empty when deviceID is null', async () => {
+        vi.mocked(useDeviceID).mockReturnValue(null)
+
+        const { result } = renderHook(() => useBannersQuery(), {
+            wrapper: createWrapper(),
+        })
+
+        // Give react-query a tick — if the query were going to fire, it
+        // would by now.
+        await new Promise(resolve => setTimeout(resolve, 50))
+
+        expect(fetchBanners).not.toHaveBeenCalled()
+        expect(result.current.banners).toEqual([])
+        expect(result.current.isLoading).toBe(false)
     })
 })

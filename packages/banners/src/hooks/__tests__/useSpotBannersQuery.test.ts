@@ -15,6 +15,7 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { createWrapper } from '@perawallet/wallet-extension-platform'
 import { useSpotBannersQuery } from '../useSpotBannersQuery'
 import { fetchSpotBanners } from '../../api/spot-banners'
+import { useDeviceID } from '@perawallet/wallet-core-device'
 
 vi.mock('../../api/spot-banners', () => ({
     fetchSpotBanners: vi.fn(),
@@ -30,6 +31,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 
 beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(useDeviceID).mockReturnValue('device-1')
 })
 
 describe('useSpotBannersQuery', () => {
@@ -70,5 +72,19 @@ describe('useSpotBannersQuery', () => {
 
         await waitFor(() => expect(result.current.isError).toBe(true))
         expect(result.current.spotBanners).toEqual([])
+    })
+
+    it('stays disabled and returns empty when deviceID is null', async () => {
+        vi.mocked(useDeviceID).mockReturnValue(null)
+
+        const { result } = renderHook(() => useSpotBannersQuery(), {
+            wrapper: createWrapper(),
+        })
+
+        await new Promise(resolve => setTimeout(resolve, 50))
+
+        expect(fetchSpotBanners).not.toHaveBeenCalled()
+        expect(result.current.spotBanners).toEqual([])
+        expect(result.current.isLoading).toBe(false)
     })
 })

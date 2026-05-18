@@ -16,6 +16,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { closeSpotBanner } from '../../api/spot-banners'
 import { useDismissSpotBannerMutation } from '../useDismissSpotBannerMutation'
 import { getSpotBannersQueryKey } from '../querykeys'
+import { useDeviceID } from '@perawallet/wallet-core-device'
 import type { ReactNode } from 'react'
 
 vi.mock('../../api/spot-banners', () => ({
@@ -39,6 +40,7 @@ const buildWrapper = (qc: QueryClient) => {
 
 beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(useDeviceID).mockReturnValue('dev-1')
 })
 
 describe('useDismissSpotBannerMutation', () => {
@@ -94,5 +96,56 @@ describe('useDismissSpotBannerMutation', () => {
         await waitFor(() => expect(result.current.isPending).toBe(false))
         // After rollback the cache should match the initial value (length 2)
         expect(qc.getQueryData<unknown[]>(key)).toHaveLength(2)
+    })
+
+    it('runs without crashing when the cache is empty (no optimistic update)', async () => {
+        const qc = new QueryClient({
+            defaultOptions: { mutations: { retry: false } },
+        })
+        vi.mocked(closeSpotBanner).mockResolvedValue(undefined)
+
+        const { result } = renderHook(() => useDismissSpotBannerMutation(), {
+            wrapper: buildWrapper(qc),
+        })
+
+        act(() => result.current.mutate(7))
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+
+        expect(closeSpotBanner).toHaveBeenCalledWith('mainnet', 'dev-1', 7)
+    })
+
+    it('does not crash on error when the cache was empty (nothing to roll back)', async () => {
+        const qc = new QueryClient({
+            defaultOptions: { mutations: { retry: false } },
+        })
+        vi.mocked(closeSpotBanner).mockRejectedValue(new Error('nope'))
+
+        const { result } = renderHook(() => useDismissSpotBannerMutation(), {
+            wrapper: buildWrapper(qc),
+        })
+
+        act(() => result.current.mutate(7))
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+
+        const key = getSpotBannersQueryKey('mainnet', 'dev-1')
+        expect(qc.getQueryData(key)).toBeUndefined()
+    })
+
+    it('uses an empty deviceID when useDeviceID returns null', async () => {
+        vi.mocked(useDeviceID).mockReturnValue(null)
+
+        const qc = new QueryClient({
+            defaultOptions: { mutations: { retry: false } },
+        })
+        vi.mocked(closeSpotBanner).mockResolvedValue(undefined)
+
+        const { result } = renderHook(() => useDismissSpotBannerMutation(), {
+            wrapper: buildWrapper(qc),
+        })
+
+        act(() => result.current.mutate(1))
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+
+        expect(closeSpotBanner).toHaveBeenCalledWith('mainnet', '', 1)
     })
 })

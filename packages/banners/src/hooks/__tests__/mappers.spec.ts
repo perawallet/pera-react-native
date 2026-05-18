@@ -70,6 +70,15 @@ describe('mapBannerResponse', () => {
         expect(result.isButtonUrlExternal).toBe(false)
     })
 
+    test('falls back to false when is_button_url_external is undefined', () => {
+        const result = mapBannerResponse({
+            id: 5,
+            type: 'generic',
+            is_button_url_external: undefined as unknown as boolean,
+        })
+        expect(result.isButtonUrlExternal).toBe(false)
+    })
+
     test('passes through force mode', () => {
         const result = mapBannerResponse({
             id: 4,
@@ -132,5 +141,16 @@ describe('mapSpotBannerResponse', () => {
             url: 'pera://x',
             isUrlExternal: true,
         })
+    })
+
+    test('falls back to false when button_url_is_external is undefined', () => {
+        const result = mapSpotBannerResponse({
+            id: 5,
+            text: 'Hi',
+            image: 'https://cdn.test/x.png',
+            url: 'pera://x',
+            button_url_is_external: undefined as unknown as boolean,
+        })
+        expect(result.isUrlExternal).toBe(false)
     })
 })
