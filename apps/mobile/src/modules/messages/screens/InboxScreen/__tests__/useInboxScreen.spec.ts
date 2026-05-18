@@ -145,7 +145,7 @@ describe('useInboxScreen', () => {
         expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
         const arg = mockRequestBottomSheet.mock.calls[0][0]
         expect(arg.options).toEqual({
-            size: 'lg',
+            size: 'auto',
             enablePanDownToClose: true,
         })
     })
