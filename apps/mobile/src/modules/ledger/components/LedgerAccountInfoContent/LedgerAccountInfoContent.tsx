@@ -17,7 +17,7 @@ import {
     PWView,
     PWText,
     PWToolbar,
-    PWIcon,
+    PWTouchableIcon,
     PWButton,
     PWFlatList,
 } from '@components/core'
@@ -81,7 +81,7 @@ export const LedgerAccountInfoContent = ({
         <PWView style={styles.container}>
             <PWToolbar
                 left={
-                    <PWIcon
+                    <PWTouchableIcon
                         name='cross'
                         onPress={dismiss}
                         testID='ledger_account_info_close'

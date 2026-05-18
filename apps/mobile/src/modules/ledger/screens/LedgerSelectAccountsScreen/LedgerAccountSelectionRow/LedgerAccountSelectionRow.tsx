@@ -18,6 +18,7 @@ import {
     PWCheckbox,
     PWChip,
     PWIcon,
+    PWTouchableIcon,
 } from '@components/core'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useClipboard } from '@hooks/useClipboard'
@@ -106,7 +107,7 @@ export const LedgerAccountSelectionRow = ({
                 )}
             </PWView>
 
-            <PWIcon
+            <PWTouchableIcon
                 name='info'
                 size='sm'
                 variant='secondary'
