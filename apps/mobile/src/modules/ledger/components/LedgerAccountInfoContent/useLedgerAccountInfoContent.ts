@@ -41,6 +41,7 @@ type UseLedgerAccountInfoContentResult = {
 export const useLedgerAccountInfoContent = (
     address: string,
     accountIndex: number,
+    /** When provided, used as the sheet title instead of the default `Ledger #N` label. */
     titleOverride?: string,
 ): UseLedgerAccountInfoContentResult => {
     const { t } = useLanguage()
