@@ -105,6 +105,31 @@ const canSignViaMultisig = (
     })
 
 /**
+ * Internal: resolve the account that signs for `account`, or null when nothing
+ * in `accounts` can. Shared by `getSignerFor` (address-keyed) and
+ * `canSignWith` (account-in-hand) so the single set of rules — rekey hop,
+ * multisig participant rule, direct signability — lives in one place.
+ */
+const signerForAccount = (
+    account: WalletAccount,
+    accounts: WalletAccount[],
+): WalletAccount | null => {
+    if (account.rekeyAddress) {
+        const auth = accounts.find(a => a.address === account.rekeyAddress)
+        if (!auth) return null
+        if (canSignDirectly(auth)) return auth
+        if (isMultisigAccount(auth) && canSignViaMultisig(auth, accounts)) {
+            return auth
+        }
+        return null
+    }
+    if (isMultisigAccount(account)) {
+        return canSignViaMultisig(account, accounts) ? account : null
+    }
+    return canSignDirectly(account) ? account : null
+}
+
+/**
  * Returns the auth account `address` is rekeyed to. Null when `address` is
  * not in the wallet, is not rekeyed, or its rekey target is not held locally.
  *
@@ -140,20 +165,7 @@ export const getSignerFor = (
 ): WalletAccount | null => {
     const account = accounts.find(a => a.address === address)
     if (!account) return null
-
-    if (account.rekeyAddress) {
-        const auth = accounts.find(a => a.address === account.rekeyAddress)
-        if (!auth) return null
-        if (canSignDirectly(auth)) return auth
-        if (isMultisigAccount(auth) && canSignViaMultisig(auth, accounts))
-            return auth
-        return null
-    }
-
-    if (isMultisigAccount(account)) {
-        return canSignViaMultisig(account, accounts) ? account : null
-    }
-    return canSignDirectly(account) ? account : null
+    return signerForAccount(account, accounts)
 }
 
 /**
@@ -164,17 +176,7 @@ export const getSignerFor = (
 export const canSignWith = (
     account: WalletAccount,
     accounts: WalletAccount[],
-): boolean => {
-    if (account.rekeyAddress) {
-        const auth = accounts.find(a => a.address === account.rekeyAddress)
-        if (!auth) return false
-        if (canSignDirectly(auth)) return true
-        if (isMultisigAccount(auth)) return canSignViaMultisig(auth, accounts)
-        return false
-    }
-    if (isMultisigAccount(account)) return canSignViaMultisig(account, accounts)
-    return canSignDirectly(account)
-}
+): boolean => signerForAccount(account, accounts) !== null
 
 export type RekeyTransition = {
     /** Raw type of the rekeyed account itself. */
@@ -263,23 +265,9 @@ export const isEligibleSharedRekeyTarget = (
     allAccounts: WalletAccount[],
 ): boolean => {
     if (target.address === sourceAddress) return false
-    if (target.type !== AccountTypes.multisig) return false
+    if (!isMultisigAccount(target)) return false
     if (target.rekeyAddress) return false
-
-    const heldByAddress = new Map(allAccounts.map(a => [a.address, a]))
-    const signableParticipants = target.multisigDetails.addresses.filter(
-        addr => {
-            const participant = heldByAddress.get(addr)
-            return (
-                !!participant &&
-                (hasSigningKeys(participant) ||
-                    isHardwareWalletAccount(participant))
-            )
-        },
-    ).length
-    if (signableParticipants < 1) return false
-
-    return true
+    return canSignViaMultisig(target, allAccounts)
 }
 
 /**

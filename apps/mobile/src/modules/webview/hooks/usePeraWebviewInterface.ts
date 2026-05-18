@@ -93,6 +93,13 @@ const BASE_WEBVIEW_TYPE: Record<
     [AccountTypes.watch]: 'Unsignable',
 }
 
+/**
+ * Maps an account onto the type identifier we hand to the webapp. Only
+ * invoked on `signingAccounts`, which has already filtered out non-signing
+ * accounts — `Unsignable` and `RekeyedUnsignable` won't actually be emitted
+ * in practice, but the full mapping is kept here so the bridge remains
+ * self-contained should the upstream filter ever loosen.
+ */
 const toWebviewAccountType = (
     account: WalletAccount,
     accounts: WalletAccount[],
