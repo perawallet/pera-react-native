@@ -318,6 +318,44 @@ describe('useAddressSearchView', () => {
         )
     })
 
+    it('excludes a contact whose address is already a wallet account', () => {
+        const accounts = [{ address: 'SHARED_ADDR', name: 'My Account' }]
+        const contacts = [
+            { address: 'SHARED_ADDR', name: 'Same As Account' },
+            { address: 'CONT_ONLY', name: 'Contact Only' },
+        ]
+        vi.mocked(useAllAccounts).mockReturnValue(
+            accounts as unknown as ReturnType<typeof useAllAccounts>,
+        )
+        mockFindContacts.mockReturnValue(contacts)
+
+        const { result } = renderHook(() =>
+            useAddressSearchView({ showAllContactsWhenEmpty: true }),
+        )
+
+        const accountItems = itemsOfType(
+            result.current.matchingItems,
+            'account',
+        )
+        const contactItems = itemsOfType(
+            result.current.matchingItems,
+            'contact',
+        )
+
+        expect(accountItems).toHaveLength(1)
+        expect(accountItems[0]).toEqual(
+            expect.objectContaining({
+                account: expect.objectContaining({ address: 'SHARED_ADDR' }),
+            }),
+        )
+        expect(contactItems).toHaveLength(1)
+        expect(contactItems[0]).toEqual(
+            expect.objectContaining({
+                contact: expect.objectContaining({ address: 'CONT_ONLY' }),
+            }),
+        )
+    })
+
     it('returns NFD results when value contains a dot', () => {
         vi.mocked(useNfdSearchQuery).mockReturnValue({
             data: [
