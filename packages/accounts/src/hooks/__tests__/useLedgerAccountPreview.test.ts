@@ -88,6 +88,7 @@ describe('useLedgerAccountPreview', () => {
         expect(result.current.preview?.assets).toHaveLength(1)
         expect(result.current.preview?.assets[0].isAlgo).toBe(true)
         expect(result.current.preview?.assets[0].unitName).toBe('ALGO')
+        expect(result.current.preview?.assets[0].decimals).toBe(6)
     })
 
     it('includes ASA holdings with metadata, fiat value and verification tier', () => {
@@ -141,6 +142,7 @@ describe('useLedgerAccountPreview', () => {
         expect(usdc?.fiatValue.toString()).toBe('1.5')
         expect(usdc?.verificationTier).toBe('verified')
         expect(usdc?.name).toBe('USDC')
+        expect(usdc?.decimals).toBe(6)
     })
 
     it('falls back to asset-id string, empty unitName, unverified tier and decimals=0 when asset metadata is missing', () => {
@@ -174,6 +176,7 @@ describe('useLedgerAccountPreview', () => {
         expect(asa?.amount.toString()).toBe('42')
         expect(asa?.fiatValue.toString()).toBe('0')
         expect(asa?.isAlgo).toBe(false)
+        expect(asa?.decimals).toBe(0)
     })
 
     it('reports rekeyedTo when the account is rekeyed', () => {

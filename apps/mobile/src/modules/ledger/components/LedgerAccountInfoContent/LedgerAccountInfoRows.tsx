@@ -131,7 +131,7 @@ export const LedgerAssetRow = ({
                 <CurrencyDisplay
                     currency={asset.isAlgo ? 'ALGO' : asset.unitName || ''}
                     value={asset.amount}
-                    precision={asset.isAlgo ? ALGO_ASSET.decimals : 6}
+                    precision={asset.decimals}
                     minPrecision={2}
                     showSymbol
                     variant='body'

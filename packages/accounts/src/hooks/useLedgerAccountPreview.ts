@@ -63,6 +63,7 @@ export const useLedgerAccountPreview = (
             assetId: ALGO_ASSET_ID,
             name: ALGO_ASSET.name ?? 'Algo',
             unitName: ALGO_ASSET.unitName ?? 'ALGO',
+            decimals: ALGO_ASSET.decimals,
             amount: algoBalance,
             fiatValue: usdToPreferred(algoBalance.times(algoUsdPrice)),
             verificationTier: PeraAssetVerificationTier.verified,
@@ -82,6 +83,7 @@ export const useLedgerAccountPreview = (
                 assetId: id,
                 name: meta?.name ?? id,
                 unitName: meta?.unitName ?? '',
+                decimals,
                 amount,
                 fiatValue: usdToPreferred(usdValue),
                 verificationTier:

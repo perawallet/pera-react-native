@@ -17,6 +17,8 @@ export type LedgerAccountPreviewAsset = {
     assetId: string
     name: string
     unitName: string
+    /** Asset decimals (display precision) */
+    decimals: number
     /** Holding amount in display units */
     amount: Decimal
     /** Holding value in the user's preferred currency */
@@ -37,7 +39,7 @@ export type LedgerAccountPreview = {
     algoBalance: Decimal
     /** Total account value in the user's preferred currency */
     totalFiatValue: Decimal
-    /** ALGO first, then assets ordered as `useSortedAssetBalances` orders them */
+    /** ALGO first, then the account's on-chain holdings in algod order */
     assets: LedgerAccountPreviewAsset[]
     rekey: LedgerAccountRekeyRelationship
 }

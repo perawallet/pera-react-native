@@ -118,6 +118,21 @@ describe('Flow: Ledger account info sheet', () => {
                 () => expect(screen.getByText('Ledger #0')).toBeTruthy(),
                 { timeout: 10000 },
             )
+
+            // Section headers should be rendered.
+            // Note: i18n is not initialised in the integration test harness,
+            // so t() returns the raw key — assert on what is actually rendered.
+            await waitFor(
+                () => {
+                    expect(
+                        screen.getByText('ledger.account_info.account_details'),
+                    ).toBeTruthy()
+                    expect(
+                        screen.getByText('ledger.account_info.assets'),
+                    ).toBeTruthy()
+                },
+                { timeout: 10000 },
+            )
         },
         SLOW_TEST_TIMEOUT_MS,
     )
