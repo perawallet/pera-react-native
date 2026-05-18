@@ -93,6 +93,13 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         close: handleCloseQRScanner,
     } = useModalState()
 
+    // Strict wordlist validation is deferred to `useImportAccount`, which
+    // surfaces typed errors (DuplicateAccountError, validation failures) the
+    // catch block translates into toasts. The button only gates on
+    // non-empty slots so the user can try the import and see the real
+    // failure, rather than the button silently never becoming tappable.
+    // (Contrast with ASB key entry, where pre-validating against the
+    // wordlist avoids an opaque decryption failure later.)
     const canImport = useMemo(() => words.every(w => w.length > 0), [words])
 
     const handleImportAccount = useCallback(() => {

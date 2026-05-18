@@ -732,6 +732,12 @@ vi.mock('expo-clipboard', () => ({
 // that transitively imports it crashes during import. Define the global up
 // front so consumers that aren't separately mocked (e.g. expo-screen-capture)
 // can be loaded by the routes barrel under unit tests.
+//
+// Side-effect: every unit test now sees `__DEV__ === false`. App code that
+// gates dev-only logging/asserts on `__DEV__` will run as if in a production
+// build. If a spec ever wants to exercise a dev-mode branch it should set
+// the global itself (and restore it afterwards) rather than rely on the
+// default.
 ;(globalThis as { __DEV__?: boolean }).__DEV__ = false
 
 vi.mock('expo-screen-capture', () => ({
