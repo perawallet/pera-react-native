@@ -29,6 +29,7 @@ import { useStyles } from './styles'
 export type LedgerAccountSelectionRowProps = {
     address: string
     accountIndex: number
+    variant?: 'derived' | 'rekeyed'
     isSelected: boolean
     isImported: boolean
     onToggle: () => void
@@ -39,6 +40,7 @@ export type LedgerAccountSelectionRowProps = {
 export const LedgerAccountSelectionRow = ({
     address,
     accountIndex,
+    variant = 'derived',
     isSelected,
     isImported,
     onToggle,
@@ -98,6 +100,13 @@ export const LedgerAccountSelectionRow = ({
                         variant='secondary'
                     />
                 </PWTouchableOpacity>
+                {variant === 'rekeyed' && (
+                    <PWChip
+                        title={t('ledger.select_accounts.rekeyed_label')}
+                        variant='secondary'
+                        textVariant='captionSmall'
+                    />
+                )}
                 {isImported && (
                     <PWChip
                         title={t('ledger.select_accounts.already_imported')}

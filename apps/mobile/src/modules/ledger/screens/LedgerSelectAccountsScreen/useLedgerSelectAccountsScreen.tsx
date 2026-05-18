@@ -17,6 +17,7 @@ import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     useAllAccounts,
     prefetchLedgerAccountPreview,
+    useLedgerRekeyedScan,
     type LedgerSelectableAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { LedgerAccount } from '@perawallet/wallet-core-ledger'
@@ -45,6 +46,8 @@ type LedgerSelectAccountsRouteProp = RouteProp<
 
 type UseLedgerSelectAccountsScreenResult = {
     accounts: LedgerAccount[]
+    selectableAccounts: LedgerSelectableAccount[]
+    isScanning: boolean
     selectedAddresses: Set<string>
     isAllSelected: boolean
     areAllImported: boolean
@@ -119,15 +122,44 @@ export const useLedgerSelectAccountsScreen =
             })
         }, [accounts, queryClient, algokit, network])
 
+        const { rekeyed, isScanning } = useLedgerRekeyedScan(accounts)
+
+        const selectableAccounts = useMemo<LedgerSelectableAccount[]>(
+            () => [
+                ...accounts.map(
+                    (account): LedgerSelectableAccount => ({
+                        kind: 'derived',
+                        account,
+                    }),
+                ),
+                ...rekeyed,
+            ],
+            [accounts, rekeyed],
+        )
+
+        const selectableByAddress = useMemo(() => {
+            const m = new Map<string, LedgerSelectableAccount>()
+            for (const s of selectableAccounts) {
+                m.set(
+                    s.kind === 'derived' ? s.account.address : s.address,
+                    s,
+                )
+            }
+            return m
+        }, [selectableAccounts])
+
         const alreadyImportedAddresses = useMemo(() => {
             return new Set(allAccounts.map(acc => acc.address))
         }, [allAccounts])
 
         const newAccounts = useMemo(() => {
-            return accounts.filter(
-                acc => !alreadyImportedAddresses.has(acc.address),
+            return selectableAccounts.filter(
+                s =>
+                    !alreadyImportedAddresses.has(
+                        s.kind === 'derived' ? s.account.address : s.address,
+                    ),
             )
-        }, [accounts, alreadyImportedAddresses])
+        }, [selectableAccounts, alreadyImportedAddresses])
 
         const isAllSelected =
             newAccounts.length > 0 &&
@@ -155,30 +187,50 @@ export const useLedgerSelectAccountsScreen =
                 setSelectedAddresses(new Set())
             } else {
                 setSelectedAddresses(
-                    new Set(newAccounts.map(acc => acc.address)),
+                    new Set(
+                        newAccounts.map(s =>
+                            s.kind === 'derived'
+                                ? s.account.address
+                                : s.address,
+                        ),
+                    ),
                 )
             }
         }, [isAllSelected, newAccounts])
 
         const handleContinue = useCallback(() => {
-            const selected = accounts.filter(acc =>
-                selectedAddresses.has(acc.address),
+            const selected = selectableAccounts.filter(s =>
+                selectedAddresses.has(
+                    s.kind === 'derived' ? s.account.address : s.address,
+                ),
             )
 
             if (selected.length === 0) return
 
-            const selectedAccounts: LedgerSelectableAccount[] = selected.map(
-                account => ({ kind: 'derived', account }),
+            const result: LedgerSelectableAccount[] = [...selected]
+            const present = new Set(
+                selected.map(s =>
+                    s.kind === 'derived' ? s.account.address : s.address,
+                ),
             )
+            for (const s of selected) {
+                if (
+                    s.kind === 'rekeyed' &&
+                    !present.has(s.authAccount.address)
+                ) {
+                    present.add(s.authAccount.address)
+                    result.push({ kind: 'derived', account: s.authAccount })
+                }
+            }
 
             navigation.navigate('LedgerVerify', {
                 deviceId,
                 deviceName,
                 transportType,
-                selectedAccounts,
+                selectedAccounts: result,
             })
         }, [
-            accounts,
+            selectableAccounts,
             selectedAddresses,
             deviceId,
             deviceName,
@@ -234,17 +286,23 @@ export const useLedgerSelectAccountsScreen =
 
         const handleInfoPress = useCallback(
             (address: string, accountIndex: number) => {
+                const selectable = selectableByAddress.get(address)
+                const title =
+                    selectable?.kind === 'rekeyed'
+                        ? t('ledger.select_accounts.rekeyed_account_title')
+                        : undefined
                 void request({
                     contents: (
                         <LedgerAccountInfoContent
                             address={address}
                             accountIndex={accountIndex}
+                            title={title}
                         />
                     ),
                     options: { size: 'lg' },
                 })
             },
-            [request],
+            [request, selectableByAddress, t],
         )
 
         const areAllImported = newAccounts.length === 0
@@ -253,6 +311,8 @@ export const useLedgerSelectAccountsScreen =
 
         return {
             accounts,
+            selectableAccounts,
+            isScanning,
             selectedAddresses,
             isAllSelected,
             areAllImported,

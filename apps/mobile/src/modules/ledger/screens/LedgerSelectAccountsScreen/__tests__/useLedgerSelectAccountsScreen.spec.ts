@@ -78,12 +78,14 @@ vi.mock('@react-navigation/native', () => ({
     }),
 }))
 
-const { mockPrefetch, mockRequest, mockQueryClient } = vi.hoisted(() => {
-    const mockPrefetch = vi.fn().mockResolvedValue(undefined)
-    const mockRequest = vi.fn().mockResolvedValue(undefined)
-    const mockQueryClient = {}
-    return { mockPrefetch, mockRequest, mockQueryClient }
-})
+const { mockPrefetch, mockRequest, mockQueryClient, mockRekeyedScan } =
+    vi.hoisted(() => {
+        const mockPrefetch = vi.fn().mockResolvedValue(undefined)
+        const mockRequest = vi.fn().mockResolvedValue(undefined)
+        const mockQueryClient = {}
+        const mockRekeyedScan = vi.fn()
+        return { mockPrefetch, mockRequest, mockQueryClient, mockRekeyedScan }
+    })
 
 // useLedgerAccountPreview is included because the screen hook imports
 // LedgerAccountInfoContent (whose hook chain references it) at module load;
@@ -92,6 +94,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => [],
     prefetchLedgerAccountPreview: mockPrefetch,
     useLedgerAccountPreview: vi.fn(),
+    useLedgerRekeyedScan: mockRekeyedScan,
 }))
 
 vi.mock('@modules/bottom-sheet', () => ({
@@ -140,6 +143,7 @@ describe('useLedgerSelectAccountsScreen', () => {
         mockConnect.mockResolvedValue(transport)
         mockDisconnectTransport.mockResolvedValue(undefined)
         mockGetProviderRegistry.mockReturnValue({ connect: mockConnect })
+        mockRekeyedScan.mockReturnValue({ rekeyed: [], isScanning: false })
     })
 
     it('exposes the route accounts unchanged on initial render', () => {
@@ -424,5 +428,57 @@ describe('useLedgerSelectAccountsScreen', () => {
                 },
             ],
         })
+    })
+
+    it('exposes derived + scanned rekeyed as selectableAccounts', () => {
+        mockRekeyedScan.mockReturnValue({
+            rekeyed: [
+                {
+                    kind: 'rekeyed',
+                    address: 'REKEYED_A',
+                    authAccount: {
+                        address: 'AAA111',
+                        publicKey: new Uint8Array([1]),
+                        accountIndex: 0,
+                    },
+                },
+            ],
+            isScanning: true,
+        })
+
+        const { result } = renderHook(() => useLedgerSelectAccountsScreen())
+
+        expect(result.current.isScanning).toBe(true)
+        const kinds = result.current.selectableAccounts.map(s => s.kind)
+        expect(kinds).toEqual(['derived', 'derived', 'rekeyed'])
+    })
+
+    it('navigates with the rekeyed selectable and auto-included auth account', () => {
+        const auth = {
+            address: 'AAA111',
+            publicKey: new Uint8Array([1]),
+            accountIndex: 0,
+        }
+        mockRekeyedScan.mockReturnValue({
+            rekeyed: [{ kind: 'rekeyed', address: 'REKEYED_A', authAccount: auth }],
+            isScanning: false,
+        })
+
+        const { result } = renderHook(() => useLedgerSelectAccountsScreen())
+
+        act(() => {
+            result.current.toggleSelection('REKEYED_A')
+        })
+        act(() => {
+            result.current.handleContinue()
+        })
+
+        const arg = mockNavigate.mock.calls.find(
+            c => c[0] === 'LedgerVerify',
+        )?.[1] as { selectedAccounts: unknown[] }
+        expect(arg.selectedAccounts).toEqual([
+            { kind: 'rekeyed', address: 'REKEYED_A', authAccount: auth },
+            { kind: 'derived', account: auth },
+        ])
     })
 })
