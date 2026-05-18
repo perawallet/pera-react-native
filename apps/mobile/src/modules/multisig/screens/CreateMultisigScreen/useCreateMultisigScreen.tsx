@@ -12,6 +12,11 @@
 
 import { useCallback } from 'react'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import {
+    DuplicateAddressError,
+    useContacts,
+} from '@perawallet/wallet-core-contacts'
+import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { AddParticipantContent } from '../../components/AddParticipantContent'
@@ -34,6 +39,7 @@ export const useCreateMultisigScreen = (): UseCreateMultisigScreenResult => {
     const navigation = useAppNavigation()
     const { request: requestBottomSheet } = useBottomSheet()
     const accounts = useAllAccounts()
+    const { addContact, contacts } = useContacts()
     const participants = useMultisigCreationStore(state => state.participants)
     const addParticipant = useMultisigCreationStore(
         state => state.addParticipant,
@@ -53,8 +59,23 @@ export const useCreateMultisigScreen = (): UseCreateMultisigScreenResult => {
         (address: string) => {
             if (participants.some(p => p.address === address)) return
             addParticipant({ address })
+
+            // Auto-save a non-wallet address as a contact so it gets a
+            // friendly name and is reusable later. Skip wallet accounts and
+            // addresses that are already contacts.
+            const isWalletAccount = accounts.some(a => a.address === address)
+            const isExistingContact = contacts.some(c => c.address === address)
+            if (isWalletAccount || isExistingContact) return
+
+            try {
+                addContact({ name: truncateAlgorandAddress(address), address })
+            } catch (e) {
+                // Defensive: ignore a concurrent duplicate; rethrow anything
+                // else since that would be a real bug.
+                if (!(e instanceof DuplicateAddressError)) throw e
+            }
         },
-        [addParticipant, participants],
+        [accounts, contacts, addContact, addParticipant, participants],
     )
 
     const handleOpenAddParticipant = useCallback(async () => {
