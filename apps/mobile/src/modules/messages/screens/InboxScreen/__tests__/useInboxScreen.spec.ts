@@ -150,6 +150,76 @@ describe('useInboxScreen', () => {
         })
     })
 
+    it('navigates to MultisigInvitationName when the invitation sheet resolves "accept"', async () => {
+        mockRequestBottomSheet.mockResolvedValueOnce('accept')
+        const createdAt = new Date('2025-01-15T00:00:00.000Z')
+        const importItem = {
+            type: 'multisig_import' as const,
+            data: {
+                customId: 'msig-1',
+                createdAt,
+                address: 'MSIG_ADDR1',
+                version: 1,
+                threshold: 2,
+                participantAddresses: ['ADDR1', 'ADDR2'],
+            },
+            createdAt,
+        }
+
+        const { result } = renderHook(() => useInboxScreen())
+
+        await act(async () => {
+            result.current.handleInboxItemPress(
+                importItem as unknown as Parameters<
+                    typeof result.current.handleInboxItemPress
+                >[0],
+            )
+        })
+
+        expect(mockPush).toHaveBeenCalledWith('Messages', {
+            screen: 'MultisigInvitationName',
+            params: {
+                invitation: {
+                    customId: 'msig-1',
+                    createdAt: createdAt.toISOString(),
+                    address: 'MSIG_ADDR1',
+                    version: 1,
+                    threshold: 2,
+                    participantAddresses: ['ADDR1', 'ADDR2'],
+                },
+            },
+        })
+    })
+
+    it('does not navigate when the invitation sheet resolves "decline"', async () => {
+        mockRequestBottomSheet.mockResolvedValueOnce('decline')
+        const createdAt = new Date('2025-01-15T00:00:00.000Z')
+        const importItem = {
+            type: 'multisig_import' as const,
+            data: {
+                customId: 'msig-1',
+                createdAt,
+                address: 'MSIG_ADDR1',
+                version: 1,
+                threshold: 2,
+                participantAddresses: ['ADDR1', 'ADDR2'],
+            },
+            createdAt,
+        }
+
+        const { result } = renderHook(() => useInboxScreen())
+
+        await act(async () => {
+            result.current.handleInboxItemPress(
+                importItem as unknown as Parameters<
+                    typeof result.current.handleInboxItemPress
+                >[0],
+            )
+        })
+
+        expect(mockPush).not.toHaveBeenCalled()
+    })
+
     it('handleInboxItemPress delegates multisig_sign to the multisig sign-tap handler', () => {
         const signItem = {
             type: 'multisig_sign' as const,

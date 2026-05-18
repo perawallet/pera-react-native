@@ -15,7 +15,6 @@ import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useDeleteMultisigInvitationMutation } from '@perawallet/wallet-core-messages'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import type { MultisigInvitationParam } from '../../routes/types'
@@ -40,7 +39,6 @@ export const useMultisigInvitationDetailContent = ({
     onIgnored,
     onAccepted,
 }: UseMultisigInvitationDetailContentParams): UseMultisigInvitationDetailContentResult => {
-    const { push } = useAppNavigation()
     const { t } = useLanguage()
     const { errorToast } = useToast()
     const { network } = useNetwork()
@@ -98,11 +96,7 @@ export const useMultisigInvitationDetailContent = ({
 
     const handleAccept = useCallback(() => {
         onAccepted()
-        push('Messages', {
-            screen: 'MultisigInvitationName',
-            params: { invitation: renderedInvitation },
-        })
-    }, [push, renderedInvitation, onAccepted])
+    }, [onAccepted])
 
     return {
         renderedInvitation,
