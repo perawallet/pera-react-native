@@ -74,14 +74,26 @@ export const useInboxScreen = (): UseInboxScreenResult => {
 
     const openInvitationDetail = useCallback(
         async (invitation: MultisigInvitationParam) => {
-            await requestBottomSheet<MultisigInvitationDetailContentResult>({
-                contents: (
-                    <MultisigInvitationDetailContent invitation={invitation} />
-                ),
-                options: { size: 'lg', enablePanDownToClose: true },
-            })
+            const result =
+                await requestBottomSheet<MultisigInvitationDetailContentResult>(
+                    {
+                        contents: (
+                            <MultisigInvitationDetailContent
+                                invitation={invitation}
+                            />
+                        ),
+                        options: { size: 'auto', enablePanDownToClose: true },
+                    },
+                )
+
+            if (result === 'accept') {
+                push('Messages', {
+                    screen: 'MultisigInvitationName',
+                    params: { invitation },
+                })
+            }
         },
-        [requestBottomSheet],
+        [requestBottomSheet, push],
     )
 
     const handleInboxItemPress = useCallback(
