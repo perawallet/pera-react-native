@@ -161,4 +161,31 @@ describe('useLedgerVerifyScreen', () => {
         expect(mockExit).toHaveBeenCalledTimes(1)
         expect(mockSetConfetti).toHaveBeenCalledWith(true)
     })
+
+    it('does not persist a rekeyed watch account when its auth account address is invalid', async () => {
+        const badAuth = {
+            address: '!!invalidauth',
+            publicKey: new Uint8Array([9]),
+            accountIndex: 9,
+        }
+        routeParams.current = {
+            deviceId: 'dev',
+            deviceName: 'Nano',
+            transportType: 'ble',
+            selectedAccounts: [
+                { kind: 'rekeyed', address: 'REKEYED_X', authAccount: badAuth },
+            ],
+        }
+
+        const { result } = renderHook(() => useLedgerVerifyScreen())
+        await waitFor(() => expect(result.current.areAllVerified).toBe(true))
+
+        act(() => {
+            result.current.handleAdd()
+        })
+
+        const accounts = useAccountsStore.getState().accounts
+        expect(accounts.find(a => a.address === 'REKEYED_X')).toBeUndefined()
+        expect(accounts.find(a => a.address === '!!invalidauth')).toBeUndefined()
+    })
 })

@@ -148,7 +148,10 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         }
     }, [deviceId, transportType, verifyTargets])
 
-    // Run verify once on mount. Ref guards StrictMode's dev double-invoke.
+    // Run verify once on mount. The ref guards against React StrictMode's
+    // dev-only double-invoke (a second call would race the first against a
+    // different transport instance). Route params are stable for the screen's
+    // lifetime, so an empty dep array is intentional.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         if (hasStartedRef.current) return
@@ -184,7 +187,11 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                 addHardware(sel.account)
             } else {
                 addHardware(sel.authAccount)
+                const authPresent =
+                    added.has(sel.authAccount.address) ||
+                    existing.has(sel.authAccount.address)
                 if (
+                    authPresent &&
                     isValidAlgorandAddress(sel.address) &&
                     !existing.has(sel.address) &&
                     !added.has(sel.address)
