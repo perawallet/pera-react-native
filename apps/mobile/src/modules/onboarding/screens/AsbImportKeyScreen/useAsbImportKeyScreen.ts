@@ -17,9 +17,8 @@ import {
     AsbImportError,
     decryptBackupPayload,
 } from '@perawallet/wallet-core-backup'
-import { logger, type Nullable } from '@perawallet/wallet-core-shared'
+import { logger } from '@perawallet/wallet-core-shared'
 import { MNEMONIC_WORDLIST } from '@perawallet/wallet-core-kms'
-import type { PWInputRef } from '@components/core'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -27,6 +26,9 @@ import {
     useAsbImportFlowStore,
     useMnemonicWordEntry,
 } from '@modules/onboarding/hooks'
+
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { PWInputRef } from '@components/core'
 
 type UseAsbImportKeyScreenResult = {
     words: string[]
@@ -138,6 +140,11 @@ export const useAsbImportKeyScreen = (): UseAsbImportKeyScreenResult => {
                 t(`onboarding.asb_import.key.errors.${reason}` as const),
             )
         } finally {
+            // No mnemonic wipe here on purpose. Success path drops the
+            // reference via the `navigation.replace` above (the screen
+            // unmounts and `words` is GC'd with it). Error path keeps the
+            // typed words so the user can correct a typo and retry without
+            // re-typing 12 words.
             setIsProcessing(false)
         }
     }, [

@@ -14,11 +14,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import * as Clipboard from 'expo-clipboard'
 
 import { MNEMONIC_WORDLIST } from '@perawallet/wallet-core-kms'
-import { type Nullable } from '@perawallet/wallet-core-shared'
-
-import type { PWInputRef } from '@components/core'
 
 import { splitMnemonic } from '../utils'
+
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { PWInputRef } from '@components/core'
 
 const MAX_SUGGESTIONS = 4
 const WORDLIST_SET = new Set(MNEMONIC_WORDLIST)
