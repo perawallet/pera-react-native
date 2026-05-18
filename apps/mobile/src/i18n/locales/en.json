@@ -2130,7 +2130,10 @@
             "cta_other": "Verify selected accounts",
             "address_sheet_title": "Account address",
             "no_new_accounts": "All accounts on this device are already imported.",
-            "find_another_wallet": "Find another account"
+            "find_another_wallet": "Find another account",
+            "rekeyed_label": "Rekeyed",
+            "rekeyed_account_title": "Rekeyed account",
+            "scanning_rekeyed": "Scanning for rekeyed accounts…"
         },
         "account_info": {
             "account_details": "Account details",
