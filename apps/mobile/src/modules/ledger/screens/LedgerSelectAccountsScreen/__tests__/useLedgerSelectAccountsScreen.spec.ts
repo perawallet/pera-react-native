@@ -481,4 +481,48 @@ describe('useLedgerSelectAccountsScreen', () => {
             { kind: 'derived', account: auth },
         ])
     })
+
+    it('does not double-include the auth account when it is also explicitly selected', () => {
+        const auth = {
+            address: 'AAA111',
+            publicKey: new Uint8Array([1]),
+            accountIndex: 0,
+        }
+        mockRekeyedScan.mockReturnValue({
+            rekeyed: [{ kind: 'rekeyed', address: 'REKEYED_A', authAccount: auth }],
+            isScanning: false,
+        })
+
+        const { result } = renderHook(() => useLedgerSelectAccountsScreen())
+
+        act(() => {
+            result.current.toggleSelection('REKEYED_A')
+        })
+        act(() => {
+            result.current.toggleSelection('AAA111')
+        })
+        act(() => {
+            result.current.handleContinue()
+        })
+
+        const arg = mockNavigate.mock.calls.find(
+            c => c[0] === 'LedgerVerify',
+        )?.[1] as { selectedAccounts: unknown[] }
+        const authDerivedCount = arg.selectedAccounts.filter(
+            (s: unknown) =>
+                (s as { kind: string; account?: { address: string } })
+                    .kind === 'derived' &&
+                (s as { account: { address: string } }).account.address ===
+                    'AAA111',
+        ).length
+        expect(authDerivedCount).toBe(1)
+        expect(
+            arg.selectedAccounts.some(
+                (s: unknown) =>
+                    (s as { kind: string; address?: string }).kind ===
+                        'rekeyed' &&
+                    (s as { address: string }).address === 'REKEYED_A',
+            ),
+        ).toBe(true)
+    })
 })

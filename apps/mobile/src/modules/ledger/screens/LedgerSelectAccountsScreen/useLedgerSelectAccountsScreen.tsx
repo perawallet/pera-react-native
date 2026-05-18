@@ -163,7 +163,11 @@ export const useLedgerSelectAccountsScreen =
 
         const isAllSelected =
             newAccounts.length > 0 &&
-            selectedAddresses.size === newAccounts.length
+            newAccounts.every(s =>
+                selectedAddresses.has(
+                    s.kind === 'derived' ? s.account.address : s.address,
+                ),
+            )
 
         const toggleSelection = useCallback(
             (address: string) => {
