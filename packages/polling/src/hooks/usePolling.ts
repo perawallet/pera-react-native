@@ -15,6 +15,7 @@ import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { usePollingStore } from '../store'
 import { useShouldRefreshMutation } from './useShouldRefreshMutation'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { onlineManager } from '@tanstack/react-query'
 
 const CACHE_CHECK_INTERVAL = 3000
 
@@ -32,6 +33,10 @@ export const usePolling = (options?: UsePollingOptions) => {
         useState<Nullable<ReturnType<typeof setInterval>>>(null)
 
     const doCheck = useCallback(async () => {
+        if (!onlineManager.isOnline) {
+            return
+        }
+        
         try {
             const response = await mutateAsync()
 
