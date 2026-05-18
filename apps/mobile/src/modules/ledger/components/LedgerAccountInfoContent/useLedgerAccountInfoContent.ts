@@ -11,6 +11,7 @@
  */
 
 import { useMemo } from 'react'
+import type { Decimal } from 'decimal.js'
 import {
     useLedgerAccountPreview,
     type LedgerAccountPreviewAsset,
@@ -23,8 +24,8 @@ export type LedgerInfoListItem =
           kind: 'account'
           key: string
           address: string
-          algoBalance: string
-          fiatValue: string
+          algoBalance: Decimal
+          fiatValue: Decimal
       }
     | { kind: 'asset'; key: string; asset: LedgerAccountPreviewAsset }
     | { kind: 'rekeyAddress'; key: string; address: string }
@@ -58,8 +59,8 @@ export const useLedgerAccountInfoContent = (
                 kind: 'account',
                 key: 'account',
                 address: preview.address,
-                algoBalance: preview.algoBalance.toString(),
-                fiatValue: preview.totalFiatValue.toString(),
+                algoBalance: preview.algoBalance,
+                fiatValue: preview.totalFiatValue,
             },
             {
                 kind: 'sectionHeader',

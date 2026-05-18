@@ -135,4 +135,32 @@ describe('useLedgerAccountInfoContent', () => {
             .map(i => (i.kind === 'rekeyAddress' ? i.address : ''))
         expect(rekeyAddresses).toEqual(['R1', 'R2'])
     })
+
+    it('carries Decimal instances for algoBalance and fiatValue on the account item', () => {
+        mocks.useLedgerAccountPreview.mockReturnValue({
+            preview: {
+                address: 'ADDR',
+                algoBalance: new Decimal('408.2'),
+                totalFiatValue: new Decimal('48.45'),
+                assets: [baseAsset],
+                rekey: { kind: 'none' },
+            },
+            isLoading: false,
+            isError: false,
+            refetch: vi.fn(),
+        })
+
+        const { result } = renderHook(() =>
+            useLedgerAccountInfoContent('ADDR', 2),
+        )
+
+        const acct = result.current.items.find(i => i.kind === 'account')
+        expect(acct?.kind).toBe('account')
+        if (acct?.kind === 'account') {
+            expect(acct.algoBalance).toBeInstanceOf(Decimal)
+            expect(acct.algoBalance.toString()).toBe('408.2')
+            expect(acct.fiatValue).toBeInstanceOf(Decimal)
+            expect(acct.fiatValue.toString()).toBe('48.45')
+        }
+    })
 })
