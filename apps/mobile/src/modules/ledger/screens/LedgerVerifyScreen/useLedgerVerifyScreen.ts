@@ -18,15 +18,24 @@ import {
     useSetAccounts,
     useSelectedAccountAddress,
     AccountTypes,
+    type LedgerSelectableAccount,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { HardwareWalletTransport } from '@perawallet/wallet-core-hardware-wallet'
-import type { LedgerAccount } from '@perawallet/wallet-core-ledger'
+import type {
+    HardwareWalletDerivedAccount,
+    HardwareWalletTransport,
+} from '@perawallet/wallet-core-hardware-wallet'
 import {
     verifyLedgerAddress,
     LedgerProviderNotFoundError,
     classifyLedgerError,
 } from '@perawallet/wallet-core-ledger'
-import type { AppError, Nullable } from '@perawallet/wallet-core-shared'
+import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import {
+    generateOrderedUniqueId,
+    type AppError,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
@@ -42,7 +51,8 @@ import {
 type LedgerVerifyRouteProp = RouteProp<AddAccountStackParamList, 'LedgerVerify'>
 
 type UseLedgerVerifyScreenResult = {
-    selectedAccounts: ReadonlyArray<LedgerAccount>
+    selectedAccounts: ReadonlyArray<LedgerSelectableAccount>
+    verifyTargets: ReadonlyArray<HardwareWalletDerivedAccount>
     verifiedIndices: ReadonlySet<number>
     areAllVerified: boolean
     errorPreset: Nullable<LedgerErrorPreset>
@@ -53,6 +63,11 @@ type UseLedgerVerifyScreenResult = {
 }
 
 type VerificationState = 'connecting' | 'verifying' | 'complete' | 'error'
+
+const authAccountOf = (
+    s: LedgerSelectableAccount,
+): HardwareWalletDerivedAccount =>
+    s.kind === 'derived' ? s.account : s.authAccount
 
 export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
     const {
@@ -69,6 +84,17 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
     const { exitAccountFlow } = useExitAccountFlow()
     const { setShouldPlayConfetti } = useShouldPlayConfetti()
     const navigation = useAppNavigation()
+
+    const verifyTargets = useMemo<HardwareWalletDerivedAccount[]>(() => {
+        const byIndex = new Map<number, HardwareWalletDerivedAccount>()
+        for (const sel of selectedAccounts) {
+            const auth = authAccountOf(sel)
+            if (!byIndex.has(auth.accountIndex)) {
+                byIndex.set(auth.accountIndex, auth)
+            }
+        }
+        return [...byIndex.values()]
+    }, [selectedAccounts])
 
     const [verificationState, setVerificationState] =
         useState<VerificationState>('connecting')
@@ -98,10 +124,10 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
             transport = await provider.connect(deviceId)
             setVerificationState('verifying')
 
-            for (let i = 0; i < selectedAccounts.length; i++) {
+            for (let i = 0; i < verifyTargets.length; i++) {
                 await verifyLedgerAddress(
                     transport,
-                    selectedAccounts[i].accountIndex,
+                    verifyTargets[i].accountIndex,
                 )
                 setVerifiedIndices(prev => {
                     const next = new Set(prev)
@@ -120,12 +146,9 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                 await transport.disconnect().catch(() => {})
             }
         }
-    }, [deviceId, transportType, selectedAccounts])
+    }, [deviceId, transportType, verifyTargets])
 
-    // Run verify once on mount. The ref guards against React StrictMode's
-    // dev-only double-invoke (a second call would race the first against a
-    // different transport instance). Route params are stable for the screen's
-    // lifetime, so an empty dep array is intentional.
+    // Run verify once on mount. Ref guards StrictMode's dev double-invoke.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         if (hasStartedRef.current) return
@@ -134,21 +157,63 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
     }, [])
 
     const handleAdd = useCallback(() => {
-        const hwAccounts = selectedAccounts.map((acc: LedgerAccount) => ({
-            type: AccountTypes.hardware,
-            address: acc.address,
-            hardwareDetails: {
-                manufacturer: 'ledger' as const,
-                deviceId,
-                deviceName,
-                accountIndex: acc.accountIndex,
-                transportType,
-            },
-        }))
+        const current = useAccountsStore.getState().accounts
+        const existing = new Set(current.map(a => a.address))
+        const added = new Set<string>()
+        const batch: WalletAccount[] = []
 
-        const currentAccounts = useAccountsStore.getState().accounts
-        setAccounts([...currentAccounts, ...hwAccounts])
-        setSelectedAccountAddress(hwAccounts[0].address)
+        const addHardware = (acc: HardwareWalletDerivedAccount) => {
+            if (!isValidAlgorandAddress(acc.address)) return
+            if (existing.has(acc.address) || added.has(acc.address)) return
+            added.add(acc.address)
+            batch.push({
+                type: AccountTypes.hardware,
+                address: acc.address,
+                hardwareDetails: {
+                    manufacturer: 'ledger' as const,
+                    deviceId,
+                    deviceName,
+                    accountIndex: acc.accountIndex,
+                    transportType,
+                },
+            })
+        }
+
+        for (const sel of selectedAccounts) {
+            if (sel.kind === 'derived') {
+                addHardware(sel.account)
+            } else {
+                addHardware(sel.authAccount)
+                if (
+                    isValidAlgorandAddress(sel.address) &&
+                    !existing.has(sel.address) &&
+                    !added.has(sel.address)
+                ) {
+                    added.add(sel.address)
+                    batch.push({
+                        id: generateOrderedUniqueId(),
+                        type: AccountTypes.watch,
+                        address: sel.address,
+                        rekeyAddress: sel.authAccount.address,
+                    })
+                }
+            }
+        }
+
+        if (batch.length === 0) {
+            exitAccountFlow()
+            return
+        }
+
+        setAccounts([...current, ...batch])
+
+        const firstDerived = selectedAccounts.find(
+            s => s.kind === 'derived',
+        )
+        const selectedAddress = firstDerived
+            ? firstDerived.account.address
+            : batch[0].address
+        setSelectedAccountAddress(selectedAddress)
         setShouldPlayConfetti(true)
         exitAccountFlow()
     }, [
@@ -179,11 +244,12 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
     )
 
     const areAllVerified =
-        selectedAccounts.length > 0 &&
-        verifiedIndices.size === selectedAccounts.length
+        verifyTargets.length > 0 &&
+        verifiedIndices.size === verifyTargets.length
 
     return {
         selectedAccounts,
+        verifyTargets,
         verifiedIndices,
         areAllVerified,
         errorPreset,

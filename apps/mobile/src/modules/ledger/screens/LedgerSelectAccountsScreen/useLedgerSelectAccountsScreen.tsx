@@ -17,6 +17,7 @@ import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     useAllAccounts,
     prefetchLedgerAccountPreview,
+    type LedgerSelectableAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { LedgerAccount } from '@perawallet/wallet-core-ledger'
 import {
@@ -160,11 +161,15 @@ export const useLedgerSelectAccountsScreen =
         }, [isAllSelected, newAccounts])
 
         const handleContinue = useCallback(() => {
-            const selectedAccounts = accounts.filter(acc =>
+            const selected = accounts.filter(acc =>
                 selectedAddresses.has(acc.address),
             )
 
-            if (selectedAccounts.length === 0) return
+            if (selected.length === 0) return
+
+            const selectedAccounts: LedgerSelectableAccount[] = selected.map(
+                account => ({ kind: 'derived', account }),
+            )
 
             navigation.navigate('LedgerVerify', {
                 deviceId,

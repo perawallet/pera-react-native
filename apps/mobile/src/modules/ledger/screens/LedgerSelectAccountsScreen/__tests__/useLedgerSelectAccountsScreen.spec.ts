@@ -396,4 +396,33 @@ describe('useLedgerSelectAccountsScreen', () => {
             )
         })
     })
+
+    it('navigates to LedgerVerify with selectedAccounts wrapped as derived LedgerSelectableAccount', () => {
+        const { result } = renderHook(() => useLedgerSelectAccountsScreen())
+
+        act(() => {
+            result.current.toggleSelection('AAA111')
+        })
+
+        act(() => {
+            result.current.handleContinue()
+        })
+
+        expect(mockNavigate).toHaveBeenCalledTimes(1)
+        expect(mockNavigate).toHaveBeenCalledWith('LedgerVerify', {
+            deviceId: 'device-1',
+            deviceName: 'Fred Nano X',
+            transportType: 'ble',
+            selectedAccounts: [
+                {
+                    kind: 'derived',
+                    account: {
+                        address: 'AAA111',
+                        publicKey: new Uint8Array([1]),
+                        accountIndex: 0,
+                    },
+                },
+            ],
+        })
+    })
 })
