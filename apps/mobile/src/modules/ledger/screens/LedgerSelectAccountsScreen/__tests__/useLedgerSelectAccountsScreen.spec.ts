@@ -78,8 +78,33 @@ vi.mock('@react-navigation/native', () => ({
     }),
 }))
 
+const { mockPrefetch, mockRequest, mockQueryClient } = vi.hoisted(() => {
+    const mockPrefetch = vi.fn().mockResolvedValue(undefined)
+    const mockRequest = vi.fn().mockResolvedValue(undefined)
+    const mockQueryClient = {}
+    return { mockPrefetch, mockRequest, mockQueryClient }
+})
+
+// useLedgerAccountPreview is included because the screen hook imports
+// LedgerAccountInfoContent (whose hook chain references it) at module load;
+// it is never invoked in these specs (the sheet content is not rendered).
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => [],
+    prefetchLedgerAccountPreview: mockPrefetch,
+    useLedgerAccountPreview: vi.fn(),
+}))
+
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({ request: mockRequest }),
+}))
+
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useAlgorandClient: () => ({}),
+    useNetwork: () => ({ network: 'mainnet' }),
+}))
+
+vi.mock('@tanstack/react-query', () => ({
+    useQueryClient: () => mockQueryClient,
 }))
 
 import { useLedgerSelectAccountsScreen } from '../useLedgerSelectAccountsScreen'
@@ -108,6 +133,8 @@ describe('useLedgerSelectAccountsScreen', () => {
         mockConnect.mockReset()
         mockGetProviderRegistry.mockReset()
         mockErrorToast.mockReset()
+        mockPrefetch.mockClear()
+        mockRequest.mockClear()
 
         const transport = buildTransport()
         mockConnect.mockResolvedValue(transport)
@@ -317,6 +344,56 @@ describe('useLedgerSelectAccountsScreen', () => {
 
         await waitFor(() => {
             expect(mockDisconnectTransport).toHaveBeenCalledTimes(1)
+        })
+    })
+
+    it('prefetches a preview for every route account on mount', async () => {
+        renderHook(() => useLedgerSelectAccountsScreen())
+
+        await waitFor(() => {
+            expect(mockPrefetch).toHaveBeenCalledWith(
+                mockQueryClient,
+                expect.anything(),
+                'AAA111',
+                'mainnet',
+            )
+            expect(mockPrefetch).toHaveBeenCalledWith(
+                mockQueryClient,
+                expect.anything(),
+                'BBB222',
+                'mainnet',
+            )
+        })
+    })
+
+    it('opens the info bottom sheet with address and accountIndex', () => {
+        const { result } = renderHook(() => useLedgerSelectAccountsScreen())
+
+        act(() => {
+            result.current.handleInfoPress('AAA111', 0)
+        })
+
+        expect(mockRequest).toHaveBeenCalledTimes(1)
+        const arg = mockRequest.mock.calls[0][0]
+        expect(arg.options).toEqual({ size: 'lg' })
+        expect(arg.contents).toBeTruthy()
+    })
+
+    it('prefetches a newly found account', async () => {
+        mockGetAddress.mockResolvedValueOnce(buildAccount(2, 'CCC333'))
+        const { result } = renderHook(() => useLedgerSelectAccountsScreen())
+
+        await act(async () => {
+            await result.current.handleFindAnother()
+        })
+
+        await waitFor(() => {
+            expect(mockPrefetch).toHaveBeenCalledWith(
+                mockQueryClient,
+                expect.anything(),
+                'CCC333',
+                'mainnet',
+            )
         })
     })
 })

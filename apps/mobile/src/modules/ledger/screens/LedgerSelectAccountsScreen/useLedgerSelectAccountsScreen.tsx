@@ -10,10 +10,14 @@
  limitations under the License
  */
 
-import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { RouteProp, useRoute } from '@react-navigation/native'
+import { useQueryClient } from '@tanstack/react-query'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import {
+    useAllAccounts,
+    prefetchLedgerAccountPreview,
+} from '@perawallet/wallet-core-accounts'
 import type { LedgerAccount } from '@perawallet/wallet-core-ledger'
 import {
     LedgerProviderNotFoundError,
@@ -21,9 +25,12 @@ import {
 } from '@perawallet/wallet-core-ledger'
 import type { HardwareWalletTransport } from '@perawallet/wallet-core-hardware-wallet'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { useAlgorandClient, useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
+import { useBottomSheet } from '@modules/bottom-sheet'
+import { LedgerAccountInfoContent } from '@modules/ledger/components/LedgerAccountInfoContent'
 import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
 import { getLedgerErrorPreset } from '@modules/ledger/utils'
 
@@ -44,6 +51,7 @@ type UseLedgerSelectAccountsScreenResult = {
     toggleSelectAll: () => void
     handleContinue: () => void
     handleFindAnother: () => Promise<void>
+    handleInfoPress: (address: string, accountIndex: number) => void
     t: (key: string, options?: Record<string, unknown>) => string
 }
 
@@ -61,6 +69,11 @@ export const useLedgerSelectAccountsScreen =
         const navigation = useAppNavigation()
         const allAccounts = useAllAccounts()
         const { errorToast } = useToast()
+
+        const queryClient = useQueryClient()
+        const algokit = useAlgorandClient()
+        const { network } = useNetwork()
+        const { request } = useBottomSheet()
 
         const [accounts, setAccounts] = useState<LedgerAccount[]>(routeAccounts)
         const [isFetchingMore, setIsFetchingMore] = useState(false)
@@ -90,6 +103,17 @@ export const useLedgerSelectAccountsScreen =
                 transportRef.current = null
             }
         }, [])
+
+        useEffect(() => {
+            accounts.forEach(acc => {
+                void prefetchLedgerAccountPreview(
+                    queryClient,
+                    algokit,
+                    acc.address,
+                    network,
+                )
+            })
+        }, [accounts, queryClient, algokit, network])
 
         const alreadyImportedAddresses = useMemo(() => {
             return new Set(allAccounts.map(acc => acc.address))
@@ -200,6 +224,21 @@ export const useLedgerSelectAccountsScreen =
             }
         }, [deviceId, transportType, errorToast, t])
 
+        const handleInfoPress = useCallback(
+            (address: string, accountIndex: number) => {
+                void request({
+                    contents: (
+                        <LedgerAccountInfoContent
+                            address={address}
+                            accountIndex={accountIndex}
+                        />
+                    ),
+                    options: { size: 'lg' },
+                })
+            },
+            [request],
+        )
+
         const areAllImported = newAccounts.length === 0
         const canContinue =
             !isFetchingMore && (areAllImported || selectedAddresses.size > 0)
@@ -216,6 +255,7 @@ export const useLedgerSelectAccountsScreen =
             toggleSelectAll,
             handleContinue,
             handleFindAnother,
+            handleInfoPress,
             t,
         }
     }

@@ -19,25 +19,29 @@ import {
     PWChip,
     PWIcon,
 } from '@components/core'
+import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useClipboard } from '@hooks/useClipboard'
 import { useLanguage } from '@hooks/useLanguage'
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import LightLedgerAccountIcon from '@assets/icons/accounts/light/ledger-account.svg'
 import { useStyles } from './styles'
 
 export type LedgerAccountSelectionRowProps = {
     address: string
+    accountIndex: number
     isSelected: boolean
     isImported: boolean
     onToggle: () => void
+    onInfoPress: (address: string, accountIndex: number) => void
     testID?: string
 }
 
 export const LedgerAccountSelectionRow = ({
     address,
+    accountIndex,
     isSelected,
     isImported,
     onToggle,
+    onInfoPress,
     testID,
 }: LedgerAccountSelectionRowProps) => {
     const styles = useStyles({ isImported })
@@ -48,6 +52,10 @@ export const LedgerAccountSelectionRow = ({
         void copyToClipboard(address)
     }, [copyToClipboard, address])
 
+    const handleInfoPress = useCallback(() => {
+        onInfoPress(address, accountIndex)
+    }, [onInfoPress, address, accountIndex])
+
     return (
         <PWTouchableOpacity
             style={styles.container}
@@ -55,6 +63,15 @@ export const LedgerAccountSelectionRow = ({
             disabled={isImported}
             testID={testID}
         >
+            {!isImported && (
+                <PWCheckbox
+                    checked={isSelected}
+                    onPress={onToggle}
+                    containerStyle={styles.checkbox}
+                    testID={testID ? `${testID}-checkbox` : undefined}
+                />
+            )}
+
             <LightLedgerAccountIcon
                 width={40}
                 height={40}
@@ -89,14 +106,13 @@ export const LedgerAccountSelectionRow = ({
                 )}
             </PWView>
 
-            {!isImported && (
-                <PWCheckbox
-                    checked={isSelected}
-                    onPress={onToggle}
-                    containerStyle={styles.checkbox}
-                    testID={testID ? `${testID}-checkbox` : undefined}
-                />
-            )}
+            <PWIcon
+                name='info'
+                size='sm'
+                variant='secondary'
+                onPress={handleInfoPress}
+                testID={testID ? `${testID}-info` : undefined}
+            />
         </PWTouchableOpacity>
     )
 }
