@@ -140,6 +140,39 @@ describe('useLedgerAccountPreview', () => {
         expect(usdc?.name).toBe('USDC')
     })
 
+    it('falls back to asset-id string, empty unitName, unverified tier and decimals=0 when asset metadata is missing', () => {
+        // Arrange
+        mocks.useOnChainAccountInformationQuery.mockReturnValue({
+            data: {
+                address: 'ADDR',
+                amount: 0n,
+                minBalance: 0n,
+                status: 'Offline',
+                rewards: 0n,
+                assets: [{ assetId: 99999999n, amount: 42n, isFrozen: false }],
+            },
+            isLoading: false,
+            isError: false,
+            refetch: vi.fn(),
+        })
+        // useAssetsQuery returns an empty Map (beforeEach default) — no metadata for 99999999
+        // useAssetPricesQuery default only has ALGO id '0' — no price for 99999999 → fiat 0
+
+        // Act
+        const { result } = renderHook(() => useLedgerAccountPreview('ADDR'))
+
+        // Assert
+        const asa = result.current.preview?.assets.find(
+            a => a.assetId === '99999999',
+        )
+        expect(asa?.name).toBe('99999999')
+        expect(asa?.unitName).toBe('')
+        expect(asa?.verificationTier).toBe('unverified')
+        expect(asa?.amount.toString()).toBe('42')
+        expect(asa?.fiatValue.toString()).toBe('0')
+        expect(asa?.isAlgo).toBe(false)
+    })
+
     it('reports rekeyedTo when the account is rekeyed', () => {
         mocks.useOnChainAccountInformationQuery.mockReturnValue({
             data: {
