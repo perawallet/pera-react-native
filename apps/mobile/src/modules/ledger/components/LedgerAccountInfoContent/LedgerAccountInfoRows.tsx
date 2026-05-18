@@ -10,15 +10,15 @@
  limitations under the License
  */
 
-import { PWView, PWText } from '@components/core'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import type { Decimal } from 'decimal.js'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import type { LedgerAccountPreviewAsset } from '@perawallet/wallet-core-accounts'
+import { PWView, PWText } from '@components/core'
+import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { AssetIcon } from '@modules/assets/components/AssetIcon'
 import { AssetTierChip } from '@modules/assets/components/AssetTierChip'
 import LightLedgerAccountIcon from '@assets/icons/accounts/light/ledger-account.svg'
-import type { Decimal } from 'decimal.js'
-import type { LedgerAccountPreviewAsset } from '@perawallet/wallet-core-accounts'
 import { useStyles } from './styles'
 
 export const LedgerSectionHeaderRow = ({ title }: { title: string }) => {

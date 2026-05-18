@@ -10,7 +10,9 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import { ActivityIndicator } from 'react-native'
+import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
     PWView,
     PWText,
@@ -21,7 +23,6 @@ import {
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
-import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
     useLedgerAccountInfoContent,
     type LedgerInfoListItem,
@@ -50,7 +51,7 @@ export const LedgerAccountInfoContent = ({
     const { title, items, isLoading, isError, refetch } =
         useLedgerAccountInfoContent(address, accountIndex)
 
-    const renderItem = ({ item }: { item: LedgerInfoListItem }) => {
+    const renderItem = useCallback(({ item }: { item: LedgerInfoListItem }) => {
         switch (item.kind) {
             case 'sectionHeader':
                 return <LedgerSectionHeaderRow title={item.title} />
@@ -74,7 +75,7 @@ export const LedgerAccountInfoContent = ({
             case 'rekeyAddress':
                 return <LedgerRekeyAddressRow address={item.address} />
         }
-    }
+    }, [t, preferredCurrency])
 
     return (
         <PWView style={styles.container}>
