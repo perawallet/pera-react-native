@@ -18,17 +18,8 @@ import {
     describe,
     expect,
     it,
-    vi,
 } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
-
-// The ledger account SVG ships as a data-URI-encoded clip-path that JSDOM
-// rejects with InvalidCharacterError when it tries to parse the attribute
-// as an XML Name. Stub it out the same way vitest.integration-setup.ts
-// stubs other SVGs that trigger this JSDOM limitation.
-vi.mock('@assets/icons/accounts/light/ledger-account.svg', () => ({
-    default: () => null,
-}))
 
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
