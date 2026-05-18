@@ -128,9 +128,14 @@ export const useMnemonicWordEntry = ({
                 return
             }
 
+            // Take the split-result token rather than `value.trim()` so the
+            // separator characters splitMnemonic recognises (commas, mixed
+            // whitespace) are stripped from the slot too. Without this, a
+            // keyboard that appends "abandon," would leave the comma in the
+            // slot and block the user from continuing.
             setWords(prev => {
                 const next = [...prev]
-                next[index] = value.trim()
+                next[index] = split[0] ?? ''
                 return next
             })
         },

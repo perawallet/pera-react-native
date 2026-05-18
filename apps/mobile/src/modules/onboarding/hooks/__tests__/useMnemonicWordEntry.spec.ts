@@ -151,10 +151,11 @@ describe('useMnemonicWordEntry — paste distribution', () => {
         })
 
         expect(Clipboard.getStringAsync).not.toHaveBeenCalled()
-        // The slot keeps the raw input (the user will tidy the trailing
-        // comma themselves); the important guarantee is that the other
-        // 11 slots were NOT clobbered by the clipboard mnemonic.
-        expect(result.current.words[0]).toBe('abandon,')
+        // The slot holds the normalised token (comma stripped by
+        // splitMnemonic) so the user doesn't have to clean it up before
+        // Continue enables; and the other 11 slots stay empty rather than
+        // being clobbered by the clipboard mnemonic.
+        expect(result.current.words[0]).toBe('abandon')
         expect(result.current.words.slice(1).every(w => w === '')).toBe(true)
     })
 
