@@ -18,13 +18,8 @@ import { AssetIcon } from '@modules/assets/components/AssetIcon'
 import { AssetTierChip } from '@modules/assets/components/AssetTierChip'
 import LightLedgerAccountIcon from '@assets/icons/accounts/light/ledger-account.svg'
 import type { Decimal } from 'decimal.js'
-import type { LedgerInfoListItem } from './useLedgerAccountInfoContent'
+import type { LedgerAccountPreviewAsset } from '@perawallet/wallet-core-accounts'
 import { useStyles } from './styles'
-
-type LedgerAccountPreviewAsset = Extract<
-    LedgerInfoListItem,
-    { kind: 'asset' }
->['asset']
 
 export const LedgerSectionHeaderRow = ({ title }: { title: string }) => {
     const styles = useStyles()
