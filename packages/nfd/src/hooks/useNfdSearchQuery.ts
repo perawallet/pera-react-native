@@ -21,11 +21,14 @@ export const useNfdSearchQuery = (
     options?: { enabled?: boolean },
 ): UseQueryResult<NfdSearchResult[]> => {
     const { network } = useNetwork()
-    const enabled = (options?.enabled ?? true) && name.length > 0
+    // NFD names are case-insensitive; normalize so "BruNo.aLgo" matches "bruno.algo".
+    const normalizedName = name.toLowerCase()
+    const enabled = (options?.enabled ?? true) && normalizedName.length > 0
 
     return useQuery({
-        queryKey: nfdQueryKeys.search(name, network),
-        queryFn: ({ signal }) => fetchNfdSearch({ name, network, signal }),
+        queryKey: nfdQueryKeys.search(normalizedName, network),
+        queryFn: ({ signal }) =>
+            fetchNfdSearch({ name: normalizedName, network, signal }),
         enabled,
     })
 }
