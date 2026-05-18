@@ -10,11 +10,11 @@
  limitations under the License
  */
 
+import { useWindowDimensions } from 'react-native'
 import { PWButton, PWImage, PWOverlay, PWText, PWView } from '@components/core'
 import { useTheme } from '@rneui/themed'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import multisigIntroHero from '@assets/images/multisig-intro-hero.png'
 import multisigIntroHeroDark from '@assets/images/multisig-intro-hero-dark.png'
@@ -36,8 +36,8 @@ export const MultisigIntroductionDialog = ({
     onContinue,
     onDismiss,
 }: MultisigIntroductionDialogProps) => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles(insets)
+    const { width: screenWidth } = useWindowDimensions()
+    const styles = useStyles({ screenWidth })
     const { theme } = useTheme()
     const { t } = useLanguage()
     const heroImage =
