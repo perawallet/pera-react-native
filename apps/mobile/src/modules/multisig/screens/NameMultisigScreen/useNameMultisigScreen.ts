@@ -82,7 +82,7 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
         getNextSharedAccountName(accounts, t('multisig.name.default_name')),
     )
     const [isCreating, setIsCreating] = useState(false)
-    useNavigationLock(isCreating)
+    const { allowProgrammaticNavigation } = useNavigationLock(isCreating)
 
     // Account names are not required to be unique — multiple accounts may
     // share a name. The only hard constraint is the account address, checked
@@ -102,9 +102,23 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
 
             await new Promise(resolve => requestAnimationFrame(resolve))
 
-            const multisigAddress =
-                importParams?.address ??
-                generateMultisigAddress(version, threshold, addresses)
+            const multisigAddress = generateMultisigAddress(
+                version,
+                threshold,
+                addresses,
+            )
+
+            // An imported shared account carries the address its QR code
+            // claimed. Re-derive it from the same (version, threshold,
+            // participants) and refuse to persist on a mismatch — a mismatch
+            // means the scanned payload is corrupt or tampered with.
+            if (importParams && importParams.address !== multisigAddress) {
+                errorToast(
+                    t('multisig.import.address_mismatch_title'),
+                    t('multisig.import.address_mismatch_body'),
+                )
+                return
+            }
 
             if (!deviceId) {
                 errorToast(t('errors.general.title'), t('errors.general.body'))
@@ -143,6 +157,10 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
             setSelectedAccountAddress(multisigAddress)
             setShouldPlayConfetti(true)
             resetState()
+            // Release the navigation lock so this flow's own exit isn't
+            // blocked by the `beforeRemove` guard `useNavigationLock` armed
+            // while `isCreating` is still true.
+            allowProgrammaticNavigation()
             exitAccountFlow()
         } catch (error) {
             errorToast(
@@ -169,6 +187,7 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
         setShouldPlayConfetti,
         resetState,
         exitAccountFlow,
+        allowProgrammaticNavigation,
         errorToast,
         t,
     ])

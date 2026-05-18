@@ -19,8 +19,11 @@ const SCANNED_ADDRESS = 'SHARED_ADDR'
 
 const mockPush = vi.fn()
 const mockRefetch = vi.fn()
+const mockExitAccountFlow = vi.fn()
+const mockDeleteImportInbox = vi.fn()
 const mockUseAllAccounts = vi.fn<() => WalletAccount[]>(() => [])
 const mockUseMultisigAccountDetailQuery = vi.fn()
+const mockUseDeviceID = vi.fn<() => string | null>(() => 'device-1')
 
 vi.mock('@react-navigation/native', async () => {
     const actual = await vi.importActual<object>('@react-navigation/native')
@@ -50,6 +53,15 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
 
 vi.mock('@perawallet/wallet-core-multisig', () => ({
     useMultisigAccountDetailQuery: () => mockUseMultisigAccountDetailQuery(),
+    useDeleteImportInboxMutation: () => ({ mutate: mockDeleteImportInbox }),
+}))
+
+vi.mock('@perawallet/wallet-core-device', () => ({
+    useDeviceID: () => mockUseDeviceID(),
+}))
+
+vi.mock('@modules/onboarding/hooks', () => ({
+    useExitAccountFlow: () => ({ exitAccountFlow: mockExitAccountFlow }),
 }))
 
 const detail = {
@@ -65,6 +77,7 @@ describe('useImportSharedAccountScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockUseAllAccounts.mockReturnValue([])
+        mockUseDeviceID.mockReturnValue('device-1')
         mockUseMultisigAccountDetailQuery.mockReturnValue({
             data: detail,
             isLoading: false,
@@ -131,7 +144,7 @@ describe('useImportSharedAccountScreen', () => {
         expect(result.current.isAddDisabled).toBe(true)
     })
 
-    it('navigates to NameMultisig with the fetched account details', () => {
+    it('navigates to NameMultisig and clears the inbox invitation on add', () => {
         const { result } = renderHook(() => useImportSharedAccountScreen())
 
         result.current.handleAddAccount()
@@ -142,6 +155,10 @@ describe('useImportSharedAccountScreen', () => {
             addresses: ['P1', 'P2', 'P3'],
             version: 1,
         })
+        // Resolving the invitation clears it from the inbox, like Android.
+        expect(mockDeleteImportInbox).toHaveBeenCalledWith({
+            multisigAddress: SCANNED_ADDRESS,
+        })
     })
 
     it('refetches on retry', () => {
@@ -150,5 +167,37 @@ describe('useImportSharedAccountScreen', () => {
         result.current.handleRetry()
 
         expect(mockRefetch).toHaveBeenCalled()
+    })
+
+    it('dismisses the import flow on handleDismiss without touching the inbox', () => {
+        const { result } = renderHook(() => useImportSharedAccountScreen())
+
+        result.current.handleDismiss()
+
+        expect(mockExitAccountFlow).toHaveBeenCalled()
+        // The toolbar back arrow leaves silently — no inbox delete.
+        expect(mockDeleteImportInbox).not.toHaveBeenCalled()
+    })
+
+    it('clears the inbox invitation then dismisses on handleIgnore', () => {
+        const { result } = renderHook(() => useImportSharedAccountScreen())
+
+        result.current.handleIgnore()
+
+        expect(mockDeleteImportInbox).toHaveBeenCalledWith({
+            multisigAddress: SCANNED_ADDRESS,
+        })
+        expect(mockExitAccountFlow).toHaveBeenCalled()
+    })
+
+    it('skips the inbox delete on handleIgnore when there is no device ID', () => {
+        mockUseDeviceID.mockReturnValue(null)
+
+        const { result } = renderHook(() => useImportSharedAccountScreen())
+
+        result.current.handleIgnore()
+
+        expect(mockDeleteImportInbox).not.toHaveBeenCalled()
+        expect(mockExitAccountFlow).toHaveBeenCalled()
     })
 })

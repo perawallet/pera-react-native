@@ -19,18 +19,20 @@ export const useStyles = makeStyles(theme => ({
     },
     scrollContent: {
         paddingHorizontal: theme.spacing.md,
+        paddingTop: theme.spacing.md,
         paddingBottom: theme.spacing.lg,
         gap: theme.spacing.lg,
     },
-    header: {
+    toolbarTitle: {
         alignItems: 'center',
-        paddingTop: theme.spacing.sm,
-        paddingBottom: theme.spacing.md,
         gap: theme.spacing.xxs,
     },
-    headerAddress: {
+    toolbarAddress: {
         color: theme.colors.textGray,
         textAlign: 'center',
+    },
+    headerBackButton: {
+        marginLeft: theme.spacing.md,
     },
     infoCard: {
         borderWidth: theme.borders.sm,
@@ -81,6 +83,16 @@ export const useStyles = makeStyles(theme => ({
         paddingTop: theme.spacing.md,
         paddingBottom: theme.spacing.md,
         gap: theme.spacing.sm,
+    },
+    bottomActions: {
+        flexDirection: 'row',
+        gap: theme.spacing.md,
+    },
+    ignoreButton: {
+        flex: 1,
+    },
+    addButton: {
+        flex: 2,
     },
     alreadyImportedNote: {
         color: theme.colors.textGray,

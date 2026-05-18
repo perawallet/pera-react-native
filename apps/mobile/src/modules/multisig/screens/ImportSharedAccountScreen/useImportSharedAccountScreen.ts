@@ -14,8 +14,13 @@ import { useCallback, useMemo } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { useMultisigAccountDetailQuery } from '@perawallet/wallet-core-multisig'
+import {
+    useMultisigAccountDetailQuery,
+    useDeleteImportInboxMutation,
+} from '@perawallet/wallet-core-multisig'
+import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useExitAccountFlow } from '@modules/onboarding/hooks'
 import type { MultisigStackParamList } from '../../routes/types'
 
 type UseImportSharedAccountScreenResult = {
@@ -30,6 +35,8 @@ type UseImportSharedAccountScreenResult = {
     isAddDisabled: boolean
     handleAddAccount: () => void
     handleRetry: () => void
+    handleDismiss: () => void
+    handleIgnore: () => void
 }
 
 export const useImportSharedAccountScreen =
@@ -41,6 +48,12 @@ export const useImportSharedAccountScreen =
 
         const { network } = useNetwork()
         const accounts = useAllAccounts()
+        const { exitAccountFlow } = useExitAccountFlow()
+        const deviceId = useDeviceID(network) ?? ''
+        const deleteImportInboxMutation = useDeleteImportInboxMutation({
+            network,
+            deviceId,
+        })
 
         const { data, isLoading, isError, refetch } =
             useMultisigAccountDetailQuery({ network, address })
@@ -66,17 +79,40 @@ export const useImportSharedAccountScreen =
 
         const handleAddAccount = useCallback(() => {
             if (!data) return
+            // Resolving the invitation — accept or ignore — clears it from
+            // the inbox on Android; fire the same fire-and-forget delete.
+            if (deviceId) {
+                deleteImportInboxMutation.mutate({ multisigAddress: address })
+            }
             navigation.push('NameMultisig', {
                 address: data.address,
                 threshold: data.threshold,
                 addresses: data.participantAddresses,
                 version: data.version,
             })
-        }, [navigation, data])
+        }, [navigation, data, deviceId, deleteImportInboxMutation, address])
 
         const handleRetry = useCallback(() => {
             void refetch()
         }, [refetch])
+
+        // The screen is reached only via the shared-account-import deeplink,
+        // so it has no back stack — dismissing returns to the wallet home.
+        // The toolbar back arrow uses this; it does not touch the inbox
+        // (Android: back ≠ Ignore).
+        const handleDismiss = useCallback(() => {
+            exitAccountFlow()
+        }, [exitAccountFlow])
+
+        // Mirror Android: tapping Ignore clears any matching inbox invitation
+        // (fire-and-forget — a 404 when the QR scan had no inbox record is
+        // expected and intentionally ignored), then leaves the flow.
+        const handleIgnore = useCallback(() => {
+            if (deviceId) {
+                deleteImportInboxMutation.mutate({ multisigAddress: address })
+            }
+            exitAccountFlow()
+        }, [deviceId, deleteImportInboxMutation, address, exitAccountFlow])
 
         return {
             address,
@@ -90,5 +126,7 @@ export const useImportSharedAccountScreen =
             isAddDisabled,
             handleAddAccount,
             handleRetry,
+            handleDismiss,
+            handleIgnore,
         }
     }

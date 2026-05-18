@@ -783,18 +783,21 @@
             "duplicate_account_body": "A shared account with these participants and threshold is already in your wallet."
         },
         "import": {
-            "title": "Import Shared Account",
+            "title": "Shared Account",
             "number_of_accounts": "Number of accounts",
             "you_included": "You're a participant",
             "threshold": "Threshold",
             "threshold_description": "Minimum number of accounts \nrequired to confirm a transaction",
             "accounts_heading": "Accounts ({{count}})",
-            "add_account": "Add Account",
+            "ignore": "Ignore",
+            "add_to_accounts": "Add to Accounts",
             "already_imported": "This shared account is already in your wallet.",
             "loading": "Loading shared account…",
             "error_title": "Couldn't load shared account",
             "error_body": "Please check your connection and try again.",
-            "retry": "Try Again"
+            "retry": "Try Again",
+            "address_mismatch_title": "Couldn't verify shared account",
+            "address_mismatch_body": "This account's address doesn't match its participants and threshold. The shared account code may be invalid — ask the sender to share it again."
         },
         "edit_participant": {
             "title": "Edit address",

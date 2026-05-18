@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import {
     IconName,
     PWButton,
+    PWIcon,
     PWScrollView,
     PWText,
     PWView,
@@ -24,6 +25,7 @@ import { ParticipantCount } from '@components/ParticipantCount'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useLanguage } from '@hooks/useLanguage'
+import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { useImportSharedAccountScreen } from './useImportSharedAccountScreen'
 import { useStyles } from './styles'
 
@@ -43,11 +45,37 @@ export const ImportSharedAccountScreen = () => {
         isAddDisabled,
         handleAddAccount,
         handleRetry,
+        handleDismiss,
+        handleIgnore,
     } = useImportSharedAccountScreen()
 
     const participantIconName: IconName = isDarkMode
         ? 'accounts/dark/multisig-account'
         : 'accounts/light/multisig-account'
+
+    // Render the title + scanned address in the navigation toolbar with a
+    // back arrow. The screen is deeplink-entered, so there is no back stack
+    // for the default header button — the arrow leaves the import flow.
+    useNavigationHeader({
+        left: (
+            <PWIcon
+                style={styles.headerBackButton}
+                name='chevron-left'
+                onPress={handleDismiss}
+            />
+        ),
+        title: (
+            <PWView style={styles.toolbarTitle}>
+                <PWText variant='h4'>{t('multisig.import.title')}</PWText>
+                <PWText
+                    style={styles.toolbarAddress}
+                    testID='import-shared-account-address'
+                >
+                    {truncateAlgorandAddress(address)}
+                </PWText>
+            </PWView>
+        ),
+    })
 
     if (isLoading) {
         return (
@@ -95,16 +123,6 @@ export const ImportSharedAccountScreen = () => {
             testID='import-shared-account-screen'
         >
             <PWScrollView contentContainerStyle={styles.scrollContent}>
-                <PWView style={styles.header}>
-                    <PWText variant='h4'>{t('multisig.import.title')}</PWText>
-                    <PWText
-                        style={styles.headerAddress}
-                        testID='import-shared-account-address'
-                    >
-                        {truncateAlgorandAddress(address)}
-                    </PWText>
-                </PWView>
-
                 <PWView style={styles.infoCard}>
                     <PWView style={styles.infoRow}>
                         <PWView style={styles.infoRowLabels}>
@@ -177,13 +195,25 @@ export const ImportSharedAccountScreen = () => {
                         {t('multisig.import.already_imported')}
                     </PWText>
                 )}
-                <PWButton
-                    variant='primary'
-                    title={t('multisig.import.add_account')}
-                    onPress={handleAddAccount}
-                    isDisabled={isAddDisabled}
-                    testID='import-shared-account-add-button'
-                />
+                <PWView style={styles.bottomActions}>
+                    <PWButton
+                        variant='secondary'
+                        title={t('multisig.import.ignore')}
+                        onPress={handleIgnore}
+                        paddingStyle='dense'
+                        style={styles.ignoreButton}
+                        testID='import-shared-account-ignore-button'
+                    />
+                    <PWButton
+                        variant='primary'
+                        title={t('multisig.import.add_to_accounts')}
+                        onPress={handleAddAccount}
+                        isDisabled={isAddDisabled}
+                        paddingStyle='dense'
+                        style={styles.addButton}
+                        testID='import-shared-account-add-button'
+                    />
+                </PWView>
             </SafeAreaView>
         </PWView>
     )
