@@ -47,7 +47,7 @@ describe('prefetchLedgerAccountPreview', () => {
     })
 
     it('primes the on-chain info and rekeyed-addresses query caches', async () => {
-        const queryClient = new QueryClient()
+        const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
         const algokit = {} as never
 
         await prefetchLedgerAccountPreview(
@@ -76,7 +76,7 @@ describe('prefetchLedgerAccountPreview', () => {
 
     it('never rejects when a fetch fails (best-effort)', async () => {
         mocks.fetchRekeyedAddresses.mockRejectedValue(new Error('network'))
-        const queryClient = new QueryClient()
+        const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
         await expect(
             prefetchLedgerAccountPreview(
