@@ -163,6 +163,37 @@ describe('Deeplink Parser - New Format', () => {
         })
     })
 
+    describe('Shared account import', () => {
+        it('parses shared-account-import deeplink', () => {
+            const result = parseDeeplink(
+                `perawallet://app/shared-account-import/?address=${TEST_ADDRESS}`,
+            )
+            expect(result?.type).toBe(DeeplinkType.SHARED_ACCOUNT_IMPORT)
+            if (result?.type === DeeplinkType.SHARED_ACCOUNT_IMPORT) {
+                expect(result.address).toBe(TEST_ADDRESS)
+            }
+        })
+
+        it('parses the joint-account-import alias from a real QR payload', () => {
+            const address =
+                'GRW2GWUKSUGKMDMJR2SVDQ2OUX37AES4O4QB354UDIHIIDSN3FUB7BJDTA'
+            const result = parseDeeplink(
+                `perawallet://app/joint-account-import/?address=${address}`,
+            )
+            expect(result?.type).toBe(DeeplinkType.SHARED_ACCOUNT_IMPORT)
+            if (result?.type === DeeplinkType.SHARED_ACCOUNT_IMPORT) {
+                expect(result.address).toBe(address)
+            }
+        })
+
+        it('rejects shared-account-import without an address', () => {
+            const result = parseDeeplink(
+                'perawallet://app/joint-account-import/',
+            )
+            expect(result?.type).not.toBe(DeeplinkType.SHARED_ACCOUNT_IMPORT)
+        })
+    })
+
     describe('Internal browser', () => {
         it('parses internal-browser with base64 URL', () => {
             const encodedUrl = btoa('https://perawallet.app/')

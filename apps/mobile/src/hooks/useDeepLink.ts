@@ -400,11 +400,10 @@ export const useDeepLink = (): UseDeepLinkResult => {
                     break
 
                 case DeeplinkType.SHARED_ACCOUNT_IMPORT:
-                    // TODO(multisig PR 1): navigate to shared-account import flow
-                    infoToast(
-                        'Shared Account Import',
-                        'Shared account import not implemented yet',
-                    )
+                    navigateToScreen(replaceCurrentScreen, 'Multisig', {
+                        screen: 'ImportSharedAccount',
+                        params: { address: parsedData.address },
+                    })
                     break
 
                 case DeeplinkType.PERA_WEB_IMPORT:
