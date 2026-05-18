@@ -15,15 +15,20 @@ import type { OnChainAccountInformationResponse } from './endpoints'
 
 export const mapOnChainAccountInformation = (
     response: OnChainAccountInformationResponse,
-): AccountInformation => ({
-    address: response.address,
-    amount: response.amount,
-    minBalance: response.minBalance,
-    status: response.status,
-    rewards: response.rewards,
-    assets: (response.assets ?? []).map(asset => ({
-        assetId: asset.assetId,
-        amount: asset.amount,
-        isFrozen: asset.isFrozen,
-    })),
-})
+): AccountInformation => {
+    const authAddr = (response as { authAddr?: { toString(): string } })
+        .authAddr
+    return {
+        address: response.address,
+        amount: response.amount,
+        minBalance: response.minBalance,
+        status: response.status,
+        rewards: response.rewards,
+        assets: (response.assets ?? []).map(asset => ({
+            assetId: asset.assetId,
+            amount: asset.amount,
+            isFrozen: asset.isFrozen,
+        })),
+        authAddress: authAddr ? authAddr.toString() : undefined,
+    }
+}
