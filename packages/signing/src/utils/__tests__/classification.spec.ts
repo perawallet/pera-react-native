@@ -14,6 +14,7 @@ import { describe, test, expect } from 'vitest'
 import {
     classifyRequestStructure,
     createTransactionListItems,
+    type GroupTransactionItem,
 } from '../classification'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 
@@ -28,17 +29,49 @@ describe('createTransactionListItems', () => {
         expect(createTransactionListItems([])).toEqual([])
     })
 
-    test('returns single transaction item for ungrouped transaction', () => {
+    test('stamps groupIndex and defaults isExternal to false when no signable set provided', () => {
         const tx = createTx('tx1')
         const items = createTransactionListItems([tx])
         expect(items).toHaveLength(1)
         expect(items[0]).toEqual({
             type: 'transaction',
             transaction: tx,
+            groupIndex: 0,
+            isExternal: false,
         })
     })
 
-    test('expands single group to individual transactions', () => {
+    test('marks indices outside signableIndices as external', () => {
+        const tx0 = createTx('tx0')
+        const tx1 = createTx('tx1')
+        const tx2 = createTx('tx2')
+        const items = createTransactionListItems(
+            [tx0, tx1, tx2],
+            new Set([0, 2]),
+        )
+        expect(items).toEqual([
+            {
+                type: 'transaction',
+                transaction: tx0,
+                groupIndex: 0,
+                isExternal: false,
+            },
+            {
+                type: 'transaction',
+                transaction: tx1,
+                groupIndex: 1,
+                isExternal: true,
+            },
+            {
+                type: 'transaction',
+                transaction: tx2,
+                groupIndex: 2,
+                isExternal: false,
+            },
+        ])
+    })
+
+    test('expands single group to individual transactions and stamps groupIndex', () => {
         const group = new Uint8Array([1, 2, 3])
         const tx1 = createTx('tx1', group)
         const tx2 = createTx('tx2', group)
@@ -46,65 +79,78 @@ describe('createTransactionListItems', () => {
 
         const items = createTransactionListItems([tx1, tx2, tx3])
 
-        // Single group should be expanded
         expect(items).toHaveLength(3)
-        expect(items[0]).toEqual({ type: 'transaction', transaction: tx1 })
-        expect(items[1]).toEqual({ type: 'transaction', transaction: tx2 })
-        expect(items[2]).toEqual({ type: 'transaction', transaction: tx3 })
+        expect(items[0]).toEqual({
+            type: 'transaction',
+            transaction: tx1,
+            groupIndex: 0,
+            isExternal: false,
+        })
+        expect(items[1]).toEqual({
+            type: 'transaction',
+            transaction: tx2,
+            groupIndex: 1,
+            isExternal: false,
+        })
+        expect(items[2]).toEqual({
+            type: 'transaction',
+            transaction: tx3,
+            groupIndex: 2,
+            isExternal: false,
+        })
     })
 
     test('preserves order and groups transactions at position of first member', () => {
         const groupA = new Uint8Array([1, 2, 3])
         const groupB = new Uint8Array([4, 5, 6])
+        const tx1 = createTx('tx1', groupA)
+        const tx2 = createTx('tx2', groupB)
+        const tx3 = createTx('tx3', groupA)
+        const tx4 = createTx('tx4', groupB)
 
-        const tx1 = createTx('tx1', groupA) // Group A starts here
-        const tx2 = createTx('tx2') // Ungrouped
-        const tx3 = createTx('tx3', groupB) // Group B starts here
-        const tx4 = createTx('tx4', groupA) // Added to Group A
-        const tx5 = createTx('tx5', groupB) // Added to Group B
+        const items = createTransactionListItems([tx1, tx2, tx3, tx4])
 
-        const items = createTransactionListItems([tx1, tx2, tx3, tx4, tx5])
-
-        expect(items).toHaveLength(3)
-
-        // First item: Group A (at position of tx1)
-        expect(items[0]).toEqual({
-            type: 'group',
-            transactions: [tx1, tx4],
-            groupIndex: 0,
-        })
-
-        // Second item: Ungrouped tx2
-        expect(items[1]).toEqual({
-            type: 'transaction',
-            transaction: tx2,
-        })
-
-        // Third item: Group B (at position of tx3)
-        expect(items[2]).toEqual({
-            type: 'group',
-            transactions: [tx3, tx5],
-            groupIndex: 1,
-        })
+        expect(items).toHaveLength(2)
+        const groupAItem = items[0] as GroupTransactionItem
+        expect(groupAItem.type).toBe('group')
+        expect(groupAItem.transactions.map(t => t.transaction.id)).toEqual([
+            'tx1',
+            'tx3',
+        ])
+        expect(groupAItem.transactions.map(t => t.groupIndex)).toEqual([0, 2])
+        const groupBItem = items[1] as GroupTransactionItem
+        expect(groupBItem.transactions.map(t => t.transaction.id)).toEqual([
+            'tx2',
+            'tx4',
+        ])
+        expect(groupBItem.transactions.map(t => t.groupIndex)).toEqual([1, 3])
     })
 
     test('keeps group collapsed when mixed with ungrouped transactions', () => {
         const group = new Uint8Array([1, 2, 3])
-        const tx1 = createTx('tx1', group)
-        const tx2 = createTx('tx2') // Ungrouped
-        const tx3 = createTx('tx3', group)
+        const groupedTx1 = createTx('grouped1', group)
+        const groupedTx2 = createTx('grouped2', group)
+        const ungroupedTx = createTx('ungrouped')
 
-        const items = createTransactionListItems([tx1, tx2, tx3])
+        const items = createTransactionListItems([
+            groupedTx1,
+            ungroupedTx,
+            groupedTx2,
+        ])
 
         expect(items).toHaveLength(2)
-        expect(items[0]).toEqual({
-            type: 'group',
-            transactions: [tx1, tx3],
-            groupIndex: 0,
-        })
+        expect(items[0].type).toBe('group')
+        const groupItem = items[0] as GroupTransactionItem
+        expect(groupItem.transactions.map(t => t.transaction.id)).toEqual([
+            'grouped1',
+            'grouped2',
+        ])
+        expect(groupItem.transactions.map(t => t.groupIndex)).toEqual([0, 2])
         expect(items[1]).toEqual({
             type: 'transaction',
-            transaction: tx2,
+            transaction: ungroupedTx,
+            groupIndex: 1,
+            isExternal: false,
         })
     })
 
@@ -116,9 +162,36 @@ describe('createTransactionListItems', () => {
         const items = createTransactionListItems([tx1, tx2, tx3])
 
         expect(items).toHaveLength(3)
-        expect(items[0]).toEqual({ type: 'transaction', transaction: tx1 })
-        expect(items[1]).toEqual({ type: 'transaction', transaction: tx2 })
-        expect(items[2]).toEqual({ type: 'transaction', transaction: tx3 })
+        items.forEach((item, i) => {
+            expect(item).toEqual({
+                type: 'transaction',
+                transaction: [tx1, tx2, tx3][i],
+                groupIndex: i,
+                isExternal: false,
+            })
+        })
+    })
+
+    test('marks external indices inside a collapsed group', () => {
+        const group = new Uint8Array([1, 2, 3])
+        const groupedTx1 = createTx('g1', group)
+        const ungroupedTx = createTx('u')
+        const groupedTx2 = createTx('g2', group)
+
+        const items = createTransactionListItems(
+            [groupedTx1, ungroupedTx, groupedTx2],
+            new Set([0]),
+        )
+        const groupItem = items[0] as GroupTransactionItem
+        expect(groupItem.transactions.map(t => t.isExternal)).toEqual([
+            false,
+            true,
+        ])
+        const ungroupedItem = items[1]
+        expect(ungroupedItem?.type).toBe('transaction')
+        if (ungroupedItem?.type === 'transaction') {
+            expect(ungroupedItem.isExternal).toBe(true)
+        }
     })
 })
 
@@ -128,41 +201,83 @@ describe('classifyRequestStructure', () => {
     })
 
     test('returns single for one transaction item', () => {
-        const tx = createTx('tx1')
         expect(
             classifyRequestStructure([
-                { type: 'transaction', transaction: tx },
+                {
+                    type: 'transaction',
+                    transaction: createTx('tx1'),
+                    groupIndex: 0,
+                    isExternal: false,
+                },
             ]),
         ).toBe('single')
     })
 
     test('returns list for multiple transaction items', () => {
-        const tx1 = createTx('tx1')
-        const tx2 = createTx('tx2')
         expect(
             classifyRequestStructure([
-                { type: 'transaction', transaction: tx1 },
-                { type: 'transaction', transaction: tx2 },
+                {
+                    type: 'transaction',
+                    transaction: createTx('tx1'),
+                    groupIndex: 0,
+                    isExternal: false,
+                },
+                {
+                    type: 'transaction',
+                    transaction: createTx('tx2'),
+                    groupIndex: 1,
+                    isExternal: false,
+                },
             ]),
         ).toBe('list')
     })
 
     test('returns list for single group item', () => {
-        const tx = createTx('tx1')
         expect(
             classifyRequestStructure([
-                { type: 'group', transactions: [tx], groupIndex: 0 },
+                {
+                    type: 'group',
+                    groupIndex: 0,
+                    transactions: [
+                        {
+                            type: 'transaction',
+                            transaction: createTx('a', new Uint8Array([1])),
+                            groupIndex: 0,
+                            isExternal: false,
+                        },
+                        {
+                            type: 'transaction',
+                            transaction: createTx('b', new Uint8Array([1])),
+                            groupIndex: 1,
+                            isExternal: false,
+                        },
+                    ],
+                },
             ]),
         ).toBe('list')
     })
 
     test('returns list for mixed items', () => {
-        const tx1 = createTx('tx1')
-        const tx2 = createTx('tx2')
         expect(
             classifyRequestStructure([
-                { type: 'group', transactions: [tx1], groupIndex: 0 },
-                { type: 'transaction', transaction: tx2 },
+                {
+                    type: 'transaction',
+                    transaction: createTx('tx1'),
+                    groupIndex: 0,
+                    isExternal: false,
+                },
+                {
+                    type: 'group',
+                    groupIndex: 1,
+                    transactions: [
+                        {
+                            type: 'transaction',
+                            transaction: createTx('a', new Uint8Array([2])),
+                            groupIndex: 1,
+                            isExternal: false,
+                        },
+                    ],
+                },
             ]),
         ).toBe('list')
     })

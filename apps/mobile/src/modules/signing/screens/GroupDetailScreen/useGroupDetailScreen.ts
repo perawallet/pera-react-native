@@ -17,10 +17,10 @@ import {
     type RouteProp,
 } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import {
     useSigningPipeline,
     type GroupTransactionItem,
+    type SingleTransactionItem,
 } from '@perawallet/wallet-core-signing'
 import type { SigningStackParamList } from '@modules/signing/routes'
 
@@ -37,18 +37,21 @@ export const useGroupDetailScreen = () => {
         (item): item is GroupTransactionItem =>
             item.type === 'group' && item.groupIndex === groupIndex,
     )
-    const transactions = groupItem?.transactions ?? []
+    const transactions: SingleTransactionItem[] = groupItem?.transactions ?? []
 
     const handleTransactionPress = useCallback(
-        (tx: PeraDisplayableTransaction) => {
-            navigation.navigate('TransactionDetails', { transaction: tx })
+        (item: SingleTransactionItem) => {
+            navigation.navigate('TransactionDetails', {
+                transaction: item.transaction,
+                isExternal: item.isExternal,
+            })
         },
         [navigation],
     )
 
     const keyExtractor = useCallback(
-        (item: PeraDisplayableTransaction, index: number) =>
-            item.id ?? `tx-${index}`,
+        (item: SingleTransactionItem, index: number) =>
+            item.transaction.id ?? `tx-${index}`,
         [],
     )
 

@@ -21,6 +21,12 @@ export type SigningStackParamList = {
         transaction?: PeraDisplayableTransaction
         transactionId?: string
         groupId?: string
+        /**
+         * Set by the signing-list / group-detail navigation when the wallet won't
+         * sign this txn. Drives the inline callout on TransactionDetailsScreen.
+         * Absent for history / deep-link flows.
+         */
+        isExternal?: boolean
     }
     GroupDetail: { groupIndex: number }
     SecuritySettings: undefined

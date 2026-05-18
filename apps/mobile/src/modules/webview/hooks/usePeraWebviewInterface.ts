@@ -17,9 +17,9 @@ import { useToast } from '@hooks/useToast'
 import { Linking } from 'react-native'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import {
+    type Arc0001SignTxnsOpts,
+    type Arc0001WalletTransaction,
     useNetwork,
-    PeraSignedTransaction,
-    useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
 import {
     AccountTypes,
@@ -38,7 +38,8 @@ import {
     type PeraArbitraryDataMessage,
     type PeraArbitraryDataSignResult,
     type SignRequestSource,
-    type TransactionSignRequest,
+    useArc0001Resolver,
+    useEnqueueArc0001SignRequest,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
 import {
@@ -48,7 +49,6 @@ import {
     sendMessageToWebview,
 } from './handlers'
 import {
-    decodeFromBase64,
     encodeToBase64,
     generateOrderedUniqueId,
     logger,
@@ -60,6 +60,7 @@ import { useDeepLink } from '@hooks/useDeepLink'
 import { parseDeeplink } from '@hooks/deeplink/parser'
 import { parseWalletConnectUri } from '@hooks/deeplink/walletconnect-parser'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
+import { bottomSheetNotifier } from '@components/core'
 
 type WebviewMessage = {
     id: string
@@ -135,8 +136,8 @@ export const usePeraWebviewInterface = (
     const { pushWebView: pushWebViewContext } = useWebView()
     const { addSignRequest } = useSigningRequest()
     const { connect } = useWalletConnect(network)
-    const { decodeTransactions, encodeSignedTransaction } =
-        useTransactionEncoder()
+    const resolveArc0001 = useArc0001Resolver()
+    const enqueueSignRequest = useEnqueueArc0001SignRequest()
     const { handleDeepLink } = useDeepLink()
 
     const hadRequiredParams = useCallback(
@@ -434,71 +435,75 @@ export const usePeraWebviewInterface = (
                     if (!hadRequiredParams(['txns', 'metadata'], message)) {
                         return
                     }
-                    const rawTxns = message.params![
+                    const txns = message.params![
                         'txns'
-                    ] as Nullable<string>[]
-                    const txns = decodeTransactions(
-                        rawTxns
-                            .filter((t): t is string => t !== null)
-                            .map(t => decodeFromBase64(t)),
-                    )
+                    ] as Arc0001WalletTransaction[]
+                    const opts = message.params!['opts'] as
+                        | Arc0001SignTxnsOpts
+                        | undefined
                     const metadata = message.params![
                         'metadata'
                     ] as SignRequestSource
 
                     try {
-                        addSignRequest({
-                            id: generateOrderedUniqueId(),
-                            type: 'transactions',
-                            transport: 'callback',
+                        // No authorizedAddresses — the webview's trust model
+                        // is per-origin (requireSecure), not per-account.
+                        const resolved = resolveArc0001({
+                            transactions: txns,
+                            opts,
+                        })
+
+                        enqueueSignRequest(resolved, {
                             sourceType: 'webview',
-                            txs: txns,
                             transportId: message.id,
                             sourceMetadata: metadata,
-                            approve: async (
-                                signed: PeraSignedTransaction[],
-                            ) => {
+                            respondWithResult: result =>
                                 sendMessageToWebview(
                                     message.id,
-                                    {
-                                        signedTxs: signed.map(s =>
-                                            encodeToBase64(
-                                                encodeSignedTransaction(s),
-                                            ),
-                                        ),
-                                    },
+                                    result,
                                     webview,
-                                )
-                            },
-                            reject: async () => {
+                                ),
+                            respondWithReject: () =>
                                 sendErrorToWebview(
                                     message.id,
                                     JsonRpcErrorCode.InternalError,
                                     'User rejected',
                                     webview,
-                                )
-                            },
-                            error: async (err: Error) =>
+                                ),
+                            respondWithError: err =>
                                 sendErrorToWebview(
                                     message.id,
                                     JsonRpcErrorCode.InternalError,
                                     err,
                                     webview,
                                 ),
-                        } as TransactionSignRequest)
+                        })
                     } catch (e) {
+                        // 4100 (Unauthorized) is the only ARC-0001 code that
+                        // gets a dedicated JSON-RPC slot; everything else
+                        // (4200/4201/4300) is structurally a bad request.
+                        const code =
+                            (e as { code?: number }).code === 4100
+                                ? JsonRpcErrorCode.Unauthorized
+                                : JsonRpcErrorCode.InvalidParams
                         sendErrorToWebview(
                             message.id,
-                            JsonRpcErrorCode.InternalError,
+                            code,
                             e as Error,
                             webview,
                         )
                         // guardrails-ignore-next-line no-error-toast-in-catch reason: dApp signing path surfaces raw error message verbatim for diagnosis
-                        showToast({
-                            title: t('errors.signing.title'),
-                            body: (e as Error).message,
-                            type: 'error',
-                        })
+                        showToast(
+                            {
+                                title: t('errors.signing.title'),
+                                body: (e as Error).message,
+                                type: 'error',
+                            },
+                            {
+                                notifier:
+                                    bottomSheetNotifier.current ?? undefined,
+                            },
+                        )
                     }
                 },
             )
@@ -508,9 +513,8 @@ export const usePeraWebviewInterface = (
             sourceUrl,
             webview,
             hadRequiredParams,
-            decodeTransactions,
-            encodeSignedTransaction,
-            addSignRequest,
+            resolveArc0001,
+            enqueueSignRequest,
             showToast,
             t,
         ],

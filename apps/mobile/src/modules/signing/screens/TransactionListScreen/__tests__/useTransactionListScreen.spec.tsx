@@ -14,7 +14,10 @@ import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useTransactionListScreen } from '../useTransactionListScreen'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
-import type { TransactionListItem } from '@perawallet/wallet-core-signing'
+import type {
+    SingleTransactionItem,
+    TransactionListItem,
+} from '@perawallet/wallet-core-signing'
 
 const mockNavigate = vi.fn()
 
@@ -28,10 +31,28 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningPipeline: vi.fn(() => ({
         currentRequest: { id: 'req-1', type: 'transactions' },
         listItems: [
-            { type: 'transaction', transaction: { id: 'tx-1' } },
+            {
+                type: 'transaction',
+                transaction: { id: 'tx-1' },
+                groupIndex: 0,
+                isExternal: false,
+            },
             {
                 type: 'group',
-                transactions: [{ id: 'tx-2' }, { id: 'tx-3' }],
+                transactions: [
+                    {
+                        type: 'transaction',
+                        transaction: { id: 'tx-2' },
+                        groupIndex: 1,
+                        isExternal: false,
+                    },
+                    {
+                        type: 'transaction',
+                        transaction: { id: 'tx-3' },
+                        groupIndex: 2,
+                        isExternal: false,
+                    },
+                ],
                 groupIndex: 0,
             },
         ],
@@ -60,12 +81,18 @@ describe('useTransactionListScreen', () => {
 
     it('navigates to TransactionDetails on transaction press', () => {
         const { result } = renderHook(() => useTransactionListScreen())
-        const mockTx = { id: 'tx-1' } as PeraDisplayableTransaction
+        const mockItem: SingleTransactionItem = {
+            type: 'transaction',
+            transaction: { id: 'tx-1' } as PeraDisplayableTransaction,
+            groupIndex: 0,
+            isExternal: false,
+        }
 
-        result.current.handleTransactionPress(mockTx)
+        result.current.handleTransactionPress(mockItem)
 
         expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
-            transaction: mockTx,
+            transaction: mockItem.transaction,
+            isExternal: false,
         })
     })
 
@@ -85,6 +112,8 @@ describe('useTransactionListScreen', () => {
         const txItem: TransactionListItem = {
             type: 'transaction',
             transaction: { id: 'tx-1' } as PeraDisplayableTransaction,
+            groupIndex: 0,
+            isExternal: false,
         }
         const key = result.current.keyExtractor(txItem, 0)
 
@@ -110,6 +139,8 @@ describe('useTransactionListScreen', () => {
         const txItem: TransactionListItem = {
             type: 'transaction',
             transaction: {} as PeraDisplayableTransaction,
+            groupIndex: 5,
+            isExternal: false,
         }
         const key = result.current.keyExtractor(txItem, 5)
 

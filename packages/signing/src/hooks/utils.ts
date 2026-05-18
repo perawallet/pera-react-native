@@ -34,6 +34,7 @@ export const EMPTY_TRANSACTIONS: PeraDisplayableTransaction[] = []
 export const EMPTY_LIST_ITEMS: TransactionListItem[] = []
 export const EMPTY_WARNINGS: TransactionWarning[] = []
 export const EMPTY_SIGNABLE_ADDRESSES = new Set<string>()
+export const EMPTY_SIGNABLE_INDICES = new Set<number>()
 export const ZERO_FEE = new Decimal(0)
 
 // =============================================================================

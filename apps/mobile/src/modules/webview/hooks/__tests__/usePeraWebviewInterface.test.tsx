@@ -134,8 +134,66 @@ vi.mock('@perawallet/wallet-core-currencies', () => ({
 }))
 
 const mockAddSignRequest = vi.fn()
+// Thin stub for useArc0001Resolver — for each entry, treats every txn as
+// signable (no signers:[] handling), so tests can keep using `[{}]`-style
+// stub transactions without going through real msgpack decode.
+const fakeArc0001Resolve = (request: {
+    transactions: Array<Record<string, unknown>>
+}) => {
+    const allDecoded = request.transactions.map((_, i) => ({
+        sender: { toString: () => `addr${i}` },
+    }))
+    const toSign = request.transactions.map((entry, i) => ({
+        index: i,
+        walletTxn: entry,
+        decoded: allDecoded[i],
+        sender: `addr${i}`,
+        signer: { kind: 'single' as const, address: `addr${i}` },
+    }))
+    return { allDecoded, toSign, signerOverrides: new Map() }
+}
+// Stub for useEnqueueArc0001SignRequest — mirrors the real hook's
+// short-circuit + addSignRequest behaviour so the existing assertions on
+// `mockAddSignRequest` keep working.
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const fakeEnqueue = (resolved: any, transport: any) => {
+    const totalLength = resolved.allDecoded.length
+    if (resolved.toSign.length === 0) {
+        transport.respondWithResult(new Array(totalLength).fill(null))
+        return
+    }
+    const indicesToSign = resolved.toSign.map((t: any) => t.index)
+    const signRequest = {
+        id: 'test-id',
+        type: 'transactions',
+        transport: 'callback',
+        sourceType: transport.sourceType,
+        transportId: transport.transportId,
+        sourceMetadata: transport.sourceMetadata,
+        txs: resolved.toSign.map((t: any) => t.decoded),
+        groupContext: resolved.allDecoded,
+        rawTransactionsBase64: resolved.toSign.map((t: any) => t.walletTxn.txn),
+        signerOverrides:
+            resolved.signerOverrides.size > 0
+                ? resolved.signerOverrides
+                : undefined,
+        approve: async (signed: Array<unknown>) => {
+            const result: Array<unknown> = new Array(totalLength).fill(null)
+            signed.forEach((tx, i) => {
+                if (tx) result[indicesToSign[i]] = tx
+            })
+            transport.respondWithResult(result)
+        },
+        reject: async () => transport.respondWithReject(),
+        error: async (err: Error) => transport.respondWithError(err),
+    }
+    mockAddSignRequest(signRequest)
+}
+/* eslint-enable @typescript-eslint/no-explicit-any */
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: () => ({ addSignRequest: mockAddSignRequest }),
+    useArc0001Resolver: () => fakeArc0001Resolve,
+    useEnqueueArc0001SignRequest: () => fakeEnqueue,
 }))
 
 const mockConnect = vi.fn()
@@ -633,16 +691,15 @@ describe('usePeraWebviewInterface', () => {
             usePeraWebviewInterface(mockWebview, true, null),
         )
 
-        const txns = [{}]
+        const txns = [{ txn: 'BASE64_TXN' }]
         const metadata = { name: 'Test dApp' }
-        const address = 'addr1'
 
         await act(async () => {
             result.current.handleMessage({
                 id: '13',
                 jsonrpc: '2.0',
                 method: 'requestTransactionSigning',
-                params: { txns, metadata, address },
+                params: { txns, metadata },
             })
         })
 
@@ -651,11 +708,14 @@ describe('usePeraWebviewInterface', () => {
                 id: 'test-id',
                 type: 'transactions',
                 transport: 'callback',
+                sourceType: 'webview',
                 sourceMetadata: metadata,
+                txs: expect.any(Array),
+                groupContext: expect.any(Array),
+                rawTransactionsBase64: ['BASE64_TXN'],
             }),
         )
 
-        // Test success
         const signRequest = mockAddSignRequest.mock.calls[0][0]
         const signedTxs = [{ id: 'tx1' }]
 
@@ -663,11 +723,12 @@ describe('usePeraWebviewInterface', () => {
             await signRequest.approve(signedTxs)
         })
 
+        // ARC-0001 response shape: an array of (base64 | null) in slot order.
         expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
             expect.stringContaining('"id":"13"'),
         )
         expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
-            expect.stringContaining('"signedTxs":[{"id":"tx1"}]'),
+            expect.stringContaining('"result":[{"id":"tx1"}]'),
         )
     })
 
@@ -676,16 +737,15 @@ describe('usePeraWebviewInterface', () => {
             usePeraWebviewInterface(mockWebview, true, null),
         )
 
-        const txns = [{}]
+        const txns = [{ txn: 'BASE64_TXN' }]
         const metadata = { name: 'Test dApp' }
-        const address = 'addr1'
 
         await act(async () => {
             result.current.handleMessage({
                 id: '13-error',
                 jsonrpc: '2.0',
                 method: 'requestTransactionSigning',
-                params: { txns, metadata, address },
+                params: { txns, metadata },
             })
         })
 
@@ -856,7 +916,7 @@ describe('usePeraWebviewInterface', () => {
                     id: '17',
                     jsonrpc: '2.0',
                     method: 'requestTransactionSigning',
-                    params: { txns: [], metadata: {}, address: 'addr1' },
+                    params: { txns: [], metadata: {} },
                 })
             })
 
@@ -1058,7 +1118,8 @@ describe('usePeraWebviewInterface', () => {
                     id: '23',
                     jsonrpc: '2.0',
                     method: 'requestTransactionSigning',
-                    params: { txns: [] }, // missing metadata and address
+                    // missing metadata
+                    params: { txns: [] },
                 })
             })
 
@@ -1122,9 +1183,8 @@ describe('usePeraWebviewInterface', () => {
                     jsonrpc: '2.0',
                     method: 'requestTransactionSigning',
                     params: {
-                        txns: [{}],
+                        txns: [{ txn: 'BASE64_TXN' }],
                         metadata: { name: 'Test' },
-                        address: 'addr1',
                     },
                 })
             })

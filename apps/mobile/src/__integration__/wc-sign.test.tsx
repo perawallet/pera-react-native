@@ -41,12 +41,18 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import React from 'react'
-import { act, renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook, screen, waitFor } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
+import { Address } from '@algorandfoundation/algokit-utils/common'
+import {
+    Transaction,
+    TransactionType,
+} from '@algorandfoundation/algokit-utils/transact'
 
 import { createTestQueryClient, render } from '@test-utils/render'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { walletConnectClientStub } from '@test-utils/walletconnect-client-stub'
+import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import {
     AccountTypes,
     useAccountsStore,
@@ -59,9 +65,47 @@ import {
     type WalletConnectSessionRequest,
 } from '@perawallet/wallet-core-walletconnect'
 import { Networks } from '@perawallet/wallet-core-shared'
+import {
+    useSigningRequest,
+    type TransactionSignRequest,
+} from '@perawallet/wallet-core-signing'
 import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletConnectProvider'
+import { TransactionListScreen } from '@modules/signing/screens'
 
 import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
+
+// ---------------------------------------------------------------------------
+// Shared fixtures for the external-transaction tests
+// ---------------------------------------------------------------------------
+
+const senderA = new Address(new Uint8Array(32).fill(1))
+const senderB = new Address(new Uint8Array(32).fill(2))
+
+const baseTxParams = {
+    fee: 1000n,
+    firstValid: 1000n,
+    lastValid: 2000n,
+    genesisId: 'mainnet-v1.0',
+    genesisHash: new Uint8Array(32).fill(0xab),
+}
+
+/** User's payment transaction — will be in `txs` (signable) */
+const makeTx0 = () =>
+    new Transaction({
+        type: TransactionType.Payment,
+        sender: senderA,
+        ...baseTxParams,
+        payment: { receiver: senderB, amount: 1_000_000n },
+    })
+
+/** External party's payment transaction — only in `groupContext` (index 1) */
+const makeTx1 = () =>
+    new Transaction({
+        type: TransactionType.Payment,
+        sender: senderB,
+        ...baseTxParams,
+        payment: { receiver: senderA, amount: 500_000n },
+    })
 
 const SIGNING_ACCOUNT: WalletAccount = {
     id: 'wc-signer',
@@ -284,10 +328,10 @@ describe('Flow: WalletConnect v1 algo_signTxn dispatch + validation', () => {
             const connector = await pairAndApprove()
 
             // ARC-0001 requires `authAddr` (when present) to be a valid
-            // base32 Algorand address. Passing garbage here triggers
-            // `validateArc0001SignTxnParams`, which throws before the
-            // msgpack decoder runs. This is the "dApp encoded the
-            // request wrong" path.
+            // base32 Algorand address. Passing garbage here trips the
+            // address-validity check in `resolveArc0001SignTxnRequest`,
+            // which throws Arc0001Error(4300) before the msgpack decoder
+            // runs. This is the "dApp encoded the request wrong" path.
             const requestId = 9003
             act(() => {
                 connector.fire('algo_signTxn', null, {
@@ -309,11 +353,87 @@ describe('Flow: WalletConnect v1 algo_signTxn dispatch + validation', () => {
                 expect(connector.rejectRequestCalls).toHaveLength(1)
             })
             expect(connector.rejectRequestCalls[0].id).toBe(requestId)
-            expect(connector.rejectRequestCalls[0].error?.name).toBe(
-                'WalletConnectSignRequestError',
-            )
+            // The resolver surfaces ARC-0001's numeric error codes via
+            // `Arc0001Error` so dApps see `{ code: 4300, … }` rather than
+            // a generic message. 4300 is "invalid input".
+            const rejected = connector.rejectRequestCalls[0].error as
+                | (Error & { code?: number })
+                | undefined
+            expect(rejected?.name).toBe('Arc0001Error')
+            expect(rejected?.code).toBe(4300)
             // Signing pipeline never reaches the success branch.
             expect(connector.approveRequestCalls).toHaveLength(0)
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'shows the Other signer pill for the external transaction in the signing list',
+        async () => {
+            // Two-transaction request where only index 0 belongs to the
+            // wallet. Index 1 has a different sender and is not in `txs`,
+            // so `signableIndices: [0]` marks it as external. The signing
+            // pipeline renders every `groupContext` transaction but stamps
+            // `isExternal: true` on the slot the wallet won't sign. The
+            // transactions are ungrouped here (no `group` byte set); the
+            // atomic-group-expansion path of `createTransactionListItems`
+            // is covered by unit tests in classification.spec.ts.
+            //
+            // NOTE: navigation to the detail screen is omitted here.
+            // `renderWithNavigation` mounts the test navigator which registers
+            // the stack, but navigating to `TransactionDetails` from an item
+            // press requires the item to be tappable in the jsdom environment
+            // (the pill tap opens a bottom sheet, not navigation). The
+            // list-level assertion is sufficient to cover Task 7 (isExternal
+            // wired through TransactionListScreen) end-to-end.
+            const tx0 = makeTx0()
+            const tx1 = makeTx1()
+
+            const request: TransactionSignRequest = {
+                id: 'external-pill-test',
+                type: 'transactions',
+                transport: 'callback',
+                sourceType: 'walletconnect',
+                txs: [tx0],
+                groupContext: [tx0, tx1],
+                signableIndices: [0],
+                approve: async () => {},
+                reject: async () => {},
+                error: async () => {},
+            }
+
+            // Seed the signing store so useSigningPipeline picks it up as
+            // `currentRequest` and computes listItems with isExternal flags.
+            const { result: req } = renderHook(() => useSigningRequest(), {
+                wrapper: HookWrapper,
+            })
+            act(() => {
+                req.current.addSignRequest(request)
+            })
+
+            renderWithNavigation(TransactionListScreen, 'TransactionList')
+
+            // The pipeline stamps isExternal: true on groupContext[1] and
+            // TransactionPreview renders the pill with this i18n key.
+            // In the integration test environment the t() function returns
+            // the key as-is (i18n is not initialized in the test setup).
+            await waitFor(() => {
+                expect(
+                    screen.getByText('signing.external_transaction.pill_label'),
+                ).toBeTruthy()
+            })
+
+            // Only the external row gets the pill — the user's own tx must
+            // not show it.
+            expect(
+                screen.getAllByText('signing.external_transaction.pill_label'),
+            ).toHaveLength(1)
+
+            // Clean up: remove the request so the actor stops and the store
+            // is back to a known-clean state for subsequent tests.
+            act(() => {
+                req.current.removeSignRequest(request)
+            })
         },
         SLOW_TEST_TIMEOUT_MS,
     )
