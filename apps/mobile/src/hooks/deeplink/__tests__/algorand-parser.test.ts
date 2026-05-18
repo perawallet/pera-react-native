@@ -126,9 +126,9 @@ describe('ARC-90 Algorand Parser', () => {
     })
 
     describe('Keyreg', () => {
-        it('parses keyreg transaction', () => {
+        it('parses keyreg transaction (ARC-26 votekd field)', () => {
             const result = parseAlgorandUri(
-                `algorand://${TEST_ADDRESS}?type=keyreg&votekey=voteKey123&selkey=selKey123&votefst=1000&votelst=2000&votekdkey=100&fee=1000`,
+                `algorand://${TEST_ADDRESS}?type=keyreg&votekey=voteKey123&selkey=selKey123&votefst=1000&votelst=2000&votekd=100&fee=1000`,
             )
             expect(result).toBeDefined()
             expect(result?.type).toBe(DeeplinkType.KEYREG)
@@ -140,6 +140,16 @@ describe('ARC-90 Algorand Parser', () => {
                 expect(result.votelst).toBe('2000')
                 expect(result.votekd).toBe('100')
                 expect(result.fee).toBe('1000')
+            }
+        })
+
+        it('falls back to legacy votekdkey field for backwards compat', () => {
+            const result = parseAlgorandUri(
+                `algorand://${TEST_ADDRESS}?type=keyreg&votekey=voteKey123&selkey=selKey123&votefst=1000&votelst=2000&votekdkey=100`,
+            )
+            expect(result).toBeDefined()
+            if (result?.type === DeeplinkType.KEYREG) {
+                expect(result.votekd).toBe('100')
             }
         })
     })

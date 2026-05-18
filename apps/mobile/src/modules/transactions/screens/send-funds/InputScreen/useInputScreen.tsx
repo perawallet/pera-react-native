@@ -11,7 +11,7 @@
  */
 
 import { Decimal } from 'decimal.js'
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
     isRekeyedAccount,
     useAccountAssetBalanceQuery,
@@ -36,17 +36,31 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
-import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
+import type { Maybe } from '@perawallet/wallet-core-shared'
 
 export const useInputScreen = () => {
     const navigation =
         useNavigation<StackNavigationProp<SendFundsStackParamList>>()
     const selectedAccount = useSelectedAccount()
-    const { selectedAssetId, setAmount, setIsCloseAccount } = useSendFunds()
+    const {
+        selectedAssetId,
+        amount,
+        pendingAmountBaseUnits,
+        setAmount,
+        setPendingAmountBaseUnits,
+        setIsCloseAccount,
+    } = useSendFunds()
     const { request: requestBottomSheet } = useBottomSheet()
 
-    // we maintain state and a ref to improve performance while retaining reactivity
-    const [value, setValue] = useState<Nullable<string>>()
+    // Seed the input from the store's prefilled amount (set by deeplink
+    // handlers / external callers that open SendFunds with values ready).
+    // The initializer only runs on mount so subsequent typing / setMax /
+    // close-account flows continue to drive `value` directly. Cast to
+    // Maybe so setValue retains the same `string | null | undefined` shape
+    // it had before — `setValueAndRef` and `handleKey` both pass undefined.
+    const [value, setValue] = useState<Maybe<string>>(() =>
+        amount ? amount.toString() : undefined,
+    )
     const valueRef = useRef<Maybe<string>>(value)
     const setValueAndRef = useCallback((newValue: Maybe<string>) => {
         valueRef.current = newValue
@@ -68,6 +82,25 @@ export const useInputScreen = () => {
         if (!selectedAssetId) return null
         return assets.get(selectedAssetId)
     }, [selectedAssetId, assets])
+
+    // ASSET_TRANSFER deeplinks stash a base-unit amount on the store because
+    // they don't know the asset's `decimals` at parse time. Convert here once
+    // the asset query resolves, mirror it into both `value` (the visual
+    // input) and `amount` (the store's display-units amount), then clear the
+    // pending field so we don't re-apply on later renders.
+    useEffect(() => {
+        if (!pendingAmountBaseUnits || !asset) return
+        const display = toWholeUnits(BigInt(pendingAmountBaseUnits), asset)
+        setValueAndRef(display.toString())
+        setAmount(display)
+        setPendingAmountBaseUnits(undefined)
+    }, [
+        pendingAmountBaseUnits,
+        asset,
+        setAmount,
+        setPendingAmountBaseUnits,
+        setValueAndRef,
+    ])
 
     const { data: params } = useSuggestedParametersQuery()
     const { data: accountInformation } = useAccountInformationQuery(

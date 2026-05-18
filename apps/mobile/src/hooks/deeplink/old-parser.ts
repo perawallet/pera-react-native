@@ -28,6 +28,7 @@ import {
     HomeDeeplink,
 } from './types'
 import { decodeBase64Param, normalizeUrl, parseQueryParams } from './utils'
+import { PERAWALLET_SCHEME } from './constants'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
@@ -38,7 +39,7 @@ export const parsePerawalletUri = (
 ): Nullable<AnyParsedDeeplink> => {
     const normalizedUrl = normalizeUrl(url)
 
-    if (!normalizedUrl.startsWith('perawallet://')) {
+    if (!normalizedUrl.startsWith(`${PERAWALLET_SCHEME}://`)) {
         return null
     }
 

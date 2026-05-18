@@ -104,10 +104,17 @@ export const useSigningStore: UseBoundStore<
             storage: signingStoreStorage(),
             version: 1,
             partialize: state => ({
-                // Persist only non-callback requests (actors are not serializable,
-                // callback/WalletConnect requests are ephemeral)
+                // Persist only non-callback, non-deeplink requests:
+                //   - callback transports (WalletConnect, webview) carry
+                //     non-serializable approve/reject closures
+                //   - deeplink requests are ephemeral — the user just
+                //     scanned a QR; if anything fails (bad shape, missing
+                //     signer, etc.) they should be able to scan again
+                //     instead of being trapped on the broken sheet.
                 pendingSignRequests: state.pendingSignRequests.filter(
-                    r => r.transport !== 'callback',
+                    r =>
+                        r.transport !== 'callback' &&
+                        r.sourceType !== 'deeplink',
                 ),
             }),
             // Belt-and-suspenders: these fields aren't in `partialize`, but a
@@ -115,21 +122,17 @@ export const useSigningStore: UseBoundStore<
             // still leave them in storage. Always boot with a clean
             // last-completed/last-failed slate so a stale id doesn't ghost
             // the next request through SignRequestView's id-equality guard.
-            //
-            // pendingSignRequests is also cleared on rehydration: the
-            // lifecycle effect auto-starts an actor for whatever's queued
-            // on mount (incl. rehydration). For hardware-targeted
-            // requests, that wakes a Ledger session the user never
-            // initiated and surfaces a 10s timeout as a render error via
-            // the root error boundary. Anything mid-flight at app close
-            // is effectively abandoned anyway — the originating UI
-            // (rekey, send, swap) is gone.
+            // Also strip any rehydrated deeplink request — covers the case
+            // where an older partialize persisted them, and matches the
+            // partialize filter above so the two stay in lockstep.
             onRehydrateStorage: () => state => {
                 if (state) {
-                    state.pendingSignRequests = []
                     state.lastCompletedRequest = null
                     state.lastFailedRequest = null
                     state.lastTransportResult = null
+                    state.pendingSignRequests = (
+                        state.pendingSignRequests ?? []
+                    ).filter(r => r.sourceType !== 'deeplink')
                 }
             },
         },

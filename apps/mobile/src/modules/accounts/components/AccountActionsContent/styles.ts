@@ -14,18 +14,34 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
+        paddingVertical: theme.spacing.xxl,
+    },
+    addressCard: {
+        marginHorizontal: theme.spacing.xl,
+        marginBottom: theme.spacing.lg,
+        padding: theme.spacing.lg,
+        backgroundColor: theme.colors.layerGrayLighter,
+        borderRadius: theme.borderRadius.lg,
+    },
+    addressLabel: {
+        color: theme.colors.textGray,
+        marginBottom: theme.spacing.xs,
+    },
+    addressText: {
+        color: theme.colors.textMain,
+    },
+    optionRow: {
+        flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
-        gap: theme.spacing.lg,
         paddingVertical: theme.spacing.lg,
-    },
-    detailContainer: {
-        paddingHorizontal: theme.spacing.sm,
+        paddingHorizontal: theme.spacing.xl,
         gap: theme.spacing.lg,
-        width: '100%',
     },
-    divider: {
-        marginTop: theme.spacing.xs,
-        width: '100%',
+    optionTextContainer: {
+        flex: 1,
+        flexDirection: 'column',
+    },
+    optionSubtitle: {
+        color: theme.colors.textGray,
     },
 }))

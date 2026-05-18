@@ -11,6 +11,7 @@
  */
 
 import React, { useEffect, useRef } from 'react'
+import { logger } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import {
     isInteractiveSource,
@@ -86,16 +87,23 @@ const useSignRequestDriver = () => {
 
         let cancelled = false
         void (async () => {
-            await requestBottomSheet<void>({
-                id: sheetId,
-                contents: <SignRequestContent request={nextRequest!} />,
-                options: {
-                    size: 'lg',
-                    enablePanDownToClose: false,
-                    enableCloseOnBackdropPress: false,
-                    autoCreateContainer: false,
-                },
-            })
+            try {
+                await requestBottomSheet<void>({
+                    id: sheetId,
+                    contents: <SignRequestContent request={nextRequest!} />,
+                    options: {
+                        size: 'lg',
+                        enablePanDownToClose: false,
+                        enableCloseOnBackdropPress: false,
+                        autoCreateContainer: false,
+                    },
+                })
+            } catch (err) {
+                logger.error('[signing/overlay] sheet promise rejected', {
+                    sheetId,
+                    err,
+                })
+            }
             if (cancelled) return
             if (openIdRef.current === sheetId) {
                 openIdRef.current = null

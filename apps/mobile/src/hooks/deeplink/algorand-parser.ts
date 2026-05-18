@@ -115,7 +115,10 @@ export const parseAlgorandUri = (url: string): Nullable<AnyParsedDeeplink> => {
             sprfkey: params.sprfkey,
             votefst: params.votefst,
             votelst: params.votelst,
-            votekd: params.votekdkey,
+            // ARC-26 / native pera apps emit `votekd` (vote key dilution).
+            // The legacy `votekdkey` form is kept as a fallback for old QR
+            // codes that may have used the misspelled field.
+            votekd: params.votekd ?? params.votekdkey,
             fee: params.fee,
             note: params.note,
             xnote: params.xnote,

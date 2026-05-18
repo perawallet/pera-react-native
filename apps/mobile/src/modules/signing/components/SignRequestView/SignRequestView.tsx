@@ -31,12 +31,25 @@ export type SignRequestViewProps = {
 const SignRequestErrorFallback = ({
     error,
     reset,
+    onDismiss,
 }: {
     error: AppError | Error
     reset: () => void
+    /**
+     * Drops the offending request from the queue so the next render
+     * doesn't reproduce the same crash. Without this, the error boundary
+     * `reset` just re-runs the same render against the same store state
+     * and the user is trapped in the failed sheet (especially bad for
+     * persisted requests that survive restart).
+     */
+    onDismiss: () => void
 }) => {
     const { t } = useLanguage()
     const appError = error instanceof AppError ? error : null
+    const handleGoBack = () => {
+        onDismiss()
+        reset()
+    }
     return (
         <EmptyView
             title={t('errors.general.title')}
@@ -45,7 +58,7 @@ const SignRequestErrorFallback = ({
                 <PWButton
                     title={t('common.go_back.label')}
                     variant='primary'
-                    onPress={reset}
+                    onPress={handleGoBack}
                 />
             }
         />
@@ -126,6 +139,7 @@ export const SignRequestView = ({ request }: SignRequestViewProps) => {
                 <SignRequestErrorFallback
                     error={error}
                     reset={reset}
+                    onDismiss={() => removeSignRequest(request)}
                 />
             )}
         >

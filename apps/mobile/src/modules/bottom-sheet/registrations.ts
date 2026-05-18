@@ -29,8 +29,14 @@
 
 import { registerBottomSheet } from './registry/registry'
 import { OptInConfirmationContent } from '@modules/assets/components/OptInConfirmationContent'
+import { AccountActionsContent } from '@modules/accounts/components/AccountActionsContent'
+import { SendFundsContent } from '@modules/transactions/components/send-funds/SendFundsContent'
+import { BidaliContent } from '@modules/gift-card/components/BidaliContent'
 
 registerBottomSheet('asset-opt-in', OptInConfirmationContent)
+registerBottomSheet('account-actions', AccountActionsContent)
+registerBottomSheet('send-funds', SendFundsContent)
+registerBottomSheet('bidali', BidaliContent)
 
 declare module '@modules/bottom-sheet' {
     interface BottomSheetRegistry {
@@ -38,6 +44,16 @@ declare module '@modules/bottom-sheet' {
             assetId: string
             accountAddress: string
         }
+        'account-actions': {
+            address: string
+            label?: string
+        }
+        'send-funds': {
+            assetId?: string
+        }
+        // BidaliContent takes no props — it owns its own internal navigator
+        // and account selection. Empty record keeps the registry typed.
+        bidali: Record<string, never>
     }
 }
 
