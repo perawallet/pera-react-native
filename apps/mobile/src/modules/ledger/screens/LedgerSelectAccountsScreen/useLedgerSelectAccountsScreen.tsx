@@ -25,7 +25,10 @@ import {
 } from '@perawallet/wallet-core-ledger'
 import type { HardwareWalletTransport } from '@perawallet/wallet-core-hardware-wallet'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { useAlgorandClient, useNetwork } from '@perawallet/wallet-core-blockchain'
+import {
+    useAlgorandClient,
+    useNetwork,
+} from '@perawallet/wallet-core-blockchain'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'

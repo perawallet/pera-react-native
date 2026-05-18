@@ -51,31 +51,36 @@ export const LedgerAccountInfoContent = ({
     const { title, items, isLoading, isError, refetch } =
         useLedgerAccountInfoContent(address, accountIndex)
 
-    const renderItem = useCallback(({ item }: { item: LedgerInfoListItem }) => {
-        switch (item.kind) {
-            case 'sectionHeader':
-                return <LedgerSectionHeaderRow title={item.title} />
-            case 'account':
-                return (
-                    <LedgerAccountDetailsRow
-                        address={item.address}
-                        algoBalance={item.algoBalance}
-                        fiatValue={item.fiatValue}
-                        label={t('ledger.account_info.ledger_account_label')}
-                        preferredCurrency={preferredCurrency}
-                    />
-                )
-            case 'asset':
-                return (
-                    <LedgerAssetRow
-                        asset={item.asset}
-                        preferredCurrency={preferredCurrency}
-                    />
-                )
-            case 'rekeyAddress':
-                return <LedgerRekeyAddressRow address={item.address} />
-        }
-    }, [t, preferredCurrency])
+    const renderItem = useCallback(
+        ({ item }: { item: LedgerInfoListItem }) => {
+            switch (item.kind) {
+                case 'sectionHeader':
+                    return <LedgerSectionHeaderRow title={item.title} />
+                case 'account':
+                    return (
+                        <LedgerAccountDetailsRow
+                            address={item.address}
+                            algoBalance={item.algoBalance}
+                            fiatValue={item.fiatValue}
+                            label={t(
+                                'ledger.account_info.ledger_account_label',
+                            )}
+                            preferredCurrency={preferredCurrency}
+                        />
+                    )
+                case 'asset':
+                    return (
+                        <LedgerAssetRow
+                            asset={item.asset}
+                            preferredCurrency={preferredCurrency}
+                        />
+                    )
+                case 'rekeyAddress':
+                    return <LedgerRekeyAddressRow address={item.address} />
+            }
+        },
+        [t, preferredCurrency],
+    )
 
     return (
         <PWView style={styles.container}>

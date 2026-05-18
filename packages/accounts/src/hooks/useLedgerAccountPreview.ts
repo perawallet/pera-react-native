@@ -46,10 +46,7 @@ export const useLedgerAccountPreview = (
     )
 
     const { data: assets } = useAssetsQuery(assetIds)
-    const priceIds = useMemo(
-        () => [ALGO_ASSET_ID, ...assetIds],
-        [assetIds],
-    )
+    const priceIds = useMemo(() => [ALGO_ASSET_ID, ...assetIds], [assetIds])
     const { data: prices } = useAssetPricesQuery(priceIds)
 
     const preview = useMemo<LedgerAccountPreview | undefined>(() => {

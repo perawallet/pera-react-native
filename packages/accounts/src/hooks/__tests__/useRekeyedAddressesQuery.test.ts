@@ -57,10 +57,9 @@ describe('useRekeyedAddressesQuery', () => {
     it('returns the addresses rekeyed to the given address', async () => {
         mocks.fetchRekeyedAddresses.mockResolvedValue(['REKEYED1', 'REKEYED2'])
 
-        const { result } = renderHook(
-            () => useRekeyedAddressesQuery('ADDR'),
-            { wrapper: createWrapper() },
-        )
+        const { result } = renderHook(() => useRekeyedAddressesQuery('ADDR'), {
+            wrapper: createWrapper(),
+        })
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
         expect(result.current.data).toEqual(['REKEYED1', 'REKEYED2'])

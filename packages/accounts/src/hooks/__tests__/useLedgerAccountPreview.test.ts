@@ -24,8 +24,7 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('../useOnChainAccountInformationQuery', () => ({
-    useOnChainAccountInformationQuery:
-        mocks.useOnChainAccountInformationQuery,
+    useOnChainAccountInformationQuery: mocks.useOnChainAccountInformationQuery,
 }))
 vi.mock('../useRekeyedAddressesQuery', () => ({
     useRekeyedAddressesQuery: mocks.useRekeyedAddressesQuery,
@@ -53,7 +52,9 @@ beforeEach(() => {
     })
     mocks.useAssetsQuery.mockReturnValue({ data: new Map(), isPending: false })
     mocks.useAssetPricesQuery.mockReturnValue({
-        data: new Map([[ALGO_ID, { assetId: ALGO_ID, usdPrice: new Decimal(2) }]]),
+        data: new Map([
+            [ALGO_ID, { assetId: ALGO_ID, usdPrice: new Decimal(2) }],
+        ]),
         isPending: false,
     })
     mocks.useRekeyedAddressesQuery.mockReturnValue({
@@ -97,7 +98,9 @@ describe('useLedgerAccountPreview', () => {
                 minBalance: 0n,
                 status: 'Offline',
                 rewards: 0n,
-                assets: [{ assetId: 31566704n, amount: 1_500_000n, isFrozen: false }],
+                assets: [
+                    { assetId: 31566704n, amount: 1_500_000n, isFrozen: false },
+                ],
             },
             isLoading: false,
             isError: false,

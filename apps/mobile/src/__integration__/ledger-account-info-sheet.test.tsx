@@ -99,9 +99,7 @@ describe('Flow: Ledger account info sheet', () => {
             )
 
             // Sheet should NOT be open initially
-            expect(
-                screen.queryByTestId('ledger_account_info_list'),
-            ).toBeNull()
+            expect(screen.queryByTestId('ledger_account_info_list')).toBeNull()
 
             // Tap the ⓘ button to open the info sheet
             fireEvent.click(infoButton)
