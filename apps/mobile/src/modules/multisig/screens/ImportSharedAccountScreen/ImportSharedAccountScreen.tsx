@@ -172,7 +172,7 @@ export const ImportSharedAccountScreen = () => {
                         <AddressDisplay
                             key={participant}
                             address={participant}
-                            addressFormat='medium'
+                            addressFormat='long'
                             iconName={participantIconName}
                             showSecondaryAddress
                             style={[

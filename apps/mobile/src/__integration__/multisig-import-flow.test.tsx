@@ -20,6 +20,7 @@ import {
     it,
 } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { View } from 'react-native'
 
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
@@ -120,8 +121,11 @@ describe('Flow: Import shared account by scanning its QR code', () => {
                     additionalScreens: [
                         { name: 'NameMultisig', component: NameMultisigScreen },
                         // exitAccountFlow resets to 'TabBar' after finishing
-                        // — a stub gives the reset a real target.
-                        { name: 'TabBar', component: () => null },
+                        // — a stub gives the reset a real, observable target.
+                        {
+                            name: 'TabBar',
+                            component: () => <View testID='import-flow-home' />,
+                        },
                     ],
                 },
             )
@@ -174,13 +178,9 @@ describe('Flow: Import shared account by scanning its QR code', () => {
                 SHARED_ADDRESS,
             )
 
-            // Finishing navigates away from the flow — the name screen,
-            // and its finish button, are gone.
-            await waitFor(() => {
-                expect(
-                    screen.queryByTestId('name_account_finish_button'),
-                ).toBeNull()
-            })
+            // Finishing navigates away from the flow — the reset lands on
+            // the wallet home (the stub TabBar route).
+            await waitFor(() => screen.getByTestId('import-flow-home'))
         },
         SLOW_TEST_TIMEOUT_MS,
     )
