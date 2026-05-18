@@ -1,0 +1,75 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { useMemo } from 'react'
+import { useQueries } from '@tanstack/react-query'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import type { HardwareWalletDerivedAccount } from '@perawallet/wallet-core-hardware-wallet'
+import { fetchRekeyedAddresses } from '../account-discovery'
+import { getRekeyedAddressesQueryKey } from './querykeys'
+import { useAllAccounts } from './useAllAccounts'
+import type { LedgerSelectableAccount } from '../models'
+
+type UseLedgerRekeyedScanResult = {
+    rekeyed: LedgerSelectableAccount[]
+    isScanning: boolean
+}
+
+/**
+ * For each discovered Ledger (derived) account, scans the indexer for accounts
+ * rekeyed to it (reusing the cached `rekeyed-addresses` query warmed by
+ * `prefetchLedgerAccountPreview`) and returns them as `rekeyed` selectables.
+ * Best-effort: a failed/empty scan yields no rows for that address.
+ */
+export const useLedgerRekeyedScan = (
+    derivedAccounts: HardwareWalletDerivedAccount[],
+): UseLedgerRekeyedScanResult => {
+    const { network } = useNetwork()
+    const allAccounts = useAllAccounts()
+
+    const results = useQueries({
+        queries: derivedAccounts.map(acc => ({
+            queryKey: getRekeyedAddressesQueryKey(acc.address, network),
+            queryFn: () => fetchRekeyedAddresses(acc.address),
+            staleTime: 0,
+        })),
+    })
+
+    return useMemo(() => {
+        const derivedAddresses = new Set(
+            derivedAccounts.map(a => a.address),
+        )
+        const importedAddresses = new Set(allAccounts.map(a => a.address))
+        const seen = new Set<string>()
+        const rekeyed: LedgerSelectableAccount[] = []
+
+        results.forEach((res, idx) => {
+            const authAccount = derivedAccounts[idx]
+            if (!authAccount) return
+            const addresses: string[] = res.data ?? []
+            for (const address of addresses) {
+                if (
+                    derivedAddresses.has(address) ||
+                    importedAddresses.has(address) ||
+                    seen.has(address)
+                ) {
+                    continue
+                }
+                seen.add(address)
+                rekeyed.push({ kind: 'rekeyed', address, authAccount })
+            }
+        })
+
+        const isScanning = results.some(r => r.isPending)
+        return { rekeyed, isScanning }
+    }, [results, derivedAccounts, allAccounts])
+}

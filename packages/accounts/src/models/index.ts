@@ -16,6 +16,7 @@ import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
 export * from './accounts'
 export * from './balances'
 export * from './ledger-account-preview'
+export * from './ledger-selectable-account'
 
 export type AccountsState = BaseStoreState & {
     accounts: WalletAccount[]
