@@ -11,6 +11,7 @@
  */
 
 import { useCallback } from 'react'
+import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { AddParticipantContent } from '../../components/AddParticipantContent'
@@ -22,20 +23,31 @@ import {
 type UseCreateMultisigScreenResult = {
     participants: Participant[]
     canContinue: boolean
+    isParticipantInWallet: (address: string) => boolean
     handleOpenAddParticipant: () => Promise<void>
     handleEditParticipant: (address: string) => void
+    handleRemoveParticipant: (address: string) => void
     handleContinue: () => void
 }
 
 export const useCreateMultisigScreen = (): UseCreateMultisigScreenResult => {
     const navigation = useAppNavigation()
     const { request: requestBottomSheet } = useBottomSheet()
+    const accounts = useAllAccounts()
     const participants = useMultisigCreationStore(state => state.participants)
     const addParticipant = useMultisigCreationStore(
         state => state.addParticipant,
     )
+    const removeParticipant = useMultisigCreationStore(
+        state => state.removeParticipant,
+    )
 
     const canContinue = participants.length >= 2
+
+    const isParticipantInWallet = useCallback(
+        (address: string) => accounts.some(a => a.address === address),
+        [accounts],
+    )
 
     const handleAddAddress = useCallback(
         (address: string) => {
@@ -65,6 +77,13 @@ export const useCreateMultisigScreen = (): UseCreateMultisigScreenResult => {
         [navigation],
     )
 
+    const handleRemoveParticipant = useCallback(
+        (address: string) => {
+            removeParticipant(address)
+        },
+        [removeParticipant],
+    )
+
     const handleContinue = useCallback(() => {
         navigation.push('SetThreshold')
     }, [navigation])
@@ -72,8 +91,10 @@ export const useCreateMultisigScreen = (): UseCreateMultisigScreenResult => {
     return {
         participants,
         canContinue,
+        isParticipantInWallet,
         handleOpenAddParticipant,
         handleEditParticipant,
+        handleRemoveParticipant,
         handleContinue,
     }
 }

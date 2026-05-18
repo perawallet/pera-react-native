@@ -33,11 +33,24 @@ vi.mock('@modules/bottom-sheet', () => ({
     }),
 }))
 
+const mockAccounts = vi.fn<() => { address: string }[]>(() => [])
+
+vi.mock('@perawallet/wallet-core-accounts', async () => {
+    const actual = await vi.importActual<
+        typeof import('@perawallet/wallet-core-accounts')
+    >('@perawallet/wallet-core-accounts')
+    return {
+        ...actual,
+        useAllAccounts: () => mockAccounts(),
+    }
+})
+
 describe('useCreateMultisigScreen', () => {
     const mockPush = vi.fn()
 
     beforeEach(() => {
         vi.clearAllMocks()
+        mockAccounts.mockReturnValue([])
         ;(useAppNavigation as Mock).mockReturnValue({
             push: mockPush,
         })
@@ -147,5 +160,29 @@ describe('useCreateMultisigScreen', () => {
         })
 
         expect(mockPush).toHaveBeenCalledWith('SetThreshold')
+    })
+
+    it('isParticipantInWallet is true only for addresses that are wallet accounts', () => {
+        mockAccounts.mockReturnValue([{ address: 'ADDR1' }])
+        const { result } = renderHook(() => useCreateMultisigScreen())
+
+        expect(result.current.isParticipantInWallet('ADDR1')).toBe(true)
+        expect(result.current.isParticipantInWallet('ADDR2')).toBe(false)
+    })
+
+    it('handleRemoveParticipant removes the participant from the store', () => {
+        const store = useMultisigCreationStore.getState()
+        store.addParticipant({ address: 'ADDR1' })
+        store.addParticipant({ address: 'ADDR2' })
+
+        const { result } = renderHook(() => useCreateMultisigScreen())
+
+        act(() => {
+            result.current.handleRemoveParticipant('ADDR1')
+        })
+
+        const participants = useMultisigCreationStore.getState().participants
+        expect(participants.find(p => p.address === 'ADDR1')).toBeUndefined()
+        expect(participants).toHaveLength(1)
     })
 })
