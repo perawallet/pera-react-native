@@ -149,7 +149,8 @@ describe('Flow: Ledger rekeyed-account import', () => {
 
             // Wait for the rekeyed row to appear (indexer scan completes)
             const rekeyedRow = await waitFor(
-                () => screen.getByTestId(`ledger_select_row_${REKEYED_ADDRESS}`),
+                () =>
+                    screen.getByTestId(`ledger_select_row_${REKEYED_ADDRESS}`),
                 { timeout: 10000 },
             )
 
@@ -199,9 +200,9 @@ describe('Flow: Ledger rekeyed-account import', () => {
                     expect(watch?.type).toBe(AccountTypes.watch)
                     expect(watch?.rekeyAddress).toBe(LEDGER_ADDRESS)
                     expect(hw?.type).toBe(AccountTypes.hardware)
-                    expect(
-                        deriveAccountLogicalType(watch!, accounts),
-                    ).toBe(AccountLogicalTypes.RekeyedAuth)
+                    expect(deriveAccountLogicalType(watch!, accounts)).toBe(
+                        AccountLogicalTypes.RekeyedAuth,
+                    )
                 },
                 { timeout: 10000 },
             )
