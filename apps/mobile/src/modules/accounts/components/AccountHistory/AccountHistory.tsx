@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { PWButton, PWText, PWTouchableOpacity, PWView } from '@components/core'
+import { useCallback } from 'react'
+import { PWButton, PWText, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
@@ -46,22 +47,29 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
         handleTransactionPress,
     } = useAccountHistory()
 
-    const renderItem = ({ item }: { item: TransactionHistoryItem }) => (
-        <TransactionListItem
-            transaction={item}
-            onPress={handleTransactionPress}
-        />
+    const renderItem = useCallback(
+        ({ item }: { item: TransactionHistoryItem }) => (
+            <TransactionListItem
+                transaction={item}
+                onPress={handleTransactionPress}
+            />
+        ),
+        [handleTransactionPress],
     )
 
-    const renderSectionHeader = ({
-        section,
-    }: {
-        section: TransactionSection
-    }) => <TransactionDateHeader title={section.title} />
+    const renderSectionHeader = useCallback(
+        ({ section }: { section: TransactionSection }) => (
+            <TransactionDateHeader title={section.title} />
+        ),
+        [],
+    )
 
-    const keyExtractor = (item: TransactionHistoryItem) => item.id
+    const keyExtractor = useCallback(
+        (item: TransactionHistoryItem) => item.id,
+        [],
+    )
 
-    const renderFooter = () => {
+    const renderFooter = useCallback(() => {
         if (isFetchingNextPage) {
             return (
                 <PWView style={styles.loadingFooter}>
@@ -70,9 +78,9 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
             )
         }
         return <PWView style={styles.footer} />
-    }
+    }, [isFetchingNextPage, styles.loadingFooter, styles.footer])
 
-    const renderEmptyComponent = () => {
+    const renderEmptyComponent = useCallback(() => {
         if (isLoading) {
             return (
                 <PWView style={styles.loadingContainer}>
@@ -80,11 +88,10 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
                 </PWView>
             )
         }
-
         return (
             <EmptyView body={t('asset_details.transaction_list.empty_body')} />
         )
-    }
+    }, [isLoading, styles.loadingContainer, t])
 
     return (
         <KeyboardAvoidingView
@@ -93,10 +100,7 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
             behavior='padding'
             style={styles.keyboardAvoidingViewContainer}
         >
-            <PWTouchableOpacity
-                style={styles.keyboardAvoidingViewContainer}
-                activeOpacity={1}
-            >
+            <PWView style={styles.keyboardAvoidingViewContainer}>
                 <SectionList
                     sections={sections}
                     renderItem={renderItem}
@@ -107,6 +111,7 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
                     stickySectionHeadersEnabled={false}
                     onEndReached={handleLoadMore}
                     onEndReachedThreshold={0.5}
+                    keyboardDismissMode='on-drag'
                     ListHeaderComponent={
                         <PWView style={styles.headerContainer}>
                             <PWView style={styles.titleBar}>
@@ -150,7 +155,7 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
                         <ActivityIndicator size='large' />
                     </PWView>
                 )}
-            </PWTouchableOpacity>
+            </PWView>
         </KeyboardAvoidingView>
     )
 }
