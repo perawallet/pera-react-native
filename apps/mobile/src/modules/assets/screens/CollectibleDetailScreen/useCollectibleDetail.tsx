@@ -43,7 +43,10 @@ import { useModalState, type ModalState } from '@hooks/useModalState'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { OptOutConfirmationContent } from '@modules/accounts/components/AccountAssetList/OptOutConfirmationContent'
 import { SendFundsContent } from '@modules/transactions/components/send-funds/SendFundsContent'
-import type { FullScreenMediaItem } from '@modules/assets/screens/FullScreenImageViewer/FullScreenImageViewer'
+import {
+    FullScreenImageViewer,
+    type FullScreenMediaItem,
+} from '@modules/assets/screens/FullScreenImageViewer/FullScreenImageViewer'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 type UseCollectibleDetailResult = {
@@ -69,9 +72,6 @@ type UseCollectibleDetailResult = {
     handleCopyImage: () => void
     handleSaveImage: () => void
     handleMediaPress: (index: number) => void
-    fullScreenMedia: FullScreenMediaItem[]
-    fullScreenInitialIndex: number
-    fullScreenViewerModal: ModalState
     hasExplorerUrl: boolean
     hasProjectUrl: boolean
 }
@@ -91,13 +91,11 @@ export const useCollectibleDetail = (
         account ?? undefined,
         assetId,
     )
-    const fullScreenViewerModal = useModalState()
     const modelViewerModal = useModalState()
     const { request: requestBottomSheet } = useBottomSheet()
     const [modelViewerUrl, setModelViewerUrl] = useState<Nullable<string>>(null)
     const { optOut, isLoading: isOptingOut } = useAssetOptOutMutation()
     const navigation = useNavigation()
-    const [fullScreenInitialIndex, setFullScreenInitialIndex] = useState(0)
 
     const collectible = asset?.peraMetadata?.collectible
     const isWatch = !logicalType || !isSigningLogicalType(logicalType)
@@ -169,7 +167,7 @@ export const useCollectibleDetail = (
             }
         } catch (err) {
             if (err instanceof UserRejectedSigningError) {
-                // User dismissed the LedgerSigningOverlay — overlay already went away; no toast.
+                // User dismissed the LedgerSigningContent sheet — sheet already went away; no toast.
                 return
             }
             showError(err, t('asset_opt_out.error'))
@@ -313,13 +311,22 @@ export const useCollectibleDetail = (
                 return
             }
             if (fullScreenMedia.length > 0) {
-                setFullScreenInitialIndex(
-                    Math.min(index, fullScreenMedia.length - 1),
-                )
-                fullScreenViewerModal.open()
+                const initialIndex = Math.min(index, fullScreenMedia.length - 1)
+                void requestBottomSheet({
+                    contents: (
+                        <FullScreenImageViewer
+                            media={fullScreenMedia}
+                            initialIndex={initialIndex}
+                        />
+                    ),
+                    options: {
+                        size: 'full',
+                        enablePanDownToClose: true,
+                    },
+                })
             }
         },
-        [media, fullScreenMedia, fullScreenViewerModal, modelViewerModal],
+        [media, fullScreenMedia, modelViewerModal, requestBottomSheet],
     )
 
     return {
@@ -345,9 +352,6 @@ export const useCollectibleDetail = (
         handleCopyImage,
         handleSaveImage,
         handleMediaPress,
-        fullScreenMedia,
-        fullScreenInitialIndex,
-        fullScreenViewerModal,
         hasExplorerUrl: !!explorerUrl,
         hasProjectUrl: !!projectUrl,
     }

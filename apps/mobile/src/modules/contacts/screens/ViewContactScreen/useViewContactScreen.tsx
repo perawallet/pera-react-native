@@ -13,12 +13,12 @@
 import { useCallback } from 'react'
 import { Contact, useContacts } from '@perawallet/wallet-core-contacts'
 import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
+import type { Maybe, Optional } from '@perawallet/wallet-core-shared'
 
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { ContactQRContent } from '@modules/contacts/components/ContactQRContent'
 import { shareText } from '@utils/shareText'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { Maybe, Optional } from '@perawallet/wallet-core-shared'
 
 export type UseViewContactScreenResult = {
     selectedContact: Maybe<Contact>

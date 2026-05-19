@@ -21,6 +21,7 @@
 // Aliased into the test build via apps/mobile/vitest.config.ts.
 
 import { KeyContext, XHDWalletAPI } from '@algorandfoundation/xhd-wallet-api'
+import { crypto_sign_keypair } from '@algorandfoundation/xhd-wallet-api/dist/sumo.facade.js'
 import { type Optional } from '@perawallet/wallet-core-shared'
 
 // Types come from `@tanstack/store` and `@algorandfoundation/keystore`,
@@ -38,12 +39,13 @@ type KeyData = Key & {
     privateKey?: Uint8Array
     publicKey?: Uint8Array
     seed?: Uint8Array
-    params?: {
+    metadata?: {
         parentKeyId?: string
         account?: number
         index?: number
         context?: number
         derivation?: number
+        [k: string]: unknown
     }
 }
 type KeyStoreState = { keys: Key[]; status: string }
@@ -144,7 +146,7 @@ export const clear = async ({
     store.setState((s: KeyStoreState) => ({ ...s, keys: [] }))
 }
 
-// Used by typedSecret.withTypedSecret via `getProvider().key.store.export(id)`.
+// Used by secrets.withSecret via `getProvider().key.store.export(id)`.
 // Returns the full KeyData including privateKey — caller is expected to zero
 // the bytes after use.
 const exportKey = async (id: string): Promise<KeyData> => {
@@ -175,33 +177,56 @@ export const WithKeyStore = (_provider: any, options: any) => {
         `test-derived-${Date.now().toString(36)}-${++derivedSeq}`
 
     const api = {
-        // Mirrors the production keystore's `generate` for the
-        // `hd-derived-ed25519` type that `useHDWallet.generateDerivedKey`
-        // uses. Resolves the parent root key bytes, derives the public key
-        // via the same `XHDWalletAPI.keyGen` call as the real keystore, then
-        // commits a KeyData entry so `export(id)` later returns the public
-        // key. Other generate types throw — flow tests should opt in.
+        // Mirrors the production keystore's `generate` for the two derived
+        // key types the kms layer mints:
+        // - `ed25519` (standalone signing child of an algo25 seed) — derives
+        //   the keypair from `parentKey.privateKey.slice(0, 32)` via tweetnacl.
+        // - `hd-derived-ed25519` (XHD child of a bip39 seed) — derives the
+        //   public key via the same `XHDWalletAPI.keyGen` call as the real
+        //   keystore. Other types throw — flow tests should opt in.
         async generate(options: {
             type?: string
             extractable?: boolean
             keyUsages?: string[]
             algorithm?: string
             params?: {
+                id?: string
                 parentKeyId?: string
                 account?: number
                 index?: number
                 context?: number
                 derivation?: number
+                value?: Uint8Array | string
+                params?: { value?: Uint8Array | string }
             }
         }): Promise<string> {
-            if (options?.type !== 'hd-derived-ed25519') {
-                throw new Error(
-                    `Test keystore: generate() supports 'hd-derived-ed25519' only, got: ${String(
-                        options?.type,
-                    )}`,
-                )
+            const type = options?.type
+            const params = options?.params ?? {}
+
+            if (!reactiveStore) throw new Error('Keystore store missing')
+
+            if (type === 'secret-key') {
+                // Mirrors `generateSecretKey` in the real keystore: read
+                // the value from `params.params.value` (the rn-keystore
+                // wraps caller params under `metadata.params`) and
+                // commit a secret-key entry. No parent required.
+                const valueSrc = params.params?.value ?? params.value
+                const value =
+                    typeof valueSrc === 'string'
+                        ? new TextEncoder().encode(valueSrc)
+                        : valueSrc instanceof Uint8Array
+                          ? valueSrc
+                          : new Uint8Array(0)
+                const id = params.id ?? newDerivedKeyId()
+                const entry: KeyData = {
+                    id,
+                    type: 'secret-key',
+                    privateKey: new Uint8Array(value),
+                }
+                await commit({ store: reactiveStore, keyData: entry })
+                return id
             }
-            const params = options.params ?? {}
+
             const parentKeyId = params.parentKeyId
             if (!parentKeyId) {
                 throw new Error(
@@ -214,31 +239,118 @@ export const WithKeyStore = (_provider: any, options: any) => {
                     `Test keystore: parent key not found or missing privateKey: ${parentKeyId}`,
                 )
             }
-            const account = params.account ?? 0
-            const index = params.index ?? 0
-            const context = (params.context ?? KeyContext.Address) as KeyContext
-            const derivation = params.derivation ?? 0
+
+            if (type === 'ed25519') {
+                // Mirrors `generateEd25519FromSeed` from the real keystore:
+                // expand the first 32 bytes of the parent seed into an
+                // Ed25519 keypair via the same xhd-wallet-api facade the
+                // production rn-keystore goes through.
+                const seedBytes = parent.privateKey.slice(0, 32)
+                const { publicKey, secretKey } = crypto_sign_keypair(seedBytes)
+                const id = params.id ?? newDerivedKeyId()
+                const derived: KeyData = {
+                    id,
+                    type: 'ed25519',
+                    publicKey: new Uint8Array(publicKey),
+                    privateKey: new Uint8Array(secretKey),
+                    metadata: { parentKeyId },
+                }
+                await commit({ store: reactiveStore, keyData: derived })
+                return id
+            }
+
+            if (type === 'hd-derived-ed25519') {
+                const account = params.account ?? 0
+                const index = params.index ?? 0
+                const context = (params.context ??
+                    KeyContext.Address) as KeyContext
+                const derivation = params.derivation ?? 0
+                const publicKey = await xhdApi.keyGen(
+                    parent.privateKey,
+                    context,
+                    account,
+                    index,
+                    derivation,
+                )
+
+                const id = params.id ?? newDerivedKeyId()
+                const derived: KeyData = {
+                    id,
+                    type: 'hd-derived-ed25519',
+                    publicKey,
+                    metadata: {
+                        parentKeyId,
+                        account,
+                        index,
+                        context,
+                        derivation,
+                    },
+                }
+                await commit({
+                    store: reactiveStore,
+                    keyData: derived,
+                })
+                return id
+            }
+
+            throw new Error(
+                `Test keystore: generate() supports 'ed25519' | 'hd-derived-ed25519' only, got: ${String(
+                    type,
+                )}`,
+            )
+        },
+        // Mirrors `keyStore.deriveFromSeed` for HD wallets. Parses the BIP44
+        // path to extract account/keyIndex, runs `xhdApi.keyGen`, and stores
+        // the derived public key alongside its derivation coords.
+        async deriveFromSeed(
+            seedId: string,
+            path: string,
+            opts?: { mode?: string; id?: string },
+        ): Promise<string> {
+            if (!reactiveStore) throw new Error('Keystore store missing')
+            const parent = keyData.get(seedId)
+            if (!parent?.privateKey) {
+                throw new Error(
+                    `Test keystore: seed not found or missing privateKey: ${seedId}`,
+                )
+            }
+            const parts = path
+                .replace(/^m\/?/, '')
+                .split('/')
+                .map(s => {
+                    const hardened = s.endsWith("'") || s.endsWith('h')
+                    const v = parseInt(s.replace(/['h]$/, ''), 10)
+                    return hardened ? v + 0x80_00_00_00 : v
+                })
+            const context =
+                parts[1] === 0x80_00_01_1b
+                    ? KeyContext.Address
+                    : KeyContext.Identity
+            const account = (parts[2] ?? 0x80_00_00_00) & 0x7f_ff_ff_ff
+            const keyIndex = (parts[4] ?? 0) & 0x7f_ff_ff_ff
+            const derivation = opts?.mode === 'standard' ? 32 : 9
             const publicKey = await xhdApi.keyGen(
                 parent.privateKey,
                 context,
                 account,
-                index,
+                keyIndex,
                 derivation,
             )
 
-            if (!reactiveStore) throw new Error('Keystore store missing')
-
-            const id = newDerivedKeyId()
+            const id = opts?.id ?? newDerivedKeyId()
             const derived: KeyData = {
                 id,
                 type: 'hd-derived-ed25519',
                 publicKey,
-                params: { parentKeyId, account, index, context, derivation },
+                metadata: {
+                    parentKeyId: seedId,
+                    account,
+                    index: keyIndex,
+                    context,
+                    derivation,
+                },
             }
-            await commit({
-                store: reactiveStore,
-                keyData: derived,
-            })
+            await commit({ store: reactiveStore, keyData: derived })
             return id
         },
         async import(data: KeyData): Promise<string> {

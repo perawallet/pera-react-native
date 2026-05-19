@@ -14,31 +14,22 @@ import { useWindowDimensions } from 'react-native'
 import { PinEntry } from '@modules/security/components/PinEntry'
 import { PinEntryMode, usePinEditView } from './usePinEditView'
 import { useStyles } from './styles'
-import {
-    PWBottomSheet,
-    PWIcon,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
+import { PWView } from '@components/core'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import type { Nullable } from '@perawallet/wallet-core-shared'
 
-type PinEditViewProps = {
-    mode: Nullable<PinEntryMode>
-    onSuccess?: () => void
-    onClose?: () => void
+export type PinEditViewProps = {
+    mode: PinEntryMode
+    onSuccess: () => void
     testID?: string
 }
 
-export const PinEditView = ({
-    mode,
-    onSuccess,
-    onClose,
-    testID,
-}: PinEditViewProps) => {
+export const PinEditView = ({ mode, onSuccess, testID }: PinEditViewProps) => {
     const { height } = useWindowDimensions()
     const insets = useSafeAreaInsets()
-    const styles = useStyles({ height, insets })
+    const styles = useStyles({
+        height: height - insets.top - insets.bottom,
+        insets,
+    })
 
     const {
         title,
@@ -46,28 +37,13 @@ export const PinEditView = ({
         isDisabled,
         handlePinComplete,
         handleErrorAnimationComplete,
-    } = usePinEditView({
-        mode,
-        onSuccess,
-    })
+    } = usePinEditView({ mode, onSuccess })
 
     return (
-        <PWBottomSheet
-            isVisible={!!mode}
-            containerStyle={styles.container}
-            innerContainerStyle={styles.innerContainer}
-            size='full'
+        <PWView
+            style={styles.innerContainer}
             testID={testID}
         >
-            <PWView style={styles.closeButtonContainer}>
-                <PWTouchableOpacity
-                    style={styles.closeButton}
-                    onPress={onClose}
-                    testID='close-button'
-                >
-                    <PWIcon name='cross' />
-                </PWTouchableOpacity>
-            </PWView>
             <PinEntry
                 title={title}
                 onPinComplete={handlePinComplete}
@@ -75,6 +51,6 @@ export const PinEditView = ({
                 hasError={hasError}
                 onErrorAnimationComplete={handleErrorAnimationComplete}
             />
-        </PWBottomSheet>
+        </PWView>
     )
 }

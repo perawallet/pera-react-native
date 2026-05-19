@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWButton, PWText, PWView } from '@components/core'
+import { PWButton, PWSlideToConfirm, PWText, PWView } from '@components/core'
 import { Arc60DataSigningSummaryView } from '@modules/signing/components/Arc60DataSigningView'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
@@ -49,7 +49,6 @@ export const Arc60SigningScreen = () => {
                             title={t('common.close.label')}
                             variant='primary'
                             onPress={handleReject}
-                            style={styles.button}
                         />
                     </PWView>
                 </PWView>
@@ -72,20 +71,18 @@ export const Arc60SigningScreen = () => {
                     <PWText style={styles.errorText}>{error.message}</PWText>
                 )}
                 <PWView style={styles.buttonContainer}>
-                    <PWButton
-                        title={t('common.cancel.label')}
-                        variant='secondary'
-                        onPress={handleReject}
-                        style={styles.button}
-                        isDisabled={isPending}
-                    />
-                    <PWButton
-                        title={t('common.confirm.label')}
-                        variant='primary'
-                        onPress={handleApprove}
-                        style={styles.button}
+                    <PWSlideToConfirm
+                        title={t('common.slide_to_confirm.label')}
+                        onConfirm={handleApprove}
                         isLoading={isPending}
                         isDisabled={!canConfirm}
+                        testID='arc60-confirm-slide'
+                    />
+                    <PWButton
+                        title={t('common.cancel.label')}
+                        variant='linkNeutral'
+                        onPress={handleReject}
+                        isDisabled={isPending}
                     />
                 </PWView>
             </PWView>

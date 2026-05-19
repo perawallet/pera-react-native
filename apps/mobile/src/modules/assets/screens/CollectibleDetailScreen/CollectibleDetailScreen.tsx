@@ -23,7 +23,6 @@ import {
     PWView,
 } from '@components/core'
 import { MediaCarousel } from '@components/MediaCarousel'
-import { FullScreenImageViewer } from '@modules/assets/screens/FullScreenImageViewer'
 import { ModelViewerBottomSheet } from '@components/ModelViewerBottomSheet'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
@@ -64,9 +63,6 @@ export const CollectibleDetailScreen = ({
         handleCopyImage,
         handleSaveImage,
         handleOptOutPressed,
-        fullScreenMedia,
-        fullScreenInitialIndex,
-        fullScreenViewerModal,
         modelViewerModal,
         modelViewerUrl,
     } = useCollectibleDetail(assetId)
@@ -216,12 +212,6 @@ export const CollectibleDetailScreen = ({
                     />
                 </PWView>
             </PWScrollView>
-            <FullScreenImageViewer
-                isVisible={fullScreenViewerModal.isOpen}
-                onClose={fullScreenViewerModal.close}
-                media={fullScreenMedia}
-                initialIndex={fullScreenInitialIndex}
-            />
             <ModelViewerBottomSheet
                 isVisible={modelViewerModal.isOpen}
                 onClose={modelViewerModal.close}

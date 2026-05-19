@@ -15,6 +15,7 @@ import { renderHook, act } from '@testing-library/react'
 import { useSigningRequest } from '../useSigningRequest'
 import { __resetSigningActorRegistryForTests } from '../useSigningActorLifecycle'
 import { useSigningStore } from '../../store'
+import { approvalGate } from '../../pipeline/approvalGate'
 import {
     MAX_TRANSACTION_SIGN_REQUESTS,
     MAX_DATA_SIGN_REQUESTS,
@@ -70,12 +71,19 @@ vi.mock('../useMultisigTransportAdapters', () => ({
     })),
 }))
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useAllAccounts: vi.fn(() => [
-        { address: 'ADDR1', type: 'algo25' },
-        { address: 'ADDR2', type: 'algo25' },
-    ]),
-}))
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
+    const original =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-accounts')
+        >()
+    return {
+        ...original,
+        useAllAccounts: vi.fn(() => [
+            { address: 'ADDR1', type: 'algo25' },
+            { address: 'ADDR2', type: 'algo25' },
+        ]),
+    }
+})
 
 vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
     const original =
@@ -263,21 +271,27 @@ describe('useSigningRequest', () => {
     })
 
     describe('signAndSendRequest', () => {
-        test('sends USER_APPROVED to the matching actor', () => {
+        test('approves the request via the approval gate', async () => {
             const actor = makeMockActor('tx-1')
             vi.mocked(createSigningMachine).mockReturnValue(actor as any)
 
             const { result } = renderHook(() => useSigningRequest())
-            const request = makeTxRequest()
+            const request = makeTxRequest({ sourceType: 'walletconnect' })
 
             act(() => {
                 result.current.addSignRequest(request)
             })
+            // Register a gate as the lifecycle would for an interactive
+            // source. The hook resolves it; we then assert the deferred
+            // resolves to 'approved' by awaiting `waitFor`.
+            approvalGate.register('tx-1')
+            const resolution = approvalGate.waitFor('tx-1')
+
             act(() => {
                 result.current.signAndSendRequest(request)
             })
 
-            expect(actor.send).toHaveBeenCalledWith({ type: 'USER_APPROVED' })
+            await expect(resolution).resolves.toBe('approved')
         })
 
         test('currentRequest is the first pending request', () => {
@@ -300,21 +314,27 @@ describe('useSigningRequest', () => {
     })
 
     describe('rejectRequest', () => {
-        test('sends USER_REJECTED to the matching actor', () => {
+        test('rejects the request via the approval gate', async () => {
             const actor = makeMockActor('tx-1')
             vi.mocked(createSigningMachine).mockReturnValue(actor as any)
 
             const { result } = renderHook(() => useSigningRequest())
-            const request = makeTxRequest({ transport: 'callback' })
+            const request = makeTxRequest({
+                transport: 'callback',
+                sourceType: 'walletconnect',
+            })
 
             act(() => {
                 result.current.addSignRequest(request)
             })
+            approvalGate.register('tx-1')
+            const resolution = approvalGate.waitFor('tx-1')
+
             act(() => {
                 result.current.rejectRequest(request)
             })
 
-            expect(actor.send).toHaveBeenCalledWith({ type: 'USER_REJECTED' })
+            await expect(resolution).resolves.toBe('rejected')
         })
 
         test('when no actor, calls reject callback and removes request for callback transport', () => {
@@ -419,12 +439,12 @@ describe('useSigningRequest', () => {
             expect(mockReject).toHaveBeenCalledTimes(1)
         })
 
-        test('sets lastCompletedRequest when actor reaches completed state', () => {
+        test('sets lastCompletedRequest for interactive sources (walletconnect)', () => {
             const actor = makeMockActor('tx-1')
             vi.mocked(createSigningMachine).mockReturnValue(actor as any)
 
             const { result } = renderHook(() => useSigningRequest())
-            const request = makeTxRequest()
+            const request = makeTxRequest({ sourceType: 'walletconnect' })
 
             act(() => {
                 result.current.addSignRequest(request)
@@ -436,15 +456,13 @@ describe('useSigningRequest', () => {
             expect(result.current.lastCompletedRequest?.id).toBe('tx-1')
         })
 
-        test('does not set lastCompletedRequest for headless requests', () => {
+        test('does not set lastCompletedRequest for non-interactive requests', () => {
             const actor = makeMockActor('tx-1')
             vi.mocked(createSigningMachine).mockReturnValue(actor as any)
 
             const { result } = renderHook(() => useSigningRequest())
-            const request = makeTxRequest({
-                transport: 'callback',
-                headless: true,
-            })
+            // No `sourceType` → not in INTERACTIVE_SOURCES → non-interactive.
+            const request = makeTxRequest({ transport: 'callback' })
 
             act(() => {
                 result.current.addSignRequest(request)

@@ -17,86 +17,15 @@ import {
     isAlgo25Account,
     isHDWalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type {
-    Algo25Account,
-    HDWalletAccount,
-    WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { decodeFromBase64, concatBytes } from '@perawallet/wallet-core-shared'
 import { SIGNING_KEY_DOMAIN } from '../constants'
 
+const MX_PREFIX = new TextEncoder().encode('MX')
+
 export const useArbitraryDataSigner = () => {
     const accounts = useAccountsStore(state => state.accounts)
-    const { getKeyOrThrow, withHDSession, withAlgo25Session } = useKMS()
-
-    const signHDWalletArbitraryData = useCallback(
-        async (
-            account: HDWalletAccount,
-            data: string | string[],
-        ): Promise<Uint8Array[]> => {
-            const hdWalletDetails = account.hdWalletDetails
-
-            const key = getKeyOrThrow(account.keyPairId)
-            return await withHDSession(
-                key,
-                SIGNING_KEY_DOMAIN,
-                async session => {
-                    const toSign = [data].flat()
-
-                    const signatures = await Promise.all(
-                        toSign.map(async item => {
-                            // Match the legacy algo_signData spec: dApps verify
-                            // the signature against `MX || data`. The Algo25
-                            // branch already does this; HD must mirror it.
-                            const bytesToSign = concatBytes(
-                                new TextEncoder().encode('MX'),
-                                decodeFromBase64(item),
-                            )
-                            return session.signData(
-                                {
-                                    account: hdWalletDetails.account,
-                                    keyIndex: hdWalletDetails.keyIndex,
-                                    derivationType:
-                                        hdWalletDetails.derivationType,
-                                },
-                                bytesToSign,
-                            )
-                        }),
-                    )
-                    return signatures
-                },
-            )
-        },
-        [withHDSession],
-    )
-
-    const signAlgo25ArbitraryData = useCallback(
-        async (
-            account: Algo25Account,
-            data: string | string[],
-        ): Promise<Uint8Array[]> => {
-            const key = getKeyOrThrow(account.keyPairId)
-            return await withAlgo25Session(
-                key,
-                SIGNING_KEY_DOMAIN,
-                async session => {
-                    const toSign = typeof data === 'string' ? [data] : data
-
-                    const signatures = await Promise.all(
-                        toSign.map(async item => {
-                            const prefixedData = concatBytes(
-                                new TextEncoder().encode('MX'),
-                                decodeFromBase64(item),
-                            )
-                            return session.signData(prefixedData)
-                        }),
-                    )
-                    return signatures
-                },
-            )
-        },
-        [withAlgo25Session],
-    )
+    const { signDataWithKey } = useKMS()
 
     const signArbitraryData = useCallback(
         async (
@@ -115,22 +44,27 @@ export const useArbitraryDataSigner = () => {
                 return signArbitraryData(rekeyedAccount, data)
             }
 
-            if (isHDWalletAccount(account)) {
-                return signHDWalletArbitraryData(
-                    account as HDWalletAccount,
-                    data,
+            if (!isHDWalletAccount(account) && !isAlgo25Account(account)) {
+                return Promise.reject(
+                    `Unsupported account type ${account.type} for ${account.address}`,
                 )
             }
 
-            if (isAlgo25Account(account)) {
-                return signAlgo25ArbitraryData(account as Algo25Account, data)
-            }
+            // Match the legacy algo_signData spec: dApps verify the
+            // signature against `MX || data`. Both account types share
+            // this prefix and route through the same `keyStore.sign`
+            // dispatch on the child key.
+            const toSign = [data]
+                .flat()
+                .map(item => concatBytes(MX_PREFIX, decodeFromBase64(item)))
 
-            return Promise.reject(
-                `Unsupported account type ${account.type} for ${account.address}`,
+            return signDataWithKey(
+                account.keyPairId,
+                SIGNING_KEY_DOMAIN,
+                toSign,
             )
         },
-        [accounts, signHDWalletArbitraryData, signAlgo25ArbitraryData],
+        [accounts, signDataWithKey],
     )
 
     return {

@@ -28,10 +28,11 @@ import { SwapUserRejectedError } from './swapGroupPlan'
  * Hand a batch of unsigned transactions to the signing pipeline and wait for
  * the user-signed bytes to come back via the callback transport.
  *
- * This is a `headless: true` local callback request — the caller is
- * responsible for having shown a review UI on the preceding screen, so the
- * pipeline skips its own review sheet and proceeds directly from
- * `validating` to `signing`.
+ * This is a headless local callback request — the caller is responsible for
+ * having shown a review UI on the preceding screen, so we leave the
+ * `sourceType` as `'local'` (outside `INTERACTIVE_SOURCES`). The lifecycle
+ * auto-resumes the machine at its `awaiting_user` pause, skipping the
+ * standard review sheet.
  *
  * Rejections are surfaced as:
  * - {@link SwapUserRejectedError} when the user cancels — callers should
@@ -53,7 +54,6 @@ export const requestSwapSignatures = (
             type: 'transactions',
             transport: 'callback',
             sourceType: 'local',
-            headless: true,
             txs: unsignedTxs,
             sourceMetadata: source,
             approve: async signed => {

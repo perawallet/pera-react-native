@@ -10,128 +10,108 @@
  limitations under the License
  */
 
-import { StackActions } from '@react-navigation/native'
 import { useToast } from './useToast'
-import { navigationRef } from '@routes/navigationRef'
-import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
+import { logger } from '@perawallet/wallet-core-shared'
 import { parseDeeplink } from './deeplink/parser'
 import { DeeplinkType } from './deeplink/types'
 import {
-    resolveImportAccountType,
     useAccountsStore,
-    useImportAccount,
     useSelectedAccountAddress,
-    WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
-import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
-import { useWebView } from '@modules/webview/hooks/useWebViewStore'
 import {
-    isSafeBrowserUrl,
-    isSafeRelativePath,
-} from '@modules/webview/hooks/handlers'
-import { useWalletConnect } from '@perawallet/wallet-core-walletconnect'
-import { ALGORAND_SCHEME } from './deeplink/arc90-parser'
+    useWalletConnect,
+    useWalletConnectStore,
+} from '@perawallet/wallet-core-walletconnect'
 import {
     isValidAlgorandAddress,
+    microAlgosToAlgos,
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
 import { useLanguage } from './useLanguage'
+import { navigateToScreen } from './deeplink/navigateToScreen'
+import {
+    buildAccountDeeplink,
+    buildDeeplink,
+    type BuildDeeplinkInput,
+} from './deeplink/builders'
+import {
+    useBrowserDeeplink,
+    useDiscoverPathDeeplink,
+    useKeyregDeeplink,
+    usePeraWebImportDeeplink,
+    useRecoverAddressDeeplink,
+    useSendFundsDeeplink,
+} from './deeplink/handlers'
+import { useDeeplinkErrorHandler } from './deeplink/handlers/useDeeplinkErrorHandler'
+import { withTimeout } from './deeplink/handlers/timeout'
+
+export type { BuildDeeplinkInput } from './deeplink/builders'
+
+/**
+ * Subscribe to the WalletConnect store and resolve `true` as soon as a
+ * session_request lands whose `clientId` wasn't in `beforeIds`. Resolves
+ * `false` if none arrives within `timeoutMs`. Used by the WC deeplink
+ * dispatcher to detect dead bridges (no event ever fires) and surface
+ * an actionable error instead of silently leaving the user staring at
+ * the screen they came from.
+ */
+const waitForNewSessionRequest = (
+    beforeIds: Set<string>,
+    timeoutMs: number,
+): Promise<boolean> =>
+    new Promise(resolve => {
+        const timer = setTimeout(() => {
+            unsub()
+            resolve(false)
+        }, timeoutMs)
+        const unsub = useWalletConnectStore.subscribe(state => {
+            const nowNew = state.sessionRequests.find(
+                r => !beforeIds.has(r.clientId),
+            )
+            if (nowNew) {
+                clearTimeout(timer)
+                unsub()
+                resolve(true)
+            }
+        })
+    })
 
 type LinkSource = 'qr' | 'deeplink'
 
-export type BuildDeeplinkInput = {
-    type: typeof DeeplinkType.SHARED_ACCOUNT_IMPORT
-    address: string
+type UseDeepLinkResult = {
+    isValidDeepLink: (url: string) => boolean
+    handleDeepLink: (
+        url: string,
+        replaceCurrentScreen: boolean | undefined,
+        source: LinkSource,
+        onError?: () => void,
+        onSuccess?: () => void,
+    ) => Promise<void>
+    parseDeeplink: typeof parseDeeplink
+    buildAccountDeeplink: typeof buildAccountDeeplink
+    buildDeeplink: (input: BuildDeeplinkInput) => string
 }
 
-export const useDeepLink = () => {
-    const { showToast, errorToast, infoToast } = useToast()
+export const useDeepLink = (): UseDeepLinkResult => {
+    const { errorToast, infoToast } = useToast()
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
-    const { pushWebView } = useWebView()
     const { network } = useNetwork()
     const { t } = useLanguage()
     const { connect } = useWalletConnect(network)
     const { requestByType } = useBottomSheetStore()
-    const importAccount = useImportAccount()
-    const markBackupComplete = useMarkMnemonicBackupComplete()
+
+    const recoverAddress = useRecoverAddressDeeplink()
+    const openSendFunds = useSendFundsDeeplink()
+    const submitKeyreg = useKeyregDeeplink()
+    const openBrowser = useBrowserDeeplink()
+    const openDiscoverPath = useDiscoverPathDeeplink()
+    const handlePeraWebImport = usePeraWebImportDeeplink()
+    const showError = useDeeplinkErrorHandler()
 
     const isValidDeepLink = (url: string): boolean => {
-        if (isValidAlgorandAddress(url)) {
-            return true
-        }
-        const parsed = parseDeeplink(url)
-        return parsed !== null
-    }
-
-    const navigateToScreen = (
-        replaceCurrentScreen: boolean,
-        screenName: string,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        params?: any,
-    ) => {
-        if (!navigationRef.isReady()) return
-        if (replaceCurrentScreen) {
-            navigationRef.dispatch(StackActions.replace(screenName, params))
-        } else {
-            navigationRef.navigate(screenName, params)
-        }
-    }
-
-    const buildAccountDeeplink = (account: WalletAccount) => {
-        return `${ALGORAND_SCHEME}${account.address}`
-    }
-
-    const handleRecoverAddressDeeplink = async ({
-        mnemonic,
-        source,
-        replaceCurrentScreen,
-    }: {
-        mnemonic: string
-        source: LinkSource
-        replaceCurrentScreen: boolean
-    }) => {
-        if (source !== 'qr') return
-
-        const resolved = resolveImportAccountType(mnemonic)
-        if (!resolved.success) return
-
-        try {
-            const result = await importAccount({
-                mnemonic,
-                type: resolved.accountType,
-            })
-
-            if (result.type === 'hdWallet' && 'walletKeyId' in result) {
-                navigateToScreen(replaceCurrentScreen, 'AddAccount', {
-                    screen: 'SearchAccounts',
-                    params: {
-                        mode: 'import',
-                        walletKeyId: result.walletKeyId,
-                        derivationType: result.derivationType,
-                    },
-                })
-            } else {
-                markBackupComplete(result as WalletAccount)
-                navigateToScreen(replaceCurrentScreen, 'AddAccount', {
-                    screen: 'SearchAccounts',
-                    params: {
-                        account: result as WalletAccount,
-                    },
-                })
-            }
-        } catch (error) {
-            logger.error('Deeplink import failed', { error })
-        }
-    }
-
-    const buildDeeplink = (input: BuildDeeplinkInput): string => {
-        switch (input.type) {
-            case DeeplinkType.SHARED_ACCOUNT_IMPORT: {
-                const encodedAddress = encodeURIComponent(input.address)
-                return `perawallet://app/shared-account-import/?address=${encodedAddress}`
-            }
-        }
+        if (isValidAlgorandAddress(url)) return true
+        return parseDeeplink(url) !== null
     }
 
     const handleDeepLink = async (
@@ -152,10 +132,7 @@ export const useDeepLink = () => {
             return
         }
 
-        logger.debug('Parsed deeplink data:', { parsedData })
-
         try {
-            // Navigate based on deeplink type
             switch (parsedData.type) {
                 case DeeplinkType.ADD_CONTACT:
                     navigateToScreen(replaceCurrentScreen, 'AddContact', {
@@ -172,63 +149,122 @@ export const useDeepLink = () => {
                     break
 
                 case DeeplinkType.ADD_WATCH_ACCOUNT:
-                    infoToast(
-                        'Add Watch Account',
-                        'Watch account screen not implemented yet',
-                    )
+                    navigateToScreen(replaceCurrentScreen, 'AddAccount', {
+                        screen: 'WatchAccount',
+                        params: { prefillAddress: parsedData.address },
+                    })
                     break
 
                 case DeeplinkType.RECEIVER_ACCOUNT_SELECTION:
-                    infoToast(
-                        'Receiver Selection',
-                        'Receiver account selection not implemented yet',
-                    )
+                    // Mirrors native: capture the address as the receiver and
+                    // open the Send flow. Native invokes this from inside the
+                    // Send destination picker; reaching it as a top-level
+                    // deeplink falls back to opening Send fresh.
+                    openSendFunds({ destination: parsedData.address })
                     break
 
                 case DeeplinkType.ADDRESS_ACTIONS:
-                    infoToast(
-                        'Address Actions',
-                        'Address actions screen not implemented yet',
-                    )
+                    requestByType('account-actions', {
+                        address: parsedData.address,
+                        label: parsedData.label,
+                    })
                     break
 
                 case DeeplinkType.ALGO_TRANSFER:
-                    infoToast(
-                        'Algo Transfer',
-                        'Algo transfer screen not implemented yet',
-                    )
+                    openSendFunds({
+                        assetId: '0',
+                        destination: parsedData.receiverAddress,
+                        // ALGO amounts arrive in microAlgos; the store holds
+                        // the display value (ALGOs) so convert here.
+                        amount: parsedData.amount
+                            ? microAlgosToAlgos(BigInt(parsedData.amount))
+                            : undefined,
+                        note: parsedData.note ?? parsedData.xnote,
+                    })
                     break
 
                 case DeeplinkType.ASSET_TRANSFER:
-                    infoToast(
-                        'Asset Transfer',
-                        'Asset transfer screen not implemented yet',
-                    )
+                    openSendFunds({
+                        assetId: parsedData.assetId,
+                        destination: parsedData.receiverAddress,
+                        // Asset amounts are in base units. The InputScreen
+                        // converts to display units once the asset's
+                        // `decimals` resolve via the assets query.
+                        amountBaseUnits: parsedData.amount,
+                        note: parsedData.note ?? parsedData.xnote,
+                    })
                     break
 
                 case DeeplinkType.KEYREG:
-                    // TODO: Handle the keyreg transaction construction and do something useful with it
-                    infoToast(
-                        'Key Registration',
-                        'Keyreg screen not implemented yet',
-                    )
+                    await submitKeyreg(parsedData)
                     break
 
                 case DeeplinkType.RECOVER_ADDRESS:
-                    await handleRecoverAddressDeeplink({
+                    await recoverAddress({
                         mnemonic: parsedData.mnemonic,
                         source,
                         replaceCurrentScreen,
+                        sourceUrl: parsedData.sourceUrl,
                     })
                     break
 
-                case DeeplinkType.WALLET_CONNECT:
-                    connect({
-                        connection: {
+                case DeeplinkType.WALLET_CONNECT: {
+                    // `connect` constructs the WC v1 client + registers
+                    // listeners synchronously; the actual bridge handshake
+                    // (and subsequent `session_request` from the dApp)
+                    // happens asynchronously after `connect` returns.
+                    //
+                    // WC v1 bridges were sunset by the WalletConnect
+                    // Foundation in mid-2024 — most public bridges 404,
+                    // including the legacy pera bridge that older QR
+                    // codes embed. The client doesn't surface this as a
+                    // sync throw, so we have to detect it ourselves:
+                    // snapshot the session-request store before connect,
+                    // wait briefly for a NEW request to land, and toast
+                    // a clear error if it never does.
+                    try {
+                        await withTimeout(
+                            'walletConnect.connect',
+                            10_000,
+                            connect({
+                                connection: { uri: parsedData.uri },
+                            }),
+                        )
+                    } catch (error) {
+                        logger.error('[deeplink/wc] connect failed', {
+                            error,
                             uri: parsedData.uri,
-                        },
-                    })
+                        })
+                        showError({
+                            variant: 'walletconnect',
+                            sourceUrl: parsedData.sourceUrl,
+                            parsedType: 'WALLET_CONNECT',
+                            error,
+                        })
+                        onError?.()
+                        return
+                    }
+                    const beforeIds = new Set(
+                        useWalletConnectStore
+                            .getState()
+                            .sessionRequests.map(r => r.clientId),
+                    )
+                    const sawNewSessionRequest = await waitForNewSessionRequest(
+                        beforeIds,
+                        8_000,
+                    )
+                    if (!sawNewSessionRequest) {
+                        showError({
+                            variant: 'walletconnect',
+                            sourceUrl: parsedData.sourceUrl,
+                            parsedType: 'WALLET_CONNECT',
+                            error: 'No response from the dApp. The session may be expired or the WalletConnect bridge may be unreachable.',
+                        })
+                        onError?.()
+                        return
+                    }
                     break
+                }
 
                 case DeeplinkType.ASSET_OPT_IN: {
                     // Prefer the address explicitly carried by the deep link;
@@ -258,9 +294,7 @@ export const useDeepLink = () => {
                         screen: 'Home',
                         params: {
                             screen: 'AssetDetails',
-                            params: {
-                                assetId: parsedData.assetId,
-                            },
+                            params: { assetId: parsedData.assetId },
                         },
                     })
                     break
@@ -280,55 +314,32 @@ export const useDeepLink = () => {
 
                 case DeeplinkType.INTERNAL_BROWSER:
                 case DeeplinkType.DISCOVER_BROWSER:
-                    if (!isSafeBrowserUrl(parsedData.url)) {
-                        logger.warn(
-                            'Blocked deeplink WebView push for unsafe URL',
-                            {
-                                url: parsedData.url,
-                                sourceUrl: parsedData.sourceUrl,
-                            },
-                        )
-                        errorToast(
-                            t('errors.deeplink.invalid_url_title'),
-                            t('errors.deeplink.invalid_url_body'),
-                        )
-                        onError?.()
+                    if (
+                        !openBrowser({
+                            url: parsedData.url,
+                            sourceUrl: parsedData.sourceUrl,
+                            onError,
+                        })
+                    ) {
                         return
                     }
-                    pushWebView({
-                        id: generateOrderedUniqueId(),
-                        url: parsedData.url,
-                    })
                     break
 
                 case DeeplinkType.DISCOVER_PATH:
                     if (
-                        parsedData.path !== undefined &&
-                        !isSafeRelativePath(parsedData.path)
+                        !openDiscoverPath({
+                            path: parsedData.path,
+                            sourceUrl: parsedData.sourceUrl,
+                            replaceCurrentScreen,
+                            onError,
+                        })
                     ) {
-                        logger.warn(
-                            'Blocked DISCOVER_PATH deeplink with unsafe path',
-                            {
-                                path: parsedData.path,
-                                sourceUrl: parsedData.sourceUrl,
-                            },
-                        )
-                        errorToast(
-                            t('errors.deeplink.invalid_url_title'),
-                            t('errors.deeplink.invalid_url_body'),
-                        )
-                        onError?.()
                         return
                     }
-                    navigateToScreen(replaceCurrentScreen, 'TabBar', {
-                        screen: 'Discover',
-                        params: { path: parsedData.path },
-                    })
                     break
 
                 case DeeplinkType.CARDS:
                     // TODO: Navigate to cards screen
-                    // navigation.navigate('Cards', { path: parsedData.path })
                     infoToast('Cards', 'Cards screen not implemented yet')
                     break
 
@@ -361,23 +372,46 @@ export const useDeepLink = () => {
                     break
 
                 case DeeplinkType.SELL:
-                    //TODO implement sell
-                    infoToast('Sell', 'Sell screen not implemented yet')
+                    // Native Sell flows route through the Bidali gift-card
+                    // marketplace (iOS BidaliFlowCoordinator, Android
+                    // navToBidaliNavigation). Open the same Bidali sheet
+                    // the Menu's "Buy Gift Card" panel button opens so we
+                    // inherit the bidaliProvider JS bridge wiring.
+                    if (parsedData.address) {
+                        setSelectedAccountAddress(parsedData.address)
+                    }
+                    requestByType(
+                        'bidali',
+                        {},
+                        {
+                            size: 'lg',
+                            enablePanDownToClose: true,
+                            autoCreateContainer: false,
+                        },
+                    )
                     break
 
                 case DeeplinkType.ACCOUNT_DETAIL:
                     setSelectedAccountAddress(parsedData.address)
                     navigateToScreen(replaceCurrentScreen, 'TabBar', {
-                        screen: 'AccountDetail',
+                        screen: 'Home',
+                        params: { screen: 'AccountDetails' },
                     })
                     break
 
                 case DeeplinkType.SHARED_ACCOUNT_IMPORT:
-                    // TODO(multisig PR 1): navigate to shared-account import flow
-                    infoToast(
-                        'Shared Account Import',
-                        'Shared account import not implemented yet',
-                    )
+                    navigateToScreen(replaceCurrentScreen, 'Multisig', {
+                        screen: 'ImportSharedAccount',
+                        params: { address: parsedData.address },
+                    })
+                    break
+
+                case DeeplinkType.PERA_WEB_IMPORT:
+                    handlePeraWebImport({
+                        data: parsedData,
+                        source,
+                        replaceCurrentScreen,
+                    })
                     break
 
                 case DeeplinkType.HOME:
@@ -388,15 +422,23 @@ export const useDeepLink = () => {
                     break
             }
 
-            logger.debug('Deeplink: Handled successfully', { url, parsedData })
             onSuccess?.()
         } catch (error) {
-            logger.error(error as Error, { url })
-            // guardrails-ignore-next-line no-error-toast-in-catch reason: bespoke deeplink-failure copy preserved verbatim
-            showToast({
-                title: 'Navigation Error',
-                body: 'Could not navigate to the requested screen',
-                type: 'error',
+            // Don't log the raw `url` here: for Pera Web QR deeplinks it is
+            // the JSON-encoded backup envelope containing the 32-byte
+            // secretbox `encryptionKey`. The logger's JSON-aware redactor
+            // scrubs it on the way out, but we err on the side of not
+            // shipping the cipher key to the crash reporter at all. For
+            // the same reason, only forward `sourceUrl` to the error sheet
+            // when the parsed deeplink isn't PERA_WEB_IMPORT.
+            logger.error(error as Error, { type: parsedData.type })
+            const isPeraWebImport =
+                parsedData.type === DeeplinkType.PERA_WEB_IMPORT
+            showError({
+                variant: 'generic',
+                sourceUrl: isPeraWebImport ? undefined : url,
+                parsedType: String(parsedData.type),
+                error,
             })
             onError?.()
         }

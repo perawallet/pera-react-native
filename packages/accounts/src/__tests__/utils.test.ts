@@ -13,17 +13,25 @@
 import { describe, test, expect } from 'vitest'
 import {
     canSignWithAccount,
+    findAccountByKey,
     getAccountDisplayName,
     hasSigningKeys,
     isAlgo25Account,
+    isEligibleLedgerRekeyTarget,
+    isEligibleRekeyTarget,
+    isEligibleSharedRekeyTarget,
     isHDWalletAccount,
     isLedgerAccount,
     isMultisigAccount,
     isSigningAccount,
     isRekeyedAccount,
     isWatchAccount,
+    matchesAccountKey,
+    resolveAuthAccount,
     resolveImportAccountType,
 } from '../utils'
+import { AccountTypes, type WalletAccount } from '../models'
+import { RekeyTargetNotFoundError } from '../errors'
 
 vi.mock('tweetnacl', () => ({
     default: {
@@ -267,7 +275,7 @@ describe('services/accounts/utils - account type checks', () => {
         expect(canSignWithAccount(rekeyedAccount, [])).toBe(false)
     })
 
-    test('canSignWithAccount handles rekey chain', () => {
+    test('canSignWithAccount resolves a single rekey hop only, not a chain', () => {
         const rootAccount = {
             id: '1',
             type: 'algo25',
@@ -290,7 +298,30 @@ describe('services/accounts/utils - account type checks', () => {
         } as any
 
         const accounts = [rootAccount, middleAccount, leafAccount]
-        expect(canSignWithAccount(leafAccount, accounts)).toBe(true)
+        // LEAF -> MIDDLE -> ROOT. MIDDLE holds no key, so LEAF cannot sign —
+        // the hop from MIDDLE to ROOT is not followed.
+        expect(canSignWithAccount(leafAccount, accounts)).toBe(false)
+        // MIDDLE -> ROOT, and ROOT holds a key, so MIDDLE can sign (one hop).
+        expect(canSignWithAccount(middleAccount, accounts)).toBe(true)
+    })
+
+    test('canSignWithAccount does not recurse on a cyclic auth chain', () => {
+        const a = {
+            id: '1',
+            type: 'watch',
+            address: 'A',
+            rekeyAddress: 'B',
+        } as any
+        const b = {
+            id: '2',
+            type: 'watch',
+            address: 'B',
+            rekeyAddress: 'A',
+        } as any
+
+        // Single-hop: A's immediate auth B holds no key — false, no infinite
+        // recursion.
+        expect(canSignWithAccount(a, [a, b])).toBe(false)
     })
 })
 
@@ -393,5 +424,261 @@ describe('services/accounts/utils - resolveImportAccountType', () => {
         )
         const result = resolveImportAccountType(mnemonic)
         expect(result).toEqual({ success: true, accountType: 'hdWallet' })
+    })
+})
+
+describe('matchesAccountKey / findAccountByKey', () => {
+    const a = { id: '1', address: 'ALICE' }
+    const b = { id: '2', address: 'BOB' }
+    const accounts = [a, b]
+
+    test('matches by address when address is supplied', () => {
+        expect(findAccountByKey(accounts, { address: 'ALICE' })).toBe(a)
+    })
+
+    test('falls back to id when address is missing', () => {
+        expect(findAccountByKey(accounts, { id: '2' })).toBe(b)
+    })
+
+    test('matches when either address or id matches (OR semantics)', () => {
+        expect(findAccountByKey(accounts, { address: 'ALICE', id: '99' })).toBe(
+            a,
+        )
+        expect(findAccountByKey(accounts, { address: 'NOPE', id: '2' })).toBe(b)
+    })
+
+    test('returns undefined when nothing matches', () => {
+        expect(
+            findAccountByKey(accounts, { address: 'NOPE', id: '99' }),
+        ).toBeUndefined()
+    })
+
+    test('empty key matches nothing', () => {
+        expect(findAccountByKey(accounts, {})).toBeUndefined()
+        expect(matchesAccountKey({})(a)).toBe(false)
+    })
+
+    test('empty-string fields are treated as missing', () => {
+        expect(matchesAccountKey({ address: '', id: '' })(a)).toBe(false)
+    })
+})
+
+const algo25 = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
+    ({
+        id: overrides.id ?? 'a',
+        address: overrides.address ?? 'A',
+        type: AccountTypes.algo25,
+        keyPairId: 'kp',
+        ...overrides,
+    }) as WalletAccount
+
+const hd = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
+    ({
+        id: overrides.id ?? 'h',
+        address: overrides.address ?? 'H',
+        type: AccountTypes.hdWallet,
+        keyPairId: 'kp-hd',
+        hdWalletDetails: {
+            account: 0,
+            change: 0,
+            keyIndex: 0,
+            derivationType: 9,
+        },
+        ...overrides,
+    }) as WalletAccount
+
+const ledger = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
+    ({
+        id: overrides.id ?? 'l',
+        address: overrides.address ?? 'L',
+        type: AccountTypes.hardware,
+        hardwareDetails: { deviceId: 'dev', addressIndex: 0 },
+        ...overrides,
+    }) as WalletAccount
+
+const watch = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
+    ({
+        id: overrides.id ?? 'w',
+        address: overrides.address ?? 'W',
+        type: AccountTypes.watch,
+        ...overrides,
+    }) as WalletAccount
+
+const multisig = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
+    ({
+        id: overrides.id ?? 'm',
+        address: overrides.address ?? 'M',
+        type: AccountTypes.multisig,
+        multisigDetails: {
+            threshold: 2,
+            addresses: ['P1', 'P2', 'P3'],
+            version: 1,
+        },
+        ...overrides,
+    }) as WalletAccount
+
+describe('services/accounts/utils - isEligibleRekeyTarget', () => {
+    test('rejects target equal to source', () => {
+        expect(isEligibleRekeyTarget(algo25({ address: 'A' }), 'A')).toBe(false)
+    })
+
+    test('rejects multisig / hardware / watch targets', () => {
+        expect(isEligibleRekeyTarget(multisig({ address: 'M' }), 'SRC')).toBe(
+            false,
+        )
+        expect(isEligibleRekeyTarget(ledger({ address: 'L' }), 'SRC')).toBe(
+            false,
+        )
+        expect(isEligibleRekeyTarget(watch({ address: 'W' }), 'SRC')).toBe(
+            false,
+        )
+    })
+
+    test('rejects target without signing keys', () => {
+        const noKey = algo25({ address: 'A' })
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ;(noKey as any).keyPairId = undefined
+        expect(isEligibleRekeyTarget(noKey, 'SRC')).toBe(false)
+    })
+
+    test('rejects target already rekeyed away', () => {
+        expect(
+            isEligibleRekeyTarget(
+                algo25({ address: 'A', rekeyAddress: 'B' }),
+                'SRC',
+            ),
+        ).toBe(false)
+    })
+
+    test('accepts valid algo25 / hdWallet target', () => {
+        expect(isEligibleRekeyTarget(algo25({ address: 'A' }), 'SRC')).toBe(
+            true,
+        )
+        expect(isEligibleRekeyTarget(hd({ address: 'H' }), 'SRC')).toBe(true)
+    })
+})
+
+describe('services/accounts/utils - isEligibleLedgerRekeyTarget', () => {
+    test('rejects non-hardware targets', () => {
+        expect(
+            isEligibleLedgerRekeyTarget(algo25({ address: 'A' }), 'SRC'),
+        ).toBe(false)
+        expect(isEligibleLedgerRekeyTarget(hd({ address: 'H' }), 'SRC')).toBe(
+            false,
+        )
+    })
+
+    test('rejects target equal to source / already rekeyed', () => {
+        expect(isEligibleLedgerRekeyTarget(ledger({ address: 'L' }), 'L')).toBe(
+            false,
+        )
+        expect(
+            isEligibleLedgerRekeyTarget(
+                ledger({ address: 'L', rekeyAddress: 'X' }),
+                'SRC',
+            ),
+        ).toBe(false)
+    })
+
+    test('accepts a clean hardware target', () => {
+        expect(
+            isEligibleLedgerRekeyTarget(ledger({ address: 'L' }), 'SRC'),
+        ).toBe(true)
+    })
+})
+
+describe('services/accounts/utils - isEligibleSharedRekeyTarget', () => {
+    test('rejects non-multisig targets', () => {
+        const all: WalletAccount[] = []
+        expect(
+            isEligibleSharedRekeyTarget(algo25({ address: 'A' }), 'SRC', all),
+        ).toBe(false)
+        expect(
+            isEligibleSharedRekeyTarget(ledger({ address: 'L' }), 'SRC', all),
+        ).toBe(false)
+    })
+
+    test('rejects multisig when the wallet holds none of its participants', () => {
+        const ms = multisig({
+            address: 'M',
+            multisigDetails: {
+                threshold: 2,
+                addresses: ['P1', 'P2', 'P3'],
+                version: 1,
+            },
+        })
+        const all: WalletAccount[] = [algo25({ id: 'x', address: 'OTHER' })]
+        expect(isEligibleSharedRekeyTarget(ms, 'SRC', all)).toBe(false)
+    })
+
+    test('rejects multisig when the only held participant cannot sign', () => {
+        // A watch-only participant has no key of its own — it can't propose.
+        const ms = multisig({
+            address: 'M',
+            multisigDetails: {
+                threshold: 2,
+                addresses: ['P1', 'P2', 'P3'],
+                version: 1,
+            },
+        })
+        const all: WalletAccount[] = [watch({ id: 'p1', address: 'P1' })]
+        expect(isEligibleSharedRekeyTarget(ms, 'SRC', all)).toBe(false)
+    })
+
+    test('accepts multisig when the wallet holds one signable participant, even below threshold', () => {
+        // Propose-based signing: one local participant can propose; the
+        // remaining signatures are collected from co-signers.
+        const ms = multisig({
+            address: 'M',
+            multisigDetails: {
+                threshold: 2,
+                addresses: ['P1', 'P2', 'P3'],
+                version: 1,
+            },
+        })
+        const all: WalletAccount[] = [algo25({ id: 'p1', address: 'P1' })]
+        expect(isEligibleSharedRekeyTarget(ms, 'SRC', all)).toBe(true)
+    })
+
+    test('rejects multisig already rekeyed away', () => {
+        const ms = multisig({
+            address: 'M',
+            rekeyAddress: 'X',
+            multisigDetails: {
+                threshold: 1,
+                addresses: ['P1'],
+                version: 1,
+            },
+        })
+        const all: WalletAccount[] = [algo25({ id: 'p1', address: 'P1' })]
+        expect(isEligibleSharedRekeyTarget(ms, 'SRC', all)).toBe(false)
+    })
+})
+
+describe('services/accounts/utils - resolveAuthAccount', () => {
+    test('returns the account itself when not rekeyed', () => {
+        const a = algo25({ address: 'A' })
+        expect(resolveAuthAccount(a, [a])).toBe(a)
+    })
+
+    test('walks a single rekey hop', () => {
+        const a = algo25({ address: 'A', rekeyAddress: 'B' })
+        const b = algo25({ address: 'B' })
+        expect(resolveAuthAccount(a, [a, b])).toBe(b)
+    })
+
+    test('resolves a single hop only — not the terminal of the chain', () => {
+        // A -> B -> C. B signs for A; rekey indirection is not transitive.
+        const a = ledger({ address: 'A', rekeyAddress: 'B' })
+        const b = ledger({ address: 'B', rekeyAddress: 'C' })
+        const c = ledger({ address: 'C' })
+        expect(resolveAuthAccount(a, [a, b, c])).toBe(b)
+    })
+
+    test('throws RekeyTargetNotFoundError when the auth account is not held', () => {
+        const a = algo25({ address: 'A', rekeyAddress: 'MISSING' })
+        expect(() => resolveAuthAccount(a, [a])).toThrow(
+            RekeyTargetNotFoundError,
+        )
     })
 })

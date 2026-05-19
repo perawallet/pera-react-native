@@ -31,7 +31,7 @@ export const useStyles = makeStyles(theme => {
             gap: theme.spacing.sm,
         },
         link: {
-            color: theme.colors.linkPrimary,
+            color: theme.colors.positive,
         },
         scrollContent: {
             gap: theme.spacing.xl,

@@ -21,15 +21,16 @@ import {
     PWFlatList,
 } from '@components/core'
 import type { LedgerAccount } from '@perawallet/wallet-core-ledger'
+import { useLanguage } from '@hooks/useLanguage'
 
 import { useStyles } from './styles'
 import { useLedgerSelectAccountsScreen } from './useLedgerSelectAccountsScreen'
 import { FindAnotherWalletRow } from './FindAnotherWalletRow'
 import { LedgerAccountSelectionRow } from './LedgerAccountSelectionRow'
-import { LedgerAccountAddressBottomSheet } from './LedgerAccountAddressBottomSheet'
 
 export const LedgerSelectAccountsScreen = () => {
     const styles = useStyles()
+    const { t } = useLanguage()
     const {
         accounts,
         selectedAddresses,
@@ -38,14 +39,10 @@ export const LedgerSelectAccountsScreen = () => {
         canContinue,
         alreadyImportedAddresses,
         isFetchingMore,
-        infoAddress,
         toggleSelection,
         toggleSelectAll,
         handleContinue,
         handleFindAnother,
-        handleOpenInfo,
-        handleCloseInfo,
-        t,
     } = useLedgerSelectAccountsScreen()
 
     const showSelectAll = accounts.length > 1 && !areAllImported
@@ -59,7 +56,6 @@ export const LedgerSelectAccountsScreen = () => {
                 isSelected={isSelected}
                 isImported={isImported}
                 onToggle={() => toggleSelection(item.address)}
-                onInfoPress={() => handleOpenInfo(item.address)}
                 testID={`ledger_select_row_${item.address}`}
             />
         )
@@ -144,12 +140,6 @@ export const LedgerSelectAccountsScreen = () => {
                     isDisabled={!canContinue}
                 />
             </SafeAreaView>
-
-            <LedgerAccountAddressBottomSheet
-                isVisible={infoAddress !== null}
-                address={infoAddress ?? ''}
-                onDismiss={handleCloseInfo}
-            />
         </PWView>
     )
 }

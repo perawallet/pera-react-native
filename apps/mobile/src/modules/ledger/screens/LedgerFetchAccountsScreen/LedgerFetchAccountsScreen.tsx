@@ -10,32 +10,23 @@
  limitations under the License
  */
 
-import React from 'react'
 import { ActivityIndicator } from 'react-native'
 import { PWView, PWText, PWResultView } from '@components/core'
-import { useAppNavigation } from '@hooks/useAppNavigation'
-
-import { LedgerConnectingBottomSheet } from '../../components/LedgerConnectingBottomSheet'
+import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useLedgerFetchAccountsScreen } from './useLedgerFetchAccountsScreen'
 
 export const LedgerFetchAccountsScreen = () => {
     const styles = useStyles()
-    const navigation = useAppNavigation()
+    const { t } = useLanguage()
     const {
-        connectionStatus,
         isDiscovering,
+        isLoading,
         progress,
         errorPreset,
         handleRetry,
         handleTroubleshoot,
-        t,
     } = useLedgerFetchAccountsScreen()
-
-    const isLoading =
-        connectionStatus === 'connecting' ||
-        connectionStatus === 'connected' ||
-        isDiscovering
 
     if (errorPreset) {
         return (
@@ -84,11 +75,6 @@ export const LedgerFetchAccountsScreen = () => {
                     </>
                 )}
             </PWView>
-
-            <LedgerConnectingBottomSheet
-                isVisible={isLoading}
-                onCancel={navigation.goBack}
-            />
         </PWView>
     )
 }

@@ -22,6 +22,12 @@ type UseSwitchNetworkResult = {
     isSwitching: boolean
 }
 
+const isNotFoundError = (error: unknown): boolean => {
+    const status = (error as { response?: { status?: number } })?.response
+        ?.status
+    return status === 404
+}
+
 export const useSwitchNetwork = (): UseSwitchNetworkResult => {
     const { network } = useNetwork()
     const deviceIDs = useDeviceStore(state => state.deviceIDs)
@@ -47,7 +53,7 @@ export const useSwitchNetwork = (): UseSwitchNetworkResult => {
                 const model = deviceInfoService.getDeviceModel()
                 const locale = deviceInfoService.getDeviceLocale()
 
-                if (!newDeviceId) {
+                const registerDevice = async () => {
                     const result = await createDevice(newNetwork, {
                         accounts: addresses,
                         platform,
@@ -57,14 +63,27 @@ export const useSwitchNetwork = (): UseSwitchNetworkResult => {
                         locale,
                     })
                     setDeviceID(newNetwork, result.id ?? null)
+                }
+
+                if (!newDeviceId) {
+                    await registerDevice()
                 } else {
-                    await updateDevice(newNetwork, newDeviceId, {
-                        accounts: addresses,
-                        platform,
-                        push_token: pushToken ?? undefined,
-                        model,
-                        locale,
-                    })
+                    // A stored device ID the backend no longer knows (e.g. after
+                    // an env reset or server-side deletion) 404s on update —
+                    // re-register instead of failing the whole switch. Mirrors
+                    // useDevice.registerDevice's 404 → createDevice fallback.
+                    try {
+                        await updateDevice(newNetwork, newDeviceId, {
+                            accounts: addresses,
+                            platform,
+                            push_token: pushToken ?? undefined,
+                            model,
+                            locale,
+                        })
+                    } catch (error) {
+                        if (!isNotFoundError(error)) throw error
+                        await registerDevice()
+                    }
                 }
 
                 setNetwork(newNetwork)

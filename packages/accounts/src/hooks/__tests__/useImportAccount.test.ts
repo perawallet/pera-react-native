@@ -14,7 +14,7 @@ import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useImportAccount } from '../useImportAccount'
 import { useAccountsStore } from '../../store'
-import { KeyType } from '@perawallet/wallet-core-kms'
+import { SeedScheme } from '@perawallet/wallet-core-kms'
 
 const uuidSpies = vi.hoisted(() => ({ v7: vi.fn() }))
 
@@ -108,21 +108,23 @@ describe('useImportAccount', () => {
         kmsMock.getKey.mockReturnValue(null)
         kmsMock.getKeyOrThrow.mockReturnValue(null)
         kmsMock.createHDWalletKey.mockResolvedValue({
-            keyPair: {
+            seedKey: {
                 id: 'WALLET1',
-                type: KeyType.HDWalletRootKey,
-                publicKey: '',
-                keystoreKeyId: 'ks-root-1',
+                type: 'seed',
+                algorithm: 'raw',
+                extractable: true,
+                metadata: { scheme: SeedScheme.Bip39 },
             },
-            entropyKeyId: 'ks-entropy-1',
         })
         kmsMock.createAlgo25Key.mockResolvedValue({
-            keyPair: {
+            seedKey: {
                 id: 'WALLET1',
-                type: KeyType.Algo25Key,
-                publicKey: 'ALGO25_PUBLIC_KEY',
+                type: 'seed',
+                algorithm: 'raw',
+                extractable: true,
+                metadata: { scheme: SeedScheme.Algo25 },
             },
-            seedKeyId: 'ks-seed-1',
+            address: 'ALGO25_PUBLIC_KEY',
         })
         kmsMock.generateDerivedKey.mockResolvedValue('ks-derived-1')
         mockKeyStoreExport.mockResolvedValue({
@@ -189,21 +191,15 @@ describe('useImportAccount', () => {
     })
 
     test('imports algo25 account with mnemonic', async () => {
-        // createAlgo25Key returns { keyPair, seedKeyId }
-        // Then createAlgo25WalletAccount is called with id + seedKeyId
-        // getKey returns the existing key so createAlgo25Key isn't called again
         kmsMock.createAlgo25Key.mockResolvedValueOnce({
-            keyPair: {
+            seedKey: {
                 id: 'WALLET1',
-                type: KeyType.Algo25Key,
-                publicKey: 'ALGO25_PUBLIC_KEY',
+                type: 'seed',
+                algorithm: 'raw',
+                extractable: true,
+                metadata: { scheme: SeedScheme.Algo25 },
             },
-            seedKeyId: 'ks-seed-1',
-        })
-        kmsMock.getKey.mockReturnValueOnce({
-            id: 'WALLET1',
-            type: KeyType.Algo25Key,
-            publicKey: 'ALGO25_PUBLIC_KEY',
+            address: 'ALGO25_PUBLIC_KEY',
         })
 
         uuidSpies.v7.mockImplementationOnce(() => 'ACC1')
@@ -223,22 +219,25 @@ describe('useImportAccount', () => {
         })
         expect(imported.address).toBe('ALGO25_PUBLIC_KEY')
         expect(imported.type).toBe('algo25')
-        expect(imported.keyPairId).toBe('WALLET1')
+        // keyPairId is the deterministic ed25519 child of the seed.
+        expect(imported.keyPairId).toBe('WALLET1-ed25519')
         expect(useAccountsStore.getState().accounts).toHaveLength(1)
     })
 
-    test('uses the keyPair from createAlgo25Key without consulting getKey (regression: stale useMemo)', async () => {
+    test('uses the seed reference from createAlgo25Key without consulting getKey (regression: stale useMemo)', async () => {
         // Simulate the stale-useMemo race: the freshly-minted key isn't yet
         // visible to getKey, which reads from a useMemo bound to the previous
-        // render. Without passing the keyPair through, the import would fall
-        // back to creating a new no-mnemonic key (random address).
+        // render. Without passing the seed reference through, the import
+        // would fall back to creating a new no-mnemonic key (random address).
         kmsMock.createAlgo25Key.mockResolvedValueOnce({
-            keyPair: {
+            seedKey: {
                 id: 'WALLET1',
-                type: KeyType.Algo25Key,
-                publicKey: 'CORRECT_ADDRESS',
+                type: 'seed',
+                algorithm: 'raw',
+                extractable: true,
+                metadata: { scheme: SeedScheme.Algo25 },
             },
-            seedKeyId: 'ks-seed-1',
+            address: 'CORRECT_ADDRESS',
         })
         kmsMock.getKey.mockReturnValue(null)
 
@@ -260,7 +259,7 @@ describe('useImportAccount', () => {
         })
         expect(kmsMock.getKey).not.toHaveBeenCalled()
         expect(imported.address).toBe('CORRECT_ADDRESS')
-        expect(imported.keyPairId).toBe('WALLET1')
+        expect(imported.keyPairId).toBe('WALLET1-ed25519')
     })
 
     test('throws when createAlgo25Key fails', async () => {

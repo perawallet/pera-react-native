@@ -216,17 +216,21 @@ describe('Flow: Account management', () => {
                 })
                 expect(key).not.toBeNull()
             })
-            const keyPairId = key!.keyPair.id ?? ''
-            // Sanity: both keystore entries are present before removal.
+            const seedKeyId = key!.seedKey.id ?? ''
+            const childKeyId = key!.signKeyId
+            // Sanity: both keystore entries are present before removal —
+            // the seed and the ed25519 signing child committed alongside.
             const keysBefore = getKeystoreStore().state.keys.map(k => k.id)
-            expect(keysBefore).toContain(keyPairId)
-            expect(keysBefore).toContain(`${keyPairId}-seed`)
+            expect(keysBefore).toContain(seedKeyId)
+            expect(keysBefore).toContain(childKeyId)
 
+            // Account.keyPairId references the derived ed25519 child key;
+            // the seed is reachable via the child's metadata.parentKeyId.
             const algo25Account: WalletAccount = {
                 id: 'signer-1',
                 type: AccountTypes.algo25,
                 address: ALGO25_TEST_ADDRESS,
-                keyPairId,
+                keyPairId: childKeyId,
                 name: 'Signing account',
             }
             // Watch account stays in the list so the post-removal
@@ -266,16 +270,14 @@ describe('Flow: Account management', () => {
                 ACCOUNT_B.address,
             )
 
-            // Both the root key and its `-seed` sibling are gone — the
-            // removal path uses `useKMS().deleteKey` for the root and
-            // `keyStore.remove(...-seed)` for the mnemonic-recovery
-            // sibling. Leaving either behind would be a security bug
-            // (the `-seed` entry is the only way to recover the
-            // 25-word phrase, which would let an attacker re-import
-            // the supposedly-deleted account).
+            // Both the seed and its ed25519 signing child are gone — the
+            // removal path follows the child up to its parent seed and
+            // sweeps both. Leaving the seed behind would be a security
+            // bug (it carries the mnemonic-recoverable bytes, so an
+            // attacker could re-import the supposedly-deleted account).
             const keysAfter = getKeystoreStore().state.keys.map(k => k.id)
-            expect(keysAfter).not.toContain(keyPairId)
-            expect(keysAfter).not.toContain(`${keyPairId}-seed`)
+            expect(keysAfter).not.toContain(seedKeyId)
+            expect(keysAfter).not.toContain(childKeyId)
         },
         SLOW_TEST_TIMEOUT_MS,
     )

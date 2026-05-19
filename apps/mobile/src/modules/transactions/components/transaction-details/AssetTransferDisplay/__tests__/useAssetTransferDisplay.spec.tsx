@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
+import { renderHook } from '@testing-library/react'
 import { useAssetTransferDisplay } from '../useAssetTransferDisplay'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import {
@@ -79,32 +79,5 @@ describe('useAssetTransferDisplay', () => {
         const { result } = renderHook(() => useAssetTransferDisplay(baseTx))
 
         expect(result.current.metadataHash).toBeUndefined()
-    })
-
-    it('manages modal state for metadata hash details', () => {
-        vi.mocked(useSingleAssetDetailsQuery).mockReturnValue({
-            data: {
-                assetId: '123',
-                name: 'Test',
-                decimals: 6,
-                metadata: 'hash',
-            },
-        } as UseQueryResult<PeraAsset, Error>)
-
-        const { result } = renderHook(() => useAssetTransferDisplay(baseTx))
-
-        expect(result.current.isMetadataHashDetailsModalOpen).toBe(false)
-
-        act(() => {
-            result.current.openMetadataHashDetailsModal()
-        })
-
-        expect(result.current.isMetadataHashDetailsModalOpen).toBe(true)
-
-        act(() => {
-            result.current.closeMetadataHashDetailsModal()
-        })
-
-        expect(result.current.isMetadataHashDetailsModalOpen).toBe(false)
     })
 })

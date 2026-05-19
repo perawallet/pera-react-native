@@ -81,6 +81,9 @@ export const useStyles = makeStyles(theme => ({
     infoValueLink: {
         color: theme.colors.linkPrimary,
     },
+    infoValueAction: {
+        color: theme.colors.positive,
+    },
     infoDivider: {
         marginVertical: 0,
     },

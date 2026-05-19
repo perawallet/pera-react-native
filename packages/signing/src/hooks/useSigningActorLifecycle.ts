@@ -20,22 +20,21 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import {
-    LedgerConnectionError,
-    LedgerTimeoutError,
-} from '@perawallet/wallet-core-ledger'
 import { useLocalKeyTransactionSigner } from './useLocalKeyTransactionSigner'
 import { useArbitraryDataSigner } from './useArbitraryDataSigner'
 import { useArc60Signer } from './useArc60Signer'
 import { useMultisigTransportAdapters } from './useMultisigTransportAdapters'
+import { buildHardwareSigningCallbacks } from './buildHardwareSigningCallbacks'
 import { useSigningStore, useHardwareSigningStore } from '../store'
 import { createSigningMachine } from '../machine/createSigningMachine'
 import { signingMachine } from '../machine/signingMachine'
 import { createTransportSelector } from '../pipeline/transports/getTransport'
 import { getNextQueuedRequest } from '../pipeline/queue'
+import { approvalGate } from '../pipeline/approvalGate'
+import { isInteractiveSource } from '../pipeline/types'
 import type { SigningMachineDeps } from '../machine/context'
-import type { SigningCallbacks } from '../pipeline/types'
-import type { SignRequest } from '../models'
+import { type SignRequest } from '../models'
+import { resolveSignerAddress } from '../utils/resolveSignerAddress'
 
 // Process-wide registry of running signing-machine actors, keyed by
 // request id. Hoisted to module scope (rather than per-hook `useRef`) so
@@ -45,6 +44,11 @@ import type { SignRequest } from '../models'
 // already exists and bail. Without this, every consumer would race and
 // produce one parallel signing machine per mount.
 const actorRefsMap = new Map<string, AnyActorRef>()
+
+// Tracks which requests we've already started awaiting the approval gate
+// for, so we don't re-enter `waitFor` on every snapshot tick while the
+// machine sits in `awaiting_user`.
+const awaitingApprovalSet = new Set<string>()
 
 /**
  * Test-only: stops every running actor and clears the module-level
@@ -56,37 +60,9 @@ export const __resetSigningActorRegistryForTests = (): void => {
         actor.stop()
     }
     actorRefsMap.clear()
+    awaitingApprovalSet.clear()
+    approvalGate.__resetForTests()
 }
-
-const isTimeoutError = (error: Error): boolean =>
-    error instanceof LedgerTimeoutError ||
-    (error instanceof LedgerConnectionError && /timed out/.test(error.message))
-
-/**
- * Build SigningCallbacks that drive the hardware-signing UI store.
- * Bound to a specific request id so the overlay knows which actor to talk
- * to when the user presses cancel/retry.
- */
-const buildHardwareSigningCallbacks = (
-    requestId: string,
-): SigningCallbacks => ({
-    onPhaseChange: phase => {
-        const store = useHardwareSigningStore.getState()
-        if (phase === 'connecting') {
-            store.start(requestId)
-        } else if (phase === 'awaiting-approval') {
-            store.setStatus('confirming')
-        }
-    },
-    onProgress: (current, total) => {
-        useHardwareSigningStore.getState().setProgress(current, total)
-    },
-    onError: error => {
-        useHardwareSigningStore
-            .getState()
-            .setError(isTimeoutError(error) ? 'timeout' : 'error')
-    },
-})
 
 // =============================================================================
 // Helpers
@@ -103,17 +79,18 @@ const isNonRetryableFailure = (
 }
 
 /**
- * Headless callers (e.g. internal send/swap flows) have no retry UI, so a
- * `failed` state is terminal for them regardless of the error's retryable
- * flag — otherwise the actor and request both leak, blocking every
- * subsequent request because the single-flight queue guard sees a running
- * actor.
+ * Non-interactive callers (internal send/swap flows — anything whose
+ * `sourceType` is not in `INTERACTIVE_SOURCES`) have no retry UI, so a
+ * `failed` state is terminal for them regardless of the error's
+ * retryable flag — otherwise the actor and request both leak, blocking
+ * every subsequent request because the single-flight queue guard sees a
+ * running actor.
  */
-const isHeadlessFailure = (
+const isNonInteractiveFailure = (
     snapshot: SnapshotFrom<typeof signingMachine>,
 ): boolean => {
     if (!snapshot.matches('failed')) return false
-    return snapshot.context.request.headless === true
+    return !isInteractiveSource(snapshot.context.request.sourceType)
 }
 
 // =============================================================================
@@ -178,28 +155,43 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
     setLastTransportResultRef.current = setLastTransportResult
 
     const buildDeps = useCallback(
-        (request: SignRequest): SigningMachineDeps => ({
-            signTransactions,
-            signArbitraryData,
-            signArc60,
-            createTransport: createTransportSelector({
-                algokit,
-                encodeSignedTransactions,
+        (request: SignRequest): SigningMachineDeps => {
+            // Resolve the signer account so the hardware-signing overlay
+            // can render the device name from the very first phase signal.
+            // For non-hardware signers, the callback builder degrades to a
+            // null deviceName — the overlay never opens in that case
+            // because only the hardware strategy emits phase callbacks.
+            const signerAddress = resolveSignerAddress(request)
+            const signerAccount = signerAddress
+                ? allAccounts.find(acc => acc.address === signerAddress)
+                : undefined
+
+            return {
+                signTransactions,
+                signArbitraryData,
+                signArc60,
+                createTransport: createTransportSelector({
+                    algokit,
+                    encodeSignedTransactions,
+                    network,
+                    proposeSignRequest,
+                    addSignatures,
+                }),
                 network,
-                proposeSignRequest,
-                addSignatures,
-            }),
-            network,
-            // Hardware-wallet actor consumes this. Ledger adds the "TX"
-            // domain-separation prefix on-device, so we pass raw msgpack.
-            encodeTransaction: encodeTransactionRaw,
-            hardwareWalletRegistry: getProvider().hardwareWalletRegistry,
-            // Drives the LedgerSigningOverlay via useHardwareSigningStore.
-            // Only the hardware strategy emits these callbacks, so requests
-            // that resolve to local-key/multisig signers never touch the
-            // overlay state.
-            signingCallbacks: buildHardwareSigningCallbacks(request.id),
-        }),
+                // Hardware-wallet actor consumes this. Ledger adds the "TX"
+                // domain-separation prefix on-device, so we pass raw msgpack.
+                encodeTransaction: encodeTransactionRaw,
+                hardwareWalletRegistry: getProvider().hardwareWalletRegistry,
+                // Drives the LedgerSigningContent sheet via useHardwareSigningStore.
+                // Only the hardware strategy emits these callbacks, so requests
+                // that resolve to local-key/multisig signers never touch the
+                // sheet state.
+                signingCallbacks: buildHardwareSigningCallbacks(
+                    request,
+                    signerAccount,
+                ),
+            }
+        },
         [
             signTransactions,
             signArbitraryData,
@@ -210,6 +202,7 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
             network,
             proposeSignRequest,
             addSignatures,
+            allAccounts,
         ],
     )
 
@@ -220,6 +213,18 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                 return
             }
 
+            // Register the approval gate synchronously here, before the
+            // machine has a chance to reach `awaiting_user`. Co-locating
+            // registration with actor creation (rather than driving it
+            // from a sibling effect on `pendingSignRequests`) removes the
+            // cross-effect ordering dependency: an interactive request
+            // can never reach the pause state with no gate registered,
+            // so it can never be silently auto-approved by the headless
+            // fast-path. Headless sources skip registration entirely.
+            if (isInteractiveSource(request.sourceType)) {
+                approvalGate.register(request.id)
+            }
+
             const actor = createSigningMachine(
                 request,
                 allAccounts,
@@ -227,20 +232,49 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
             )
 
             actor.subscribe(snapshot => {
+                // Bridge the machine's external sync point to the approval
+                // gate. Headless flows resolve immediately (no gate was
+                // registered when the actor was created), interactive
+                // flows block on the gate until `signAndSendRequest` /
+                // `rejectRequest` (slide / dismiss) resolves it.
+                //
+                // `'cancelled'` is emitted by `approvalGate.unregister` to
+                // release this `.then` chain when the actor is torn down
+                // for reasons unrelated to user input. The actor is on its
+                // way to (or already at) a terminal state in that case, so
+                // we just no-op.
+                if (
+                    snapshot.matches('awaiting_user') &&
+                    !awaitingApprovalSet.has(actor.id)
+                ) {
+                    awaitingApprovalSet.add(actor.id)
+                    void approvalGate.waitFor(actor.id).then(result => {
+                        awaitingApprovalSet.delete(actor.id)
+                        if (result === 'cancelled') return
+                        actor.send({
+                            type:
+                                result === 'approved'
+                                    ? 'USER_APPROVED'
+                                    : 'USER_REJECTED',
+                        })
+                    })
+                }
+
                 const isTerminal =
                     snapshot.status === 'done' ||
                     isNonRetryableFailure(snapshot) ||
-                    isHeadlessFailure(snapshot)
+                    isNonInteractiveFailure(snapshot)
 
                 if (!isTerminal) return
 
                 const req = snapshot.context.request
-                // Non-headless failures stay in the queue so the signing sheet
+                const isInteractive = isInteractiveSource(req.sourceType)
+                // Interactive failures stay in the queue so the signing sheet
                 // keeps rendering; the inline error view (driven by
                 // lastFailedRequest in the store) takes over the sheet
                 // content until the user dismisses via removeSignRequest.
                 const keepForInlineError =
-                    snapshot.matches('failed') && !req.headless
+                    snapshot.matches('failed') && isInteractive
 
                 // Tear down the hardware overlay on any terminal transition
                 // for the matching request — success, rejection, or
@@ -251,7 +285,7 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                 }
 
                 if (snapshot.matches('completed')) {
-                    // Publish the transport result regardless of `headless`.
+                    // Publish the transport result regardless of source.
                     // Headless flows that don't surface completion UI still
                     // need a reliable hook for store-driven listeners (e.g.
                     // PendingSignatures auto-open, send-funds exit on
@@ -265,9 +299,10 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                     // The transport is responsible for invoking the request's
                     // approve callback (with the actual signed data) — see
                     // createCallbackTransport / createWalletConnectTransport.
-                    // Headless callers own the completion UI, same as the
-                    // pre-sign review UI (see SignRequest.headless).
-                    if (!req.headless) {
+                    // Headless callers own the completion UI; only the
+                    // standard review flow (the `SigningOverlays` drivers)
+                    // reads these store fields.
+                    if (isInteractive) {
                         setLastCompletedRequestRef.current(req)
                     }
                 } else if (snapshot.matches('failed')) {
@@ -284,7 +319,7 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                     // maps (not shared state), so the store is the only
                     // mechanism that reliably re-renders all subscribers.
                     // Headless callers drive their own error UI.
-                    if (!req.headless) {
+                    if (isInteractive) {
                         setLastFailedRequestRef.current({
                             request: req,
                             error: normalizedError,
@@ -293,6 +328,15 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                 } else if (snapshot.matches('rejected')) {
                     ;(req as { reject?: () => Promise<void> }).reject?.()
                 }
+
+                // The lifecycle owns gate cleanup — `approve`/`reject` only
+                // resolve, they don't delete (otherwise a Cancel tap during
+                // the async validating phase would be lost). `unregister`
+                // both resolves any still-pending deferred with `'cancelled'`
+                // (releasing the awaiting `.then` closure) and removes the
+                // map entry.
+                approvalGate.unregister(actor.id)
+                awaitingApprovalSet.delete(actor.id)
 
                 if (keepForInlineError) return
 
@@ -318,6 +362,8 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
             actor.stop()
             actorRefsMap.delete(requestId)
         }
+        approvalGate.unregister(requestId)
+        awaitingApprovalSet.delete(requestId)
     }, [])
 
     const getActorRef = useCallback((requestId: string) => {

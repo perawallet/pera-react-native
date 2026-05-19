@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { pbkdf2, randomBytes } from 'crypto'
 
 // v1 used Argon2id in pure-JS; unusably slow on mobile engines, so it was
@@ -49,15 +50,21 @@ const hexToBytes = (hex: string): Uint8Array => {
     return bytes
 }
 
+// Zeros the UTF-8 encoded PIN buffer once pbkdf2 has consumed it. The PIN
+// string itself is immutable (JS strings can't be wiped) — clearing the
+// encoded byte view is the best we can do without a string-zeroing
+// primitive.
 const hashPin = (pin: string, salt: Uint8Array): Promise<Uint8Array> =>
     new Promise((resolve, reject) => {
+        const pinBytes = encoder.encode(pin)
         pbkdf2(
-            encoder.encode(pin),
+            pinBytes,
             salt,
             PBKDF2_ITERATIONS,
             HASH_LENGTH_BYTES,
             PBKDF2_DIGEST,
             (err, derivedKey) => {
+                zeroBytes(pinBytes)
                 if (err || !derivedKey) {
                     reject(err ?? new Error('pbkdf2 returned no key'))
                     return
@@ -70,12 +77,17 @@ const hashPin = (pin: string, salt: Uint8Array): Promise<Uint8Array> =>
 export const createPinRecord = async (pin: string): Promise<PinRecord> => {
     const salt = new Uint8Array(randomBytes(SALT_LENGTH_BYTES))
     const hash = await hashPin(pin, salt)
-    return {
-        version: PIN_RECORD_VERSION,
-        salt: bytesToHex(salt),
-        hash: bytesToHex(hash),
-        failedAttempts: 0,
-        lockoutEndTime: null,
+    try {
+        return {
+            version: PIN_RECORD_VERSION,
+            salt: bytesToHex(salt),
+            hash: bytesToHex(hash),
+            failedAttempts: 0,
+            lockoutEndTime: null,
+        }
+    } finally {
+        // Hex copies are now in the record; the raw buffers can go.
+        zeroBytes(salt, hash)
     }
 }
 
@@ -93,8 +105,14 @@ export const verifyPinAgainstRecord = async (
     pin: string,
     record: PinRecord,
 ): Promise<boolean> => {
-    const candidate = await hashPin(pin, hexToBytes(record.salt))
-    return constantTimeEqual(candidate, hexToBytes(record.hash))
+    const saltBytes = hexToBytes(record.salt)
+    const hashBytes = hexToBytes(record.hash)
+    const candidate = await hashPin(pin, saltBytes)
+    try {
+        return constantTimeEqual(candidate, hashBytes)
+    } finally {
+        zeroBytes(candidate, saltBytes, hashBytes)
+    }
 }
 
 export const serializePinRecord = (record: PinRecord): Uint8Array =>

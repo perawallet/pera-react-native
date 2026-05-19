@@ -53,6 +53,7 @@ import {
 } from '@perawallet/wallet-core-walletconnect'
 import { Networks, type Optional } from '@perawallet/wallet-core-shared'
 import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletConnectProvider'
+import { BottomSheetManager } from '@modules/bottom-sheet'
 
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 
@@ -161,9 +162,12 @@ describe('Flow: WalletConnect v1 pair → approve session', () => {
         'Given a dApp pairs with the wallet, when a session_request arrives on the matching network, then the wallet store records the request and ConnectionView mounts with the dApp metadata',
         async () => {
             render(
-                <WalletConnectProvider>
-                    <div data-testid='child' />
-                </WalletConnectProvider>,
+                <>
+                    <WalletConnectProvider>
+                        <div data-testid='child' />
+                    </WalletConnectProvider>
+                    <BottomSheetManager />
+                </>,
             )
 
             await driveSessionRequest({
@@ -214,9 +218,12 @@ describe('Flow: WalletConnect v1 pair → approve session', () => {
         'Given a session request is showing, when the user picks one account and taps Connect, then approveSession on the underlying connector is called with that exact address list',
         async () => {
             render(
-                <WalletConnectProvider>
-                    <div data-testid='child' />
-                </WalletConnectProvider>,
+                <>
+                    <WalletConnectProvider>
+                        <div data-testid='child' />
+                    </WalletConnectProvider>
+                    <BottomSheetManager />
+                </>,
             )
 
             const connector = await driveSessionRequest({
@@ -299,9 +306,12 @@ describe('Flow: WalletConnect v1 pair → approve session', () => {
         'Given a session request is showing, when the user taps Cancel, then connector.rejectSession is called and the request is cleared from the store',
         async () => {
             render(
-                <WalletConnectProvider>
-                    <div data-testid='child' />
-                </WalletConnectProvider>,
+                <>
+                    <WalletConnectProvider>
+                        <div data-testid='child' />
+                    </WalletConnectProvider>
+                    <BottomSheetManager />
+                </>,
             )
 
             const connector = await driveSessionRequest({
@@ -356,9 +366,12 @@ describe('Flow: WalletConnect v1 pair → approve session', () => {
             // → push instance into the map keyed by clientId). renderHook
             // separately so the test can call `disconnect()` directly.
             render(
-                <WalletConnectProvider>
-                    <div data-testid='child' />
-                </WalletConnectProvider>,
+                <>
+                    <WalletConnectProvider>
+                        <div data-testid='child' />
+                    </WalletConnectProvider>
+                    <BottomSheetManager />
+                </>,
             )
 
             const connector = await driveSessionRequest({
@@ -456,9 +469,12 @@ describe('Flow: WalletConnect v1 pair → approve session', () => {
             // this without ever showing the sheet, surfacing a
             // WalletConnectInvalidNetworkError on the store.
             render(
-                <WalletConnectProvider>
-                    <div data-testid='child' />
-                </WalletConnectProvider>,
+                <>
+                    <WalletConnectProvider>
+                        <div data-testid='child' />
+                    </WalletConnectProvider>
+                    <BottomSheetManager />
+                </>,
             )
 
             await driveSessionRequest({

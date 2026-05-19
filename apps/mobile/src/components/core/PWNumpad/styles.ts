@@ -38,8 +38,10 @@ export const useStyles = makeStyles(theme => {
         },
         keyPlaceholder: {
             width: KEY_SIZE,
-            height: KEY_SIZE,
-            marginHorizontal: KEY_SPACING / 2,
+            height: KEY_SIZE * 0.8,
+            marginHorizontal: KEY_SPACING * 0.7,
+            justifyContent: 'center',
+            alignItems: 'center',
             backgroundColor: 'transparent',
         },
         keyText: {

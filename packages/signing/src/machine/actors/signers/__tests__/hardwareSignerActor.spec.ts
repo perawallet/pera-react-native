@@ -225,7 +225,9 @@ describe('hardwareSignerActor', () => {
         actor.start()
         await toPromise(actor)
 
-        expect(onPhaseChange).toHaveBeenCalledTimes(2)
+        // 'connecting' + 'awaiting-approval' (connectAndVerify) +
+        // 'awaiting-approval' (signTransactions loop, one per signable tx)
+        expect(onPhaseChange).toHaveBeenCalledTimes(3)
         expect(onSigningStart).toHaveBeenCalledTimes(1)
         expect(onProgress).toHaveBeenCalledTimes(1)
         expect(onSigningComplete).toHaveBeenCalledTimes(1)
@@ -355,12 +357,15 @@ describe('hardwareSignerActor', () => {
         })
         const provider = makeMockProvider(transport)
 
-        // Account A is rekeyed to Account B (Ledger)
+        // Account A is rekeyed to Account B (Ledger). Production uses the
+        // SOURCE address (ADDR_A) as the group's signerAddress — the actor
+        // must resolve the auth chain to find the Ledger account that
+        // actually holds the signing key.
         const rekeyedAccount: WalletAccount = {
             type: 'algo25',
             address: ADDR_A,
             keyPairId: 'key-1',
-            authAddress: ADDR_B,
+            rekeyAddress: ADDR_B,
         } as unknown as WalletAccount
 
         const ledgerAccount = makeLedgerAccount(ADDR_B)
@@ -368,7 +373,7 @@ describe('hardwareSignerActor', () => {
         const input: HardwareSignerActorInput = {
             groups: [
                 {
-                    ...makeGroup(ADDR_B),
+                    ...makeGroup(ADDR_A),
                     data: {
                         type: 'transactions',
                         transactions: [mockTransaction(ADDR_A)],
@@ -393,6 +398,86 @@ describe('hardwareSignerActor', () => {
         // carry an authAddress pointing back to the Ledger key so network
         // validators accept it. Without this assertion the test only proves
         // the happy path doesn't throw.
+        if (results[0].signedData.type === 'transactions') {
+            const signed = results[0].signedData.signed[0]
+            expect(signed.authAddress).toEqual({ address: ADDR_B })
+        }
+    })
+
+    it('signs a Ledger→Ledger rekey using the AUTH device, not the source', async () => {
+        const sourceTransport = makeMockTransport()
+        const authTransport = makeMockTransport()
+        authTransport.getAddress = vi.fn().mockResolvedValue({
+            address: ADDR_B,
+            publicKey: new Uint8Array(32),
+            accountIndex: 7,
+        })
+
+        // Provider must return the auth device's transport regardless of
+        // deviceId so we can inspect which accountIndex was used.
+        const provider: HardwareWalletTransportProvider = {
+            manufacturer: 'ledger',
+            scan: () => () => {},
+            connect: vi
+                .fn()
+                .mockImplementation(async (deviceId: string) =>
+                    deviceId === 'device-auth'
+                        ? authTransport
+                        : sourceTransport,
+                ),
+            isSupported: vi.fn().mockResolvedValue(true),
+        }
+
+        const sourceLedger: HardwareWalletAccount = {
+            type: 'hardware',
+            address: ADDR_A,
+            rekeyAddress: ADDR_B,
+            hardwareDetails: {
+                manufacturer: 'ledger',
+                deviceId: 'device-source',
+                deviceName: 'Nano X (source)',
+                accountIndex: 0,
+            },
+        } as unknown as HardwareWalletAccount
+
+        const authLedger: HardwareWalletAccount = {
+            type: 'hardware',
+            address: ADDR_B,
+            hardwareDetails: {
+                manufacturer: 'ledger',
+                deviceId: 'device-auth',
+                deviceName: 'Nano X (auth)',
+                accountIndex: 7,
+            },
+        } as unknown as HardwareWalletAccount
+
+        const input: HardwareSignerActorInput = {
+            groups: [
+                {
+                    ...makeGroup(ADDR_A),
+                    data: {
+                        type: 'transactions',
+                        transactions: [mockTransaction(ADDR_A)],
+                        indicesToSign: [0],
+                    },
+                },
+            ],
+            allAccounts: [sourceLedger, authLedger],
+            hardwareWalletRegistry: makeRegistry(provider),
+            encodeTransaction: vi.fn().mockReturnValue(new Uint8Array([0xaa])),
+        }
+
+        const actor = createActor(hardwareSignerActor, { input })
+        actor.start()
+        const results = await toPromise(actor)
+
+        expect(provider.connect).toHaveBeenCalledWith('device-auth')
+        expect(authTransport.signTransaction).toHaveBeenCalledWith(
+            7,
+            expect.any(Uint8Array),
+        )
+        expect(sourceTransport.signTransaction).not.toHaveBeenCalled()
+
         if (results[0].signedData.type === 'transactions') {
             const signed = results[0].signedData.signed[0]
             expect(signed.authAddress).toEqual({ address: ADDR_B })

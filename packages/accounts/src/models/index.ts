@@ -30,4 +30,12 @@ export type AccountsState = BaseStoreState & {
         address: string,
         rekeyAddress: string | null,
     ) => void
+    /** Append watch-only accounts whose rekeyAddress points at `sourceAddress`,
+     * skipping addresses that are already present in the store. Returns the
+     * number of accounts actually appended. Validation (Algorand-address
+     * shape) is the caller's responsibility. */
+    addRekeyedWatchAccounts: (
+        sourceAddress: string,
+        addresses: string[],
+    ) => number
 }

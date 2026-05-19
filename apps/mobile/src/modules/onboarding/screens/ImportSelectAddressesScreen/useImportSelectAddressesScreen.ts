@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native'
 import {
     useAllAccounts,
@@ -20,9 +20,11 @@ import {
     useAccountDiscovery,
     useHDImportSession,
     DerivationTypes,
+    isHDWalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
-import { deferToNextCycle } from '@perawallet/wallet-core-shared'
+import { useKMS } from '@perawallet/wallet-core-kms'
+import { deferToNextCycle, logger } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useExitAccountFlow } from '@modules/onboarding/hooks'
@@ -64,6 +66,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
     const { exitAccountFlow } = useExitAccountFlow()
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
     const { setAccounts } = useSetAccounts()
+    const { seedIdOf } = useKMS()
 
     const alreadyImportedAddresses = useMemo(() => {
         return new Set(allAccounts.map(acc => acc.address))
@@ -79,6 +82,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
         () => new Set(newAccounts.length > 0 ? [newAccounts[0].address] : []),
     )
     const [isProcessing, setIsProcessing] = useState(false)
+    const hasCommittedRef = useRef(false)
 
     const isAllSelected =
         newAccounts.length > 0 && selectedAddresses.size === newAccounts.length
@@ -126,29 +130,63 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
                             walletKeyId: importWalletKeyId,
                             selectedAccounts: accountsToAdd,
                         })
+                        hasCommittedRef.current = true
                         setSelectedAccountAddress(accountsToAdd[0].address)
+                    } else {
+                        // Re-import path: every selected address was already in
+                        // the store, so there's nothing to commit but the
+                        // session still proved possession and must not be
+                        // cancelled by the beforeRemove listener.
+                        hasCommittedRef.current = true
                     }
                     // Re-entering the mnemonic proves possession, so mark the
-                    // wallet's keyPairId as backed up regardless of whether
+                    // wallet's bip39 seed as backed up regardless of whether
                     // any new addresses were actually added — re-imports
                     // (every discovered address already in the store) and
                     // accounts created before this feature shipped both rely
-                    // on this path to clear the backup banner.
+                    // on this path to clear the backup banner. Match on the
+                    // child→seed parent since `account.keyPairId` is now
+                    // the child's id.
                     const accountToMark =
                         accountsToAdd[0] ??
-                        allAccounts.find(a => a.keyPairId === importWalletKeyId)
+                        allAccounts.find(
+                            a => seedIdOf(a.keyPairId) === importWalletKeyId,
+                        )
                     if (accountToMark) markBackupComplete(accountToMark)
                 } else if (accountsToAdd.length > 0) {
                     setAccounts([...allAccounts, ...accountsToAdd])
                     setSelectedAccountAddress(accountsToAdd[0].address)
                 }
 
-                const walletKeyId = accounts[0].keyPairId
+                // Discovery operates against the bip39 seed id (rekey scan
+                // uses it to label results). The discovered candidate
+                // accounts in `accounts` carry derived child ids on
+                // `keyPairId`; resolve the parent for the discovery API.
+                const walletKeyId =
+                    importWalletKeyId ?? seedIdOf(accounts[0].keyPairId)
+                if (!walletKeyId) {
+                    exitAccountFlow()
+                    return
+                }
+                // Only scan addresses the wallet actually holds after this
+                // step: the freshly imported selection plus HD siblings
+                // already in the store. Scanning unselected discovered
+                // addresses would let the user persist watch accounts
+                // rekeyed to an auth address we don't hold.
+                const scanAddresses = [
+                    ...new Set([
+                        ...accountsToAdd.map(a => a.address),
+                        ...allAccounts
+                            .filter(isHDWalletAccount)
+                            .filter(a => seedIdOf(a.keyPairId) === walletKeyId)
+                            .map(a => a.address),
+                    ]),
+                ]
                 const discoveredRekeyedAccounts = await discoverRekeyedAccounts(
                     {
                         walletKeyId,
                         derivationType: DerivationTypes.Peikert,
-                        accountAddresses: accounts.map(a => a.address),
+                        accountAddresses: scanAddresses,
                     },
                 )
 
@@ -164,7 +202,12 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
                         accounts: discoveredRekeyedAccounts,
                     })
                 }
-            } catch {
+            } catch (error) {
+                logger.error('Account import flow failed', {
+                    source: 'useImportSelectAddressesScreen',
+                    isImportMode,
+                    error,
+                })
                 exitAccountFlow()
             } finally {
                 setIsProcessing(false)
@@ -188,13 +231,15 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
     useEffect(() => {
         if (!isImportMode) return
         const unsub = reactNavigation.addListener('beforeRemove', () => {
-            // Only trigger cancellation when leaving without committing.
-            if (!isProcessing) {
+            // beforeRemove fires after navigation.replace too, so guard on a
+            // commit flag rather than isProcessing (which the success path
+            // resets in finally before this listener runs).
+            if (!hasCommittedRef.current) {
                 cancelImport()
             }
         })
         return unsub
-    }, [isImportMode, reactNavigation, isProcessing, cancelImport])
+    }, [isImportMode, reactNavigation, cancelImport])
 
     const areAllImported = newAccounts.length === 0
     const canContinue = areAllImported || selectedAddresses.size > 0

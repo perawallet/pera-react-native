@@ -14,7 +14,7 @@ import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useCreateAccount } from '../useCreateAccount'
 import { useAccountsStore } from '../../store'
-import { KeyType } from '@perawallet/wallet-core-kms'
+import { SeedScheme } from '@perawallet/wallet-core-kms'
 
 const uuidSpies = vi.hoisted(() => ({ v7: vi.fn() }))
 
@@ -47,15 +47,12 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     }
 })
 
-const mockKeyStoreExport = vi.fn()
-
 const kmsMock = vi.hoisted(() => ({
     getKey: vi.fn(),
     getKeyOrThrow: vi.fn(),
     createHDWalletKey: vi.fn(),
     createAlgo25Key: vi.fn(),
-    generateDerivedKey: vi.fn(),
-    withExportedKey: vi.fn(),
+    getDerivedPublicKey: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-kms', async () => {
@@ -97,38 +94,31 @@ describe('useCreateAccount', () => {
         kmsMock.getKeyOrThrow.mockReset()
         kmsMock.createHDWalletKey.mockReset()
         kmsMock.createAlgo25Key.mockReset()
-        kmsMock.generateDerivedKey.mockReset()
-        kmsMock.withExportedKey.mockReset()
-        mockKeyStoreExport.mockReset()
+        kmsMock.getDerivedPublicKey.mockReset()
 
         kmsMock.getKey.mockReturnValue(null)
         kmsMock.getKeyOrThrow.mockReturnValue(null)
         kmsMock.createHDWalletKey.mockResolvedValue({
-            keyPair: {
+            seedKey: {
                 id: 'WALLET1',
-                type: KeyType.HDWalletRootKey,
-                publicKey: '',
-                keystoreKeyId: 'ks-root-1',
+                type: 'seed',
+                algorithm: 'raw',
+                extractable: true,
+                metadata: { scheme: SeedScheme.Bip39 },
             },
-            entropyKeyId: 'ks-entropy-1',
         })
         kmsMock.createAlgo25Key.mockResolvedValue({
-            keyPair: {
+            seedKey: {
                 id: 'WALLET1',
-                type: KeyType.Algo25Key,
-                publicKey: 'ALGO25_PUBLIC_KEY',
+                type: 'seed',
+                algorithm: 'raw',
+                extractable: true,
+                metadata: { scheme: SeedScheme.Algo25 },
             },
-            seedKeyId: 'ks-seed-1',
+            address: 'ALGO25_PUBLIC_KEY',
         })
-        kmsMock.generateDerivedKey.mockResolvedValue('ks-derived-1')
-        mockKeyStoreExport.mockResolvedValue({
-            publicKey: new Uint8Array(32).fill(2),
-        })
-        kmsMock.withExportedKey.mockImplementation(
-            async (keyId: string, handler: (keyData: any) => any) => {
-                const keyData = await mockKeyStoreExport(keyId)
-                return handler(keyData)
-            },
+        kmsMock.getDerivedPublicKey.mockResolvedValue(
+            new Uint8Array(32).fill(2),
         )
     })
 
@@ -150,29 +140,28 @@ describe('useCreateAccount', () => {
         expect(kmsMock.createHDWalletKey).toHaveBeenCalledWith({
             id: 'WALLET1',
         })
-        expect(kmsMock.generateDerivedKey).toHaveBeenCalledWith(
-            'ks-root-1',
+        expect(kmsMock.getDerivedPublicKey).toHaveBeenCalledWith(
+            'WALLET1',
             0,
             0,
             9,
         )
-        expect(kmsMock.withExportedKey).toHaveBeenCalledWith(
-            'ks-derived-1',
-            expect.any(Function),
-        )
         expect(created.id).toBe('ACC1')
         expect(created.address).toBeTruthy()
         expect(created.type).toBe('hdWallet')
-        expect(created.keyPairId).toBe('WALLET1')
+        // keyPairId is the deterministic derived child id; the seed parent
+        // is reachable via metadata.parentKeyId on the child.
+        expect(created.keyPairId).toBe('WALLET1-acc0-idx0-dt9')
         expect(useAccountsStore.getState().accounts).toHaveLength(1)
     })
 
     test('creates a sibling HD account on an existing wallet root', async () => {
         kmsMock.getKey.mockReturnValueOnce({
             id: 'EXISTING_WALLET',
-            type: KeyType.HDWalletRootKey,
-            publicKey: '',
-            keystoreKeyId: 'ks-existing-root',
+            type: 'seed',
+            algorithm: 'raw',
+            extractable: true,
+            metadata: { scheme: SeedScheme.Bip39 },
         })
 
         uuidSpies.v7.mockImplementationOnce(() => 'ACC1')
@@ -189,18 +178,21 @@ describe('useCreateAccount', () => {
         })
 
         expect(kmsMock.createHDWalletKey).not.toHaveBeenCalled()
-        expect(created.keyPairId).toBe('EXISTING_WALLET')
+        // keyPairId is the deterministic derived child id of the existing
+        // seed at (account=1, keyIndex=0, derivationType=9).
+        expect(created.keyPairId).toBe('EXISTING_WALLET-acc1-idx0-dt9')
         expect(created.hdWalletDetails.account).toBe(1)
     })
 
     test('throws error when key derivation fails', async () => {
         kmsMock.getKey.mockReturnValueOnce({
             id: 'WALLET1',
-            type: KeyType.HDWalletRootKey,
-            publicKey: '',
-            keystoreKeyId: 'ks-root-1',
+            type: 'seed',
+            algorithm: 'raw',
+            extractable: true,
+            metadata: { scheme: SeedScheme.Bip39 },
         })
-        kmsMock.generateDerivedKey.mockRejectedValueOnce(
+        kmsMock.getDerivedPublicKey.mockRejectedValueOnce(
             new Error('Derivation failed'),
         )
 
@@ -266,14 +258,19 @@ describe('useCreateAccount', () => {
 
         expect(created.type).toBe('algo25')
         expect(created.address).toBe('ALGO25_PUBLIC_KEY')
-        expect(created.keyPairId).toBe('WALLET1')
+        // keyPairId is the deterministic ed25519 child id committed
+        // alongside the seed at `${seedKeyId}-ed25519`.
+        expect(created.keyPairId).toBe('WALLET1-ed25519')
     })
 
     test('creates an algo25 account from an existing root key', async () => {
         kmsMock.getKey.mockReturnValueOnce({
             id: 'WALLET1',
-            type: KeyType.Algo25Key,
-            publicKey: 'ALGO25_PUBLIC_KEY',
+            type: 'seed',
+            algorithm: 'raw',
+            extractable: true,
+            publicKey: new Uint8Array(),
+            metadata: { scheme: SeedScheme.Algo25 },
         })
 
         uuidSpies.v7.mockImplementationOnce(() => 'ACC1')
@@ -289,15 +286,20 @@ describe('useCreateAccount', () => {
 
         expect(kmsMock.createAlgo25Key).not.toHaveBeenCalled()
         expect(created.type).toBe('algo25')
-        expect(created.address).toBe('ALGO25_PUBLIC_KEY')
-        expect(created.keyPairId).toBe('WALLET1')
+        // The address is encoded from the seed key's persisted publicKey
+        // bytes via the wallet-blockchain encodeAlgorandAddress mock; with
+        // an empty Uint8Array seed this comes out as ''.
+        expect(created.address).toBe('')
+        // keyPairId is the deterministic ed25519 child id committed
+        // alongside the seed at `${seedKeyId}-ed25519`.
+        expect(created.keyPairId).toBe('WALLET1-ed25519')
     })
 
-    test('uses provided keyPair without consulting getKey or createAlgo25Key (regression: stale useMemo)', async () => {
+    test('uses provided seed reference without consulting getKey or createAlgo25Key (regression: stale useMemo)', async () => {
         // getKey is bound to the previous render's keystore snapshot via
         // useMemo, so a key just minted in the same async handler isn't
-        // visible. The import flow passes the freshly-minted keyPair
-        // directly to bypass that.
+        // visible. The import flow passes the freshly-minted seed
+        // reference directly to bypass that.
         uuidSpies.v7.mockImplementationOnce(() => 'ACC1')
 
         const { result } = renderHook(() => useCreateAccount())
@@ -305,10 +307,9 @@ describe('useCreateAccount', () => {
         let created: any
         await act(async () => {
             created = await result.current.createAlgo25WalletAccount({
-                keyPair: {
-                    id: 'IMPORTED_KEY',
-                    type: KeyType.Algo25Key,
-                    publicKey: 'IMPORTED_ADDRESS',
+                seed: {
+                    seedKeyId: 'IMPORTED_KEY',
+                    address: 'IMPORTED_ADDRESS',
                 },
             })
         })
@@ -317,6 +318,7 @@ describe('useCreateAccount', () => {
         expect(kmsMock.createAlgo25Key).not.toHaveBeenCalled()
         expect(created.type).toBe('algo25')
         expect(created.address).toBe('IMPORTED_ADDRESS')
-        expect(created.keyPairId).toBe('IMPORTED_KEY')
+        // keyPairId is the ed25519 child of the imported seed.
+        expect(created.keyPairId).toBe('IMPORTED_KEY-ed25519')
     })
 })

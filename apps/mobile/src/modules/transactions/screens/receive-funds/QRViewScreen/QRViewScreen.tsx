@@ -30,14 +30,15 @@ export const QRViewScreen = () => {
     const styles = useStyles()
     const { width } = useWindowDimensions()
     const { theme } = useTheme()
-    const { canSelectAccount, onFinished } = useReceiveFunds()
+    const { onFinished } = useReceiveFunds()
     const {
         account,
         deeplink,
+        canSelectAccount,
+        handleBack,
         handleCopyAddress,
         handleShareAddress,
-        handleBack,
-    } = useQRViewScreen(onFinished)
+    } = useQRViewScreen()
 
     useNavigationHeader({
         left: (
@@ -46,7 +47,16 @@ export const QRViewScreen = () => {
                 onPress={handleBack}
             />
         ),
-        title: account ? getAccountDisplayName(account) : '',
+        title: account ? (
+            <PWText
+                variant='h3'
+                numberOfLines={1}
+            >
+                {getAccountDisplayName(account)}
+            </PWText>
+        ) : (
+            ''
+        ),
     })
 
     if (!account) {
@@ -76,9 +86,6 @@ export const QRViewScreen = () => {
                     />
                 </PWView>
                 <PWView style={styles.addressContainer}>
-                    <PWText variant='h3'>
-                        {getAccountDisplayName(account)}
-                    </PWText>
                     <CopyableText copyValue={account.address}>
                         <PWText style={styles.address}>
                             {account.address}

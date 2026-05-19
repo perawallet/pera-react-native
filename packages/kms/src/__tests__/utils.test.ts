@@ -18,73 +18,119 @@ vi.mock('@algorandfoundation/algokit-utils', () => ({
         `ADDR_${Buffer.from(bytes).toString('hex')}`,
 }))
 
-import { keystoreKeyToKeyPair, peraMetadataFor, makeKeyPair } from '../utils'
-import { AccessControlPermission, KeyType } from '../models'
+import {
+    aclOf,
+    algo25AddressOf,
+    buildSeedMetadata,
+    createdAtOf,
+    expiresAtOf,
+    hexToBytes,
+    isSeedKey,
+    seedSchemeOf,
+} from '../utils'
+import { AccessControlPermission } from '../models'
+import { SeedScheme } from '../constants'
 
-describe('keystoreKeyToKeyPair', () => {
-    test('maps an HD root key to a wallet-domain HD root KeyPair', () => {
-        const key: Key = {
-            id: 'wallet-1',
-            type: 'hd-root-key',
-            algorithm: 'raw',
-            extractable: true,
-        }
+const seedKey = (
+    overrides: Partial<Key> & { metadata?: Record<string, unknown> } = {},
+): Key => ({
+    id: 'wallet-1',
+    type: 'seed',
+    algorithm: 'raw',
+    extractable: true,
+    ...overrides,
+})
 
-        const kp = keystoreKeyToKeyPair(key)
-
-        expect(kp).not.toBeNull()
-        expect(kp?.id).toBe('wallet-1')
-        expect(kp?.keystoreKeyId).toBe('wallet-1')
-        expect(kp?.type).toBe(KeyType.HDWalletRootKey)
-        expect(kp?.publicKey).toBe('') // HD root has no usable address
+describe('seedSchemeOf', () => {
+    test('returns "bip39" for a seed with scheme=bip39 metadata', () => {
+        expect(
+            seedSchemeOf(seedKey({ metadata: { scheme: SeedScheme.Bip39 } })),
+        ).toBe(SeedScheme.Bip39)
     })
 
-    test('maps an Algo25 root key to an Algo25 KeyPair with encoded address', () => {
-        const publicKey = new Uint8Array([1, 2, 3])
-        const key: Key = {
-            id: 'algo25-1',
-            type: 'algo25',
-            algorithm: 'EdDSA',
-            extractable: true,
-            publicKey,
-        }
-
-        const kp = keystoreKeyToKeyPair(key)
-
-        expect(kp).not.toBeNull()
-        expect(kp?.id).toBe('algo25-1')
-        expect(kp?.type).toBe(KeyType.Algo25Key)
-        expect(kp?.publicKey).toBe('ADDR_010203')
+    test('returns "algo25" for a seed with scheme=algo25 metadata', () => {
+        expect(
+            seedSchemeOf(seedKey({ metadata: { scheme: SeedScheme.Algo25 } })),
+        ).toBe(SeedScheme.Algo25)
     })
 
-    test('returns null for HD-derived child keys (type hd-derived-ed25519, used only for HD children)', () => {
-        const key: Key = {
-            id: 'derived-child-1',
-            type: 'hd-derived-ed25519',
-            algorithm: 'EdDSA',
-            extractable: false,
-            metadata: {
-                parentKeyId: 'wallet-1',
-                account: 0,
-                path: "m/44'/283'/0'/0/0",
-            },
-        }
-
-        expect(keystoreKeyToKeyPair(key)).toBeNull()
+    test('returns null for a seed with no scheme metadata', () => {
+        expect(seedSchemeOf(seedKey())).toBeNull()
     })
 
-    test('returns null for entropy/seed entries (type hd-seed)', () => {
-        const key: Key = {
-            id: 'wallet-1-entropy',
-            type: 'hd-seed',
-            algorithm: 'raw',
-            extractable: true,
-        }
-
-        expect(keystoreKeyToKeyPair(key)).toBeNull()
+    test('returns null for an unknown scheme value', () => {
+        expect(
+            seedSchemeOf(seedKey({ metadata: { scheme: 'frobnicate' } })),
+        ).toBeNull()
     })
 
-    test('round-trips acl, createdAt, expiresAt through pera metadata', () => {
+    test('returns null for non-seed types (hd-derived-ed25519, secret-key, etc.)', () => {
+        expect(
+            seedSchemeOf({
+                id: 'derived-1',
+                type: 'hd-derived-ed25519',
+                algorithm: 'EdDSA',
+                extractable: false,
+                metadata: { scheme: SeedScheme.Bip39 },
+            }),
+        ).toBeNull()
+        expect(
+            seedSchemeOf({
+                id: 'pin',
+                type: 'secret-key',
+                algorithm: 'raw',
+                extractable: true,
+            }),
+        ).toBeNull()
+    })
+
+    test('accepts the legacy hd-seed type for backward compatibility', () => {
+        expect(
+            seedSchemeOf({
+                id: 'wallet-1',
+                type: 'hd-seed',
+                algorithm: 'raw',
+                extractable: true,
+                metadata: { scheme: SeedScheme.Bip39 },
+            }),
+        ).toBe(SeedScheme.Bip39)
+    })
+})
+
+describe('isSeedKey', () => {
+    test('mirrors seedSchemeOf — true iff a recognised scheme is present', () => {
+        expect(
+            isSeedKey(seedKey({ metadata: { scheme: SeedScheme.Bip39 } })),
+        ).toBe(true)
+        expect(isSeedKey(seedKey())).toBe(false)
+    })
+})
+
+describe('algo25AddressOf', () => {
+    test('encodes the publicKey bytes for an algo25 seed', () => {
+        const key = seedKey({
+            metadata: { scheme: SeedScheme.Algo25 },
+            publicKey: new Uint8Array([1, 2, 3]),
+        })
+        expect(algo25AddressOf(key)).toBe('ADDR_010203')
+    })
+
+    test('returns "" for a bip39 seed (no single address)', () => {
+        const key = seedKey({
+            metadata: { scheme: SeedScheme.Bip39 },
+            publicKey: new Uint8Array([1, 2, 3]),
+        })
+        expect(algo25AddressOf(key)).toBe('')
+    })
+
+    test('returns "" when an algo25 seed lacks a publicKey on its reactive snapshot', () => {
+        const key = seedKey({ metadata: { scheme: SeedScheme.Algo25 } })
+        expect(algo25AddressOf(key)).toBe('')
+    })
+})
+
+describe('aclOf / createdAtOf / expiresAtOf', () => {
+    test('round-trips acl, createdAt, expiresAt through buildSeedMetadata', () => {
         const createdAt = new Date('2025-06-01T12:00:00Z')
         const expiresAt = new Date('2025-12-01T12:00:00Z')
         const acl = [
@@ -94,75 +140,78 @@ describe('keystoreKeyToKeyPair', () => {
             },
         ]
 
-        const key: Key = {
-            id: 'wallet-1',
-            type: 'hd-root-key',
-            algorithm: 'raw',
-            extractable: true,
-            metadata: peraMetadataFor({ acl, createdAt, expiresAt }),
-        }
+        const key = seedKey({
+            metadata: buildSeedMetadata({
+                scheme: SeedScheme.Bip39,
+                acl,
+                createdAt,
+                expiresAt,
+            }),
+        })
 
-        const kp = keystoreKeyToKeyPair(key)
-
-        expect(kp?.acl).toEqual(acl)
-        expect(kp?.createdAt?.toISOString()).toBe(createdAt.toISOString())
-        expect(kp?.expiresAt?.toISOString()).toBe(expiresAt.toISOString())
+        expect(aclOf(key)).toEqual(acl)
+        expect(createdAtOf(key).toISOString()).toBe(createdAt.toISOString())
+        expect(expiresAtOf(key)?.toISOString()).toBe(expiresAt.toISOString())
     })
 
-    test('defaults createdAt to "now" and acl to [] when pera metadata is absent', () => {
+    test('aclOf defaults to [] when pera metadata is absent', () => {
+        expect(aclOf(seedKey())).toEqual([])
+    })
+
+    test('createdAtOf defaults to "now" when pera metadata is absent', () => {
         const before = Date.now()
-        const key: Key = {
-            id: 'wallet-1',
-            type: 'hd-root-key',
-            algorithm: 'raw',
-            extractable: true,
-        }
-
-        const kp = keystoreKeyToKeyPair(key)
-
-        expect(kp?.acl).toEqual([])
-        expect(kp?.createdAt?.getTime()).toBeGreaterThanOrEqual(before)
-        expect(kp?.expiresAt).toBeUndefined()
+        expect(createdAtOf(seedKey()).getTime()).toBeGreaterThanOrEqual(before)
     })
 
-    test('returns null for unknown keystore types', () => {
-        const key: Key = {
-            id: 'rsa-1',
-            type: 'rsa',
-            algorithm: 'RS256',
-            extractable: true,
-        }
-
-        expect(keystoreKeyToKeyPair(key)).toBeNull()
+    test('expiresAtOf returns undefined when expiresAt is not stamped', () => {
+        const key = seedKey({
+            metadata: buildSeedMetadata({ scheme: SeedScheme.Bip39 }),
+        })
+        expect(expiresAtOf(key)).toBeUndefined()
     })
 })
 
-describe('peraMetadataFor', () => {
+describe('buildSeedMetadata', () => {
     test('serializes Date fields to ISO strings under the pera namespace', () => {
         const createdAt = new Date('2025-01-01T00:00:00Z')
         const expiresAt = new Date('2026-01-01T00:00:00Z')
 
-        const meta = peraMetadataFor({ createdAt, expiresAt })
+        const meta = buildSeedMetadata({
+            scheme: SeedScheme.Bip39,
+            createdAt,
+            expiresAt,
+        })
 
-        expect(meta.pera.createdAt).toBe('2025-01-01T00:00:00.000Z')
-        expect(meta.pera.expiresAt).toBe('2026-01-01T00:00:00.000Z')
+        expect(meta.scheme).toBe(SeedScheme.Bip39)
+        expect(meta.pera?.createdAt).toBe('2025-01-01T00:00:00.000Z')
+        expect(meta.pera?.expiresAt).toBe('2026-01-01T00:00:00.000Z')
     })
 
     test('defaults createdAt to now() when not provided', () => {
         const before = Date.now()
-        const meta = peraMetadataFor({})
-        const created = new Date(meta.pera.createdAt!).getTime()
+        const meta = buildSeedMetadata({ scheme: SeedScheme.Algo25 })
+        const created = new Date(meta.pera!.createdAt!).getTime()
         expect(created).toBeGreaterThanOrEqual(before)
+    })
+
+    test('stashes entropy as a lowercase hex string when provided', () => {
+        const entropy = new Uint8Array([0xde, 0xad, 0xbe, 0xef])
+        const meta = buildSeedMetadata({ scheme: SeedScheme.Bip39, entropy })
+        expect(meta.entropy).toBe('deadbeef')
+    })
+
+    test('omits the entropy field entirely when not provided', () => {
+        const meta = buildSeedMetadata({ scheme: SeedScheme.Algo25 })
+        expect('entropy' in meta).toBe(false)
     })
 })
 
-describe('makeKeyPair', () => {
-    test('applies sensible defaults', () => {
-        const kp = makeKeyPair({})
-
-        expect(kp.id).toBe('')
-        expect(kp.publicKey).toBe('')
-        expect(kp.acl).toEqual([])
-        expect(kp.createdAt).toBeInstanceOf(Date)
+describe('hexToBytes', () => {
+    test('round-trips with the hex emitted by buildSeedMetadata', () => {
+        const entropy = new Uint8Array([1, 2, 3, 255])
+        const meta = buildSeedMetadata({ scheme: SeedScheme.Bip39, entropy })
+        expect(Array.from(hexToBytes(meta.entropy!))).toEqual(
+            Array.from(entropy),
+        )
     })
 })

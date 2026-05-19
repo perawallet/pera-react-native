@@ -106,7 +106,7 @@ describe('useDeleteAllData', () => {
         })
     })
 
-    it('should delete keys, delete devices, clear PIN, and clear stores except accounts', async () => {
+    it('should delete keys, delete devices, clear PIN, and clear ALL stores including accounts', async () => {
         const { result } = renderHook(() => useDeleteAllData())
 
         await act(async () => {
@@ -124,9 +124,7 @@ describe('useDeleteAllData', () => {
         expect(mockSavePin).toHaveBeenCalledWith(null)
         expect(mockDeleteDatabase).toHaveBeenCalledTimes(1)
         expect(mockInitializeDatabase).toHaveBeenCalledTimes(1)
-        expect(clearAllStores).toHaveBeenCalledWith({
-            skip: ['accounts-store'],
-        })
+        expect(clearAllStores).toHaveBeenCalledWith()
     })
 
     it('should clear accounts store when clearAccountsStore is called', () => {
@@ -247,8 +245,6 @@ describe('useDeleteAllData', () => {
         })
 
         expect(mockDeleteDatabase).toHaveBeenCalledTimes(1)
-        expect(clearAllStores).toHaveBeenCalledWith({
-            skip: ['accounts-store'],
-        })
+        expect(clearAllStores).toHaveBeenCalledWith()
     })
 })

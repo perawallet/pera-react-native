@@ -319,20 +319,4 @@ describe('useLedgerSelectAccountsScreen', () => {
             expect(mockDisconnectTransport).toHaveBeenCalledTimes(1)
         })
     })
-
-    it('exposes handleOpenInfo / handleCloseInfo to drive the address sheet', () => {
-        const { result } = renderHook(() => useLedgerSelectAccountsScreen())
-
-        expect(result.current.infoAddress).toBeNull()
-
-        act(() => {
-            result.current.handleOpenInfo('ADDR')
-        })
-        expect(result.current.infoAddress).toBe('ADDR')
-
-        act(() => {
-            result.current.handleCloseInfo()
-        })
-        expect(result.current.infoAddress).toBeNull()
-    })
 })

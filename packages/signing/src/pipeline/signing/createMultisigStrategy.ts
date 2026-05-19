@@ -11,7 +11,10 @@
  */
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { isMultisigAccount } from '@perawallet/wallet-core-accounts'
+import {
+    isMultisigAccount,
+    resolveAuthAccount,
+} from '@perawallet/wallet-core-accounts'
 import { encodeToBase64, type Nullable } from '@perawallet/wallet-core-shared'
 import type {
     SigningStrategy,
@@ -67,10 +70,21 @@ export const createMultisigStrategy = (
             }
 
             const allAccounts = getAllAccounts()
-            const localParticipants = getLocalParticipants(account, allAccounts)
+            // `account` is a multisig — possibly one that has itself been
+            // rekeyed to another multisig (a shared account can only be
+            // rekeyed to another shared account). Resolve the single rekey
+            // hop so participant lookup uses the auth multisig;
+            // `resolveAuthAccount` returns the account unchanged when it is
+            // not rekeyed. The `group` keeps the original sender's
+            // transactions — only the participant set comes from the multisig.
+            const multisigAccount = resolveAuthAccount(account, allAccounts)
+            const localParticipants = getLocalParticipants(
+                multisigAccount,
+                allAccounts,
+            )
 
             if (localParticipants.length === 0) {
-                throw new NoLocalParticipantsError(account.address)
+                throw new NoLocalParticipantsError(multisigAccount.address)
             }
 
             // Sign with each local participant in parallel

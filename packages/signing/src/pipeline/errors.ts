@@ -69,21 +69,6 @@ export class CannotSignError extends PipelineError {
 }
 
 /**
- * Rekey target account not found in local accounts
- */
-export class RekeyTargetNotFoundError extends PipelineError {
-    constructor(rekeyAddress: string) {
-        super(
-            `Rekey target account ${rekeyAddress} not found in local accounts`,
-            undefined,
-            {
-                params: { rekeyAddress },
-            },
-        )
-    }
-}
-
-/**
  * No local participants found for multisig account
  */
 export class NoLocalParticipantsError extends PipelineError {

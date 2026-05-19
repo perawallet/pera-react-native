@@ -11,8 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderHook, act, waitFor } from '@test-utils/render'
-import { type Optional } from '@perawallet/wallet-core-shared'
+import { renderHook, act } from '@test-utils/render'
 
 const { mockCheckPinEnabled } = vi.hoisted(() => ({
     mockCheckPinEnabled: vi.fn(),
@@ -43,110 +42,94 @@ vi.mock('../../ViewPassphraseContent', () => ({
     ViewPassphraseContent: () => null,
 }))
 
+vi.mock('@modules/security', () => ({
+    PinEditContent: () => null,
+}))
+
 import { useViewPassphraseFlow } from '../useViewPassphraseFlow'
 
 describe('useViewPassphraseFlow', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        // Default: hold any sheet open so step transitions are observable.
+    })
+
+    it('requests the PIN sheet first when a PIN is set', async () => {
+        mockCheckPinEnabled.mockResolvedValue(true)
+        // Pending forever so we can assert only the PIN sheet was opened.
         mockRequestBottomSheet.mockReturnValue(new Promise(() => {}))
-    })
 
-    it('starts with a null step when not visible', () => {
-        mockCheckPinEnabled.mockResolvedValue(true)
-        const { result } = renderHook(() =>
-            useViewPassphraseFlow({
-                isVisible: false,
-                address: 'ADDR',
-                onClose: vi.fn(),
-            }),
-        )
-        expect(result.current.step).toBeNull()
-    })
-
-    it("enters the 'pin' step when visible and a PIN is set", async () => {
-        mockCheckPinEnabled.mockResolvedValue(true)
-        const { result } = renderHook(() =>
-            useViewPassphraseFlow({
-                isVisible: true,
-                address: 'ADDR',
-                onClose: vi.fn(),
-            }),
-        )
-        await waitFor(() => expect(result.current.step).toBe('pin'))
-    })
-
-    it("skips the PIN and enters 'acknowledge' when no PIN is set", async () => {
-        mockCheckPinEnabled.mockResolvedValue(false)
-        const { result } = renderHook(() =>
-            useViewPassphraseFlow({
-                isVisible: true,
-                address: 'ADDR',
-                onClose: vi.fn(),
-            }),
-        )
-        await waitFor(() => expect(result.current.step).toBe('acknowledge'))
-    })
-
-    it("advances to 'acknowledge' on PIN success", async () => {
-        mockCheckPinEnabled.mockResolvedValue(true)
-        const { result } = renderHook(() =>
-            useViewPassphraseFlow({
-                isVisible: true,
-                address: 'ADDR',
-                onClose: vi.fn(),
-            }),
-        )
-        await waitFor(() => expect(result.current.step).toBe('pin'))
-
-        act(() => result.current.handlePinSuccess())
-
-        expect(result.current.step).toBe('acknowledge')
-    })
-
-    it("advances to 'display' when the acknowledge sheet resolves with 'confirm'", async () => {
-        mockCheckPinEnabled.mockResolvedValue(false)
-        let resolveAcknowledge: (value: Optional<'confirm'>) => void = () => {}
-        mockRequestBottomSheet.mockImplementationOnce(
-            () =>
-                new Promise<Optional<'confirm'>>(resolve => {
-                    resolveAcknowledge = resolve
-                }),
-        )
-        // Hold the display sheet open so the step is observable.
-        mockRequestBottomSheet.mockReturnValueOnce(new Promise(() => {}))
-
-        const { result } = renderHook(() =>
-            useViewPassphraseFlow({
-                isVisible: true,
-                address: 'ADDR',
-                onClose: vi.fn(),
-            }),
-        )
-        await waitFor(() => expect(result.current.step).toBe('acknowledge'))
-
+        const { result } = renderHook(() => useViewPassphraseFlow())
         await act(async () => {
-            resolveAcknowledge('confirm')
+            void result.current.openViewPassphraseFlow('ADDR')
         })
 
-        await waitFor(() => expect(result.current.step).toBe('display'))
+        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
     })
 
-    it('resets the step to null when isVisible flips to false', async () => {
+    it('skips the PIN sheet and opens the acknowledge sheet when no PIN is set', async () => {
         mockCheckPinEnabled.mockResolvedValue(false)
-        const { result, rerender } = renderHook(
-            ({ isVisible }: { isVisible: boolean }) =>
-                useViewPassphraseFlow({
-                    isVisible,
-                    address: 'ADDR',
-                    onClose: vi.fn(),
-                }),
-            { initialProps: { isVisible: true } },
-        )
-        await waitFor(() => expect(result.current.step).toBe('acknowledge'))
+        mockRequestBottomSheet.mockReturnValue(new Promise(() => {}))
 
-        rerender({ isVisible: false })
+        const { result } = renderHook(() => useViewPassphraseFlow())
+        await act(async () => {
+            void result.current.openViewPassphraseFlow('ADDR')
+        })
 
-        expect(result.current.step).toBeNull()
+        // Single call: acknowledge sheet only.
+        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+    })
+
+    it('aborts the flow when the PIN sheet is dismissed', async () => {
+        mockCheckPinEnabled.mockResolvedValue(true)
+        mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+
+        const { result } = renderHook(() => useViewPassphraseFlow())
+        await act(async () => {
+            await result.current.openViewPassphraseFlow('ADDR')
+        })
+
+        // Only the PIN sheet was opened — acknowledge / display never fired.
+        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+    })
+
+    it('opens the acknowledge sheet after PIN verification', async () => {
+        mockCheckPinEnabled.mockResolvedValue(true)
+        mockRequestBottomSheet.mockResolvedValueOnce(true)
+        mockRequestBottomSheet.mockReturnValueOnce(new Promise(() => {}))
+
+        const { result } = renderHook(() => useViewPassphraseFlow())
+        await act(async () => {
+            void result.current.openViewPassphraseFlow('ADDR')
+        })
+
+        // First call: PIN. Second call: acknowledge.
+        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(2)
+    })
+
+    it("opens the display sheet after the acknowledge sheet resolves with 'confirm'", async () => {
+        mockCheckPinEnabled.mockResolvedValue(false)
+        mockRequestBottomSheet.mockResolvedValueOnce('confirm')
+        mockRequestBottomSheet.mockReturnValueOnce(new Promise(() => {}))
+
+        const { result } = renderHook(() => useViewPassphraseFlow())
+        await act(async () => {
+            void result.current.openViewPassphraseFlow('ADDR')
+        })
+
+        // First call: acknowledge. Second call: display.
+        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(2)
+    })
+
+    it('aborts the flow when the acknowledge sheet does not resolve with confirm', async () => {
+        mockCheckPinEnabled.mockResolvedValue(false)
+        mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+
+        const { result } = renderHook(() => useViewPassphraseFlow())
+        await act(async () => {
+            await result.current.openViewPassphraseFlow('ADDR')
+        })
+
+        // No display sheet was opened.
+        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
     })
 })

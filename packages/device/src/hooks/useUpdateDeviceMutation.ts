@@ -24,6 +24,14 @@ export const useUpdateDeviceMutation = (
 ) => {
     const { network } = useNetwork()
     return useMutation({
+        // Device registration is best-effort: a failed update (notably a 404
+        // for a device ID the backend no longer knows — e.g. after an env
+        // switch) is handled by `useDevice.registerDevice`, which re-registers
+        // the device, and by `useDeviceRegistration`, which logs and swallows.
+        // The global mutation config sets `throwOnError: true`; without opting
+        // out here React Query would re-throw the already-handled error on the
+        // next render and crash the app with a render error.
+        throwOnError: false,
         mutationFn: ({
             deviceId,
             data,

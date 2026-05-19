@@ -12,6 +12,7 @@
 
 import { ActivityIndicator } from 'react-native'
 import { useTheme } from '@rneui/themed'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { PWButton, PWIcon, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { type SignerRow } from '../../utils/buildSignerRows'
@@ -21,7 +22,6 @@ import {
 } from '../SignerStatusListItem'
 import { usePendingSignaturesContent } from './usePendingSignaturesContent'
 import { useStyles } from './styles'
-import { Optional } from '@perawallet/wallet-core-shared'
 
 export type PendingSignaturesContentProps = Record<string, never>
 

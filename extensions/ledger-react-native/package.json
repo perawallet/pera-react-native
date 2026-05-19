@@ -27,7 +27,8 @@
     "@ledgerhq/devices": "^8.13.0",
     "@ledgerhq/errors": "^6.32.0",
     "@ledgerhq/hw-app-algorand": "^6.34.1",
-    "@ledgerhq/react-native-hw-transport-ble": "^6.39.1"
+    "@ledgerhq/react-native-hw-transport-ble": "^6.39.1",
+    "react-native": "0.83.9"
   },
   "devDependencies": {
     "typescript": "catalog:",

@@ -25,7 +25,7 @@ import {
     useRef,
 } from 'react'
 import { useStyles } from './styles'
-import { Keyboard, StyleProp, ViewStyle } from 'react-native'
+import { Keyboard, Platform, StyleProp, ViewStyle } from 'react-native'
 import { NotifierRoot, NotifierWrapper } from 'react-native-notifier'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -155,6 +155,11 @@ export const PWBottomSheet = ({
             ref={bottomSheetModalRef}
             snapPoints={defaults.snapPoints}
             enableDynamicSizing={defaults.enableDynamicSizing}
+            // Never let the sheet rise above the status bar, even when its
+            // dynamically-sized content (e.g. an expanded HD wallet tree)
+            // would otherwise push it past the configured snap point. Skip
+            // for `full`-size sheets which intentionally cover everything.
+            topInset={size === 'full' ? 0 : insets.top}
             backdropComponent={renderBackdrop}
             onDismiss={handleDismiss}
             onAnimate={handleAnimate}
@@ -168,7 +173,7 @@ export const PWBottomSheet = ({
             enablePanDownToClose={enablePanDownToClose}
             enableContentPanningGesture={enableContentPanningGesture}
             enableOverDrag={false}
-            bottomInset={insets.bottom}
+            bottomInset={Platform.OS === 'android' ? insets.bottom : 0}
         >
             <NotifierWrapper
                 omitGlobalMethodsHookup

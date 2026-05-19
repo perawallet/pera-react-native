@@ -79,7 +79,10 @@ describe('useSignAndSubmitGroup', () => {
         await captured?.approve?.(signed)
 
         await expect(promise).resolves.toEqual({ txIds: ['tx1', 'tx2'] })
-        expect(captured?.headless).toBe(true)
+        // Internal flows must stamp `sourceType: 'local'` (or omit it) —
+        // never one of `INTERACTIVE_SOURCES`. Asserting the field guards
+        // against a regression where the swap flow accidentally pulls in
+        // the standard review/completion sheets.
         expect(captured?.transport).toBe('callback')
         expect(captured?.sourceType).toBe('local')
         expect(captured?.txs).toEqual([fakeTxn, fakeTxn])

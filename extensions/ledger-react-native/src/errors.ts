@@ -178,6 +178,147 @@ export class LedgerNoAccountsFoundError extends AppError {
 }
 
 /**
+ * The device's Bluetooth adapter is disabled at sign time.
+ */
+export class LedgerBluetoothDisabledError extends AppError {
+    constructor(originalError?: Error) {
+        super(
+            'Bluetooth must be enabled to communicate with a Ledger device',
+            {
+                severity: ErrorSeverity.MEDIUM,
+                category: ErrorCategory.BLOCKCHAIN,
+                retryable: true,
+            },
+            originalError,
+        )
+    }
+}
+
+/**
+ * BLE scan permission was denied or revoked.
+ */
+export class LedgerPermissionDeniedError extends AppError {
+    constructor(originalError?: Error) {
+        super(
+            'Bluetooth scan permission is required to search for nearby Ledger devices',
+            {
+                severity: ErrorSeverity.MEDIUM,
+                category: ErrorCategory.BLOCKCHAIN,
+                retryable: true,
+            },
+            originalError,
+        )
+    }
+}
+
+/**
+ * BLE scan completed without locating the target device. Distinct from
+ * `LedgerTimeoutError` (which covers any device-communication timeout) so
+ * the UI can render scan-specific copy and the troubleshooting link.
+ */
+export class LedgerScanTimeoutError extends AppError {
+    constructor(message: string, originalError?: Error) {
+        super(
+            `Ledger scan timed out: ${message}`,
+            {
+                severity: ErrorSeverity.MEDIUM,
+                category: ErrorCategory.BLOCKCHAIN,
+                retryable: true,
+            },
+            originalError,
+        )
+    }
+}
+
+/**
+ * Signature attachment or post-sign processing failed after the device
+ * returned a signature. Indicates an internal protocol/encoding failure,
+ * not a user action.
+ */
+export class LedgerSigningFailedError extends AppError {
+    constructor(message: string, originalError?: Error) {
+        super(
+            `Ledger signing failed: ${message}`,
+            {
+                severity: ErrorSeverity.HIGH,
+                category: ErrorCategory.BLOCKCHAIN,
+                retryable: true,
+            },
+            originalError,
+        )
+    }
+}
+
+/**
+ * Failed to write a BLE characteristic when sending data to the Ledger.
+ */
+export class LedgerTransmissionError extends AppError {
+    constructor(message: string, originalError?: Error) {
+        super(
+            `Ledger transmission failed: ${message}`,
+            {
+                severity: ErrorSeverity.HIGH,
+                category: ErrorCategory.BLOCKCHAIN,
+                retryable: true,
+            },
+            originalError,
+        )
+    }
+}
+
+/**
+ * Failed to read the device's public key during connect-time verification.
+ */
+export class LedgerPublicKeyReadError extends AppError {
+    constructor(originalError?: Error) {
+        super(
+            'Failed to read public key from Ledger device',
+            {
+                severity: ErrorSeverity.HIGH,
+                category: ErrorCategory.BLOCKCHAIN,
+                retryable: true,
+            },
+            originalError,
+        )
+    }
+}
+
+/**
+ * Network/indexer error during a Ledger-driven flow (e.g. account
+ * existence check).
+ */
+export class LedgerNetworkError extends AppError {
+    constructor(originalError?: Error) {
+        super(
+            'Network error during Ledger operation',
+            {
+                severity: ErrorSeverity.MEDIUM,
+                category: ErrorCategory.BLOCKCHAIN,
+                retryable: true,
+            },
+            originalError,
+        )
+    }
+}
+
+/**
+ * The connected device returned an unsupported-model indicator.
+ */
+export class LedgerUnsupportedDeviceError extends AppError {
+    constructor(originalError?: Error) {
+        super(
+            'This Ledger device is not supported',
+            {
+                severity: ErrorSeverity.HIGH,
+                category: ErrorCategory.BLOCKCHAIN,
+                retryable: false,
+            },
+            originalError,
+        )
+    }
+}
+
+/**
  * Extract the APDU status code from a Ledger SDK error.
  * Ledger errors typically have a `statusCode` property.
  */
@@ -198,6 +339,10 @@ const getStatusCode = (error: unknown): Nullable<number> => {
  * to typed Ledger error classes. Pass-through for already-classified
  * AppError instances so re-classification at catch sites preserves the
  * specific error type.
+ *
+ * Errors that this codebase throws directly (bluetooth disabled, scan
+ * timeout, transmission, etc.) are AppError subclasses already, so they
+ * fall through the AppError short-circuit without needing a mapping rule.
  */
 export const classifyLedgerError = (error: unknown): AppError => {
     if (error instanceof AppError) return error

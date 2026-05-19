@@ -28,7 +28,15 @@ const mockRequestBottomSheet = vi.fn()
 
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheet: () => ({ request: mockRequestBottomSheet }),
+    useBottomSheetResult: () => ({ resolve: vi.fn(), dismiss: vi.fn() }),
 }))
+
+vi.mock(
+    '@modules/assets/screens/FullScreenImageViewer/FullScreenImageViewer',
+    () => ({
+        FullScreenImageViewer: () => null,
+    }),
+)
 
 vi.mock('@react-navigation/native', () => ({
     useNavigation: () => ({

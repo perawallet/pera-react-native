@@ -9,6 +9,7 @@
     "dev:packages": "turbo run dev --filter='./packages/*' --parallel",
     "android": "turbo run android --filter=mobile",
     "ios": "turbo run ios --filter=mobile",
+    "ios:device": "pnpm --filter mobile ios:device",
     "mobile:start": "turbo run start --filter=mobile",
     "pre-push": "./tools/pre-push",
     "lint": "turbo run lint && pnpm lint:guardrails",
@@ -53,7 +54,7 @@
       "expo-sqlite@14.0.6": "patches/expo-sqlite@14.0.6.patch"
     },
     "overrides": {
-      "@algorandfoundation/keystore": "1.0.0-canary.12",
+      "@algorandfoundation/keystore": "1.0.0-canary.16",
       "@babel/plugin-transform-modules-systemjs@>=7.12.0 <7.29.4": ">=7.29.4",
       "@expo/dom-webview": "^55.0.5",
       "@xmldom/xmldom": "0.8.13",

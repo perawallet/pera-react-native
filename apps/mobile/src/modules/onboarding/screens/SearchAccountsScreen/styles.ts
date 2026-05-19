@@ -12,6 +12,10 @@
 
 import { makeStyles } from '@rneui/themed'
 
+// Sizes pulled from Figma node 110459:26125.
+const DOT_SIZE = 3
+const DOT_GAP = 12
+
 export const useStyles = makeStyles(theme => ({
     container: {
         flex: 1,
@@ -19,23 +23,22 @@ export const useStyles = makeStyles(theme => ({
         justifyContent: 'center',
         alignItems: 'center',
         padding: theme.spacing.xl,
-        gap: theme.spacing.xl,
+        gap: theme.spacing.xxl,
     },
     topRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: theme.spacing.xl,
     },
     dotsContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginHorizontal: theme.spacing.xl,
-        gap: theme.spacing.md,
+        marginHorizontal: theme.spacing.lg,
+        gap: DOT_GAP,
     },
     dot: {
-        width: theme.spacing.xs,
-        height: theme.spacing.xs,
-        borderRadius: theme.spacing.xs,
+        width: DOT_SIZE,
+        height: DOT_SIZE,
+        borderRadius: DOT_SIZE / 2,
     },
     dot1: {
         backgroundColor: theme.colors.layerGray,

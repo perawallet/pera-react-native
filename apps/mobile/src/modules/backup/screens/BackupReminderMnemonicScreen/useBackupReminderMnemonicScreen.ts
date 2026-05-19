@@ -12,9 +12,9 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import {
-    useNavigation,
     useRoute,
     type RouteProp,
+    useNavigation,
 } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
@@ -30,7 +30,6 @@ export type UseBackupReminderMnemonicScreenResult = {
     isPinVisible: boolean
     isPinGateResolved: boolean
     handlePinVerified: () => void
-    handlePinClose: () => void
     onContinue: () => void
 }
 
@@ -123,11 +122,6 @@ export const useBackupReminderMnemonicScreen =
             setIsPinGateResolved(true)
         }, [])
 
-        const handlePinClose = useCallback(() => {
-            setIsPinVisible(false)
-            navigation.goBack()
-        }, [navigation])
-
         const onContinue = useCallback(() => {
             if (!address) return
             // Native-stack keeps this screen mounted after navigate(), so the
@@ -145,7 +139,6 @@ export const useBackupReminderMnemonicScreen =
             isPinVisible,
             isPinGateResolved,
             handlePinVerified,
-            handlePinClose,
             onContinue,
         }
     }

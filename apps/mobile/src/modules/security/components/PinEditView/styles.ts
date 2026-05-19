@@ -15,22 +15,12 @@ import { EdgeInsets } from 'react-native-safe-area-context'
 
 export const useStyles = makeStyles(
     (theme, { height, insets }: { height: number; insets: EdgeInsets }) => ({
-        container: {
-            flex: 1,
-            backgroundColor: theme.colors.background,
-            marginBottom: theme.spacing.xl,
-        },
         innerContainer: {
-            height,
+            flexGrow: 1,
+            minHeight: height,
             paddingVertical: theme.spacing.xl,
             paddingBottom: insets.bottom,
-        },
-        closeButtonContainer: {
-            paddingVertical: theme.spacing.sm,
-            paddingHorizontal: theme.spacing.md,
-        },
-        closeButton: {
-            padding: theme.spacing.sm,
+            backgroundColor: theme.colors.background,
         },
     }),
 )

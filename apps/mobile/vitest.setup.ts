@@ -514,6 +514,11 @@ vi.mock('@components/core', () => {
                       children,
                   )
                 : null,
+        PWLottie: ({ testID, ...props }: any) =>
+            React.createElement('div', {
+                ...props,
+                'data-testid': testID || 'PWLottie',
+            }),
         PWNumpad: ({ mode, onKeyPress, isDisabled, testID }: any) => {
             const keys =
                 mode === 'number'
@@ -721,6 +726,21 @@ vi.mock('expo-clipboard', () => ({
     setStringAsync: vi.fn(),
     getStringAsync: vi.fn(),
 }))
+
+// `expo-file-system` transitively imports `expo-modules-core`, which probes
+// `__DEV__` at module init and crashes under jsdom. Stub the `File` class
+// to the surface the ASB import screen actually uses (the static picker +
+// the `.text()` reader).
+vi.mock('expo-file-system', () => {
+    class FileMock {
+        name = 'mock-file.txt'
+        async text() {
+            return ''
+        }
+        static pickFileAsync = vi.fn(async () => new FileMock())
+    }
+    return { File: FileMock }
+})
 
 vi.mock('expo-haptics', () => ({
     notificationAsync: vi.fn(),
@@ -1129,7 +1149,10 @@ vi.mock('react-native', () => {
         },
         AppState: {
             currentState: 'active',
-            addEventListener: vi.fn(),
+            // Real RN returns an `EmitterSubscription` with `.remove()`.
+            // Default the mock to the same shape so consumers can call
+            // `.remove()` in an effect cleanup without crashing.
+            addEventListener: vi.fn(() => ({ remove: vi.fn() })),
             removeEventListener: vi.fn(),
         },
         InteractionManager: {
@@ -1957,6 +1980,9 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     formatNumber: vi.fn(value => String(value)),
     generateUniqueId: vi.fn(() => 'mock-uuid'),
     generateOrderedUniqueId: vi.fn(() => 'mock-time-uuid'),
+    toError: vi.fn((e: unknown) =>
+        e instanceof Error ? e : new Error(String(e)),
+    ),
     AppError: class AppError extends Error {
         constructor(message: string) {
             super(message)
@@ -2062,17 +2088,40 @@ vi.mock('@perawallet/wallet-core-background', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
-    useKMS: vi.fn(),
-    useKMSService: vi.fn(() => ({
-        commitTypedSecret: vi.fn(async () => {}),
-        withTypedSecret: vi.fn(async () => null),
-        hasTypedSecret: vi.fn(() => false),
-        removeTypedSecret: vi.fn(async () => {}),
+    // Default useKMS stub: provides every shape consumers destructure
+    // (seedIdOf, sign helpers, etc.) so tests that don't care about the
+    // KMS layer can render without rewiring. Suite-specific tests
+    // override via their own vi.mock call.
+    useKMS: vi.fn(() => ({
+        keys: new Map(),
+        seedIdOf: vi.fn(() => undefined),
+        deleteKey: vi.fn(async () => {}),
+        getKey: vi.fn(() => null),
+        getKeyOrThrow: vi.fn(() => {
+            throw new Error('Key not found (default mock)')
+        }),
+        createAlgo25Key: vi.fn(),
+        createHDWalletKey: vi.fn(),
+        persistHDMasterKey: vi.fn(),
+        generateDerivedKey: vi.fn(),
+        getDerivedPublicKey: vi.fn(),
+        removeKeyAndChildren: vi.fn(async () => {}),
+        keyStore: {},
+        withExportedKey: vi.fn(),
+        signTransactionsWithKey: vi.fn(async () => []),
+        signDataWithKey: vi.fn(async () => []),
+        executeWithMnemonic: vi.fn(),
     })),
-    commitTypedSecret: vi.fn(async () => {}),
-    withTypedSecret: vi.fn(async () => null),
-    hasTypedSecret: vi.fn(() => false),
-    removeTypedSecret: vi.fn(async () => {}),
+    useKMSService: vi.fn(() => ({
+        commitSecret: vi.fn(async () => {}),
+        withSecret: vi.fn(async () => null),
+        hasSecret: vi.fn(() => false),
+        removeSecret: vi.fn(async () => {}),
+    })),
+    commitSecret: vi.fn(async () => {}),
+    withSecret: vi.fn(async () => null),
+    hasSecret: vi.fn(() => false),
+    removeSecret: vi.fn(async () => {}),
     uniformIntBelow: (max: number) =>
         max <= 0 ? 0 : Math.floor(Math.random() * max),
     pickDistinctIndexes: (count: number, poolSize: number) => {
@@ -2089,6 +2138,11 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
             if (buf) buf.fill(0)
         }
     },
+    // ASB key entry needs the BIP-39 wordlist to validate user input. Tests
+    // don't exercise the full 2048-word list — a small placeholder is enough
+    // to satisfy `new Set(MNEMONIC_WORDLIST)` at import time without dragging
+    // the real wordlist into the test bundle.
+    MNEMONIC_WORDLIST: ['abandon', 'ability', 'able', 'about'],
 }))
 
 // Mock @perawallet/wallet-core-assets
@@ -2239,6 +2293,15 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             multisig: 'multisig',
             watch: 'watch',
         },
+        AccountLogicalTypes: {
+            Algo25: 'Algo25',
+            HdKey: 'HdKey',
+            LedgerBle: 'LedgerBle',
+            Multisig: 'Multisig',
+            Rekeyed: 'Rekeyed',
+            RekeyedAuth: 'RekeyedAuth',
+            NoAuth: 'NoAuth',
+        },
         useOwnedAssets: vi.fn(() => ({
             assets: [],
             isLoading: false,
@@ -2332,6 +2395,29 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
                 err instanceof Error ? err : undefined,
             ),
     ),
+    microAlgosToAlgos: vi.fn((microAlgos: bigint | number | string) => {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const { Decimal } = require('decimal.js')
+        return new Decimal(microAlgos.toString()).dividedBy(1_000_000)
+    }),
+    baseUnitsToDisplayUnits: vi.fn(
+        (baseUnits: bigint | number | string, decimals: number) => {
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
+            const { Decimal } = require('decimal.js')
+            return new Decimal(baseUnits.toString()).dividedBy(
+                new Decimal(10).pow(decimals),
+            )
+        },
+    ),
+}))
+
+// Stub lottie-react-native globally. It ships untransformed TSX inside its
+// commonjs build, which Vitest's external module loader can't parse — any
+// transitive import of LottieView throws "Unexpected token 'typeof'" at
+// test collection time. Local mocks in component-specific tests still
+// override this with their own stubs when they need testID wiring.
+vi.mock('lottie-react-native', () => ({
+    default: () => null,
 }))
 
 // Mock @perawallet/wallet-extension-platform

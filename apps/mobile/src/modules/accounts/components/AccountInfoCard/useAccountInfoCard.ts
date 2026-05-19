@@ -26,14 +26,10 @@ import { microAlgosToAlgos } from '@perawallet/wallet-core-blockchain'
 import { useLanguage } from '@hooks/useLanguage'
 import { navigationRef } from '@routes/navigationRef'
 import { Decimal } from 'decimal.js'
+import { useAccountTypeLabel } from '@modules/accounts/hooks/useAccountTypeLabel'
+import type { AccountTypeLabel } from '@modules/accounts/hooks/useAccountTypeLabel'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { IconName } from '@components/core'
-
-export type SharedAccountDetails = {
-    participantCount: number
-    threshold: number
-    addresses: string[]
-}
 
 type UseAccountInfoCardParams = {
     account: WalletAccount
@@ -43,16 +39,15 @@ type UseAccountInfoCardParams = {
 type UseAccountInfoCardResult = {
     isExpanded: boolean
     handleToggleExpanded: () => void
-    accountTypeLabel: string
+    accountType: AccountTypeLabel
     minBalanceAlgos: Nullable<Decimal>
     isMinBalanceLoading: boolean
     showMinBalance: boolean
     showStructure: boolean
-    showSharedAccountDetails: boolean
-    sharedAccountDetails: Nullable<SharedAccountDetails>
     structureLabel: string
     structureIcon: IconName
     structureAccounts: WalletAccount[]
+    structureMainAddress: string
     handleScanAddresses: () => void
 }
 
@@ -76,44 +71,11 @@ export const useAccountInfoCard = ({
         useAccountLogicalType(account.address) ??
         (isMultisig ? 'Multisig' : 'NoAuth')
     const showMinBalance = isSigningLogicalType(logicalType)
-    const showStructure = isHDWallet || isLedger
-    const sharedAccountDetails = useMemo<Nullable<SharedAccountDetails>>(() => {
-        if (!isMultisig) return null
-
-        return {
-            participantCount: account.multisigDetails.addresses.length,
-            threshold: account.multisigDetails.threshold,
-            addresses: account.multisigDetails.addresses,
-        }
-    }, [account, isMultisig])
+    const accountType = useAccountTypeLabel(account)
 
     const handleToggleExpanded = useCallback(() => {
         setIsExpanded(prev => !prev)
     }, [])
-
-    const accountTypeLabel = useMemo(() => {
-        switch (logicalType) {
-            case 'HdKey':
-                return t('account_info.type_universal_wallet')
-            case 'Algo25':
-                return t('account_info.type_algo25')
-            case 'LedgerBle':
-                return t('account_info.type_ledger')
-            case 'Multisig':
-                return t('account_info.type_multisig', {
-                    count: isMultisig
-                        ? account.multisigDetails.addresses.length
-                        : 0,
-                })
-            case 'NoAuth':
-                return t('account_info.type_watch')
-            case 'Rekeyed':
-            case 'RekeyedAuth':
-                return t('account_info.type_rekeyed')
-            default:
-                return t('account_info.type_unknown')
-        }
-    }, [account, isMultisig, logicalType, t])
 
     const minBalanceAlgos = useMemo(() => {
         if (accountInfo?.minBalance == null) return null
@@ -122,10 +84,12 @@ export const useAccountInfoCard = ({
 
     const hdWalletGroupIndex = useMemo(() => {
         if (!isHDWallet) return -1
-        return hdWalletGroups.findIndex(
-            group => group.keyPairId === account.keyPairId,
+        // Account.keyPairId is the derived child id; match by membership
+        // rather than by id since the group's `seedKeyId` is the parent.
+        return hdWalletGroups.findIndex(group =>
+            group.accounts.some(a => a.id === account.id),
         )
-    }, [isHDWallet, hdWalletGroups, account.keyPairId])
+    }, [isHDWallet, hdWalletGroups, account.id])
 
     const ledgerDeviceGroup = useMemo(() => {
         if (!isLedgerAccount(account)) return null
@@ -166,6 +130,25 @@ export const useAccountInfoCard = ({
         ledgerDeviceGroup,
     ])
 
+    const structureMainAddress = useMemo<string>(() => {
+        if (isHDWallet && hdWalletGroupIndex >= 0) {
+            return hdWalletGroups[hdWalletGroupIndex].firstAccount.address
+        }
+        if (isLedger && ledgerDeviceGroup) {
+            return ledgerDeviceGroup.firstAccount.address
+        }
+        return ''
+    }, [
+        isHDWallet,
+        hdWalletGroupIndex,
+        hdWalletGroups,
+        isLedger,
+        ledgerDeviceGroup,
+    ])
+
+    const showStructure =
+        isHDWallet || (isLedger && structureAccounts.length > 0)
+
     const handleScanAddresses = useCallback(() => {
         if (isHDWalletAccount(account)) {
             onClose()
@@ -173,7 +156,7 @@ export const useAccountInfoCard = ({
                 screen: 'SearchAccounts',
                 params: {
                     account,
-                    createIfEmpty: true,
+                    notifyOnEmpty: true,
                 },
             })
             return
@@ -194,16 +177,15 @@ export const useAccountInfoCard = ({
     return {
         isExpanded,
         handleToggleExpanded,
-        accountTypeLabel,
+        accountType,
         minBalanceAlgos,
         isMinBalanceLoading,
         showMinBalance,
         showStructure,
-        showSharedAccountDetails: isMultisig,
-        sharedAccountDetails,
         structureLabel,
         structureIcon,
         structureAccounts,
+        structureMainAddress,
         handleScanAddresses,
     }
 }

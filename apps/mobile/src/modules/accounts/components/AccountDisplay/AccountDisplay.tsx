@@ -28,6 +28,7 @@ import { useStyles } from './styles'
 import { AccountIcon, AccountIconProps } from '../AccountIcon'
 import { useMemo } from 'react'
 import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
+import { useAccountTypeLabel } from '@modules/accounts/hooks/useAccountTypeLabel'
 
 export type AccountDisplayProps = {
     account?: WalletAccount
@@ -36,6 +37,11 @@ export type AccountDisplayProps = {
     showChevron?: boolean
     noBorder?: boolean
     compact?: boolean
+    /**
+     * When set, accounts shown by their truncated address (no custom name or
+     * NFD) display the account type on the secondary line instead.
+     */
+    showAccountType?: boolean
 } & PWViewProps
 
 export const AccountDisplay = ({
@@ -45,6 +51,7 @@ export const AccountDisplay = ({
     textProps,
     noBorder,
     compact = false,
+    showAccountType = false,
     ...rest
 }: AccountDisplayProps) => {
     const { theme } = useTheme()
@@ -54,8 +61,7 @@ export const AccountDisplay = ({
         [account?.name, account?.address],
     )
     const address = useMemo(
-        () =>
-            account ? truncateAlgorandAddress(account?.address, 12) : undefined,
+        () => (account ? truncateAlgorandAddress(account?.address) : undefined),
         [account?.address],
     )
 
@@ -65,10 +71,15 @@ export const AccountDisplay = ({
 
     const nfdName = useMemo(() => nfdNames?.at(0)?.name, [nfdNames])
 
-    const renderSecondary = useMemo(
-        () => nfdName || displayName === address,
-        [nfdName, displayName, address],
-    )
+    const { label: accountTypeLabel } = useAccountTypeLabel(account)
+
+    const hasName = Boolean(nfdName) || displayName !== address
+    const showTypeAsSecondary =
+        showAccountType && !hasName && Boolean(accountTypeLabel)
+    const renderSecondary = hasName || showTypeAsSecondary
+    const secondaryText = showTypeAsSecondary
+        ? accountTypeLabel
+        : (nfdName ?? address)
 
     return (
         <PWView
@@ -99,9 +110,9 @@ export const AccountDisplay = ({
                         style={styles.addressText}
                         variant='caption'
                         numberOfLines={1}
-                        ellipsizeMode='middle'
+                        ellipsizeMode={showTypeAsSecondary ? 'tail' : 'middle'}
                     >
-                        {nfdName ?? address}
+                        {secondaryText}
                     </PWText>
                 )}
             </PWView>

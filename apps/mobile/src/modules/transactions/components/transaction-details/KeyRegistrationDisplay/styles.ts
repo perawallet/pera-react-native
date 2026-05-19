@@ -22,6 +22,7 @@ export const useStyles = makeStyles(theme => ({
     detailContainer: {
         paddingHorizontal: theme.spacing.sm,
         gap: theme.spacing.lg,
+        width: '100%',
     },
     divider: {
         marginTop: theme.spacing.xs,

@@ -19,13 +19,17 @@ export type PreparedHDMasterKey = {
     keyId: string
     rootKey: Uint8Array
     entropy: Uint8Array
-    mnemonic: string
 }
 
 /**
  * Pure in-memory HD master-key derivation. Computes the BIP39 seed, the
  * XHD root key (96 bytes: kL || kR || chainCode), and the BIP39 entropy.
  * Nothing is written to the keystore — caller decides when to persist.
+ *
+ * The BIP39 mnemonic is intentionally not returned — JS strings can't be
+ * zeroed, so exposing it here would leave the phrase reachable on the heap
+ * for the lifetime of the returned object. Callers that need the words can
+ * rebuild them from `entropy` via `entropyToMnemonic` at the call site.
  */
 export const prepareHDMasterKey = async (params?: {
     id?: string
@@ -42,6 +46,5 @@ export const prepareHDMasterKey = async (params?: {
         keyId,
         rootKey,
         entropy: masterKey.entropy,
-        mnemonic: masterKey.mnemonic,
     }
 }

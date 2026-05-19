@@ -17,12 +17,15 @@ import { PWText } from '../PWText'
 import { useStyles, PWChipVariant } from './styles'
 import { StyleProp, ViewStyle } from 'react-native'
 
+import type { TypographyVariant } from '@theme/typography'
+
 export type PWChipProps = {
     title: string
     variant?: PWChipVariant
     style?: StyleProp<ViewStyle>
     paddingStyle?: 'dense' | 'normal'
     forceUppercase?: boolean
+    textVariant?: TypographyVariant
 }
 
 export const PWChip = ({
@@ -31,13 +34,14 @@ export const PWChip = ({
     style,
     paddingStyle = 'normal',
     forceUppercase = true,
+    textVariant = 'captionMedium',
 }: PWChipProps) => {
     const styles = useStyles({ variant, paddingStyle })
 
     return (
         <PWView style={[styles.chipStyle, style]}>
             <PWText
-                variant='body'
+                variant={textVariant}
                 style={styles.titleStyle}
             >
                 {forceUppercase ? title.toUpperCase() : title}

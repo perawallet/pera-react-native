@@ -13,7 +13,6 @@
 import {
     IconName,
     PWIcon,
-    PWRoundIcon,
     PWText,
     PWTouchableOpacity,
     PWView,
@@ -29,6 +28,7 @@ type AccountStructureTreeProps = {
     label: string
     icon: IconName
     accounts: WalletAccount[]
+    mainAccountAddress: string
     onScanAddresses: () => void
 }
 
@@ -36,6 +36,7 @@ export const AccountStructureTree = ({
     label,
     icon,
     accounts,
+    mainAccountAddress,
     onScanAddresses,
 }: AccountStructureTreeProps) => {
     const styles = useStyles()
@@ -44,51 +45,68 @@ export const AccountStructureTree = ({
     return (
         <PWView style={styles.treeContainer}>
             <PWView style={styles.walletRow}>
-                <PWRoundIcon
-                    icon={icon}
-                    variant='secondary'
-                    size='lg'
-                />
-                <PWText variant='body'>{label}</PWText>
+                <PWView style={styles.walletCircle}>
+                    <PWIcon
+                        name={icon}
+                        size='md'
+                        variant='primary'
+                    />
+                </PWView>
+                <PWText variant='bodyLarge'>{label}</PWText>
             </PWView>
 
-            {accounts.map(account => (
-                <PWView
-                    key={account.address}
-                    style={styles.accountRowWithConnector}
-                >
-                    <PWView style={styles.connectorContainer}>
-                        <PWView style={styles.connectorVertical} />
-                        <PWView style={styles.connectorHorizontal} />
-                    </PWView>
-                    <PWView style={styles.accountRow}>
-                        <AccountIcon
-                            account={account}
-                            size='md'
-                        />
-                        <PWView style={styles.accountInfo}>
-                            <PWText variant='body'>
-                                {account.name ?? t('account_info.main_address')}
-                            </PWText>
-                            <CopyableText copyValue={account.address}>
-                                <PWText
-                                    variant='body'
-                                    style={styles.addressText}
-                                >
-                                    {truncateAlgorandAddress(account.address)}
+            {accounts.map((account, index) => {
+                const isMain = account.address === mainAccountAddress
+                const truncated = truncateAlgorandAddress(account.address)
+                const hasRealName = !!account.name && account.name !== truncated
+                const fallbackLabel = isMain
+                    ? t('account_info.main_address')
+                    : t('account_info.sub_address')
+                const isLast = index === accounts.length - 1
+
+                return (
+                    <PWView
+                        key={account.address}
+                        style={styles.accountRowWithConnector}
+                    >
+                        <PWView style={styles.connectorContainer}>
+                            <PWView
+                                style={[
+                                    styles.connectorVertical,
+                                    isLast && styles.connectorVerticalLast,
+                                ]}
+                            />
+                            <PWView style={styles.connectorHorizontal} />
+                        </PWView>
+                        <PWView style={styles.accountRow}>
+                            <AccountIcon
+                                account={account}
+                                size='lg'
+                            />
+                            <PWView style={styles.accountInfo}>
+                                <PWText variant='bodyLarge'>
+                                    {hasRealName ? account.name : fallbackLabel}
                                 </PWText>
-                            </CopyableText>
+                                <CopyableText copyValue={account.address}>
+                                    <PWText
+                                        variant='body'
+                                        style={styles.addressText}
+                                    >
+                                        {truncated}
+                                    </PWText>
+                                </CopyableText>
+                            </PWView>
                         </PWView>
                     </PWView>
-                </PWView>
-            ))}
+                )
+            })}
 
             <PWTouchableOpacity
                 style={styles.scanButton}
                 onPress={onScanAddresses}
             >
                 <PWIcon
-                    name='magnifying-glass'
+                    name='scan'
                     size='sm'
                     variant='helper'
                 />

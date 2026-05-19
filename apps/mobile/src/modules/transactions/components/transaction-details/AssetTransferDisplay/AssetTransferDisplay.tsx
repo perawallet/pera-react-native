@@ -27,7 +27,9 @@ import { TransactionFooter } from '../TransactionFooter/TransactionFooter'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { LoadingView } from '@components/LoadingView'
 import { AssetTitle } from '@modules/assets/components/AssetTitle'
-import { ViewTextDetailsPanel } from '../../ViewTextDetailsPanel'
+import { ViewTextDetailsContent } from '../../ViewTextDetailsContent'
+import { useBottomSheet } from '@modules/bottom-sheet'
+import { useCallback } from 'react'
 import { useAssetTransferDisplay } from './useAssetTransferDisplay'
 
 export type AssetTransferDisplayProps = {
@@ -55,10 +57,21 @@ export const AssetTransferDisplay = ({
         metadataHash,
         assetTransfer,
         showWarnings,
-        isMetadataHashDetailsModalOpen,
-        openMetadataHashDetailsModal,
-        closeMetadataHashDetailsModal,
     } = useAssetTransferDisplay(transaction, referenceAddress)
+
+    const { request: requestBottomSheet } = useBottomSheet()
+    const openMetadataHashDetails = useCallback(() => {
+        if (!metadataHash) return
+        void requestBottomSheet({
+            contents: (
+                <ViewTextDetailsContent
+                    text={metadataHash}
+                    title={t('transactions.common.view_metadata')}
+                />
+            ),
+            options: { size: 'auto', enablePanDownToClose: true },
+        })
+    }, [metadataHash, requestBottomSheet, t])
 
     if (!assetTransfer) {
         return null
@@ -139,10 +152,10 @@ export const AssetTransferDisplay = ({
                         title={t('transactions.asset_config.metadata_hash')}
                     >
                         <PWButton
-                            variant='link'
+                            variant='linkPositive'
                             paddingStyle='none'
                             title={t('transactions.common.view_metadata')}
-                            onPress={openMetadataHashDetailsModal}
+                            onPress={openMetadataHashDetails}
                         />
                     </KeyValueRow>
                 )}
@@ -166,15 +179,6 @@ export const AssetTransferDisplay = ({
             />
 
             <TransactionFooter transaction={transaction} />
-
-            {!!metadataHash && (
-                <ViewTextDetailsPanel
-                    isVisible={isMetadataHashDetailsModalOpen}
-                    onClose={closeMetadataHashDetailsModal}
-                    text={metadataHash}
-                    title={t('transactions.common.view_metadata')}
-                />
-            )}
         </PWView>
     )
 }

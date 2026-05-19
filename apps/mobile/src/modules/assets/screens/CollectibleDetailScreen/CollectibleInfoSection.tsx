@@ -83,7 +83,7 @@ export const CollectibleInfoSection = ({
                 </PWText>
                 <PWText
                     variant='body'
-                    style={styles.infoValueLink}
+                    style={styles.infoValueAction}
                 >
                     {asset.assetId}
                 </PWText>

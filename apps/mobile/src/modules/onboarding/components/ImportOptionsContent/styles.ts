@@ -13,17 +13,6 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: theme.spacing.lg,
-        paddingHorizontal: theme.spacing.xl,
-    },
-    closeButton: {
-        position: 'absolute',
-        left: 0,
-    },
     optionsContainer: {
         gap: theme.spacing.md,
         marginTop: theme.spacing.lg,
@@ -43,7 +32,7 @@ export const useStyles = makeStyles(theme => ({
     optionContent: {
         flex: 1,
         justifyContent: 'space-between',
-        gap: theme.spacing.lg,
+        gap: theme.spacing.sm,
     },
     optionTopContent: {
         gap: theme.spacing.xs,
@@ -58,7 +47,7 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textGray,
     },
     optionLink: {
-        color: theme.colors.linkPrimary,
+        color: theme.colors.positive,
     },
     rightIconContainer: {
         width: theme.spacing.xxl,

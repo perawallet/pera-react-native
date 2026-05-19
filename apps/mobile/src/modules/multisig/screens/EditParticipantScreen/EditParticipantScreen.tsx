@@ -36,7 +36,7 @@ export const EditParticipantScreen = () => {
         title: t('multisig.edit_participant.title'),
         right: (
             <PWButton
-                variant='link'
+                variant='linkPositive'
                 title={t('multisig.edit_participant.done')}
                 onPress={handleDone}
                 isDisabled={isDoneDisabled}

@@ -23,14 +23,23 @@ export {
     prepareHDMasterKey,
     type PreparedHDMasterKey,
 } from './crypto/prepare-hd-master-key'
-export { ALGO25_KEYSTORE_TYPE } from './constants'
+export { SeedScheme } from './constants'
 export {
-    commitTypedSecret,
-    withTypedSecret,
-    hasTypedSecret,
-    removeTypedSecret,
-    type TypedSecret,
-} from './storage/typedSecret'
+    aclOf,
+    algo25AddressOf,
+    createdAtOf,
+    expiresAtOf,
+    hexToBytes,
+    isSeedKey,
+    seedSchemeOf,
+} from './utils'
+export { hdDerivedKeyId } from './hooks/useHDWallet'
+export {
+    commitSecret,
+    hasSecret,
+    removeSecret,
+    withSecret,
+} from './storage/secrets'
 
 // `installKMSKeystoreHooks` is intentionally NOT re-exported here — it pulls
 // `@algorandfoundation/react-native-keystore` (MMKV native), which would

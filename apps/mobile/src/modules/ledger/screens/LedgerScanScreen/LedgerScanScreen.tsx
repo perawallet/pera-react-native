@@ -22,13 +22,15 @@ import {
 import { useNavigation } from '@react-navigation/native'
 import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wallet'
 
+import { useBottomSafeAreaPadding } from '@hooks/useBottomSafeAreaPadding'
 import { LedgerDeviceItem } from '../../components/LedgerDeviceItem'
 import { LedgerCompositeIcon } from '../../components/LedgerCompositeIcon'
 import { useStyles } from './styles'
 import { useLedgerScanScreen } from './useLedgerScanScreen'
 
 export const LedgerScanScreen = () => {
-    const styles = useStyles()
+    const bottomPadding = useBottomSafeAreaPadding()
+    const styles = useStyles(bottomPadding)
     const navigation = useNavigation()
     const {
         devices,

@@ -35,7 +35,6 @@ export const useStyles = makeStyles((theme, props: PWBadgeProps) => {
 
     return {
         container: {
-            paddingVertical: isAlert ? 0 : theme.spacing.xs,
             paddingHorizontal: isAlert ? 0 : theme.spacing.sm,
             minWidth: isAlert ? theme.spacing.xl : undefined,
             height: theme.spacing.xl,

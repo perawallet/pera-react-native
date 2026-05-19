@@ -19,12 +19,14 @@ import {
 } from '@components/core'
 import { PanelButton } from '@components/PanelButton'
 import { QRScannerView } from '@components/QRScannerView'
+import { useBottomSafeAreaPadding } from '@hooks/useBottomSafeAreaPadding'
 import { useLanguage } from '@hooks/useLanguage'
 import { useImportAccountOptionsScreen } from './useImportAccountOptionsScreen'
 import { useStyles } from './styles'
 
 export const ImportAccountOptionsScreen = () => {
-    const styles = useStyles()
+    const bottomPadding = useBottomSafeAreaPadding()
+    const styles = useStyles(bottomPadding)
     const { t } = useLanguage()
     const {
         options,

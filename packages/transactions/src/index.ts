@@ -44,3 +44,14 @@ export {
     type CsvExportResult,
     type FetchCsvParams,
 } from './api/csv-export'
+
+export {
+    TransactionError,
+    InvalidSendParamsError,
+    AlreadyOptedInError,
+    InsufficientBalanceForOptInError,
+    NonZeroBalanceError,
+    CreatorCannotOptOutError,
+    RekeyError,
+    type RekeyErrorReason,
+} from './errors'

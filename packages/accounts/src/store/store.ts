@@ -12,7 +12,14 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import type { AccountsState, AccountSortMode, WalletAccount } from '../models'
+import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import {
+    AccountTypes,
+    type AccountsState,
+    type AccountSortMode,
+    type WalletAccount,
+    type WatchAccount,
+} from '../models'
 import {
     logger,
     registerStore,
@@ -100,6 +107,28 @@ export const useAccountsStore: UseBoundStore<
                 const next = [...accounts]
                 next[idx] = { ...current, rekeyAddress: nextValue }
                 set({ accounts: next })
+            },
+            addRekeyedWatchAccounts: (
+                sourceAddress: string,
+                addresses: string[],
+            ) => {
+                if (addresses.length === 0) return 0
+
+                const current = get().accounts
+                const currentAddresses = new Set(current.map(a => a.address))
+                const watchAccounts: WatchAccount[] = addresses
+                    .filter(addr => !currentAddresses.has(addr))
+                    .map(address => ({
+                        id: generateOrderedUniqueId(),
+                        address,
+                        type: AccountTypes.watch,
+                        rekeyAddress: sourceAddress,
+                    }))
+
+                if (watchAccounts.length === 0) return 0
+
+                get().setAccounts([...current, ...watchAccounts])
+                return watchAccounts.length
             },
             resetState: () => set(initialState),
         }),

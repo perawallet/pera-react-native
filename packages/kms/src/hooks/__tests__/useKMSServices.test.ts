@@ -13,8 +13,10 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import type { Optional } from '@perawallet/wallet-core-shared'
+import type { Key } from '@algorandfoundation/keystore'
 import { useKMSService, checkAccess } from '../useKMSServices'
-import { AccessControlPermission, KeyPair, KeyType } from '../../models'
+import { AccessControlPermission } from '../../models'
+import { SeedScheme } from '../../constants'
 import { KeyAccessError } from '../../errors'
 
 const mockKeyStoreRemove = vi.fn()
@@ -75,36 +77,37 @@ describe('useKMSService', () => {
     })
 
     describe('checkAccess', () => {
-        const makeKey = (overrides?: Partial<KeyPair>): KeyPair => ({
+        const makeKey = (
+            acl?: { domains: string[]; permissions: string[] }[],
+        ): Key => ({
             id: 'key-1',
-            publicKey: 'ADDR',
-            type: KeyType.Algo25Key,
-            keystoreKeyId: 'ks-key-1',
-            ...overrides,
+            type: 'seed',
+            algorithm: 'raw',
+            extractable: true,
+            metadata: {
+                scheme: SeedScheme.Algo25,
+                pera: acl !== undefined ? { acl } : {},
+            },
         })
 
         test('allows access when ACL grants ReadPrivate for domain', () => {
-            const key = makeKey({
-                acl: [
-                    {
-                        domains: ['test-domain'],
-                        permissions: [AccessControlPermission.ReadPrivate],
-                    },
-                ],
-            })
+            const key = makeKey([
+                {
+                    domains: ['test-domain'],
+                    permissions: [AccessControlPermission.ReadPrivate],
+                },
+            ])
 
             expect(() => checkAccess(key, 'test-domain')).not.toThrow()
         })
 
         test('throws KeyAccessError when ACL denies access for domain', () => {
-            const key = makeKey({
-                acl: [
-                    {
-                        domains: ['other-domain'],
-                        permissions: [AccessControlPermission.ReadPrivate],
-                    },
-                ],
-            })
+            const key = makeKey([
+                {
+                    domains: ['other-domain'],
+                    permissions: [AccessControlPermission.ReadPrivate],
+                },
+            ])
 
             expect(() => checkAccess(key, 'test-domain')).toThrow(
                 KeyAccessError,
@@ -112,29 +115,25 @@ describe('useKMSService', () => {
         })
 
         test('throws KeyAccessError when ACL lacks ReadPrivate permission', () => {
-            const key = makeKey({
-                acl: [
-                    {
-                        domains: ['test-domain'],
-                        permissions: [AccessControlPermission.ReadPublic],
-                    },
-                ],
-            })
+            const key = makeKey([
+                {
+                    domains: ['test-domain'],
+                    permissions: [AccessControlPermission.ReadPublic],
+                },
+            ])
 
             expect(() => checkAccess(key, 'test-domain')).toThrow(
                 KeyAccessError,
             )
         })
 
-        test('allows access when key has no ACL', () => {
-            const key = makeKey({ acl: undefined })
-
+        test('allows access when key has no ACL metadata', () => {
+            const key = makeKey()
             expect(() => checkAccess(key, 'test-domain')).not.toThrow()
         })
 
         test('allows access when key has empty ACL', () => {
-            const key = makeKey({ acl: [] })
-
+            const key = makeKey([])
             expect(() => checkAccess(key, 'test-domain')).not.toThrow()
         })
 

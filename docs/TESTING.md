@@ -30,50 +30,75 @@ src/hooks/
 
 ## What to Test
 
+The test pyramid for this repo, from most to least invested in:
+
+1. **Integration tests** (`apps/mobile/src/__integration__/`) — exercise full user flows against real domain code with only the network (MSW) and platform natives swapped out. **This is where screen and module-level behavior gets tested.** See [Integration Tests](#integration-tests-user-facing-flows) below.
+2. **Hook & util unit tests** — pure logic, run fast, easy to make exhaustive. Every non-trivial hook, util, transformer, and store action gets one.
+3. **Core / shared component unit tests** — behavioral tests for the design system (`apps/mobile/src/components/core/PW*/`) and shared components (`apps/mobile/src/components/[Name]/`). Smoke tests are welcome here too.
+4. **Module-level component unit tests** — **don't write these.** Integration tests cover the screens that consume them. If a module component has non-trivial logic, extract it into a `use[Component]` hook and test the hook.
+
 ### In Packages (Business Logic)
 
-Focus on:
+Required:
 
-- Zustand store updates
+- Zustand store updates and selectors
 - Data transformation functions
 - Hook behavior (with `renderHook`)
-- Error handling
+- Error handling and edge cases
 
-### In Mobile App (UI)
+### In the Mobile App
 
-Focus on:
+| Location                                                              | Write unit tests?                                                                                                               |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/mobile/src/hooks/`, `modules/[mod]/hooks/`                      | **Yes — required.** Tests the actual behavior.                                                                                  |
+| `apps/mobile/src/utils/`, module utils                                | **Yes — required** for any non-trivial pure function.                                                                           |
+| `apps/mobile/src/components/core/PW*/`                                | **Yes.** Behavioral tests (interactions, prop wiring, conditional rendering, formatting). One smoke test per file is also fine. |
+| `apps/mobile/src/components/[Name]/`                                  | **Yes** — same rules as core.                                                                                                   |
+| `apps/mobile/src/modules/[mod]/components/`, `modules/[mod]/screens/` | **No.** Covered by integration tests. Extract logic into `use[Component]` / `use[Screen]` and test that instead.                |
 
-- User interactions (button presses, form inputs)
-- Conditional rendering
-- Critical user flows
+### Don't write tests that
 
-Avoid:
-
-- Snapshot tests for complex components
-- Testing third-party library behavior
+- Have no real assertion — e.g. `render(...); expect(container).toBeTruthy()`. If the only outcome you assert is that `render()` didn't throw, you're testing that the import works, which CI already catches at typecheck.
+- Repeat the same render check several times with minor prop tweaks (`renders with variant=A`, `renders with variant=B`, …) when the variants don't change observable behavior. Pick one.
+- Assert style values (color, padding, fontWeight). Theme tokens are reviewed in PRs, not tests.
+- Re-test React Native primitives on every wrapper (`renders children`, `forwards testID`). Trust the platform.
+- Use snapshot testing.
 
 ## Component Testing Standards
 
-1. **File Naming**: Use `.spec.tsx` extension.
-2. **Behavior Only**: Test interactions (presses, inputs) and conditionals. Do not test static text rendering.
-3. **AAA Pattern**: Structure tests with Arrange, Act, Assert comments.
-4. **Naming**: Use `it('does something when event happens')`.
-5. **Atomicity**: Tests must be independent and self-contained. Setup dependencies inside the test or `beforeEach`.
+1. **File naming**: `.spec.tsx` for components (and `.spec.ts` for pure logic/hooks without JSX).
+2. **Behavior only**: Test interactions (presses, inputs), conditional rendering, prop wiring, and formatting/text-transformation logic. Static text rendering is not behavior.
+3. **AAA pattern**: Arrange, Act, Assert (comments are optional but the structure isn't).
+4. **Naming**: `it('does X when Y happens')`.
+5. **Atomicity**: Each test sets up its own state — use `beforeEach` for shared setup; never let one test depend on another's side effects.
 
 ```typescript
 import { render, fireEvent, screen } from '@test-utils/render'
 
-// ✅ Good Example
+// ✅ Behavior — tests a user-observable outcome
 it('submits form when save is pressed', () => {
-    // Arrange
     const onSave = vi.fn()
     render(<UserForm onSave={onSave} />)
 
-    // Act
     fireEvent.click(screen.getByText('Save'))
 
-    // Assert
     expect(onSave).toHaveBeenCalled()
+})
+
+// ❌ Not behavior — render-with-no-assertion
+it('renders correctly', () => {
+    const { container } = render(<UserForm onSave={vi.fn()} />)
+    expect(container).toBeTruthy()
+})
+
+// ❌ Not behavior — variant render checks with no observable difference
+it('renders with primary variant', () => {
+    render(<PWChip title='new' variant='primary' />)
+    expect(screen.getByText('NEW')).toBeTruthy()
+})
+it('renders with secondary variant', () => {
+    render(<PWChip title='new' variant='secondary' />)
+    expect(screen.getByText('NEW')).toBeTruthy()
 })
 ```
 
@@ -81,7 +106,7 @@ it('submits form when save is pressed', () => {
 
 **Test behavior, not implementation.**
 
-Ask: "What should happen when the user does X?" rather than "Does internal method Y get called?"
+Ask: "What changes for the user when X happens?" If the answer is "nothing observable, just different internal styles," there's no test to write — let the integration test catch regressions on the surrounding flow.
 
 ## Integration Tests (User-Facing Flows)
 

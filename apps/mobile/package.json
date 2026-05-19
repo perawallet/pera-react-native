@@ -7,6 +7,7 @@
     "start": "expo start --dev-client",
     "android": "expo run:android",
     "ios": "expo run:ios",
+    "ios:device": "expo run:ios --device",
     "expo:prebuild": "expo prebuild",
     "expo:prebuild:clean": "expo prebuild --clean",
     "lint": "oxlint --config ../../.oxlintrc.json .",
@@ -30,6 +31,7 @@
   "dependencies": {
     "@algorandfoundation/algokit-utils": "catalog:",
     "@algorandfoundation/xhd-wallet-api": "catalog:",
+    "@noble/hashes": "catalog:",
     "@craftzdog/react-native-buffer": "^6.1.1",
     "@expo/config-plugins": "~55.0.8",
     "@gorhom/bottom-sheet": "^5.2.8",
@@ -84,6 +86,7 @@
     "@rneui/base": "4.0.0-rc.8",
     "@rneui/themed": "4.0.0-rc.8",
     "@scure/bip39": "catalog:",
+    "tweetnacl": "^1.0.3",
     "@tanstack/query-async-storage-persister": "catalog:",
     "@tanstack/react-query": "catalog:",
     "@tanstack/react-query-persist-client": "catalog:",

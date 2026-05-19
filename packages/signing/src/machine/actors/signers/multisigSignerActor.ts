@@ -43,7 +43,7 @@ export type MultisigSignerActorInput = {
  * XState actor that signs each multisig group with every local participant
  * (Algo25, HD, and hardware-wallet) in parallel, producing one combined
  * SigningResult per group. Hardware participants trigger the standard
- * LedgerSigningOverlay during signing.
+ * LedgerSigningContent sheet during signing.
  *
  * This runs on the propose flow (creating a new multisig transaction). The
  * cosign flow uses a different entry point: the PendingSignaturesBottomSheet

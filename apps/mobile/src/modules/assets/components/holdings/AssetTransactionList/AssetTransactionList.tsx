@@ -86,7 +86,7 @@ export const AssetTransactionList = ({
                                     title={t(
                                         'asset_details.transaction_list.filter',
                                     )}
-                                    variant='link'
+                                    variant='linkPositive'
                                     icon='sliders'
                                     paddingStyle='dense'
                                     onPress={handleOpenFilter}
@@ -110,7 +110,6 @@ export const AssetTransactionList = ({
                 ListEmptyComponent={
                     <EmptyView
                         style={styles.emptyView}
-                        title={t('asset_details.transaction_list.empty_title')}
                         body={t('asset_details.transaction_list.empty_body')}
                     />
                 }

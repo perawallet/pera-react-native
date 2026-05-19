@@ -18,7 +18,6 @@ import {
     PWView,
 } from '@components/core'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { ViewPassphraseFlow } from '@modules/view-passphrase'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useStyles } from './styles'
 import { AccountOption, useAccountOptions } from './useAccountOptions'
@@ -75,11 +74,18 @@ export const AccountOptionsContent = ({
 }: AccountOptionsContentProps) => {
     const styles = useStyles()
     const { dismiss } = useBottomSheetResult<void>()
-    const { options, isPassphraseFlowVisible, handleClosePassphraseFlow } =
-        useAccountOptions({ account, onClose: dismiss, onShowAddress })
+    const {
+        options,
+        isRekeyed,
+        canUndoRekey,
+        authAccount,
+        authAddress,
+        handleUndoRekey,
+    } = useAccountOptions({ account, onClose: dismiss, onShowAddress })
 
     const generalOptions = options.filter(
         o =>
+            o.id === 'shared-account-detail' ||
             o.id === 'copy-address' ||
             o.id === 'show-address' ||
             o.id === 'view-passphrase' ||
@@ -112,6 +118,17 @@ export const AccountOptionsContent = ({
                     <AccountInfoCard
                         account={account}
                         onClose={dismiss}
+                        rekeyedTo={
+                            isRekeyed && authAddress
+                                ? {
+                                      authAccount,
+                                      authAddress,
+                                      onUndoRekey: canUndoRekey
+                                          ? handleUndoRekey
+                                          : undefined,
+                                  }
+                                : undefined
+                        }
                     />
                 </PWView>
 
@@ -151,12 +168,6 @@ export const AccountOptionsContent = ({
                     ))}
                 </PWView>
             </BottomSheetScrollView>
-
-            <ViewPassphraseFlow
-                isVisible={isPassphraseFlowVisible}
-                address={account.address}
-                onClose={handleClosePassphraseFlow}
-            />
         </>
     )
 }

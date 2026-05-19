@@ -21,7 +21,14 @@ export const parseQueryParams = (url: string): Record<string, string> => {
             url.replace(/^([a-z-]+):\/\/(?!\/)/, '$1://placeholder/'),
         )
         urlObj.searchParams.forEach((value, key) => {
-            params[key] = decodeURIComponent(value)
+            // Defensive trim: real-world deeplinks have shown stray
+            // whitespace (e.g. `?address= BB4A...` from QR generators or
+            // copy/paste). Address validators reject any whitespace, so a
+            // single space silently kills an otherwise-valid handler. The
+            // trim is safe because none of our supported params (address,
+            // assetId, amount, mnemonic, etc.) carry semantically meaningful
+            // leading or trailing whitespace.
+            params[key] = decodeURIComponent(value).trim()
         })
     } catch {
         // Fallback for malformed URLs
@@ -32,7 +39,7 @@ export const parseQueryParams = (url: string): Record<string, string> => {
         queryString.split('&').forEach(pair => {
             const [key, value] = pair.split('=')
             if (key) {
-                params[key] = value ? decodeURIComponent(value) : ''
+                params[key] = value ? decodeURIComponent(value).trim() : ''
             }
         })
     }

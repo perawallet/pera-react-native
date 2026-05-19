@@ -12,9 +12,9 @@
 
 import React, { useCallback, useRef } from 'react'
 import {
-    PWButton,
     PWCheckbox,
     PWFlatList,
+    PWSlideToConfirm,
     PWText,
     PWTouchableOpacity,
     PWView,
@@ -107,14 +107,12 @@ export const RemoveAssetsScreen = () => {
 
             {isRemoveSelectedVisible && (
                 <PWView style={styles.footerContainer}>
-                    <PWButton
-                        title={t('remove_assets.remove_selected', {
-                            count: selectedAssetIds.size,
-                        })}
-                        variant='destructive'
-                        onPress={handleRemoveSelected}
-                        isDisabled={selectedAssetIds.size === 0 || isRemoving}
+                    <PWSlideToConfirm
+                        title={t('common.slide_to_confirm.label')}
+                        onConfirm={handleRemoveSelected}
                         isLoading={isRemoving}
+                        isDisabled={selectedAssetIds.size === 0 || isRemoving}
+                        testID='remove_assets_confirm_slide'
                     />
                 </PWView>
             )}

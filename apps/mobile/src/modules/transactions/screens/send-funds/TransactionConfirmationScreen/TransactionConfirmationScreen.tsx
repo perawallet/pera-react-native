@@ -11,9 +11,9 @@
  */
 
 import {
-    PWButton,
     PWDivider,
     PWIcon,
+    PWSlideToConfirm,
     PWText,
     PWTouchableOpacity,
     PWView,
@@ -28,7 +28,6 @@ import { Decimal } from 'decimal.js'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { useStyles } from './styles'
-import { AddNotePanel } from '../../../components/send-funds/AddNotePanel'
 import { ALGO_ASSET, toWholeUnits } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
 import { LoadingView } from '@components/LoadingView'
@@ -50,9 +49,7 @@ export const TransactionConfirmationScreen = () => {
         currentBalance,
         currentBalancePending,
         note,
-        noteOpen,
         openNote,
-        closeNote,
         handleConfirm,
         isCollectible,
         isReady,
@@ -182,23 +179,16 @@ export const TransactionConfirmationScreen = () => {
                             minBalance={recipientMbrDisplay}
                         />
                     )}
-                    <PWButton
-                        title={t('send_funds.confirmation.confirm_button')}
-                        variant='primary'
-                        testID='send_confirm_button'
-                        onPress={handleConfirm}
+                    <PWSlideToConfirm
+                        title={t('common.slide_to_confirm.label')}
+                        onConfirm={handleConfirm}
+                        isLoading={isRecipientInfoPending}
                         isDisabled={
                             isRecipientBelowMbr || isRecipientInfoPending
                         }
-                        isLoading={isRecipientInfoPending}
+                        testID='send_confirm_button'
                     />
                 </PWView>
-
-                <AddNotePanel
-                    isVisible={noteOpen}
-                    onClose={closeNote}
-                    onDismiss={closeNote}
-                />
             </PWScrollView>
         </PWView>
     )

@@ -163,12 +163,13 @@ export const useImportAccountOptionsScreen =
             ],
         )
 
-        const handleNotImplemented = useCallback(() => {
-            errorToast(
-                t('common.not_implemented.title'),
-                t('common.not_implemented.body'),
-            )
-        }, [errorToast, t])
+        const handleImportAsb = useCallback(() => {
+            navigation.push('AsbImportInfo')
+        }, [navigation])
+
+        const handleImportPeraWeb = useCallback(() => {
+            navigation.push('PeraWebImportInfo')
+        }, [navigation])
 
         const options: AccountOption[] = useMemo(() => {
             const allOptions: AccountOption[] = [
@@ -221,7 +222,7 @@ export const useImportAccountOptionsScreen =
                     descriptionKey:
                         'onboarding.import_account_options.pera_web_description',
                     leftIcon: 'globe' as IconName,
-                    onPress: handleNotImplemented,
+                    onPress: handleImportPeraWeb,
                 },
                 {
                     testID: 'import_account_options_asb_button',
@@ -229,7 +230,7 @@ export const useImportAccountOptionsScreen =
                     descriptionKey:
                         'onboarding.import_account_options.asb_description',
                     leftIcon: 'shield-check' as IconName,
-                    onPress: handleNotImplemented,
+                    onPress: handleImportAsb,
                 },
             )
 
@@ -239,7 +240,8 @@ export const useImportAccountOptionsScreen =
             openQRScanner,
             handlePairLedgerBle,
             handlePairLedgerUsb,
-            handleNotImplemented,
+            handleImportAsb,
+            handleImportPeraWeb,
         ])
 
         return {

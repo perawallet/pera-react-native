@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { describe, test, it, expect, vi, beforeEach } from 'vitest'
 
 const transportListenMock = vi.hoisted(() => vi.fn())
 const transportOpenMock = vi.hoisted(() => vi.fn())
@@ -18,6 +18,7 @@ const transportIsSupportedMock = vi.hoisted(() => vi.fn())
 const transportCloseMock = vi.hoisted(() => vi.fn())
 const algorandGetAddressMock = vi.hoisted(() => vi.fn())
 const algorandSignMock = vi.hoisted(() => vi.fn())
+const permissionsCheckMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@ledgerhq/react-native-hw-transport-ble', () => ({
     default: {
@@ -34,6 +35,19 @@ vi.mock('@ledgerhq/hw-app-algorand', () => ({
     },
 }))
 
+vi.mock('react-native', () => ({
+    Platform: { OS: 'ios', Version: 17 },
+    PermissionsAndroid: {
+        check: permissionsCheckMock,
+        PERMISSIONS: {
+            BLUETOOTH_SCAN: 'android.permission.BLUETOOTH_SCAN',
+            BLUETOOTH_CONNECT: 'android.permission.BLUETOOTH_CONNECT',
+            ACCESS_FINE_LOCATION: 'android.permission.ACCESS_FINE_LOCATION',
+        },
+    },
+}))
+
+import { Platform } from 'react-native'
 import { RNLedgerService } from '../RNLedgerService'
 import {
     LedgerConnectionError,
@@ -42,6 +56,8 @@ import {
     LedgerAppNotOpenError,
     LedgerDisconnectedError,
     LedgerTimeoutError,
+    LedgerBluetoothDisabledError,
+    LedgerPermissionDeniedError,
     classifyLedgerError,
 } from '../errors'
 
@@ -53,6 +69,18 @@ describe('RNLedgerService', () => {
         transportCloseMock.mockReset()
         algorandGetAddressMock.mockReset()
         algorandSignMock.mockReset()
+        permissionsCheckMock.mockReset()
+        // Default pre-flight state: BLE supported, iOS (skips perm check).
+        // Tests that need to exercise the failure paths override these.
+        transportIsSupportedMock.mockResolvedValue(true)
+        Object.defineProperty(Platform, 'OS', {
+            value: 'ios',
+            configurable: true,
+        })
+        Object.defineProperty(Platform, 'Version', {
+            value: 17,
+            configurable: true,
+        })
     })
 
     describe('createTransportProvider().scan', () => {
@@ -200,6 +228,55 @@ describe('RNLedgerService', () => {
                     .createTransportProvider()
                     .connect('device-id'),
             ).rejects.toThrow()
+        })
+    })
+
+    describe('connect pre-flight checks', () => {
+        beforeEach(() => {
+            vi.clearAllMocks()
+        })
+
+        it('throws LedgerBluetoothDisabledError when TransportBLE.isSupported returns false', async () => {
+            vi.mocked(transportIsSupportedMock).mockResolvedValueOnce(false)
+            const service = new RNLedgerService()
+            const provider = service.createTransportProvider()
+            await expect(provider.connect('device-id')).rejects.toBeInstanceOf(
+                LedgerBluetoothDisabledError,
+            )
+        })
+
+        it('throws LedgerPermissionDeniedError on Android when BLE scan permission is missing', async () => {
+            vi.mocked(transportIsSupportedMock).mockResolvedValueOnce(true)
+            // Force android with API 31+ and missing scan permission
+            Object.defineProperty(Platform, 'OS', {
+                value: 'android',
+                configurable: true,
+            })
+            Object.defineProperty(Platform, 'Version', {
+                value: 31,
+                configurable: true,
+            })
+            vi.mocked(permissionsCheckMock).mockResolvedValue(false)
+            const service = new RNLedgerService()
+            const provider = service.createTransportProvider()
+            await expect(provider.connect('device-id')).rejects.toBeInstanceOf(
+                LedgerPermissionDeniedError,
+            )
+        })
+
+        it('proceeds to TransportBLE.open when BLE is supported and permissions are granted', async () => {
+            vi.mocked(transportIsSupportedMock).mockResolvedValueOnce(true)
+            Object.defineProperty(Platform, 'OS', {
+                value: 'ios',
+                configurable: true,
+            }) // iOS skips perm check
+            const fakeBleTransport = { close: vi.fn() } as never
+            vi.mocked(transportOpenMock).mockResolvedValueOnce(fakeBleTransport)
+            const service = new RNLedgerService()
+            const provider = service.createTransportProvider()
+            const transport = await provider.connect('device-id')
+            expect(transportOpenMock).toHaveBeenCalledWith('device-id')
+            expect(transport).toBeDefined()
         })
     })
 

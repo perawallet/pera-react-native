@@ -10,13 +10,13 @@
  limitations under the License
  */
 
-import { Optional } from '@perawallet/wallet-core-shared'
 import { useBottomSheetStore } from '../store/bottomSheetStore'
 import type {
     BottomSheetOptions,
     BottomSheetRegistry,
     BottomSheetRequest,
 } from '../types'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 type UseBottomSheetResult = {
     request: <T = unknown>(req: BottomSheetRequest) => Promise<Optional<T>>

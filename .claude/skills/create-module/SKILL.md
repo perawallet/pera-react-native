@@ -32,7 +32,16 @@ Create `apps/mobile/src/modules/[module-name]/routes/index.tsx` with stack navig
 
 Update `apps/mobile/src/routes/` to include the new module routes.
 
-### 5. Verify
+### 5. Add Tests
+
+**Do NOT write component-rendering unit tests for the screen or module components.** Module screens are covered by integration tests under `apps/mobile/src/__integration__/`. For unit tests:
+
+- **Screen logic** → extract into `use[ModuleName]Screen.ts` and test the hook with `renderHook`.
+- **Component logic** → extract into `use[Component].ts` colocated with the component and test the hook.
+- **Module utils** → test the pure functions in `__tests__/`.
+- **Flow coverage** → if this module introduces a non-trivial user flow (multi-screen, network-dependent, state-changing), add an integration test in `apps/mobile/src/__integration__/<flow>.test.tsx`. See `docs/TESTING.md` for the harness.
+
+### 6. Verify
 
 ```sh
 pnpm pre-push --no-fail-on-error

@@ -23,6 +23,7 @@ export type PWButtonProps = {
         | 'secondary'
         | 'helper'
         | 'link'
+        | 'linkNeutral'
         | 'linkPositive'
         | 'destructive'
         | 'destructiveLight'
@@ -45,6 +46,7 @@ const ICON_VARIANT_MAP: Record<string, PWIconVariant> = {
     secondary: 'primary',
     helper: 'helper',
     link: 'link',
+    linkNeutral: 'primary',
     linkPositive: 'positive',
     destructive: 'white',
     destructiveLight: 'error',

@@ -22,9 +22,8 @@ import {
     useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
 import {
-    getAccountDisplayName,
     useAllAccountLogicalTypes,
-    useAllAccounts,
+    useSigningAccounts,
 } from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useCallback } from 'react'
@@ -73,7 +72,7 @@ export const usePeraWebviewInterface = (
     onBackRequested?: () => void,
 ) => {
     const { showToast } = useToast()
-    const accounts = useAllAccounts()
+    const signingAccounts = useSigningAccounts()
     const logicalTypes = useAllAccountLogicalTypes()
     const { network } = useNetwork()
     const deviceID = useDeviceID(network)
@@ -307,16 +306,26 @@ export const usePeraWebviewInterface = (
                     webview,
                 },
                 () => {
-                    const payload = accounts.map(a => ({
-                        name: getAccountDisplayName(a),
-                        address: a.address,
-                        type: logicalTypes.get(a.address) ?? 'NoAuth',
+                    // Match Android's `GetAuthorizedAddressesInfoWebMessages`:
+                    // 1. `useSigningAccounts` drops Watch / Rekeyed-no-auth so
+                    //    the user can't pick a non-funding-eligible account.
+                    // 2. Send raw `account.name` (empty string when none). The
+                    //    webapp owns the truncated-address fallback; sending
+                    //    the truncated address as both name AND address (via
+                    //    getAccountDisplayName) made the webapp render the
+                    //    same string twice in its list rows.
+                    // Ordering is the consumer's responsibility — Pera Connect
+                    // sorts on its side based on its own UX needs.
+                    const payload = signingAccounts.map(account => ({
+                        name: account.name ?? '',
+                        address: account.address,
+                        type: logicalTypes.get(account.address) ?? 'NoAuth',
                     }))
                     sendMessageToWebview(message.id, payload, webview)
                 },
             )
         },
-        [securedConnection, sourceUrl, accounts, webview],
+        [securedConnection, sourceUrl, signingAccounts, logicalTypes, webview],
     )
 
     const getSettings = useCallback(
@@ -393,6 +402,7 @@ export const usePeraWebviewInterface = (
                             id: generateOrderedUniqueId(),
                             type: 'transactions',
                             transport: 'callback',
+                            sourceType: 'webview',
                             txs: txns,
                             transportId: message.id,
                             sourceMetadata: metadata,
@@ -444,7 +454,17 @@ export const usePeraWebviewInterface = (
                 },
             )
         },
-        [securedConnection, sourceUrl, webview],
+        [
+            securedConnection,
+            sourceUrl,
+            webview,
+            hadRequiredParams,
+            decodeTransactions,
+            encodeSignedTransaction,
+            addSignRequest,
+            showToast,
+            t,
+        ],
     )
 
     //TODO handle arc60 here
@@ -486,6 +506,7 @@ export const usePeraWebviewInterface = (
                             id: generateOrderedUniqueId(),
                             type: 'arbitrary-data',
                             transport: 'callback',
+                            sourceType: 'webview',
                             transportId: message.id,
                             sourceMetadata: metadata,
                             data: [data],
@@ -533,7 +554,15 @@ export const usePeraWebviewInterface = (
                 },
             )
         },
-        [securedConnection, sourceUrl, webview],
+        [
+            securedConnection,
+            sourceUrl,
+            webview,
+            hadRequiredParams,
+            addSignRequest,
+            showToast,
+            t,
+        ],
     )
 
     const getPublicSettings = useCallback(
@@ -684,6 +713,11 @@ export const usePeraWebviewInterface = (
             onBackPressed,
             logAnalyticsEvent,
             closeWebView,
+            requestTransactionSigning,
+            requestDataSigning,
+            openWalletConnect,
+            webview,
+            t,
         ],
     )
 

@@ -16,7 +16,7 @@ import { LedgerSigningError } from './errors'
  * Normalize the raw `signature` field returned by `@ledgerhq/hw-app-algorand`'s
  * `sign()` into a real Ed25519 signature.
  *
- * hw-app-algorand@6.35.1 returns the raw APDU response including the
+ * hw-app-algorand (^6.34) returns the raw APDU response including the
  * trailing 2-byte status word (SW_OK = 0x9000). The base
  * @ledgerhq/hw-transport.send() validates the SW but returns the buffer
  * with it still appended. Strip those bytes so callers get a real 64-byte

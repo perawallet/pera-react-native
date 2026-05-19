@@ -132,6 +132,14 @@ vi.mock('@assets/images/eye-inverted.svg', () => {
             React.createElement('div', { ...props, 'data-testid': 'SvgIcon' }),
     }
 })
+// Check glyph rendered on the rekey success screens.
+vi.mock('@assets/icons/check.svg', () => {
+    const React = require('react')
+    return {
+        default: (props: Record<string, unknown>) =>
+            React.createElement('div', { ...props, 'data-testid': 'SvgIcon' }),
+    }
+})
 
 // `expo-modules-core` references the React-Native `__DEV__` global at
 // module-load time (in `setUpJsLogger.fx.ts`). Under jsdom this is
@@ -199,12 +207,23 @@ vi.mock('expo-audio', () => ({
 }))
 
 vi.mock('expo-file-system', () => {
+    // The ASB import screen uses the static `File.pickFileAsync` to surface
+    // the native picker and then reads `.text()` on the returned instance.
+    // Tests override the `pickFileAsync` vi.fn() per-case to supply backup
+    // contents — see `__integration__/onboarding-import-asb.test.tsx`.
     class File {
-        constructor(_uri: string) {}
-        async write(_data: unknown): Promise<void> {}
+        name = 'mock-file.txt'
+        constructor(uri?: string) {
+            if (typeof uri === 'string') this.name = uri
+        }
+        async text(): Promise<string> {
+            return ''
+        }
         async read(): Promise<string> {
             return ''
         }
+        async write(_data: unknown): Promise<void> {}
+        static pickFileAsync = vi.fn(async () => new File())
     }
     return {
         File,

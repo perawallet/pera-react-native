@@ -10,92 +10,60 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback } from 'react'
 import { usePinCode } from '@perawallet/wallet-core-security'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { PinEditContent } from '@modules/security'
 import {
     PassphraseAcknowledgeContent,
     type PassphraseAcknowledgeContentResult,
 } from '../PassphraseAcknowledgeContent'
 import { ViewPassphraseContent } from '../ViewPassphraseContent'
 
-export type ViewPassphraseFlowStep = 'pin' | 'acknowledge' | 'display' | null
-
-export type UseViewPassphraseFlowParams = {
-    isVisible: boolean
-    address: string
-    onClose: () => void
-}
-
 export type UseViewPassphraseFlowResult = {
-    step: ViewPassphraseFlowStep
-    handlePinSuccess: () => void
+    openViewPassphraseFlow: (address: string) => Promise<void>
 }
 
-export const useViewPassphraseFlow = ({
-    isVisible,
-    address,
-    onClose,
-}: UseViewPassphraseFlowParams): UseViewPassphraseFlowResult => {
+/**
+ * Imperative view-passphrase flow: PIN gate (if enabled) → acknowledge →
+ * display. Each step opens via the managed bottom-sheet system, so the
+ * flow runs even if the caller's host sheet has been dismissed (which is
+ * desirable — callers like AccountOptionsContent dismiss themselves
+ * before opening this flow to avoid stacked sheets).
+ */
+export const useViewPassphraseFlow = (): UseViewPassphraseFlowResult => {
     const { checkPinEnabled } = usePinCode()
     const { request: requestBottomSheet } = useBottomSheet()
-    const [step, setStep] = useState<ViewPassphraseFlowStep>(null)
 
-    useEffect(() => {
-        if (!isVisible) {
-            setStep(null)
-            return
-        }
-        let cancelled = false
-        ;(async () => {
+    const openViewPassphraseFlow = useCallback(
+        async (address: string) => {
             const pinEnabled = await checkPinEnabled()
-            if (cancelled) return
-            setStep(pinEnabled ? 'pin' : 'acknowledge')
-        })()
-        return () => {
-            cancelled = true
-        }
-    }, [isVisible, checkPinEnabled])
-
-    const handlePinSuccess = useCallback(() => {
-        setStep('acknowledge')
-    }, [])
-
-    useEffect(() => {
-        if (step !== 'acknowledge') return
-        let cancelled = false
-        requestBottomSheet<PassphraseAcknowledgeContentResult>({
-            contents: <PassphraseAcknowledgeContent />,
-            options: { size: 'auto', enablePanDownToClose: true },
-        }).then(result => {
-            if (cancelled) return
-            if (result === 'confirm') {
-                setStep('display')
-            } else {
-                onClose()
+            if (pinEnabled) {
+                const verified = await requestBottomSheet<boolean>({
+                    contents: <PinEditContent mode='verify' />,
+                    options: {
+                        size: 'full',
+                        enablePanDownToClose: false,
+                        enableCloseOnBackdropPress: false,
+                    },
+                })
+                if (verified !== true) return
             }
-        })
-        return () => {
-            cancelled = true
-        }
-    }, [step, requestBottomSheet, onClose])
 
-    useEffect(() => {
-        if (step !== 'display') return
-        let cancelled = false
-        requestBottomSheet<void>({
-            contents: <ViewPassphraseContent address={address} />,
-            options: { size: 'lg', enablePanDownToClose: true },
-        }).finally(() => {
-            if (!cancelled) onClose()
-        })
-        return () => {
-            cancelled = true
-        }
-    }, [step, requestBottomSheet, address, onClose])
+            const ack =
+                await requestBottomSheet<PassphraseAcknowledgeContentResult>({
+                    contents: <PassphraseAcknowledgeContent />,
+                    options: { size: 'auto', enablePanDownToClose: true },
+                })
+            if (ack !== 'confirm') return
 
-    return {
-        step,
-        handlePinSuccess,
-    }
+            await requestBottomSheet<void>({
+                contents: <ViewPassphraseContent address={address} />,
+                options: { size: 'lg', enablePanDownToClose: true },
+            })
+        },
+        [checkPinEnabled, requestBottomSheet],
+    )
+
+    return { openViewPassphraseFlow }
 }

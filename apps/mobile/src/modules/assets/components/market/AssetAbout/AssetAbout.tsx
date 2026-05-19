@@ -71,7 +71,7 @@ export const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
                             onPress={() =>
                                 copyToClipboard(assetDetails.assetId.toString())
                             }
-                            variant='link'
+                            variant='linkPositive'
                             paddingStyle='none'
                         />
                     </KeyValueRow>
@@ -87,7 +87,7 @@ export const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
                         onPress={() =>
                             copyToClipboard(assetDetails.creator.address)
                         }
-                        variant='link'
+                        variant='linkPositive'
                         paddingStyle='none'
                     />
                 </KeyValueRow>

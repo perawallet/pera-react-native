@@ -19,6 +19,7 @@ import { HDImportSessionNotFoundError } from '../../errors'
 
 const kmsMock = vi.hoisted(() => ({
     persistHDMasterKey: vi.fn(),
+    generateDerivedKey: vi.fn().mockResolvedValue('derived-id'),
 }))
 const prepareMock = vi.hoisted(() => vi.fn())
 
@@ -59,13 +60,13 @@ describe('useHDImportSession', () => {
             mnemonic: 'one two three',
         })
         kmsMock.persistHDMasterKey.mockResolvedValue({
-            keyPair: {
+            seedKey: {
                 id: 'w-1',
-                type: 'hdwallet-root-key',
-                publicKey: '',
-                keystoreKeyId: 'ks-1',
+                type: 'seed',
+                algorithm: 'raw',
+                extractable: true,
+                metadata: {},
             },
-            entropyKeyId: 'ks-entropy-1',
         })
     })
 

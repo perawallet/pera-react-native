@@ -33,6 +33,10 @@ export const ALGO25_TEST_MNEMONIC_WORDS = ALGO25_TEST_MNEMONIC.split(' ')
 export const ALGO25_TEST_ADDRESS =
     'T2A7FPKQ3YON2JT5A5CSN4JWNDMUGJY6WX4H6HEH2UPKWSPSPBG5O7X4UM'
 
+/** Distinct from {@link ALGO25_TEST_ADDRESS} / {@link HD_TEST_ADDRESS}; valid checksum multisig placeholder for integration tests. */
+export const MULTISIG_REKEY_INTEGRATION_ADDRESS =
+    'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ'
+
 // Real BIP39 mnemonic words but in an order that fails BIP39 checksum
 // validation. Use to assert the import flow surfaces an error toast on
 // invalid input.

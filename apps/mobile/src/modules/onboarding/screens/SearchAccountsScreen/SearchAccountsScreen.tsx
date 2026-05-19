@@ -65,7 +65,7 @@ export const SearchAccountsScreen = () => {
             </PWView>
 
             <PWText
-                variant='h2'
+                variant='h3'
                 style={styles.title}
             >
                 {t('onboarding.searching_accounts.title')}

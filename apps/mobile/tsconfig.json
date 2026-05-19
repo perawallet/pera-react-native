@@ -51,6 +51,9 @@
       "@perawallet/wallet-core-messages/test-handlers": [
         "../../packages/messages/src/test-handlers.ts"
       ],
+      "@perawallet/wallet-core-multisig/test-handlers": [
+        "../../packages/multisig/src/test-handlers.ts"
+      ],
       "@perawallet/wallet-core-staking/test-handlers": [
         "../../packages/staking/src/test-handlers.ts"
       ],

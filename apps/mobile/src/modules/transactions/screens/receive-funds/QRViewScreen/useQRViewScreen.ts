@@ -17,34 +17,36 @@ import { useErrorToast } from '@hooks/useErrorToast'
 import { useClipboard } from '@hooks/useClipboard'
 import { useDeepLink } from '@hooks/useDeepLink'
 import { useLanguage } from '@hooks/useLanguage'
+import { useAppNavigation } from '@hooks/useAppNavigation'
 import { bottomSheetNotifier } from '@components/core'
 import {
     getAccountDisplayName,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { useReceiveFunds } from '@modules/transactions/hooks'
-import { ReceiveFundsStackParamList } from '@modules/transactions/routes/receive-funds/types'
-import { StackNavigationProp } from '@react-navigation/stack'
-import { useNavigation } from '@react-navigation/native'
 
 type UseQRViewScreenResult = {
-    account?: WalletAccount
+    account: Optional<WalletAccount>
     deeplink: string
+    /**
+     * True when the user reached this screen via AccountSelection — the
+     * header back button navigates back to the picker. False when QRView is
+     * the initial route and back must dismiss the whole flow.
+     */
+    canSelectAccount: boolean
     handleBack: () => void
     handleCopyAddress: () => void
     handleShareAddress: () => Promise<void>
 }
 
-export const useQRViewScreen = (
-    onFinished?: () => void,
-): UseQRViewScreenResult => {
-    const { selectedAccount, canSelectAccount } = useReceiveFunds()
+export const useQRViewScreen = (): UseQRViewScreenResult => {
+    const { selectedAccount, canSelectAccount, onFinished } = useReceiveFunds()
+    const navigation = useAppNavigation()
     const { t } = useLanguage()
     const { showError } = useErrorToast()
     const { copyToClipboard } = useClipboard()
     const { buildAccountDeeplink } = useDeepLink()
-    const navigation =
-        useNavigation<StackNavigationProp<ReceiveFundsStackParamList>>()
 
     const deeplink = useMemo(() => {
         if (!selectedAccount) {
@@ -56,14 +58,6 @@ export const useQRViewScreen = (
     const handleCopyAddress = useCallback(() => {
         copyToClipboard(selectedAccount?.address ?? '')
     }, [copyToClipboard, selectedAccount?.address])
-
-    const handleBack = useCallback(() => {
-        if (canSelectAccount) {
-            navigation.goBack()
-        } else {
-            onFinished?.()
-        }
-    }, [canSelectAccount, navigation, onFinished])
 
     const handleShareAddress = useCallback(async () => {
         try {
@@ -81,9 +75,18 @@ export const useQRViewScreen = (
         }
     }, [selectedAccount, showError, t])
 
+    const handleBack = useCallback(() => {
+        if (canSelectAccount) {
+            navigation.goBack()
+        } else {
+            onFinished?.()
+        }
+    }, [canSelectAccount, navigation, onFinished])
+
     return {
         account: selectedAccount,
         deeplink,
+        canSelectAccount,
         handleBack,
         handleCopyAddress,
         handleShareAddress,

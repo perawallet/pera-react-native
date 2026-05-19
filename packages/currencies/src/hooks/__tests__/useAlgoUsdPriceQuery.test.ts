@@ -17,12 +17,26 @@ import { useAlgoUsdPriceQuery } from '../useAlgoUsdPriceQuery'
 import React from 'react'
 import { Decimal } from 'decimal.js'
 
-const mockDbAll = vi.hoisted(() => vi.fn())
-vi.mock('@perawallet/wallet-core-database', () => ({
-    getDatabase: () => ({
-        all: mockDbAll,
-    }),
-}))
+const mockAll = vi.hoisted(() => vi.fn())
+
+vi.mock('@perawallet/wallet-core-database', async () => {
+    const actual = await vi.importActual<
+        typeof import('@perawallet/wallet-core-database')
+    >('@perawallet/wallet-core-database')
+
+    const chain = {
+        from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        all: mockAll,
+    }
+
+    return {
+        ...actual,
+        getDatabase: () => ({
+            select: vi.fn(() => chain),
+        }),
+    }
+})
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
@@ -49,8 +63,8 @@ describe('useAlgoUsdPriceQuery', () => {
             children,
         )
 
-    it('fetches and selects ALGO USD price as Decimal from DB', async () => {
-        mockDbAll.mockResolvedValue([{ usd_price: '0.15' }])
+    it('fetches ALGO USD price as Decimal from DB', async () => {
+        mockAll.mockResolvedValue([{ usdPrice: new Decimal('0.15') }])
 
         const { result } = renderHook(() => useAlgoUsdPriceQuery(), {
             wrapper,
@@ -58,11 +72,11 @@ describe('useAlgoUsdPriceQuery', () => {
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
-        expect(result.current.data).toEqual(Decimal('0.15'))
+        expect(result.current.data).toEqual(new Decimal('0.15'))
     })
 
     it('handles loading state', () => {
-        mockDbAll.mockImplementation(() => new Promise(() => {}))
+        mockAll.mockImplementation(() => new Promise(() => {}))
 
         const { result } = renderHook(() => useAlgoUsdPriceQuery(), {
             wrapper,
@@ -77,11 +91,11 @@ describe('useAlgoUsdPriceQuery', () => {
         })
 
         expect(result.current.fetchStatus).toBe('idle')
-        expect(mockDbAll).not.toHaveBeenCalled()
+        expect(mockAll).not.toHaveBeenCalled()
     })
 
     it('returns zero when no price found in DB', async () => {
-        mockDbAll.mockResolvedValue([])
+        mockAll.mockResolvedValue([])
 
         const { result } = renderHook(() => useAlgoUsdPriceQuery(), {
             wrapper,
@@ -89,6 +103,6 @@ describe('useAlgoUsdPriceQuery', () => {
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
-        expect(result.current.data).toEqual(Decimal(0))
+        expect(result.current.data).toEqual(new Decimal(0))
     })
 })

@@ -16,15 +16,11 @@ import type { Optional } from '@perawallet/wallet-core-shared'
 import { useArbitraryDataSigner } from '../useArbitraryDataSigner'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
-const mockGetKeyOrThrow = vi.fn()
-const mockWithHDSession = vi.fn()
-const mockWithAlgo25Session = vi.fn()
+const mockSignDataWithKey = vi.fn()
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
     useKMS: () => ({
-        getKeyOrThrow: (...args: any[]) => mockGetKeyOrThrow(...args),
-        withHDSession: (...args: any[]) => mockWithHDSession(...args),
-        withAlgo25Session: (...args: any[]) => mockWithAlgo25Session(...args),
+        signDataWithKey: (...args: any[]) => mockSignDataWithKey(...args),
     }),
 }))
 
@@ -48,18 +44,16 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     }
 })
 
-const mockKey = { id: 'key-1', type: 'HDWalletRootKey', publicKey: '' }
-
 const hdAccount = {
     address: 'HD_ADDR',
-    keyPairId: 'key-1',
+    keyPairId: 'key-hd-child',
     type: 'hd-wallet',
     hdWalletDetails: { account: 0, keyIndex: 1, derivationType: 9 },
 } as unknown as WalletAccount
 
 const algo25Account = {
     address: 'ALGO25_ADDR',
-    keyPairId: 'key-1',
+    keyPairId: 'key-algo25-ed25519',
     type: 'algo25',
 } as unknown as WalletAccount
 
@@ -67,9 +61,9 @@ describe('useArbitraryDataSigner', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockAccounts = []
-        mockGetKeyOrThrow.mockReturnValue(mockKey)
         mockIsHDWalletAccount.mockReturnValue(false)
         mockIsAlgo25Account.mockReturnValue(false)
+        mockSignDataWithKey.mockResolvedValue([new Uint8Array([9, 8, 7])])
     })
 
     describe('HD wallet account', () => {
@@ -77,58 +71,33 @@ describe('useArbitraryDataSigner', () => {
             mockIsHDWalletAccount.mockReturnValue(true)
         })
 
-        test('calls session.signData with MX-prefixed bytes', async () => {
-            const mockSignData = vi
-                .fn()
-                .mockResolvedValue(new Uint8Array([9, 8, 7]))
-            mockWithHDSession.mockImplementation(
-                async (_key: any, _domain: string, handler: any) =>
-                    handler({ signData: mockSignData }),
-            )
-
+        test('calls signDataWithKey with the account child id and MX-prefixed bytes', async () => {
             const { result } = renderHook(() => useArbitraryDataSigner())
 
             await act(async () => {
                 await result.current.signArbitraryData(hdAccount, 'hello')
             })
 
-            expect(mockSignData).toHaveBeenCalledTimes(1)
-            const [derivationParams, dataArg] = mockSignData.mock.calls[0]
+            expect(mockSignDataWithKey).toHaveBeenCalledTimes(1)
+            const [childId, domain, items] = mockSignDataWithKey.mock.calls[0]
 
-            expect(derivationParams).toEqual({
-                account: 0,
-                keyIndex: 1,
-                derivationType: 9,
-            })
+            expect(childId).toBe('key-hd-child')
+            expect(domain).toBe('pera.accounts')
+            expect(items).toHaveLength(1)
 
+            const dataArg = items[0] as Uint8Array
             // dApps verifying via the legacy algo_signData spec expect
             // signatures over `MX || data`, so the wallet must prepend it.
             expect(dataArg[0]).toBe('M'.charCodeAt(0))
             expect(dataArg[1]).toBe('X'.charCodeAt(0))
         })
 
-        test('calls withHDSession with SIGNING_KEY_DOMAIN', async () => {
-            mockWithHDSession.mockResolvedValue([new Uint8Array([1])])
-
-            const { result } = renderHook(() => useArbitraryDataSigner())
-
-            await act(async () => {
-                await result.current.signArbitraryData(hdAccount, 'hello')
-            })
-
-            expect(mockWithHDSession).toHaveBeenCalledWith(
-                mockKey,
-                'pera.accounts',
-                expect.any(Function),
-            )
-        })
-
         test('signs each item in an array of data', async () => {
-            const mockSignData = vi.fn().mockResolvedValue(new Uint8Array([1]))
-            mockWithHDSession.mockImplementation(
-                async (_key: any, _domain: string, handler: any) =>
-                    handler({ signData: mockSignData }),
-            )
+            mockSignDataWithKey.mockResolvedValue([
+                new Uint8Array([1]),
+                new Uint8Array([2]),
+                new Uint8Array([3]),
+            ])
 
             const { result } = renderHook(() => useArbitraryDataSigner())
 
@@ -140,17 +109,13 @@ describe('useArbitraryDataSigner', () => {
                 ])
             })
 
-            expect(mockSignData).toHaveBeenCalledTimes(3)
+            const [, , items] = mockSignDataWithKey.mock.calls[0]
+            expect(items).toHaveLength(3)
         })
 
-        test('returns signatures from session', async () => {
+        test('returns signatures from the kms call', async () => {
             const expectedSig = new Uint8Array([42, 43, 44])
-            mockWithHDSession.mockImplementation(
-                async (_key: any, _domain: string, handler: any) =>
-                    handler({
-                        signData: vi.fn().mockResolvedValue(expectedSig),
-                    }),
-            )
+            mockSignDataWithKey.mockResolvedValue([expectedSig])
 
             const { result } = renderHook(() => useArbitraryDataSigner())
 
@@ -171,51 +136,28 @@ describe('useArbitraryDataSigner', () => {
             mockIsAlgo25Account.mockReturnValue(true)
         })
 
-        test('calls session.signData with MX prefix prepended', async () => {
-            const mockSignData = vi
-                .fn()
-                .mockResolvedValue(new Uint8Array([9, 8, 7]))
-            mockWithAlgo25Session.mockImplementation(
-                async (_key: any, _domain: string, handler: any) =>
-                    handler({ signData: mockSignData }),
-            )
-
+        test('calls signDataWithKey with the account child id and MX-prefixed bytes', async () => {
             const { result } = renderHook(() => useArbitraryDataSigner())
 
             await act(async () => {
                 await result.current.signArbitraryData(algo25Account, 'hello')
             })
 
-            expect(mockSignData).toHaveBeenCalledTimes(1)
-            const dataArg = mockSignData.mock.calls[0][0] as Uint8Array
+            expect(mockSignDataWithKey).toHaveBeenCalledTimes(1)
+            const [childId, domain, items] = mockSignDataWithKey.mock.calls[0]
+            expect(childId).toBe('key-algo25-ed25519')
+            expect(domain).toBe('pera.accounts')
 
-            // MX prefix must be present
+            const dataArg = items[0] as Uint8Array
             expect(dataArg[0]).toBe('M'.charCodeAt(0))
             expect(dataArg[1]).toBe('X'.charCodeAt(0))
         })
 
-        test('calls withAlgo25Session with SIGNING_KEY_DOMAIN', async () => {
-            mockWithAlgo25Session.mockResolvedValue([new Uint8Array([1])])
-
-            const { result } = renderHook(() => useArbitraryDataSigner())
-
-            await act(async () => {
-                await result.current.signArbitraryData(algo25Account, 'hello')
-            })
-
-            expect(mockWithAlgo25Session).toHaveBeenCalledWith(
-                mockKey,
-                'pera.accounts',
-                expect.any(Function),
-            )
-        })
-
         test('signs each item in an array of data', async () => {
-            const mockSignData = vi.fn().mockResolvedValue(new Uint8Array([1]))
-            mockWithAlgo25Session.mockImplementation(
-                async (_key: any, _domain: string, handler: any) =>
-                    handler({ signData: mockSignData }),
-            )
+            mockSignDataWithKey.mockResolvedValue([
+                new Uint8Array([1]),
+                new Uint8Array([2]),
+            ])
 
             const { result } = renderHook(() => useArbitraryDataSigner())
 
@@ -226,7 +168,8 @@ describe('useArbitraryDataSigner', () => {
                 ])
             })
 
-            expect(mockSignData).toHaveBeenCalledTimes(2)
+            const [, , items] = mockSignDataWithKey.mock.calls[0]
+            expect(items).toHaveLength(2)
         })
     })
 
@@ -244,7 +187,7 @@ describe('useArbitraryDataSigner', () => {
 
             mockAccounts = [rekeyedAccount as unknown as WalletAccount]
             mockIsAlgo25Account.mockReturnValue(true)
-            mockWithAlgo25Session.mockResolvedValue([new Uint8Array([42])])
+            mockSignDataWithKey.mockResolvedValue([new Uint8Array([42])])
 
             const { result } = renderHook(() => useArbitraryDataSigner())
 
@@ -252,7 +195,7 @@ describe('useArbitraryDataSigner', () => {
                 await result.current.signArbitraryData(originalAccount, 'hello')
             })
 
-            expect(mockWithAlgo25Session).toHaveBeenCalled()
+            expect(mockSignDataWithKey).toHaveBeenCalled()
         })
 
         test('rejects when rekeyed account is not found', async () => {

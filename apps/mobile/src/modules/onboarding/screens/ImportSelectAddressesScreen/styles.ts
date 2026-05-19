@@ -45,7 +45,7 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
     },
     selectAllText: {
-        color: theme.colors.linkPrimary,
+        color: theme.colors.positive,
         marginRight: theme.spacing.xs,
     },
     checkboxContainer: {
@@ -57,6 +57,10 @@ export const useStyles = makeStyles(theme => ({
     },
     listContent: {
         paddingBottom: theme.spacing.xl,
+    },
+    emptyState: {
+        flex: 1,
+        justifyContent: 'center',
     },
     itemContainer: {
         flexDirection: 'row',

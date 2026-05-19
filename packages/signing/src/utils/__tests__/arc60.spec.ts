@@ -11,7 +11,7 @@
  */
 
 import { describe, expect, test } from 'vitest'
-import { sha256 } from '@noble/hashes/sha256'
+import { sha256 } from '@noble/hashes/sha2.js'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import {
     Arc60DomainMismatchError,

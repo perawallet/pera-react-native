@@ -44,7 +44,12 @@ export const ManageAssetsContent = ({
                     />
                 }
                 center={
-                    <PWText variant='h4'>{t('manage_assets.title')}</PWText>
+                    <PWText
+                        variant='bodyLarge'
+                        weight={500}
+                    >
+                        {t('manage_assets.title')}
+                    </PWText>
                 }
                 paddingStyle='dense'
             />
@@ -57,9 +62,12 @@ export const ManageAssetsContent = ({
                     <PWIcon
                         name='list-arrow-down'
                         variant='primary'
-                        size='sm'
+                        size='md'
                     />
-                    <PWText style={styles.menuLabel}>
+                    <PWText
+                        variant='bodyLarge'
+                        style={styles.menuLabel}
+                    >
                         {t('manage_assets.sort')}
                     </PWText>
                 </PWTouchableOpacity>
@@ -72,9 +80,12 @@ export const ManageAssetsContent = ({
                     <PWIcon
                         name='funnel'
                         variant='primary'
-                        size='sm'
+                        size='md'
                     />
-                    <PWText style={styles.menuLabel}>
+                    <PWText
+                        variant='bodyLarge'
+                        style={styles.menuLabel}
+                    >
                         {t('manage_assets.filter')}
                     </PWText>
                 </PWTouchableOpacity>
@@ -88,9 +99,12 @@ export const ManageAssetsContent = ({
                         <PWIcon
                             name='trash'
                             variant='error'
-                            size='sm'
+                            size='md'
                         />
-                        <PWText style={styles.menuLabelDestructive}>
+                        <PWText
+                            variant='bodyLarge'
+                            style={styles.menuLabelDestructive}
+                        >
                             {t('manage_assets.remove_assets')}
                         </PWText>
                     </PWTouchableOpacity>

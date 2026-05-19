@@ -16,6 +16,7 @@ import { PWText } from '@components/core/PWText'
 import { PWIcon } from '@components/core/PWIcon'
 import { useStyles } from './styles'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { PWView } from '../PWView'
 
 export type NumpadKey =
     | '0'
@@ -66,7 +67,7 @@ export const PWNumpad = ({
     const renderKey = (key: Nullable<NumpadKey>, index: number) => {
         if (key === null) {
             return (
-                <View
+                <PWView
                     key={index}
                     style={styles.keyPlaceholder}
                 />

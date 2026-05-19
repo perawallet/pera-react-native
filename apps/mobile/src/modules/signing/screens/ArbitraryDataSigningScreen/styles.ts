@@ -25,15 +25,9 @@ export const useStyles = makeStyles(theme => ({
         flexGrow: 1,
     },
     buttonContainer: {
-        flexDirection: 'row',
-        gap: theme.spacing.lg,
-        alignItems: 'center',
-        justifyContent: 'center',
+        gap: theme.spacing.md,
         borderTopWidth: theme.borders.sm,
         borderTopColor: theme.colors.layerGrayLightest,
         paddingVertical: theme.spacing.md,
-    },
-    button: {
-        flexGrow: 1,
     },
 }))

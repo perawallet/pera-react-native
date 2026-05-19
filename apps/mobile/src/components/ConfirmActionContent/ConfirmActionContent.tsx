@@ -14,6 +14,7 @@ import { PWButton, PWIcon, PWText, PWView } from '@components/core'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useStyles } from './styles'
 
+import type { ReactNode } from 'react'
 import type { IconName, PWButtonProps, PWIconVariant } from '@components/core'
 
 /**
@@ -24,12 +25,15 @@ import type { IconName, PWButtonProps, PWIconVariant } from '@components/core'
  * backdrop / pan gesture. No default icon is rendered so the component
  * doesn't quietly assume a destructive context. Button variants default
  * to primary/secondary; override per callsite when the design diverges.
+ *
+ * `message` accepts a plain string (rendered as centered body copy) or
+ * any ReactNode for callers needing multi-line / interpolated content.
  */
 export type ConfirmActionContentProps = {
     icon?: IconName
     iconVariant?: PWIconVariant
     title: string
-    message: string
+    message: ReactNode
     confirmLabel: string
     cancelLabel: string
     confirmVariant?: PWButtonProps['variant']
@@ -68,12 +72,16 @@ export const ConfirmActionContent = ({
                 />
             )}
             <PWText variant='h3'>{title}</PWText>
-            <PWText
-                variant='body'
-                style={styles.message}
-            >
-                {message}
-            </PWText>
+            {typeof message === 'string' ? (
+                <PWText
+                    variant='body'
+                    style={styles.message}
+                >
+                    {message}
+                </PWText>
+            ) : (
+                <PWView style={styles.message}>{message}</PWView>
+            )}
             <PWView style={styles.actions}>
                 <PWButton
                     variant={confirmVariant}

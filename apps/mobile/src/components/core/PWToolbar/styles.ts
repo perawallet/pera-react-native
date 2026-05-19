@@ -24,17 +24,24 @@ export const useStyles = makeStyles(
         leftSlotContainer: {
             alignItems: 'flex-start',
             flexShrink: 1,
-            minWidth: theme.spacing.xxl,
+            minWidth: 0,
+            maxWidth: '60%',
+            overflow: 'hidden',
         },
         centerSlotContainer: {
             alignItems: 'center',
             justifyContent: 'center',
             flexGrow: 1,
+            flexShrink: 1,
+            minWidth: 0,
         },
         rightSlotContainer: {
-            alignItems: 'flex-end',
+            flexDirection: 'row',
+            justifyContent: 'flex-end',
+            alignItems: 'center',
             flexShrink: 1,
-            minWidth: theme.spacing.xxl,
+            minWidth: 0,
+            maxWidth: '60%',
         },
     }),
 )

@@ -35,7 +35,8 @@ export type UseHDImportSessionResult = {
 }
 
 export const useHDImportSession = (): UseHDImportSessionResult => {
-    const { persistHDMasterKey } = useKMS()
+    const { persistHDMasterKey, generateDerivedKey, removeKeyAndChildren } =
+        useKMS()
     const setAccounts = useAccountsStore(state => state.setAccounts)
 
     const prepareImport = useCallback(
@@ -92,6 +93,30 @@ export const useHDImportSession = (): UseHDImportSessionResult => {
                 entropy: pending.entropy,
             })
 
+            try {
+                await Promise.all(
+                    selectedAccounts.map(acc =>
+                        generateDerivedKey(
+                            pending.walletKeyId,
+                            acc.hdWalletDetails.account,
+                            acc.hdWalletDetails.keyIndex,
+                            acc.hdWalletDetails.derivationType,
+                        ),
+                    ),
+                )
+            } catch (e) {
+                // Roll back the seed + any successfully-derived children so
+                // the keystore doesn't end up with a half-imported wallet.
+                // Seed ids are deterministic, but partial state would still
+                // shadow a future retry's view of which children exist.
+                try {
+                    await removeKeyAndChildren(pending.walletKeyId)
+                } catch {
+                    // Best-effort cleanup; surface the original failure.
+                }
+                throw e
+            }
+
             const existing = useAccountsStore.getState().accounts
             const next = [...existing, ...selectedAccounts]
             setAccounts(next)
@@ -100,7 +125,12 @@ export const useHDImportSession = (): UseHDImportSessionResult => {
 
             return selectedAccounts
         },
-        [persistHDMasterKey, setAccounts],
+        [
+            persistHDMasterKey,
+            generateDerivedKey,
+            removeKeyAndChildren,
+            setAccounts,
+        ],
     )
 
     const cancelImport = useCallback(() => {

@@ -42,6 +42,23 @@ vi.mock('@components/core', () => ({
     PWView: vi.fn(),
 }))
 
+vi.mock('@components/ConfirmActionContent', () => ({
+    ConfirmActionContent: () => null,
+}))
+
+const { mockRequestBottomSheet } = vi.hoisted(() => ({
+    mockRequestBottomSheet: vi.fn(),
+}))
+
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({
+        request: mockRequestBottomSheet,
+        requestByType: vi.fn(),
+        dismiss: vi.fn(),
+        dismissAll: vi.fn(),
+    }),
+}))
+
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
     useAccountBalancesQuery: vi.fn(),
@@ -53,6 +70,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
             algoValue: new Decimal(100),
         },
     })),
+    isRekeyedAccount: vi.fn(() => false),
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
@@ -147,6 +165,7 @@ describe('useInputScreen', () => {
                 assets: [{ assetId: 123, amount: 0n, isFrozen: false }],
             },
         })
+        mockRequestBottomSheet.mockResolvedValue(undefined)
     })
 
     it('calculates max amount for Algo correctly', () => {
@@ -156,18 +175,15 @@ describe('useInputScreen', () => {
 
     it('calculates total balance for Algo correctly', () => {
         const { result } = renderHook(() => useInputScreen())
-        // totalBalance = balance
         expect(result.current.totalBalance.toNumber()).toBe(100)
     })
 
     it('calculates minBalanceDisplay for Algo correctly', () => {
         const { result } = renderHook(() => useInputScreen())
-        // minBalance = 100_000 microAlgo = 0.1 ALGO
         expect(result.current.minBalanceDisplay).toBe('0.1')
     })
 
     it('calculates max amount for ASA correctly', () => {
-        // Update mock state for ASA
         mockSendFundsState.selectedAssetId = '1'
 
         const { result } = renderHook(() => useInputScreen())
@@ -198,10 +214,10 @@ describe('useInputScreen', () => {
         expect(result.current.cryptoValue).toBeNull()
     })
 
-    it('validates input on next (error if 0/empty)', () => {
+    it('validates input on next (error if 0/empty)', async () => {
         const { result } = renderHook(() => useInputScreen())
-        act(() => {
-            result.current.handleNext()
+        await act(async () => {
+            await result.current.handleNext()
         })
         expect(mockShowToast).toHaveBeenCalledWith(
             expect.objectContaining({ type: 'error' }),
@@ -210,8 +226,7 @@ describe('useInputScreen', () => {
         expect(mockNavigate).not.toHaveBeenCalled()
     })
 
-    it('shows toast when value exceeds total balance', () => {
-        // amount=10 ALGO, minBalance=0 → totalBalance = 10 - 0.001 = 9.999
+    it('shows toast when value exceeds total balance', async () => {
         ;(useAccountInformationQuery as Mock).mockReturnValue({
             data: { amount: 10_000_000n, minBalance: 0n },
         })
@@ -220,22 +235,18 @@ describe('useInputScreen', () => {
         act(() => {
             result.current.setCryptoValue('20')
         })
-        act(() => {
-            result.current.handleNext()
+        await act(async () => {
+            await result.current.handleNext()
         })
         expect(mockShowToast).toHaveBeenCalledWith(
             expect.objectContaining({ type: 'error' }),
             expect.anything(),
         )
-        expect(result.current.isMaxExceeded).toBe(false)
+        expect(mockRequestBottomSheet).not.toHaveBeenCalled()
         expect(mockNavigate).not.toHaveBeenCalled()
     })
 
-    it('shows min balance panel when value exceeds MBR but within total balance', () => {
-        // amount=100 ALGO, minBalance=1 ALGO, fee=0.001
-        // maxAmount = 100 - 1 - 0.001 = 98.999
-        // totalBalance = 100 - 0.001 = 99.999
-        // value=99.5 → > maxAmount but < totalBalance → show panel
+    it('opens insufficient-balance confirm when value exceeds MBR but within total balance', async () => {
         ;(useAccountInformationQuery as Mock).mockReturnValue({
             data: {
                 amount: 100_000_000n,
@@ -248,15 +259,60 @@ describe('useInputScreen', () => {
         act(() => {
             result.current.setCryptoValue('99.5')
         })
-        act(() => {
-            result.current.handleNext()
+        await act(async () => {
+            await result.current.handleNext()
         })
-        expect(result.current.isMaxExceeded).toBe(true)
+        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
         expect(mockShowToast).not.toHaveBeenCalled()
         expect(mockNavigate).not.toHaveBeenCalled()
     })
 
-    it('proceeds on next if valid', () => {
+    it('continues past MBR when insufficient-balance confirm resolves true', async () => {
+        ;(useAccountInformationQuery as Mock).mockReturnValue({
+            data: {
+                amount: 100_000_000n,
+                minBalance: 1_000_000n,
+                assets: [{ assetId: 123, amount: 0n, isFrozen: false }],
+            },
+        })
+        mockRequestBottomSheet.mockResolvedValue(true)
+
+        const { result } = renderHook(() => useInputScreen())
+        act(() => {
+            result.current.setCryptoValue('99.5')
+        })
+        await act(async () => {
+            await result.current.handleNext()
+        })
+        // maxAmount = 100 - 1 - 0.001 = 98.999
+        expect(mockSetAmount).toHaveBeenCalled()
+        expect(mockSetAmount.mock.calls[0][0].toString()).toBe('98.999')
+        expect(result.current.cryptoValue).toBe('98.999')
+        expect(mockNavigate).toHaveBeenCalledWith('SelectDestination')
+    })
+
+    it('does not navigate when insufficient-balance confirm is dismissed', async () => {
+        ;(useAccountInformationQuery as Mock).mockReturnValue({
+            data: {
+                amount: 100_000_000n,
+                minBalance: 1_000_000n,
+                assets: [{ assetId: 123, amount: 0n, isFrozen: false }],
+            },
+        })
+        mockRequestBottomSheet.mockResolvedValue(undefined)
+
+        const { result } = renderHook(() => useInputScreen())
+        act(() => {
+            result.current.setCryptoValue('99.5')
+        })
+        await act(async () => {
+            await result.current.handleNext()
+        })
+        expect(mockSetAmount).not.toHaveBeenCalled()
+        expect(mockNavigate).not.toHaveBeenCalled()
+    })
+
+    it('proceeds on next if valid', async () => {
         ;(useAccountInformationQuery as Mock).mockReturnValue({
             data: { amount: 100_000_000n, minBalance: 0n },
         })
@@ -265,44 +321,15 @@ describe('useInputScreen', () => {
         act(() => {
             result.current.setCryptoValue('5')
         })
-        act(() => {
-            result.current.handleNext()
+        await act(async () => {
+            await result.current.handleNext()
         })
         expect(mockSetAmount).toHaveBeenCalled()
         expect(mockSetAmount.mock.calls[0][0].toString()).toBe('5')
         expect(mockNavigate).toHaveBeenCalledWith('SelectDestination')
     })
 
-    it('handleContinuePastMbr sets amount to max and navigates', () => {
-        // maxAmount = 100 - 0.1 - 0.001 = 99.899
-        const { result } = renderHook(() => useInputScreen())
-
-        // First trigger the panel
-        act(() => {
-            result.current.setCryptoValue('99.95')
-        })
-        act(() => {
-            result.current.handleNext()
-        })
-        expect(result.current.isMaxExceeded).toBe(true)
-
-        // Then continue past MBR
-        act(() => {
-            result.current.handleContinuePastMbr()
-        })
-        expect(result.current.isMaxExceeded).toBe(false)
-        expect(mockSetAmount).toHaveBeenCalledWith(
-            expect.objectContaining({
-                toString: expect.any(Function),
-            }),
-        )
-        expect(mockSetAmount.mock.calls[0][0].toString()).toBe('99.899')
-        expect(result.current.cryptoValue).toBe('99.899')
-        expect(mockNavigate).toHaveBeenCalledWith('SelectDestination')
-    })
-
     it('setMax sets value to full account balance', () => {
-        // account balance = 100 ALGO (100_000_000 microAlgo)
         const { result } = renderHook(() => useInputScreen())
         act(() => {
             result.current.setMax()
@@ -340,7 +367,7 @@ describe('useInputScreen', () => {
         expect(result.current.cryptoValue).toBe('1.5')
     })
 
-    it('shows toast when value exceeds zero balance', () => {
+    it('shows toast when value exceeds zero balance', async () => {
         ;(useAccountInformationQuery as Mock).mockReturnValue({
             data: { amount: 0n, minBalance: 0n },
         })
@@ -349,10 +376,9 @@ describe('useInputScreen', () => {
         act(() => {
             result.current.setCryptoValue('0.1')
         })
-        act(() => {
-            result.current.handleNext()
+        await act(async () => {
+            await result.current.handleNext()
         })
-        // totalBalance = 0 - 0.001 = 0 (clamped), so 0.1 > 0 → toast
         expect(mockShowToast).toHaveBeenCalledWith(
             expect.objectContaining({ type: 'error' }),
             expect.anything(),
@@ -360,32 +386,7 @@ describe('useInputScreen', () => {
         expect(mockNavigate).not.toHaveBeenCalled()
     })
 
-    it('dismisses max exceeded state', () => {
-        // Set up scenario where panel shows (value > maxAmount but <= totalBalance)
-        ;(useAccountInformationQuery as Mock).mockReturnValue({
-            data: {
-                amount: 100_000_000n,
-                minBalance: 1_000_000n,
-                assets: [{ assetId: 123, amount: 0n, isFrozen: false }],
-            },
-        })
-
-        const { result } = renderHook(() => useInputScreen())
-        act(() => {
-            result.current.setCryptoValue('99.5')
-        })
-        act(() => {
-            result.current.handleNext()
-        })
-        expect(result.current.isMaxExceeded).toBe(true)
-        act(() => {
-            result.current.dismissMaxExceeded()
-        })
-        expect(result.current.isMaxExceeded).toBe(false)
-    })
-
-    it('shows close account panel when ALGO exceeds MBR and no opted-in ASAs', () => {
-        // Account with no ASAs
+    it('opens close-account confirm when ALGO exceeds MBR and no opted-in ASAs', async () => {
         ;(useAccountInformationQuery as Mock).mockReturnValue({
             data: {
                 amount: 100_000_000n,
@@ -398,36 +399,14 @@ describe('useInputScreen', () => {
         act(() => {
             result.current.setCryptoValue('99.95')
         })
-        act(() => {
-            result.current.handleNext()
+        await act(async () => {
+            await result.current.handleNext()
         })
-        expect(result.current.isCloseAccountEligible).toBe(true)
-        expect(result.current.isMaxExceeded).toBe(false)
+        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
         expect(mockNavigate).not.toHaveBeenCalled()
     })
 
-    it('shows insufficient balance panel when ALGO exceeds MBR but has opted-in ASAs', () => {
-        // Account with ASAs
-        ;(useAccountInformationQuery as Mock).mockReturnValue({
-            data: {
-                amount: 100_000_000n,
-                minBalance: 1_000_000n,
-                assets: [{ assetId: 123, amount: 0n, isFrozen: false }],
-            },
-        })
-
-        const { result } = renderHook(() => useInputScreen())
-        act(() => {
-            result.current.setCryptoValue('99.5')
-        })
-        act(() => {
-            result.current.handleNext()
-        })
-        expect(result.current.isMaxExceeded).toBe(true)
-        expect(result.current.isCloseAccountEligible).toBe(false)
-    })
-
-    it('handleConfirmCloseAccount sets close account flag and navigates', () => {
+    it('confirms close account when confirm resolves true', async () => {
         ;(useAccountInformationQuery as Mock).mockReturnValue({
             data: {
                 amount: 100_000_000n,
@@ -435,22 +414,15 @@ describe('useInputScreen', () => {
                 assets: [],
             },
         })
+        mockRequestBottomSheet.mockResolvedValue(true)
 
         const { result } = renderHook(() => useInputScreen())
-        // First trigger the panel
         act(() => {
             result.current.setCryptoValue('99.95')
         })
-        act(() => {
-            result.current.handleNext()
+        await act(async () => {
+            await result.current.handleNext()
         })
-        expect(result.current.isCloseAccountEligible).toBe(true)
-
-        // Confirm close account
-        act(() => {
-            result.current.handleConfirmCloseAccount()
-        })
-        expect(result.current.isCloseAccountEligible).toBe(false)
         expect(mockSetIsCloseAccount).toHaveBeenCalledWith(true)
         // amount = totalBalance - fee = 100 - 0.001 = 99.999
         expect(mockSetAmount).toHaveBeenCalled()
@@ -458,7 +430,7 @@ describe('useInputScreen', () => {
         expect(mockNavigate).toHaveBeenCalledWith('SelectDestination')
     })
 
-    it('dismissCloseAccount resets close account eligible state', () => {
+    it('does not confirm close account when confirm is dismissed', async () => {
         ;(useAccountInformationQuery as Mock).mockReturnValue({
             data: {
                 amount: 100_000_000n,
@@ -466,23 +438,21 @@ describe('useInputScreen', () => {
                 assets: [],
             },
         })
+        mockRequestBottomSheet.mockResolvedValue(undefined)
 
         const { result } = renderHook(() => useInputScreen())
         act(() => {
             result.current.setCryptoValue('99.95')
         })
-        act(() => {
-            result.current.handleNext()
+        await act(async () => {
+            await result.current.handleNext()
         })
-        expect(result.current.isCloseAccountEligible).toBe(true)
-
-        act(() => {
-            result.current.dismissCloseAccount()
-        })
-        expect(result.current.isCloseAccountEligible).toBe(false)
+        expect(mockSetIsCloseAccount).not.toHaveBeenCalledWith(true)
+        expect(mockSetAmount).not.toHaveBeenCalled()
+        expect(mockNavigate).not.toHaveBeenCalled()
     })
 
-    it('resets isCloseAccount when amount is within maxAmount on next', () => {
+    it('resets isCloseAccount when amount is within maxAmount on next', async () => {
         ;(useAccountInformationQuery as Mock).mockReturnValue({
             data: {
                 amount: 100_000_000n,
@@ -495,8 +465,8 @@ describe('useInputScreen', () => {
         act(() => {
             result.current.setCryptoValue('5')
         })
-        act(() => {
-            result.current.handleNext()
+        await act(async () => {
+            await result.current.handleNext()
         })
         expect(mockSetIsCloseAccount).toHaveBeenCalledWith(false)
         expect(mockNavigate).toHaveBeenCalledWith('SelectDestination')

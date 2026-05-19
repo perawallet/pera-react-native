@@ -56,7 +56,7 @@ export const SingleArbitrarySignRequestView = ({
             <PWView style={styles.detailsContainer}>
                 <PWButton
                     title={t('signing.arbitrary_data_view.show_details')}
-                    variant='link'
+                    variant='linkPositive'
                     paddingStyle='dense'
                     onPress={handleDetailsPress}
                 />

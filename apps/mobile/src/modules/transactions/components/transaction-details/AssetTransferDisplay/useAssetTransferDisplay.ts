@@ -18,7 +18,6 @@ import {
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
 import { Decimal } from 'decimal.js'
 import { useStyles } from './styles'
-import { useModalState } from '@hooks/useModalState'
 
 export const useAssetTransferDisplay = (
     transaction: PeraDisplayableTransaction,
@@ -56,7 +55,6 @@ export const useAssetTransferDisplay = (
     }, [amount])
 
     const metadataHash = useMemo(() => asset?.metadata, [asset])
-    const metadataHashDetailsModal = useModalState()
 
     return {
         transferType,
@@ -69,8 +67,5 @@ export const useAssetTransferDisplay = (
         amount,
         amountStyle,
         metadataHash,
-        isMetadataHashDetailsModalOpen: metadataHashDetailsModal.isOpen,
-        openMetadataHashDetailsModal: metadataHashDetailsModal.open,
-        closeMetadataHashDetailsModal: metadataHashDetailsModal.close,
     }
 }

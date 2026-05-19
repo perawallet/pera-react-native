@@ -10,27 +10,33 @@
  limitations under the License
  */
 
-import type { KeyStoreAPI, KeyData, KeyId } from '@algorandfoundation/keystore'
+import type {
+    Key,
+    KeyStoreAPI,
+    KeyData,
+    KeyId,
+} from '@algorandfoundation/keystore'
 import { clearKeyData } from '@algorandfoundation/keystore'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { AccessControlPermission, KeyPair } from '../models'
+import { AccessControlPermission } from '../models'
+import { aclOf } from '../utils'
 import { KeyAccessError } from '../errors'
 import { useCallback } from 'react'
 import {
-    commitTypedSecret,
-    hasTypedSecret,
-    removeTypedSecret,
-    withTypedSecret,
-    type TypedSecret,
-} from '../storage/typedSecret'
+    commitSecret,
+    hasSecret,
+    removeSecret,
+    withSecret,
+} from '../storage/secrets'
 import { Nullable } from '@perawallet/wallet-core-shared'
 
-export const checkAccess = (key: KeyPair, domain: string): void => {
-    if (key.acl?.length) {
-        const hasAccess = key.acl.some(
-            acl =>
-                acl.domains.includes(domain) &&
-                acl.permissions.includes(AccessControlPermission.ReadPrivate),
+export const checkAccess = (key: Key, domain: string): void => {
+    const acl = aclOf(key)
+    if (acl.length) {
+        const hasAccess = acl.some(
+            entry =>
+                entry.domains.includes(domain) &&
+                entry.permissions.includes(AccessControlPermission.ReadPrivate),
         )
 
         if (!hasAccess) {
@@ -49,13 +55,13 @@ type UseKMSServiceResult = {
     checkAccess: typeof checkAccess
     keyStore: KeyStoreAPI
     withExportedKey: WithExportedKey
-    commitTypedSecret: (blob: TypedSecret) => Promise<void>
-    withTypedSecret: <T>(
+    commitSecret: typeof commitSecret
+    withSecret: <T>(
         id: string,
         handler: (bytes: Uint8Array) => T | Promise<T>,
     ) => Promise<Nullable<T>>
-    hasTypedSecret: (id: string) => boolean
-    removeTypedSecret: (id: string) => Promise<void>
+    hasSecret: (id: string) => boolean
+    removeSecret: (id: string) => Promise<void>
 }
 
 export const useKMSService = (): UseKMSServiceResult => {
@@ -85,9 +91,9 @@ export const useKMSService = (): UseKMSServiceResult => {
         checkAccess,
         keyStore,
         withExportedKey,
-        commitTypedSecret,
-        withTypedSecret,
-        hasTypedSecret,
-        removeTypedSecret,
+        commitSecret,
+        withSecret,
+        hasSecret,
+        removeSecret,
     }
 }
