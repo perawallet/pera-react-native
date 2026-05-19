@@ -100,9 +100,7 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
             behavior='padding'
             style={styles.keyboardAvoidingViewContainer}
         >
-            <PWView
-                style={styles.keyboardAvoidingViewContainer}
-            >
+            <PWView style={styles.keyboardAvoidingViewContainer}>
                 <SectionList
                     sections={sections}
                     renderItem={renderItem}
