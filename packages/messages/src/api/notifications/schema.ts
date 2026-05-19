@@ -51,6 +51,4 @@ export type NotificationResponse = z.infer<typeof notificationResponseSchema>
 export type NotificationsListResponse = z.infer<
     typeof notificationsListResponseSchema
 >
-export type MessageStatusResponse = z.infer<
-    typeof messageStatusResponseSchema
->
+export type MessageStatusResponse = z.infer<typeof messageStatusResponseSchema>

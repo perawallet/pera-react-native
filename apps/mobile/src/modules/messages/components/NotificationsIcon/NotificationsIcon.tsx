@@ -24,7 +24,7 @@ const MAX_INBOX_COUNT_DISPLAY = 9
 export const NotificationsIcon = (props: NotificationsIconProps) => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { hasUnreadNotifications } = useInboxStatus()
-    const { data: inboxData } = useInboxQuery() 
+    const { data: inboxData } = useInboxQuery()
     const styles = useStyles()
 
     const goToNotifications = () => {
