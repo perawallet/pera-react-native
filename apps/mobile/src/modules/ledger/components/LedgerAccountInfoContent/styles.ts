@@ -25,19 +25,25 @@ export const useStyles = makeStyles(theme => ({
         marginBottom: theme.spacing.sm,
         color: theme.colors.textMain,
     },
-    row: {
+    /** Account-details row — mirrors AccountWithBalance layout */
+    accountRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: theme.spacing.md,
-        gap: theme.spacing.md,
+        justifyContent: 'space-between',
+        gap: theme.spacing.sm,
+        paddingVertical: theme.spacing.sm,
     },
-    rowText: {
-        flex: 1,
-        gap: theme.spacing.xxs,
-    },
-    rowTrailing: {
+    balanceContainer: {
+        gap: theme.spacing.xs,
         alignItems: 'flex-end',
-        gap: theme.spacing.xxs,
+        flexShrink: 0,
+    },
+    fiatBalance: {
+        color: theme.colors.textGray,
+    },
+    /** Rekey-address rows — light vertical padding so they read as a list */
+    rekeyRow: {
+        paddingVertical: theme.spacing.sm,
     },
     secondary: {
         color: theme.colors.textGray,

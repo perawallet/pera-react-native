@@ -12,7 +12,6 @@
 
 import { useCallback } from 'react'
 import { ActivityIndicator } from 'react-native'
-import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
     PWView,
     PWText,
@@ -21,18 +20,17 @@ import {
     PWButton,
     PWFlatList,
 } from '@components/core'
+import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
+import { AccountAssetItemView } from '@modules/assets/components/AssetItem'
+import { ALGO_ASSET, ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
 import {
     useLedgerAccountInfoContent,
     type LedgerInfoListItem,
 } from './useLedgerAccountInfoContent'
-import {
-    LedgerSectionHeaderRow,
-    LedgerAccountDetailsRow,
-    LedgerAssetRow,
-    LedgerRekeyAddressRow,
-} from './LedgerAccountInfoRows'
 import { useStyles } from './styles'
 
 export type LedgerAccountInfoContentProps = {
@@ -49,7 +47,6 @@ export const LedgerAccountInfoContent = ({
     const styles = useStyles()
     const { t } = useLanguage()
     const { dismiss } = useBottomSheetResult<void>()
-    const { preferredCurrency } = useCurrency()
     const {
         title: resolvedTitle,
         items,
@@ -62,31 +59,64 @@ export const LedgerAccountInfoContent = ({
         ({ item }: { item: LedgerInfoListItem }) => {
             switch (item.kind) {
                 case 'sectionHeader':
-                    return <LedgerSectionHeaderRow title={item.title} />
+                    return (
+                        <PWText
+                            variant='h4'
+                            style={styles.sectionHeader}
+                        >
+                            {item.title}
+                        </PWText>
+                    )
+
                 case 'account':
                     return (
-                        <LedgerAccountDetailsRow
-                            address={item.address}
-                            algoBalance={item.algoBalance}
-                            fiatValue={item.fiatValue}
-                            label={t(
-                                'ledger.account_info.ledger_account_label',
-                            )}
-                            preferredCurrency={preferredCurrency}
-                        />
+                        <PWView style={styles.accountRow}>
+                            <AccountDisplay
+                                account={item.account}
+                                showChevron={false}
+                                showAccountType
+                            />
+                            <PWView style={styles.balanceContainer}>
+                                <CurrencyDisplay
+                                    currency='ALGO'
+                                    value={item.algoBalance}
+                                    precision={ALGO_ASSET.decimals}
+                                    minPrecision={2}
+                                    variant='bodyCompact'
+                                />
+                                <PreferredCurrencyDisplay
+                                    sourceAssetId={ALGO_ASSET_ID}
+                                    sourceAmount={item.algoBalance}
+                                    usdPrice={item.algoUsdPrice}
+                                    precision={2}
+                                    minPrecision={2}
+                                    variant='bodyCompact'
+                                    style={styles.fiatBalance}
+                                />
+                            </PWView>
+                        </PWView>
                     )
+
                 case 'asset':
                     return (
-                        <LedgerAssetRow
-                            asset={item.asset}
-                            preferredCurrency={preferredCurrency}
+                        <AccountAssetItemView
+                            accountBalance={item.accountBalance}
+                            usdPrice={item.usdPrice}
                         />
                     )
+
                 case 'rekeyAddress':
-                    return <LedgerRekeyAddressRow address={item.address} />
+                    return (
+                        <AccountDisplay
+                            account={item.account}
+                            showChevron={false}
+                            showAccountType
+                            style={styles.rekeyRow}
+                        />
+                    )
             }
         },
-        [t, preferredCurrency],
+        [styles],
     )
 
     return (

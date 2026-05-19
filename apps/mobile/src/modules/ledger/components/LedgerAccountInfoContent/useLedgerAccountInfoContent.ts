@@ -11,11 +11,15 @@
  */
 
 import { useMemo } from 'react'
-import type { Decimal } from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import {
     useLedgerAccountPreview,
-    type LedgerAccountPreviewAsset,
+    AccountTypes,
+    type WalletAccount,
+    type HardwareWalletAccount,
+    type WatchAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 
 export type LedgerInfoListItem =
@@ -23,12 +27,17 @@ export type LedgerInfoListItem =
     | {
           kind: 'account'
           key: string
-          address: string
+          account: WalletAccount
           algoBalance: Decimal
-          fiatValue: Decimal
+          algoUsdPrice: Decimal
       }
-    | { kind: 'asset'; key: string; asset: LedgerAccountPreviewAsset }
-    | { kind: 'rekeyAddress'; key: string; address: string }
+    | {
+          kind: 'asset'
+          key: string
+          accountBalance: AssetWithAccountBalance
+          usdPrice: Decimal
+      }
+    | { kind: 'rekeyAddress'; key: string; account: WalletAccount }
 
 type UseLedgerAccountInfoContentResult = {
     title: string
@@ -51,6 +60,33 @@ export const useLedgerAccountInfoContent = (
     const items = useMemo<LedgerInfoListItem[]>(() => {
         if (!preview) return []
 
+        // Build the synth account for the sheet's own address.
+        // If the account is rekeyed to an auth address, render it as a watch
+        // account with rekeyAddress set. Otherwise render it as a hardware
+        // Ledger account so AccountDisplay/AccountIcon show the correct icon.
+        const synthAccount: WalletAccount =
+            preview.rekey.kind === 'rekeyedTo'
+                ? ({
+                      type: AccountTypes.watch,
+                      address: preview.address,
+                      rekeyAddress: preview.rekey.authAddress,
+                  } satisfies WatchAccount)
+                : ({
+                      type: AccountTypes.hardware,
+                      address: preview.address,
+                      hardwareDetails: {
+                          manufacturer: 'ledger',
+                          deviceId: '',
+                          deviceName: '',
+                          accountIndex,
+                          transportType: 'ble',
+                      },
+                  } satisfies HardwareWalletAccount)
+
+        // Extract usdPrice from the ALGO preview asset for the account row.
+        const algoPreviewAsset = preview.assets.find(a => a.isAlgo)
+        const algoUsdPrice = algoPreviewAsset?.usdPrice ?? new Decimal(0)
+
         const list: LedgerInfoListItem[] = [
             {
                 kind: 'sectionHeader',
@@ -60,9 +96,9 @@ export const useLedgerAccountInfoContent = (
             {
                 kind: 'account',
                 key: 'account',
-                address: preview.address,
+                account: synthAccount,
                 algoBalance: preview.algoBalance,
-                fiatValue: preview.totalFiatValue,
+                algoUsdPrice,
             },
             {
                 kind: 'sectionHeader',
@@ -73,12 +109,31 @@ export const useLedgerAccountInfoContent = (
                 (asset): LedgerInfoListItem => ({
                     kind: 'asset',
                     key: `asset-${asset.assetId}`,
-                    asset,
+                    accountBalance: {
+                        assetId: asset.assetId,
+                        amount: asset.amount,
+                        algoValue: new Decimal(0),
+                    } satisfies AssetWithAccountBalance,
+                    usdPrice: asset.usdPrice,
                 }),
             ),
         ]
 
         if (preview.rekey.kind === 'rekeyedTo') {
+            // Build a synth hardware account for the auth address (it's a Ledger
+            // signing key). accountIndex 0 is a safe placeholder — AccountDisplay
+            // only reads type/address/name for display.
+            const authSynthAccount: HardwareWalletAccount = {
+                type: AccountTypes.hardware,
+                address: preview.rekey.authAddress,
+                hardwareDetails: {
+                    manufacturer: 'ledger',
+                    deviceId: '',
+                    deviceName: '',
+                    accountIndex: 0,
+                    transportType: 'ble',
+                },
+            }
             list.push(
                 {
                     kind: 'sectionHeader',
@@ -88,7 +143,7 @@ export const useLedgerAccountInfoContent = (
                 {
                     kind: 'rekeyAddress',
                     key: `rekey-${preview.rekey.authAddress}`,
-                    address: preview.rekey.authAddress,
+                    account: authSynthAccount,
                 },
             )
         } else if (preview.rekey.kind === 'canSignFor') {
@@ -98,16 +153,21 @@ export const useLedgerAccountInfoContent = (
                 title: t('ledger.account_info.can_sign_for'),
             })
             preview.rekey.addresses.forEach(addr => {
+                // These rekeyed addresses are watch accounts (no key on this device).
+                const watchSynth: WatchAccount = {
+                    type: AccountTypes.watch,
+                    address: addr,
+                }
                 list.push({
                     kind: 'rekeyAddress',
                     key: `rekey-${addr}`,
-                    address: addr,
+                    account: watchSynth,
                 })
             })
         }
 
         return list
-    }, [preview, t])
+    }, [preview, t, accountIndex])
 
     return {
         title: titleOverride ?? `Ledger #${accountIndex}`,

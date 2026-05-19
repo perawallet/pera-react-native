@@ -13,12 +13,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
+import { AccountTypes } from '@perawallet/wallet-core-accounts'
 import { useLedgerAccountInfoContent } from '../useLedgerAccountInfoContent'
 
 const mocks = vi.hoisted(() => ({ useLedgerAccountPreview: vi.fn() }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useLedgerAccountPreview: mocks.useLedgerAccountPreview,
+    AccountTypes: {
+        algo25: 'algo25',
+        hdWallet: 'hdWallet',
+        hardware: 'hardware',
+        multisig: 'multisig',
+        watch: 'watch',
+    },
 }))
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (k: string) => k }),
@@ -28,10 +36,24 @@ const baseAsset = {
     assetId: '0',
     name: 'Algo',
     unitName: 'ALGO',
+    decimals: 6,
     amount: new Decimal(5),
     fiatValue: new Decimal(10),
-    verificationTier: 'verified',
+    usdPrice: new Decimal(2),
+    verificationTier: 'verified' as const,
     isAlgo: true,
+}
+
+const asaAsset = {
+    assetId: '12345',
+    name: 'USDC',
+    unitName: 'USDC',
+    decimals: 6,
+    amount: new Decimal(100),
+    fiatValue: new Decimal(100),
+    usdPrice: new Decimal(1),
+    verificationTier: 'trusted' as const,
+    isAlgo: false,
 }
 
 beforeEach(() => {
@@ -108,8 +130,10 @@ describe('useLedgerAccountInfoContent', () => {
         expect(rekeyAddressItems).toHaveLength(1)
         expect(rekeyAddressItems[0]).toMatchObject({
             kind: 'rekeyAddress',
-            address: 'AUTH',
         })
+        if (rekeyAddressItems[0].kind === 'rekeyAddress') {
+            expect(rekeyAddressItems[0].account.address).toBe('AUTH')
+        }
     })
 
     it('emits a "can sign for these" rekey section when canSignFor', () => {
@@ -132,7 +156,7 @@ describe('useLedgerAccountInfoContent', () => {
 
         const rekeyAddresses = result.current.items
             .filter(i => i.kind === 'rekeyAddress')
-            .map(i => (i.kind === 'rekeyAddress' ? i.address : ''))
+            .map(i => (i.kind === 'rekeyAddress' ? i.account.address : ''))
         expect(rekeyAddresses).toEqual(['R1', 'R2'])
     })
 
@@ -151,13 +175,13 @@ describe('useLedgerAccountInfoContent', () => {
         expect(result.current.title).toBe('Rekeyed account')
     })
 
-    it('carries Decimal instances for algoBalance and fiatValue on the account item', () => {
+    it('carries Decimal instances for algoBalance and algoUsdPrice on the account item', () => {
         mocks.useLedgerAccountPreview.mockReturnValue({
             preview: {
                 address: 'ADDR',
                 algoBalance: new Decimal('408.2'),
                 totalFiatValue: new Decimal('48.45'),
-                assets: [baseAsset],
+                assets: [{ ...baseAsset, usdPrice: new Decimal('0.6') }],
                 rekey: { kind: 'none' },
             },
             isLoading: false,
@@ -174,8 +198,135 @@ describe('useLedgerAccountInfoContent', () => {
         if (acct?.kind === 'account') {
             expect(acct.algoBalance).toBeInstanceOf(Decimal)
             expect(acct.algoBalance.toString()).toBe('408.2')
-            expect(acct.fiatValue).toBeInstanceOf(Decimal)
-            expect(acct.fiatValue.toString()).toBe('48.45')
+            expect(acct.algoUsdPrice).toBeInstanceOf(Decimal)
+            expect(acct.algoUsdPrice.toString()).toBe('0.6')
         }
+    })
+
+    it('builds a hardware synth account on the account item when no rekey', () => {
+        mocks.useLedgerAccountPreview.mockReturnValue({
+            preview: {
+                address: 'MYADDR',
+                algoBalance: new Decimal(1),
+                totalFiatValue: new Decimal(0),
+                assets: [baseAsset],
+                rekey: { kind: 'none' },
+            },
+            isLoading: false,
+            isError: false,
+            refetch: vi.fn(),
+        })
+
+        const { result } = renderHook(() =>
+            useLedgerAccountInfoContent('MYADDR', 2),
+        )
+
+        const acct = result.current.items.find(i => i.kind === 'account')
+        if (acct?.kind === 'account') {
+            expect(acct.account.type).toBe(AccountTypes.hardware)
+            expect(acct.account.address).toBe('MYADDR')
+            if (acct.account.type === AccountTypes.hardware) {
+                expect(acct.account.hardwareDetails.accountIndex).toBe(2)
+                expect(acct.account.hardwareDetails.manufacturer).toBe('ledger')
+            }
+        }
+    })
+
+    it('builds a watch+rekeyAddress synth account on the account item when rekeyedTo', () => {
+        mocks.useLedgerAccountPreview.mockReturnValue({
+            preview: {
+                address: 'WATCH_ADDR',
+                algoBalance: new Decimal(0),
+                totalFiatValue: new Decimal(0),
+                assets: [baseAsset],
+                rekey: { kind: 'rekeyedTo', authAddress: 'AUTH_ADDR' },
+            },
+            isLoading: false,
+            isError: false,
+            refetch: vi.fn(),
+        })
+
+        const { result } = renderHook(() =>
+            useLedgerAccountInfoContent('WATCH_ADDR', 0),
+        )
+
+        const acct = result.current.items.find(i => i.kind === 'account')
+        if (acct?.kind === 'account') {
+            expect(acct.account.type).toBe(AccountTypes.watch)
+            expect(acct.account.address).toBe('WATCH_ADDR')
+            expect(acct.account.rekeyAddress).toBe('AUTH_ADDR')
+        }
+    })
+
+    it('adapts LedgerAccountPreviewAsset to AssetWithAccountBalance shape on asset items', () => {
+        mocks.useLedgerAccountPreview.mockReturnValue({
+            preview: {
+                address: 'ADDR',
+                algoBalance: new Decimal(5),
+                totalFiatValue: new Decimal(105),
+                assets: [baseAsset, asaAsset],
+                rekey: { kind: 'none' },
+            },
+            isLoading: false,
+            isError: false,
+            refetch: vi.fn(),
+        })
+
+        const { result } = renderHook(() =>
+            useLedgerAccountInfoContent('ADDR', 0),
+        )
+
+        const assetItems = result.current.items.filter(i => i.kind === 'asset')
+        expect(assetItems).toHaveLength(2)
+
+        if (assetItems[0].kind === 'asset') {
+            expect(assetItems[0].accountBalance.assetId).toBe('0')
+            expect(assetItems[0].accountBalance.amount).toBeInstanceOf(Decimal)
+            expect(assetItems[0].accountBalance.amount.toString()).toBe('5')
+            expect(assetItems[0].usdPrice).toBeInstanceOf(Decimal)
+            expect(assetItems[0].usdPrice.toString()).toBe('2')
+        }
+
+        if (assetItems[1].kind === 'asset') {
+            expect(assetItems[1].accountBalance.assetId).toBe('12345')
+            expect(assetItems[1].usdPrice.toString()).toBe('1')
+        }
+    })
+
+    it('section ordering: account_details → account → assets → asset(s) → rekey header + rekey rows', () => {
+        mocks.useLedgerAccountPreview.mockReturnValue({
+            preview: {
+                address: 'ADDR',
+                algoBalance: new Decimal(1),
+                totalFiatValue: new Decimal(1),
+                assets: [baseAsset, asaAsset],
+                rekey: { kind: 'canSignFor', addresses: ['R1'] },
+            },
+            isLoading: false,
+            isError: false,
+            refetch: vi.fn(),
+        })
+
+        const { result } = renderHook(() =>
+            useLedgerAccountInfoContent('ADDR', 0),
+        )
+
+        const kinds = result.current.items.map(i => i.kind)
+        expect(kinds).toEqual([
+            'sectionHeader', // account_details
+            'account',
+            'sectionHeader', // assets
+            'asset', // ALGO
+            'asset', // USDC
+            'sectionHeader', // can_sign_for
+            'rekeyAddress',
+        ])
+
+        const headers = result.current.items
+            .filter(i => i.kind === 'sectionHeader')
+            .map(i => (i.kind === 'sectionHeader' ? i.title : ''))
+        expect(headers[0]).toBe('ledger.account_info.account_details')
+        expect(headers[1]).toBe('ledger.account_info.assets')
+        expect(headers[2]).toBe('ledger.account_info.can_sign_for')
     })
 })
