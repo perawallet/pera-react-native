@@ -17,11 +17,9 @@ import {
     PWTouchableOpacity,
     PWCheckbox,
     PWChip,
-    PWIcon,
     PWTouchableIcon,
 } from '@components/core'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
-import { useClipboard } from '@hooks/useClipboard'
 import { useLanguage } from '@hooks/useLanguage'
 import LightLedgerAccountIcon from '@assets/icons/accounts/light/ledger-account.svg'
 import { useStyles } from './styles'
@@ -49,11 +47,6 @@ export const LedgerAccountSelectionRow = ({
 }: LedgerAccountSelectionRowProps) => {
     const styles = useStyles({ isImported })
     const { t } = useLanguage()
-    const { copyToClipboard } = useClipboard()
-
-    const handleCopyAddress = useCallback(() => {
-        void copyToClipboard(address)
-    }, [copyToClipboard, address])
 
     const handleInfoPress = useCallback(() => {
         onInfoPress(address, accountIndex)
@@ -80,25 +73,13 @@ export const LedgerAccountSelectionRow = ({
             />
 
             <PWView style={styles.textContainer}>
-                <PWTouchableOpacity
-                    style={styles.addressTouchable}
-                    onPress={handleCopyAddress}
-                    hitSlop={8}
-                    testID={testID ? `${testID}-copy-address` : undefined}
+                <PWText
+                    variant='body'
+                    style={styles.title}
+                    numberOfLines={1}
                 >
-                    <PWText
-                        variant='body'
-                        style={styles.title}
-                        numberOfLines={1}
-                    >
-                        {truncateAlgorandAddress(address)}
-                    </PWText>
-                    <PWIcon
-                        name='copy'
-                        size='sm'
-                        variant='secondary'
-                    />
-                </PWTouchableOpacity>
+                    {truncateAlgorandAddress(address)}
+                </PWText>
                 {variant === 'rekeyed' && (
                     <PWChip
                         title={t('ledger.select_accounts.rekeyed_label')}
