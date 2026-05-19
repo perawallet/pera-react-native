@@ -45,7 +45,7 @@ export const AssetActionButtons = ({
     const { t } = useLanguage()
     const account = useSelectedAccount()
     const { request: requestBottomSheet } = useBottomSheet()
-    const isWatch = !useCanSignWith(account)
+    const isReadOnly = !useCanSignWith(account)
     const { setSelectedAssetId, setCanSelectAsset } = useSendFunds()
     const { copyToClipboard } = useClipboard()
     const { showToast } = useToast()
@@ -108,7 +108,7 @@ export const AssetActionButtons = ({
         }
     }, [account, copyToClipboard, showToast, t])
 
-    if (isWatch) {
+    if (isReadOnly) {
         return (
             <PWView style={styles.container}>
                 <RoundButton

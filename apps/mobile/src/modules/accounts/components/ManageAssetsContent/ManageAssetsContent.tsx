@@ -24,11 +24,11 @@ import { useStyles } from './styles'
 export type ManageAssetsAction = 'sort' | 'filter' | 'remove'
 
 export type ManageAssetsContentProps = {
-    isWatchAccount: boolean
+    isReadOnly: boolean
 }
 
 export const ManageAssetsContent = ({
-    isWatchAccount,
+    isReadOnly,
 }: ManageAssetsContentProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -90,7 +90,7 @@ export const ManageAssetsContent = ({
                     </PWText>
                 </PWTouchableOpacity>
 
-                {!isWatchAccount && (
+                {!isReadOnly && (
                     <PWTouchableOpacity
                         style={styles.menuRow}
                         onPress={() => resolve('remove')}

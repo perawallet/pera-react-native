@@ -37,6 +37,7 @@ vi.mock('../useWalletConnectHandlers', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(() => []),
+    useSigningAccounts: vi.fn(() => []),
 }))
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({

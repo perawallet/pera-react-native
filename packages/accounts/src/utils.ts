@@ -105,28 +105,56 @@ const canSignViaMultisig = (
     })
 
 /**
- * Internal: resolve the account that signs for `account`, or null when nothing
- * in `accounts` can. Shared by `getSignerFor` (address-keyed) and
- * `canSignWith` (account-in-hand) so the single set of rules — rekey hop,
- * multisig participant rule, direct signability — lives in one place.
+ * Tagged resolution of the signer. Use `getSignerFor` / `canSignWith` when
+ * you only need the happy path; use the tagged form to branch on *why*
+ * signing isn't possible.
  */
-const signerForAccount = (
+export type SignerResolution =
+    | { kind: 'ok'; signer: WalletAccount }
+    | { kind: 'accountNotFound' }
+    | { kind: 'watch'; account: WalletAccount }
+    | {
+          kind: 'authMissing'
+          account: WalletAccount
+          authAddress: string
+      }
+    | { kind: 'authIsWatch'; account: WalletAccount; auth: WalletAccount }
+    | {
+          kind: 'authNoLocalParticipant'
+          account: WalletAccount
+          auth: MultiSigAccount
+      }
+    | { kind: 'noLocalParticipant'; account: MultiSigAccount }
+
+/** Account-in-hand counterpart to {@link resolveSignerFor}. */
+export const resolveSignerForAccount = (
     account: WalletAccount,
     accounts: WalletAccount[],
-): WalletAccount | null => {
+): SignerResolution => {
     if (account.rekeyAddress) {
         const auth = accounts.find(a => a.address === account.rekeyAddress)
-        if (!auth) return null
-        if (canSignDirectly(auth)) return auth
-        if (isMultisigAccount(auth) && canSignViaMultisig(auth, accounts)) {
-            return auth
+        if (!auth) {
+            return {
+                kind: 'authMissing',
+                account,
+                authAddress: account.rekeyAddress,
+            }
         }
-        return null
+        if (isMultisigAccount(auth)) {
+            return canSignViaMultisig(auth, accounts)
+                ? { kind: 'ok', signer: auth }
+                : { kind: 'authNoLocalParticipant', account, auth }
+        }
+        if (canSignDirectly(auth)) return { kind: 'ok', signer: auth }
+        return { kind: 'authIsWatch', account, auth }
     }
     if (isMultisigAccount(account)) {
-        return canSignViaMultisig(account, accounts) ? account : null
+        return canSignViaMultisig(account, accounts)
+            ? { kind: 'ok', signer: account }
+            : { kind: 'noLocalParticipant', account }
     }
-    return canSignDirectly(account) ? account : null
+    if (canSignDirectly(account)) return { kind: 'ok', signer: account }
+    return { kind: 'watch', account }
 }
 
 /**
@@ -147,6 +175,18 @@ export const getRekeyAccount = (
 }
 
 /**
+ * Tagged resolution of the signer for `address`. Single-hop only.
+ */
+export const resolveSignerFor = (
+    address: string,
+    accounts: WalletAccount[],
+): SignerResolution => {
+    const account = accounts.find(a => a.address === address)
+    if (!account) return { kind: 'accountNotFound' }
+    return resolveSignerForAccount(account, accounts)
+}
+
+/**
  * Returns the account that will produce signatures for `address` in this
  * wallet. Resolves a single rekey hop and multisig participation.
  *
@@ -158,14 +198,15 @@ export const getRekeyAccount = (
  * - Watch (not rekeyed) → null
  *
  * Single-hop only: cyclic and multi-hop auth chains are not followed.
+ *
+ * Use `resolveSignerFor` when the failure reason matters.
  */
 export const getSignerFor = (
     address: string,
     accounts: WalletAccount[],
 ): WalletAccount | null => {
-    const account = accounts.find(a => a.address === address)
-    if (!account) return null
-    return signerForAccount(account, accounts)
+    const r = resolveSignerFor(address, accounts)
+    return r.kind === 'ok' ? r.signer : null
 }
 
 /**
@@ -176,7 +217,46 @@ export const getSignerFor = (
 export const canSignWith = (
     account: WalletAccount,
     accounts: WalletAccount[],
-): boolean => signerForAccount(account, accounts) !== null
+): boolean => resolveSignerForAccount(account, accounts).kind === 'ok'
+
+/**
+ * True iff the wallet can sign arbitrary data (algo_signData / ARC-60).
+ * Stricter than `canSignWith`: rejects hardware (no raw-byte opcode on the
+ * device) and multisig (no signature shape in the spec). Resolves a single
+ * rekey hop, so the rejection applies to the resolved signer.
+ */
+export const canSignArbitraryData = (
+    account: WalletAccount,
+    accounts: WalletAccount[],
+): boolean => {
+    const r = resolveSignerForAccount(account, accounts)
+    if (r.kind !== 'ok') return false
+    if (isHardwareWalletAccount(r.signer)) return false
+    if (isMultisigAccount(r.signer)) return false
+    return true
+}
+
+/**
+ * True iff `account` is rekeyed and the wallet can't sign for the auth
+ * chain. Distinguishes the "rekeyed but stranded" display state from a pure
+ * `isWatchAccount`.
+ */
+export const isRekeyedUnsignable = (
+    account: WalletAccount,
+    accounts: WalletAccount[],
+): boolean =>
+    !!account.rekeyAddress &&
+    resolveSignerForAccount(account, accounts).kind !== 'ok'
+
+/**
+ * True iff the user can initiate a rekey from `account`. Aliased to
+ * `canSignWith` — the rekey txn itself must be signed by the current auth
+ * chain — but exported under the intent-revealing name.
+ */
+export const canInitiateRekey = (
+    account: WalletAccount,
+    accounts: WalletAccount[],
+): boolean => canSignWith(account, accounts)
 
 export type RekeyTransition = {
     /** Raw type of the rekeyed account itself. */

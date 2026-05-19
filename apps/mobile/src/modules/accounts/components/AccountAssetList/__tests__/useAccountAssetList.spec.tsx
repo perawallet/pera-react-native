@@ -61,8 +61,6 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
             ]),
             isPending: false,
         })),
-        useAccountLogicalType: vi.fn(() => 'Algo25'),
-        isSigningLogicalType: vi.fn(() => true),
         useSortedAssetBalances: vi.fn(() => ({
             sortedBalances: [],
             assetSortMode: 'balanceDesc',

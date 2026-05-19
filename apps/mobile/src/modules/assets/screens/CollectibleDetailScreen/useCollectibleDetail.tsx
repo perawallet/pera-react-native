@@ -52,7 +52,7 @@ type UseCollectibleDetailResult = {
     asset: Optional<PeraAsset>
     collectible: Optional<PeraCollectible>
     isPending: boolean
-    isWatch: boolean
+    isReadOnly: boolean
     traits: CollectibleTrait[]
     media: CollectibleMedia[]
     accountAddress: string
@@ -84,7 +84,7 @@ export const useCollectibleDetail = (
     )
     const account = useSelectedAccount()
     const { network } = useNetwork()
-    const isWatch = !useCanSignWith(account)
+    const isReadOnly = !useCanSignWith(account)
     const { t } = useLanguage()
     const { data: assetBalance } = useAccountAssetBalanceQuery(
         account ?? undefined,
@@ -331,7 +331,7 @@ export const useCollectibleDetail = (
         asset,
         collectible,
         isPending,
-        isWatch,
+        isReadOnly,
         traits,
         media,
         accountAddress,

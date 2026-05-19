@@ -31,7 +31,10 @@ import {
     Networks,
     type Optional,
 } from '@perawallet/wallet-core-shared'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import {
+    useAllAccounts,
+    useSigningAccounts,
+} from '@perawallet/wallet-core-accounts'
 
 const connectors = new Map<string, WalletConnect>()
 
@@ -66,6 +69,7 @@ export const useWalletConnect = (network: Network) => {
     const { addSessionRequest } = useWalletConnectSessionRequests()
     const { handleSignData, handleSignTransaction } = useWalletConnectHandlers()
     const accounts = useAllAccounts()
+    const signingAccounts = useSigningAccounts()
 
     // Refs let the connector's registered event handlers always read the
     // latest values. Without this, network changes don't propagate because
@@ -79,6 +83,8 @@ export const useWalletConnect = (network: Network) => {
     handleSignTransactionRef.current = handleSignTransaction
     const accountsRef = useRef(accounts)
     accountsRef.current = accounts
+    const signingAccountsRef = useRef(signingAccounts)
+    signingAccountsRef.current = signingAccounts
 
     const initWalletConnect = useCallback(() => {
         triggerWCRefresh()
@@ -198,10 +204,12 @@ export const useWalletConnect = (network: Network) => {
                 }
 
                 if (autoConnect) {
+                    // Filter to signable accounts so later requests don't
+                    // fail with an opaque "Invalid signer".
                     approveSession(
                         connector.clientId,
                         payload.params[0],
-                        accountsRef.current.map(a => a.address),
+                        signingAccountsRef.current.map(a => a.address),
                     )
                 } else {
                     addSessionRequest({

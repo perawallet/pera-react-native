@@ -101,6 +101,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         { address: 'addr1', name: 'Account 1', type: 'standard' },
     ]),
     canSignWith: vi.fn(() => true),
+    canSignArbitraryData: vi.fn(() => true),
     getAccountDisplayName: vi.fn((a: any) => a.name || a.address),
     isHardwareWalletAccount: vi.fn(() => false),
 }))

@@ -12,10 +12,14 @@
 
 import { describe, expect, it } from 'vitest'
 import {
+    canInitiateRekey,
+    canSignArbitraryData,
     canSignWith,
     getRekeyAccount,
     getSignerFor,
+    isRekeyedUnsignable,
     rekeyTransitionFor,
+    resolveSignerFor,
 } from '../utils'
 import {
     AccountTypes,
@@ -322,5 +326,193 @@ describe('rekeyTransitionFor', () => {
             from: AccountTypes.algo25,
             to: AccountTypes.algo25,
         })
+    })
+})
+
+describe('resolveSignerFor', () => {
+    it('returns accountNotFound for unknown address', () => {
+        expect(resolveSignerFor('UNKNOWN', [])).toEqual({
+            kind: 'accountNotFound',
+        })
+    })
+
+    it('returns ok for a standard signing account', () => {
+        const a = algo25('A')
+        expect(resolveSignerFor('A', [a])).toEqual({ kind: 'ok', signer: a })
+    })
+
+    it('returns watch for a non-rekeyed watch account', () => {
+        const a = watch('A')
+        expect(resolveSignerFor('A', [a])).toEqual({
+            kind: 'watch',
+            account: a,
+        })
+    })
+
+    it('returns authMissing when rekeyed and auth is not in the wallet', () => {
+        const a = watch('A', 'MISSING')
+        expect(resolveSignerFor('A', [a])).toEqual({
+            kind: 'authMissing',
+            account: a,
+            authAddress: 'MISSING',
+        })
+    })
+
+    it('returns authIsWatch when rekeyed to a watch account', () => {
+        const auth = watch('S')
+        const a = watch('A', 'S')
+        expect(resolveSignerFor('A', [a, auth])).toEqual({
+            kind: 'authIsWatch',
+            account: a,
+            auth,
+        })
+    })
+
+    it('returns authNoLocalParticipant when rekeyed to an unsignable multisig', () => {
+        const ms = multisig('M', ['P1', 'P2'])
+        const a = watch('A', 'M')
+        expect(resolveSignerFor('A', [a, ms])).toEqual({
+            kind: 'authNoLocalParticipant',
+            account: a,
+            auth: ms,
+        })
+    })
+
+    it('returns ok when rekeyed to a signable multisig', () => {
+        const participant = algo25('P1')
+        const ms = multisig('M', ['P1', 'P2'])
+        const a = watch('A', 'M')
+        expect(resolveSignerFor('A', [a, ms, participant])).toEqual({
+            kind: 'ok',
+            signer: ms,
+        })
+    })
+
+    it('returns noLocalParticipant for a multisig with no local signers', () => {
+        const ms = multisig('M', ['P1', 'P2'])
+        expect(resolveSignerFor('M', [ms])).toEqual({
+            kind: 'noLocalParticipant',
+            account: ms,
+        })
+    })
+})
+
+describe('canSignArbitraryData', () => {
+    it('returns true for a standard algo25', () => {
+        const a = algo25('A')
+        expect(canSignArbitraryData(a, [a])).toBe(true)
+    })
+
+    it('returns true for an HD wallet account', () => {
+        const a = hdWallet('A')
+        expect(canSignArbitraryData(a, [a])).toBe(true)
+    })
+
+    it('returns false for a hardware wallet — Ledger has no raw-byte opcode', () => {
+        const a = hardware('A')
+        expect(canSignArbitraryData(a, [a])).toBe(false)
+    })
+
+    it('returns false for a multisig — no multisig signature shape for raw data', () => {
+        const participant = algo25('P1')
+        const ms = multisig('M', ['P1', 'P2'])
+        expect(canSignArbitraryData(ms, [ms, participant])).toBe(false)
+    })
+
+    it('returns false for watch accounts', () => {
+        const a = watch('A')
+        expect(canSignArbitraryData(a, [a])).toBe(false)
+    })
+
+    it('returns true when rekeyed to a software signer', () => {
+        const auth = algo25('S')
+        const a = watch('A', 'S')
+        expect(canSignArbitraryData(a, [a, auth])).toBe(true)
+    })
+
+    it('returns false when rekeyed to a hardware signer', () => {
+        // Software account rekeyed to a Ledger — the actual signer is the
+        // hardware, so arbitrary-data signing is unavailable.
+        const auth = hardware('S')
+        const a: WalletAccount = { ...algo25('A'), rekeyAddress: 'S' }
+        expect(canSignArbitraryData(a, [a, auth])).toBe(false)
+    })
+
+    it('returns false when rekeyed to a multisig', () => {
+        const participant = algo25('P1')
+        const ms = multisig('M', ['P1', 'P2'])
+        const a = watch('A', 'M')
+        expect(canSignArbitraryData(a, [a, ms, participant])).toBe(false)
+    })
+
+    it('returns false when rekeyed but auth is missing locally', () => {
+        const a = watch('A', 'MISSING')
+        expect(canSignArbitraryData(a, [a])).toBe(false)
+    })
+})
+
+describe('isRekeyedUnsignable', () => {
+    it('returns false for non-rekeyed accounts', () => {
+        const a = algo25('A')
+        expect(isRekeyedUnsignable(a, [a])).toBe(false)
+    })
+
+    it('returns false for non-rekeyed watch accounts', () => {
+        // A pure watch is NOT rekeyed-unsignable. UI should use
+        // isWatchAccount for that case.
+        const a = watch('A')
+        expect(isRekeyedUnsignable(a, [a])).toBe(false)
+    })
+
+    it('returns true when rekeyed and auth is missing locally', () => {
+        const a = watch('A', 'MISSING')
+        expect(isRekeyedUnsignable(a, [a])).toBe(true)
+    })
+
+    it('returns true when rekeyed to a watch', () => {
+        const auth = watch('S')
+        const a = watch('A', 'S')
+        expect(isRekeyedUnsignable(a, [a, auth])).toBe(true)
+    })
+
+    it('returns true when rekeyed to an unsignable multisig', () => {
+        const ms = multisig('M', ['P1', 'P2'])
+        const a = watch('A', 'M')
+        expect(isRekeyedUnsignable(a, [a, ms])).toBe(true)
+    })
+
+    it('returns false when rekeyed to a signable account', () => {
+        const auth = algo25('S')
+        const a = watch('A', 'S')
+        expect(isRekeyedUnsignable(a, [a, auth])).toBe(false)
+    })
+})
+
+describe('canInitiateRekey', () => {
+    it('matches canSignWith — same condition under a clearer name', () => {
+        const auth = algo25('S')
+        const a = watch('A', 'S')
+        const accounts: WalletAccount[] = [a, auth]
+        expect(canInitiateRekey(a, accounts)).toBe(canSignWith(a, accounts))
+        expect(canInitiateRekey(auth, accounts)).toBe(
+            canSignWith(auth, accounts),
+        )
+    })
+
+    it('returns true for an already-rekeyed account whose auth we hold', () => {
+        // The re-rekey would be signed by the existing auth chain.
+        const auth = algo25('S')
+        const a = watch('A', 'S')
+        expect(canInitiateRekey(a, [a, auth])).toBe(true)
+    })
+
+    it('returns false for a stranded rekey (auth missing)', () => {
+        const a = watch('A', 'MISSING')
+        expect(canInitiateRekey(a, [a])).toBe(false)
+    })
+
+    it('returns false for a pure watch account', () => {
+        const a = watch('A')
+        expect(canInitiateRekey(a, [a])).toBe(false)
     })
 })

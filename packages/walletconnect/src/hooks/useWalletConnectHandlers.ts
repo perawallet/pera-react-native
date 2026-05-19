@@ -51,8 +51,7 @@ import {
 import { MAX_DATA_SIGN_REQUESTS } from '../constants'
 import { arc60PayloadSchema } from '../schema'
 import {
-    canSignWith,
-    isHardwareWalletAccount,
+    canSignArbitraryData,
     useAllAccounts,
     useSigningAccounts,
     WalletAccount,
@@ -145,13 +144,9 @@ const validateDataSignRequest = (
         const account = accounts.find(
             account => account.address === item.signer,
         )
-        if (!account || !canSignWith(account, accounts)) {
-            throw new WalletConnectInvalidSessionError('Invalid signer')
-        }
-
-        if (isHardwareWalletAccount(account)) {
+        if (!account || !canSignArbitraryData(account, accounts)) {
             throw new WalletConnectInvalidSessionError(
-                'Hardware wallet accounts are not supported',
+                'Signer cannot sign arbitrary data',
             )
         }
 
@@ -209,12 +204,9 @@ const validateArc60Request = (
         throw new WalletConnectInvalidSessionError('Invalid signer')
     }
     const account = accounts.find(a => a.address === signer)
-    if (!account || !canSignWith(account, accounts)) {
-        throw new WalletConnectInvalidSessionError('Invalid signer')
-    }
-    if (isHardwareWalletAccount(account)) {
+    if (!account || !canSignArbitraryData(account, accounts)) {
         throw new WalletConnectInvalidSessionError(
-            'Hardware wallet accounts are not supported',
+            'Signer cannot sign ARC-60 payloads',
         )
     }
 

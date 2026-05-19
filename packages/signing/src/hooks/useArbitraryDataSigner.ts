@@ -10,13 +10,14 @@
  limitations under the License
  */
 
-import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import { useKMS } from '@perawallet/wallet-core-kms'
-import { useCallback } from 'react'
 import {
     isAlgo25Account,
     isHDWalletAccount,
+    resolveSignerForAccount,
+    useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
+import { useKMS } from '@perawallet/wallet-core-kms'
+import { useCallback } from 'react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { decodeFromBase64, concatBytes } from '@perawallet/wallet-core-shared'
 import { SIGNING_KEY_DOMAIN } from '../constants'
@@ -32,37 +33,30 @@ export const useArbitraryDataSigner = () => {
             account: WalletAccount,
             data: string | string[],
         ): Promise<Uint8Array[]> => {
-            if (account.rekeyAddress) {
-                const rekeyedAccount =
-                    accounts.find(a => a.address === account.rekeyAddress) ??
-                    null
-                if (!rekeyedAccount) {
-                    return Promise.reject(
-                        `No rekeyed account found for ${account.rekeyAddress}`,
-                    )
-                }
-                return signArbitraryData(rekeyedAccount, data)
-            }
-
-            if (!isHDWalletAccount(account) && !isAlgo25Account(account)) {
+            const resolution = resolveSignerForAccount(account, accounts)
+            if (resolution.kind !== 'ok') {
                 return Promise.reject(
-                    `Unsupported account type ${account.type} for ${account.address}`,
+                    new Error(
+                        `Cannot sign arbitrary data for ${account.address}: ${resolution.kind}`,
+                    ),
+                )
+            }
+            const signer = resolution.signer
+
+            if (!isHDWalletAccount(signer) && !isAlgo25Account(signer)) {
+                return Promise.reject(
+                    new Error(
+                        `Unsupported signer type ${signer.type} for ${account.address}`,
+                    ),
                 )
             }
 
-            // Match the legacy algo_signData spec: dApps verify the
-            // signature against `MX || data`. Both account types share
-            // this prefix and route through the same `keyStore.sign`
-            // dispatch on the child key.
+            // Legacy algo_signData: dApps verify against `MX || data`.
             const toSign = [data]
                 .flat()
                 .map(item => concatBytes(MX_PREFIX, decodeFromBase64(item)))
 
-            return signDataWithKey(
-                account.keyPairId,
-                SIGNING_KEY_DOMAIN,
-                toSign,
-            )
+            return signDataWithKey(signer.keyPairId, SIGNING_KEY_DOMAIN, toSign)
         },
         [accounts, signDataWithKey],
     )

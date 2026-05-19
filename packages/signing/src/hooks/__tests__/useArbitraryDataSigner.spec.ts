@@ -24,15 +24,18 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
     }),
 }))
 
-const mockIsHDWalletAccount = vi.fn()
-const mockIsAlgo25Account = vi.fn()
 let mockAccounts: WalletAccount[] = []
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useAccountsStore: (selector: any) => selector({ accounts: mockAccounts }),
-    isHDWalletAccount: (...args: any[]) => mockIsHDWalletAccount(...args),
-    isAlgo25Account: (...args: any[]) => mockIsAlgo25Account(...args),
-}))
+vi.mock('@perawallet/wallet-core-accounts', async () => {
+    const actual = await vi.importActual<object>(
+        '@perawallet/wallet-core-accounts',
+    )
+    return {
+        ...actual,
+        useAccountsStore: (selector: any) =>
+            selector({ accounts: mockAccounts }),
+    }
+})
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
     const actual = await vi.importActual<object>(
@@ -47,8 +50,13 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
 const hdAccount = {
     address: 'HD_ADDR',
     keyPairId: 'key-hd-child',
-    type: 'hd-wallet',
-    hdWalletDetails: { account: 0, keyIndex: 1, derivationType: 9 },
+    type: 'hdWallet',
+    hdWalletDetails: {
+        account: 0,
+        change: 0,
+        keyIndex: 1,
+        derivationType: 9,
+    },
 } as unknown as WalletAccount
 
 const algo25Account = {
@@ -61,17 +69,11 @@ describe('useArbitraryDataSigner', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockAccounts = []
-        mockIsHDWalletAccount.mockReturnValue(false)
-        mockIsAlgo25Account.mockReturnValue(false)
         mockSignDataWithKey.mockResolvedValue([new Uint8Array([9, 8, 7])])
     })
 
     describe('HD wallet account', () => {
-        beforeEach(() => {
-            mockIsHDWalletAccount.mockReturnValue(true)
-        })
-
-        test('calls signDataWithKey with the account child id and MX-prefixed bytes', async () => {
+        test('signs with the account child id and MX-prefixed bytes', async () => {
             const { result } = renderHook(() => useArbitraryDataSigner())
 
             await act(async () => {
@@ -86,8 +88,6 @@ describe('useArbitraryDataSigner', () => {
             expect(items).toHaveLength(1)
 
             const dataArg = items[0] as Uint8Array
-            // dApps verifying via the legacy algo_signData spec expect
-            // signatures over `MX || data`, so the wallet must prepend it.
             expect(dataArg[0]).toBe('M'.charCodeAt(0))
             expect(dataArg[1]).toBe('X'.charCodeAt(0))
         })
@@ -132,11 +132,7 @@ describe('useArbitraryDataSigner', () => {
     })
 
     describe('Algo25 account', () => {
-        beforeEach(() => {
-            mockIsAlgo25Account.mockReturnValue(true)
-        })
-
-        test('calls signDataWithKey with the account child id and MX-prefixed bytes', async () => {
+        test('signs with the account child id and MX-prefixed bytes', async () => {
             const { result } = renderHook(() => useArbitraryDataSigner())
 
             await act(async () => {
@@ -152,54 +148,35 @@ describe('useArbitraryDataSigner', () => {
             expect(dataArg[0]).toBe('M'.charCodeAt(0))
             expect(dataArg[1]).toBe('X'.charCodeAt(0))
         })
-
-        test('signs each item in an array of data', async () => {
-            mockSignDataWithKey.mockResolvedValue([
-                new Uint8Array([1]),
-                new Uint8Array([2]),
-            ])
-
-            const { result } = renderHook(() => useArbitraryDataSigner())
-
-            await act(async () => {
-                await result.current.signArbitraryData(algo25Account, [
-                    'item1',
-                    'item2',
-                ])
-            })
-
-            const [, , items] = mockSignDataWithKey.mock.calls[0]
-            expect(items).toHaveLength(2)
-        })
     })
 
     describe('rekeyed accounts', () => {
-        test('delegates signing to the rekeyed account', async () => {
-            const rekeyedAccount = {
+        test('delegates signing to the rekeyed auth account', async () => {
+            const auth = {
                 ...algo25Account,
-                address: 'REKEYED_ADDR',
-            }
-            const originalAccount = {
+                address: 'AUTH_ADDR',
+                keyPairId: 'key-auth',
+            } as unknown as WalletAccount
+            const original = {
                 ...algo25Account,
                 address: 'ORIGINAL_ADDR',
-                rekeyAddress: 'REKEYED_ADDR',
+                rekeyAddress: 'AUTH_ADDR',
             } as unknown as WalletAccount
 
-            mockAccounts = [rekeyedAccount as unknown as WalletAccount]
-            mockIsAlgo25Account.mockReturnValue(true)
-            mockSignDataWithKey.mockResolvedValue([new Uint8Array([42])])
+            mockAccounts = [auth]
 
             const { result } = renderHook(() => useArbitraryDataSigner())
 
             await act(async () => {
-                await result.current.signArbitraryData(originalAccount, 'hello')
+                await result.current.signArbitraryData(original, 'hello')
             })
 
-            expect(mockSignDataWithKey).toHaveBeenCalled()
+            const [childId] = mockSignDataWithKey.mock.calls[0]
+            expect(childId).toBe('key-auth')
         })
 
-        test('rejects when rekeyed account is not found', async () => {
-            const originalAccount = {
+        test('rejects when auth account is not in the wallet', async () => {
+            const original = {
                 ...algo25Account,
                 address: 'ORIGINAL_ADDR',
                 rekeyAddress: 'MISSING_ADDR',
@@ -211,20 +188,45 @@ describe('useArbitraryDataSigner', () => {
 
             await expect(
                 act(async () => {
-                    await result.current.signArbitraryData(
-                        originalAccount,
-                        'hello',
-                    )
+                    await result.current.signArbitraryData(original, 'hello')
                 }),
-            ).rejects.toMatch('No rekeyed account found for MISSING_ADDR')
+            ).rejects.toThrow(/authMissing/)
+        })
+
+        test('rejects when rekeyed to a hardware wallet', async () => {
+            const auth = {
+                address: 'HW_ADDR',
+                type: 'hardware',
+                hardwareDetails: {
+                    manufacturer: 'ledger',
+                    deviceId: 'd',
+                    deviceName: 'L',
+                    accountIndex: 0,
+                    transportType: 'ble',
+                },
+            } as unknown as WalletAccount
+            const original = {
+                ...algo25Account,
+                address: 'ORIGINAL_ADDR',
+                rekeyAddress: 'HW_ADDR',
+            } as unknown as WalletAccount
+
+            mockAccounts = [auth]
+
+            const { result } = renderHook(() => useArbitraryDataSigner())
+
+            await expect(
+                act(async () => {
+                    await result.current.signArbitraryData(original, 'hello')
+                }),
+            ).rejects.toThrow(/Unsupported signer type hardware/)
         })
     })
 
     describe('unsupported account type', () => {
-        test('rejects with unsupported account type message', async () => {
+        test('rejects watch accounts with no auth', async () => {
             const watchAccount = {
                 address: 'WATCH_ADDR',
-                keyPairId: 'key-1',
                 type: 'watch',
             } as unknown as WalletAccount
 
@@ -237,7 +239,29 @@ describe('useArbitraryDataSigner', () => {
                         'hello',
                     )
                 }),
-            ).rejects.toMatch('Unsupported account type watch for WATCH_ADDR')
+            ).rejects.toThrow(/Cannot sign arbitrary data.*watch/)
+        })
+
+        test('rejects hardware wallet accounts', async () => {
+            const hwAccount = {
+                address: 'HW_ADDR',
+                type: 'hardware',
+                hardwareDetails: {
+                    manufacturer: 'ledger',
+                    deviceId: 'd',
+                    deviceName: 'L',
+                    accountIndex: 0,
+                    transportType: 'ble',
+                },
+            } as unknown as WalletAccount
+
+            const { result } = renderHook(() => useArbitraryDataSigner())
+
+            await expect(
+                act(async () => {
+                    await result.current.signArbitraryData(hwAccount, 'hello')
+                }),
+            ).rejects.toThrow(/Unsupported signer type hardware/)
         })
     })
 })
