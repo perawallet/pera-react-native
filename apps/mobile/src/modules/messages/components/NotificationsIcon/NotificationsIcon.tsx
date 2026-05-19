@@ -24,7 +24,7 @@ const MAX_INBOX_COUNT_DISPLAY = 9
 
 export const NotificationsIcon = (props: NotificationsIconProps) => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
-    const { hasUnreadInboxItems, hasUnreadNotifications } = useInboxStatus()
+    const { hasUnreadNotifications } = useInboxStatus()
     const { data: inboxData } = useInboxQuery()
     // Spot banners live on the Messages screen above the tabs, so any
     // outstanding spot banner is also an "unread" signal the icon should
