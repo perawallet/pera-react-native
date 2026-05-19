@@ -26,7 +26,7 @@ export const useStyles = makeStyles(theme => ({
         backgroundColor: theme.colors.dappBidali,
     },
     contentSection: {
-        flex: 1,
+        flexGrow: 1,
         paddingHorizontal: theme.spacing.xl,
         paddingTop: theme.spacing['3xl'],
         gap: theme.spacing.lg,
@@ -36,6 +36,7 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textGray,
     },
     footer: {
+        marginTop: theme.spacing.md,
         paddingHorizontal: theme.spacing.xl,
         paddingBottom: theme.spacing['3xl'],
         backgroundColor: theme.colors.background,
