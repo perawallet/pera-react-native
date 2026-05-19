@@ -26,9 +26,12 @@ type UseLedgerRekeyedScanResult = {
 
 /**
  * For each discovered Ledger (derived) account, scans the indexer for accounts
- * rekeyed to it (reusing the cached `rekeyed-addresses` query warmed by
- * `prefetchLedgerAccountPreview`) and returns them as `rekeyed` selectables.
- * Best-effort: a failed/empty scan yields no rows for that address.
+ * rekeyed to it and returns them as `rekeyed` selectables.
+ *
+ * Shares the `rekeyed-addresses` query key with `prefetchLedgerAccountPreview`,
+ * so a prior prefetch supplies an immediate (non-empty) first value; with
+ * `staleTime: 0` the query still refetches in the background to keep rekey
+ * data fresh. Best-effort: a failed/empty scan yields no rows for that address.
  */
 export const useLedgerRekeyedScan = (
     derivedAccounts: HardwareWalletDerivedAccount[],

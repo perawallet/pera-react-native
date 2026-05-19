@@ -61,8 +61,13 @@ describe('useRekeyedAddressesQuery', () => {
             wrapper: createWrapper(),
         })
 
-        await waitFor(() => expect(result.current.isSuccess).toBe(true))
-        expect(result.current.data).toEqual(['REKEYED1', 'REKEYED2'])
+        await waitFor(() =>
+            expect(result.current.rekeyedAddresses).toEqual([
+                'REKEYED1',
+                'REKEYED2',
+            ]),
+        )
+        expect(result.current.isError).toBe(false)
         expect(mocks.fetchRekeyedAddresses).toHaveBeenCalledWith('ADDR')
     })
 
@@ -71,7 +76,8 @@ describe('useRekeyedAddressesQuery', () => {
             wrapper: createWrapper(),
         })
 
-        expect(result.current.fetchStatus).toBe('idle')
+        expect(result.current.rekeyedAddresses).toBeUndefined()
+        expect(result.current.isLoading).toBe(false)
         expect(mocks.fetchRekeyedAddresses).not.toHaveBeenCalled()
     })
 })

@@ -111,15 +111,23 @@ describe('Flow: Ledger imported account row checkbox', () => {
                 },
             )
 
-            await waitFor(
+            const checkbox = await waitFor(
                 () =>
-                    expect(
-                        screen.getByTestId(
-                            `ledger_select_row_${LEDGER_ADDRESS}-checkbox`,
-                        ),
-                    ).toBeTruthy(),
+                    screen.getByTestId(
+                        `ledger_select_row_${LEDGER_ADDRESS}-checkbox`,
+                    ),
                 { timeout: 10000 },
             )
+
+            // The "already imported" chip renders under the same `isImported`
+            // flag that forces the checkbox to checked + disabled in
+            // LedgerAccountSelectionRow, so its presence is the faithful
+            // assertion of this scenario. (Integration tests run without
+            // i18n, so the chip renders the raw key.)
+            expect(checkbox).not.toBeNull()
+            expect(
+                screen.queryByText('ledger.select_accounts.already_imported'),
+            ).not.toBeNull()
         },
         SLOW_TEST_TIMEOUT_MS,
     )

@@ -149,6 +149,13 @@ const buildAccount = (
     accountIndex,
 })
 
+// The hook no longer exposes the raw derived list; `selectableAccounts` is the
+// canonical surface. This narrows it back to the derived accounts for assertions.
+const derivedAccounts = (
+    r: ReturnType<typeof useLedgerSelectAccountsScreen>,
+): HardwareWalletDerivedAccount[] =>
+    r.selectableAccounts.flatMap(s => (s.kind === 'derived' ? [s.account] : []))
+
 describe('useLedgerSelectAccountsScreen', () => {
     beforeEach(() => {
         mockNavigate.mockReset()
@@ -167,12 +174,13 @@ describe('useLedgerSelectAccountsScreen', () => {
         mockRekeyedScan.mockReturnValue({ rekeyed: [], isScanning: false })
     })
 
-    it('exposes the route accounts unchanged on initial render', () => {
+    it('reflects the route accounts as derived selectables on initial render', () => {
         const { result } = renderHook(() => useLedgerSelectAccountsScreen())
 
-        expect(result.current.accounts).toHaveLength(2)
-        expect(result.current.accounts[0].accountIndex).toBe(0)
-        expect(result.current.accounts[1].accountIndex).toBe(1)
+        const derived = derivedAccounts(result.current)
+        expect(derived).toHaveLength(2)
+        expect(derived[0].accountIndex).toBe(0)
+        expect(derived[1].accountIndex).toBe(1)
         expect(result.current.isFetchingMore).toBe(false)
     })
 
@@ -189,8 +197,9 @@ describe('useLedgerSelectAccountsScreen', () => {
         expect(mockConnect).toHaveBeenCalledWith('device-1')
         expect(mockGetAddress).toHaveBeenCalledTimes(1)
         expect(mockGetAddress).toHaveBeenCalledWith(2, false)
-        expect(result.current.accounts).toHaveLength(3)
-        expect(result.current.accounts[2]).toEqual({
+        const derived = derivedAccounts(result.current)
+        expect(derived).toHaveLength(3)
+        expect(derived[2]).toEqual({
             address: 'CCC333',
             publicKey: new Uint8Array([2]),
             accountIndex: 2,
@@ -215,8 +224,9 @@ describe('useLedgerSelectAccountsScreen', () => {
         expect(mockConnect).toHaveBeenCalledTimes(1)
         expect(mockGetAddress).toHaveBeenNthCalledWith(1, 2, false)
         expect(mockGetAddress).toHaveBeenNthCalledWith(2, 3, false)
-        expect(result.current.accounts).toHaveLength(4)
-        expect(result.current.accounts[3].accountIndex).toBe(3)
+        const derived = derivedAccounts(result.current)
+        expect(derived).toHaveLength(4)
+        expect(derived[3].accountIndex).toBe(3)
     })
 
     it('is a no-op while a fetch is in flight', async () => {
@@ -266,7 +276,7 @@ describe('useLedgerSelectAccountsScreen', () => {
         })
 
         expect(mockErrorToast).toHaveBeenCalledTimes(1)
-        expect(result.current.accounts).toHaveLength(2)
+        expect(derivedAccounts(result.current)).toHaveLength(2)
         expect(result.current.isFetchingMore).toBe(false)
     })
 
@@ -280,7 +290,7 @@ describe('useLedgerSelectAccountsScreen', () => {
         })
 
         expect(mockErrorToast).toHaveBeenCalledTimes(1)
-        expect(result.current.accounts).toHaveLength(2)
+        expect(derivedAccounts(result.current)).toHaveLength(2)
         expect(result.current.isFetchingMore).toBe(false)
     })
 
@@ -389,6 +399,64 @@ describe('useLedgerSelectAccountsScreen', () => {
                 'mainnet',
             )
         })
+    })
+
+    it('prefetches discovered rekeyed addresses', async () => {
+        mockRekeyedScan.mockReturnValue({
+            rekeyed: [
+                {
+                    kind: 'rekeyed',
+                    address: 'REKEYED_A',
+                    authAccount: {
+                        address: 'AAA111',
+                        publicKey: new Uint8Array([1]),
+                        accountIndex: 0,
+                    },
+                },
+            ],
+            isScanning: false,
+        })
+
+        renderHook(() => useLedgerSelectAccountsScreen())
+
+        await waitFor(() => {
+            expect(mockPrefetch).toHaveBeenCalledWith(
+                mockQueryClient,
+                expect.anything(),
+                'REKEYED_A',
+                'mainnet',
+            )
+        })
+    })
+
+    it('does not re-prefetch already-prefetched accounts when the list grows', async () => {
+        mockGetAddress.mockResolvedValueOnce(buildAccount(2, 'CCC333'))
+        const { result } = renderHook(() => useLedgerSelectAccountsScreen())
+
+        await waitFor(() => {
+            expect(mockPrefetch).toHaveBeenCalledWith(
+                mockQueryClient,
+                expect.anything(),
+                'AAA111',
+                'mainnet',
+            )
+        })
+
+        await act(async () => {
+            await result.current.handleFindAnother()
+        })
+
+        await waitFor(() => {
+            expect(mockPrefetch).toHaveBeenCalledWith(
+                mockQueryClient,
+                expect.anything(),
+                'CCC333',
+                'mainnet',
+            )
+        })
+
+        const aaaCalls = mockPrefetch.mock.calls.filter(c => c[2] === 'AAA111')
+        expect(aaaCalls).toHaveLength(1)
     })
 
     it('opens the info bottom sheet with address and accountIndex', () => {

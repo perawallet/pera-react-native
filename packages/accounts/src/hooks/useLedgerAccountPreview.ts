@@ -102,10 +102,10 @@ export const useLedgerAccountPreview = (
             rekey = { kind: 'rekeyedTo', authAddress }
         } else if (
             !rekeyed.isError &&
-            rekeyed.data &&
-            rekeyed.data.length > 0
+            rekeyed.rekeyedAddresses &&
+            rekeyed.rekeyedAddresses.length > 0
         ) {
-            rekey = { kind: 'canSignFor', addresses: rekeyed.data }
+            rekey = { kind: 'canSignFor', addresses: rekeyed.rekeyedAddresses }
         }
 
         return {
@@ -120,7 +120,7 @@ export const useLedgerAccountPreview = (
         onChain.data,
         assets,
         prices,
-        rekeyed.data,
+        rekeyed.rekeyedAddresses,
         rekeyed.isError,
         usdToPreferred,
     ])

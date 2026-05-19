@@ -15,7 +15,9 @@ import { mapOnChainAccountInformation } from '../mappers'
 import type { OnChainAccountInformationResponse } from '../endpoints'
 
 const buildResponse = (
-    overrides: Partial<OnChainAccountInformationResponse> = {},
+    overrides: Partial<OnChainAccountInformationResponse> & {
+        authAddr?: { toString(): string }
+    } = {},
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): OnChainAccountInformationResponse =>
     ({
@@ -78,7 +80,7 @@ describe('mapOnChainAccountInformation', () => {
         const mapped = mapOnChainAccountInformation(
             buildResponse({
                 authAddr: { toString: () => 'AUTHADDR' },
-            } as any),
+            }),
         )
 
         expect(mapped.authAddress).toBe('AUTHADDR')

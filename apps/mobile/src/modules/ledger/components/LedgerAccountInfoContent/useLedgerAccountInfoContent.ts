@@ -124,7 +124,14 @@ export const useLedgerAccountInfoContent = (
                     accountBalance: {
                         assetId: asset.assetId,
                         amount: asset.amount,
-                        algoValue: new Decimal(0),
+                        // Holding value in ALGOs (display units):
+                        // amount * usdPrice / algoUsdPrice. Falls back to 0
+                        // when the ALGO USD price is unknown (avoids /0).
+                        algoValue: algoUsdPrice.isZero()
+                            ? new Decimal(0)
+                            : asset.amount
+                                  .times(asset.usdPrice)
+                                  .div(algoUsdPrice),
                     } satisfies AssetWithAccountBalance,
                     usdPrice: asset.usdPrice,
                 }),

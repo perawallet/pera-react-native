@@ -45,7 +45,6 @@ type LedgerSelectAccountsRouteProp = RouteProp<
 >
 
 type UseLedgerSelectAccountsScreenResult = {
-    accounts: LedgerAccount[]
     selectableAccounts: LedgerSelectableAccount[]
     isScanning: boolean
     selectedAddresses: Set<string>
@@ -92,6 +91,9 @@ export const useLedgerSelectAccountsScreen =
         const inFlightRef = useRef(false)
         const isMountedRef = useRef(true)
         const accountsRef = useRef<LedgerAccount[]>(routeAccounts)
+        // Network-scoped set of addresses already warmed, so growing the
+        // list (Find another / rekeyed scan) only prefetches new addresses.
+        const prefetchedRef = useRef<Set<string>>(new Set())
 
         useEffect(() => {
             isMountedRef.current = true
@@ -111,17 +113,6 @@ export const useLedgerSelectAccountsScreen =
             }
         }, [])
 
-        useEffect(() => {
-            accounts.forEach(acc => {
-                void prefetchLedgerAccountPreview(
-                    queryClient,
-                    algokit,
-                    acc.address,
-                    network,
-                )
-            })
-        }, [accounts, queryClient, algokit, network])
-
         const { rekeyed, isScanning } = useLedgerRekeyedScan(accounts)
 
         const selectableAccounts = useMemo<LedgerSelectableAccount[]>(
@@ -136,6 +127,24 @@ export const useLedgerSelectAccountsScreen =
             ],
             [accounts, rekeyed],
         )
+
+        useEffect(() => {
+            for (const selectable of selectableAccounts) {
+                const address =
+                    selectable.kind === 'derived'
+                        ? selectable.account.address
+                        : selectable.address
+                const key = `${network}:${address}`
+                if (prefetchedRef.current.has(key)) continue
+                prefetchedRef.current.add(key)
+                void prefetchLedgerAccountPreview(
+                    queryClient,
+                    algokit,
+                    address,
+                    network,
+                )
+            }
+        }, [selectableAccounts, queryClient, algokit, network])
 
         const selectableByAddress = useMemo(() => {
             const m = new Map<string, LedgerSelectableAccount>()
@@ -311,7 +320,6 @@ export const useLedgerSelectAccountsScreen =
             !isFetchingMore && (areAllImported || selectedAddresses.size > 0)
 
         return {
-            accounts,
             selectableAccounts,
             isScanning,
             selectedAddresses,

@@ -58,7 +58,7 @@ beforeEach(() => {
         isPending: false,
     })
     mocks.useRekeyedAddressesQuery.mockReturnValue({
-        data: [],
+        rekeyedAddresses: [],
         isLoading: false,
         isError: false,
     })
@@ -198,7 +198,7 @@ describe('useLedgerAccountPreview', () => {
             refetch: vi.fn(),
         })
         mocks.useRekeyedAddressesQuery.mockReturnValue({
-            data: ['SOMEONE'],
+            rekeyedAddresses: ['SOMEONE'],
             isLoading: false,
             isError: false,
         })
@@ -226,7 +226,7 @@ describe('useLedgerAccountPreview', () => {
             refetch: vi.fn(),
         })
         mocks.useRekeyedAddressesQuery.mockReturnValue({
-            data: ['R1', 'R2'],
+            rekeyedAddresses: ['R1', 'R2'],
             isLoading: false,
             isError: false,
         })
@@ -298,7 +298,7 @@ describe('useLedgerAccountPreview', () => {
             refetch: vi.fn(),
         })
         mocks.useRekeyedAddressesQuery.mockReturnValue({
-            data: undefined,
+            rekeyedAddresses: undefined,
             isLoading: false,
             isError: true,
         })

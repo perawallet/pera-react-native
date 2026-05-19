@@ -15,13 +15,32 @@ import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { fetchRekeyedAddresses } from '../account-discovery'
 import { getRekeyedAddressesQueryKey } from './querykeys'
 
-export const useRekeyedAddressesQuery = (address: string) => {
+type UseRekeyedAddressesQueryResult = {
+    /** Addresses rekeyed to `address`; `undefined` until the query resolves */
+    rekeyedAddresses: string[] | undefined
+    isLoading: boolean
+    isError: boolean
+    refetch: () => void
+}
+
+export const useRekeyedAddressesQuery = (
+    address: string,
+): UseRekeyedAddressesQueryResult => {
     const { network } = useNetwork()
 
-    return useQuery({
+    const query = useQuery({
         queryKey: getRekeyedAddressesQueryKey(address, network),
         queryFn: () => fetchRekeyedAddresses(address),
         enabled: !!address,
         staleTime: 0,
     })
+
+    return {
+        rekeyedAddresses: query.data,
+        isLoading: query.isLoading,
+        isError: query.isError,
+        refetch: () => {
+            void query.refetch()
+        },
+    }
 }

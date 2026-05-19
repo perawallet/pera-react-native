@@ -314,11 +314,40 @@ describe('useLedgerAccountInfoContent', () => {
             expect(assetItems[0].accountBalance.amount.toString()).toBe('5')
             expect(assetItems[0].usdPrice).toBeInstanceOf(Decimal)
             expect(assetItems[0].usdPrice.toString()).toBe('2')
+            // ALGO holding: its ALGO value is the amount itself (5 * 2 / 2).
+            expect(assetItems[0].accountBalance.algoValue.toString()).toBe('5')
         }
 
         if (assetItems[1].kind === 'asset') {
             expect(assetItems[1].accountBalance.assetId).toBe('12345')
             expect(assetItems[1].usdPrice.toString()).toBe('1')
+            // USDC holding value in ALGO = amount * usdPrice / algoUsdPrice
+            //                            = 100 * 1 / 2 = 50.
+            expect(assetItems[1].accountBalance.algoValue.toString()).toBe('50')
+        }
+    })
+
+    it('falls back to a zero algoValue when the ALGO USD price is unknown', () => {
+        mocks.useLedgerAccountPreview.mockReturnValue({
+            preview: {
+                address: 'ADDR',
+                algoBalance: new Decimal(5),
+                totalFiatValue: new Decimal(0),
+                assets: [{ ...baseAsset, usdPrice: new Decimal(0) }, asaAsset],
+                rekey: { kind: 'none' },
+            },
+            isLoading: false,
+            isError: false,
+            refetch: vi.fn(),
+        })
+
+        const { result } = renderHook(() =>
+            useLedgerAccountInfoContent('ADDR', 0),
+        )
+
+        const assetItems = result.current.items.filter(i => i.kind === 'asset')
+        if (assetItems[1].kind === 'asset') {
+            expect(assetItems[1].accountBalance.algoValue.toString()).toBe('0')
         }
     })
 
