@@ -1,6 +1,6 @@
 ---
 name: upgrading-dependencies-safely
-description: Use when adopting a dependency version bump, fixing an `audit`/advisory finding, or batching multiple bumps into a branch — especially when the ecosystem (npm, PyPI, crates.io, RubyGems, etc.) is under active supply-chain attack. Defends against compromised maintainer accounts, fresh malicious releases, and stale-Dependabot-PR title traps.
+description: Use when handling any dependency version change — Dependabot/Renovate PRs, advisory patches, manual bumps, audit fixes, override edits. Symptoms that mean STOP and load this skill — uncertain whether a bump tool's `from→to` reflects the actual spec change; deciding migration shape from a semver delta; about to classify a major as safe or a minor as breaking; about to add a transitive override or a freshness-window carveout. Applies during evaluation and triage, not only at install time. Heightened criticality during active supply-chain attacks (e.g. shai-hulud/npm).
 ---
 
 # Upgrading Dependencies Safely
@@ -11,6 +11,16 @@ A version bump is two questions, not one:
 2. **Is this version compatible with our code?** (migration question)
 
 You answer both _before_ `<pkg-manager> install`. If either answer is no, the bump doesn't ship — it gets split, deferred, or declined. Don't paper over a failure by widening freshness windows, suppressing audit gates, or bypassing existing ignore lists.
+
+## Read these first — most-missed traps
+
+Even if you skim the rest, do not skip these. They are the failure modes that bite during evaluation, before any install:
+
+- **The PR title's `from → to` is often a lie.** Bump tools (Dependabot, Renovate) commonly report the *oldest transitive resolution* as "from" — not the direct dependency. A PR titled "bump zod from 3.25.76 to 4.4.3" may actually be a `^4.3.6 → ^4.4.3` minor change to the catalog/spec; the 3.x is just an unrelated transitive that the tool happened to surface. **Diff the actual spec file (`package.json`, `pnpm-workspace.yaml`, `Cargo.toml`, etc.) on the bump branch against base. The spec diff is the truth; the PR title is a hint.**
+- **Semver major ≠ migration shape.** A `major` bump may be a trivial packaging change *or* an API rewrite. A `minor` bump may be ESM-only / native-rebuild / drop-platform-support and break you. **Read the changelog before classifying the migration shape — never infer from the version number alone.**
+- **A bump can surface pre-existing inconsistencies.** Overrides, catalogs, and ignore lists drift. A bump that pulls one version forward may expose a sibling pin that wasn't following along. **When something fails unexpectedly mid-bump, check whether the failing config predates the bump.**
+- **A bump's spec diff that includes a *downgrade* of an unrelated package is a flag, not an error.** Catalogs and overrides sometimes move backward as a side-effect — either to satisfy a peer-dep conflict surfaced by the main bump, or to align the spec with an existing ignore/policy (e.g. catalog `^2.0.1 → ^1.8.0` to honor an "ESM-only major is unadoptable" ignore rule). Don't reflexively undo a downgrade; trace *why* it moved, document it in the PR, and verify it's not an accidental regression of someone else's work.
+- **"Pre-existing" audit findings still count.** They don't block the PR, but if you're already touching the lockfile, fix them in the same PR. Just verify pre-existence first by running `audit` on the base branch.
 
 ## When to use
 
@@ -147,4 +157,12 @@ Before opening / merging the bump PR:
 
 ## Notes for skill maintainers
 
-This skill was authored from one observed session as the de-facto RED baseline (failure modes: misreading PR `from→to` as the real spec change, treating semver major as proxy for migration shape, missing pre-existing catalog/override mismatches that a bump surfaces). A fresh-agent pressure test against a synthetic multi-PR bump scenario is still pending — run that before considering the skill "verified."
+Authored from one observed session as the de-facto RED baseline (failure modes: misreading PR `from→to` as the real spec change, treating semver major as proxy for migration shape, missing pre-existing catalog/override mismatches that a bump surfaces, adding freshness-window exclusions without verifying maintainer continuity).
+
+Validated via two GREEN rounds of fresh-agent pressure testing:
+
+- **Round 1 (Explore agent):** RED — skill not invoked. Agent rationalized "skills are for execution; this is research." Description was scoped to action verbs only.
+- **Round 2 (Explore agent, broadened description):** RED — agent still rationalized "no skills strictly necessary for this research task." Verdicts hand-waved without spec-diff evidence.
+- **Round 3 (default `claude` agent, symptom-driven description):** GREEN — agent invoked the skill at step 1, cited spec diffs for every verdict, caught all three "PR title lies" traps, identified the `react-native-nitro-image` peer-dep change in vision-camera v5, and surfaced the catalog-moved-backward pattern (which was added to the Red Flags section as a result).
+
+If you re-tune this skill, re-run a fresh-agent pressure test — discoverability is fragile and easy to regress.
