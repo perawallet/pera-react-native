@@ -169,6 +169,18 @@ vi.mock('react-native-reanimated', () => {
         Layout: {
             springify: () => ({ damping: () => ({}) }),
         },
+        // Reanimated re-exports `Easing`; CompactBanner consumes
+        // `Easing.inOut(Easing.quad)`. Identity stubs keep the calls safe.
+        Easing: {
+            inOut: (fn: any) => fn,
+            out: (fn: any) => fn,
+            in: (fn: any) => fn,
+            ease: () => undefined,
+            linear: () => undefined,
+            quad: () => undefined,
+            cubic: () => undefined,
+            bezier: () => () => undefined,
+        },
         FadeIn: {
             duration: () => ({}),
         },

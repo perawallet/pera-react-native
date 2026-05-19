@@ -10,12 +10,15 @@
  limitations under the License
  */
 
+import Animated from 'react-native-reanimated'
 import { PWIcon, PWToolbar, PWTouchableOpacity, PWView } from '@components/core'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import { useVisibleBanners } from '@perawallet/wallet-core-banners'
 import { useShouldPlayConfetti } from '@modules/onboarding/hooks'
 
+import { useAccountScreenAnimation } from './useAccountScreenAnimation'
 import { useStyles } from './styles'
 import { useModalState } from '@hooks/useModalState'
 import { AccountSelection } from '@modules/accounts/components/AccountSelection'
@@ -27,6 +30,7 @@ import { PromptContainer } from '@modules/prompts'
 import { AccountTabNavigator } from '@modules/accounts/components/AccountTabNavigator'
 import { NotificationsIcon } from '@modules/messages/components/NotificationsIcon'
 import { AccountHeaderMenu } from '@components/AccountHeaderMenu'
+import { HomeBannersStrip } from '@modules/banners'
 
 export const AccountScreen = () => {
     const styles = useStyles()
@@ -39,6 +43,9 @@ export const AccountScreen = () => {
 
     const { getPreference } = usePreferences()
     const chartVisible = !!getPreference(UserPreferences.chartVisible)
+    const { banners: visibleBanners } = useVisibleBanners()
+    const hasHomeBanner = visibleBanners.length > 0
+    const { animatedCornerStyle } = useAccountScreenAnimation(hasHomeBanner)
 
     if (!account) {
         return (
@@ -58,26 +65,35 @@ export const AccountScreen = () => {
                 play={shouldPlayConfetti}
                 onFinish={() => setShouldPlayConfetti(false)}
             />
-            <PWToolbar
-                style={styles.iconBar}
-                left={<AccountSelection />}
-                right={
-                    <PWView style={styles.iconBarSection}>
-                        <AccountHeaderMenu testID='account_screen_dropdown' />
-                        <PWTouchableOpacity
-                            onPress={scannerState.open}
-                            testID='account_screen_qr_scanner_button'
-                        >
-                            <PWIcon name='camera' />
-                        </PWTouchableOpacity>
-                        <NotificationsIcon testID='account_screen_notifications' />
-                    </PWView>
-                }
-            />
-            <AccountTabNavigator
-                account={account}
-                chartVisible={chartVisible}
-            />
+            {hasHomeBanner && <HomeBannersStrip />}
+            <Animated.View
+                style={[
+                    styles.content,
+                    hasHomeBanner && styles.contentClipped,
+                    animatedCornerStyle,
+                ]}
+            >
+                <PWToolbar
+                    style={styles.iconBar}
+                    left={<AccountSelection />}
+                    right={
+                        <PWView style={styles.iconBarSection}>
+                            <AccountHeaderMenu testID='account_screen_dropdown' />
+                            <PWTouchableOpacity
+                                onPress={scannerState.open}
+                                testID='account_screen_qr_scanner_button'
+                            >
+                                <PWIcon name='camera' />
+                            </PWTouchableOpacity>
+                            <NotificationsIcon testID='account_screen_notifications' />
+                        </PWView>
+                    }
+                />
+                <AccountTabNavigator
+                    account={account}
+                    chartVisible={chartVisible}
+                />
+            </Animated.View>
             <QRScannerView
                 isVisible={scannerState.isOpen}
                 onSuccess={scannerState.close}
