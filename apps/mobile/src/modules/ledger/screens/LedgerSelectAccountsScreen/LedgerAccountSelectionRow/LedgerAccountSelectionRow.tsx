@@ -66,14 +66,13 @@ export const LedgerAccountSelectionRow = ({
             disabled={isImported}
             testID={testID}
         >
-            {!isImported && (
-                <PWCheckbox
-                    checked={isSelected}
-                    onPress={onToggle}
-                    containerStyle={styles.checkbox}
-                    testID={testID ? `${testID}-checkbox` : undefined}
-                />
-            )}
+            <PWCheckbox
+                checked={isImported ? true : isSelected}
+                onPress={onToggle}
+                disabled={isImported}
+                containerStyle={styles.checkbox}
+                testID={testID ? `${testID}-checkbox` : undefined}
+            />
 
             <LightLedgerAccountIcon
                 width={40}
