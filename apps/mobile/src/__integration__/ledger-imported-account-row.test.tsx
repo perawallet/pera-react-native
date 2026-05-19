@@ -30,7 +30,10 @@ import {
     setupTestDatabase,
     teardownTestDatabase,
 } from '@test-utils/database-setup'
-import { AccountTypes, useAccountsStore } from '@perawallet/wallet-core-accounts'
+import {
+    AccountTypes,
+    useAccountsStore,
+} from '@perawallet/wallet-core-accounts'
 import type { HardwareWalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     mockAlgodAccountInformation,

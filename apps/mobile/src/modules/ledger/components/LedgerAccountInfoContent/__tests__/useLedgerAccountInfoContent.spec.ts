@@ -13,7 +13,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
-import { AccountTypes, AccountLogicalTypes } from '@perawallet/wallet-core-accounts'
+import {
+    AccountTypes,
+    AccountLogicalTypes,
+} from '@perawallet/wallet-core-accounts'
 import { useLedgerAccountInfoContent } from '../useLedgerAccountInfoContent'
 
 const mocks = vi.hoisted(() => ({ useLedgerAccountPreview: vi.fn() }))
@@ -142,7 +145,9 @@ describe('useLedgerAccountInfoContent', () => {
         })
         if (rekeyAddressItems[0].kind === 'rekeyAddress') {
             expect(rekeyAddressItems[0].account.address).toBe('AUTH')
-            expect(rekeyAddressItems[0].logicalTypeOverride).toBe(AccountLogicalTypes.LedgerBle)
+            expect(rekeyAddressItems[0].logicalTypeOverride).toBe(
+                AccountLogicalTypes.LedgerBle,
+            )
         }
     })
 
@@ -167,13 +172,15 @@ describe('useLedgerAccountInfoContent', () => {
         const rekeyAddressItems = result.current.items.filter(
             i => i.kind === 'rekeyAddress',
         )
-        const rekeyAddresses = rekeyAddressItems.map(
-            i => (i.kind === 'rekeyAddress' ? i.account.address : ''),
+        const rekeyAddresses = rekeyAddressItems.map(i =>
+            i.kind === 'rekeyAddress' ? i.account.address : '',
         )
         expect(rekeyAddresses).toEqual(['R1', 'R2'])
         rekeyAddressItems.forEach(i => {
             if (i.kind === 'rekeyAddress') {
-                expect(i.logicalTypeOverride).toBe(AccountLogicalTypes.RekeyedAuth)
+                expect(i.logicalTypeOverride).toBe(
+                    AccountLogicalTypes.RekeyedAuth,
+                )
             }
         })
     })
@@ -274,7 +281,9 @@ describe('useLedgerAccountInfoContent', () => {
             expect(acct.account.type).toBe(AccountTypes.watch)
             expect(acct.account.address).toBe('WATCH_ADDR')
             expect(acct.account.rekeyAddress).toBe('AUTH_ADDR')
-            expect(acct.logicalTypeOverride).toBe(AccountLogicalTypes.RekeyedAuth)
+            expect(acct.logicalTypeOverride).toBe(
+                AccountLogicalTypes.RekeyedAuth,
+            )
         }
     })
 

@@ -75,7 +75,10 @@ export const LedgerAccountInfoContent = ({
                                 account={item.account}
                                 showChevron={false}
                                 showAccountType
-                                iconProps={{ logicalTypeOverride: item.logicalTypeOverride }}
+                                iconProps={{
+                                    logicalTypeOverride:
+                                        item.logicalTypeOverride,
+                                }}
                             />
                             <PWView style={styles.balanceContainer}>
                                 <CurrencyDisplay
@@ -113,7 +116,9 @@ export const LedgerAccountInfoContent = ({
                             showChevron={false}
                             showAccountType
                             style={styles.rekeyRow}
-                            iconProps={{ logicalTypeOverride: item.logicalTypeOverride }}
+                            iconProps={{
+                                logicalTypeOverride: item.logicalTypeOverride,
+                            }}
                         />
                     )
             }

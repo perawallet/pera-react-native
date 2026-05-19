@@ -40,7 +40,12 @@ export type LedgerInfoListItem =
           accountBalance: AssetWithAccountBalance
           usdPrice: Decimal
       }
-    | { kind: 'rekeyAddress'; key: string; account: WalletAccount; logicalTypeOverride: AccountLogicalType }
+    | {
+          kind: 'rekeyAddress'
+          key: string
+          account: WalletAccount
+          logicalTypeOverride: AccountLogicalType
+      }
 
 type UseLedgerAccountInfoContentResult = {
     title: string
