@@ -156,6 +156,9 @@ overrides:
   postcss@<8.5.10: '>=8.5.10'
 
 patchedDependencies:
+  '@expo/prebuild-config@55.0.16':
+    hash: 17e44194976bbb1a2165f81e6d6003430d8e60aebcdd94735400e56d01dceafa
+    path: patches/@expo__prebuild-config@55.0.16.patch
   expo-sqlite@14.0.6:
     hash: 0a5bc89131bb04637237f25fbb401548193ee15136b17f4867d55b77b12710dd
     path: patches/expo-sqlite@14.0.6.patch
@@ -11610,7 +11613,7 @@ snapshots:
       '@expo/osascript': 2.4.2
       '@expo/package-manager': 1.10.4
       '@expo/plist': 0.5.2
-      '@expo/prebuild-config': 55.0.16(expo@55.0.15)(typescript@5.9.3)
+      '@expo/prebuild-config': 55.0.16(patch_hash=17e44194976bbb1a2165f81e6d6003430d8e60aebcdd94735400e56d01dceafa)(expo@55.0.15)(typescript@5.9.3)
       '@expo/require-utils': 55.0.4(typescript@5.9.3)
       '@expo/router-server': 55.0.14(expo-constants@55.0.14(expo@55.0.15)(react-native@0.83.4(@babel/core@7.29.0)(@react-native/metro-config@0.85.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.6))(typescript@5.9.3))(expo-font@55.0.7(expo@55.0.15)(react-native@0.83.4(@babel/core@7.29.0)(@react-native/metro-config@0.85.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.6))(react@19.2.6))(expo-server@55.0.7)(expo@55.0.15)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       '@expo/schema-utils': 55.0.3
@@ -11685,7 +11688,7 @@ snapshots:
       '@expo/osascript': 2.4.2
       '@expo/package-manager': 1.10.4
       '@expo/plist': 0.5.2
-      '@expo/prebuild-config': 55.0.16(expo@55.0.15)(typescript@5.9.3)
+      '@expo/prebuild-config': 55.0.16(patch_hash=17e44194976bbb1a2165f81e6d6003430d8e60aebcdd94735400e56d01dceafa)(expo@55.0.15)(typescript@5.9.3)
       '@expo/require-utils': 55.0.4(typescript@5.9.3)
       '@expo/router-server': 55.0.14(expo-constants@55.0.14(expo@55.0.15)(react-native@0.83.9(@babel/core@7.29.0)(@react-native/metro-config@0.85.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.6))(typescript@5.9.3))(expo-font@55.0.7(expo@55.0.15)(react-native@0.83.9(@babel/core@7.29.0)(@react-native/metro-config@0.85.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.6))(react@19.2.6))(expo-server@55.0.7)(expo@55.0.15)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       '@expo/schema-utils': 55.0.3
@@ -11975,7 +11978,7 @@ snapshots:
       base64-js: 1.5.1
       xmlbuilder: 15.1.1
 
-  '@expo/prebuild-config@55.0.16(expo@55.0.15)(typescript@5.9.3)':
+  '@expo/prebuild-config@55.0.16(patch_hash=17e44194976bbb1a2165f81e6d6003430d8e60aebcdd94735400e56d01dceafa)(expo@55.0.15)(typescript@5.9.3)':
     dependencies:
       '@expo/config': 55.0.15(typescript@5.9.3)
       '@expo/config-plugins': 55.0.8
@@ -14163,7 +14166,7 @@ snapshots:
       obug: 2.1.1
       std-env: 4.1.0
       tinyrainbow: 3.1.0
-      vitest: 4.1.4(@types/node@25.7.0)(@vitest/coverage-v8@4.1.4)(happy-dom@20.9.0)(jsdom@29.0.2(@noble/hashes@2.2.0))(msw@2.14.6(@types/node@25.7.0)(typescript@5.9.3))(vite@8.0.12(@types/node@25.7.0)(esbuild@0.27.3)(jiti@2.5.1)(terser@5.47.1)(tsx@4.21.0)(yaml@2.8.3))
+      vitest: 4.1.4(@types/node@25.7.0)(@vitest/coverage-v8@4.1.4)(happy-dom@20.9.0)(jsdom@27.4.0(@noble/hashes@1.8.0))(msw@2.12.10(@types/node@25.7.0)(typescript@5.9.3))(vite@8.0.12(@types/node@25.7.0)(esbuild@0.27.3)(jiti@2.5.1)(terser@5.47.1)(tsx@4.21.0)(yaml@2.8.3))
     optional: true
 
   '@vitest/coverage-v8@4.1.5(vitest@4.1.5)':
@@ -15700,7 +15703,7 @@ snapshots:
 
   expo-splash-screen@55.0.19(expo@55.0.15)(typescript@5.9.3):
     dependencies:
-      '@expo/prebuild-config': 55.0.16(expo@55.0.15)(typescript@5.9.3)
+      '@expo/prebuild-config': 55.0.16(patch_hash=17e44194976bbb1a2165f81e6d6003430d8e60aebcdd94735400e56d01dceafa)(expo@55.0.15)(typescript@5.9.3)
       expo: 55.0.15(@babel/core@7.29.0)(@expo/dom-webview@55.0.5)(react-dom@19.2.6(react@19.2.6))(react-native-webview@13.16.1(react-native@0.83.4(@babel/core@7.29.0)(@react-native/metro-config@0.85.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.6))(react@19.2.6))(react-native-worklets@0.8.3(@babel/core@7.29.0)(@react-native/metro-config@0.85.0(@babel/core@7.29.0))(react-native@0.83.4(@babel/core@7.29.0)(@react-native/metro-config@0.85.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.6))(react@19.2.6))(react-native@0.83.4(@babel/core@7.29.0)(@react-native/metro-config@0.85.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.6))(react@19.2.6)(typescript@5.9.3)
     transitivePeerDependencies:
       - supports-color

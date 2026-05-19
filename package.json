@@ -51,7 +51,8 @@
       "better-sqlite3"
     ],
     "patchedDependencies": {
-      "expo-sqlite@14.0.6": "patches/expo-sqlite@14.0.6.patch"
+      "expo-sqlite@14.0.6": "patches/expo-sqlite@14.0.6.patch",
+      "@expo/prebuild-config@55.0.16": "patches/@expo__prebuild-config@55.0.16.patch"
     },
     "overrides": {
       "@algorandfoundation/keystore": "1.0.0-canary.16",

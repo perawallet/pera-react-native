@@ -1,0 +1,16 @@
+diff --git a/build/plugins/unversioned/expo-splash-screen/withAndroidSplashStyles.js b/build/plugins/unversioned/expo-splash-screen/withAndroidSplashStyles.js
+index 1539af2f68dd9e7e37a360b86e4fd20d2d9c46f1..eedb836f5b28aabc30b4ba3119431d1f883078ae 100644
+--- a/build/plugins/unversioned/expo-splash-screen/withAndroidSplashStyles.js
++++ b/build/plugins/unversioned/expo-splash-screen/withAndroidSplashStyles.js
+@@ -96,11 +96,6 @@ function addSplashScreenStyle(styles, isLegacyConfig) {
+         name: 'postSplashScreenTheme'
+       },
+       _: '@style/AppTheme'
+-    }, {
+-      $: {
+-        name: 'android:windowSplashScreenBehavior'
+-      },
+-      _: 'icon_preferred'
+     }];
+   }
+   styles.resources.style = [...style.filter(({
