@@ -13,40 +13,24 @@
 import { useQuery } from '@tanstack/react-query'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import {
-    fetchNotificationStatus,
-    type NotificationStatusResponse,
-} from '../api/notifications'
+import { fetchMessageStatus } from '../api/notifications'
 import { config } from '@perawallet/wallet-core-config'
-import { useCallback } from 'react'
-import { getNotificationStatusQueryKey } from './querykeys'
-import { useInboxQuery } from './useInboxQuery'
+import { getMessageStatusQueryKey } from './querykeys'
 
 export const useInboxStatus = () => {
     const { network } = useNetwork()
     const deviceID = useDeviceID(network)
 
-    const { data: inboxData } = useInboxQuery()
-
-    const { data: notificationStatusData } = useQuery({
-        queryKey: getNotificationStatusQueryKey(network, deviceID ?? ''),
-        queryFn: () => fetchNotificationStatus(network, deviceID ?? ''),
+    const { data } = useQuery({
+        queryKey: getMessageStatusQueryKey(network, deviceID ?? ''),
+        queryFn: () => fetchMessageStatus(network, deviceID ?? ''),
         enabled: !!deviceID,
         refetchInterval: config.notificationRefreshTime,
-        select: useCallback((data: NotificationStatusResponse) => {
-            return {
-                hasNewNotification: data.has_new_notification,
-            }
-        }, []),
     })
 
-    const hasUnreadNotifications = inboxData?.length
-        ? notificationStatusData?.hasNewNotification
-        : false
-
     return {
-        hasUnreadItems: inboxData?.length || hasUnreadNotifications,
-        hasUnreadInboxItems: inboxData?.length,
-        hasUnreadNotifications,
+        hasUnreadItems: data?.hasUnreadItems ?? false,
+        hasUnreadInboxItems: data?.hasUnreadInboxItems ?? false,
+        hasUnreadNotifications: data?.hasUnreadNotifications ?? false,
     }
 }

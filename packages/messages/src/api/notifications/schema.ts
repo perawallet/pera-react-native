@@ -32,6 +32,12 @@ export const notificationResponseSchema = z.object({
         .optional(),
 })
 
+export const messageStatusResponseSchema = z.object({
+    hasUnreadItems: z.boolean(),
+    hasUnreadNotifications: z.boolean(),
+    hasUnreadInboxItems: z.boolean(),
+})
+
 export const notificationsListResponseSchema = z.object({
     results: z.array(notificationResponseSchema),
     next: z.string().nullable(),
@@ -44,4 +50,7 @@ export type NotificationStatusResponse = z.infer<
 export type NotificationResponse = z.infer<typeof notificationResponseSchema>
 export type NotificationsListResponse = z.infer<
     typeof notificationsListResponseSchema
+>
+export type MessageStatusResponse = z.infer<
+    typeof messageStatusResponseSchema
 >

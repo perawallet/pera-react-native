@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useInboxStatus } from '@perawallet/wallet-core-messages'
+import { useInboxStatus, useInboxQuery } from '@perawallet/wallet-core-messages'
 import { SvgProps } from 'react-native-svg'
 import { PWBadge, PWIcon, PWTouchableOpacity, PWView } from '@components/core'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
@@ -23,14 +23,15 @@ const MAX_INBOX_COUNT_DISPLAY = 9
 
 export const NotificationsIcon = (props: NotificationsIconProps) => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
-    const { hasUnreadInboxItems, hasUnreadNotifications } = useInboxStatus()
+    const { hasUnreadNotifications } = useInboxStatus()
+    const { data: inboxData } = useInboxQuery() 
     const styles = useStyles()
 
     const goToNotifications = () => {
         navigation.navigate('Messages')
     }
 
-    const inboxCount = hasUnreadInboxItems ?? 0
+    const inboxCount = inboxData?.length ?? 0
     const showCountBadge = inboxCount > 0
     const showDotBadge = !showCountBadge && hasUnreadNotifications
     const countLabel =

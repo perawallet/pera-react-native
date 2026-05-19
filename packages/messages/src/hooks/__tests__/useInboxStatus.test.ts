@@ -14,16 +14,11 @@ import { describe, it, expect, vi } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { createWrapper } from '@perawallet/wallet-extension-platform'
 import { useInboxStatus } from '../useInboxStatus'
-import { fetchNotificationStatus } from '../../api/notifications'
-import { useInboxQuery } from '../useInboxQuery'
+import { fetchMessageStatus } from '../../api/notifications'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 
 vi.mock('../../api/notifications', () => ({
-    fetchNotificationStatus: vi.fn(),
-}))
-
-vi.mock('../useInboxQuery', () => ({
-    useInboxQuery: vi.fn(),
+    fetchMessageStatus: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-device', async importOriginal => {
@@ -40,44 +35,61 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 }))
 
 describe('useInboxStatus', () => {
-    it('should fetch notification status and return hasUnreadItems', async () => {
-        const mockResponse = {
-            has_new_notification: true,
-        }
-        vi.mocked(fetchNotificationStatus).mockResolvedValue(mockResponse)
-        vi.mocked(useInboxQuery).mockReturnValue({
-            data: [],
-        } as unknown as ReturnType<typeof useInboxQuery>)
+    it('returns status from the unified message-status endpoint', async () => {
+        vi.mocked(fetchMessageStatus).mockResolvedValue({
+            hasUnreadItems: true,
+            hasUnreadNotifications: false,
+            hasUnreadInboxItems: true,
+        })
 
         const { result } = renderHook(() => useInboxStatus(), {
             wrapper: createWrapper(),
         })
 
         await waitFor(() => {
-            expect(result.current.hasUnreadItems).toBe(false)
+            expect(result.current.hasUnreadItems).toBe(true)
         })
 
-        expect(fetchNotificationStatus).toHaveBeenCalledWith(
+        expect(fetchMessageStatus).toHaveBeenCalledWith(
             'test-network',
             'test-device-id',
         )
-        expect(result.current.hasUnreadItems).toEqual(false)
-        expect(result.current.hasUnreadNotifications).toEqual(false)
-        expect(result.current.hasUnreadInboxItems).toBeFalsy()
+        expect(result.current.hasUnreadItems).toBe(true)
+        expect(result.current.hasUnreadInboxItems).toBe(true)
+        expect(result.current.hasUnreadNotifications).toBe(false)
     })
 
-    it('skips the status fetch when deviceID is missing', async () => {
-        vi.mocked(useDeviceID).mockReturnValueOnce(null)
-        vi.mocked(fetchNotificationStatus).mockClear()
-        vi.mocked(useInboxQuery).mockReturnValue({
-            data: [],
-        } as unknown as ReturnType<typeof useInboxQuery>)
+    it('returns all false when there are no unread items', async () => {
+        vi.mocked(fetchMessageStatus).mockResolvedValue({
+            hasUnreadItems: false,
+            hasUnreadNotifications: false,
+            hasUnreadInboxItems: false,
+        })
 
         const { result } = renderHook(() => useInboxStatus(), {
             wrapper: createWrapper(),
         })
 
-        expect(fetchNotificationStatus).not.toHaveBeenCalled()
+        await waitFor(() => {
+            expect(fetchMessageStatus).toHaveBeenCalled()
+        })
+
+        expect(result.current.hasUnreadItems).toBe(false)
+        expect(result.current.hasUnreadInboxItems).toBe(false)
         expect(result.current.hasUnreadNotifications).toBe(false)
+    })
+
+    it('skips the fetch and returns defaults when deviceID is missing', async () => {
+        vi.mocked(useDeviceID).mockReturnValueOnce(null)
+        vi.mocked(fetchMessageStatus).mockClear()
+
+        const { result } = renderHook(() => useInboxStatus(), {
+            wrapper: createWrapper(),
+        })
+
+        expect(fetchMessageStatus).not.toHaveBeenCalled()
+        expect(result.current.hasUnreadItems).toBe(false)
+        expect(result.current.hasUnreadNotifications).toBe(false)
+        expect(result.current.hasUnreadInboxItems).toBe(false)
     })
 })
