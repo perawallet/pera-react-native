@@ -250,6 +250,9 @@ importers:
       '@perawallet/wallet-core-backup':
         specifier: workspace:*
         version: link:../../packages/backup
+      '@perawallet/wallet-core-banners':
+        specifier: workspace:*
+        version: link:../../packages/banners
       '@perawallet/wallet-core-blockchain':
         specifier: workspace:*
         version: link:../../packages/blockchain
@@ -1321,6 +1324,70 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 4.1.4(@types/node@25.6.0)(@vitest/coverage-v8@4.1.4)(happy-dom@20.9.0)(jsdom@29.0.2(@noble/hashes@2.0.1))(msw@2.12.10(@types/node@25.6.0)(typescript@5.9.3))(vite@8.0.8(@types/node@25.6.0)(esbuild@0.27.3)(jiti@2.5.1)(terser@5.47.1)(tsx@4.21.0)(yaml@2.8.3))
+
+  packages/banners:
+    dependencies:
+      '@babel/runtime':
+        specifier: 'catalog:'
+        version: 7.29.2
+      '@perawallet/wallet-core-blockchain':
+        specifier: workspace:*
+        version: link:../blockchain
+      '@perawallet/wallet-core-config':
+        specifier: workspace:*
+        version: link:../config
+      '@perawallet/wallet-core-device':
+        specifier: workspace:*
+        version: link:../device
+      '@perawallet/wallet-core-shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@perawallet/wallet-extension-platform':
+        specifier: workspace:*
+        version: link:../../extensions/platform
+      '@perawallet/wallet-extension-provider':
+        specifier: workspace:*
+        version: link:../../extensions/provider
+      '@tanstack/react-query':
+        specifier: 'catalog:'
+        version: 5.99.0(react@19.2.5)
+      react:
+        specifier: 'catalog:'
+        version: 19.2.5
+      react-dom:
+        specifier: 19.2.5
+        version: 19.2.5(react@19.2.5)
+      zod:
+        specifier: 'catalog:'
+        version: 4.3.6
+      zustand:
+        specifier: 'catalog:'
+        version: 5.0.12(@types/react@19.2.14)(react@19.2.5)(use-sync-external-store@1.6.0(react@19.2.5))
+    devDependencies:
+      '@perawallet/wallet-core-devtools':
+        specifier: workspace:*
+        version: link:../devtools
+      '@testing-library/react':
+        specifier: 'catalog:'
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.2.14
+      msw:
+        specifier: 'catalog:'
+        version: 2.12.10(@types/node@25.6.0)(typescript@5.9.3)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vite:
+        specifier: 'catalog:'
+        version: 8.0.8(@types/node@25.6.0)(esbuild@0.27.3)(jiti@2.5.1)(terser@5.46.2)(tsx@4.21.0)(yaml@2.8.3)
+      vite-plugin-dts:
+        specifier: 'catalog:'
+        version: 5.0.0(@microsoft/api-extractor@7.57.7(@types/node@25.6.0))(esbuild@0.27.3)(rollup@4.59.0)(typescript@5.9.3)(vite@8.0.8(@types/node@25.6.0)(esbuild@0.27.3)(jiti@2.5.1)(terser@5.46.2)(tsx@4.21.0)(yaml@2.8.3))
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.5(@types/node@25.6.0)(@vitest/coverage-v8@4.1.5)(happy-dom@20.9.0)(jsdom@29.0.2(@noble/hashes@2.0.1))(msw@2.12.10(@types/node@25.6.0)(typescript@5.9.3))(vite@8.0.8(@types/node@25.6.0)(esbuild@0.27.3)(jiti@2.5.1)(terser@5.46.2)(tsx@4.21.0)(yaml@2.8.3))
 
   packages/blockchain:
     dependencies:
