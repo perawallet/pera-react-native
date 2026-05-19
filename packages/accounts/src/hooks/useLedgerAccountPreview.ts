@@ -66,6 +66,7 @@ export const useLedgerAccountPreview = (
             decimals: ALGO_ASSET.decimals,
             amount: algoBalance,
             fiatValue: usdToPreferred(algoBalance.times(algoUsdPrice)),
+            usdPrice: algoUsdPrice,
             verificationTier: PeraAssetVerificationTier.verified,
             logo: undefined,
             isAlgo: true,
@@ -86,6 +87,7 @@ export const useLedgerAccountPreview = (
                 decimals,
                 amount,
                 fiatValue: usdToPreferred(usdValue),
+                usdPrice,
                 verificationTier:
                     meta?.peraMetadata?.verificationTier ??
                     PeraAssetVerificationTier.unverified,

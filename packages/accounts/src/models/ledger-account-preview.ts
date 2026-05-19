@@ -23,6 +23,8 @@ export type LedgerAccountPreviewAsset = {
     amount: Decimal
     /** Holding value in the user's preferred currency */
     fiatValue: Decimal
+    /** Asset USD price (0 when unknown) */
+    usdPrice: Decimal
     verificationTier: PeraAssetVerificationTier
     logo?: string
     isAlgo: boolean
