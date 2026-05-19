@@ -14,12 +14,14 @@ import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import {
     useLedgerAccountPreview,
+    AccountLogicalTypes,
     AccountTypes,
+    type AccountLogicalType,
+    type AssetWithAccountBalance,
     type WalletAccount,
     type HardwareWalletAccount,
     type WatchAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 
 export type LedgerInfoListItem =
@@ -30,6 +32,7 @@ export type LedgerInfoListItem =
           account: WalletAccount
           algoBalance: Decimal
           algoUsdPrice: Decimal
+          logicalTypeOverride: AccountLogicalType
       }
     | {
           kind: 'asset'
@@ -37,7 +40,7 @@ export type LedgerInfoListItem =
           accountBalance: AssetWithAccountBalance
           usdPrice: Decimal
       }
-    | { kind: 'rekeyAddress'; key: string; account: WalletAccount }
+    | { kind: 'rekeyAddress'; key: string; account: WalletAccount; logicalTypeOverride: AccountLogicalType }
 
 type UseLedgerAccountInfoContentResult = {
     title: string
@@ -99,6 +102,10 @@ export const useLedgerAccountInfoContent = (
                 account: synthAccount,
                 algoBalance: preview.algoBalance,
                 algoUsdPrice,
+                logicalTypeOverride:
+                    preview.rekey.kind === 'rekeyedTo'
+                        ? AccountLogicalTypes.RekeyedAuth
+                        : AccountLogicalTypes.LedgerBle,
             },
             {
                 kind: 'sectionHeader',
@@ -144,6 +151,7 @@ export const useLedgerAccountInfoContent = (
                     kind: 'rekeyAddress',
                     key: `rekey-${preview.rekey.authAddress}`,
                     account: authSynthAccount,
+                    logicalTypeOverride: AccountLogicalTypes.LedgerBle,
                 },
             )
         } else if (preview.rekey.kind === 'canSignFor') {
@@ -162,6 +170,7 @@ export const useLedgerAccountInfoContent = (
                     kind: 'rekeyAddress',
                     key: `rekey-${addr}`,
                     account: watchSynth,
+                    logicalTypeOverride: AccountLogicalTypes.RekeyedAuth,
                 })
             })
         }

@@ -13,7 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
-import { AccountTypes } from '@perawallet/wallet-core-accounts'
+import { AccountTypes, AccountLogicalTypes } from '@perawallet/wallet-core-accounts'
 import { useLedgerAccountInfoContent } from '../useLedgerAccountInfoContent'
 
 const mocks = vi.hoisted(() => ({ useLedgerAccountPreview: vi.fn() }))
@@ -26,6 +26,15 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         hardware: 'hardware',
         multisig: 'multisig',
         watch: 'watch',
+    },
+    AccountLogicalTypes: {
+        Algo25: 'Algo25',
+        HdKey: 'HdKey',
+        LedgerBle: 'LedgerBle',
+        Multisig: 'Multisig',
+        Rekeyed: 'Rekeyed',
+        RekeyedAuth: 'RekeyedAuth',
+        NoAuth: 'NoAuth',
     },
 }))
 vi.mock('@hooks/useLanguage', () => ({
@@ -133,6 +142,7 @@ describe('useLedgerAccountInfoContent', () => {
         })
         if (rekeyAddressItems[0].kind === 'rekeyAddress') {
             expect(rekeyAddressItems[0].account.address).toBe('AUTH')
+            expect(rekeyAddressItems[0].logicalTypeOverride).toBe(AccountLogicalTypes.LedgerBle)
         }
     })
 
@@ -154,10 +164,18 @@ describe('useLedgerAccountInfoContent', () => {
             useLedgerAccountInfoContent('ADDR', 1),
         )
 
-        const rekeyAddresses = result.current.items
-            .filter(i => i.kind === 'rekeyAddress')
-            .map(i => (i.kind === 'rekeyAddress' ? i.account.address : ''))
+        const rekeyAddressItems = result.current.items.filter(
+            i => i.kind === 'rekeyAddress',
+        )
+        const rekeyAddresses = rekeyAddressItems.map(
+            i => (i.kind === 'rekeyAddress' ? i.account.address : ''),
+        )
         expect(rekeyAddresses).toEqual(['R1', 'R2'])
+        rekeyAddressItems.forEach(i => {
+            if (i.kind === 'rekeyAddress') {
+                expect(i.logicalTypeOverride).toBe(AccountLogicalTypes.RekeyedAuth)
+            }
+        })
     })
 
     it('uses the title override when provided, ignoring the index', () => {
@@ -229,6 +247,7 @@ describe('useLedgerAccountInfoContent', () => {
                 expect(acct.account.hardwareDetails.accountIndex).toBe(2)
                 expect(acct.account.hardwareDetails.manufacturer).toBe('ledger')
             }
+            expect(acct.logicalTypeOverride).toBe(AccountLogicalTypes.LedgerBle)
         }
     })
 
@@ -255,6 +274,7 @@ describe('useLedgerAccountInfoContent', () => {
             expect(acct.account.type).toBe(AccountTypes.watch)
             expect(acct.account.address).toBe('WATCH_ADDR')
             expect(acct.account.rekeyAddress).toBe('AUTH_ADDR')
+            expect(acct.logicalTypeOverride).toBe(AccountLogicalTypes.RekeyedAuth)
         }
     })
 

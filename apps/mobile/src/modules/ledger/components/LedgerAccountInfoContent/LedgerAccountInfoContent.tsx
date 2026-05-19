@@ -12,6 +12,7 @@
 
 import { useCallback } from 'react'
 import { ActivityIndicator } from 'react-native'
+import { ALGO_ASSET, ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
 import {
     PWView,
     PWText,
@@ -26,7 +27,6 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { AccountAssetItemView } from '@modules/assets/components/AssetItem'
-import { ALGO_ASSET, ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
 import {
     useLedgerAccountInfoContent,
     type LedgerInfoListItem,
@@ -75,6 +75,7 @@ export const LedgerAccountInfoContent = ({
                                 account={item.account}
                                 showChevron={false}
                                 showAccountType
+                                iconProps={{ logicalTypeOverride: item.logicalTypeOverride }}
                             />
                             <PWView style={styles.balanceContainer}>
                                 <CurrencyDisplay
@@ -112,6 +113,7 @@ export const LedgerAccountInfoContent = ({
                             showChevron={false}
                             showAccountType
                             style={styles.rekeyRow}
+                            iconProps={{ logicalTypeOverride: item.logicalTypeOverride }}
                         />
                     )
             }
