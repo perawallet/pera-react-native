@@ -253,6 +253,7 @@ describe('SigningStore', () => {
             type: 'proposed' as const,
             signRequestId: 'sr-1',
             status: 'pending' as const,
+            sourceType: 'local' as const,
         }
 
         act(() => {
@@ -276,6 +277,7 @@ describe('SigningStore', () => {
                 type: 'proposed',
                 signRequestId: 'sr-1',
                 status: 'pending',
+                sourceType: 'local',
             })
         })
 

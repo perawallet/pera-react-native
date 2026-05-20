@@ -10,12 +10,17 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import {
     useNetwork,
     useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
+import {
+    isMultisigAccount,
+    useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
+import { useDeviceID } from '@perawallet/wallet-core-device'
 import {
     addSignature,
     getSignRequestDetailQueryKey,
@@ -23,7 +28,12 @@ import {
     type ProposeSignRequest,
 } from '@perawallet/wallet-core-multisig'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
-import type { ProposeSignRequestFn } from '../pipeline/transports/createMultisigProposeTransport'
+import type {
+    GetDeviceIdFn,
+    GetMsigMetadataFn,
+    MsigMetadata,
+    ProposeSignRequestFn,
+} from '../pipeline/transports/createMultisigProposeTransport'
 import type { AddSignaturesFn } from '../pipeline/transports/createMultisigCosignTransport'
 import type { SigningResult } from '../pipeline/types'
 
@@ -32,9 +42,21 @@ type UseMultisigTransportAdaptersResult = {
     proposeSignRequest: ProposeSignRequestFn
     /** Adapter for createMultisigCosignTransport */
     addSignatures: AddSignaturesFn
+    /**
+     * Resolves multisig metadata for a given account address. Required by
+     * the propose transport so the resolver listener can assemble the
+     * composite multisig signed transaction (subsig order depends on the
+     * canonical participant addresses).
+     */
+    getMsigMetadata: GetMsigMetadataFn
+    /**
+     * Returns the persistent device id for the current network, used by
+     * the `with-signatures` and `mark-confirmed` API calls. May be
+     * undefined briefly during app startup before the device is
+     * registered; the propose transport throws in that case.
+     */
+    getDeviceId: GetDeviceIdFn
 }
-
-const SIGN_REQUEST_TYPE = 'async'
 
 /**
  * Builds the per-signer responses array for both propose and cosign requests.
@@ -68,9 +90,45 @@ export const useMultisigTransportAdapters =
         const { network } = useNetwork()
         const { encodeTransactionRaw } = useTransactionEncoder()
         const queryClient = useQueryClient()
+        const allAccounts = useAllAccounts()
+        const deviceId = useDeviceID(network)
+
+        const getDeviceId = useCallback<GetDeviceIdFn>(
+            () => deviceId ?? undefined,
+            [deviceId],
+        )
+
+        // Index multisig accounts by address for O(1) lookup. Recomputed
+        // when the accounts list changes; stable identity otherwise so the
+        // returned `getMsigMetadata` doesn't churn the transport selector.
+        //
+        // `version` is fixed to 1 because the local MultiSigDetails model
+        // doesn't carry it — pera creates multisig accounts at v1 (see
+        // `useNameMultisigScreen.ts` calling `generateMultisigAddress(1, ...)`).
+        // Algorand's multisig spec has only ever had version 1; if that
+        // changes upstream, plumb the version through the model and read
+        // it here instead of hardcoding.
+        const msigByAddress = useMemo(() => {
+            const map = new Map<string, MsigMetadata>()
+            for (const a of allAccounts) {
+                if (!isMultisigAccount(a)) continue
+                if (!a.multisigDetails) continue
+                map.set(a.address, {
+                    version: 1,
+                    threshold: a.multisigDetails.threshold,
+                    addresses: a.multisigDetails.addresses,
+                })
+            }
+            return map
+        }, [allAccounts])
+
+        const getMsigMetadata = useCallback<GetMsigMetadataFn>(
+            (address: string) => msigByAddress.get(address),
+            [msigByAddress],
+        )
 
         const proposeSignRequest = useCallback<ProposeSignRequestFn>(
-            async ({ multisigAddress, signedData, signers }) => {
+            async ({ multisigAddress, signedData, signers, type }) => {
                 if (signedData.type !== 'transactions') {
                     throw new Error(
                         `Multisig propose requires transaction data, got: ${signedData.type}`,
@@ -102,7 +160,11 @@ export const useMultisigTransportAdapters =
                 const proposeParams: ProposeSignRequest = {
                     joint_account_address: multisigAddress,
                     proposer_address: proposer.address,
-                    type: SIGN_REQUEST_TYPE,
+                    // `'sync'` for WC / webview / deeplink handoffs — tells
+                    // the backend "wallet will deliver; don't broadcast
+                    // yourself". `'async'` for in-app Send / inbox-driven
+                    // flows where the backend (eventually) broadcasts.
+                    type,
                     raw_transaction_lists: [rawTransactionsBase64],
                     responses: buildResponses([proposer]),
                 }
@@ -175,5 +237,10 @@ export const useMultisigTransportAdapters =
             [network, queryClient],
         )
 
-        return { proposeSignRequest, addSignatures }
+        return {
+            proposeSignRequest,
+            addSignatures,
+            getMsigMetadata,
+            getDeviceId,
+        }
     }

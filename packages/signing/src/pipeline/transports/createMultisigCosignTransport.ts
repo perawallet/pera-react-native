@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { toError } from '@perawallet/wallet-core-shared'
+import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
+import { toError, type Network } from '@perawallet/wallet-core-shared'
 import type {
     DataTransport,
     SigningResult,
@@ -18,7 +19,7 @@ import type {
     TransportResult,
     SignRequestStatus,
 } from '../types'
-import { TransportError } from '../errors'
+import { NetworkChangedError, TransportError } from '../errors'
 
 /**
  * Function type for adding signatures to an existing multisig request
@@ -33,9 +34,14 @@ export type AddSignaturesFn = (params: {
  * This is used when co-signing a transaction that was proposed by another participant.
  *
  * @param addSignatures - Function to call the backend API
+ * @param capturedNetwork - Network active when the signing actor was created.
+ *   Live network is re-checked before submission — if the user switched
+ *   networks mid-flow we abort so cosign signatures aren't routed to the
+ *   wrong backend (which would silently 404).
  */
 export const createMultisigCosignTransport = (
     addSignatures: AddSignaturesFn,
+    capturedNetwork: Network,
 ): DataTransport => {
     return {
         send: async (
@@ -49,6 +55,11 @@ export const createMultisigCosignTransport = (
                 )
             }
 
+            const liveNetwork = useNetworkStore.getState().network
+            if (liveNetwork !== capturedNetwork) {
+                throw new NetworkChangedError(capturedNetwork, liveNetwork)
+            }
+
             try {
                 const response = await addSignatures({
                     signRequestId: source.signRequestId,
@@ -60,6 +71,7 @@ export const createMultisigCosignTransport = (
                     status: response.status,
                 }
             } catch (error) {
+                if (error instanceof NetworkChangedError) throw error
                 const err = toError(error)
                 throw new TransportError(err.message, err)
             }

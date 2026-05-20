@@ -19,12 +19,14 @@ import {
     addSignatureRequestSchema,
     createMultisigAccountRequestSchema,
     createMultisigAccountResponseSchema,
+    getSignRequestsWithSignaturesRequestSchema,
+    getSignRequestsWithSignaturesResponseSchema,
+    markSignRequestsConfirmedRequestSchema,
     proposeSignRequestResponseSchema,
     proposeSignRequestSchema,
-    signRequestDetailResponseSchema,
     type CreateMultisigAccountResponse,
+    type GetSignRequestsWithSignaturesResponse,
     type ProposeSignRequestResponse,
-    type SignRequestDetailResponse,
 } from './schema'
 
 export type MockCreateMultisigAccountParams = {
@@ -129,27 +131,51 @@ export const mockAddSignature = ({
     )
 }
 
-export type MockGetSignRequestDetailParams = {
-    signRequestId: string
-    response: SignRequestDetailResponse
+export type MockGetSignRequestsWithSignaturesParams = {
+    response: GetSignRequestsWithSignaturesResponse
     status?: number
 }
 
-export const mockGetSignRequestDetail = ({
-    signRequestId,
+export const mockGetSignRequestsWithSignatures = ({
     response,
     status = 200,
-}: MockGetSignRequestDetailParams): HttpHandler => {
+}: MockGetSignRequestsWithSignaturesParams): HttpHandler => {
     validateMockResponse(
-        signRequestDetailResponseSchema,
+        getSignRequestsWithSignaturesResponseSchema,
         response,
-        'mockGetSignRequestDetail',
+        'mockGetSignRequestsWithSignatures',
     )
-    return http.get(
-        `*/v1/joint-accounts/sign-requests/${signRequestId}/with-signatures/`,
-        () => HttpResponse.json(response, { status }),
+    return http.post(
+        '*/v1/joint-accounts/sign-requests/with-signatures/',
+        async ({ request }) => {
+            const validated = await validateMockRequest(
+                getSignRequestsWithSignaturesRequestSchema,
+                request,
+            )
+            if (!validated.ok) return validated.response
+            return HttpResponse.json(response, { status })
+        },
     )
 }
+
+export type MockMarkSignRequestsConfirmedParams = {
+    status?: number
+}
+
+export const mockMarkSignRequestsConfirmed = ({
+    status = 204,
+}: MockMarkSignRequestsConfirmedParams = {}): HttpHandler =>
+    http.post(
+        '*/v1/joint-accounts/sign-requests/mark-confirmed/',
+        async ({ request }) => {
+            const validated = await validateMockRequest(
+                markSignRequestsConfirmedRequestSchema,
+                request,
+            )
+            if (!validated.ok) return validated.response
+            return new HttpResponse(null, { status })
+        },
+    )
 
 export type MockDeleteMultisigImportInboxParams = {
     deviceId: string

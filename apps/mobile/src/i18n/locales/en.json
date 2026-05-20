@@ -924,6 +924,16 @@
                 "title": "Could not cancel",
                 "body": "We couldn't cancel this transaction. Please try again."
             }
+        },
+        "sync_sign": {
+            "errors": {
+                "declined": "Multisig sign request declined by a participant",
+                "expired": "Multisig sign request expired before threshold was reached",
+                "failed": "Multisig sign request failed",
+                "no_transactions": "Multisig sign request has no transactions",
+                "assembly_failed": "Multisig assembly failed: {{reason}}",
+                "delivery_failed": "Failed to deliver signed transaction to dApp"
+            }
         }
     },
     "onboarding": {

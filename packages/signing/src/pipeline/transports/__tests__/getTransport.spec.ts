@@ -13,7 +13,16 @@
 import { describe, test, expect, vi } from 'vitest'
 import { createTransportSelector } from '../getTransport'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type { SourceMetadata } from '../../types'
+import type {
+    SigningResult,
+    SignedTransactionData,
+    SourceMetadata,
+} from '../../types'
+
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useNetworkStore: { getState: () => ({ network: 'testnet' }) },
+    encodeTransactionRaw: vi.fn(() => new Uint8Array([0xa1])),
+}))
 
 const algo25Account: WalletAccount = {
     type: 'algo25',
@@ -31,25 +40,60 @@ const multisigAccount: WalletAccount = {
     },
 } as unknown as WalletAccount
 
+const MSIG_METADATA = {
+    version: 1,
+    threshold: 2,
+    addresses: ['A', 'B'],
+}
+
 const baseOptions = () => ({
     algokit: {
         client: { algod: { sendRawTransaction: vi.fn() } },
     },
     encodeSignedTransactions: vi.fn(),
     network: 'testnet' as const,
+    getMsigMetadata: () => MSIG_METADATA,
+    getDeviceId: () => 'device-1',
 })
 
+const stubResult: SigningResult = {
+    signedData: {
+        type: 'transactions',
+        signed: [{ txn: {} as never, blob: new Uint8Array() } as never],
+    } as SignedTransactionData,
+    signers: [{ address: 'ADDR' }],
+}
+
 describe('createTransportSelector', () => {
-    test('walletconnect source returns WC transport regardless of account', () => {
-        const selector = createTransportSelector(baseOptions())
+    test('non-multisig walletconnect source returns WC transport', async () => {
+        const proposeSignRequest = vi.fn()
+        const selector = createTransportSelector({
+            ...baseOptions(),
+            proposeSignRequest,
+        })
+        const approve = vi.fn().mockResolvedValue(undefined)
         const transport = selector(
-            { type: 'walletconnect' } as SourceMetadata,
+            {
+                type: 'walletconnect',
+                requestId: 'wc-1',
+                callbacks: { approve },
+            } as SourceMetadata,
             algo25Account,
         )
-        expect(transport.send).toBeInstanceOf(Function)
+
+        const result = await transport.send(stubResult, {
+            type: 'walletconnect',
+            requestId: 'wc-1',
+            callbacks: { approve },
+        })
+
+        // WC transport route — propose is NOT invoked
+        expect(proposeSignRequest).not.toHaveBeenCalled()
+        expect(approve).toHaveBeenCalled()
+        expect(result.type).toBe('callback-sent')
     })
 
-    test('webview source returns WC-style transport', () => {
+    test('webview source returns WC-style transport for non-multisig', () => {
         const selector = createTransportSelector(baseOptions())
         const transport = selector(
             { type: 'webview' } as SourceMetadata,
@@ -58,7 +102,7 @@ describe('createTransportSelector', () => {
         expect(transport.send).toBeInstanceOf(Function)
     })
 
-    test('deeplink source returns WC-style transport', () => {
+    test('deeplink source returns WC-style transport for non-multisig', () => {
         const selector = createTransportSelector(baseOptions())
         const transport = selector(
             { type: 'deeplink' } as SourceMetadata,
@@ -91,7 +135,11 @@ describe('createTransportSelector', () => {
     })
 
     test('multisig account + local source throws without proposeSignRequest', () => {
-        const selector = createTransportSelector(baseOptions())
+        const { proposeSignRequest: _, ...rest } = {
+            ...baseOptions(),
+            proposeSignRequest: undefined,
+        }
+        const selector = createTransportSelector(rest)
         expect(() =>
             selector({ type: 'local' } as SourceMetadata, multisigAccount),
         ).toThrow('proposeSignRequest')
@@ -108,6 +156,82 @@ describe('createTransportSelector', () => {
             multisigAccount,
         )
         expect(transport.send).toBeInstanceOf(Function)
+    })
+
+    test.each(['walletconnect', 'webview', 'deeplink'] as const)(
+        'multisig account + %s source uses propose transport (sync handoff)',
+        async sourceType => {
+            const proposeSignRequest = vi.fn().mockResolvedValue({
+                signRequestId: 'mp-1',
+                status: 'pending',
+            })
+            const selector = createTransportSelector({
+                ...baseOptions(),
+                proposeSignRequest,
+            })
+
+            const transport = selector(
+                { type: sourceType } as SourceMetadata,
+                multisigAccount,
+            )
+
+            const result = await transport.send(
+                stubResult,
+                { type: sourceType } as SourceMetadata,
+                'MSIG',
+            )
+
+            expect(proposeSignRequest).toHaveBeenCalledTimes(1)
+            expect(result).toMatchObject({
+                type: 'proposed',
+                signRequestId: 'mp-1',
+                sourceType,
+            })
+        },
+    )
+
+    test('multisig account + walletconnect throws without proposeSignRequest', () => {
+        const { proposeSignRequest: _, ...rest } = {
+            ...baseOptions(),
+            proposeSignRequest: undefined,
+        }
+        const selector = createTransportSelector(rest)
+        expect(() =>
+            selector(
+                { type: 'walletconnect' } as SourceMetadata,
+                multisigAccount,
+            ),
+        ).toThrow('proposeSignRequest')
+    })
+
+    test('multisig account throws when getMsigMetadata missing', () => {
+        const proposeSignRequest = vi.fn()
+        const selector = createTransportSelector({
+            ...baseOptions(),
+            proposeSignRequest,
+            getMsigMetadata: undefined,
+        })
+        expect(() =>
+            selector(
+                { type: 'walletconnect' } as SourceMetadata,
+                multisigAccount,
+            ),
+        ).toThrow(/getMsigMetadata/)
+    })
+
+    test('multisig account throws when getDeviceId missing', () => {
+        const proposeSignRequest = vi.fn()
+        const selector = createTransportSelector({
+            ...baseOptions(),
+            proposeSignRequest,
+            getDeviceId: undefined,
+        })
+        expect(() =>
+            selector(
+                { type: 'walletconnect' } as SourceMetadata,
+                multisigAccount,
+            ),
+        ).toThrow(/getDeviceId/)
     })
 
     test("source.transport='callback' returns callback transport", () => {

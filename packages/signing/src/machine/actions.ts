@@ -203,6 +203,15 @@ const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
             approve: approveCallback,
             reject: 'reject' in request ? request.reject : undefined,
             error: 'error' in request ? request.error : undefined,
+            // Multisig sync-flow handoff: thread the transaction-only
+            // callbacks through so createMultisigProposeTransport can
+            // register them and the resolver can deliver / soft-reject.
+            softReject: isTransactionRequest(request)
+                ? request.softReject
+                : undefined,
+            approveSignedBytes: isTransactionRequest(request)
+                ? request.approveSignedBytes
+                : undefined,
         },
     }
 }
