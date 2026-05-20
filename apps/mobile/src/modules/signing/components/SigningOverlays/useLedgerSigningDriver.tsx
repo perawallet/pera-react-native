@@ -12,11 +12,7 @@
 
 import React, { useEffect, useRef } from 'react'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import {
-    isInteractiveSource,
-    useHardwareSigning,
-    useSigningRequest,
-} from '@perawallet/wallet-core-signing'
+import { useHardwareSigning } from '@perawallet/wallet-core-signing'
 import { LedgerSigningContent } from '../LedgerSigningContent'
 import { useLedgerSigningContent } from '../LedgerSigningContent/useLedgerSigningContent'
 
@@ -24,12 +20,9 @@ import { useLedgerSigningContent } from '../LedgerSigningContent/useLedgerSignin
  * Watches the hardware-wallet signing store for an active session and shows
  * the LedgerSigningContent sheet via the centralized bottom sheet manager.
  *
- * The sheet visibility is gated by the content hook's `isVisible` derivation
- * AND by the active request's source type: headless (`'local'`) callers
- * own their own Ledger UI (e.g. `TransactionProcessingScreen` renders the
- * awaiting/error content inline), so opening a second stacked sheet would
- * cover the originating sheet for no benefit. Only interactive sources
- * (WalletConnect, deeplinks, multisig-cosign, etc.) need the overlay.
+ * The sheet visibility is gated by the content hook's `isVisible` derivation,
+ * which excludes the silent BLE-scan phase and the BLE-class error path
+ * (where the troubleshooting sheet is the primary surface).
  *
  * Presentation matches the legacy overlay: `size='auto'`, gestures and
  * backdrop press disabled — signing must complete via the UI controls.
@@ -37,18 +30,11 @@ import { useLedgerSigningContent } from '../LedgerSigningContent/useLedgerSignin
 export const useLedgerSigningDriver = (): void => {
     const { requestId } = useHardwareSigning()
     const { isVisible } = useLedgerSigningContent()
-    const { pendingSignRequests } = useSigningRequest()
     const { request: requestBottomSheet, dismiss } = useBottomSheet()
     const openIdRef = useRef<string | null>(null)
 
-    const activeRequest = pendingSignRequests.find(r => r.id === requestId)
-    const isInteractive = activeRequest
-        ? isInteractiveSource(activeRequest.sourceType)
-        : false
-
     useEffect(() => {
-        const sheetId =
-            isVisible && requestId && isInteractive ? requestId : null
+        const sheetId = isVisible && requestId ? requestId : null
 
         if (!sheetId) {
             if (openIdRef.current) {
@@ -84,5 +70,5 @@ export const useLedgerSigningDriver = (): void => {
         return () => {
             cancelled = true
         }
-    }, [isVisible, requestId, isInteractive, requestBottomSheet, dismiss])
+    }, [isVisible, requestId, requestBottomSheet, dismiss])
 }

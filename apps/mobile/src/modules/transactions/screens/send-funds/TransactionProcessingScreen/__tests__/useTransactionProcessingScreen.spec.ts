@@ -14,7 +14,6 @@ import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useTransactionProcessingScreen } from '../useTransactionProcessingScreen'
 import {
-    useHardwareSigningStore,
     UserRejectedSigningError,
     type TransportResult,
 } from '@perawallet/wallet-core-signing'
@@ -104,11 +103,6 @@ vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
     return {
         ...actual,
         useLastTransportResult: () => lastTransportResultMock.current,
-        useSigningRequest: () => ({
-            pendingSignRequests: [],
-            rejectRequest: vi.fn(),
-            retryRequest: vi.fn(),
-        }),
     }
 })
 
@@ -129,16 +123,6 @@ vi.mock('react-native', () => ({
     BackHandler: {
         addEventListener: vi.fn(() => ({ remove: vi.fn() })),
     },
-    // The barrel-import of `LedgerSigningContent` transitively pulls in
-    // `@theme/typography` -> `src/platform/utils.ts`, which calls `Platform.OS`.
-    Platform: {
-        OS: 'ios',
-        select: (obj: Record<string, unknown>) => obj.ios ?? obj.default,
-    },
-}))
-
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (k: string) => k }),
 }))
 
 const proposedResult = (
@@ -154,7 +138,6 @@ describe('useTransactionProcessingScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         lastTransportResultMock.current = null
-        useHardwareSigningStore.getState().reset()
     })
 
     it('calls navigation.goBack and does not show an error toast when user cancels the signing overlay', async () => {
@@ -201,29 +184,6 @@ describe('useTransactionProcessingScreen', () => {
         expect(mockReplace).not.toHaveBeenCalled()
     })
 
-    it('still calls onFinished on proposed transport result while view is ledger-awaiting (multisig + hardware co-flow)', () => {
-        // execute() never resolves so we stay mounted; drive both signals.
-        mockExecute.mockReturnValue(new Promise(() => {}))
-
-        const { result, rerender } = renderHook(() =>
-            useTransactionProcessingScreen(),
-        )
-
-        // Drive the hardware-signing store to awaitingApproval so view='ledger-awaiting'.
-        useHardwareSigningStore.getState().start('req-1', 'Nano X')
-        useHardwareSigningStore.getState().setStatus('awaitingApproval')
-        rerender()
-        expect(result.current.view).toBe('ledger-awaiting')
-
-        // Now publish a 'proposed' transport result — should still trigger onFinished.
-        lastTransportResultMock.current = proposedResult()
-        rerender()
-
-        expect(mockOnFinished).toHaveBeenCalledTimes(1)
-        expect(mockReplace).not.toHaveBeenCalled()
-        expect(mockGoBack).not.toHaveBeenCalled()
-    })
-
     it('does not call onFinished on a non-proposed transport result', () => {
         mockExecute.mockReturnValue(new Promise(() => {}))
 
@@ -260,94 +220,5 @@ describe('useTransactionProcessingScreen', () => {
         renderHook(() => useTransactionProcessingScreen())
 
         expect(mockOnFinished).not.toHaveBeenCalled()
-    })
-
-    describe('view', () => {
-        beforeEach(() => {
-            // execute() never resolves so we stay mounted while we drive the
-            // hardware signing store through its phases.
-            mockExecute.mockReturnValue(new Promise(() => {}))
-        })
-
-        it('returns view="processing" by default (idle hardware store)', () => {
-            const { result } = renderHook(() =>
-                useTransactionProcessingScreen(),
-            )
-            expect(result.current.view).toBe('processing')
-        })
-
-        it('returns view="processing" during the silent BLE-scan phase', () => {
-            const { result, rerender } = renderHook(() =>
-                useTransactionProcessingScreen(),
-            )
-            // start() sets status='searching' — the silent phase.
-            useHardwareSigningStore.getState().start('req-1', 'Nano X')
-            rerender()
-            expect(result.current.view).toBe('processing')
-        })
-
-        it('returns view="ledger-awaiting" when status flips to awaitingApproval', () => {
-            const { result, rerender } = renderHook(() =>
-                useTransactionProcessingScreen(),
-            )
-            useHardwareSigningStore.getState().start('req-1', 'Nano X')
-            useHardwareSigningStore.getState().setStatus('awaitingApproval')
-            rerender()
-            expect(result.current.view).toBe('ledger-awaiting')
-            expect(result.current.ledger.deviceName).toBe('Nano X')
-        })
-
-        it('returns view="ledger-awaiting" during the signing phase too', () => {
-            const { result, rerender } = renderHook(() =>
-                useTransactionProcessingScreen(),
-            )
-            useHardwareSigningStore.getState().start('req-1', 'Nano X')
-            useHardwareSigningStore.getState().setStatus('signing')
-            rerender()
-            expect(result.current.view).toBe('ledger-awaiting')
-        })
-
-        it('exposes progress counters through ledger props', () => {
-            const { result, rerender } = renderHook(() =>
-                useTransactionProcessingScreen(),
-            )
-            useHardwareSigningStore.getState().start('req-1', 'Nano X')
-            useHardwareSigningStore.getState().setStatus('awaitingApproval')
-            useHardwareSigningStore.getState().setProgress(2, 3)
-            rerender()
-            expect(result.current.ledger.currentTx).toBe(2)
-            expect(result.current.ledger.totalTxs).toBe(3)
-        })
-
-        it('returns view="ledger-error" for non-BLE error kinds', () => {
-            const { result, rerender } = renderHook(() =>
-                useTransactionProcessingScreen(),
-            )
-            useHardwareSigningStore.getState().start('req-1', 'Nano X')
-            // user_rejected is not a BLE-class kind, so isBleClassError=false
-            // and the ledger-error view should surface.
-            useHardwareSigningStore
-                .getState()
-                .setError({ kind: 'user_rejected' })
-            rerender()
-            expect(result.current.view).toBe('ledger-error')
-            expect(result.current.ledger.error?.kind).toBe('user_rejected')
-        })
-
-        it('returns view="processing" for BLE-class errors (troubleshooting sheet handles them)', () => {
-            const { result, rerender } = renderHook(() =>
-                useTransactionProcessingScreen(),
-            )
-            useHardwareSigningStore.getState().start('req-1', 'Nano X')
-            // bluetooth_disabled is a BLE-class (troubleshootable) kind. The
-            // troubleshooting sheet is opened by useLedgerConnectionIssueDriver
-            // at the root, so the processing screen stays on the generic view
-            // to avoid double-rendering.
-            useHardwareSigningStore
-                .getState()
-                .setError({ kind: 'bluetooth_disabled' })
-            rerender()
-            expect(result.current.view).toBe('processing')
-        })
     })
 })

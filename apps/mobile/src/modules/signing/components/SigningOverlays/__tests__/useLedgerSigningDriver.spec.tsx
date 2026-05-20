@@ -12,16 +12,12 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import {
-    useHardwareSigningStore,
-    type SignRequest,
-} from '@perawallet/wallet-core-signing'
+import { useHardwareSigningStore } from '@perawallet/wallet-core-signing'
 import { useLedgerSigningDriver } from '../useLedgerSigningDriver'
 
-const { requestBottomSheetMock, dismissMock, pendingRef } = vi.hoisted(() => ({
+const { requestBottomSheetMock, dismissMock } = vi.hoisted(() => ({
     requestBottomSheetMock: vi.fn().mockResolvedValue(undefined),
     dismissMock: vi.fn(),
-    pendingRef: { current: [] as SignRequest[] },
 }))
 
 vi.mock('@modules/bottom-sheet', () => ({
@@ -43,40 +39,20 @@ vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
     return {
         ...actual,
         useSigningRequest: () => ({
-            pendingSignRequests: pendingRef.current,
+            pendingSignRequests: [],
             rejectRequest: vi.fn(),
             retryRequest: vi.fn(),
         }),
     }
 })
 
-const interactiveRequest = (id: string): SignRequest =>
-    ({
-        id,
-        type: 'transactions',
-        transport: 'algod',
-        sourceType: 'walletconnect',
-        txs: [],
-    }) as unknown as SignRequest
-
-const headlessRequest = (id: string): SignRequest =>
-    ({
-        id,
-        type: 'transactions',
-        transport: 'callback',
-        sourceType: 'local',
-        txs: [],
-    }) as unknown as SignRequest
-
 describe('useLedgerSigningDriver', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         useHardwareSigningStore.getState().reset()
-        pendingRef.current = []
     })
 
-    it('opens the sheet when the active request comes from an interactive source', async () => {
-        pendingRef.current = [interactiveRequest('req-1')]
+    it('opens the sheet when the hardware-signing store flips to awaitingApproval', () => {
         const { rerender } = renderHook(() => useLedgerSigningDriver())
         act(() => {
             useHardwareSigningStore.getState().start('req-1', 'Nano X')
@@ -87,46 +63,27 @@ describe('useLedgerSigningDriver', () => {
         expect(requestBottomSheetMock.mock.calls[0][0].id).toBe('req-1')
     })
 
-    it('does NOT open the sheet when the active request is headless (sourceType: "local")', () => {
-        pendingRef.current = [headlessRequest('req-1')]
+    it('keeps the sheet closed during the silent BLE-scan phase', () => {
         const { rerender } = renderHook(() => useLedgerSigningDriver())
         act(() => {
+            // start() sets status='searching' — the silent phase.
             useHardwareSigningStore.getState().start('req-1', 'Nano X')
-            useHardwareSigningStore.getState().setStatus('awaitingApproval')
         })
         rerender()
         expect(requestBottomSheetMock).not.toHaveBeenCalled()
     })
 
-    it('does NOT open the sheet when the requestId is not in pendingSignRequests yet (race window)', () => {
-        pendingRef.current = []
+    it('opens the sheet for the signing phase too', () => {
         const { rerender } = renderHook(() => useLedgerSigningDriver())
         act(() => {
             useHardwareSigningStore.getState().start('req-1', 'Nano X')
-            useHardwareSigningStore.getState().setStatus('awaitingApproval')
+            useHardwareSigningStore.getState().setStatus('signing')
         })
-        rerender()
-        expect(requestBottomSheetMock).not.toHaveBeenCalled()
-    })
-
-    it('opens the sheet on re-render once the interactive request appears in the queue', async () => {
-        pendingRef.current = []
-        const { rerender } = renderHook(() => useLedgerSigningDriver())
-        act(() => {
-            useHardwareSigningStore.getState().start('req-1', 'Nano X')
-            useHardwareSigningStore.getState().setStatus('awaitingApproval')
-        })
-        rerender()
-        expect(requestBottomSheetMock).not.toHaveBeenCalled()
-
-        pendingRef.current = [interactiveRequest('req-1')]
         rerender()
         expect(requestBottomSheetMock).toHaveBeenCalledTimes(1)
     })
 
-    it('dismisses the sheet when the active interactive request leaves the queue (terminal/queue-advance)', async () => {
-        // Open: interactive request in queue, store says awaitingApproval
-        pendingRef.current = [interactiveRequest('req-1')]
+    it('dismisses the sheet when the hardware-signing store resets', () => {
         const { rerender } = renderHook(() => useLedgerSigningDriver())
         act(() => {
             useHardwareSigningStore.getState().start('req-1', 'Nano X')
@@ -136,9 +93,9 @@ describe('useLedgerSigningDriver', () => {
         expect(requestBottomSheetMock).toHaveBeenCalledTimes(1)
         expect(dismissMock).not.toHaveBeenCalled()
 
-        // The request leaves pendingSignRequests (queue advanced) while the
-        // store still holds the requestId. The gate must close the sheet.
-        pendingRef.current = []
+        act(() => {
+            useHardwareSigningStore.getState().reset()
+        })
         rerender()
         expect(dismissMock).toHaveBeenCalledWith('req-1')
     })

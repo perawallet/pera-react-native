@@ -15,8 +15,6 @@ import LottieView from 'lottie-react-native'
 import { PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import peraTransactionLoading from '@assets/animations/pera-transaction-loading.json'
-import { LedgerAwaitingApprovalContent } from '@modules/signing/components/LedgerAwaitingApprovalContent'
-import { LedgerErrorContent } from '@modules/signing/components/LedgerErrorContent'
 import { useStyles } from './styles'
 import { useTransactionProcessingScreen } from './useTransactionProcessingScreen'
 
@@ -24,29 +22,7 @@ export const TransactionProcessingScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
 
-    const { view, ledger } = useTransactionProcessingScreen()
-
-    if (view === 'ledger-awaiting') {
-        return (
-            <LedgerAwaitingApprovalContent
-                deviceName={ledger.deviceName}
-                currentTx={ledger.currentTx}
-                totalTxs={ledger.totalTxs}
-                onCancel={ledger.onCancel}
-            />
-        )
-    }
-
-    if (view === 'ledger-error' && ledger.error) {
-        return (
-            <LedgerErrorContent
-                error={ledger.error}
-                onRetry={ledger.onRetry}
-                onClose={ledger.onCancel}
-                onOpenTroubleshooting={ledger.onOpenTroubleshooting}
-            />
-        )
-    }
+    useTransactionProcessingScreen()
 
     return (
         <PWView style={styles.container}>

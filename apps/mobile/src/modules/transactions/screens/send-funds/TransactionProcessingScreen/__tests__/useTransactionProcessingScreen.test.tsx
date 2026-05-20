@@ -29,12 +29,6 @@ vi.mock('react-native', () => ({
     BackHandler: {
         addEventListener: vi.fn(() => ({ remove: mockRemove })),
     },
-    // The barrel-import of `LedgerSigningContent` transitively pulls in
-    // `@theme/typography` -> `src/platform/utils.ts`, which calls `Platform.OS`.
-    Platform: {
-        OS: 'ios',
-        select: (obj: Record<string, unknown>) => obj.ios ?? obj.default,
-    },
 }))
 
 vi.mock('@react-navigation/native', () => ({
@@ -81,25 +75,6 @@ vi.mock('@hooks/useLanguage', () => ({
             }
             return translations[key] ?? key
         },
-    }),
-}))
-
-// These existing tests focus on execute/navigation behavior. Stub the
-// ledger-view adapter so we don't pull the signing-actor lifecycle (and its
-// transitive `useAccountsStore` dependency) into the test graph.
-vi.mock('@modules/signing/components/LedgerSigningContent', () => ({
-    useLedgerSigningContent: () => ({
-        isVisible: false,
-        status: 'idle',
-        deviceName: null,
-        currentTx: null,
-        totalTxs: null,
-        error: null,
-        onCancel: vi.fn(),
-        onRetry: vi.fn(),
-        isTroubleshootingVisible: false,
-        onOpenTroubleshooting: vi.fn(),
-        onCloseTroubleshooting: vi.fn(),
     }),
 }))
 

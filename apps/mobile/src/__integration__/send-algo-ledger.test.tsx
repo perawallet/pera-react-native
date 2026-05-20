@@ -44,6 +44,7 @@ import { useSendFundsStore } from '@modules/transactions/hooks/send-funds/useSen
 import { TransactionConfirmationScreen } from '@modules/transactions/screens/send-funds/TransactionConfirmationScreen/TransactionConfirmationScreen'
 import { TransactionProcessingScreen } from '@modules/transactions/screens/send-funds/TransactionProcessingScreen/TransactionProcessingScreen'
 import { TransactionSuccessScreen } from '@modules/transactions/screens/send-funds/TransactionSuccessScreen/TransactionSuccessScreen'
+import { useLedgerSigningDriver } from '@modules/signing/components/SigningOverlays/useLedgerSigningDriver'
 import {
     mockAlgodAccountInformation,
     mockAlgodSendRawTransaction,
@@ -124,19 +125,55 @@ const seedLedgerSender = (): HardwareWalletAccount => {
     return sender
 }
 
+/**
+ * Test-only mount of the LedgerSigningDriver so the LedgerSigningContent
+ * bottom sheet actually opens during integration tests. In production this
+ * is one of the hooks called by `SigningOverlays` at the root of the app
+ * (`RootComponent.tsx`); the test harness `renderWithNavigation` mounts
+ * the `BottomSheetManager` but not the overlays, so we wire just the
+ * driver here.
+ */
+const LedgerDriverHost = () => {
+    useLedgerSigningDriver()
+    return null
+}
+
 const renderSendConfirmationStack = () =>
-    renderWithNavigation(TransactionConfirmationScreen, 'ConfirmTransaction', {
-        additionalScreens: [
-            {
-                name: 'TransactionProcessing',
-                component: TransactionProcessingScreen,
-            },
-            {
-                name: 'TransactionSuccess',
-                component: TransactionSuccessScreen,
-            },
-        ],
-    })
+    renderWithNavigation(
+        wrapWithLedgerDriver(TransactionConfirmationScreen),
+        'ConfirmTransaction',
+        {
+            additionalScreens: [
+                {
+                    name: 'TransactionProcessing',
+                    component: wrapWithLedgerDriver(
+                        TransactionProcessingScreen,
+                    ),
+                },
+                {
+                    name: 'TransactionSuccess',
+                    component: TransactionSuccessScreen,
+                },
+            ],
+        },
+    )
+
+// Mount the driver alongside each signing-adjacent screen so the bottom
+// sheet stays subscribed for the duration of the flow (the driver only
+// runs while its hosting component is mounted, and screens unmount on
+// navigation in the test stack).
+const wrapWithLedgerDriver = <P extends object>(
+    Component: React.ComponentType<P>,
+): React.ComponentType<P> => {
+    const Wrapped = (props: P) => (
+        <>
+            <LedgerDriverHost />
+            <Component {...props} />
+        </>
+    )
+    Wrapped.displayName = `WithLedgerDriver(${Component.displayName ?? Component.name})`
+    return Wrapped
+}
 
 describe('Flow: Send ALGO from a Ledger account (Confirmation → Awaiting Approval → Success)', () => {
     beforeAll(async () => {
@@ -177,7 +214,7 @@ describe('Flow: Send ALGO from a Ledger account (Confirmation → Awaiting Appro
     })
 
     it(
-        'Given a Ledger sender, when the user confirms, then TransactionProcessingScreen renders LedgerAwaitingApprovalContent inline until the device signs',
+        'Given a Ledger sender, when the user confirms, then the LedgerAwaitingApprovalContent surfaces via the SigningOverlays driver until the device signs',
         async () => {
             const sender = seedLedgerSender()
             useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
@@ -216,10 +253,11 @@ describe('Flow: Send ALGO from a Ledger account (Confirmation → Awaiting Appro
 
             fireEvent.click(confirmButton)
 
-            // The critical assertion: the awaiting-approval phase renders the
-            // inline LedgerAwaitingApprovalContent inside
-            // TransactionProcessingScreen — not via a separately-stacked
-            // bottom sheet. The Lottie testID is the visible signal.
+            // The critical assertion: the awaiting-approval phase surfaces
+            // the LedgerAwaitingApprovalContent via the SigningOverlays
+            // bottom sheet driver. The Lottie testID is the visible signal
+            // that the user is seeing Ledger UI (not just the generic
+            // "Sending the transaction" Lottie).
             await waitFor(
                 () => {
                     expect(
