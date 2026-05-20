@@ -26,6 +26,7 @@ import { useArc60Signer } from './useArc60Signer'
 import { useMultisigTransportAdapters } from './useMultisigTransportAdapters'
 import { buildHardwareSigningCallbacks } from './buildHardwareSigningCallbacks'
 import { useSigningStore, useHardwareSigningStore } from '../store'
+import { isBleClassErrorKind } from '../types/ledgerErrorPresetKind'
 import { createSigningMachine } from '../machine/createSigningMachine'
 import { signingMachine } from '../machine/signingMachine'
 import { createTransportSelector } from '../pipeline/transports/getTransport'
@@ -279,8 +280,21 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                 // Tear down the hardware overlay on any terminal transition
                 // for the matching request — success, rejection, or
                 // non-retryable failure (the inline error sheet takes over).
+                //
+                // Exception: for BLE-class failures (Bluetooth off, scan
+                // timeout, connect failed/lost, permission) the user-facing
+                // remediation lives in the troubleshooting bottom sheet,
+                // which is gated on the hardware store still holding the
+                // error. Resetting synchronously here would dismiss that
+                // sheet ~50ms after `setError` opened it, leaving the user
+                // with no feedback. Keep the store in `error` state until
+                // the user closes the troubleshooting sheet — that path
+                // calls `dismiss()` (= `reset`) via `onCancel`.
                 const hardwareStore = useHardwareSigningStore.getState()
-                if (hardwareStore.requestId === req.id) {
+                const isBleClassFailure =
+                    snapshot.matches('failed') &&
+                    isBleClassErrorKind(hardwareStore.error?.kind)
+                if (hardwareStore.requestId === req.id && !isBleClassFailure) {
                     hardwareStore.reset()
                 }
 

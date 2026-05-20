@@ -24,4 +24,8 @@ export {
     type LedgerSigningErrorPayload,
 } from './store/hardwareSigningStore'
 
+export {
+    BLE_CLASS_ERROR_KINDS,
+    isBleClassErrorKind,
+} from './types/ledgerErrorPresetKind'
 export type { LedgerErrorPresetKind } from './types/ledgerErrorPresetKind'

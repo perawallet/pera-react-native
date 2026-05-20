@@ -47,6 +47,17 @@ vi.mock('@components/core', () => ({
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
     useAccountBalancesInvalidator: vi.fn(() => ({ invalidate: vi.fn() })),
+    // The processing-screen hook derives Ledger-aware copy from these; the
+    // existing tests focus on send-pipeline routing and don't care about
+    // the copy branch, so a minimal stub keeps them green.
+    AccountTypes: {
+        algo25: 'algo25',
+        hardware: 'hardware',
+        watch: 'watch',
+        multisig: 'multisig',
+        hd: 'hd',
+    },
+    isHardwareWalletAccount: vi.fn(() => false),
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
