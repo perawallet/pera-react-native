@@ -191,7 +191,9 @@ export const useLedgerAccountInfoContent = (
     }, [preview, t, accountIndex])
 
     return {
-        title: titleOverride ?? `Ledger #${accountIndex}`,
+        title:
+            titleOverride ??
+            t('ledger.account_info.default_title', { index: accountIndex }),
         items,
         isLoading,
         isError,

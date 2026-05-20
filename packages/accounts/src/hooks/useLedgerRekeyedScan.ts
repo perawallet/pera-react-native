@@ -28,10 +28,11 @@ type UseLedgerRekeyedScanResult = {
  * For each discovered Ledger (derived) account, scans the indexer for accounts
  * rekeyed to it and returns them as `rekeyed` selectables.
  *
- * Shares the `rekeyed-addresses` query key with `prefetchLedgerAccountPreview`,
- * so a prior prefetch supplies an immediate (non-empty) first value; with
- * `staleTime: 0` the query still refetches in the background to keep rekey
- * data fresh. Best-effort: a failed/empty scan yields no rows for that address.
+ * Shares the `rekeyed-addresses` query key with `prefetchLedgerAccountPreview`
+ * so a prior prefetch supplies an immediate first value. A small `staleTime`
+ * lets the prefetch actually pay off across this short-lived import session;
+ * rescan flows invalidate the cache when fresher data is explicitly required.
+ * Best-effort: a failed/empty scan yields no rows for that address.
  */
 export const useLedgerRekeyedScan = (
     derivedAccounts: HardwareWalletDerivedAccount[],
@@ -42,10 +43,24 @@ export const useLedgerRekeyedScan = (
     const results = useQueries({
         queries: derivedAccounts.map(acc => ({
             queryKey: getRekeyedAddressesQueryKey(acc.address, network),
-            queryFn: () => fetchRekeyedAddresses(acc.address),
-            staleTime: 0,
+            queryFn: () => fetchRekeyedAddresses(acc.address, network),
+            staleTime: 30_000,
         })),
     })
+
+    // `useQueries` returns a fresh `results` array on every render even when
+    // nothing changed, so depending on it directly defeats memoization. This
+    // primitive signature captures everything the body actually reads, and
+    // Object.is stays true across renders when content matches — so the
+    // useMemo below skips recomputation until a query result actually moves.
+    const resultsSig = results
+        .map(
+            (r, i) =>
+                `${derivedAccounts[i]?.address ?? ''}|${
+                    r.isPending ? 1 : 0
+                }|${(r.data ?? []).join(',')}`,
+        )
+        .join('||')
 
     return useMemo(() => {
         const derivedAddresses = new Set(derivedAccounts.map(a => a.address))
@@ -72,5 +87,8 @@ export const useLedgerRekeyedScan = (
 
         const isScanning = results.some(r => r.isPending)
         return { rekeyed, isScanning }
-    }, [results, derivedAccounts, allAccounts])
+        // `resultsSig` encodes everything we read from `results`; depending
+        // on `results` itself would force a re-compute every render.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [resultsSig, derivedAccounts, allAccounts])
 }

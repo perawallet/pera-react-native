@@ -113,9 +113,13 @@ describe('Flow: Ledger account info sheet', () => {
                 { timeout: 10000 },
             )
 
-            // The sheet title should be "Ledger #0"
+            // The sheet title is the i18n key (integration harness doesn't
+            // initialise i18n — t() returns the raw key, see comment below).
             await waitFor(
-                () => expect(screen.getByText('Ledger #0')).toBeTruthy(),
+                () =>
+                    expect(
+                        screen.getByText('ledger.account_info.default_title'),
+                    ).toBeTruthy(),
                 { timeout: 10000 },
             )
 

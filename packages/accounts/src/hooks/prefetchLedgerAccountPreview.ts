@@ -40,7 +40,7 @@ export const prefetchLedgerAccountPreview = async (
         }),
         queryClient.prefetchQuery({
             queryKey: getRekeyedAddressesQueryKey(address, network),
-            queryFn: () => fetchRekeyedAddresses(address),
+            queryFn: () => fetchRekeyedAddresses(address, network),
         }),
     ])
 }

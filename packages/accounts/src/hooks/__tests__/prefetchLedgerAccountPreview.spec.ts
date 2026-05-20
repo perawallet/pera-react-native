@@ -73,7 +73,10 @@ describe('prefetchLedgerAccountPreview', () => {
             algokit,
             'ADDR',
         )
-        expect(mocks.fetchRekeyedAddresses).toHaveBeenCalledWith('ADDR')
+        expect(mocks.fetchRekeyedAddresses).toHaveBeenCalledWith(
+            'ADDR',
+            'mainnet',
+        )
     })
 
     it('never rejects when a fetch fails (best-effort)', async () => {

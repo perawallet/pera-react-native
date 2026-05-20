@@ -197,6 +197,12 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                     !added.has(sel.address)
                 ) {
                     added.add(sel.address)
+                    // Watch entries carry an explicit `id` to match the
+                    // existing rekeyed-watch precedent in account-discovery
+                    // (`fetchRekeyedAddresses` consumers). Hardware accounts
+                    // are deduped by `address` (see `addHardware` above and
+                    // every other hardware-creation site), so they
+                    // deliberately leave `id` unset.
                     batch.push({
                         id: generateOrderedUniqueId(),
                         type: AccountTypes.watch,

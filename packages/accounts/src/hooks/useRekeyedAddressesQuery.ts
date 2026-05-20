@@ -30,9 +30,13 @@ export const useRekeyedAddressesQuery = (
 
     const query = useQuery({
         queryKey: getRekeyedAddressesQueryKey(address, network),
-        queryFn: () => fetchRekeyedAddresses(address),
+        queryFn: () => fetchRekeyedAddresses(address, network),
         enabled: !!address,
-        staleTime: 0,
+        // 30s lets `prefetchLedgerAccountPreview`'s warm-up actually pay off
+        // for the short-lived Ledger import session without serving
+        // long-stale rekey data; rescan flows invalidate this key when
+        // fresher data is explicitly required.
+        staleTime: 30_000,
     })
 
     return {

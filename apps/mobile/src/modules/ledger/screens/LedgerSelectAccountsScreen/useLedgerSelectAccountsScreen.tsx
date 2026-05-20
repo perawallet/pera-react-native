@@ -113,6 +113,13 @@ export const useLedgerSelectAccountsScreen =
             }
         }, [])
 
+        // Each entry in `prefetchedRef` is bound to a specific network — when
+        // the active network changes, those entries no longer represent warm
+        // caches, so reset and let the prefetch effect re-warm the list.
+        useEffect(() => {
+            prefetchedRef.current = new Set()
+        }, [network])
+
         const { rekeyed, isScanning } = useLedgerRekeyedScan(accounts)
 
         const selectableAccounts = useMemo<LedgerSelectableAccount[]>(

@@ -68,7 +68,10 @@ describe('useRekeyedAddressesQuery', () => {
             ]),
         )
         expect(result.current.isError).toBe(false)
-        expect(mocks.fetchRekeyedAddresses).toHaveBeenCalledWith('ADDR')
+        expect(mocks.fetchRekeyedAddresses).toHaveBeenCalledWith(
+            'ADDR',
+            'mainnet',
+        )
     })
 
     it('is disabled when address is empty', () => {

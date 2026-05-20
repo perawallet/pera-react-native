@@ -19,7 +19,10 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useLedgerAccountInfoContent } from '../useLedgerAccountInfoContent'
 
-const mocks = vi.hoisted(() => ({ useLedgerAccountPreview: vi.fn() }))
+const mocks = vi.hoisted(() => ({
+    useLedgerAccountPreview: vi.fn(),
+    t: vi.fn((k: string, _opts?: Record<string, unknown>) => k),
+}))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useLedgerAccountPreview: mocks.useLedgerAccountPreview,
@@ -41,7 +44,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     },
 }))
 vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (k: string) => k }),
+    useLanguage: () => ({ t: mocks.t }),
 }))
 
 const baseAsset = {
@@ -85,7 +88,11 @@ describe('useLedgerAccountInfoContent', () => {
             useLedgerAccountInfoContent('ADDR', 0),
         )
 
-        expect(result.current.title).toBe('Ledger #0')
+        expect(result.current.title).toBe('ledger.account_info.default_title')
+        expect(mocks.t).toHaveBeenCalledWith(
+            'ledger.account_info.default_title',
+            { index: 0 },
+        )
         expect(result.current.isLoading).toBe(true)
         expect(result.current.items).toEqual([])
     })
@@ -115,7 +122,11 @@ describe('useLedgerAccountInfoContent', () => {
             'sectionHeader',
             'asset',
         ])
-        expect(result.current.title).toBe('Ledger #3')
+        expect(result.current.title).toBe('ledger.account_info.default_title')
+        expect(mocks.t).toHaveBeenCalledWith(
+            'ledger.account_info.default_title',
+            { index: 3 },
+        )
     })
 
     it('emits a "can be signed by" rekey section when rekeyedTo', () => {
