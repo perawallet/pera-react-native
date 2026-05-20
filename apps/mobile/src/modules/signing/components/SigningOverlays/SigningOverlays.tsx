@@ -20,11 +20,11 @@ import {
 } from '@perawallet/wallet-core-signing'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { LedgerConnectionIssueContent } from '../LedgerConnectionIssueContent'
-import { LedgerSigningContent } from '../LedgerSigningContent'
 import { useLedgerSigningContent } from '../LedgerSigningContent/useLedgerSigningContent'
 import { SignRequestContent } from '../SignRequestContent'
 import { SigningCompletedContent } from '../SigningCompletedContent'
 import { TransactionRequestFAQContent } from '../TransactionRequestFAQContent'
+import { useLedgerSigningDriver } from './useLedgerSigningDriver'
 
 /**
  * Watches the signing queue for the next interactive sign request and
@@ -197,64 +197,6 @@ const useTransactionRequestFAQDriver = () => {
             cancelled = true
         }
     }, [pendingSignRequests, getPreference, setPreference, requestBottomSheet])
-}
-
-/**
- * Watches the hardware-wallet signing store for an active session and
- * shows the LedgerSigningContent sheet via the centralized bottom sheet
- * manager.
- *
- * The sheet visibility is gated by the content hook's `isVisible`
- * derivation, which excludes the silent BLE-scan phase and the BLE-class
- * error path (where the troubleshooting sheet is the primary surface).
- *
- * Presentation matches the legacy overlay: `size='auto'`, gestures and
- * backdrop press disabled — signing must complete via the UI controls.
- */
-const useLedgerSigningDriver = () => {
-    const { requestId } = useHardwareSigning()
-    const { isVisible } = useLedgerSigningContent()
-    const { request: requestBottomSheet, dismiss } = useBottomSheet()
-    const openIdRef = useRef<string | null>(null)
-
-    useEffect(() => {
-        const sheetId = isVisible && requestId ? requestId : null
-
-        if (!sheetId) {
-            if (openIdRef.current) {
-                dismiss(openIdRef.current)
-                openIdRef.current = null
-            }
-            return
-        }
-        if (openIdRef.current === sheetId) return
-
-        if (openIdRef.current) {
-            dismiss(openIdRef.current)
-        }
-        openIdRef.current = sheetId
-
-        let cancelled = false
-        void (async () => {
-            await requestBottomSheet<void>({
-                id: sheetId,
-                contents: <LedgerSigningContent />,
-                options: {
-                    size: 'auto',
-                    enablePanDownToClose: false,
-                    enableCloseOnBackdropPress: false,
-                    autoCreateContainer: false,
-                },
-            })
-            if (cancelled) return
-            if (openIdRef.current === sheetId) {
-                openIdRef.current = null
-            }
-        })()
-        return () => {
-            cancelled = true
-        }
-    }, [isVisible, requestId, requestBottomSheet, dismiss])
 }
 
 /**
