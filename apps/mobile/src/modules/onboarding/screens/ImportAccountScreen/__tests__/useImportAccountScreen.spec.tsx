@@ -18,6 +18,7 @@ import { useImportAccountScreen } from '../useImportAccountScreen'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 
 const mockShowToast = vi.fn()
+const mockErrorToast = vi.fn()
 const mockReplace = vi.fn()
 const mockPush = vi.fn()
 const mockGoBack = vi.fn()
@@ -90,6 +91,7 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
 vi.mock('@hooks/useToast', () => ({
     useToast: vi.fn(() => ({
         showToast: mockShowToast,
+        errorToast: mockErrorToast,
     })),
 }))
 
@@ -177,11 +179,10 @@ describe('useImportAccountScreen', () => {
             result.current.updateWord(mnemonic, 22)
         })
 
-        expect(mockShowToast).toHaveBeenCalledWith({
-            title: 'onboarding.import_account.insufficient_slots_title',
-            body: 'onboarding.import_account.insufficient_slots_body',
-            type: 'error',
-        })
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            'onboarding.import_account.insufficient_slots_title',
+            'onboarding.import_account.insufficient_slots_body',
+        )
         expect(result.current.words[22]).toBe('')
     })
 
@@ -193,11 +194,10 @@ describe('useImportAccountScreen', () => {
             result.current.updateWord(mnemonic, 0)
         })
 
-        expect(mockShowToast).toHaveBeenCalledWith({
-            title: 'onboarding.import_account.invalid_mnemonic_title',
-            body: 'onboarding.import_account.invalid_mnemonic_body',
-            type: 'error',
-        })
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            'onboarding.import_account.invalid_mnemonic_title',
+            'onboarding.import_account.invalid_mnemonic_body',
+        )
         expect(result.current.words[0]).toBe('')
     })
 
@@ -259,11 +259,10 @@ describe('useImportAccountScreen', () => {
             result.current.handleQRScannerSuccess('invalid-url')
         })
 
-        expect(mockShowToast).toHaveBeenCalledWith({
-            title: 'onboarding.import_account.invalid_mnemonic_title',
-            body: 'onboarding.import_account.invalid_mnemonic_body',
-            type: 'error',
-        })
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            'onboarding.import_account.invalid_mnemonic_title',
+            'onboarding.import_account.invalid_mnemonic_body',
+        )
     })
 
     describe('suggestions', () => {
