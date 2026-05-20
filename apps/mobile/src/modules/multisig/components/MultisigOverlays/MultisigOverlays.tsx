@@ -13,11 +13,13 @@
 import { useEffect, useRef } from 'react'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useMultisigProposeListener } from '../../hooks/useMultisigProposeListener'
+import { useWalletConnectHandoffResolver } from '../../hooks/useWalletConnectHandoffResolver'
 import { usePendingSignaturesSheetStore } from '../../stores/usePendingSignaturesSheetStore'
 import { PendingSignaturesContent } from '../PendingSignaturesContent'
 
 export const MultisigOverlays = () => {
     useMultisigProposeListener()
+    useWalletConnectHandoffResolver()
 
     const signRequestId = usePendingSignaturesSheetStore(
         state => state.signRequestId,

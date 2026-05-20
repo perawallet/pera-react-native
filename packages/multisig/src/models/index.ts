@@ -32,6 +32,14 @@ export type SignRequestStatus =
 export interface SignerResponse {
     address: string
     response: 'signed' | 'declined'
+    /**
+     * Per-transaction signatures from this participant, base64-encoded.
+     * Same order as the enclosing `TransactionList.rawTransactions` array;
+     * nullable entries mean "this participant didn't sign this index".
+     * Populated only by the `getSignRequestsWithSignatures` endpoint —
+     * other endpoints (search, propose/cosign responses) omit it.
+     */
+    signatures?: Nullable<string>[]
 }
 
 export interface TransactionList {

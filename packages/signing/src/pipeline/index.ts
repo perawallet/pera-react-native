@@ -31,3 +31,10 @@ export * from './transports'
 // Submission helpers (low-level algod submission — prefer the pipeline for
 // end-to-end flows, but exposed for callers that merge pre-signed bytes).
 export * from './submission'
+
+// Sync-flow WalletConnect handoff registry. Populated by the multisig
+// propose transport; consumed by the app-side resolver listener.
+export {
+    walletConnectHandoffs,
+    type PendingWalletConnectHandoff,
+} from './walletConnectHandoffs'

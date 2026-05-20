@@ -15,6 +15,7 @@ import { isMultisigAccount } from '@perawallet/wallet-core-accounts'
 import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
 import type { Network } from '@perawallet/wallet-core-shared'
 import type { DataTransport, SourceMetadata } from '../types'
+import { isExternalCallbackSource } from '../types'
 import {
     createAlgodTransport,
     type AlgokitClientInterface,
@@ -23,6 +24,8 @@ import { createWalletConnectTransport } from './createWalletConnectTransport'
 import { createCallbackTransport } from './createCallbackTransport'
 import {
     createMultisigProposeTransport,
+    type GetDeviceIdFn,
+    type GetMsigMetadataFn,
     type ProposeSignRequestFn,
 } from './createMultisigProposeTransport'
 import {
@@ -54,6 +57,20 @@ export interface CreateTransportSelectorOptions {
     proposeSignRequest?: ProposeSignRequestFn
     /** Function to add signatures to an existing request (required only for multisig flows) */
     addSignatures?: AddSignaturesFn
+    /**
+     * Resolves multisig metadata for a given account address. Required by
+     * the propose transport for sync-flow handoffs so the resolver listener
+     * can assemble the composite multisig signed transaction. Optional for
+     * cosign-only configurations; the transport selector throws at
+     * selection time if a sync-flow handoff requires it but it's missing.
+     */
+    getMsigMetadata?: GetMsigMetadataFn
+    /**
+     * Returns the persistent device id for `with-signatures` and
+     * `mark-confirmed` API calls in the sync-flow handoff. Optional;
+     * required only when the propose transport handles an external source.
+     */
+    getDeviceId?: GetDeviceIdFn
 }
 
 /**
@@ -66,33 +83,61 @@ export const createTransportSelector = (
     options: CreateTransportSelectorOptions,
 ): ((source: SourceMetadata, account: WalletAccount) => DataTransport) => {
     return (source: SourceMetadata, account: WalletAccount): DataTransport => {
-        // External callback sources (WalletConnect, webview, deeplink) go back via callback
-        if (
-            source.type === 'walletconnect' ||
-            source.type === 'webview' ||
-            source.type === 'deeplink'
-        ) {
-            return createWalletConnectTransport(options.network)
-        }
-
-        // Multisig co-sign adds signatures to existing request
+        // Multisig co-sign adds signatures to an existing backend request.
+        // Routed first because the `multisig-cosign` source carries its own
+        // signRequestId regardless of account-shape.
         if (source.type === 'multisig-cosign') {
             if (!options.addSignatures) {
                 throw new Error(
                     'Multisig co-sign transport requires addSignatures',
                 )
             }
-            return createMultisigCosignTransport(options.addSignatures)
+            return createMultisigCosignTransport(
+                options.addSignatures,
+                options.network,
+            )
         }
 
-        // Multisig account with local source = propose new request
-        if (isMultisigAccount(account) && source.type === 'local') {
+        // Multisig account → propose a new sign-request to the backend,
+        // regardless of source. This covers:
+        //   - `'local'`: proposer's first send from an in-app screen.
+        //     `type: 'async'` — backend handles broadcast.
+        //   - `'walletconnect'` / `'webview'` / `'deeplink'`: sync-flow
+        //     handoff. `type: 'sync'` — wallet delivers the assembled
+        //     signed bytes to the dApp once threshold is met (via the
+        //     resolver listener). Hoisted above the external-callback
+        //     rule below so multisig wins over source type.
+        if (
+            isMultisigAccount(account) &&
+            (source.type === 'local' || isExternalCallbackSource(source.type))
+        ) {
             if (!options.proposeSignRequest) {
                 throw new Error(
                     'Multisig propose transport requires proposeSignRequest',
                 )
             }
-            return createMultisigProposeTransport(options.proposeSignRequest)
+            if (!options.getMsigMetadata) {
+                throw new Error(
+                    'Multisig propose transport requires getMsigMetadata',
+                )
+            }
+            if (!options.getDeviceId) {
+                throw new Error(
+                    'Multisig propose transport requires getDeviceId',
+                )
+            }
+            return createMultisigProposeTransport(
+                options.proposeSignRequest,
+                options.network,
+                options.getMsigMetadata,
+                options.getDeviceId,
+            )
+        }
+
+        // External callback sources (WalletConnect, webview, deeplink) go
+        // back via callback for non-multisig accounts.
+        if (isExternalCallbackSource(source.type)) {
+            return createWalletConnectTransport(options.network)
         }
 
         // Local + callback: hand the signed bytes back to the caller instead

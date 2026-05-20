@@ -44,6 +44,7 @@ const proposedResult = (
     type: 'proposed',
     signRequestId: SIGN_REQUEST_ID,
     status: 'pending',
+    sourceType: 'local',
     ...overrides,
 })
 

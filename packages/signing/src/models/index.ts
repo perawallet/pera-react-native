@@ -70,6 +70,23 @@ export type TransactionSignRequest = {
     approve?: (signedTxs: PeraSignedTransaction[]) => Promise<void>
     reject?: () => Promise<void>
     error?: (error: Error) => Promise<void>
+    /**
+     * Resolve the external peer cleanly with a non-fatal reason — used when
+     * the request was successfully handed off to a different flow (e.g. a
+     * multisig sign-request was created on the backend) and the peer needs
+     * to know the inline response will not arrive. Implementers (e.g. the
+     * WalletConnect handler) should surface the error to the peer via
+     * `rejectRequest` WITHOUT raising an in-app connection-error banner.
+     */
+    softReject?: (error: Error) => Promise<void>
+    /**
+     * Alternative delivery path: hand pre-encoded SignedTransaction bytes
+     * to the peer (skipping algosdk's decode + re-encode roundtrip). Used
+     * by the multisig sync-flow resolver to deliver the assembled
+     * composite multisig signed transaction with the original txn bytes
+     * embedded verbatim — critical so per-participant signatures verify.
+     */
+    approveSignedBytes?: (bytes: Uint8Array[]) => Promise<void>
 } & BaseSignRequest
 
 export type PeraArbitraryDataMessage = {
