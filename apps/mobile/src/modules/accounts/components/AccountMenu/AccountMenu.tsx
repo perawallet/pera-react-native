@@ -49,14 +49,17 @@ export const AccountMenu = (props: AccountMenuProps) => {
 
             <PWView style={styles.mainContent}>
                 {!hideDefaultHeader && (
-                    <PWView style={styles.titleBar}>
+                    <PWView style={styles.titleBar} accessible={false}>
                         <PWText
                             variant='h3'
                             style={styles.activeTitle}
                         >
                             {t('account_menu.title')}
                         </PWText>
-                        <PWView style={styles.titleBarButtonContainer}>
+                        <PWView
+                            style={styles.titleBarButtonContainer}
+                            accessible={false}
+                        >
                             <PWButton
                                 variant='linkPositive'
                                 icon='list-arrow-down'
@@ -66,6 +69,7 @@ export const AccountMenu = (props: AccountMenuProps) => {
                             />
                             <PWButton
                                 testID='account_menu_add_account_button'
+                                accessibilityLabel='account_menu_add_account_button'
                                 variant='helper'
                                 icon='plus'
                                 paddingStyle='dense'

@@ -47,4 +47,19 @@ describe('PWButton', () => {
         // Implementation: {!!props.title && !props.loading && <Text...>}
         expect(screen.queryByText('Click Me')).toBeNull()
     })
+
+    it('forwards accessibilityLabel and testID to the native touchable', () => {
+        render(
+            <PWButton
+                title='Add Account'
+                onPress={vi.fn()}
+                variant='helper'
+                testID='add_account_button'
+                accessibilityLabel='add_account_button'
+            />,
+        )
+
+        expect(screen.getByTestId('add_account_button')).toBeTruthy()
+        expect(screen.getByLabelText('add_account_button')).toBeTruthy()
+    })
 })
