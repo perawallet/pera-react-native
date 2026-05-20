@@ -104,19 +104,6 @@ export const useBottomSheetStore: UseBoundStore<StoreApi<BottomSheetStore>> =
                     id ?? state.requests[state.requests.length - 1]?.id
                 if (!target) return {}
                 if (!state.requests.some(r => r.id === target)) return {}
-                // [LEDGER-DEBUG] Log dismiss with a stack so we can identify
-                // the caller responsible for tearing down the SendFunds sheet.
-                // eslint-disable-next-line no-console
-                console.warn(
-                    '[LEDGER-DEBUG] bottomSheetStore.dismiss',
-                    JSON.stringify({
-                        id: target,
-                        explicit: id ?? null,
-                        requestCount: state.requests.length,
-                        at: new Date().toISOString(),
-                    }),
-                    new Error('stack').stack,
-                )
                 // dismiss intentionally does NOT populate pendingValues
                 return {
                     requests: state.requests.map(r =>
@@ -126,11 +113,6 @@ export const useBottomSheetStore: UseBoundStore<StoreApi<BottomSheetStore>> =
             })
         },
         dismissAll: () => {
-            // eslint-disable-next-line no-console
-            console.warn(
-                '[LEDGER-DEBUG] bottomSheetStore.dismissAll',
-                new Error('stack').stack,
-            )
             set(state => ({
                 requests: state.requests.map(r => ({
                     ...r,
@@ -142,18 +124,6 @@ export const useBottomSheetStore: UseBoundStore<StoreApi<BottomSheetStore>> =
             set(state => {
                 const target = state.requests.find(r => r.id === id)
                 if (!target) return {}
-                // [LEDGER-DEBUG] The remove path is the one that actually
-                // unmounts a BottomSheetHost. Always fires after dismiss →
-                // gorhom onDismiss → handleDismiss → remove.
-                // eslint-disable-next-line no-console
-                console.warn(
-                    '[LEDGER-DEBUG] bottomSheetStore.remove',
-                    JSON.stringify({
-                        id,
-                        remainingCount: state.requests.length - 1,
-                        at: new Date().toISOString(),
-                    }),
-                )
                 const value = pendingValues.get(id)
                 pendingValues.delete(id)
                 target.resolver(value)

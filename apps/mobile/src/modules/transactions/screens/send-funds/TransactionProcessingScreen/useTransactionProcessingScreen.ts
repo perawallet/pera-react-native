@@ -116,15 +116,6 @@ export const useTransactionProcessingScreen =
         }, [lastTransportResult, onFinished])
 
         useEffect(() => {
-            // eslint-disable-next-line no-console
-            console.warn(
-                '[LEDGER-DEBUG] ProcessingScreen MOUNTED + execute()',
-                JSON.stringify({
-                    sendMode,
-                    senderAddress: selectedAccount?.address ?? null,
-                    senderType: selectedAccount?.type ?? null,
-                }),
-            )
             const subscription = BackHandler.addEventListener(
                 'hardwareBackPress',
                 () => true,
@@ -145,27 +136,12 @@ export const useTransactionProcessingScreen =
                 params: sendParams,
             })
                 .then(txId => {
-                    // eslint-disable-next-line no-console
-                    console.warn(
-                        '[LEDGER-DEBUG] execute() RESOLVED',
-                        JSON.stringify({ txId }),
-                    )
                     invalidateAccountBalances()
                     navigation.replace('TransactionSuccess', {
                         transactionId: txId,
                     })
                 })
                 .catch(error => {
-                    // eslint-disable-next-line no-console
-                    console.warn(
-                        '[LEDGER-DEBUG] execute() REJECTED',
-                        JSON.stringify({
-                            errorName: (error as Error)?.name,
-                            errorMessage: (error as Error)?.message,
-                            isUserRejected:
-                                error instanceof UserRejectedSigningError,
-                        }),
-                    )
                     if (error instanceof UserRejectedSigningError) {
                         // Silent navigation back — user already saw the overlay's cancel button.
                         navigation.goBack()
@@ -177,11 +153,7 @@ export const useTransactionProcessingScreen =
                     navigation.goBack()
                 })
 
-            return () => {
-                // eslint-disable-next-line no-console
-                console.warn('[LEDGER-DEBUG] ProcessingScreen UNMOUNTED')
-                subscription.remove()
-            }
+            return () => subscription.remove()
         }, [])
 
         const isHardwareSender = selectedAccount?.type === AccountTypes.hardware

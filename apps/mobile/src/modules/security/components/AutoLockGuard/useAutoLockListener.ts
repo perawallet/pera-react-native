@@ -93,14 +93,6 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
     }, [setAutoLockStartedAt])
 
     const handleResetData = useCallback(async () => {
-        // [LEDGER-DEBUG] Auto-lock failed-PIN reset path. If this fires
-        // during a Ledger signing window, it wipes the accounts store and
-        // unmounts the SendFunds modal — see follow-up investigation.
-        // eslint-disable-next-line no-console
-        console.warn(
-            '[LEDGER-DEBUG] AutoLock handleResetData FIRED',
-            new Date().toISOString(),
-        )
         await deleteAllData()
         // deleteAllData skips the accounts store so the settings-flow success
         // modal can render before the route tree switches to Onboarding.

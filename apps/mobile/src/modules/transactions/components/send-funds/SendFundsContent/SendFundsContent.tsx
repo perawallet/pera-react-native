@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { useEffect, useRef } from 'react'
 import {
     NavigationContainer,
     NavigationIndependentTree,
@@ -29,37 +28,6 @@ export type SendFundsContentProps = {
 export const SendFundsContent = ({ assetId }: SendFundsContentProps) => {
     const { t } = useLanguage()
     const { selectedAccount } = useSendFundsContent(assetId)
-
-    // [LEDGER-DEBUG] Track whether the modal's nested navigator is mounted
-    // (i.e. selectedAccount is truthy). If selectedAccount goes from truthy
-    // → falsy mid-signing, the navigator unmounts and the user is "kicked
-    // out" while execute() keeps running headlessly.
-    const prevHadAccountRef = useRef<boolean | null>(null)
-    useEffect(() => {
-        const has = !!selectedAccount
-        if (prevHadAccountRef.current !== has) {
-            // eslint-disable-next-line no-console
-            console.warn(
-                '[LEDGER-DEBUG] SendFundsContent selectedAccount',
-                JSON.stringify({
-                    hadAccount: prevHadAccountRef.current,
-                    nowHasAccount: has,
-                    address: selectedAccount?.address ?? null,
-                    type: selectedAccount?.type ?? null,
-                }),
-            )
-            prevHadAccountRef.current = has
-        }
-    }, [selectedAccount])
-
-    useEffect(() => {
-        // eslint-disable-next-line no-console
-        console.warn('[LEDGER-DEBUG] SendFundsContent MOUNTED')
-        return () => {
-            // eslint-disable-next-line no-console
-            console.warn('[LEDGER-DEBUG] SendFundsContent UNMOUNTED')
-        }
-    }, [])
 
     return (
         <TransactionErrorBoundary t={t}>

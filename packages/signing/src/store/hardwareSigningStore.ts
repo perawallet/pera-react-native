@@ -76,48 +76,23 @@ const initialState: State = {
     isTroubleshootingVisible: false,
 }
 
-// [LEDGER-DEBUG] Helper so every mutation logs with a consistent shape and
-// timestamp. Lets you correlate hardware-signing phase transitions against
-// SendFunds mount/unmount and accountsStore mutations in the same trace.
-const debugLog = (label: string, payload: Record<string, unknown>) => {
-    // eslint-disable-next-line no-console
-    console.warn(
-        `[LEDGER-DEBUG] hardwareSigningStore ${label}`,
-        JSON.stringify({
-            ...payload,
-            at: new Date().toISOString(),
-        }),
-    )
-}
-
 // Intentionally session-only (no persist middleware) — live signing state is
 // meaningless after an app reload. Same pattern as useHDImportSessionStore.
 export const useHardwareSigningStore = create<Store>(set => ({
     ...initialState,
-    start: (requestId, deviceName) => {
-        debugLog('start', { requestId, deviceName })
+    start: (requestId, deviceName) =>
         set({
             ...initialState,
             status: 'searching',
             requestId,
             deviceName,
-        })
-    },
-    setStatus: status => {
-        debugLog('setStatus', { status })
-        set({ status })
-    },
+        }),
+    setStatus: status => set({ status }),
     setProgress: (current, total) =>
         set({ currentTx: current, totalTxs: total }),
-    setError: payload => {
-        debugLog('setError', { kind: payload.kind })
-        set({ status: 'error', error: payload })
-    },
+    setError: payload => set({ status: 'error', error: payload }),
     openTroubleshooting: () => set({ isTroubleshootingVisible: true }),
     closeTroubleshooting: () => set({ isTroubleshootingVisible: false }),
-    reset: () => {
-        debugLog('reset', {})
-        set(initialState)
-    },
+    reset: () => set(initialState),
     resetState: () => set(initialState),
 }))

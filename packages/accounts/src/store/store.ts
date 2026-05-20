@@ -55,44 +55,13 @@ export const useAccountsStore: UseBoundStore<
                 )
             },
             setAccounts: (accounts: WalletAccount[]) => {
-                const prev = get().accounts
                 const currentSelected = get().selectedAccountAddress
                 const currentManualOrder = get().manualAccountOrder
-                // [LEDGER-DEBUG] Most common reason SendFundsContent unmounts
-                // is selectedAccount turning null — usually because the
-                // current selected address was pruned out of `accounts` by a
-                // setAccounts() call here. Log every transition.
-                if (prev.length !== accounts.length) {
-                    // eslint-disable-next-line no-console
-                    console.warn(
-                        '[LEDGER-DEBUG] accountsStore.setAccounts size change',
-                        JSON.stringify({
-                            prevCount: prev.length,
-                            nextCount: accounts.length,
-                            prevSelected: currentSelected,
-                            stillPresent:
-                                currentSelected != null &&
-                                accounts.some(
-                                    a => a.address === currentSelected,
-                                ),
-                            at: new Date().toISOString(),
-                        }),
-                    )
-                }
                 set({ accounts })
 
                 if (currentSelected == null && accounts.length) {
                     set({ selectedAccountAddress: accounts.at(0)?.address })
                 } else if (!accounts.find(a => a.address === currentSelected)) {
-                    // eslint-disable-next-line no-console
-                    console.warn(
-                        '[LEDGER-DEBUG] accountsStore.setAccounts: SELECTED PRUNED',
-                        JSON.stringify({
-                            previousSelected: currentSelected,
-                            newSelected: accounts.at(0)?.address ?? null,
-                            at: new Date().toISOString(),
-                        }),
-                    )
                     set({
                         selectedAccountAddress: accounts.at(0)?.address ?? null,
                     })
@@ -114,18 +83,6 @@ export const useAccountsStore: UseBoundStore<
                         `Attempted to set selected account address to ${address}, but it does not exist in accounts list.`,
                     )
                     return
-                }
-                const prev = get().selectedAccountAddress
-                if (prev !== address) {
-                    // eslint-disable-next-line no-console
-                    console.warn(
-                        '[LEDGER-DEBUG] accountsStore.setSelectedAccountAddress',
-                        JSON.stringify({
-                            from: prev,
-                            to: address,
-                            at: new Date().toISOString(),
-                        }),
-                    )
                 }
                 set({ selectedAccountAddress: address })
             },
