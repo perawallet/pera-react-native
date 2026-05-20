@@ -83,6 +83,9 @@ export const QRViewScreen = () => {
                         {...getTestProps('receive_qr_code')}
                         value={deeplink}
                         size={width - theme.spacing['5xl'] * 2}
+                        color='black'
+                        backgroundColor='white'
+                        quietZone={theme.spacing.sm}
                     />
                 </PWView>
                 <PWView style={styles.addressContainer}>
