@@ -201,6 +201,29 @@ describe('useTransactionProcessingScreen', () => {
         expect(mockReplace).not.toHaveBeenCalled()
     })
 
+    it('still calls onFinished on proposed transport result while view is ledger-awaiting (multisig + hardware co-flow)', () => {
+        // execute() never resolves so we stay mounted; drive both signals.
+        mockExecute.mockReturnValue(new Promise(() => {}))
+
+        const { result, rerender } = renderHook(() =>
+            useTransactionProcessingScreen(),
+        )
+
+        // Drive the hardware-signing store to awaitingApproval so view='ledger-awaiting'.
+        useHardwareSigningStore.getState().start('req-1', 'Nano X')
+        useHardwareSigningStore.getState().setStatus('awaitingApproval')
+        rerender()
+        expect(result.current.view).toBe('ledger-awaiting')
+
+        // Now publish a 'proposed' transport result — should still trigger onFinished.
+        lastTransportResultMock.current = proposedResult()
+        rerender()
+
+        expect(mockOnFinished).toHaveBeenCalledTimes(1)
+        expect(mockReplace).not.toHaveBeenCalled()
+        expect(mockGoBack).not.toHaveBeenCalled()
+    })
+
     it('does not call onFinished on a non-proposed transport result', () => {
         mockExecute.mockReturnValue(new Promise(() => {}))
 
