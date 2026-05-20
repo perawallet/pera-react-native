@@ -10,6 +10,10 @@
  limitations under the License
  */
 
+// guardrails-ignore-file no-primitive-rn-components no-numeric-sizes no-typography-in-styles
+// Temporary debug overlay; using primitives keeps the file isolated from
+// the styling system so it can be deleted in a single revert once the
+// issue is fixed.
 import React from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useLedgerDebugStore } from './ledgerDebugStore'
