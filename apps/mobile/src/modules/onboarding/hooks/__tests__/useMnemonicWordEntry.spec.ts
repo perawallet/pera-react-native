@@ -236,6 +236,24 @@ describe('useMnemonicWordEntry — paste distribution', () => {
     })
 })
 
+describe('useMnemonicWordEntry — unmount cleanup', () => {
+    it('wipes the entered words from the held array on unmount', async () => {
+        const { result, unmount } = renderEntry()
+
+        await act(async () => {
+            await result.current.handleWordChange(TWELVE_WORDS.join(' '), 0)
+        })
+
+        // Same array the hook holds internally; cleanup fills it in place.
+        const heldWords = result.current.words
+        expect(heldWords).toEqual(TWELVE_WORDS)
+
+        unmount()
+
+        expect(heldWords.every(w => w === '')).toBe(true)
+    })
+})
+
 describe('useMnemonicWordEntry — suggestions', () => {
     it('returns wordlist matches that share the current prefix', async () => {
         const { result } = renderEntry()

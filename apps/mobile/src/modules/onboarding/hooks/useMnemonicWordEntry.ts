@@ -24,14 +24,10 @@ const MAX_SUGGESTIONS = 4
 const WORDLIST_SET = new Set(MNEMONIC_WORDLIST)
 
 export type UseMnemonicWordEntryParams = {
-    /** Total number of words the user is expected to enter. */
     wordCount: number
-    /** Fired when a paste contains more words than `wordCount`. Callers wire
-     * their own toast / dialog copy from this. */
+    /** Fired when a paste holds more words than `wordCount`. */
     onTooManyWords: () => void
-    /** Fired when a partial paste cannot fit in the slots remaining at the
-     * paste site (e.g. pasting 6 words starting at slot 9 of a 12-word
-     * mnemonic). */
+    /** Fired when a partial paste can't fit in the slots after the paste site. */
     onInsufficientSlots: () => void
 }
 
@@ -40,42 +36,18 @@ export type UseMnemonicWordEntryResult = {
     focused: number
     suggestions: string[]
     setFocused: (index: number) => void
-    /** Direct setter for programmatic input (QR scan, deep link). Splits and
-     * distributes the same way a paste does. */
+    /** Programmatic setter (QR scan, deep link); distributes like a paste. */
     updateWord: (value: string, index: number) => void
-    /** Wired straight to `<TextInput onChangeText>`. Detects pastes via the
-     * input-length delta and consults the system clipboard so multi-word
-     * pastes still distribute when the keyboard collapses whitespace. */
     handleWordChange: (value: string, index: number) => Promise<void>
-    /** Sets the focused slot to the picked suggestion and advances focus. */
     handleSelectSuggestion: (word: string) => void
-    /** Per-slot `ref` callbacks. Attach to each input so the hook can
-     * imperatively move focus on suggestion select / keyboard Next. */
     refCallbacks: ((ref: Nullable<PWInputRef>) => void)[]
-    /** Wire to `<TextInput onSubmitEditing>`. Advances focus to the next
-     * slot unless the user is already on the last one. */
     handleSubmitEditing: (index: number) => void
 }
 
 /**
- * Reusable mechanic for "enter a mnemonic across N input slots" screens.
- *
- * Handles:
- * - Per-slot word state with focus tracking.
- * - Paste distribution: a full N-word paste fills every slot regardless of
- *   which slot received it; a partial paste fills forward from the paste
- *   site.
- * - Clipboard fallback: some Android keyboards (Gboard, Samsung) corrupt
- *   multi-word pastes by collapsing whitespace into a single token. When
- *   the input-length delta suggests a paste, we re-read the clipboard and
- *   prefer it if it has more separable words than the value we received.
- * - Wordlist-driven suggestions for the focused slot, with the exact match
- *   filtered out so the suggestion row hides once the slot holds a complete
- *   word.
- *
- * The hook is wordlist- and copy-agnostic above the BIP39/Algo25 wordlist:
- * callers pass their own `onTooManyWords` / `onInsufficientSlots` handlers
- * so screen-specific i18n stays out of this layer.
+ * Drives "enter a mnemonic across N input slots" screens: per-slot state,
+ * paste distribution, and wordlist suggestions. Copy-agnostic — callers pass
+ * their own `onTooManyWords` / `onInsufficientSlots` handlers.
  */
 export const useMnemonicWordEntry = ({
     wordCount,
@@ -128,11 +100,9 @@ export const useMnemonicWordEntry = ({
                 return
             }
 
-            // Take the split-result token rather than `value.trim()` so the
-            // separator characters splitMnemonic recognises (commas, mixed
-            // whitespace) are stripped from the slot too. Without this, a
-            // keyboard that appends "abandon," would leave the comma in the
-            // slot and block the user from continuing.
+            // Use the split token, not value.trim(), so separators
+            // splitMnemonic strips (commas, mixed whitespace) don't linger in
+            // the slot and block the user.
             setWords(prev => {
                 const next = [...prev]
                 next[index] = split[0] ?? ''
@@ -147,29 +117,13 @@ export const useMnemonicWordEntry = ({
             const currentWord = wordsRef.current[index] ?? ''
             const delta = value.length - currentWord.length
 
-            // The clipboard fallback exists for keyboards (Gboard, Samsung)
-            // that mangle multi-word pastes — collapsing whitespace,
-            // dropping the first separator, etc. We want to consult the
-            // clipboard for those cases but NOT for ordinary typing or
-            // autocomplete.
-            //
-            // Heuristic: skip the clipboard read whenever the change looks
-            // like autocomplete — a single token that is itself a valid
-            // BIP39 word. iOS autocomplete delivers the whole completed
-            // word in one change event, which would otherwise trip the
-            // delta>1 check and, if the user had a mnemonic on the
-            // clipboard for any reason, overwrite every slot.
-            //
-            // Everything else with delta>1 (multi-token paste, single
-            // non-wordlist token like a collapsed `helpinhale`, etc.) goes
-            // through the clipboard check, which only takes effect when
-            // the clipboard has more separable words than the received
-            // value.
-            // Derive the candidate token from splitMnemonic, not value.trim(),
-            // so trailing punctuation a keyboard may append ("abandon,",
-            // "abandon.") still classifies as autocomplete. Stripping only
-            // whitespace would leave the comma attached, fail the wordlist
-            // check, and let a clipboard mnemonic overwrite every slot.
+            // Android keyboards (Gboard, Samsung) mangle multi-word pastes by
+            // collapsing whitespace, so on a paste-sized delta we re-read the
+            // clipboard. Skip it when the change looks like autocomplete (a
+            // single valid wordlist token) — iOS delivers completed words in
+            // one event and would otherwise overwrite every slot from whatever
+            // mnemonic sits on the clipboard. Use splitMnemonic, not
+            // value.trim(), so trailing punctuation still reads as one token.
             const tokens = splitMnemonic(value)
             const looksLikeAutocomplete =
                 tokens.length === 1 && WORDLIST_SET.has(tokens[0].toLowerCase())
@@ -224,9 +178,7 @@ export const useMnemonicWordEntry = ({
         [wordCount],
     )
 
-    // Skip the mount run so we don't fight the consumer's `autoFocus` on the
-    // first input. Only subsequent `focused` changes (suggestion select,
-    // keyboard Next) drive imperative focus.
+    // Skip the mount run so we don't fight the consumer's `autoFocus`.
     const isInitialFocusRunRef = useRef(true)
     useEffect(() => {
         if (isInitialFocusRunRef.current) {
@@ -235,6 +187,15 @@ export const useMnemonicWordEntry = ({
         }
         inputRefs.current[focused]?.focus()
     }, [focused])
+
+    // Wipe the entered words from the heap on unmount. Best-effort — it clears
+    // the array we hold so a mnemonic doesn't outlive the entry screen.
+    useEffect(
+        () => () => {
+            wordsRef.current.fill('')
+        },
+        [],
+    )
 
     const handleSubmitEditing = useCallback(
         (index: number) => {

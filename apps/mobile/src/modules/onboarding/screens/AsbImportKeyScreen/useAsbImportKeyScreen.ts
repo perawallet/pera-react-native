@@ -121,11 +121,10 @@ export const useAsbImportKeyScreen = (): UseAsbImportKeyScreenResult => {
             await Promise.resolve()
             const payload = decryptBackupPayload(envelope, mnemonic)
             setPayload(payload)
-            // `replace` (not `push`) so the Key screen unmounts and the
-            // typed recovery mnemonic stored in the input hook is dropped
-            // for GC. Strings can't be zeroed in JS, but the reference goes
-            // away. Bonus: back-navigating from SelectAccounts / Result no
-            // longer lands on a stale Key screen with prefilled words.
+            // `replace` (not `push`) so the Key screen unmounts on success: the
+            // input hook wipes the typed words on unmount, and back-navigating
+            // from SelectAccounts / Result won't land on a stale prefilled Key
+            // screen.
             navigation.replace('AsbImportSelectAccounts')
         } catch (e) {
             const reason =
@@ -140,11 +139,8 @@ export const useAsbImportKeyScreen = (): UseAsbImportKeyScreenResult => {
                 t(`onboarding.asb_import.key.errors.${reason}` as const),
             )
         } finally {
-            // No mnemonic wipe here on purpose. Success path drops the
-            // reference via the `navigation.replace` above (the screen
-            // unmounts and `words` is GC'd with it). Error path keeps the
-            // typed words so the user can correct a typo and retry without
-            // re-typing 12 words.
+            // Don't wipe the words here: on error we keep them so the user can
+            // fix a typo and retry; on success the unmount wipe handles it.
             setIsProcessing(false)
         }
     }, [

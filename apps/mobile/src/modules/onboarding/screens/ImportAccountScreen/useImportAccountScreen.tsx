@@ -47,7 +47,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     const navigation = useAppNavigation()
     const importAccount = useImportAccount()
     const markBackupComplete = useMarkMnemonicBackupComplete()
-    const { showToast } = useToast()
+    const { showToast, errorToast } = useToast()
     const { t } = useLanguage()
     const { parseDeeplink } = useDeepLink()
     const { request: requestBottomSheet } = useBottomSheet()
@@ -55,20 +55,18 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     const mnemonicLength = MNEMONIC_WORD_COUNT[accountType]
 
     const onTooManyWords = useCallback(() => {
-        showToast({
-            title: t('onboarding.import_account.invalid_mnemonic_title'),
-            body: t('onboarding.import_account.invalid_mnemonic_body'),
-            type: 'error',
-        })
-    }, [showToast, t])
+        errorToast(
+            t('onboarding.import_account.invalid_mnemonic_title'),
+            t('onboarding.import_account.invalid_mnemonic_body'),
+        )
+    }, [errorToast, t])
 
     const onInsufficientSlots = useCallback(() => {
-        showToast({
-            title: t('onboarding.import_account.insufficient_slots_title'),
-            body: t('onboarding.import_account.insufficient_slots_body'),
-            type: 'error',
-        })
-    }, [showToast, t])
+        errorToast(
+            t('onboarding.import_account.insufficient_slots_title'),
+            t('onboarding.import_account.insufficient_slots_body'),
+        )
+    }, [errorToast, t])
 
     const {
         words,
@@ -192,13 +190,12 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
                 return
             }
 
-            showToast({
-                title: t('onboarding.import_account.invalid_mnemonic_title'),
-                body: t('onboarding.import_account.invalid_mnemonic_body'),
-                type: 'error',
-            })
+            errorToast(
+                t('onboarding.import_account.invalid_mnemonic_title'),
+                t('onboarding.import_account.invalid_mnemonic_body'),
+            )
         },
-        [handleCloseQRScanner, parseDeeplink, showToast, t, updateWord],
+        [handleCloseQRScanner, parseDeeplink, errorToast, t, updateWord],
     )
 
     const handleLearnMore = useCallback(() => {
