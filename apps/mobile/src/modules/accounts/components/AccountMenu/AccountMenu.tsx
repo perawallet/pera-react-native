@@ -49,7 +49,10 @@ export const AccountMenu = (props: AccountMenuProps) => {
 
             <PWView style={styles.mainContent}>
                 {!hideDefaultHeader && (
-                    <PWView style={styles.titleBar} accessible={false}>
+                    <PWView
+                        style={styles.titleBar}
+                        accessible={false}
+                    >
                         <PWText
                             variant='h3'
                             style={styles.activeTitle}
