@@ -129,6 +129,12 @@ vi.mock('react-native', () => ({
     BackHandler: {
         addEventListener: vi.fn(() => ({ remove: vi.fn() })),
     },
+    // The barrel-import of `LedgerSigningContent` transitively pulls in
+    // `@theme/typography` -> `src/platform/utils.ts`, which calls `Platform.OS`.
+    Platform: {
+        OS: 'ios',
+        select: (obj: Record<string, unknown>) => obj.ios ?? obj.default,
+    },
 }))
 
 vi.mock('@hooks/useLanguage', () => ({

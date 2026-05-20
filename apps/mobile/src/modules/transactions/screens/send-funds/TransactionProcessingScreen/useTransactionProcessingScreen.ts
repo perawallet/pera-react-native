@@ -33,7 +33,7 @@ import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 import { useErrorToast } from '@hooks/useErrorToast'
-import { useLedgerSigningContent } from '@modules/signing/components/LedgerSigningContent/useLedgerSigningContent'
+import { useLedgerSigningContent } from '@modules/signing/components/LedgerSigningContent'
 import type { LedgerErrorPreset } from '@modules/ledger/utils/ledgerErrorPresets'
 
 export type TransactionProcessingView =
@@ -175,11 +175,13 @@ export const useTransactionProcessingScreen =
         // wires cancel/retry/troubleshooting through the signing machine.
         const ledgerSigning = useLedgerSigningContent()
 
-        const view: TransactionProcessingView = ledgerSigning.isVisible
-            ? ledgerSigning.status === 'error' && ledgerSigning.error
-                ? 'ledger-error'
-                : 'ledger-awaiting'
-            : 'processing'
+        const view: TransactionProcessingView = (() => {
+            if (!ledgerSigning.isVisible) return 'processing'
+            if (ledgerSigning.status === 'error' && ledgerSigning.error) {
+                return 'ledger-error'
+            }
+            return 'ledger-awaiting'
+        })()
 
         return {
             view,
