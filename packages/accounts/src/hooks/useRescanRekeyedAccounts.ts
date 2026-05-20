@@ -11,7 +11,10 @@
  */
 
 import { useCallback } from 'react'
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import {
+    isValidAlgorandAddress,
+    useNetwork,
+} from '@perawallet/wallet-core-blockchain'
 import { fetchRekeyedAddresses } from '../account-discovery'
 import { useAccountsStore } from '../store'
 
@@ -41,10 +44,14 @@ export const useRescanRekeyedAccounts = (): UseRescanRekeyedAccountsResult => {
     const addRekeyedWatchAccounts = useAccountsStore(
         state => state.addRekeyedWatchAccounts,
     )
+    const { network } = useNetwork()
 
     const scan = useCallback(
         async (sourceAddress: string): Promise<RekeyedScanResult> => {
-            const addresses = await fetchRekeyedAddresses(sourceAddress)
+            const addresses = await fetchRekeyedAddresses(
+                sourceAddress,
+                network,
+            )
             // Read the wallet's account set fresh, after the indexer call —
             // a scan can outlive an import/add that lands while the request
             // is in flight, so classification must reflect the latest store
@@ -66,7 +73,7 @@ export const useRescanRekeyedAccounts = (): UseRescanRekeyedAccountsResult => {
                 notImportedAddresses: notImported,
             }
         },
-        [],
+        [network],
     )
 
     const importSelected = useCallback(

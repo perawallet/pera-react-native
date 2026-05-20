@@ -406,6 +406,20 @@ export default defineConfig({
                 ),
             },
             {
+                find: '@perawallet/wallet-core-banners/test-handlers',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/banners/src/test-handlers.ts',
+                ),
+            },
+            {
+                find: '@perawallet/wallet-core-banners',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/banners/src/index.ts',
+                ),
+            },
+            {
                 find: '@perawallet/wallet-core-remote-config',
                 replacement: path.resolve(
                     __dirname,

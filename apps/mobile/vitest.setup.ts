@@ -64,6 +64,12 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
             getBoolean: vi.fn().mockReturnValue(false),
             getString: vi.fn().mockReturnValue(''),
         },
+        // Expose a real (empty) registry so integration tests that exercise
+        // hardware-wallet flows (e.g. LedgerVerifyScreen) can register a fake
+        // transport provider via `getProvider().hardwareWalletRegistry.register()`.
+        // Unit tests never call into the registry so providing an empty one is safe.
+        hardwareWalletRegistry:
+            require('@perawallet/wallet-core-hardware-wallet').createHardwareWalletRegistry(),
     }),
     getPlatformServices: () => ({
         keyValueStorage: {
@@ -168,6 +174,18 @@ vi.mock('react-native-reanimated', () => {
         Extrapolate: { CLAMP: 'clamp' },
         Layout: {
             springify: () => ({ damping: () => ({}) }),
+        },
+        // Reanimated re-exports `Easing`; CompactBanner consumes
+        // `Easing.inOut(Easing.quad)`. Identity stubs keep the calls safe.
+        Easing: {
+            inOut: (fn: any) => fn,
+            out: (fn: any) => fn,
+            in: (fn: any) => fn,
+            ease: () => undefined,
+            linear: () => undefined,
+            quad: () => undefined,
+            cubic: () => undefined,
+            bezier: () => () => undefined,
         },
         FadeIn: {
             duration: () => ({}),

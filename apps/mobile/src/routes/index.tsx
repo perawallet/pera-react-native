@@ -17,6 +17,7 @@ import {
     NativeStackHeaderProps,
 } from '@react-navigation/native-stack'
 import { StakingScreen } from '@modules/staking/screens/StakingScreen'
+import { BannersCarouselModalScreen } from '@modules/banners'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import {
     OnboardingStackNavigator,
@@ -148,6 +149,14 @@ export const MainRoutes = () => {
                             }}
                             layout={fullScreenLayout}
                             component={StakingScreen}
+                        />
+                        <RootStack.Screen
+                            name='BannersCarouselModal'
+                            component={BannersCarouselModalScreen}
+                            options={{
+                                presentation: 'modal',
+                                headerShown: false,
+                            }}
                         />
                         <RootStack.Screen
                             name='GroupTransactionList'

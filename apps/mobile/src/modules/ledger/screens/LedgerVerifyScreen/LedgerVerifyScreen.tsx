@@ -28,6 +28,7 @@ export const LedgerVerifyScreen = () => {
     const styles = useStyles()
     const {
         selectedAccounts,
+        verifyTargets,
         verifiedIndices,
         areAllVerified,
         errorPreset,
@@ -80,7 +81,7 @@ export const LedgerVerifyScreen = () => {
                 </PWText>
 
                 <PWView style={styles.cardList}>
-                    {selectedAccounts.map((acc, i) => (
+                    {verifyTargets.map((acc, i) => (
                         <LedgerVerificationCard
                             key={acc.address}
                             address={acc.address}

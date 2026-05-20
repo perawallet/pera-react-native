@@ -57,3 +57,9 @@ export const NFT_NOT_OPTED_IN_OPACITY = 0.5
 
 export const SCROLL_EVENT_THROTTLE = 16
 export const DEFAULT_SNAP_THRESHOLD = 0.25
+
+export const BANNER_REVEAL_DURATION_MS = 500
+// How long to wait after mount before the home / messages banner reveal kicks
+// off. Lets the surrounding screen paint first so the animation reads as a
+// distinct beat instead of getting lost in the initial render frames.
+export const BANNER_REVEAL_DELAY_MS = 500
