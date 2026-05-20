@@ -13,9 +13,9 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { BackHandler } from 'react-native'
 
-import { bottomSheetNotifier } from '@components/core'
-import { useSendFunds } from '@modules/transactions/hooks'
 import {
+    AccountTypes,
+    isHardwareWalletAccount,
     useAccountBalancesInvalidator,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -31,12 +31,10 @@ import {
 } from '@perawallet/wallet-core-signing'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
-import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
+import { bottomSheetNotifier } from '@components/core'
+import { useSendFunds } from '@modules/transactions/hooks'
 import { useErrorToast } from '@hooks/useErrorToast'
-import {
-    AccountTypes,
-    isHardwareWalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 
 export type UseTransactionProcessingScreenResult = {
     /** True when the sender is a hardware-wallet account; selects copy. */

@@ -34,15 +34,15 @@ export type LedgerErrorPresetKind =
 
 /**
  * Subset of error kinds where the user-facing remediation lives in the
- * troubleshooting bottom sheet rather than the inline error UI. The
- * app-side `ledgerErrorPresets.ts` mirrors this set for the UI side; both
- * must stay in sync.
+ * troubleshooting bottom sheet rather than the inline error UI. Consumed
+ * by both the actor lifecycle (via `isBleClassErrorKind`) and the UI
+ * presets (which alias this set as `TROUBLESHOOTABLE_KINDS`), so the two
+ * cannot drift.
  *
- * The actor lifecycle checks `isBleClassErrorKind` to decide whether to
- * tear down the hardware-signing store on a terminal failure — for these
- * kinds we leave the store in `error` state so the troubleshooting sheet
- * stays open until the user closes it. Other failure kinds reset the
- * store synchronously to free up the next signing request.
+ * For these kinds we leave the hardware-signing store in `error` state on
+ * a terminal failure so the troubleshooting sheet stays open until the
+ * user closes it. Other failure kinds reset the store synchronously to
+ * free up the next signing request.
  */
 export const BLE_CLASS_ERROR_KINDS: ReadonlySet<LedgerErrorPresetKind> =
     new Set([

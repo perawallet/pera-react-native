@@ -12,7 +12,7 @@
 
 import React, { useEffect, useRef } from 'react'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { useHardwareSigning } from '@perawallet/wallet-core-signing'
+import { useHardwareSigningStore } from '@perawallet/wallet-core-signing'
 import { LedgerSigningContent } from '../LedgerSigningContent'
 import { useLedgerSigningContent } from '../LedgerSigningContent/useLedgerSigningContent'
 
@@ -28,7 +28,7 @@ import { useLedgerSigningContent } from '../LedgerSigningContent/useLedgerSignin
  * backdrop press disabled — signing must complete via the UI controls.
  */
 export const useLedgerSigningDriver = (): void => {
-    const { requestId } = useHardwareSigning()
+    const requestId = useHardwareSigningStore(state => state.requestId)
     const { isVisible } = useLedgerSigningContent()
     const { request: requestBottomSheet, dismiss } = useBottomSheet()
     const openIdRef = useRef<string | null>(null)
