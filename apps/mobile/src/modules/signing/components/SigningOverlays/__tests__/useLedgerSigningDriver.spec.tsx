@@ -123,4 +123,23 @@ describe('useLedgerSigningDriver', () => {
         rerender()
         expect(requestBottomSheetMock).toHaveBeenCalledTimes(1)
     })
+
+    it('dismisses the sheet when the active interactive request leaves the queue (terminal/queue-advance)', async () => {
+        // Open: interactive request in queue, store says awaitingApproval
+        pendingRef.current = [interactiveRequest('req-1')]
+        const { rerender } = renderHook(() => useLedgerSigningDriver())
+        act(() => {
+            useHardwareSigningStore.getState().start('req-1', 'Nano X')
+            useHardwareSigningStore.getState().setStatus('awaitingApproval')
+        })
+        rerender()
+        expect(requestBottomSheetMock).toHaveBeenCalledTimes(1)
+        expect(dismissMock).not.toHaveBeenCalled()
+
+        // The request leaves pendingSignRequests (queue advanced) while the
+        // store still holds the requestId. The gate must close the sheet.
+        pendingRef.current = []
+        rerender()
+        expect(dismissMock).toHaveBeenCalledWith('req-1')
+    })
 })
