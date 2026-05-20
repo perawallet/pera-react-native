@@ -301,10 +301,7 @@ describe('discoverRekeyedAccounts', () => {
             },
         } as any)
 
-        const addresses = await fetchRekeyedAddresses(
-            'AUTH_ADDRESS',
-            'mainnet',
-        )
+        const addresses = await fetchRekeyedAddresses('AUTH_ADDRESS', 'mainnet')
 
         expect(addresses).toEqual(['REKEYED_PAGE_1', 'REKEYED_PAGE_2'])
         expect(mockSearchForAccounts).toHaveBeenCalledTimes(2)
