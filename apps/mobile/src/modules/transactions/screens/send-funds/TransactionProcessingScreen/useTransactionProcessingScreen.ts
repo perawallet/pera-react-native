@@ -33,7 +33,6 @@ import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 import { useErrorToast } from '@hooks/useErrorToast'
-import { pushLedgerDebug } from '@modules/debug/ledgerDebugStore'
 
 export const useTransactionProcessingScreen = () => {
     const navigation =
@@ -105,11 +104,15 @@ export const useTransactionProcessingScreen = () => {
     }, [lastTransportResult, onFinished])
 
     useEffect(() => {
-        pushLedgerDebug('ProcessingScreen MOUNTED + execute()', {
-            sendMode,
-            senderAddress: selectedAccount?.address ?? null,
-            senderType: selectedAccount?.type ?? null,
-        })
+        // eslint-disable-next-line no-console
+        console.warn(
+            '[LEDGER-DEBUG] ProcessingScreen MOUNTED + execute()',
+            JSON.stringify({
+                sendMode,
+                senderAddress: selectedAccount?.address ?? null,
+                senderType: selectedAccount?.type ?? null,
+            }),
+        )
         const subscription = BackHandler.addEventListener(
             'hardwareBackPress',
             () => true,
@@ -130,18 +133,27 @@ export const useTransactionProcessingScreen = () => {
             params: sendParams,
         })
             .then(txId => {
-                pushLedgerDebug('execute() RESOLVED', { txId })
+                // eslint-disable-next-line no-console
+                console.warn(
+                    '[LEDGER-DEBUG] execute() RESOLVED',
+                    JSON.stringify({ txId }),
+                )
                 invalidateAccountBalances()
                 navigation.replace('TransactionSuccess', {
                     transactionId: txId,
                 })
             })
             .catch(error => {
-                pushLedgerDebug('execute() REJECTED', {
-                    errorName: (error as Error)?.name,
-                    errorMessage: (error as Error)?.message,
-                    isUserRejected: error instanceof UserRejectedSigningError,
-                })
+                // eslint-disable-next-line no-console
+                console.warn(
+                    '[LEDGER-DEBUG] execute() REJECTED',
+                    JSON.stringify({
+                        errorName: (error as Error)?.name,
+                        errorMessage: (error as Error)?.message,
+                        isUserRejected:
+                            error instanceof UserRejectedSigningError,
+                    }),
+                )
                 if (error instanceof UserRejectedSigningError) {
                     // Silent navigation back — user already saw the overlay's cancel button.
                     navigation.goBack()
@@ -154,7 +166,8 @@ export const useTransactionProcessingScreen = () => {
             })
 
         return () => {
-            pushLedgerDebug('ProcessingScreen UNMOUNTED')
+            // eslint-disable-next-line no-console
+            console.warn('[LEDGER-DEBUG] ProcessingScreen UNMOUNTED')
             subscription.remove()
         }
     }, [])

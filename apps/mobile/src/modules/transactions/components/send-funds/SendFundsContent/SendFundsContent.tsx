@@ -19,7 +19,6 @@ import {
 import { EmptyView } from '@components/EmptyView'
 import { TransactionErrorBoundary } from '@modules/transactions/components/TransactionErrorBoundary/TransactionErrorBoundary'
 import { useLanguage } from '@hooks/useLanguage'
-import { pushLedgerDebug } from '@modules/debug/ledgerDebugStore'
 import { SendFundsRoutes } from '../../../routes/send-funds'
 import { useSendFundsContent } from './useSendFundsContent'
 
@@ -39,20 +38,26 @@ export const SendFundsContent = ({ assetId }: SendFundsContentProps) => {
     useEffect(() => {
         const has = !!selectedAccount
         if (prevHadAccountRef.current !== has) {
-            pushLedgerDebug('SendFundsContent selectedAccount', {
-                hadAccount: prevHadAccountRef.current,
-                nowHasAccount: has,
-                address: selectedAccount?.address ?? null,
-                type: selectedAccount?.type ?? null,
-            })
+            // eslint-disable-next-line no-console
+            console.warn(
+                '[LEDGER-DEBUG] SendFundsContent selectedAccount',
+                JSON.stringify({
+                    hadAccount: prevHadAccountRef.current,
+                    nowHasAccount: has,
+                    address: selectedAccount?.address ?? null,
+                    type: selectedAccount?.type ?? null,
+                }),
+            )
             prevHadAccountRef.current = has
         }
     }, [selectedAccount])
 
     useEffect(() => {
-        pushLedgerDebug('SendFundsContent MOUNTED')
+        // eslint-disable-next-line no-console
+        console.warn('[LEDGER-DEBUG] SendFundsContent MOUNTED')
         return () => {
-            pushLedgerDebug('SendFundsContent UNMOUNTED')
+            // eslint-disable-next-line no-console
+            console.warn('[LEDGER-DEBUG] SendFundsContent UNMOUNTED')
         }
     }, [])
 
