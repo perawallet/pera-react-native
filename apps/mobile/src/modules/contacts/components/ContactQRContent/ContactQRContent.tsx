@@ -73,6 +73,9 @@ export const ContactQRContent = ({ contact }: ContactQRContentProps) => {
                     <QRCode
                         value={contact.address}
                         size={qrSize}
+                        color='black'
+                        backgroundColor='white'
+                        quietZone={theme.spacing.sm}
                     />
                 </PWView>
                 <PWText
