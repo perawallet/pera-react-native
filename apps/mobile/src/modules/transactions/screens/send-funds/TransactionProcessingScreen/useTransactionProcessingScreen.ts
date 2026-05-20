@@ -33,6 +33,7 @@ import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 import { useErrorToast } from '@hooks/useErrorToast'
+import { pushLedgerDebug } from '@modules/debug/ledgerDebugStore'
 
 export const useTransactionProcessingScreen = () => {
     const navigation =
@@ -104,16 +105,11 @@ export const useTransactionProcessingScreen = () => {
     }, [lastTransportResult, onFinished])
 
     useEffect(() => {
-        // eslint-disable-next-line no-console
-        console.warn(
-            '[LEDGER-DEBUG] TransactionProcessingScreen MOUNTED, calling execute()',
-            JSON.stringify({
-                sendMode,
-                senderAddress: selectedAccount?.address ?? null,
-                senderType: selectedAccount?.type ?? null,
-                at: new Date().toISOString(),
-            }),
-        )
+        pushLedgerDebug('ProcessingScreen MOUNTED + execute()', {
+            sendMode,
+            senderAddress: selectedAccount?.address ?? null,
+            senderType: selectedAccount?.type ?? null,
+        })
         const subscription = BackHandler.addEventListener(
             'hardwareBackPress',
             () => true,
@@ -134,28 +130,18 @@ export const useTransactionProcessingScreen = () => {
             params: sendParams,
         })
             .then(txId => {
-                // eslint-disable-next-line no-console
-                console.warn(
-                    '[LEDGER-DEBUG] execute() RESOLVED, navigating to success',
-                    JSON.stringify({ txId, at: new Date().toISOString() }),
-                )
+                pushLedgerDebug('execute() RESOLVED', { txId })
                 invalidateAccountBalances()
                 navigation.replace('TransactionSuccess', {
                     transactionId: txId,
                 })
             })
             .catch(error => {
-                // eslint-disable-next-line no-console
-                console.warn(
-                    '[LEDGER-DEBUG] execute() REJECTED',
-                    JSON.stringify({
-                        errorName: (error as Error)?.name,
-                        errorMessage: (error as Error)?.message,
-                        isUserRejected:
-                            error instanceof UserRejectedSigningError,
-                        at: new Date().toISOString(),
-                    }),
-                )
+                pushLedgerDebug('execute() REJECTED', {
+                    errorName: (error as Error)?.name,
+                    errorMessage: (error as Error)?.message,
+                    isUserRejected: error instanceof UserRejectedSigningError,
+                })
                 if (error instanceof UserRejectedSigningError) {
                     // Silent navigation back — user already saw the overlay's cancel button.
                     navigation.goBack()
@@ -168,11 +154,7 @@ export const useTransactionProcessingScreen = () => {
             })
 
         return () => {
-            // eslint-disable-next-line no-console
-            console.warn(
-                '[LEDGER-DEBUG] TransactionProcessingScreen UNMOUNTED',
-                new Date().toISOString(),
-            )
+            pushLedgerDebug('ProcessingScreen UNMOUNTED')
             subscription.remove()
         }
     }, [])

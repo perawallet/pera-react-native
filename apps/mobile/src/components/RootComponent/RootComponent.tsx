@@ -33,6 +33,7 @@ import { useTokenListener } from '@modules/token'
 import { AutoLockGuard } from '@modules/security/components/AutoLockGuard/AutoLockGuard'
 import { SigningOverlays } from '@modules/signing/components/SigningOverlays'
 import { MultisigOverlays } from '@modules/multisig/components/MultisigOverlays'
+import { LedgerDebugOverlay } from '@modules/debug'
 import {
     getAppStatePlatform,
     getPollingTransitionAction,
@@ -179,6 +180,7 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
                 </WalletConnectProvider>
                 <SigningOverlays />
                 <MultisigOverlays />
+                <LedgerDebugOverlay />
             </AutoLockGuard>
         </BottomSheetModalProvider>
     )
