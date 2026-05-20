@@ -673,8 +673,14 @@ vi.mock('@components/core', () => {
                     role: 'button',
                     disabled: isDisabled ?? disabled,
                     // Prefer testID, then accessibilityIdentifier for deterministic test ids.
-                    'data-testid': testID || accessibilityIdentifier || 'PWTouchableOpacity',
-                    testid: testID || accessibilityIdentifier || 'PWTouchableOpacity',
+                    'data-testid':
+                        testID ||
+                        accessibilityIdentifier ||
+                        'PWTouchableOpacity',
+                    testid:
+                        testID ||
+                        accessibilityIdentifier ||
+                        'PWTouchableOpacity',
                 },
                 children,
             ),
@@ -880,7 +886,14 @@ vi.mock('react-native', () => {
         TouchableOpacity: vi
             .fn()
             .mockImplementation(
-                ({ onPress, children, activeOpacity, testID, accessibilityLabel, ...props }) => {
+                ({
+                    onPress,
+                    children,
+                    activeOpacity,
+                    testID,
+                    accessibilityLabel,
+                    ...props
+                }) => {
                     const React = require('react')
 
                     void activeOpacity
