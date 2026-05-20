@@ -81,10 +81,13 @@ const initialState: State = {
 // SendFunds mount/unmount and accountsStore mutations in the same trace.
 const debugLog = (label: string, payload: Record<string, unknown>) => {
     // eslint-disable-next-line no-console
-    console.log(`[LEDGER-DEBUG] hardwareSigningStore ${label}`, {
-        ...payload,
-        at: new Date().toISOString(),
-    })
+    console.warn(
+        `[LEDGER-DEBUG] hardwareSigningStore ${label}`,
+        JSON.stringify({
+            ...payload,
+            at: new Date().toISOString(),
+        }),
+    )
 }
 
 // Intentionally session-only (no persist middleware) — live signing state is

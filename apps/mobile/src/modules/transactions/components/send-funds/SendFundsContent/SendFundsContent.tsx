@@ -39,15 +39,15 @@ export const SendFundsContent = ({ assetId }: SendFundsContentProps) => {
         const has = !!selectedAccount
         if (prevHadAccountRef.current !== has) {
             // eslint-disable-next-line no-console
-            console.log(
+            console.warn(
                 '[LEDGER-DEBUG] SendFundsContent selectedAccount changed:',
-                {
+                JSON.stringify({
                     hadAccount: prevHadAccountRef.current,
                     nowHasAccount: has,
                     address: selectedAccount?.address ?? null,
                     type: selectedAccount?.type ?? null,
                     at: new Date().toISOString(),
-                },
+                }),
             )
             prevHadAccountRef.current = has
         }
@@ -55,14 +55,16 @@ export const SendFundsContent = ({ assetId }: SendFundsContentProps) => {
 
     useEffect(() => {
         // eslint-disable-next-line no-console
-        console.log('[LEDGER-DEBUG] SendFundsContent MOUNTED', {
-            at: new Date().toISOString(),
-        })
+        console.warn(
+            '[LEDGER-DEBUG] SendFundsContent MOUNTED',
+            new Date().toISOString(),
+        )
         return () => {
             // eslint-disable-next-line no-console
-            console.log('[LEDGER-DEBUG] SendFundsContent UNMOUNTED', {
-                at: new Date().toISOString(),
-            })
+            console.warn(
+                '[LEDGER-DEBUG] SendFundsContent UNMOUNTED',
+                new Date().toISOString(),
+            )
         }
     }, [])
 

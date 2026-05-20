@@ -64,9 +64,9 @@ export const useAccountsStore: UseBoundStore<
                 // setAccounts() call here. Log every transition.
                 if (prev.length !== accounts.length) {
                     // eslint-disable-next-line no-console
-                    console.log(
+                    console.warn(
                         '[LEDGER-DEBUG] accountsStore.setAccounts size change',
-                        {
+                        JSON.stringify({
                             prevCount: prev.length,
                             nextCount: accounts.length,
                             prevSelected: currentSelected,
@@ -76,7 +76,7 @@ export const useAccountsStore: UseBoundStore<
                                     a => a.address === currentSelected,
                                 ),
                             at: new Date().toISOString(),
-                        },
+                        }),
                     )
                 }
                 set({ accounts })
@@ -85,13 +85,13 @@ export const useAccountsStore: UseBoundStore<
                     set({ selectedAccountAddress: accounts.at(0)?.address })
                 } else if (!accounts.find(a => a.address === currentSelected)) {
                     // eslint-disable-next-line no-console
-                    console.log(
+                    console.warn(
                         '[LEDGER-DEBUG] accountsStore.setAccounts: SELECTED PRUNED',
-                        {
+                        JSON.stringify({
                             previousSelected: currentSelected,
                             newSelected: accounts.at(0)?.address ?? null,
                             at: new Date().toISOString(),
-                        },
+                        }),
                     )
                     set({
                         selectedAccountAddress: accounts.at(0)?.address ?? null,
@@ -118,13 +118,13 @@ export const useAccountsStore: UseBoundStore<
                 const prev = get().selectedAccountAddress
                 if (prev !== address) {
                     // eslint-disable-next-line no-console
-                    console.log(
+                    console.warn(
                         '[LEDGER-DEBUG] accountsStore.setSelectedAccountAddress',
-                        {
+                        JSON.stringify({
                             from: prev,
                             to: address,
                             at: new Date().toISOString(),
-                        },
+                        }),
                     )
                 }
                 set({ selectedAccountAddress: address })
