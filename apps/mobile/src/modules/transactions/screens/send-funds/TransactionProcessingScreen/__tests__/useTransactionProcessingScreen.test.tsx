@@ -78,6 +78,28 @@ vi.mock('@hooks/useLanguage', () => ({
     }),
 }))
 
+// These existing tests focus on execute/navigation behavior. Stub the
+// ledger-view adapter so we don't pull the signing-actor lifecycle (and its
+// transitive `useAccountsStore` dependency) into the test graph.
+vi.mock(
+    '@modules/signing/components/LedgerSigningContent/useLedgerSigningContent',
+    () => ({
+        useLedgerSigningContent: () => ({
+            isVisible: false,
+            status: 'idle',
+            deviceName: null,
+            currentTx: null,
+            totalTxs: null,
+            error: null,
+            onCancel: vi.fn(),
+            onRetry: vi.fn(),
+            isTroubleshootingVisible: false,
+            onOpenTroubleshooting: vi.fn(),
+            onCloseTroubleshooting: vi.fn(),
+        }),
+    }),
+)
+
 describe('useTransactionProcessingScreen', () => {
     const mockShowError = vi.fn()
     const mockExecute = vi.fn()
