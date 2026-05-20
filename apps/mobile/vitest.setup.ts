@@ -64,6 +64,12 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
             getBoolean: vi.fn().mockReturnValue(false),
             getString: vi.fn().mockReturnValue(''),
         },
+        // Expose a real (empty) registry so integration tests that exercise
+        // hardware-wallet flows (e.g. LedgerVerifyScreen) can register a fake
+        // transport provider via `getProvider().hardwareWalletRegistry.register()`.
+        // Unit tests never call into the registry so providing an empty one is safe.
+        hardwareWalletRegistry:
+            require('@perawallet/wallet-core-hardware-wallet').createHardwareWalletRegistry(),
     }),
     getPlatformServices: () => ({
         keyValueStorage: {

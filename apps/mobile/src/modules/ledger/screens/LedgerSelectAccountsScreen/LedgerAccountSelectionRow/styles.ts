@@ -38,12 +38,6 @@ export const useStyles = makeStyles((theme, { isImported }: StyleProps) => ({
         flex: 1,
         gap: theme.spacing.xxs,
     },
-    addressTouchable: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.xxs,
-        alignSelf: 'flex-start',
-    },
     title: {
         color: theme.colors.textMain,
     },

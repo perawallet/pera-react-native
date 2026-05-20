@@ -13,17 +13,32 @@
 import type { AccountInformation } from '@perawallet/wallet-core-blockchain'
 import type { OnChainAccountInformationResponse } from './endpoints'
 
+/**
+ * AlgoKit's algod account response carries `authAddr` (the rekey/auth
+ * address), but the `OnChainAccountInformationResponse` alias inferred from
+ * the algod client method does not surface it. This narrows that single field
+ * access without widening (or mis-stating) the whole response shape — and
+ * documents why the assertion is needed so it stays greppable.
+ */
+type WithAuthAddr = { authAddr?: { toString(): string } }
+
 export const mapOnChainAccountInformation = (
     response: OnChainAccountInformationResponse,
-): AccountInformation => ({
-    address: response.address,
-    amount: response.amount,
-    minBalance: response.minBalance,
-    status: response.status,
-    rewards: response.rewards,
-    assets: (response.assets ?? []).map(asset => ({
-        assetId: asset.assetId,
-        amount: asset.amount,
-        isFrozen: asset.isFrozen,
-    })),
-})
+): AccountInformation => {
+    const authAddr = (
+        response as OnChainAccountInformationResponse & WithAuthAddr
+    ).authAddr
+    return {
+        address: response.address,
+        amount: response.amount,
+        minBalance: response.minBalance,
+        status: response.status,
+        rewards: response.rewards,
+        assets: (response.assets ?? []).map(asset => ({
+            assetId: asset.assetId,
+            amount: asset.amount,
+            isFrozen: asset.isFrozen,
+        })),
+        authAddress: authAddr ? authAddr.toString() : undefined,
+    }
+}

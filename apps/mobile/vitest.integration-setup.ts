@@ -140,6 +140,13 @@ vi.mock('@assets/icons/check.svg', () => {
             React.createElement('div', { ...props, 'data-testid': 'SvgIcon' }),
     }
 })
+vi.mock('@assets/icons/accounts/light/ledger-account.svg', () => {
+    const React = require('react')
+    return {
+        default: (props: Record<string, unknown>) =>
+            React.createElement('div', { ...props, 'data-testid': 'SvgIcon' }),
+    }
+})
 
 // `expo-modules-core` references the React-Native `__DEV__` global at
 // module-load time (in `setUpJsLogger.fx.ts`). Under jsdom this is

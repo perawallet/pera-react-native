@@ -2150,7 +2150,20 @@
             "cta_other": "Verify selected accounts",
             "address_sheet_title": "Account address",
             "no_new_accounts": "All accounts on this device are already imported.",
-            "find_another_wallet": "Find another account"
+            "find_another_wallet": "Find another account",
+            "rekeyed_label": "Rekeyed",
+            "rekeyed_account_title": "Rekeyed account",
+            "scanning_rekeyed": "Scanning for rekeyed accounts…"
+        },
+        "account_info": {
+            "account_details": "Account details",
+            "assets": "Assets",
+            "default_title": "Ledger #{{index}}",
+            "ledger_account_label": "Ledger Account",
+            "can_be_signed_by": "Can be signed by",
+            "can_sign_for": "Can sign for these",
+            "error": "Couldn't load account information.",
+            "retry": "Try again"
         },
         "verify": {
             "title": "Verify Account Addresses via Ledger",
