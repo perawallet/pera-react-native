@@ -39,7 +39,7 @@ export const SharedAccountDetailsContent = ({
     const { isUserIncluded } = useSharedAccountDetailsContent(details.addresses)
 
     return (
-        <>
+        <PWView style={styles.container}>
             <PWToolbar
                 center={
                     <PWView style={styles.headerTitle}>
@@ -96,6 +96,6 @@ export const SharedAccountDetailsContent = ({
                     </PWView>
                 </PWView>
             </BottomSheetScrollView>
-        </>
+        </PWView>
     )
 }
