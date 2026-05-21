@@ -19,6 +19,8 @@ const transportIsSupportedMock = vi.hoisted(() => vi.fn())
 const transportCloseMock = vi.hoisted(() => vi.fn())
 const algorandGetAddressMock = vi.hoisted(() => vi.fn())
 const algorandSignMock = vi.hoisted(() => vi.fn())
+const algorandGetVersionMock = vi.hoisted(() => vi.fn())
+const algorandSignDataMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@ledgerhq/react-native-hid', () => ({
     default: {
@@ -33,14 +35,17 @@ vi.mock('@algorandfoundation/ledger-algorand-js', () => ({
     AlgorandApp: class {
         getAddressAndPubKey = algorandGetAddressMock
         sign = algorandSignMock
-        getVersion = vi.fn()
-        signData = vi.fn()
+        getVersion = algorandGetVersionMock
+        signData = algorandSignDataMock
     },
     ScopeType: { UNKNOWN: -1, AUTH: 1 },
 }))
 
 import { RNLedgerUsbService } from '../RNLedgerUsbService'
-import { LedgerSigningError } from '@perawallet/wallet-extension-ledger-react-native/protocol'
+import {
+    LedgerSigningError,
+    LedgerUserRejectedError,
+} from '@perawallet/wallet-extension-ledger-react-native/protocol'
 
 const NANO_S_PLUS_DESCRIPTOR = {
     deviceId: 1234,
@@ -68,6 +73,8 @@ describe('RNLedgerUsbService', () => {
         transportCloseMock.mockReset()
         algorandGetAddressMock.mockReset()
         algorandSignMock.mockReset()
+        algorandGetVersionMock.mockReset()
+        algorandSignDataMock.mockReset()
         transportOpenMock.mockResolvedValue({ close: transportCloseMock })
     })
 
@@ -178,6 +185,15 @@ describe('RNLedgerUsbService', () => {
         await expect(
             transport.signTransaction(0, new Uint8Array([1])),
         ).rejects.toBeInstanceOf(LedgerSigningError)
+    })
+
+    test('signTransaction translates app errors through classifyLedgerError', async () => {
+        algorandSignMock.mockRejectedValue({ returnCode: 0x6986 })
+        const transport = await connectToFirstDevice()
+
+        await expect(
+            transport.signTransaction(0, new Uint8Array([1])),
+        ).rejects.toBeInstanceOf(LedgerUserRejectedError)
     })
 
     test('wrapped transport.disconnect closes the underlying HID transport', async () => {

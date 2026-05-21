@@ -344,6 +344,15 @@ describe('RNLedgerService', () => {
             ).rejects.toBeInstanceOf(LedgerSigningError)
         })
 
+        test('signTransaction translates app errors through classifyLedgerError', async () => {
+            algorandSignMock.mockRejectedValue({ returnCode: 0x6986 })
+            const transport = await mountTransport()
+
+            await expect(
+                transport.signTransaction(0, new Uint8Array([1])),
+            ).rejects.toBeInstanceOf(LedgerUserRejectedError)
+        })
+
         test('disconnect closes the underlying BLE transport', async () => {
             transportCloseMock.mockResolvedValue(undefined)
             const transport = await mountTransport()
