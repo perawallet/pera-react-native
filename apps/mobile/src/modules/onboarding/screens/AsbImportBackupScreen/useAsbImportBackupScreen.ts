@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import * as Clipboard from 'expo-clipboard'
 import { File } from 'expo-file-system'
 import {
@@ -44,9 +44,21 @@ export const useAsbImportBackupScreen = (): UseAsbImportBackupScreenResult => {
     const navigation = useAppNavigation()
     const { t } = useLanguage()
     const { errorToast } = useToast()
+    const envelope = useAsbImportFlowStore(state => state.envelope)
     const setEnvelope = useAsbImportFlowStore(state => state.setEnvelope)
 
     const [loadedFile, setLoadedFile] = useState<LoadedFile | null>(null)
+
+    // Later flow steps (SelectAccounts cleanup, Result Done) wipe the store
+    // to zero decrypted material. If the user navigates back into this screen
+    // afterwards, the local "loadedFile" card would otherwise still display
+    // "Pasted backup", but tapping Next leads to a Key screen with no
+    // envelope to decrypt — so it bounces straight back here. Mirror the
+    // store: if the envelope disappears, clear the displayed indicator so
+    // the user has to re-pick / re-paste.
+    useEffect(() => {
+        if (!envelope) setLoadedFile(null)
+    }, [envelope])
 
     const showValidationError = useCallback(
         (reason: AsbErrorReason) => {

@@ -24,8 +24,6 @@ export type UseImportAccountScreenResult = {
     handleImportAccount: () => void
     mnemonicLength: number
     t: (key: string) => string
-    isKeyboardVisible: boolean
-    keyboardHeight: number
     handleOpenSupportOptions: () => void
     isQRScannerVisible: boolean
     handleCloseQRScanner: () => void
@@ -33,4 +31,5 @@ export type UseImportAccountScreenResult = {
     suggestions: string[]
     handleSelectSuggestion: (word: string) => void
     refCallbacks: ((ref: Nullable<PWInputRef>) => void)[]
+    handleSubmitEditing: (index: number) => void
 }

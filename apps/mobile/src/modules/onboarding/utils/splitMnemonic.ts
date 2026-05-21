@@ -10,21 +10,13 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => ({
-    container: {
-        backgroundColor: theme.colors.background,
-        borderRadius: theme.spacing.sm,
-        borderWidth: theme.borders.sm,
-        borderColor: theme.colors.layerGray,
-        ...theme.shadows.md,
-    },
-    suggestionItem: {
-        paddingVertical: theme.spacing.sm,
-        paddingHorizontal: theme.spacing.md,
-    },
-    suggestionText: {
-        color: theme.colors.textMain,
-    },
-}))
+/**
+ * Split a pasted mnemonic blob into individual words. Accepts any mix of
+ * whitespace and commas as separators so users can paste `a b c`, `a,b,c`,
+ * or `a, b, c` regardless of how their source app formatted the list.
+ */
+export const splitMnemonic = (value: string): string[] =>
+    value
+        .trim()
+        .split(/[\s,]+/)
+        .filter(Boolean)
