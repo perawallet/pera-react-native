@@ -19,7 +19,6 @@ const mockNavigate = vi.fn()
 const mockGoBack = vi.fn()
 const mockReplace = vi.fn()
 const mockSetArc59Summary = vi.fn()
-const mockSetSendMode = vi.fn()
 
 const { mockRequestBottomSheet } = vi.hoisted(() => ({
     mockRequestBottomSheet: vi.fn(),
@@ -55,10 +54,6 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     })),
     useAccountInformationQuery: vi.fn(() => ({
         data: { amount: 10_000_000n, minBalance: 100_000n },
-    })),
-    useOnChainAccountInformationQuery: vi.fn(() => ({
-        data: { assets: [], amount: 0n, minBalance: 0n },
-        isLoading: false,
     })),
 }))
 
@@ -138,27 +133,20 @@ describe('useARC59SendSummaryScreen', () => {
             destination: 'RECEIVERADDR',
             amount: '50',
             setArc59Summary: mockSetArc59Summary,
-            setSendMode: mockSetSendMode,
         })
 
         // Reset query mocks to known defaults — `vi.clearAllMocks()` clears
         // call history but not return values set via `mockReturnValue`
         const { useArc59SendSummaryQuery } =
             await import('@perawallet/wallet-core-asa-inbox')
-        const {
-            useAccountInformationQuery,
-            useOnChainAccountInformationQuery,
-        } = await import('@perawallet/wallet-core-accounts')
+        const { useAccountInformationQuery } =
+            await import('@perawallet/wallet-core-accounts')
         ;(useArc59SendSummaryQuery as Mock).mockReturnValue({
             data: null,
             isLoading: true,
         })
         ;(useAccountInformationQuery as Mock).mockReturnValue({
             data: { amount: 10_000_000n, minBalance: 100_000n },
-        })
-        ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({
-            data: { assets: [] },
-            isLoading: false,
         })
     })
 
@@ -238,21 +226,7 @@ describe('useARC59SendSummaryScreen', () => {
         expect(result.current.isLoading).toBe(false)
     })
 
-    it('redirects to ConfirmTransaction with normal mode when receiver is already opted into the asset', async () => {
-        const { useOnChainAccountInformationQuery } =
-            await import('@perawallet/wallet-core-accounts')
-        ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({
-            data: { assets: [{ assetId: 123n, amount: 0n, isFrozen: false }] },
-            isLoading: false,
-        })
-
-        renderHook(() => useARC59SendSummaryScreen())
-
-        expect(mockSetSendMode).toHaveBeenCalledWith('normal')
-        expect(mockReplace).toHaveBeenCalledWith('ConfirmTransaction')
-    })
-
-    it('redirects to InsufficientBalance when receiver is not opted in and sender lacks ALGO for the inbox fees', async () => {
+    it('redirects to InsufficientBalance when sender lacks ALGO for the inbox fees', async () => {
         const { useArc59SendSummaryQuery } =
             await import('@perawallet/wallet-core-asa-inbox')
         const { useAccountInformationQuery } =
@@ -270,34 +244,5 @@ describe('useARC59SendSummaryScreen', () => {
         expect(mockReplace).toHaveBeenCalledWith('InsufficientBalance', {
             requiredBalance: '0.300000 ALGO',
         })
-    })
-
-    it('does not redirect to InsufficientBalance when receiver is opted in, even with a low ALGO balance', async () => {
-        const { useArc59SendSummaryQuery } =
-            await import('@perawallet/wallet-core-asa-inbox')
-        const {
-            useAccountInformationQuery,
-            useOnChainAccountInformationQuery,
-        } = await import('@perawallet/wallet-core-accounts')
-        ;(useArc59SendSummaryQuery as Mock).mockReturnValue({
-            data: mockSummary,
-            isLoading: false,
-        })
-        ;(useAccountInformationQuery as Mock).mockReturnValue({
-            data: { amount: 250_000n, minBalance: 100_000n },
-        })
-        ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({
-            data: { assets: [{ assetId: 123n, amount: 0n, isFrozen: false }] },
-            isLoading: false,
-        })
-
-        renderHook(() => useARC59SendSummaryScreen())
-
-        expect(mockReplace).not.toHaveBeenCalledWith(
-            'InsufficientBalance',
-            expect.anything(),
-        )
-        expect(mockSetSendMode).toHaveBeenCalledWith('normal')
-        expect(mockReplace).toHaveBeenCalledWith('ConfirmTransaction')
     })
 })

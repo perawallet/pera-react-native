@@ -19,7 +19,6 @@ import {
 } from '@perawallet/wallet-core-asa-inbox'
 import {
     useAccountInformationQuery,
-    useOnChainAccountInformationQuery,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -56,13 +55,8 @@ export const useARC59SendSummaryScreen =
     (): UseARC59SendSummaryScreenResult => {
         const navigation =
             useNavigation<StackNavigationProp<SendFundsStackParamList>>()
-        const {
-            selectedAssetId,
-            destination,
-            amount,
-            setArc59Summary,
-            setSendMode,
-        } = useSendFunds()
+        const { selectedAssetId, destination, amount, setArc59Summary } =
+            useSendFunds()
         const selectedAccount = useSelectedAccount()
         const { request: requestBottomSheet } = useBottomSheet()
         const { mode } = useThemeMode()
@@ -80,33 +74,10 @@ export const useARC59SendSummaryScreen =
             selectedAccount?.address ?? '',
         )
 
-        const { data: receiverOnChainInfo, isLoading: receiverInfoLoading } =
-            useOnChainAccountInformationQuery(receiverAddress)
-
-        const isLoading = summaryLoading || assetLoading || receiverInfoLoading
-
+        const isLoading = summaryLoading || assetLoading
         const headerImage = mode === 'dark' ? DarkHeaderImage : LightHeaderImage
 
-        // `undefined` until the receiver's on-chain holdings have loaded
-        const isReceiverOptedIn: boolean | undefined = receiverOnChainInfo
-            ? receiverOnChainInfo.assets.some(
-                  a => a.assetId === BigInt(assetId),
-              )
-            : undefined
-
-        // Receiver already holds the asset — the inbox is unnecessary, so
-        // reroute to the normal send flow
         useEffect(() => {
-            if (isReceiverOptedIn) {
-                setSendMode('normal')
-                navigation.replace('ConfirmTransaction')
-            }
-        }, [isReceiverOptedIn, setSendMode, navigation])
-
-        // Gated on the receiver not being opted in: a low ALGO balance must
-        // not block a send that is about to be rerouted to the normal flow
-        useEffect(() => {
-            if (isReceiverOptedIn !== false) return
             if (!summary || !accountInfo) return
 
             const availableAlgo = accountInfo.amount - accountInfo.minBalance
@@ -125,9 +96,8 @@ export const useARC59SendSummaryScreen =
                     ),
                 })
             }
-        }, [isReceiverOptedIn, summary, accountInfo, navigation])
+        }, [summary, accountInfo, navigation])
 
-        // Store the summary for transaction processing
         useEffect(() => {
             if (summary) {
                 setArc59Summary(summary)
