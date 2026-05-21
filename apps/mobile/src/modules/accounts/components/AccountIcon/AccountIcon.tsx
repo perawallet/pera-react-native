@@ -27,6 +27,11 @@ import { AccountIconSize, useStyles } from './styles'
 const THEME_TOKEN = '__theme__'
 const FALLBACK_ASSET = `accounts/${THEME_TOKEN}/unknown-account`
 
+export type AccountDisplayState =
+    | 'base'
+    | 'rekeyedSignable'
+    | 'rekeyedUnsignable'
+
 export type AccountIconProps = {
     account?: WalletAccount
     size?: AccountIconSize
@@ -36,6 +41,12 @@ export type AccountIconProps = {
      * source would look like once the rekey is undone.
      */
     ignoreRekey?: boolean
+    /**
+     * Force the display state. Use for accounts not yet in the store
+     * (e.g. import previews) where `canSignWith` can't resolve from store
+     * state alone.
+     */
+    displayState?: AccountDisplayState
 } & SvgProps
 
 const BASE_ICON: Record<AccountType, string> = {
@@ -54,7 +65,7 @@ const REKEYED_SIGNABLE_DEFAULT = `accounts/${THEME_TOKEN}/rekeyed-standard`
 const REKEYED_UNSIGNABLE_ICON = `accounts/${THEME_TOKEN}/noauth-account`
 
 export const AccountIcon = (props: AccountIconProps) => {
-    const { account, size = 'md', ignoreRekey, ...rest } = props
+    const { account, size = 'md', ignoreRekey, displayState, ...rest } = props
     const darkmode = useIsDarkMode()
     const rekeyAccount = useRekeyAccount(account?.address)
     const canSign = useCanSignWith(account)
@@ -64,14 +75,27 @@ export const AccountIcon = (props: AccountIconProps) => {
         if (!account) return null
 
         const isRekeyed = !ignoreRekey && !!account.rekeyAddress
+        const state: AccountDisplayState =
+            displayState ??
+            (isRekeyed
+                ? canSign
+                    ? 'rekeyedSignable'
+                    : 'rekeyedUnsignable'
+                : 'base')
+
         let asset: string
-        if (isRekeyed && canSign) {
-            asset =
-                REKEYED_SIGNABLE_ICON[account.type] ?? REKEYED_SIGNABLE_DEFAULT
-        } else if (isRekeyed && !canSign) {
-            asset = REKEYED_UNSIGNABLE_ICON
-        } else {
-            asset = BASE_ICON[account.type] ?? FALLBACK_ASSET
+        switch (state) {
+            case 'rekeyedSignable':
+                asset =
+                    REKEYED_SIGNABLE_ICON[account.type] ??
+                    REKEYED_SIGNABLE_DEFAULT
+                break
+            case 'rekeyedUnsignable':
+                asset = REKEYED_UNSIGNABLE_ICON
+                break
+            case 'base':
+                asset = BASE_ICON[account.type] ?? FALLBACK_ASSET
+                break
         }
 
         const theme = darkmode ? 'dark' : 'light'
@@ -89,7 +113,16 @@ export const AccountIcon = (props: AccountIconProps) => {
         // rekeyAccount keeps the memo invalidating when the auth account
         // changes (which can flip canSign).
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [account, ignoreRekey, canSign, rekeyAccount, darkmode, size, rest])
+    }, [
+        account,
+        ignoreRekey,
+        displayState,
+        canSign,
+        rekeyAccount,
+        darkmode,
+        size,
+        rest,
+    ])
 
     if (!icon) return <></>
 

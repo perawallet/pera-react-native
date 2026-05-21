@@ -11,4 +11,4 @@
  */
 
 export { AccountIcon } from './AccountIcon'
-export type { AccountIconProps } from './AccountIcon'
+export type { AccountIconProps, AccountDisplayState } from './AccountIcon'
