@@ -68,10 +68,60 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
         error: vi.fn(),
     },
     generateOrderedUniqueId: vi.fn(() => 'test-id'),
+    decodeFromBase64: vi.fn((b64: string) =>
+        Uint8Array.from(Buffer.from(b64, 'base64')),
+    ),
+}))
+
+const { mockAddSignRequest } = vi.hoisted(() => ({
+    mockAddSignRequest: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
-    useSigningRequest: () => ({ addSignRequest: vi.fn() }),
+    useSigningRequest: () => ({ addSignRequest: mockAddSignRequest }),
+}))
+
+const { mockOnlineKeyRegistration, mockOfflineKeyRegistration } = vi.hoisted(
+    () => ({
+        mockOnlineKeyRegistration: vi.fn(async () => ({
+            type: 'keyreg',
+            mock: 'tx',
+        })),
+        mockOfflineKeyRegistration: vi.fn(async () => ({
+            type: 'keyreg-offline',
+            mock: 'tx',
+        })),
+    }),
+)
+
+// Re-mocks only what useDeepLink consumes. Keeps `microAlgosToAlgos` /
+// `isValidAlgorandAddress` / `useNetwork` consistent with the global
+// vitest.setup.ts contract while overlaying useAlgorandClient with keyreg
+// builder mocks the keyreg deeplink test asserts against.
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    isValidAlgorandAddress: (address: string) => {
+        if (!address) return false
+        return /^[0-9a-zA-Z]{58}$/.test(address)
+    },
+    microAlgosToAlgos: (microAlgos: bigint | number | string) => {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const { Decimal } = require('decimal.js')
+        return new Decimal(microAlgos.toString()).dividedBy(1_000_000)
+    },
+    useNetwork: () => ({ network: 'mainnet' }),
+    useAlgorandClient: () => ({
+        createTransaction: {
+            onlineKeyRegistration: mockOnlineKeyRegistration,
+            offlineKeyRegistration: mockOfflineKeyRegistration,
+        },
+    }),
+    // Identity encode/decode pair for the keyreg shape-normalization
+    // step. Real impl encodes to msgpack bytes then decodes back to a
+    // string-sender txn; the tests don't care about byte representation.
+    useTransactionEncoder: () => ({
+        encodeTransaction: (tx: unknown) => tx,
+        decodeTransaction: (tx: unknown) => tx,
+    }),
 }))
 
 const mockImportAccount = vi.fn()
@@ -80,6 +130,10 @@ const mockMarkBackupComplete = vi.fn()
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: () => ({ address: 'addr1' }),
     useSelectedAccountAddress: () => ({ setSelectedAccountAddress: vi.fn() }),
+    useAllAccounts: () => [
+        { address: 'A'.repeat(58), id: 'mock', type: 'algo25' },
+    ],
+    resolveAuthAccount: (account: unknown) => account,
     resolveImportAccountType: (mnemonic: string) => {
         const wordCount = mnemonic.trim().split(/\s+/).length
         if (wordCount === 24) return { success: true, accountType: 'hdWallet' }
@@ -87,11 +141,27 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         return { success: false, wordCount }
     },
     useImportAccount: vi.fn(),
+    DuplicateAccountError: class DuplicateAccountError extends Error {},
 }))
 
 vi.mock('@perawallet/wallet-core-backup', () => ({
     useMarkMnemonicBackupComplete: vi.fn(),
+    // parser.ts imports these to detect Pera Web "Transfer Accounts" QR
+    // payloads — stub so the parser doesn't crash on JSON-shaped URLs.
+    PeraWebImportError: class PeraWebImportError extends Error {},
+    parsePeraWebQrPayload: vi.fn(() => {
+        throw new Error('not a pera web qr')
+    }),
 }))
+
+// Forward to the real store so the dispatcher's `setQr` lands on the same
+// instance the tests below assert against (imported via the deep path).
+vi.mock('@modules/onboarding/hooks', async () => {
+    const actual = (await vi.importActual(
+        '@modules/onboarding/hooks/peraWebImportFlowStore',
+    )) as typeof import('@modules/onboarding/hooks/peraWebImportFlowStore')
+    return { usePeraWebImportFlowStore: actual.usePeraWebImportFlowStore }
+})
 
 const { mockPushWebView } = vi.hoisted(() => ({
     mockPushWebView: vi.fn(),
@@ -107,6 +177,68 @@ vi.mock('@modules/webview/hooks/useWebViewStore', () => ({
 
 vi.mock('@perawallet/wallet-core-walletconnect', () => ({
     useWalletConnect: () => ({ connect: vi.fn() }),
+}))
+
+const {
+    mockRequestByType,
+    mockRequestBottomSheet,
+    mockSetDestination,
+    mockSetSelectedAssetId,
+    mockSetCanSelectAsset,
+    mockSetNote,
+    mockSetAmount,
+    mockSendFundsReset,
+    SendFundsContentMock,
+} = vi.hoisted(() => ({
+    mockRequestByType: vi.fn(),
+    mockRequestBottomSheet: vi.fn(),
+    mockSetDestination: vi.fn(),
+    mockSetSelectedAssetId: vi.fn(),
+    mockSetCanSelectAsset: vi.fn(),
+    mockSetNote: vi.fn(),
+    mockSetAmount: vi.fn(),
+    mockSendFundsReset: vi.fn(),
+    SendFundsContentMock: vi.fn(),
+}))
+
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheetStore: () => ({
+        requestByType: mockRequestByType,
+    }),
+    useBottomSheet: () => ({
+        request: mockRequestBottomSheet,
+        requestByType: mockRequestByType,
+        dismiss: vi.fn(),
+        dismissAll: vi.fn(),
+    }),
+}))
+
+// Mock SendFundsContent / BidaliContent so the deeplink test doesn't pull in
+// their full navigator trees (heavy imports not needed for these assertions).
+vi.mock('@modules/transactions/components/send-funds/SendFundsContent', () => ({
+    SendFundsContent: SendFundsContentMock,
+}))
+
+vi.mock('@modules/gift-card/components/BidaliContent', () => ({
+    BidaliContent: vi.fn(),
+}))
+
+const { mockSetPendingAmountBaseUnits } = vi.hoisted(() => ({
+    mockSetPendingAmountBaseUnits: vi.fn(),
+}))
+
+vi.mock('@modules/transactions/hooks', () => ({
+    useSendFundsStore: {
+        getState: () => ({
+            reset: mockSendFundsReset,
+            setDestination: mockSetDestination,
+            setSelectedAssetId: mockSetSelectedAssetId,
+            setCanSelectAsset: mockSetCanSelectAsset,
+            setNote: mockSetNote,
+            setAmount: mockSetAmount,
+            setPendingAmountBaseUnits: mockSetPendingAmountBaseUnits,
+        }),
+    },
 }))
 
 const { mockInfoToast, mockErrorToast } = vi.hoisted(() => ({
@@ -248,7 +380,7 @@ describe('useDeepLink', () => {
         // Success case, connect should have been called (mocked in useWalletConnect)
     })
 
-    it('should handle ALGO_TRANSFER deeplink', async () => {
+    it('should open send-funds bottom sheet for ALGO_TRANSFER deeplink', async () => {
         ;(parseDeeplink as Mock).mockReturnValue({
             type: DeeplinkType.ALGO_TRANSFER,
             receiverAddress: 'receiver1',
@@ -265,13 +397,22 @@ describe('useDeepLink', () => {
             )
         })
 
-        expect(mockInfoToast).toHaveBeenCalledWith(
-            'Algo Transfer',
-            'Algo transfer screen not implemented yet',
+        expect(mockInfoToast).not.toHaveBeenCalled()
+        expect(mockRequestByType).toHaveBeenCalledWith(
+            'send-funds',
+            { assetId: '0' },
+            expect.objectContaining({ size: 'lg' }),
         )
+        expect(mockSetDestination).toHaveBeenCalledWith('receiver1')
+        expect(mockSetSelectedAssetId).toHaveBeenCalledWith('0')
+        expect(mockSetCanSelectAsset).toHaveBeenCalledWith(false)
+        expect(mockSetNote).toHaveBeenCalledWith('test note')
+        // 1_000_000 microAlgos == 1 ALGO in display units.
+        expect(mockSetAmount).toHaveBeenCalled()
+        expect(mockSetAmount.mock.calls[0][0].toString()).toBe('1')
     })
 
-    it('should handle ASSET_TRANSFER deeplink', async () => {
+    it('should open send-funds bottom sheet for ASSET_TRANSFER deeplink', async () => {
         ;(parseDeeplink as Mock).mockReturnValue({
             type: DeeplinkType.ASSET_TRANSFER,
             assetId: '123',
@@ -289,10 +430,22 @@ describe('useDeepLink', () => {
             )
         })
 
-        expect(mockInfoToast).toHaveBeenCalledWith(
-            'Asset Transfer',
-            'Asset transfer screen not implemented yet',
+        expect(mockInfoToast).not.toHaveBeenCalled()
+        expect(mockRequestByType).toHaveBeenCalledWith(
+            'send-funds',
+            { assetId: '123' },
+            expect.objectContaining({ size: 'lg' }),
         )
+        expect(mockSetDestination).toHaveBeenCalledWith('receiver1')
+        expect(mockSetSelectedAssetId).toHaveBeenCalledWith('123')
+        expect(mockSetCanSelectAsset).toHaveBeenCalledWith(false)
+        expect(mockSetNote).toHaveBeenCalledWith('test note')
+        // Asset amount is in base units; conversion is deferred to the input
+        // screen because it depends on asset decimals — but we stash the raw
+        // base-unit string so InputScreen can convert + populate once the
+        // asset query resolves.
+        expect(mockSetAmount).not.toHaveBeenCalled()
+        expect(mockSetPendingAmountBaseUnits).toHaveBeenCalledWith('100')
     })
 
     it('should handle ASSET_OPT_IN deeplink', async () => {
@@ -488,7 +641,9 @@ describe('useDeepLink', () => {
             )
         })
 
-        expect(mockNavigate).toHaveBeenCalledWith('TabBar', { screen: 'Fund' })
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+            screen: 'Fund',
+        })
     })
 
     it('should handle ACCOUNT_DETAIL deeplink', async () => {
@@ -506,8 +661,13 @@ describe('useDeepLink', () => {
             )
         })
 
+        // Navigates into the Home stack to the AccountDetails screen — the
+        // top-level TabBar has no screen named 'AccountDetail'.
         expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
-            screen: 'AccountDetail',
+            screen: 'Home',
+            params: {
+                screen: 'AccountDetails',
+            },
         })
     })
 
@@ -667,7 +827,7 @@ describe('useDeepLink', () => {
         // Success case (infoPost called)
     })
 
-    it('should handle SELL deeplink', async () => {
+    it('should open Bidali bottom sheet for SELL deeplink', async () => {
         ;(parseDeeplink as Mock).mockReturnValue({
             type: DeeplinkType.SELL,
             address: 'addr1',
@@ -682,7 +842,15 @@ describe('useDeepLink', () => {
             )
         })
 
-        // Success case (infoPost called)
+        expect(mockInfoToast).not.toHaveBeenCalled()
+        // Routes to the existing Menu → Buy Gift Card sheet (Bidali) via
+        // requestByType so the sell flow inherits the bidaliProvider bridge
+        // wiring instead of running through a thin webview redirect.
+        expect(mockRequestByType).toHaveBeenCalledWith(
+            'bidali',
+            {},
+            expect.objectContaining({ size: 'lg' }),
+        )
     })
 
     it('should handle RECOVER_ADDRESS deeplink and import as HD wallet from QR', async () => {
@@ -811,9 +979,11 @@ describe('useDeepLink', () => {
         // Success case
     })
 
-    it('should handle ADDRESS_ACTIONS deeplink', async () => {
+    it('should open account-actions bottom sheet for ADDRESS_ACTIONS deeplink', async () => {
         ;(parseDeeplink as Mock).mockReturnValue({
             type: DeeplinkType.ADDRESS_ACTIONS,
+            address: 'recipient1',
+            label: 'Friend',
         })
         const { result } = renderHook(() => useDeepLink())
 
@@ -825,12 +995,66 @@ describe('useDeepLink', () => {
             )
         })
 
-        // Success case
+        expect(mockInfoToast).not.toHaveBeenCalled()
+        // Routes to the account-actions bottom sheet (Send / Watch / Add
+        // Contact menu); the in-sheet handlers themselves prefill send-funds
+        // when the user picks "Send".
+        expect(mockRequestByType).toHaveBeenCalledWith('account-actions', {
+            address: 'recipient1',
+            label: 'Friend',
+        })
     })
 
-    it('should handle KEYREG deeplink', async () => {
+    it('should open send-funds bottom sheet for RECEIVER_ACCOUNT_SELECTION deeplink', async () => {
+        ;(parseDeeplink as Mock).mockReturnValue({
+            type: DeeplinkType.RECEIVER_ACCOUNT_SELECTION,
+            address: 'recipient1',
+        })
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'perawallet://app/receiver-account-selection',
+                false,
+                'deeplink',
+            )
+        })
+
+        expect(mockInfoToast).not.toHaveBeenCalled()
+        expect(mockSetDestination).toHaveBeenCalledWith('recipient1')
+        expect(mockRequestByType).toHaveBeenCalledWith(
+            'send-funds',
+            { assetId: undefined },
+            expect.objectContaining({ size: 'lg' }),
+        )
+    })
+
+    it('should navigate to WatchAccount with prefill for ADD_WATCH_ACCOUNT deeplink', async () => {
+        ;(parseDeeplink as Mock).mockReturnValue({
+            type: DeeplinkType.ADD_WATCH_ACCOUNT,
+            address: 'addr1',
+        })
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'perawallet://app/register-watch-account',
+                false,
+                'deeplink',
+            )
+        })
+
+        expect(mockNavigate).toHaveBeenCalledWith('AddAccount', {
+            screen: 'WatchAccount',
+            params: { prefillAddress: 'addr1' },
+        })
+    })
+
+    it('should reject KEYREG deeplink with invalid sender address', async () => {
         ;(parseDeeplink as Mock).mockReturnValue({
             type: DeeplinkType.KEYREG,
+            senderAddress: 'not-an-algorand-address',
+            keyregType: 'offline',
         })
         const { result } = renderHook(() => useDeepLink())
 
@@ -842,7 +1066,104 @@ describe('useDeepLink', () => {
             )
         })
 
-        // Success case
+        // Deeplink errors surface via the in-app toast notifier,
+        // deferred by ~400ms to let the QR Modal close first.
+        await vi.waitFor(() => expect(mockErrorToast).toHaveBeenCalled())
+        expect(mockAddSignRequest).not.toHaveBeenCalled()
+    })
+
+    it('should submit offline KEYREG deeplink to signing pipeline', async () => {
+        ;(parseDeeplink as Mock).mockReturnValue({
+            type: DeeplinkType.KEYREG,
+            senderAddress: 'A'.repeat(58),
+            keyregType: 'offline',
+        })
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'perawallet://app/keyreg?type=offline',
+                false,
+                'deeplink',
+            )
+        })
+
+        expect(mockOfflineKeyRegistration).toHaveBeenCalledWith(
+            expect.objectContaining({
+                sender: 'A'.repeat(58),
+            }),
+        )
+        expect(mockAddSignRequest).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: 'transactions',
+                transport: 'algod',
+            }),
+        )
+    })
+
+    it('should rejects online KEYREG deeplink missing required fields', async () => {
+        ;(parseDeeplink as Mock).mockReturnValue({
+            type: DeeplinkType.KEYREG,
+            senderAddress: 'A'.repeat(58),
+            keyregType: 'keyreg',
+            voteKey: 'AAAA',
+            // missing selkey, sprfkey, votefst, votelst, votekd
+        })
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'perawallet://app/keyreg',
+                false,
+                'deeplink',
+            )
+        })
+
+        await vi.waitFor(() => expect(mockErrorToast).toHaveBeenCalled())
+        expect(mockOnlineKeyRegistration).not.toHaveBeenCalled()
+        expect(mockAddSignRequest).not.toHaveBeenCalled()
+    })
+
+    it('should submit online KEYREG deeplink to signing pipeline', async () => {
+        ;(parseDeeplink as Mock).mockReturnValue({
+            type: DeeplinkType.KEYREG,
+            senderAddress: 'A'.repeat(58),
+            keyregType: 'keyreg',
+            voteKey: 'AAAA',
+            selkey: 'BBBB',
+            sprfkey: 'CCCC',
+            votefst: '1',
+            votelst: '1000',
+            votekd: '10',
+            fee: '1000',
+        })
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'perawallet://app/keyreg',
+                false,
+                'deeplink',
+            )
+        })
+
+        expect(mockOnlineKeyRegistration).toHaveBeenCalledWith(
+            expect.objectContaining({
+                sender: 'A'.repeat(58),
+                voteFirst: 1n,
+                voteLast: 1000n,
+                voteKeyDilution: 10n,
+                // staticFee is wrapped in algokit's AlgoAmount; just assert it
+                // was passed through (AlgoAmount.microAlgos === 1000n).
+                staticFee: expect.objectContaining({ microAlgos: 1000n }),
+            }),
+        )
+        expect(mockAddSignRequest).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: 'transactions',
+                transport: 'algod',
+            }),
+        )
     })
 
     it('should handle navigation error', async () => {
@@ -903,7 +1224,9 @@ describe('useDeepLink', () => {
             )
         })
 
-        expect(mockNavigate).toHaveBeenCalledWith('TabBar', { screen: 'Fund' })
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+            screen: 'Fund',
+        })
     })
 
     it('should call onError callback when deeplink is invalid', async () => {

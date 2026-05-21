@@ -17,36 +17,40 @@ import {
     PWTouchableOpacity,
     PWCheckbox,
     PWChip,
-    PWIcon,
+    PWTouchableIcon,
 } from '@components/core'
-import { useClipboard } from '@hooks/useClipboard'
-import { useLanguage } from '@hooks/useLanguage'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
+import { useLanguage } from '@hooks/useLanguage'
 import LightLedgerAccountIcon from '@assets/icons/accounts/light/ledger-account.svg'
 import { useStyles } from './styles'
 
 export type LedgerAccountSelectionRowProps = {
     address: string
+    accountIndex: number
+    variant?: 'derived' | 'rekeyed'
     isSelected: boolean
     isImported: boolean
     onToggle: () => void
+    onInfoPress: (address: string, accountIndex: number) => void
     testID?: string
 }
 
 export const LedgerAccountSelectionRow = ({
     address,
+    accountIndex,
+    variant = 'derived',
     isSelected,
     isImported,
     onToggle,
+    onInfoPress,
     testID,
 }: LedgerAccountSelectionRowProps) => {
     const styles = useStyles({ isImported })
     const { t } = useLanguage()
-    const { copyToClipboard } = useClipboard()
 
-    const handleCopyAddress = useCallback(() => {
-        void copyToClipboard(address)
-    }, [copyToClipboard, address])
+    const handleInfoPress = useCallback(() => {
+        onInfoPress(address, accountIndex)
+    }, [onInfoPress, address, accountIndex])
 
     return (
         <PWTouchableOpacity
@@ -55,31 +59,34 @@ export const LedgerAccountSelectionRow = ({
             disabled={isImported}
             testID={testID}
         >
+            <PWCheckbox
+                checked={isImported ? true : isSelected}
+                onPress={onToggle}
+                disabled={isImported}
+                containerStyle={styles.checkbox}
+                testID={testID ? `${testID}-checkbox` : undefined}
+            />
+
             <LightLedgerAccountIcon
                 width={40}
                 height={40}
             />
 
             <PWView style={styles.textContainer}>
-                <PWTouchableOpacity
-                    style={styles.addressTouchable}
-                    onPress={handleCopyAddress}
-                    hitSlop={8}
-                    testID={testID ? `${testID}-copy-address` : undefined}
+                <PWText
+                    variant='body'
+                    style={styles.title}
+                    numberOfLines={1}
                 >
-                    <PWText
-                        variant='body'
-                        style={styles.title}
-                        numberOfLines={1}
-                    >
-                        {truncateAlgorandAddress(address)}
-                    </PWText>
-                    <PWIcon
-                        name='copy'
-                        size='sm'
+                    {truncateAlgorandAddress(address)}
+                </PWText>
+                {variant === 'rekeyed' && (
+                    <PWChip
+                        title={t('ledger.select_accounts.rekeyed_label')}
                         variant='secondary'
+                        textVariant='captionSmall'
                     />
-                </PWTouchableOpacity>
+                )}
                 {isImported && (
                     <PWChip
                         title={t('ledger.select_accounts.already_imported')}
@@ -89,14 +96,13 @@ export const LedgerAccountSelectionRow = ({
                 )}
             </PWView>
 
-            {!isImported && (
-                <PWCheckbox
-                    checked={isSelected}
-                    onPress={onToggle}
-                    containerStyle={styles.checkbox}
-                    testID={testID ? `${testID}-checkbox` : undefined}
-                />
-            )}
+            <PWTouchableIcon
+                name='info'
+                size='sm'
+                variant='secondary'
+                onPress={handleInfoPress}
+                testID={testID ? `${testID}-info` : undefined}
+            />
         </PWTouchableOpacity>
     )
 }

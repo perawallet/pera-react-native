@@ -133,7 +133,6 @@ module.exports = {
     intentFilters: [
       {
         action: 'VIEW',
-        autoVerify: true,
         data: [
           { scheme: 'perawallet' },
           { scheme: 'algorand' },
@@ -146,8 +145,16 @@ module.exports = {
         action: 'VIEW',
         autoVerify: true,
         data: [
-          { scheme: 'https', host: 'perawallet.app', pathPrefix: '/qr' },
-          { scheme: 'https', host: 'perawallet.app', pathPrefix: '/app' },
+          {
+            scheme: 'https',
+            host: 'perawallet.app',
+            pathPrefix: '/qr/perawallet/',
+          },
+          {
+            scheme: 'https',
+            host: 'perawallet.app',
+            pathPrefix: '/qr/perawallet-wc/',
+          },
         ],
         category: ['DEFAULT', 'BROWSABLE'],
       },

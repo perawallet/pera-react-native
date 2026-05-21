@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
+import { useRoute, type RouteProp } from '@react-navigation/native'
 import {
     useAllAccounts,
     useSelectedAccountAddress,
@@ -32,22 +33,37 @@ import {
 } from '@modules/onboarding/hooks'
 import { useMultisigCreationStore } from '../../hooks/useMultisigCreation'
 import { getNextSharedAccountName } from '../../utils'
-import { Optional } from '@perawallet/wallet-core-shared'
+import type { MultisigStackParamList } from '../../routes/types'
 
 type UseNameMultisigScreenResult = {
     accountName: string
     isCreating: boolean
-    isNameTaken: boolean
-    nameError: Optional<string>
     isFinishDisabled: boolean
     handleNameChange: (value: string) => void
     handleFinish: () => void
 }
 
 export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
-    const participants = useMultisigCreationStore(state => state.participants)
-    const threshold = useMultisigCreationStore(state => state.threshold)
+    // When `params` is present the screen names an imported (QR-scanned)
+    // shared account; otherwise it names one built via the creation flow.
+    const { params: importParams } =
+        useRoute<RouteProp<MultisigStackParamList, 'NameMultisig'>>()
+
+    const storeParticipants = useMultisigCreationStore(
+        state => state.participants,
+    )
+    const storeThreshold = useMultisigCreationStore(state => state.threshold)
     const resetState = useMultisigCreationStore(state => state.resetState)
+
+    const addresses = useMemo(
+        () =>
+            importParams
+                ? importParams.addresses
+                : storeParticipants.map(p => p.address),
+        [importParams, storeParticipants],
+    )
+    const threshold = importParams ? importParams.threshold : storeThreshold
+    const version = importParams ? importParams.version : 1
 
     const accounts = useAllAccounts()
     const setAccounts = useAccountsStore(state => state.setAccounts)
@@ -66,19 +82,13 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
         getNextSharedAccountName(accounts, t('multisig.name.default_name')),
     )
     const [isCreating, setIsCreating] = useState(false)
-    useNavigationLock(isCreating)
+    const { allowProgrammaticNavigation } = useNavigationLock(isCreating)
 
+    // Account names are not required to be unique — multiple accounts may
+    // share a name. The only hard constraint is the account address, checked
+    // in `handleFinish` below.
     const trimmedName = accountName.trim()
-    const normalizedName = trimmedName.toLowerCase()
-    const isNameTaken =
-        trimmedName !== '' &&
-        accounts.some(
-            a => (a.name ?? '').trim().toLowerCase() === normalizedName,
-        )
-    const nameError = isNameTaken
-        ? t('multisig.name.error_name_taken')
-        : undefined
-    const isFinishDisabled = isCreating || trimmedName === '' || isNameTaken
+    const isFinishDisabled = isCreating || trimmedName === ''
 
     const handleNameChange = useCallback((value: string) => {
         setAccountName(value)
@@ -92,12 +102,23 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
 
             await new Promise(resolve => requestAnimationFrame(resolve))
 
-            const addresses = participants.map(p => p.address)
             const multisigAddress = generateMultisigAddress(
-                1,
+                version,
                 threshold,
                 addresses,
             )
+
+            // An imported shared account carries the address its QR code
+            // claimed. Re-derive it from the same (version, threshold,
+            // participants) and refuse to persist on a mismatch — a mismatch
+            // means the scanned payload is corrupt or tampered with.
+            if (importParams && importParams.address !== multisigAddress) {
+                errorToast(
+                    t('multisig.import.address_mismatch_title'),
+                    t('multisig.import.address_mismatch_body'),
+                )
+                return
+            }
 
             if (!deviceId) {
                 errorToast(t('errors.general.title'), t('errors.general.body'))
@@ -116,7 +137,7 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
             }
 
             await createMultisigMutation.mutateAsync({
-                version: 1,
+                version,
                 threshold,
                 participant_addresses: addresses,
                 device_id: deviceId,
@@ -136,6 +157,10 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
             setSelectedAccountAddress(multisigAddress)
             setShouldPlayConfetti(true)
             resetState()
+            // Release the navigation lock so this flow's own exit isn't
+            // blocked by the `beforeRemove` guard `useNavigationLock` armed
+            // while `isCreating` is still true.
+            allowProgrammaticNavigation()
             exitAccountFlow()
         } catch (error) {
             errorToast(
@@ -150,8 +175,10 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
     }, [
         isCreating,
         deviceId,
-        participants,
+        importParams,
+        addresses,
         threshold,
+        version,
         accountName,
         accounts,
         setAccounts,
@@ -160,6 +187,7 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
         setShouldPlayConfetti,
         resetState,
         exitAccountFlow,
+        allowProgrammaticNavigation,
         errorToast,
         t,
     ])
@@ -167,8 +195,6 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
     return {
         accountName,
         isCreating,
-        isNameTaken,
-        nameError,
         isFinishDisabled,
         handleNameChange,
         handleFinish,

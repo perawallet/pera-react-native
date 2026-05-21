@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { useNavigation } from '@react-navigation/native'
+import { useNavigation, useRoute } from '@react-navigation/native'
 import {
     DuplicateAddressError,
     useContacts,
@@ -20,10 +20,11 @@ import {
 import { useLanguage } from '@hooks/useLanguage'
 import { useContactForm } from './useContactForm'
 
-import type { ParamListBase } from '@react-navigation/native'
+import type { ParamListBase, RouteProp } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { Contact } from '@perawallet/wallet-core-contacts'
 import type { UseContactFormResult } from './useContactForm'
+import type { ContactsStackParamsList } from '@modules/contacts/routes'
 
 export type UseAddContactFormResult = UseContactFormResult & {
     save: (data: Contact) => void
@@ -33,7 +34,16 @@ export const useAddContactForm = (): UseAddContactFormResult => {
     const { addContact, setSelectedContact } = useContacts()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { t } = useLanguage()
-    const form = useContactForm(null)
+    // Forwarded by ADD_CONTACT deeplinks and the AccountActions sheet so the
+    // form opens with the address (and optional label → name) prefilled.
+    const route = useRoute<RouteProp<ContactsStackParamsList, 'AddContact'>>()
+    const prefillAddress = route.params?.address ?? ''
+    const prefillName = route.params?.label ?? ''
+    const initialContact = useMemo<Contact | null>(() => {
+        if (!prefillAddress && !prefillName) return null
+        return { address: prefillAddress, name: prefillName }
+    }, [prefillAddress, prefillName])
+    const form = useContactForm(initialContact)
 
     const save = useCallback(
         (data: Contact) => {

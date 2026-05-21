@@ -20,7 +20,7 @@ import {
     PWIcon,
     PWFlatList,
 } from '@components/core'
-import type { LedgerAccount } from '@perawallet/wallet-core-ledger'
+import type { LedgerSelectableAccount } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 
 import { useStyles } from './styles'
@@ -32,7 +32,8 @@ export const LedgerSelectAccountsScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const {
-        accounts,
+        selectableAccounts,
+        isScanning,
         selectedAddresses,
         isAllSelected,
         areAllImported,
@@ -43,31 +44,52 @@ export const LedgerSelectAccountsScreen = () => {
         toggleSelectAll,
         handleContinue,
         handleFindAnother,
+        handleInfoPress,
     } = useLedgerSelectAccountsScreen()
 
-    const showSelectAll = accounts.length > 1 && !areAllImported
+    const showSelectAll = selectableAccounts.length > 1 && !areAllImported
 
-    const renderItem = ({ item }: { item: LedgerAccount }) => {
-        const isImported = alreadyImportedAddresses.has(item.address)
-        const isSelected = selectedAddresses.has(item.address)
+    const renderItem = ({ item }: { item: LedgerSelectableAccount }) => {
+        const address =
+            item.kind === 'derived' ? item.account.address : item.address
+        const accountIndex =
+            item.kind === 'derived'
+                ? item.account.accountIndex
+                : item.authAccount.accountIndex
+        const isImported = alreadyImportedAddresses.has(address)
+        const isSelected = selectedAddresses.has(address)
         return (
             <LedgerAccountSelectionRow
-                address={item.address}
+                address={address}
+                accountIndex={accountIndex}
+                variant={item.kind}
                 isSelected={isSelected}
                 isImported={isImported}
-                onToggle={() => toggleSelection(item.address)}
-                testID={`ledger_select_row_${item.address}`}
+                onToggle={() => toggleSelection(address)}
+                onInfoPress={handleInfoPress}
+                testID={`ledger_select_row_${address}`}
             />
         )
     }
 
     const renderFooter = () => (
-        <FindAnotherWalletRow
-            onPress={handleFindAnother}
-            isLoading={isFetchingMore}
-            label={t('ledger.select_accounts.find_another_wallet')}
-            testID='ledger_select_accounts_find_another'
-        />
+        <>
+            {isScanning && (
+                <PWText
+                    variant='caption'
+                    style={styles.description}
+                    testID='ledger_select_accounts_scanning'
+                >
+                    {t('ledger.select_accounts.scanning_rekeyed')}
+                </PWText>
+            )}
+            <FindAnotherWalletRow
+                onPress={handleFindAnother}
+                isLoading={isFetchingMore}
+                label={t('ledger.select_accounts.find_another_wallet')}
+                testID='ledger_select_accounts_find_another'
+            />
+        </>
     )
 
     return (
@@ -85,7 +107,7 @@ export const LedgerSelectAccountsScreen = () => {
                     style={styles.title}
                 >
                     {t('ledger.select_accounts.title', {
-                        count: accounts.length,
+                        count: selectableAccounts.length,
                     })}
                 </PWText>
                 <PWText
@@ -116,9 +138,13 @@ export const LedgerSelectAccountsScreen = () => {
                 )}
 
                 <PWFlatList
-                    data={accounts}
+                    data={selectableAccounts}
                     renderItem={renderItem}
-                    keyExtractor={item => item.address}
+                    keyExtractor={item =>
+                        item.kind === 'derived'
+                            ? item.account.address
+                            : item.address
+                    }
                     extraData={selectedAddresses}
                     contentContainerStyle={styles.listContent}
                     showsVerticalScrollIndicator={false}

@@ -32,11 +32,17 @@ type ResolveSignableResult = {
  * @param txParams        Per-transaction signer specs from the request
  * @param txSenders       Sender address of each decoded transaction (same order as txParams)
  * @param signableAddresses  Addresses the wallet can actually sign for
+ * @param multisigAddresses  Locally-held multisig addresses. A multisig
+ *   sender short-circuits the ARC-0001 `signers` hint — the dApp can't
+ *   enumerate our local participant set, so the wallet signs with every
+ *   local participant and the transport selector routes through the
+ *   multisig propose flow. Defaults to empty so non-WC callers stay unchanged.
  */
 export const resolveSignableTransactions = (
     txParams: SignerSpec[],
     txSenders: string[],
     signableAddresses: Set<string>,
+    multisigAddresses: ReadonlySet<string> = new Set(),
 ): ResolveSignableResult => {
     const indicesToSign: number[] = []
     const signerOverrides = new Map<number, string>()
@@ -45,7 +51,22 @@ export const resolveSignableTransactions = (
         const param = txParams[i]
         const txSender = txSenders[i]
 
+        // Explicit dApp-signed (`signers: []`) wins for every account
+        // type — it's the only way to say "skip this txn".
         if (param.signers && param.signers.length === 0) {
+            continue
+        }
+
+        // Multisig sender: route via the multisig flow regardless of
+        // ARC-0001 `signers`. Even when the dApp specifies a single
+        // participant (e.g. `signers: [P1]`), the wallet signs with every
+        // local participant of this multisig — the resulting signatures
+        // are posted to the backend via the propose transport, and the
+        // dApp peer is resolved via `softReject`. Keeping the sender as
+        // the multisig address ensures the transport selector at
+        // `getTransport.ts` picks the propose branch.
+        if (multisigAddresses.has(txSender)) {
+            indicesToSign.push(i)
             continue
         }
 

@@ -82,6 +82,12 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
             getBoolean: vi.fn().mockReturnValue(false),
             getString: vi.fn().mockReturnValue(''),
         },
+        // Expose a real (empty) registry so integration tests that exercise
+        // hardware-wallet flows (e.g. LedgerVerifyScreen) can register a fake
+        // transport provider via `getProvider().hardwareWalletRegistry.register()`.
+        // Unit tests never call into the registry so providing an empty one is safe.
+        hardwareWalletRegistry:
+            require('@perawallet/wallet-core-hardware-wallet').createHardwareWalletRegistry(),
     }),
     getPlatformServices: () => ({
         keyValueStorage: {
@@ -186,6 +192,18 @@ vi.mock('react-native-reanimated', () => {
         Extrapolate: { CLAMP: 'clamp' },
         Layout: {
             springify: () => ({ damping: () => ({}) }),
+        },
+        // Reanimated re-exports `Easing`; CompactBanner consumes
+        // `Easing.inOut(Easing.quad)`. Identity stubs keep the calls safe.
+        Easing: {
+            inOut: (fn: any) => fn,
+            out: (fn: any) => fn,
+            in: (fn: any) => fn,
+            ease: () => undefined,
+            linear: () => undefined,
+            quad: () => undefined,
+            cubic: () => undefined,
+            bezier: () => () => undefined,
         },
         FadeIn: {
             duration: () => ({}),
@@ -659,17 +677,28 @@ vi.mock('@components/core', () => {
             testID,
             isDisabled,
             disabled,
+            accessibilityLabel,
+            accessibilityIdentifier,
             ...props
         }: any) =>
             React.createElement(
                 'button',
                 {
+                    // Spread after explicit test id handling so that testID / accessibilityIdentifier win.
                     ...props,
+                    'aria-label': accessibilityLabel,
                     onClick: onPress,
                     role: 'button',
                     disabled: isDisabled ?? disabled,
-                    'data-testid': testID || 'PWTouchableOpacity',
-                    testid: testID || 'PWTouchableOpacity',
+                    // Prefer testID, then accessibilityIdentifier for deterministic test ids.
+                    'data-testid':
+                        testID ||
+                        accessibilityIdentifier ||
+                        'PWTouchableOpacity',
+                    testid:
+                        testID ||
+                        accessibilityIdentifier ||
+                        'PWTouchableOpacity',
                 },
                 children,
             ),
@@ -743,6 +772,26 @@ vi.mock('expo-image', () => {
 vi.mock('expo-clipboard', () => ({
     setStringAsync: vi.fn(),
     getStringAsync: vi.fn(),
+}))
+
+// `expo-modules-core` references `__DEV__` at module-load time in
+// `setUpJsLogger.fx.ts`; under jsdom this is undefined and any expo-* package
+// that transitively imports it crashes during import. Define the global up
+// front so consumers that aren't separately mocked (e.g. expo-screen-capture)
+// can be loaded by the routes barrel under unit tests.
+//
+// Side-effect: every unit test now sees `__DEV__ === false`. App code that
+// gates dev-only logging/asserts on `__DEV__` will run as if in a production
+// build. If a spec ever wants to exercise a dev-mode branch it should set
+// the global itself (and restore it afterwards) rather than rely on the
+// default.
+;(globalThis as { __DEV__?: boolean }).__DEV__ = false
+
+vi.mock('expo-screen-capture', () => ({
+    preventScreenCaptureAsync: vi.fn().mockResolvedValue(undefined),
+    allowScreenCaptureAsync: vi.fn().mockResolvedValue(undefined),
+    addScreenshotListener: vi.fn(() => ({ remove: vi.fn() })),
+    removeScreenshotListener: vi.fn(),
 }))
 
 // `expo-file-system` transitively imports `expo-modules-core`, which probes
@@ -875,7 +924,14 @@ vi.mock('react-native', () => {
         TouchableOpacity: vi
             .fn()
             .mockImplementation(
-                ({ onPress, children, activeOpacity, testID, ...props }) => {
+                ({
+                    onPress,
+                    children,
+                    activeOpacity,
+                    testID,
+                    accessibilityLabel,
+                    ...props
+                }) => {
                     const React = require('react')
 
                     void activeOpacity
@@ -884,6 +940,7 @@ vi.mock('react-native', () => {
                         'button',
                         {
                             ...props,
+                            'aria-label': accessibilityLabel,
                             onClick: onPress,
                             ...(testID
                                 ? { 'data-testid': testID, testid: testID }
@@ -2413,6 +2470,29 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
                 err instanceof Error ? err : undefined,
             ),
     ),
+    microAlgosToAlgos: vi.fn((microAlgos: bigint | number | string) => {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const { Decimal } = require('decimal.js')
+        return new Decimal(microAlgos.toString()).dividedBy(1_000_000)
+    }),
+    baseUnitsToDisplayUnits: vi.fn(
+        (baseUnits: bigint | number | string, decimals: number) => {
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
+            const { Decimal } = require('decimal.js')
+            return new Decimal(baseUnits.toString()).dividedBy(
+                new Decimal(10).pow(decimals),
+            )
+        },
+    ),
+}))
+
+// Stub lottie-react-native globally. It ships untransformed TSX inside its
+// commonjs build, which Vitest's external module loader can't parse — any
+// transitive import of LottieView throws "Unexpected token 'typeof'" at
+// test collection time. Local mocks in component-specific tests still
+// override this with their own stubs when they need testID wiring.
+vi.mock('lottie-react-native', () => ({
+    default: () => null,
 }))
 
 // Mock @perawallet/wallet-extension-platform

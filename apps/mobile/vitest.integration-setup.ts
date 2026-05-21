@@ -97,6 +97,16 @@ vi.mock('@react-navigation/stack', async () => {
     }
 })
 
+// `useHeaderHeight` throws when the screen isn't inside a real
+// header-bearing navigator. The test navigator above renders screens
+// without a header, so any production screen using `useHeaderHeight`
+// (e.g. for `KeyboardAvoidingView.keyboardVerticalOffset`) would crash.
+// Stub it to 0 — flow tests don't care about layout offsets.
+vi.mock('@react-navigation/elements', async importOriginal => ({
+    ...(await importOriginal<typeof import('@react-navigation/elements')>()),
+    useHeaderHeight: () => 0,
+}))
+
 // SVGs used by onboarding screens. svgr emits real React SVG components,
 // but rendering them under jsdom triggers `InvalidCharacterError` on
 // attributes whose value is a long data URL (jsdom tries to use it as an
@@ -134,6 +144,21 @@ vi.mock('@assets/images/eye-inverted.svg', () => {
 })
 // Check glyph rendered on the rekey success screens.
 vi.mock('@assets/icons/check.svg', () => {
+    const React = require('react')
+    return {
+        default: (props: Record<string, unknown>) =>
+            React.createElement('div', { ...props, 'data-testid': 'SvgIcon' }),
+    }
+})
+// Shield glyph rendered on the ASB import info screen.
+vi.mock('@assets/icons/shield-check.svg', () => {
+    const React = require('react')
+    return {
+        default: (props: Record<string, unknown>) =>
+            React.createElement('div', { ...props, 'data-testid': 'SvgIcon' }),
+    }
+})
+vi.mock('@assets/icons/accounts/light/ledger-account.svg', () => {
     const React = require('react')
     return {
         default: (props: Record<string, unknown>) =>

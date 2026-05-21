@@ -42,6 +42,8 @@ vi.mock('@react-navigation/native', async () => {
     return {
         ...actual,
         useNavigation: () => mockNavigation,
+        // Creation flow renders NameMultisig with no route params.
+        useRoute: () => ({ params: undefined }),
     }
 })
 
@@ -233,7 +235,7 @@ describe('multisig creation flow', () => {
         expect(useMultisigCreationStore.getState().threshold).toBe(2)
     })
 
-    it('blocks finish when account name collides with existing account', async () => {
+    it('allows finishing with a name already used by another account', async () => {
         mockUseAllAccounts.mockReturnValue([
             { address: 'EXISTING', name: 'My Wallet' } as WalletAccount,
         ])
@@ -251,18 +253,11 @@ describe('multisig creation flow', () => {
 
         const nameHook = renderHook(() => useNameMultisigScreen())
 
+        // Names are not required to be unique — a duplicate name still finishes.
         act(() => {
             nameHook.result.current.handleNameChange('My Wallet')
         })
 
-        expect(nameHook.result.current.isNameTaken).toBe(true)
-        expect(nameHook.result.current.isFinishDisabled).toBe(true)
-
-        act(() => {
-            nameHook.result.current.handleNameChange('My Shared Wallet')
-        })
-
-        expect(nameHook.result.current.isNameTaken).toBe(false)
         expect(nameHook.result.current.isFinishDisabled).toBe(false)
     })
 

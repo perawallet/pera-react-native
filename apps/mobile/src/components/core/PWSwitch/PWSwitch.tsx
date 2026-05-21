@@ -11,6 +11,7 @@
  */
 
 import { Switch as RNESwitch } from '@rneui/themed'
+import { getTestProps } from '@utils/test-id-helper'
 
 import { StyleProp, ViewStyle } from 'react-native'
 
@@ -29,6 +30,7 @@ export const PWSwitch = ({
     disabled,
     style,
     color,
+    testID,
     ...props
 }: PWSwitchProps) => {
     return (
@@ -38,6 +40,7 @@ export const PWSwitch = ({
             disabled={disabled}
             style={style}
             color={color}
+            {...getTestProps(testID)}
             {...props}
         />
     )

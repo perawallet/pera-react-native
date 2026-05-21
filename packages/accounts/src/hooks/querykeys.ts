@@ -45,6 +45,11 @@ export const getOnChainAccountInformationQueryKey = (
     network: Network,
 ) => [MODULE_PREFIX, 'on-chain-account-information', { address, network }]
 
+export const getRekeyedAddressesQueryKey = (
+    address: string,
+    network: Network,
+) => [MODULE_PREFIX, 'rekeyed-addresses', { address, network }]
+
 export const getOwnedAssetIdsQueryKey = (network: Network) => [
     MODULE_PREFIX,
     'owned-asset-ids',

@@ -11,10 +11,12 @@
  */
 
 import React, { useEffect, useRef } from 'react'
+import { logger } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import {
     isInteractiveSource,
     useHardwareSigning,
+    useLastTransportResult,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
 import { usePreferences } from '@perawallet/wallet-core-settings'
@@ -86,16 +88,23 @@ const useSignRequestDriver = () => {
 
         let cancelled = false
         void (async () => {
-            await requestBottomSheet<void>({
-                id: sheetId,
-                contents: <SignRequestContent request={nextRequest!} />,
-                options: {
-                    size: 'lg',
-                    enablePanDownToClose: false,
-                    enableCloseOnBackdropPress: false,
-                    autoCreateContainer: false,
-                },
-            })
+            try {
+                await requestBottomSheet<void>({
+                    id: sheetId,
+                    contents: <SignRequestContent request={nextRequest!} />,
+                    options: {
+                        size: 'lg',
+                        enablePanDownToClose: false,
+                        enableCloseOnBackdropPress: false,
+                        autoCreateContainer: false,
+                    },
+                })
+            } catch (err) {
+                logger.error('[signing/overlay] sheet promise rejected', {
+                    sheetId,
+                    err,
+                })
+            }
             if (cancelled) return
             if (openIdRef.current === sheetId) {
                 openIdRef.current = null
@@ -117,6 +126,7 @@ const useSignRequestDriver = () => {
 const useSigningCompletedDriver = () => {
     const { lastCompletedRequest, clearLastCompletedRequest } =
         useSigningRequest()
+    const lastTransportResult = useLastTransportResult()
     const { request: requestBottomSheet } = useBottomSheet()
     const openIdRef = useRef<string | null>(null)
 
@@ -128,6 +138,18 @@ const useSigningCompletedDriver = () => {
         // signature; they didn't send a transaction), so suppress it and
         // clear the success state so the next request can render.
         if (lastCompletedRequest.sourceType === 'multisig-cosign') {
+            clearLastCompletedRequest()
+            return
+        }
+        // Multisig propose (including sync-flow handoffs from WC / webview /
+        // deeplink) is also surfaced by PendingSignaturesContent. Showing
+        // the "Transaction Processing" sheet on top would race the
+        // pending-signatures sheet that useMultisigProposeListener opens.
+        // The lifecycle sets lastTransportResult BEFORE lastCompletedRequest
+        // (useSigningActorLifecycle.ts: setLastTransportResultRef then
+        // setLastCompletedRequestRef), so by the time this effect runs the
+        // transport result reflects the same completion.
+        if (lastTransportResult?.type === 'proposed') {
             clearLastCompletedRequest()
             return
         }
@@ -149,7 +171,12 @@ const useSigningCompletedDriver = () => {
         return () => {
             cancelled = true
         }
-    }, [lastCompletedRequest, requestBottomSheet, clearLastCompletedRequest])
+    }, [
+        lastCompletedRequest,
+        lastTransportResult,
+        requestBottomSheet,
+        clearLastCompletedRequest,
+    ])
 }
 
 const FAQ_SEEN_KEY = 'hasSeenTransactionRequestFAQ'

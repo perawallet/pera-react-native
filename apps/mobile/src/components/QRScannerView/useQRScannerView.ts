@@ -12,7 +12,7 @@
 
 import { useDeepLink } from '@hooks/useDeepLink'
 import { logger } from '@perawallet/wallet-core-shared'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
     useCameraDevice,
     useCameraPermission,
@@ -22,11 +22,20 @@ import {
 export type UseQRScannerViewProps = {
     isVisible: boolean
     onSuccess: (url: string, restartScanning: () => void) => void
+    /**
+     * Called when a recognised deeplink URL fails to dispatch (handler
+     * threw, parser-recognised but unsupported, etc.). Used to dismiss
+     * the camera Modal so any error toast queued by the deeplink handler
+     * becomes visible — toasts render above Modal in the root tree but
+     * are obscured by the Modal's native window while it's open.
+     */
+    onClose?: () => void
 }
 
 export const useQRScannerView = ({
     isVisible,
     onSuccess,
+    onClose,
 }: UseQRScannerViewProps) => {
     const device = useCameraDevice('back')
     const { hasPermission, requestPermission } = useCameraPermission()
@@ -35,10 +44,23 @@ export const useQRScannerView = ({
 
     const { handleDeepLink, isValidDeepLink } = useDeepLink()
 
+    // Synchronous guard against double-fire. Vision Camera's
+    // `onCodeScanned` is invoked from the native camera frame loop and
+    // can fire multiple times in the same tick — a `setScanningEnabled`
+    // (React state) update doesn't propagate to the `isActive` prop fast
+    // enough to suppress the second call. Without this ref we end up
+    // dispatching the same deeplink twice (visible in QR logs as two
+    // "Deep link handled successfully" entries → two stacked sign sheets
+    // / two error popups the user has to dismiss separately).
+    const handlingRef = useRef(false)
+
+    // Reset the guard whenever the modal opens; same lifecycle as the
+    // scanningEnabled state.
     useEffect(() => {
         if (!isVisible) {
             setScanningEnabled(false)
         } else {
+            handlingRef.current = false
             setScanningEnabled(true)
         }
     }, [isVisible])
@@ -47,29 +69,47 @@ export const useQRScannerView = ({
         codeTypes: ['qr', 'ean-13'],
         onCodeScanned: codes => {
             try {
+                if (handlingRef.current) return
                 const url = codes.at(0)?.value
-                setScanningEnabled(false)
                 if (!url) return
                 if (!isValidDeepLink(url)) {
-                    // Unrecognized code — re-arm the scanner so the user
-                    // can try again without closing the modal.
-                    setScanningEnabled(true)
+                    // Unrecognized code — leave the scanner armed so the
+                    // user can try again without closing the modal.
                     return
                 }
+                // Take the lock before doing anything that could re-enter.
+                handlingRef.current = true
+                setScanningEnabled(false)
+                // Push, don't replace: the QR modal dismisses itself via
+                // `onSuccess`, so the underlying nav already advances. Using
+                // `replace` here would discard the screen the user was on,
+                // leaving destinations like Staking / AssetDetails with no
+                // back path.
                 handleDeepLink(
                     url,
-                    true,
+                    false,
                     'qr',
-                    () => setScanningEnabled(true),
+                    () => {
+                        // Dispatcher already toasted the failure. Close the
+                        // Modal so the toast (rendered behind it via the
+                        // root NotifierRoot) becomes visible.
+                        handlingRef.current = false
+                        setScanningEnabled(true)
+                        onClose?.()
+                    },
                     () => {
                         logger.debug(
                             'QRScannerView: Deep link handled successfully',
                             { url },
                         )
-                        onSuccess(url, () => setScanningEnabled(true))
+                        onSuccess(url, () => {
+                            handlingRef.current = false
+                            setScanningEnabled(true)
+                        })
                     },
                 )
             } catch (error) {
+                handlingRef.current = false
                 logger.error('QRScannerView: QR scanner error:', { error })
             }
         },

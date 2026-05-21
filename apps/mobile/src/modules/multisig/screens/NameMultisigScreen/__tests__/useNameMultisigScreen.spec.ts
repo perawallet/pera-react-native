@@ -15,6 +15,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useNameMultisigScreen } from '../useNameMultisigScreen'
 import { useMultisigCreationStore } from '../../../hooks/useMultisigCreation'
+import type { NameMultisigImportParams } from '../../../routes/types'
 
 const mockMutateAsync = vi.fn()
 const mockSetAccounts = vi.fn()
@@ -38,12 +39,16 @@ const mockNavigation = {
     addListener: mockAddListener,
     setOptions: mockSetOptions,
 }
+const mockUseRoute = vi.fn<
+    () => { params: NameMultisigImportParams | undefined }
+>(() => ({ params: undefined }))
 
 vi.mock('@react-navigation/native', async () => {
     const actual = await vi.importActual<object>('@react-navigation/native')
     return {
         ...actual,
         useNavigation: () => mockNavigation,
+        useRoute: () => mockUseRoute(),
     }
 })
 
@@ -133,6 +138,7 @@ describe('useNameMultisigScreen', () => {
         mockMutateAsync.mockResolvedValue(undefined)
         mockGenerateMultisigAddress.mockReturnValue('MULTISIG_ADDR')
         mockAddListener.mockReturnValue(vi.fn())
+        mockUseRoute.mockReturnValue({ params: undefined })
 
         const store = useMultisigCreationStore.getState()
         store.resetState()
@@ -187,7 +193,7 @@ describe('useNameMultisigScreen', () => {
         expect(result.current.accountName).toBe('My Wallet')
     })
 
-    it('derives isNameTaken when the user types a name matching an existing account (case-insensitive, trimmed)', () => {
+    it('allows a name already used by another account (names need not be unique)', () => {
         mockUseAllAccounts.mockReturnValue([
             { address: 'A', name: 'my account' } as WalletAccount,
         ])
@@ -198,20 +204,6 @@ describe('useNameMultisigScreen', () => {
             result.current.handleNameChange('  MY ACCOUNT  ')
         })
 
-        expect(result.current.isNameTaken).toBe(true)
-        expect(result.current.nameError).toBe('multisig.name.error_name_taken')
-        expect(result.current.isFinishDisabled).toBe(true)
-    })
-
-    it('isNameTaken is false when no account matches', () => {
-        mockUseAllAccounts.mockReturnValue([
-            { address: 'A', name: 'Other' } as WalletAccount,
-        ])
-
-        const { result } = renderHook(() => useNameMultisigScreen())
-
-        expect(result.current.isNameTaken).toBe(false)
-        expect(result.current.nameError).toBeUndefined()
         expect(result.current.isFinishDisabled).toBe(false)
     })
 
@@ -395,6 +387,118 @@ describe('useNameMultisigScreen', () => {
         })
     })
 
+    describe('import mode (route params present)', () => {
+        const importParams: NameMultisigImportParams = {
+            address: 'IMPORTED_SHARED_ADDR',
+            threshold: 3,
+            addresses: ['IMP1', 'IMP2', 'IMP3'],
+            version: 1,
+        }
+
+        beforeEach(() => {
+            mockUseRoute.mockReturnValue({ params: importParams })
+            // Import happy path: the address re-derived from the scanned
+            // (version, threshold, participants) must equal the address the
+            // QR payload carried, or handleFinish aborts on the mismatch
+            // guard before persisting.
+            mockGenerateMultisigAddress.mockReturnValue('IMPORTED_SHARED_ADDR')
+        })
+
+        it('handleFinish verifies the derived address, then saves the imported account', async () => {
+            const existing = [{ address: 'X', name: 'Other' } as WalletAccount]
+            mockUseAllAccounts.mockReturnValue(existing)
+
+            const { result } = renderHook(() => useNameMultisigScreen())
+
+            await act(async () => {
+                await result.current.handleFinish()
+            })
+
+            // The address is re-derived locally and verified against the
+            // scanned payload before persisting.
+            expect(mockGenerateMultisigAddress).toHaveBeenCalledWith(1, 3, [
+                'IMP1',
+                'IMP2',
+                'IMP3',
+            ])
+            expect(mockMutateAsync).toHaveBeenCalledWith({
+                version: 1,
+                threshold: 3,
+                participant_addresses: ['IMP1', 'IMP2', 'IMP3'],
+                device_id: 'device-id',
+            })
+            expect(mockSetAccounts).toHaveBeenCalledWith([
+                ...existing,
+                expect.objectContaining({
+                    type: 'multisig',
+                    address: 'IMPORTED_SHARED_ADDR',
+                    multisigDetails: {
+                        threshold: 3,
+                        addresses: ['IMP1', 'IMP2', 'IMP3'],
+                    },
+                }),
+            ])
+            expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith(
+                'IMPORTED_SHARED_ADDR',
+            )
+            expect(mockExitAccountFlow).toHaveBeenCalled()
+        })
+
+        it('handleFinish blocks when the imported address is already in the wallet', async () => {
+            mockUseAllAccounts.mockReturnValue([
+                {
+                    address: 'IMPORTED_SHARED_ADDR',
+                    name: 'Existing Shared',
+                    type: 'multisig',
+                    multisigDetails: {
+                        threshold: 3,
+                        addresses: ['IMP1', 'IMP2', 'IMP3'],
+                    },
+                } as WalletAccount,
+            ])
+
+            const { result } = renderHook(() => useNameMultisigScreen())
+
+            await act(async () => {
+                await result.current.handleFinish()
+            })
+
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'multisig.name.duplicate_account_title',
+                'multisig.name.duplicate_account_body',
+            )
+            expect(mockMutateAsync).not.toHaveBeenCalled()
+            expect(mockSetAccounts).not.toHaveBeenCalled()
+        })
+
+        it('handleFinish aborts with a mismatch toast when the derived address does not match the scanned address', async () => {
+            // The QR payload claims IMPORTED_SHARED_ADDR, but deriving the
+            // multisig address from its (version, threshold, participants)
+            // yields a different address — the payload is corrupt or
+            // tampered with. handleFinish must refuse to persist.
+            mockGenerateMultisigAddress.mockReturnValue(
+                'DERIVED_DIFFERENT_ADDR',
+            )
+            mockUseAllAccounts.mockReturnValue([])
+
+            const { result } = renderHook(() => useNameMultisigScreen())
+
+            await act(async () => {
+                await result.current.handleFinish()
+            })
+
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'multisig.import.address_mismatch_title',
+                'multisig.import.address_mismatch_body',
+            )
+            expect(mockMutateAsync).not.toHaveBeenCalled()
+            expect(mockSetAccounts).not.toHaveBeenCalled()
+            expect(mockSetSelectedAccountAddress).not.toHaveBeenCalled()
+            expect(mockExitAccountFlow).not.toHaveBeenCalled()
+            expect(result.current.isCreating).toBe(false)
+        })
+    })
+
     it('beforeRemove listener calls preventDefault during isCreating', async () => {
         let capturedListener: (e: {
             preventDefault: () => void
@@ -429,5 +533,37 @@ describe('useNameMultisigScreen', () => {
         await act(async () => {
             resolveMutation(undefined)
         })
+    })
+
+    it('releases the navigation lock so the finish-time exit can navigate', async () => {
+        let capturedListener: (e: {
+            preventDefault: () => void
+        }) => void = () => {}
+        mockAddListener.mockImplementation(
+            (
+                _event: string,
+                listener: (e: { preventDefault: () => void }) => void,
+            ) => {
+                capturedListener = listener
+                return vi.fn()
+            },
+        )
+        // exitAccountFlow stands in for navigation.reset, which fires
+        // `beforeRemove`. handleFinish must release the lock (via
+        // allowProgrammaticNavigation) before calling it, or the exit is
+        // blocked and the screen never leaves.
+        const preventDefault = vi.fn()
+        mockExitAccountFlow.mockImplementationOnce(() => {
+            capturedListener({ preventDefault })
+        })
+
+        const { result } = renderHook(() => useNameMultisigScreen())
+
+        await act(async () => {
+            await result.current.handleFinish()
+        })
+
+        expect(mockExitAccountFlow).toHaveBeenCalled()
+        expect(preventDefault).not.toHaveBeenCalled()
     })
 })

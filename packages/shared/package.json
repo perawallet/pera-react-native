@@ -36,7 +36,7 @@
     "decimal.js": "^10.6.0",
     "ky": "^2.0.2",
     "react": "catalog:",
-    "react-native-quick-base64": "^2.2.2",
+    "react-native-quick-base64": "^3.0.0",
     "util": "catalog:",
     "uuid": "catalog:",
     "zod": "catalog:",

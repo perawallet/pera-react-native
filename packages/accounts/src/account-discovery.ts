@@ -32,6 +32,7 @@ import {
     generateOrderedUniqueId,
     fetchAccountFastLookup,
     logger,
+    type Network,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { hdDerivedKeyId } from '@perawallet/wallet-core-kms'
@@ -302,11 +303,16 @@ async function checkRekeyed(
  * on-chain account whose auth-addr is `address`. Used to surface accounts
  * the user could re-import as watch entries after a rekey was performed
  * outside the wallet. Mirrors Android's `fetchRekeyedAddresses`.
+ *
+ * `network` is required so the indexer client matches the network-scoped
+ * query key callers use (no implicit reliance on the global active-network
+ * store), keeping fetch and cache key in lockstep across network switches.
  */
 export async function fetchRekeyedAddresses(
     address: string,
+    network: Network,
 ): Promise<string[]> {
-    const algorandClient = getAlgorandClient()
+    const algorandClient = getAlgorandClient(network)
     const accounts = await checkRekeyed(algorandClient, address)
     return accounts.map(a => a.address)
 }

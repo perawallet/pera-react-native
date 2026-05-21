@@ -29,6 +29,7 @@ export function getTestProps(id?: string, suffix?: string) {
     return {
         testID: suffixedID,
         accessibilityLabel: suffixedID, // Set on both platforms per Appium Pro recommendation
+        accessibilityIdentifier: suffixedID,
         accessible: true,
     }
 }

@@ -10,13 +10,14 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi } from 'vitest'
+import { describe, test, expect, vi, beforeEach } from 'vitest'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { createAlgodTransport } from '../createAlgodTransport'
 import { createCallbackTransport } from '../createCallbackTransport'
 import { createWalletConnectTransport } from '../createWalletConnectTransport'
 import { createMultisigCosignTransport } from '../createMultisigCosignTransport'
 import { createMultisigProposeTransport } from '../createMultisigProposeTransport'
+import { walletConnectHandoffs } from '../../walletConnectHandoffs'
 import { NetworkChangedError, TransportError } from '../../errors'
 import type {
     SigningResult,
@@ -29,6 +30,7 @@ const getNetworkMock = vi.fn(() => ({ network: 'testnet' }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetworkStore: { getState: () => getNetworkMock() },
+    encodeTransactionRaw: vi.fn(() => new Uint8Array([0xa1, 0xa2])),
 }))
 
 const transactionResult: SigningResult = {
@@ -375,7 +377,10 @@ describe('createWalletConnectTransport', () => {
 describe('createMultisigCosignTransport', () => {
     test('adds signatures and returns signatures-added result', async () => {
         const addSignatures = vi.fn().mockResolvedValue({ status: 'ready' })
-        const transport = createMultisigCosignTransport(addSignatures)
+        const transport = createMultisigCosignTransport(
+            addSignatures,
+            'testnet',
+        )
         const source: SourceMetadata = {
             type: 'multisig-cosign',
             signRequestId: 'mcs-1',
@@ -395,16 +400,36 @@ describe('createMultisigCosignTransport', () => {
     })
 
     test('throws when signRequestId is missing', async () => {
-        const transport = createMultisigCosignTransport(vi.fn())
+        const transport = createMultisigCosignTransport(vi.fn(), 'testnet')
 
         await expect(
             transport.send(transactionResult, { type: 'multisig-cosign' }),
         ).rejects.toThrow('Sign request ID is required')
     })
 
+    test('throws NetworkChangedError when live network differs', async () => {
+        getNetworkMock.mockReturnValueOnce({ network: 'mainnet' })
+        const addSignatures = vi.fn()
+        const transport = createMultisigCosignTransport(
+            addSignatures,
+            'testnet',
+        )
+
+        await expect(
+            transport.send(transactionResult, {
+                type: 'multisig-cosign',
+                signRequestId: 'mcs-1',
+            }),
+        ).rejects.toThrow(NetworkChangedError)
+        expect(addSignatures).not.toHaveBeenCalled()
+    })
+
     test('wraps API errors in TransportError', async () => {
         const addSignatures = vi.fn().mockRejectedValue(new Error('api fail'))
-        const transport = createMultisigCosignTransport(addSignatures)
+        const transport = createMultisigCosignTransport(
+            addSignatures,
+            'testnet',
+        )
 
         await expect(
             transport.send(transactionResult, {
@@ -416,7 +441,10 @@ describe('createMultisigCosignTransport', () => {
 
     test('wraps non-Error rejections in TransportError', async () => {
         const addSignatures = vi.fn().mockRejectedValue('bad')
-        const transport = createMultisigCosignTransport(addSignatures)
+        const transport = createMultisigCosignTransport(
+            addSignatures,
+            'testnet',
+        )
 
         await expect(
             transport.send(transactionResult, {
@@ -432,12 +460,43 @@ describe('createMultisigCosignTransport', () => {
 // =============================================================================
 
 describe('createMultisigProposeTransport', () => {
-    test('proposes and returns proposed result', async () => {
+    const MSIG_METADATA = {
+        version: 1,
+        threshold: 2,
+        addresses: ['A', 'B', 'C'],
+    }
+
+    const buildPropose = (
+        proposeSignRequest: ReturnType<typeof vi.fn> = vi.fn(),
+        opts: {
+            msigMetadata?: typeof MSIG_METADATA | null
+            // `'omit'` indicates the caller wants getDeviceId to return
+            // undefined; bare `undefined` falls through to the default.
+            deviceId?: string | 'omit'
+        } = {},
+    ) => {
+        const msigMetadata =
+            'msigMetadata' in opts ? opts.msigMetadata : MSIG_METADATA
+        const deviceId =
+            opts.deviceId === 'omit' ? undefined : (opts.deviceId ?? 'device-1')
+        return createMultisigProposeTransport(
+            proposeSignRequest,
+            'testnet',
+            () => msigMetadata ?? undefined,
+            () => deviceId,
+        )
+    }
+
+    beforeEach(() => {
+        walletConnectHandoffs.__resetForTests()
+    })
+
+    test('proposes (type=async) and returns proposed result for local source', async () => {
         const proposeSignRequest = vi.fn().mockResolvedValue({
             signRequestId: 'new-req',
             status: 'pending',
         })
-        const transport = createMultisigProposeTransport(proposeSignRequest)
+        const transport = buildPropose(proposeSignRequest)
 
         const result = await transport.send(
             transactionResult,
@@ -449,27 +508,42 @@ describe('createMultisigProposeTransport', () => {
             multisigAddress: 'JOINT_ADDR',
             signedData: transactionResult.signedData,
             signers: transactionResult.signers,
+            type: 'async',
         })
         expect(result).toEqual({
             type: 'proposed',
             signRequestId: 'new-req',
             status: 'pending',
+            sourceType: 'local',
         })
+        // Local source: no handoff registered (in-app inbox owns delivery).
+        expect(walletConnectHandoffs.list()).toEqual([])
     })
 
     test('throws when multisigAddress is missing', async () => {
-        const transport = createMultisigProposeTransport(vi.fn())
+        const transport = buildPropose()
 
         await expect(
             transport.send(transactionResult, { type: 'local' }),
         ).rejects.toThrow('Multisig address is required')
     })
 
+    test('throws NetworkChangedError when live network differs', async () => {
+        getNetworkMock.mockReturnValueOnce({ network: 'mainnet' })
+        const proposeSignRequest = vi.fn()
+        const transport = buildPropose(proposeSignRequest)
+
+        await expect(
+            transport.send(transactionResult, { type: 'local' }, 'JOINT_ADDR'),
+        ).rejects.toThrow(NetworkChangedError)
+        expect(proposeSignRequest).not.toHaveBeenCalled()
+    })
+
     test('wraps API errors in TransportError', async () => {
         const proposeSignRequest = vi
             .fn()
             .mockRejectedValue(new Error('propose fail'))
-        const transport = createMultisigProposeTransport(proposeSignRequest)
+        const transport = buildPropose(proposeSignRequest)
 
         await expect(
             transport.send(transactionResult, { type: 'local' }, 'JOINT_ADDR'),
@@ -478,10 +552,109 @@ describe('createMultisigProposeTransport', () => {
 
     test('wraps non-Error rejections in TransportError', async () => {
         const proposeSignRequest = vi.fn().mockRejectedValue(123)
-        const transport = createMultisigProposeTransport(proposeSignRequest)
+        const transport = buildPropose(proposeSignRequest)
 
         await expect(
             transport.send(transactionResult, { type: 'local' }, 'JOINT_ADDR'),
         ).rejects.toThrow(TransportError)
+    })
+
+    test.each(['walletconnect', 'webview', 'deeplink'] as const)(
+        'registers a handoff for %s source after successful propose (type=sync)',
+        async sourceType => {
+            const proposeSignRequest = vi.fn().mockResolvedValue({
+                signRequestId: 'wc-handoff',
+                status: 'pending',
+            })
+            const approveSignedBytes = vi.fn()
+            const error = vi.fn()
+            const reject = vi.fn()
+            const transport = buildPropose(proposeSignRequest)
+
+            const result = await transport.send(
+                transactionResult,
+                {
+                    type: sourceType,
+                    callbacks: { approveSignedBytes, error, reject },
+                },
+                'JOINT_ADDR',
+            )
+
+            expect(proposeSignRequest).toHaveBeenCalledWith({
+                multisigAddress: 'JOINT_ADDR',
+                signedData: transactionResult.signedData,
+                signers: transactionResult.signers,
+                type: 'sync',
+            })
+            expect(result).toEqual({
+                type: 'proposed',
+                signRequestId: 'wc-handoff',
+                status: 'pending',
+                sourceType,
+            })
+            // No reject called by the transport — the resolver invokes it
+            // (with `kind: 'softReject'`) when status terminates.
+            expect(reject).not.toHaveBeenCalled()
+
+            const handoff = walletConnectHandoffs.get('wc-handoff')
+            expect(handoff).toBeDefined()
+            expect(handoff?.multisigAddress).toBe('JOINT_ADDR')
+            expect(handoff?.deviceId).toBe('device-1')
+            expect(handoff?.network).toBe('testnet')
+            expect(handoff?.msigMetadata).toEqual(MSIG_METADATA)
+            expect(handoff?.callbacks.approveSignedBytes).toBe(
+                approveSignedBytes,
+            )
+            expect(handoff?.callbacks.error).toBe(error)
+            expect(handoff?.callbacks.reject).toBe(reject)
+        },
+    )
+
+    test('throws and surfaces error via WC callback when msig metadata missing', async () => {
+        const proposeSignRequest = vi.fn().mockResolvedValue({
+            signRequestId: 'wc-handoff',
+            status: 'pending',
+        })
+        const error = vi.fn().mockResolvedValue(undefined)
+        const transport = buildPropose(proposeSignRequest, {
+            msigMetadata: null,
+        })
+
+        await expect(
+            transport.send(
+                transactionResult,
+                { type: 'walletconnect', callbacks: { error } },
+                'JOINT_ADDR',
+            ),
+        ).rejects.toThrow(TransportError)
+
+        await Promise.resolve()
+        await Promise.resolve()
+        expect(error).toHaveBeenCalled()
+        expect(walletConnectHandoffs.list()).toEqual([])
+    })
+
+    test('throws and surfaces error via WC callback when device id missing', async () => {
+        const proposeSignRequest = vi.fn().mockResolvedValue({
+            signRequestId: 'wc-handoff',
+            status: 'pending',
+        })
+        const error = vi.fn().mockResolvedValue(undefined)
+        const transport = buildPropose(proposeSignRequest, {
+            deviceId: 'omit',
+        })
+
+        await expect(
+            transport.send(
+                transactionResult,
+                { type: 'walletconnect', callbacks: { error } },
+                'JOINT_ADDR',
+            ),
+        ).rejects.toThrow(TransportError)
+
+        await Promise.resolve()
+        await Promise.resolve()
+        expect(error).toHaveBeenCalled()
+        expect(walletConnectHandoffs.list()).toEqual([])
     })
 })

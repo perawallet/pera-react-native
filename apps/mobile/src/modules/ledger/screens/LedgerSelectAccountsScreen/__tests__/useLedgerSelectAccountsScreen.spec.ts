@@ -78,8 +78,57 @@ vi.mock('@react-navigation/native', () => ({
     }),
 }))
 
+const { mockPrefetch, mockRequest, mockQueryClient, mockRekeyedScan } =
+    vi.hoisted(() => {
+        const mockPrefetch = vi.fn().mockResolvedValue(undefined)
+        const mockRequest = vi.fn().mockResolvedValue(undefined)
+        const mockQueryClient = {}
+        const mockRekeyedScan = vi.fn()
+        return { mockPrefetch, mockRequest, mockQueryClient, mockRekeyedScan }
+    })
+
+// useLedgerAccountPreview is included because the screen hook imports
+// LedgerAccountInfoContent (whose hook chain references it) at module load;
+// it is never invoked in these specs (the sheet content is not rendered).
+// AccountTypes / AccountLogicalTypes / useAccountLogicalType / useRekeyTransition
+// are needed because useLedgerAccountInfoContent → AccountDisplay →
+// useAccountTypeLabel pulls these in at module evaluation time.
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => [],
+    prefetchLedgerAccountPreview: mockPrefetch,
+    useLedgerAccountPreview: vi.fn(),
+    useLedgerRekeyedScan: mockRekeyedScan,
+    AccountTypes: {
+        algo25: 'algo25',
+        hdWallet: 'hdWallet',
+        hardware: 'hardware',
+        multisig: 'multisig',
+        watch: 'watch',
+    },
+    AccountLogicalTypes: {
+        HdKey: 'HdKey',
+        Algo25: 'Algo25',
+        LedgerBle: 'LedgerBle',
+        Multisig: 'Multisig',
+        NoAuth: 'NoAuth',
+        Rekeyed: 'Rekeyed',
+        RekeyedAuth: 'RekeyedAuth',
+    },
+    useAccountLogicalType: vi.fn().mockReturnValue(null),
+    useRekeyTransition: vi.fn().mockReturnValue(null),
+}))
+
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({ request: mockRequest }),
+}))
+
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useAlgorandClient: () => ({}),
+    useNetwork: () => ({ network: 'mainnet' }),
+}))
+
+vi.mock('@tanstack/react-query', () => ({
+    useQueryClient: () => mockQueryClient,
 }))
 
 import { useLedgerSelectAccountsScreen } from '../useLedgerSelectAccountsScreen'
@@ -100,6 +149,13 @@ const buildAccount = (
     accountIndex,
 })
 
+// The hook no longer exposes the raw derived list; `selectableAccounts` is the
+// canonical surface. This narrows it back to the derived accounts for assertions.
+const derivedAccounts = (
+    r: ReturnType<typeof useLedgerSelectAccountsScreen>,
+): HardwareWalletDerivedAccount[] =>
+    r.selectableAccounts.flatMap(s => (s.kind === 'derived' ? [s.account] : []))
+
 describe('useLedgerSelectAccountsScreen', () => {
     beforeEach(() => {
         mockNavigate.mockReset()
@@ -108,19 +164,23 @@ describe('useLedgerSelectAccountsScreen', () => {
         mockConnect.mockReset()
         mockGetProviderRegistry.mockReset()
         mockErrorToast.mockReset()
+        mockPrefetch.mockClear()
+        mockRequest.mockClear()
 
         const transport = buildTransport()
         mockConnect.mockResolvedValue(transport)
         mockDisconnectTransport.mockResolvedValue(undefined)
         mockGetProviderRegistry.mockReturnValue({ connect: mockConnect })
+        mockRekeyedScan.mockReturnValue({ rekeyed: [], isScanning: false })
     })
 
-    it('exposes the route accounts unchanged on initial render', () => {
+    it('reflects the route accounts as derived selectables on initial render', () => {
         const { result } = renderHook(() => useLedgerSelectAccountsScreen())
 
-        expect(result.current.accounts).toHaveLength(2)
-        expect(result.current.accounts[0].accountIndex).toBe(0)
-        expect(result.current.accounts[1].accountIndex).toBe(1)
+        const derived = derivedAccounts(result.current)
+        expect(derived).toHaveLength(2)
+        expect(derived[0].accountIndex).toBe(0)
+        expect(derived[1].accountIndex).toBe(1)
         expect(result.current.isFetchingMore).toBe(false)
     })
 
@@ -137,8 +197,9 @@ describe('useLedgerSelectAccountsScreen', () => {
         expect(mockConnect).toHaveBeenCalledWith('device-1')
         expect(mockGetAddress).toHaveBeenCalledTimes(1)
         expect(mockGetAddress).toHaveBeenCalledWith(2, false)
-        expect(result.current.accounts).toHaveLength(3)
-        expect(result.current.accounts[2]).toEqual({
+        const derived = derivedAccounts(result.current)
+        expect(derived).toHaveLength(3)
+        expect(derived[2]).toEqual({
             address: 'CCC333',
             publicKey: new Uint8Array([2]),
             accountIndex: 2,
@@ -163,8 +224,9 @@ describe('useLedgerSelectAccountsScreen', () => {
         expect(mockConnect).toHaveBeenCalledTimes(1)
         expect(mockGetAddress).toHaveBeenNthCalledWith(1, 2, false)
         expect(mockGetAddress).toHaveBeenNthCalledWith(2, 3, false)
-        expect(result.current.accounts).toHaveLength(4)
-        expect(result.current.accounts[3].accountIndex).toBe(3)
+        const derived = derivedAccounts(result.current)
+        expect(derived).toHaveLength(4)
+        expect(derived[3].accountIndex).toBe(3)
     })
 
     it('is a no-op while a fetch is in flight', async () => {
@@ -214,7 +276,7 @@ describe('useLedgerSelectAccountsScreen', () => {
         })
 
         expect(mockErrorToast).toHaveBeenCalledTimes(1)
-        expect(result.current.accounts).toHaveLength(2)
+        expect(derivedAccounts(result.current)).toHaveLength(2)
         expect(result.current.isFetchingMore).toBe(false)
     })
 
@@ -228,7 +290,7 @@ describe('useLedgerSelectAccountsScreen', () => {
         })
 
         expect(mockErrorToast).toHaveBeenCalledTimes(1)
-        expect(result.current.accounts).toHaveLength(2)
+        expect(derivedAccounts(result.current)).toHaveLength(2)
         expect(result.current.isFetchingMore).toBe(false)
     })
 
@@ -318,5 +380,242 @@ describe('useLedgerSelectAccountsScreen', () => {
         await waitFor(() => {
             expect(mockDisconnectTransport).toHaveBeenCalledTimes(1)
         })
+    })
+
+    it('prefetches a preview for every route account on mount', async () => {
+        renderHook(() => useLedgerSelectAccountsScreen())
+
+        await waitFor(() => {
+            expect(mockPrefetch).toHaveBeenCalledWith(
+                mockQueryClient,
+                expect.anything(),
+                'AAA111',
+                'mainnet',
+            )
+            expect(mockPrefetch).toHaveBeenCalledWith(
+                mockQueryClient,
+                expect.anything(),
+                'BBB222',
+                'mainnet',
+            )
+        })
+    })
+
+    it('prefetches discovered rekeyed addresses', async () => {
+        mockRekeyedScan.mockReturnValue({
+            rekeyed: [
+                {
+                    kind: 'rekeyed',
+                    address: 'REKEYED_A',
+                    authAccount: {
+                        address: 'AAA111',
+                        publicKey: new Uint8Array([1]),
+                        accountIndex: 0,
+                    },
+                },
+            ],
+            isScanning: false,
+        })
+
+        renderHook(() => useLedgerSelectAccountsScreen())
+
+        await waitFor(() => {
+            expect(mockPrefetch).toHaveBeenCalledWith(
+                mockQueryClient,
+                expect.anything(),
+                'REKEYED_A',
+                'mainnet',
+            )
+        })
+    })
+
+    it('does not re-prefetch already-prefetched accounts when the list grows', async () => {
+        mockGetAddress.mockResolvedValueOnce(buildAccount(2, 'CCC333'))
+        const { result } = renderHook(() => useLedgerSelectAccountsScreen())
+
+        await waitFor(() => {
+            expect(mockPrefetch).toHaveBeenCalledWith(
+                mockQueryClient,
+                expect.anything(),
+                'AAA111',
+                'mainnet',
+            )
+        })
+
+        await act(async () => {
+            await result.current.handleFindAnother()
+        })
+
+        await waitFor(() => {
+            expect(mockPrefetch).toHaveBeenCalledWith(
+                mockQueryClient,
+                expect.anything(),
+                'CCC333',
+                'mainnet',
+            )
+        })
+
+        const aaaCalls = mockPrefetch.mock.calls.filter(c => c[2] === 'AAA111')
+        expect(aaaCalls).toHaveLength(1)
+    })
+
+    it('opens the info bottom sheet with address and accountIndex', () => {
+        const { result } = renderHook(() => useLedgerSelectAccountsScreen())
+
+        act(() => {
+            result.current.handleInfoPress('AAA111', 0)
+        })
+
+        expect(mockRequest).toHaveBeenCalledTimes(1)
+        const arg = mockRequest.mock.calls[0][0]
+        expect(arg.options).toEqual({ size: 'lg' })
+        expect(arg.contents).toBeTruthy()
+    })
+
+    it('prefetches a newly found account', async () => {
+        mockGetAddress.mockResolvedValueOnce(buildAccount(2, 'CCC333'))
+        const { result } = renderHook(() => useLedgerSelectAccountsScreen())
+
+        await act(async () => {
+            await result.current.handleFindAnother()
+        })
+
+        await waitFor(() => {
+            expect(mockPrefetch).toHaveBeenCalledWith(
+                mockQueryClient,
+                expect.anything(),
+                'CCC333',
+                'mainnet',
+            )
+        })
+    })
+
+    it('navigates to LedgerVerify with selectedAccounts wrapped as derived LedgerSelectableAccount', () => {
+        const { result } = renderHook(() => useLedgerSelectAccountsScreen())
+
+        act(() => {
+            result.current.toggleSelection('AAA111')
+        })
+
+        act(() => {
+            result.current.handleContinue()
+        })
+
+        expect(mockNavigate).toHaveBeenCalledTimes(1)
+        expect(mockNavigate).toHaveBeenCalledWith('LedgerVerify', {
+            deviceId: 'device-1',
+            deviceName: 'Fred Nano X',
+            transportType: 'ble',
+            selectedAccounts: [
+                {
+                    kind: 'derived',
+                    account: {
+                        address: 'AAA111',
+                        publicKey: new Uint8Array([1]),
+                        accountIndex: 0,
+                    },
+                },
+            ],
+        })
+    })
+
+    it('exposes derived + scanned rekeyed as selectableAccounts', () => {
+        mockRekeyedScan.mockReturnValue({
+            rekeyed: [
+                {
+                    kind: 'rekeyed',
+                    address: 'REKEYED_A',
+                    authAccount: {
+                        address: 'AAA111',
+                        publicKey: new Uint8Array([1]),
+                        accountIndex: 0,
+                    },
+                },
+            ],
+            isScanning: true,
+        })
+
+        const { result } = renderHook(() => useLedgerSelectAccountsScreen())
+
+        expect(result.current.isScanning).toBe(true)
+        const kinds = result.current.selectableAccounts.map(s => s.kind)
+        expect(kinds).toEqual(['derived', 'derived', 'rekeyed'])
+    })
+
+    it('navigates with the rekeyed selectable and auto-included auth account', () => {
+        const auth = {
+            address: 'AAA111',
+            publicKey: new Uint8Array([1]),
+            accountIndex: 0,
+        }
+        mockRekeyedScan.mockReturnValue({
+            rekeyed: [
+                { kind: 'rekeyed', address: 'REKEYED_A', authAccount: auth },
+            ],
+            isScanning: false,
+        })
+
+        const { result } = renderHook(() => useLedgerSelectAccountsScreen())
+
+        act(() => {
+            result.current.toggleSelection('REKEYED_A')
+        })
+        act(() => {
+            result.current.handleContinue()
+        })
+
+        const arg = mockNavigate.mock.calls.find(
+            c => c[0] === 'LedgerVerify',
+        )?.[1] as { selectedAccounts: unknown[] }
+        expect(arg.selectedAccounts).toEqual([
+            { kind: 'rekeyed', address: 'REKEYED_A', authAccount: auth },
+            { kind: 'derived', account: auth },
+        ])
+    })
+
+    it('does not double-include the auth account when it is also explicitly selected', () => {
+        const auth = {
+            address: 'AAA111',
+            publicKey: new Uint8Array([1]),
+            accountIndex: 0,
+        }
+        mockRekeyedScan.mockReturnValue({
+            rekeyed: [
+                { kind: 'rekeyed', address: 'REKEYED_A', authAccount: auth },
+            ],
+            isScanning: false,
+        })
+
+        const { result } = renderHook(() => useLedgerSelectAccountsScreen())
+
+        act(() => {
+            result.current.toggleSelection('REKEYED_A')
+        })
+        act(() => {
+            result.current.toggleSelection('AAA111')
+        })
+        act(() => {
+            result.current.handleContinue()
+        })
+
+        const arg = mockNavigate.mock.calls.find(
+            c => c[0] === 'LedgerVerify',
+        )?.[1] as { selectedAccounts: unknown[] }
+        const authDerivedCount = arg.selectedAccounts.filter(
+            (s: unknown) =>
+                (s as { kind: string; account?: { address: string } }).kind ===
+                    'derived' &&
+                (s as { account: { address: string } }).account.address ===
+                    'AAA111',
+        ).length
+        expect(authDerivedCount).toBe(1)
+        expect(
+            arg.selectedAccounts.some(
+                (s: unknown) =>
+                    (s as { kind: string; address?: string }).kind ===
+                        'rekeyed' &&
+                    (s as { address: string }).address === 'REKEYED_A',
+            ),
+        ).toBe(true)
     })
 })

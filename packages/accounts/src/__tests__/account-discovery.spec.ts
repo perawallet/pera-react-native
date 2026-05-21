@@ -301,7 +301,7 @@ describe('discoverRekeyedAccounts', () => {
             },
         } as any)
 
-        const addresses = await fetchRekeyedAddresses('AUTH_ADDRESS')
+        const addresses = await fetchRekeyedAddresses('AUTH_ADDRESS', 'mainnet')
 
         expect(addresses).toEqual(['REKEYED_PAGE_1', 'REKEYED_PAGE_2'])
         expect(mockSearchForAccounts).toHaveBeenCalledTimes(2)
@@ -320,8 +320,8 @@ describe('discoverRekeyedAccounts', () => {
             },
         } as any)
 
-        await expect(fetchRekeyedAddresses('AUTH_ADDRESS')).rejects.toThrow(
-            'indexer unreachable',
-        )
+        await expect(
+            fetchRekeyedAddresses('AUTH_ADDRESS', 'mainnet'),
+        ).rejects.toThrow('indexer unreachable')
     })
 })

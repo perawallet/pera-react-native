@@ -36,6 +36,7 @@ export const useMarkNotificationsAsReadMutation =
             onSuccess: () => {
                 invalidate()
             },
+            throwOnError: false,
         })
 
         return {

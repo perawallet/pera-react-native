@@ -25,6 +25,14 @@ import { usePendingSignaturesSheetStore } from '../stores/usePendingSignaturesSh
  * (`type: 'signatures-added'`), so the user sees live signing status without
  * having to navigate to the inbox.
  *
+ * Source-agnostic: a propose from a WalletConnect / webview / deeplink
+ * handoff lands here too, with `lastTransportResult.sourceType` reflecting
+ * the original sync request. The dApp peer is resolved separately by the
+ * propose transport via `softReject` — this hook only owns the in-app
+ * sheet. A future follow-up could add a one-time toast for external
+ * handoffs ("Sign request created. The dApp was notified."); deferred
+ * because no generic toast/snackbar infrastructure exists yet.
+ *
  * Reads `lastTransportResult` from the signing store (set unconditionally by
  * the actor lifecycle on every completed transition) rather than subscribing
  * via `useSigningPipeline({ onEvent })`. The pipeline subscription doesn't

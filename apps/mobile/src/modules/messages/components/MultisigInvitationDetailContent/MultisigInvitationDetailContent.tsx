@@ -18,12 +18,12 @@ import {
     PWView,
 } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
+import { MultisigInfoCard } from '@components/MultisigInfoCard'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useLanguage } from '@hooks/useLanguage'
 import type { MultisigInvitationParam } from '../../routes/types'
-import { InvitationInfoCard } from './components/InvitationInfoCard'
 import { useMultisigInvitationDetailContent } from './useMultisigInvitationDetailContent'
 import { useStyles } from './styles'
 
@@ -82,10 +82,12 @@ export const MultisigInvitationDetailContent = ({
                     </PWText>
                 </PWView>
 
-                <InvitationInfoCard
+                <MultisigInfoCard
                     threshold={renderedInvitation.threshold}
                     totalParticipants={totalParticipants}
                     isUserIncluded={isUserIncluded}
+                    participantCountTestID='multisig_invitation_participant_count'
+                    thresholdTestID='multisig_invitation_threshold_value'
                 />
 
                 <PWText

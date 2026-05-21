@@ -14,6 +14,7 @@ import {
     PWButton,
     PWIcon,
     PWImage,
+    PWScrollView,
     PWText,
     PWToolbar,
     PWView,
@@ -44,52 +45,54 @@ export const BidaliIntroScreen = () => {
 
     return (
         <PWView style={styles.container}>
-            <PWView style={styles.heroSection}>
-                <PWToolbar
-                    left={
-                        <PWIcon
-                            name='cross'
-                            variant='primary'
-                            onPress={onClose}
-                        />
-                    }
-                    center={
-                        <PWText
-                            variant='h4'
-                            style={styles.toolbarTitle}
-                        >
-                            {t('giftCard.intro.navigation_title')}
-                        </PWText>
-                    }
-                    paddingStyle='dense'
-                />
+            <PWToolbar
+                left={
+                    <PWIcon
+                        name='cross'
+                        variant='primary'
+                        onPress={onClose}
+                    />
+                }
+                center={
+                    <PWText
+                        variant='h4'
+                        style={styles.toolbarTitle}
+                    >
+                        {t('giftCard.intro.navigation_title')}
+                    </PWText>
+                }
+                paddingStyle='dense'
+            />
 
-                <PWView style={styles.heroImage}>
-                    <PWImage
-                        source={bidaliBackground}
-                        width={width}
-                        height={width * BG_IMAGE_ASPECT_RATIO}
-                        resizeMode='contain'
+            <PWScrollView>
+                <PWView style={styles.heroSection}>
+                    <PWView style={styles.heroImage}>
+                        <PWImage
+                            source={bidaliBackground}
+                            width={width}
+                            height={width * BG_IMAGE_ASPECT_RATIO}
+                            resizeMode='contain'
+                        />
+                    </PWView>
+                </PWView>
+
+                <PWView style={styles.contentSection}>
+                    <PWText variant='h1'>{t('giftCard.intro.title')}</PWText>
+
+                    <PWText style={styles.description}>
+                        {t('giftCard.intro.body')}
+                    </PWText>
+                </PWView>
+
+                <PWView style={styles.footer}>
+                    <PWButton
+                        variant='primary'
+                        title={t('giftCard.intro.buy_gift_cards')}
+                        onPress={handleBuyGiftCards}
+                        testID='bidali_intro_buy_button'
                     />
                 </PWView>
-            </PWView>
-
-            <PWView style={styles.contentSection}>
-                <PWText variant='h1'>{t('giftCard.intro.title')}</PWText>
-
-                <PWText style={styles.description}>
-                    {t('giftCard.intro.body')}
-                </PWText>
-            </PWView>
-
-            <PWView style={styles.footer}>
-                <PWButton
-                    variant='primary'
-                    title={t('giftCard.intro.buy_gift_cards')}
-                    onPress={handleBuyGiftCards}
-                    testID='bidali_intro_buy_button'
-                />
-            </PWView>
+            </PWScrollView>
         </PWView>
     )
 }

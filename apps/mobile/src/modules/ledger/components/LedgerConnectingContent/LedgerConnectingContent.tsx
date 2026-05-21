@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import { PWView, PWText, PWButton } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
@@ -20,6 +21,11 @@ export const LedgerConnectingContent = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const { resolve } = useBottomSheetResult<'cancel'>()
+
+    // Named, memoized close handler so the button's onPress is a stable
+    // reference bound to the sheet's resolve — `resolve('cancel')` is what
+    // actually dismisses this sheet and signals `cancel` to the screen.
+    const handleClose = useCallback(() => resolve('cancel'), [resolve])
 
     return (
         <PWView style={styles.container}>
@@ -39,7 +45,7 @@ export const LedgerConnectingContent = () => {
             <PWButton
                 variant='secondary'
                 title={t('ledger.connecting.cancel')}
-                onPress={() => resolve('cancel')}
+                onPress={handleClose}
                 style={styles.button}
                 testID='ledger_connecting_cancel_button'
             />

@@ -37,7 +37,7 @@ export const useNetworkStatusListener = (): void => {
     useEffect(() => {
         const netInfoSubscription = NetInfo.addEventListener(
             (state: NetInfoState) => {
-                const isConnected = state.isConnected !== false
+                const isConnected = state.isConnected === true
                 setHasInternet(isConnected)
                 onlineManager.setOnline(isConnected)
             },

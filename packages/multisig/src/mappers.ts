@@ -40,6 +40,9 @@ export const mapTransactionList = (
     firstValidBlock: response.first_valid_block,
     lastValidBlock: response.last_valid_block,
     expectedExpireDatetime: new Date(response.expected_expire_datetime),
+    // `responses` already carries the optional `signatures` field via the
+    // updated `signResponseSchema`; the SignerResponse model declares it
+    // as optional, so direct passthrough is shape-compatible.
     responses: response.responses,
 })
 

@@ -83,6 +83,7 @@ declare module '@rneui/themed' {
         heroBg: string
 
         // Banner
+        bannerContentBg: string
         bannerBg: string
         bannerButton: string
         bannerIconBg: string

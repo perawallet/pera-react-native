@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react'
+import React, { useState, useCallback, useMemo } from 'react'
 import { Linking } from 'react-native'
 import * as Clipboard from 'expo-clipboard'
 
@@ -23,30 +23,22 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
-import { MNEMONIC_WORDLIST as WORDLIST } from '@perawallet/wallet-core-kms'
 import { config } from '@perawallet/wallet-core-config'
 
-import type { PWInputRef } from '@components/core'
 import type { UseImportAccountScreenResult } from './types'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import {
-    deferToNextCycle,
-    logger,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import { deferToNextCycle, logger } from '@perawallet/wallet-core-shared'
 import { useModalState } from '@hooks/useModalState'
-import { useKeyboardHeight } from '@hooks/useKeyboardHeight'
 import { useDeepLink } from '@hooks/useDeepLink'
 import { DeeplinkType } from '@hooks/deeplink/types'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { useMnemonicWordEntry } from '@modules/onboarding/hooks'
 import {
     ImportAccountSupportOptionsContent,
     type ImportAccountSupportOptionsContentResult,
 } from './ImportAccountSupportOptionsContent'
-
-const MAX_SUGGESTIONS = 4
 
 export function useImportAccountScreen(): UseImportAccountScreenResult {
     const {
@@ -55,21 +47,43 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     const navigation = useAppNavigation()
     const importAccount = useImportAccount()
     const markBackupComplete = useMarkMnemonicBackupComplete()
-    const { showToast } = useToast()
+    const { showToast, errorToast } = useToast()
     const { t } = useLanguage()
     const { parseDeeplink } = useDeepLink()
     const { request: requestBottomSheet } = useBottomSheet()
 
-    const { isKeyboardVisible, keyboardHeight } = useKeyboardHeight()
-
     const mnemonicLength = MNEMONIC_WORD_COUNT[accountType]
 
-    const [words, setWords] = useState<string[]>(
-        new Array(mnemonicLength).fill(''),
-    )
-    const wordsRef = useRef(words)
-    wordsRef.current = words
-    const [focused, setFocused] = useState(0)
+    const onTooManyWords = useCallback(() => {
+        errorToast(
+            t('onboarding.import_account.invalid_mnemonic_title'),
+            t('onboarding.import_account.invalid_mnemonic_body'),
+        )
+    }, [errorToast, t])
+
+    const onInsufficientSlots = useCallback(() => {
+        errorToast(
+            t('onboarding.import_account.insufficient_slots_title'),
+            t('onboarding.import_account.insufficient_slots_body'),
+        )
+    }, [errorToast, t])
+
+    const {
+        words,
+        focused,
+        suggestions,
+        setFocused,
+        updateWord,
+        handleWordChange,
+        handleSelectSuggestion,
+        refCallbacks,
+        handleSubmitEditing,
+    } = useMnemonicWordEntry({
+        wordCount: mnemonicLength,
+        onTooManyWords,
+        onInsufficientSlots,
+    })
+
     const [processing, setProcessing] = useState(false)
     const {
         isOpen: isQRScannerVisible,
@@ -77,170 +91,14 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         close: handleCloseQRScanner,
     } = useModalState()
 
-    const inputRefs = useRef<Nullable<PWInputRef>[]>(
-        new Array(mnemonicLength).fill(null),
-    )
-
-    const refCallbacks = useMemo(
-        () =>
-            Array.from(
-                { length: mnemonicLength },
-                (_, i) => (ref: Nullable<PWInputRef>) => {
-                    inputRefs.current[i] = ref
-                },
-            ),
-        [mnemonicLength],
-    )
-
-    const focusInput = useCallback((index: number) => {
-        inputRefs.current[index]?.focus()
-    }, [])
-
-    useEffect(() => {
-        focusInput(focused)
-    }, [focused, focusInput])
-
+    // Strict wordlist validation is deferred to `useImportAccount`, which
+    // surfaces typed errors (DuplicateAccountError, validation failures) the
+    // catch block translates into toasts. The button only gates on
+    // non-empty slots so the user can try the import and see the real
+    // failure, rather than the button silently never becoming tappable.
+    // (Contrast with ASB key entry, where pre-validating against the
+    // wordlist avoids an opaque decryption failure later.)
     const canImport = useMemo(() => words.every(w => w.length > 0), [words])
-
-    const suggestions = useMemo(() => {
-        const currentWord = words[focused]?.toLowerCase() ?? ''
-
-        if (currentWord.length === 0) {
-            return []
-        }
-
-        const matches: string[] = []
-
-        for (const word of WORDLIST) {
-            if (word.startsWith(currentWord)) {
-                matches.push(word)
-
-                if (matches.length >= MAX_SUGGESTIONS) {
-                    break
-                }
-            }
-        }
-
-        // If the only match is an exact match, no suggestions needed
-        if (matches.length === 1 && matches[0] === currentWord) {
-            return []
-        }
-
-        return matches
-    }, [words, focused])
-
-    const handleSelectSuggestion = useCallback(
-        (word: string) => {
-            setWords(prev => {
-                const next = [...prev]
-
-                next[focused] = word
-                return next
-            })
-
-            const nextIndex = focused + 1
-
-            if (nextIndex < mnemonicLength) {
-                setFocused(nextIndex)
-            }
-        },
-        [focused, mnemonicLength],
-    )
-
-    const updateWord = useCallback(
-        (word: string, index: number) => {
-            const trimmedValue = word.trim()
-            const splitWords = trimmedValue.split(/\s+/).filter(Boolean)
-
-            if (splitWords.length > 1) {
-                // Case: Pasted content is a full mnemonic of the expected length
-                if (splitWords.length === mnemonicLength) {
-                    setWords(splitWords)
-                    return
-                }
-
-                // Case: Pasted content is larger than the total expected mnemonic length
-                if (splitWords.length > mnemonicLength) {
-                    showToast({
-                        title: t(
-                            'onboarding.import_account.invalid_mnemonic_title',
-                        ),
-                        body: t(
-                            'onboarding.import_account.invalid_mnemonic_body',
-                        ),
-                        type: 'error',
-                    })
-                    return
-                }
-
-                // Case: Pasted content is smaller than the total expected length
-                const remainingSlots = mnemonicLength - index
-
-                if (splitWords.length <= remainingSlots) {
-                    setWords(prev => {
-                        const next = [...prev]
-
-                        splitWords.forEach((w, i) => {
-                            next[index + i] = w
-                        })
-                        return next
-                    })
-                } else {
-                    showToast({
-                        title: t(
-                            'onboarding.import_account.insufficient_slots_title',
-                        ),
-                        body: t(
-                            'onboarding.import_account.insufficient_slots_body',
-                        ),
-                        type: 'error',
-                    })
-                }
-                return
-            }
-
-            setWords(prev => {
-                const next = [...prev]
-
-                next[index] = word.trim()
-                return next
-            })
-        },
-        [mnemonicLength, showToast, t],
-    )
-
-    const handleWordChange = useCallback(
-        async (text: string, index: number) => {
-            const currentWord = wordsRef.current[index] ?? ''
-
-            if (text.length - currentWord.length > 1) {
-                try {
-                    const clipboardContent = await Clipboard.getStringAsync()
-
-                    if (clipboardContent) {
-                        const clipboardWords = clipboardContent
-                            .trim()
-                            .split(/\s+/)
-                            .filter(Boolean)
-                        const receivedWords = text
-                            .trim()
-                            .split(/\s+/)
-                            .filter(Boolean)
-
-                        if (clipboardWords.length > receivedWords.length) {
-                            updateWord(clipboardContent, index)
-                            return
-                        }
-                    }
-                } catch {
-                    // Clipboard read failed; fall through
-                }
-            }
-
-            updateWord(text, index)
-        },
-        [updateWord],
-    )
 
     const handleImportAccount = useCallback(() => {
         setProcessing(true)
@@ -253,11 +111,16 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
                     type: accountType,
                 })
 
+                // `replace` (not `push`) so this screen unmounts and the typed
+                // mnemonic held in the input hook is dropped for GC. Strings
+                // can't be zeroed in JS, but the reference goes away — and
+                // back-navigating from later steps no longer lands on a
+                // stale Import screen with prefilled words.
                 if (result.type === 'hdWallet' && 'walletKeyId' in result) {
                     // HD import: jump into the discovery flow. Backup is marked
                     // only after the user commits a selection (see
                     // ImportSelectAddressesScreen).
-                    navigation.push('SearchAccounts', {
+                    navigation.replace('SearchAccounts', {
                         mode: 'import',
                         walletKeyId: result.walletKeyId,
                         derivationType: result.derivationType,
@@ -266,7 +129,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
                     // algo25 import: the account already exists. Mark backup and
                     // route through the existing post-create discovery.
                     markBackupComplete(result as WalletAccount)
-                    navigation.push('SearchAccounts', {
+                    navigation.replace('SearchAccounts', {
                         account: result as WalletAccount,
                     })
                 }
@@ -327,13 +190,12 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
                 return
             }
 
-            showToast({
-                title: t('onboarding.import_account.invalid_mnemonic_title'),
-                body: t('onboarding.import_account.invalid_mnemonic_body'),
-                type: 'error',
-            })
+            errorToast(
+                t('onboarding.import_account.invalid_mnemonic_title'),
+                t('onboarding.import_account.invalid_mnemonic_body'),
+            )
         },
-        [handleCloseQRScanner, parseDeeplink, showToast, t, updateWord],
+        [handleCloseQRScanner, parseDeeplink, errorToast, t, updateWord],
     )
 
     const handleLearnMore = useCallback(() => {
@@ -372,8 +234,6 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         handleImportAccount,
         mnemonicLength,
         t,
-        isKeyboardVisible,
-        keyboardHeight,
         handleOpenSupportOptions,
         isQRScannerVisible,
         handleCloseQRScanner,
@@ -381,5 +241,6 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         suggestions,
         handleSelectSuggestion,
         refCallbacks,
+        handleSubmitEditing,
     }
 }
