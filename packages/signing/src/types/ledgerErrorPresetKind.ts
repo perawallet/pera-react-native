@@ -31,6 +31,7 @@ export type LedgerErrorPresetKind =
     | 'address_mismatch'
     | 'network_error'
     | 'unsupported_device'
+    | 'app_outdated'
 
 /**
  * Subset of error kinds where the user-facing remediation lives in the

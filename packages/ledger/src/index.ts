@@ -27,6 +27,7 @@ export type {
 export {
     LedgerAddressMismatchError,
     LedgerAppNotOpenError,
+    LedgerAppOutdatedError,
     LedgerBluetoothDisabledError,
     LedgerConnectionError,
     LedgerDisconnectedError,

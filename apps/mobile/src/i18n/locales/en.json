@@ -2223,6 +2223,8 @@
             "network_error": "A network error occurred. Please try again.",
             "unsupported_device_title": "Unsupported device",
             "unsupported_device": "This Ledger device is not supported.",
+            "app_outdated_title": "Update your Ledger Algorand app",
+            "app_outdated": "Your Ledger's Algorand app is too old to sign this request. Open Ledger Live and update the Algorand app, then try again.",
             "timeout": "Your Ledger device did not respond in time. Please try again.",
             "timeout_title": "Request timed out",
             "address_mismatch": "The address on your Ledger device does not match the expected address. Please verify you selected the correct account.",

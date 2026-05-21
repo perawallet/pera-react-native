@@ -13,6 +13,7 @@
 import {
     LedgerAddressMismatchError,
     LedgerAppNotOpenError,
+    LedgerAppOutdatedError,
     LedgerBluetoothDisabledError,
     LedgerConnectionError,
     LedgerDisconnectedError,
@@ -52,6 +53,7 @@ export const classifyLedgerErrorKind = (
     if (error instanceof LedgerPublicKeyReadError)
         return 'public_key_read_failed'
     if (error instanceof LedgerNetworkError) return 'network_error'
+    if (error instanceof LedgerAppOutdatedError) return 'app_outdated'
     if (error instanceof LedgerUnsupportedDeviceError)
         return 'unsupported_device'
     if (error instanceof LedgerDisconnectedError) return 'connection_lost'

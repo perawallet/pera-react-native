@@ -14,6 +14,7 @@ import { describe, it, expect } from 'vitest'
 import {
     LedgerAddressMismatchError,
     LedgerAppNotOpenError,
+    LedgerAppOutdatedError,
     LedgerBluetoothDisabledError,
     LedgerConnectionError,
     LedgerDisconnectedError,
@@ -54,6 +55,12 @@ describe('classifyLedgerErrorKind', () => {
 
     it.each(cases)('classifies %s as %s', (error, expected) => {
         expect(classifyLedgerErrorKind(error)).toBe(expected)
+    })
+
+    it('classifies LedgerAppOutdatedError as app_outdated', () => {
+        expect(classifyLedgerErrorKind(new LedgerAppOutdatedError())).toBe(
+            'app_outdated',
+        )
     })
 
     it('falls back to connection_failed for unknown errors', () => {

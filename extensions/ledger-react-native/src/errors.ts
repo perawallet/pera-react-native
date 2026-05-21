@@ -319,6 +319,25 @@ export class LedgerUnsupportedDeviceError extends AppError {
 }
 
 /**
+ * The device's Algorand app is too old to support arbitrary-data (ARC-60)
+ * signing — it lacks the SIGN_ARBITRARY instruction. The user must update
+ * the Algorand app via Ledger Live.
+ */
+export class LedgerAppOutdatedError extends AppError {
+    constructor(originalError?: Error) {
+        super(
+            'The Ledger Algorand app must be updated to sign this request',
+            {
+                severity: ErrorSeverity.MEDIUM,
+                category: ErrorCategory.BLOCKCHAIN,
+                retryable: false,
+            },
+            originalError,
+        )
+    }
+}
+
+/**
  * Extract the APDU status code from a Ledger SDK error.
  * `@algorandfoundation/ledger-algorand-js` errors expose `returnCode` via
  * `@zondax/ledger-js` `ResponseError`; legacy `statusCode` is also handled for
