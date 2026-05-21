@@ -175,7 +175,7 @@ export const AddressDisplay = ({
                     <PWView style={styles.foreignAvatar}>
                         <PWIcon
                             name='person'
-                            size='sm'
+                            size='md'
                             variant='white'
                         />
                     </PWView>
