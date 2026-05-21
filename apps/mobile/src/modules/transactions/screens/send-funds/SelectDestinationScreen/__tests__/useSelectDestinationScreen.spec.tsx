@@ -192,8 +192,8 @@ describe('useSelectDestinationScreen', () => {
         ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({
             data: undefined,
             isFetching: false,
-            isSuccess: true,
-            isError: false,
+            isSuccess: false,
+            isError: true,
         })
 
         const { result } = renderHook(() => useSelectDestinationScreen())
