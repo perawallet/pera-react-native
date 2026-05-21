@@ -14,10 +14,10 @@ import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { AppState, type AppStateStatus } from 'react-native'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { reconnectAllConnectors } from '@perawallet/wallet-core-walletconnect'
+import { reconnectAllConnectors } from '../../connection'
 import { useWalletConnectForegroundReconnect } from '../useWalletConnectForegroundReconnect'
 
-vi.mock('@perawallet/wallet-core-walletconnect', () => ({
+vi.mock('../../connection', () => ({
     reconnectAllConnectors: vi.fn(),
 }))
 

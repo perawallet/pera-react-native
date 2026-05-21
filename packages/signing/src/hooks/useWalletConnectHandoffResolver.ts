@@ -10,33 +10,36 @@
  limitations under the License
  */
 
-import {
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
-    useSyncExternalStore,
-} from 'react'
-import { AppState } from 'react-native'
+import { useEffect, useMemo, useRef } from 'react'
 import { useQueries } from '@tanstack/react-query'
-import { useTranslation } from 'react-i18next'
 import {
     getSignRequestsWithSignatures,
     getSignRequestsWithSignaturesQueryKey,
     useMarkSignRequestsConfirmedMutation,
     type SignRequestResponse,
 } from '@perawallet/wallet-core-multisig'
-import { walletConnectHandoffs } from '@perawallet/wallet-core-signing'
 import {
     classifyHandoffPoll,
     resolveHandoffOutcome,
     type ResolverMessages,
-} from '../utils/classifyHandoffPoll'
+} from '../pipeline/classifyHandoffPoll'
+import { useWalletConnectHandoffsStore } from '../store/walletConnectHandoffsStore'
 
 /** Poll cadence while the backend is responding. */
 const BASE_POLL_INTERVAL_MS = 3000
 /** Slower cadence right after a failed poll, so a down backend isn't hammered. */
 const ERROR_POLL_INTERVAL_MS = 30000
+
+export type UseWalletConnectHandoffResolverArgs = {
+    /**
+     * Polling pauses when false (e.g. app backgrounded). A backgrounded
+     * poll would only fail (suspended network) and could not be delivered
+     * anyway (suspended WC socket).
+     */
+    isAppActive: boolean
+    /** Localized strings delivered to the dApp on terminal outcomes. */
+    messages: ResolverMessages
+}
 
 /**
  * Resolves WalletConnect sync-flow multisig handoffs.
@@ -47,8 +50,8 @@ const ERROR_POLL_INTERVAL_MS = 30000
  * callbacks:
  *   - `'ready'` / `'confirmed'`: assemble the composite multisig signed
  *     transaction(s) and hand them to `approveSignedBytes`.
- *   - `'declined'` / `'expired'`: `softReject` — a clean rejection with no
- *     in-app connection-error banner.
+ *   - `'declined'` / `'expired'`: `reject({ kind: 'softReject', error })` —
+ *     a clean rejection with no in-app connection-error banner.
  *   - `'failed'`: `error` — the connection-error banner is appropriate.
  *
  * One `useQueries` poll per registered handoff. Mounted once at the app
@@ -56,51 +59,18 @@ const ERROR_POLL_INTERVAL_MS = 30000
  * the on-chain sign-request still exists and the user can finish it from
  * the inbox flow.
  *
- * There is no Android analog: Android fetches sign-request status on demand
- * from a ViewModel when the user opens the joint-account screen. RN polls in
- * the background because the WC peer is blocked on `approveRequest` with no
- * UI surface to drive the fetch.
+ * Platform-agnostic — callers pass `isAppActive` and `messages` so the
+ * hook itself has no `react-native` or `react-i18next` dependency.
  */
-export const useWalletConnectHandoffResolver = (): void => {
-    const { t } = useTranslation()
-
-    // Re-render whenever a handoff is registered / unregistered. The
-    // snapshot is the registry's monotonic version, not its list length —
-    // length would miss a same-tick unregister + register that collapses to
-    // the same count.
-    const version = useSyncExternalStore(
-        walletConnectHandoffs.subscribe,
-        walletConnectHandoffs.getVersion,
-        () => 0,
-    )
-    const handoffs = useMemo(() => walletConnectHandoffs.list(), [version])
-
-    const messages = useMemo<ResolverMessages>(
-        () => ({
-            declined: t('multisig.sync_sign.errors.declined'),
-            expired: t('multisig.sync_sign.errors.expired'),
-            failed: t('multisig.sync_sign.errors.failed'),
-            noTransactions: t('multisig.sync_sign.errors.no_transactions'),
-            deliveryFailed: t('multisig.sync_sign.errors.delivery_failed'),
-            assemblyFailed: (reason: string) =>
-                t('multisig.sync_sign.errors.assembly_failed', { reason }),
-        }),
-        [t],
-    )
-
-    // Polling pauses while the app is backgrounded — the multisig flow
-    // inherently backgrounds the wallet while the user signs their other
-    // participant, and a backgrounded poll would only fail (suspended
-    // network) and could not be delivered (suspended WC socket).
-    const [isAppActive, setIsAppActive] = useState(
-        AppState.currentState === 'active',
-    )
-    useEffect(() => {
-        const subscription = AppState.addEventListener('change', nextState => {
-            setIsAppActive(nextState === 'active')
-        })
-        return () => subscription.remove()
-    }, [])
+export const useWalletConnectHandoffResolver = ({
+    isAppActive,
+    messages,
+}: UseWalletConnectHandoffResolverArgs): void => {
+    // Re-render whenever a handoff is registered / unregistered. The store
+    // swaps the `handoffs` dict reference on every change, so the default
+    // selector identity check fires for the events we care about.
+    const handoffsMap = useWalletConnectHandoffsStore(s => s.handoffs)
+    const handoffs = useMemo(() => Object.values(handoffsMap), [handoffsMap])
 
     // Sign-request ids already delivered a terminal callback — guards
     // against a late poll re-delivering before the registry-unregister

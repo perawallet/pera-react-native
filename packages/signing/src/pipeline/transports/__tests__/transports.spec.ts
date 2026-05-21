@@ -568,14 +568,14 @@ describe('createMultisigProposeTransport', () => {
             })
             const approveSignedBytes = vi.fn()
             const error = vi.fn()
-            const softReject = vi.fn()
+            const reject = vi.fn()
             const transport = buildPropose(proposeSignRequest)
 
             const result = await transport.send(
                 transactionResult,
                 {
                     type: sourceType,
-                    callbacks: { approveSignedBytes, error, softReject },
+                    callbacks: { approveSignedBytes, error, reject },
                 },
                 'JOINT_ADDR',
             )
@@ -592,9 +592,9 @@ describe('createMultisigProposeTransport', () => {
                 status: 'pending',
                 sourceType,
             })
-            // No softReject called by the transport — the resolver does it
-            // when status terminates.
-            expect(softReject).not.toHaveBeenCalled()
+            // No reject called by the transport — the resolver invokes it
+            // (with `kind: 'softReject'`) when status terminates.
+            expect(reject).not.toHaveBeenCalled()
 
             const handoff = walletConnectHandoffs.get('wc-handoff')
             expect(handoff).toBeDefined()
@@ -606,7 +606,7 @@ describe('createMultisigProposeTransport', () => {
                 approveSignedBytes,
             )
             expect(handoff?.callbacks.error).toBe(error)
-            expect(handoff?.callbacks.softReject).toBe(softReject)
+            expect(handoff?.callbacks.reject).toBe(reject)
         },
     )
 

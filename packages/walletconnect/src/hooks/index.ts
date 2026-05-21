@@ -11,4 +11,5 @@
  */
 
 export * from './useWalletConnect'
+export * from './useWalletConnectForegroundReconnect'
 export * from './useWalletConnectSessionRequests'

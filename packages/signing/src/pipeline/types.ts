@@ -190,22 +190,24 @@ export interface SourceMetadata {
 }
 
 /**
+ * Why a sign request is being rejected at the peer. `'user'` is the
+ * common path (the user tapped Decline). `'softReject'` is used when the
+ * request was handed off to another flow (e.g. a multisig sign-request
+ * created on the backend) and the peer needs to know the inline response
+ * will not arrive — implementers must NOT raise an in-app connection-error
+ * banner, this is a success-path event.
+ */
+export type RejectReason =
+    | { kind: 'user' }
+    | { kind: 'softReject'; error: Error }
+
+/**
  * Callbacks for external sources (WalletConnect, etc.)
  */
 export interface SourceCallbacks {
     approve?: (result: SigningResult) => Promise<void>
-    reject?: () => Promise<void>
+    reject?: (reason?: RejectReason) => Promise<void>
     error?: (error: Error) => Promise<void>
-    /**
-     * Resolve the external peer cleanly with a non-fatal reason — used when
-     * the request was successfully handed off to a different flow (e.g. a
-     * multisig sign-request was created on the backend) and the peer needs
-     * to know the inline response will not arrive. Implementers should
-     * surface the error to the peer (e.g. WC `rejectRequest`) WITHOUT
-     * raising an in-app connection-error banner — the handoff is a
-     * success-path event, not a failure.
-     */
-    softReject?: (error: Error) => Promise<void>
     /**
      * Alternative delivery path: hand pre-encoded canonical msgpack
      * SignedTransaction bytes to the external peer without going through

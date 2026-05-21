@@ -32,15 +32,11 @@ type ResolveSignableResult = {
  * @param txParams        Per-transaction signer specs from the request
  * @param txSenders       Sender address of each decoded transaction (same order as txParams)
  * @param signableAddresses  Addresses the wallet can actually sign for
- * @param multisigAddresses  Locally-held multisig (joint-account) addresses.
- *   When a transaction's sender is in this set, the wallet ignores the
- *   ARC-0001 `signers` field for that index — the dApp can't enumerate
- *   our local participant set, so its hint is incomplete by definition.
- *   `signerAddress` stays as the multisig sender, the multisig strategy
- *   auto-signs with every local participant, and the transport selector
- *   routes the result to `createMultisigProposeTransport`. Mirrors
- *   pera-android's `JointAccountTransactionSignHelper.autoSignWithLocalAccounts`.
- *   Defaults to an empty set so non-WC callers stay unchanged.
+ * @param multisigAddresses  Locally-held multisig addresses. A multisig
+ *   sender short-circuits the ARC-0001 `signers` hint — the dApp can't
+ *   enumerate our local participant set, so the wallet signs with every
+ *   local participant and the transport selector routes through the
+ *   multisig propose flow. Defaults to empty so non-WC callers stay unchanged.
  */
 export const resolveSignableTransactions = (
     txParams: SignerSpec[],

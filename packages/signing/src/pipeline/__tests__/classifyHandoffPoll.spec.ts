@@ -14,7 +14,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
     walletConnectHandoffs,
     type PendingWalletConnectHandoff,
-} from '@perawallet/wallet-core-signing'
+} from '../walletConnectHandoffs'
 import type { SignRequestResponse } from '@perawallet/wallet-core-multisig'
 
 const { assembleMock, loggerWarnMock } = vi.hoisted(() => ({
@@ -73,7 +73,7 @@ const makeHandoff = (
     callbacks: {
         approveSignedBytes: vi.fn().mockResolvedValue(undefined),
         error: vi.fn().mockResolvedValue(undefined),
-        softReject: vi.fn().mockResolvedValue(undefined),
+        reject: vi.fn().mockResolvedValue(undefined),
     },
     source: { type: 'walletconnect' },
     registeredAt: Date.now(),
@@ -365,9 +365,10 @@ describe('resolveHandoffOutcome', () => {
             markConfirmed: vi.fn(),
         })
 
-        expect(handoff.callbacks.softReject).toHaveBeenCalledWith(
-            new Error('msg.declined'),
-        )
+        expect(handoff.callbacks.reject).toHaveBeenCalledWith({
+            kind: 'softReject',
+            error: new Error('msg.declined'),
+        })
         expect(handoff.callbacks.error).not.toHaveBeenCalled()
         expect(walletConnectHandoffs.get(SIGN_REQUEST_ID)).toBeUndefined()
     })
@@ -383,9 +384,10 @@ describe('resolveHandoffOutcome', () => {
             markConfirmed: vi.fn(),
         })
 
-        expect(handoff.callbacks.softReject).toHaveBeenCalledWith(
-            new Error('msg.expired'),
-        )
+        expect(handoff.callbacks.reject).toHaveBeenCalledWith({
+            kind: 'softReject',
+            error: new Error('msg.expired'),
+        })
     })
 
     it('delivers an error outcome via the error callback and logs it', async () => {

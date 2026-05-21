@@ -24,7 +24,14 @@ export default defineConfig({
         alias: [
             {
                 find: 'react-native',
-                replacement: 'react-native-web',
+                // Absolute path so the alias resolves identically when the
+                // import originates from another workspace package — those
+                // packages don't have react-native-web in their own
+                // node_modules under pnpm.
+                replacement: path.resolve(
+                    __dirname,
+                    './node_modules/react-native-web',
+                ),
             },
             {
                 // The published expo-linear-gradient build ships untransformed

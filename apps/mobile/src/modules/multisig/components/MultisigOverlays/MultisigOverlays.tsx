@@ -10,16 +10,21 @@
  limitations under the License
  */
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { AppState } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import {
+    useWalletConnectHandoffResolver,
+    type ResolverMessages,
+} from '@perawallet/wallet-core-signing'
 import { useMultisigProposeListener } from '../../hooks/useMultisigProposeListener'
-import { useWalletConnectHandoffResolver } from '../../hooks/useWalletConnectHandoffResolver'
 import { usePendingSignaturesSheetStore } from '../../stores/usePendingSignaturesSheetStore'
 import { PendingSignaturesContent } from '../PendingSignaturesContent'
 
 export const MultisigOverlays = () => {
     useMultisigProposeListener()
-    useWalletConnectHandoffResolver()
+    useResolverWiring()
 
     const signRequestId = usePendingSignaturesSheetStore(
         state => state.signRequestId,
@@ -50,4 +55,39 @@ export const MultisigOverlays = () => {
     }, [signRequestId, requestBottomSheet, closeSheet])
 
     return null
+}
+
+/**
+ * Thin RN + i18n shell over the package-level
+ * `useWalletConnectHandoffResolver`. Owns: pausing polling while the app is
+ * backgrounded (a backgrounded poll would only fail and could not be
+ * delivered), and building the localized message bag.
+ */
+const useResolverWiring = (): void => {
+    const { t } = useTranslation()
+
+    const [isAppActive, setIsAppActive] = useState(
+        AppState.currentState === 'active',
+    )
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', nextState => {
+            setIsAppActive(nextState === 'active')
+        })
+        return () => subscription.remove()
+    }, [])
+
+    const messages = useMemo<ResolverMessages>(
+        () => ({
+            declined: t('multisig.sync_sign.errors.declined'),
+            expired: t('multisig.sync_sign.errors.expired'),
+            failed: t('multisig.sync_sign.errors.failed'),
+            noTransactions: t('multisig.sync_sign.errors.no_transactions'),
+            deliveryFailed: t('multisig.sync_sign.errors.delivery_failed'),
+            assemblyFailed: (reason: string) =>
+                t('multisig.sync_sign.errors.assembly_failed', { reason }),
+        }),
+        [t],
+    )
+
+    useWalletConnectHandoffResolver({ isAppActive, messages })
 }
