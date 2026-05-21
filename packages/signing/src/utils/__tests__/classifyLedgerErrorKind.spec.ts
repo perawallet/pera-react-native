@@ -48,6 +48,7 @@ describe('classifyLedgerErrorKind', () => {
         [new LedgerPublicKeyReadError(), 'public_key_read_failed'],
         [new LedgerNetworkError(), 'network_error'],
         [new LedgerUnsupportedDeviceError(), 'unsupported_device'],
+        [new LedgerAppOutdatedError(), 'app_outdated'],
         [new LedgerDisconnectedError(), 'connection_lost'],
         [new LedgerTimeoutError('x'), 'timeout'],
         [new LedgerConnectionError('x'), 'connection_failed'],
@@ -55,12 +56,6 @@ describe('classifyLedgerErrorKind', () => {
 
     it.each(cases)('classifies %s as %s', (error, expected) => {
         expect(classifyLedgerErrorKind(error)).toBe(expected)
-    })
-
-    it('classifies LedgerAppOutdatedError as app_outdated', () => {
-        expect(classifyLedgerErrorKind(new LedgerAppOutdatedError())).toBe(
-            'app_outdated',
-        )
     })
 
     it('falls back to connection_failed for unknown errors', () => {
