@@ -12,16 +12,23 @@
 
 import { describe, expect, test } from 'vitest'
 import { sha256 } from '@noble/hashes/sha2.js'
+import { canonify } from 'canonify'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import {
+    ARC60_SCOPE_AUTH,
+    Arc60BadJsonError,
     Arc60DomainMismatchError,
     Arc60FailedDecodingError,
+    Arc60InvalidScopeError,
+    Arc60InvalidSignerError,
     Arc60MissingAuthDataError,
     Arc60MissingDomainError,
     buildArc60AuthSigningPayload,
     decodeArc60Data,
+    validateArc60AuthRequest,
     verifyAuthenticatorDomain,
 } from '../arc60'
+import { SIWA_CHAIN_ID } from '../siwa'
 
 const utf8 = (s: string): Uint8Array => new TextEncoder().encode(s)
 
@@ -86,6 +93,127 @@ describe('verifyAuthenticatorDomain', () => {
         expect(() => verifyAuthenticatorDomain(domain, tooShort)).toThrow(
             Arc60MissingAuthDataError,
         )
+    })
+})
+
+// =============================================================================
+// Fixtures shared by validateArc60AuthRequest tests — mirrored from
+// useArc60Signer.spec.ts so the two suites use identical payloads.
+// =============================================================================
+
+const DOMAIN = 'arc60.io'
+const SIGNER = 'HD_ADDR'
+
+const rpIdHash = sha256(utf8(DOMAIN))
+// 37-byte authenticatorData: 32-byte rpIdHash + 5 flag/counter bytes
+const AUTH_DATA = new Uint8Array([...rpIdHash, 0x05, 0x00, 0x00, 0x00, 0x00])
+
+const buildSiwa = (overrides: Record<string, unknown> = {}): string =>
+    canonify({
+        domain: DOMAIN,
+        account_address: SIGNER,
+        uri: 'https://arc60.io/login',
+        version: '1',
+        chain_id: SIWA_CHAIN_ID,
+        type: 'ed25519',
+        ...overrides,
+    })!
+
+const validSiwaPayload = utf8(buildSiwa())
+const validData = encodeToBase64(validSiwaPayload)
+
+const mismatchedData = encodeToBase64(utf8(buildSiwa({ account_address: 'OTHER_ADDR' })))
+
+const makeAuthData = (domain: string): Uint8Array => {
+    const hash = sha256(utf8(domain))
+    return new Uint8Array([...hash, 0x05, 0x00, 0x00, 0x00, 0x00])
+}
+
+describe('validateArc60AuthRequest', () => {
+    test('returns decodedData for a valid AUTH request', () => {
+        const { decodedData } = validateArc60AuthRequest(
+            {
+                data: validData,
+                signer: SIGNER,
+                domain: DOMAIN,
+                authenticatorData: AUTH_DATA,
+            },
+            { scope: ARC60_SCOPE_AUTH, encoding: 'base64' },
+        )
+        expect(decodedData).toBeInstanceOf(Uint8Array)
+        expect(Array.from(decodedData)).toEqual(Array.from(validSiwaPayload))
+    })
+
+    test('throws Arc60InvalidScopeError on non-AUTH scope', () => {
+        expect(() =>
+            validateArc60AuthRequest(
+                {
+                    data: 'e30=',
+                    signer: SIGNER,
+                    domain: DOMAIN,
+                    authenticatorData: AUTH_DATA,
+                },
+                { scope: 2, encoding: 'base64' },
+            ),
+        ).toThrow(Arc60InvalidScopeError)
+    })
+
+    test('throws when authenticatorData rpIdHash does not match domain', () => {
+        expect(() =>
+            validateArc60AuthRequest(
+                {
+                    data: validData,
+                    signer: SIGNER,
+                    domain: DOMAIN,
+                    authenticatorData: makeAuthData('evil.com'),
+                },
+                { scope: ARC60_SCOPE_AUTH, encoding: 'base64' },
+            ),
+        ).toThrow(Arc60DomainMismatchError)
+    })
+
+    test('throws Arc60InvalidSignerError when SIWA account_address does not match signer', () => {
+        expect(() =>
+            validateArc60AuthRequest(
+                {
+                    data: mismatchedData,
+                    signer: SIGNER,
+                    domain: DOMAIN,
+                    authenticatorData: AUTH_DATA,
+                },
+                { scope: ARC60_SCOPE_AUTH, encoding: 'base64' },
+            ),
+        ).toThrow(Arc60InvalidSignerError)
+    })
+
+    test('throws Arc60BadJsonError when SIWA domain does not match request domain', () => {
+        const wrongDomainData = encodeToBase64(utf8(buildSiwa({ domain: 'evil.io' })))
+        expect(() =>
+            validateArc60AuthRequest(
+                {
+                    data: wrongDomainData,
+                    signer: SIGNER,
+                    domain: DOMAIN,
+                    authenticatorData: AUTH_DATA,
+                },
+                { scope: ARC60_SCOPE_AUTH, encoding: 'base64' },
+            ),
+        ).toThrow(Arc60BadJsonError)
+    })
+
+    test('throws Arc60BadJsonError when payload is not valid SIWA JSON', () => {
+        const nonSiwaData = encodeToBase64(utf8('{"not":"siwa"}'))
+        expect(() =>
+            validateArc60AuthRequest(
+                {
+                    data: nonSiwaData,
+                    signer: SIGNER,
+                    domain: DOMAIN,
+                    authenticatorData: AUTH_DATA,
+                },
+                { scope: ARC60_SCOPE_AUTH, encoding: 'base64' },
+            ),
+        ).toThrow(Arc60BadJsonError)
     })
 })
 

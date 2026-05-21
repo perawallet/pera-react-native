@@ -25,15 +25,12 @@ import { SIGNING_KEY_DOMAIN } from '../constants'
 import type { Arc60Metadata, Arc60StdSigData } from '../pipeline/types'
 import {
     ARC60_SCOPE_AUTH,
-    Arc60BadJsonError,
     Arc60FailedHdPathError,
     Arc60InvalidScopeError,
     Arc60InvalidSignerError,
     buildArc60AuthSigningPayload,
-    decodeArc60Data,
-    verifyAuthenticatorDomain,
+    validateArc60AuthRequest,
 } from '../utils/arc60'
-import { parseSiwa } from '../utils/siwa'
 
 export type UseArc60SignerResult = {
     /**
@@ -84,43 +81,12 @@ export const useArc60Signer = (): UseArc60SignerResult => {
                 return signArc60(rekeyedAccount, stdSigData, metadata)
             }
 
-            // Domain binding — verify before doing any signing work.
-            verifyAuthenticatorDomain(
-                stdSigData.domain,
-                stdSigData.authenticatorData,
+            // Shared ARC-60 AUTH validation: scope, domain binding, base64
+            // decode, UTF-8 + canonical SIWA parse, signer/domain checks.
+            const { decodedData } = validateArc60AuthRequest(
+                stdSigData,
+                metadata,
             )
-
-            const decodedData = decodeArc60Data(
-                stdSigData.data,
-                metadata.encoding,
-            )
-
-            // AUTH scope is strict SIWA: parse + canonicalize before signing
-            // so the dApp can't slip arbitrary bytes through the AUTH path.
-            let jsonString: string
-            try {
-                jsonString = new TextDecoder('utf-8', { fatal: true }).decode(
-                    decodedData,
-                )
-            } catch (caught) {
-                throw new Arc60BadJsonError(
-                    'decoded payload is not valid UTF-8',
-                    caught instanceof Error ? caught : undefined,
-                )
-            }
-            const siwa = parseSiwa(jsonString)
-
-            if (siwa.domain !== stdSigData.domain) {
-                throw new Arc60BadJsonError(
-                    `SIWA domain "${siwa.domain}" does not match request domain "${stdSigData.domain}"`,
-                )
-            }
-            if (siwa.account_address !== stdSigData.signer) {
-                throw new Arc60InvalidSignerError(
-                    stdSigData.signer,
-                    `SIWA account_address "${siwa.account_address}" does not match request signer`,
-                )
-            }
 
             const payload = buildArc60AuthSigningPayload(
                 decodedData,
