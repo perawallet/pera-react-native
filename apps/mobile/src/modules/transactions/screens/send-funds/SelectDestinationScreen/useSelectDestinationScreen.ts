@@ -17,12 +17,13 @@ import {
     useAccountBalancesQuery,
     useAllAccountLogicalTypes,
     useAllAccounts,
+    useOnChainAccountInformationQuery,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
 import { ALGO_ASSET_ID, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { useNavigation } from '@react-navigation/native'
 import { StackNavigationProp } from '@react-navigation/stack'
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 export const useSelectDestinationScreen = () => {
     const { selectedAssetId, setDestination, setSendMode } = useSendFunds()
@@ -43,6 +44,10 @@ export const useSelectDestinationScreen = () => {
 
     const navigation =
         useNavigation<StackNavigationProp<SendFundsStackParamList>>()
+
+    const [pendingAddress, setPendingAddress] = useState<string>()
+    const { data: pendingOnChainInfo, isError: pendingCheckFailed } =
+        useOnChainAccountInformationQuery(pendingAddress ?? '')
 
     const handleSelected = useCallback(
         (address: string) => {
@@ -73,18 +78,19 @@ export const useSelectDestinationScreen = () => {
 
             // Check if receiver is a local account we can sign for
             const localType = logicalTypes.get(address)
-            const isLocalSignable =
-                !!localType && isSigningLogicalType(localType)
-
-            if (isLocalSignable) {
-                // Express send: local account, we handle opt-in + transfer
-                setSendMode('express')
-                navigation.navigate('ExpressSend')
-            } else {
-                // ARC59: external account or local but can't sign (watch/hardware)
-                setSendMode('sendArc59')
-                navigation.navigate('ARC59SendSummary')
+            if (localType) {
+                if (isSigningLogicalType(localType)) {
+                    // Express send: we handle opt-in + transfer
+                    setSendMode('express')
+                    navigation.navigate('ExpressSend')
+                } else {
+                    // Watch/hardware account we can't sign for
+                    setSendMode('sendArc59')
+                    navigation.navigate('ARC59SendSummary')
+                }
+                return
             }
+            setPendingAddress(address)
         },
         [
             selectedAsset,
@@ -96,9 +102,36 @@ export const useSelectDestinationScreen = () => {
         ],
     )
 
+    useEffect(() => {
+        if (!pendingAddress || !selectedAsset) return
+        if (pendingOnChainInfo === undefined && !pendingCheckFailed) return
+
+        const isReceiverOptedIn =
+            pendingOnChainInfo?.assets.some(
+                a => a.assetId === BigInt(selectedAsset.assetId),
+            ) ?? false
+
+        if (isReceiverOptedIn) {
+            setSendMode('normal')
+            navigation.navigate('ConfirmTransaction')
+        } else {
+            setSendMode('sendArc59')
+            navigation.navigate('ARC59SendSummary')
+        }
+        setPendingAddress(undefined)
+    }, [
+        pendingAddress,
+        pendingOnChainInfo,
+        pendingCheckFailed,
+        selectedAsset,
+        setSendMode,
+        navigation,
+    ])
+
     return {
         selectedAsset,
         selectedAccount,
         handleSelected,
+        isCheckingDestination: pendingAddress !== undefined,
     }
 }

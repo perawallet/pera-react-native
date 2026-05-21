@@ -75,10 +75,8 @@ export const useARC59SendSummaryScreen =
         )
 
         const isLoading = summaryLoading || assetLoading
-
         const headerImage = mode === 'dark' ? DarkHeaderImage : LightHeaderImage
 
-        // Check for insufficient balance
         useEffect(() => {
             if (!summary || !accountInfo) return
 
@@ -100,7 +98,6 @@ export const useARC59SendSummaryScreen =
             }
         }, [summary, accountInfo, navigation])
 
-        // Store the summary for transaction processing
         useEffect(() => {
             if (summary) {
                 setArc59Summary(summary)
