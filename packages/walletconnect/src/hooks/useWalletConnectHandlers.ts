@@ -39,6 +39,7 @@ import {
     type Arc60StdSigData,
     type PeraArbitraryDataMessage,
     type PeraArbitraryDataSignResult,
+    type RejectReason,
     type TransactionSignRequest,
     resolveSignableTransactions,
     useSigningRequest,
@@ -55,31 +56,52 @@ import { arc60PayloadSchema } from '../schema'
 import {
     canSignWithAccount,
     isHardwareWalletAccount,
+    isMultisigAccount,
     useAllAccounts,
     useSigningAccounts,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 
-/**
- * A WalletConnect delivery-connection timeout is owned end-to-end by the
- * signing machine: it lands the request in `failed`, the inline error
- * sheet renders with a Retry, and a retry re-attempts delivery on a fresh
- * socket. A request's `error` callback must therefore NOT also pop the WC
- * error bottom sheet, drain the sign-request queue, or reject the dApp on
- * a timeout — each would fight that flow (a drained queue kills the retry
- * and orphans the actor; an early `rejectRequest` burns a request id the
- * retry still needs).
- *
- * The callback is invoked both with the raw timeout error (from the
- * WalletConnect transport's catch) and with the `TransportError` that
- * wraps it (from the signing machine's `failed` handler), so match both
- * shapes — `AppError` exposes the wrapped cause as `originalError`.
- */
+// A delivery-connection timeout is owned by the signing machine
+// (retryable via the inline error sheet). The error callback receives
+// both the raw error and a wrapping `TransportError` whose cause is
+// exposed as `originalError`, so check both shapes.
 const isConnectionTimeout = (error: unknown): boolean =>
     error instanceof WalletConnectConnectionTimeoutError ||
     (error instanceof Error &&
         (error as { originalError?: unknown }).originalError instanceof
             WalletConnectConnectionTimeoutError)
+
+/**
+ * Guarantee a live bridge socket before responding — WC v1 silently
+ * queues into a dead socket once the app has been backgrounded.
+ * `ensureConnectorReady` throws `WalletConnectConnectionTimeoutError` if
+ * it can't be revived; the signing pipeline surfaces that as a retryable
+ * failure.
+ */
+const deliverApprove = async (
+    clientId: string,
+    id: number,
+    result: unknown,
+): Promise<void> => {
+    const readyConnector = await ensureConnectorReady(
+        clientId,
+        WC_DELIVERY_TIMEOUT_MS,
+    )
+    await readyConnector.approveRequest({ id, result })
+}
+
+const deliverReject = async (
+    clientId: string,
+    id: number,
+    error: Error,
+): Promise<void> => {
+    const readyConnector = await ensureConnectorReady(
+        clientId,
+        WC_DELIVERY_TIMEOUT_MS,
+    )
+    readyConnector.rejectRequest({ id, error })
+}
 
 const validateRequest = (
     connector: WalletConnect,
@@ -308,30 +330,24 @@ export const useWalletConnectHandlers = () => {
                     const result = signed.map(item =>
                         encodeToBase64(item.signature),
                     )
-                    // Guarantee a live bridge socket before responding —
-                    // WC v1 silently queues into a dead socket. Throws a
-                    // WalletConnectConnectionTimeoutError the signing
-                    // pipeline surfaces as an honest failure if the socket
-                    // can't be revived.
-                    const readyConnector = await ensureConnectorReady(
-                        connector.clientId,
-                        WC_DELIVERY_TIMEOUT_MS,
-                    )
-                    await readyConnector.approveRequest({
-                        id: payload.id,
-                        result,
-                    })
+                    await deliverApprove(connector.clientId, payload.id, result)
                 },
-                reject: async () => {
+                reject: async (reason: RejectReason = { kind: 'user' }) => {
+                    if (reason.kind === 'softReject') {
+                        await deliverReject(
+                            connector.clientId,
+                            payload.id,
+                            reason.error,
+                        )
+                        removeSignRequest(signRequest)
+                        return
+                    }
                     connector.rejectRequest({
                         id: payload.id,
                         error: new Error('User rejected'),
                     })
                 },
                 error: async (err: Error) => {
-                    // A delivery-connection timeout is surfaced and retried
-                    // by the signing machine — bail so we don't double up
-                    // the UI or kill the retry. See isConnectionTimeout.
                     if (isConnectionTimeout(err)) {
                         return
                     }
@@ -344,10 +360,9 @@ export const useWalletConnectHandlers = () => {
                         .setConnectionError(
                             new WalletConnectSignRequestError(err.message),
                         )
-                    // Pull the request out of the queue and clear the
-                    // failed-request flag so the WC error bottom sheet is the
-                    // only surface — otherwise we'd also flash the signing
-                    // pipeline's full-screen "Signing Failed" view.
+                    // The WC error bottom sheet is the only surface here;
+                    // clearing the failed-request flag suppresses the
+                    // signing pipeline's full-screen "Signing Failed" view.
                     clearLastFailedRequest()
                     removeSignRequest(signRequest)
                 },
@@ -412,31 +427,29 @@ export const useWalletConnectHandlers = () => {
                         const result = signedData.map(item =>
                             encodeToBase64(item.signature),
                         )
-                        // Guarantee a live bridge socket before responding
-                        // — WC v1 silently queues into a dead socket.
-                        // Throws a WalletConnectConnectionTimeoutError the
-                        // signing pipeline surfaces as an honest failure if
-                        // the socket can't be revived.
-                        const readyConnector = await ensureConnectorReady(
+                        await deliverApprove(
                             connector.clientId,
-                            WC_DELIVERY_TIMEOUT_MS,
-                        )
-                        await readyConnector.approveRequest({
-                            id: payload.id,
+                            payload.id,
                             result,
-                        })
+                        )
                     }
                 },
-                reject: async () => {
+                reject: async (reason: RejectReason = { kind: 'user' }) => {
+                    if (reason.kind === 'softReject') {
+                        await deliverReject(
+                            connector.clientId,
+                            payload.id,
+                            reason.error,
+                        )
+                        removeSignRequest(signRequest)
+                        return
+                    }
                     connector.rejectRequest({
                         id: payload.id,
                         error: new Error('User rejected'),
                     })
                 },
                 error: async (error: Error) => {
-                    // A delivery-connection timeout is surfaced and retried
-                    // by the signing machine — bail so we don't double up
-                    // the UI or kill the retry. See isConnectionTimeout.
                     if (isConnectionTimeout(error)) {
                         return
                     }
@@ -500,36 +513,33 @@ export const useWalletConnectHandlers = () => {
             const signableAddresses = new Set(
                 signingAccounts.map(a => a.address),
             )
+            const multisigAddresses = new Set(
+                accounts.filter(isMultisigAccount).map(a => a.address),
+            )
             const { indicesToSign, signerOverrides } =
                 resolveSignableTransactions(
                     paramOne,
                     allTxnObjects.map(tx => tx.sender.toString()),
                     signableAddresses,
+                    multisigAddresses,
                 )
 
             // If no transactions need signing, approve with all-null array.
-            // This delivers outside the signing machine (no review/retry
-            // UI), so respond best-effort: ensure a live socket first —
-            // WC v1 silently queues into a dead one — then log if it
-            // could not be revived.
+            // Fire-and-forget: this delivers outside the signing machine
+            // (no review/retry UI), so a delivery failure is logged, not
+            // surfaced.
             if (indicesToSign.length === 0) {
                 const allNullResult = new Array(paramOne.length).fill(null)
-                void ensureConnectorReady(
+                void deliverApprove(
                     connector.clientId,
-                    WC_DELIVERY_TIMEOUT_MS,
-                )
-                    .then(readyConnector =>
-                        readyConnector.approveRequest({
-                            id: payload.id,
-                            result: allNullResult,
-                        }),
+                    payload.id,
+                    allNullResult,
+                ).catch(error => {
+                    logger.error(
+                        'WC: failed to deliver all-null sign response',
+                        { error, clientId: connector.clientId },
                     )
-                    .catch(error => {
-                        logger.error(
-                            'WC: failed to deliver all-null sign response',
-                            { error, clientId: connector.clientId },
-                        )
-                    })
+                })
                 return
             }
 
@@ -564,35 +574,26 @@ export const useWalletConnectHandlers = () => {
                             result[indicesToSign[i]] = encodeToBase64(encoded)
                         }
                     })
-
-                    // Guarantee a live bridge socket before responding.
-                    // WC v1 silently queues the response into a dead
-                    // socket, so without this the dApp never receives the
-                    // signed transaction once the app has been
-                    // backgrounded — yet the UI still reports success.
-                    // ensureConnectorReady throws a
-                    // WalletConnectConnectionTimeoutError if the socket
-                    // can't be revived, failing the signing pipeline
-                    // honestly instead of faking success.
-                    const readyConnector = await ensureConnectorReady(
-                        connector.clientId,
-                        WC_DELIVERY_TIMEOUT_MS,
-                    )
-                    await readyConnector.approveRequest({
-                        id: payload.id,
-                        result,
-                    })
+                    await deliverApprove(connector.clientId, payload.id, result)
                 },
-                reject: async () => {
+                reject: async (reason: RejectReason = { kind: 'user' }) => {
+                    if (reason.kind === 'softReject') {
+                        // Propose handoff succeeded; reject the WC peer
+                        // cleanly without raising the connection-error banner.
+                        await deliverReject(
+                            connector.clientId,
+                            payload.id,
+                            reason.error,
+                        )
+                        removeSignRequest(signRequest)
+                        return
+                    }
                     connector.rejectRequest({
                         id: payload.id,
                         error: new Error('User rejected'),
                     })
                 },
                 error: async (error: Error) => {
-                    // A delivery-connection timeout is surfaced and retried
-                    // by the signing machine — bail so we don't double up
-                    // the UI or kill the retry. See isConnectionTimeout.
                     if (isConnectionTimeout(error)) {
                         return
                     }
@@ -608,31 +609,11 @@ export const useWalletConnectHandlers = () => {
                     clearLastFailedRequest()
                     removeSignRequest(signRequest)
                 },
-                // Sync-flow multisig handoff: invoked by
-                // createMultisigProposeTransport after a successful
-                // backend propose. The dApp request is rejected so the
-                // peer doesn't hang for the WC protocol timeout, but
-                // unlike `error` we don't set a connection-error banner
-                // — the user successfully created a sign-request, this
-                // is not a failure. removeSignRequest is defensive; the
-                // signing lifecycle already removes the request on the
-                // `completed` transition (useSigningActorLifecycle).
-                softReject: async (error: Error) => {
-                    connector.rejectRequest({
-                        id: payload.id,
-                        error,
-                    })
-                    removeSignRequest(signRequest)
-                },
-                // Sync-flow multisig success delivery: invoked by the
-                // resolver listener once threshold is met and the
-                // composite multisig SignedTransaction has been
-                // assembled. Bytes embed the original `txn` payload
-                // verbatim (no algosdk decode + re-encode), so the
-                // collected per-participant signatures verify on algod
-                // when the dApp broadcasts. Align each item with the
-                // corresponding position in the original `algo_signTxn`
-                // request via `indicesToSign`.
+                // Sync-flow multisig success delivery: encodes the
+                // assembled multisig bytes verbatim (no algosdk
+                // decode/re-encode, so participant signatures still verify
+                // on algod) into the original request positions via
+                // `indicesToSign`.
                 approveSignedBytes: async (signedBytes: Uint8Array[]) => {
                     const result: Nullable<string>[] = new Array(
                         paramOne.length,
@@ -642,22 +623,14 @@ export const useWalletConnectHandlers = () => {
                         if (idx === undefined) return
                         result[idx] = encodeToBase64(bytes)
                     })
-                    // Guarantee a live bridge socket before responding —
-                    // WC v1 silently queues into a dead socket.
-                    const readyConnector = await ensureConnectorReady(
-                        connector.clientId,
-                        WC_DELIVERY_TIMEOUT_MS,
-                    )
-                    await readyConnector.approveRequest({
-                        id: payload.id,
-                        result,
-                    })
+                    await deliverApprove(connector.clientId, payload.id, result)
                 },
             } as TransactionSignRequest
             addSignRequest(signRequest)
         },
         [
             connections,
+            accounts,
             addSignRequest,
             removeSignRequest,
             clearLastFailedRequest,

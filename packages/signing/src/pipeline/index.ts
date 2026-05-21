@@ -38,3 +38,16 @@ export {
     walletConnectHandoffs,
     type PendingWalletConnectHandoff,
 } from './walletConnectHandoffs'
+
+// Sync-flow handoff classification + delivery. Pure functions consumed by
+// the resolver hook (`useWalletConnectHandoffResolver`).
+export {
+    classifyHandoffPoll,
+    resolveHandoffOutcome,
+    errorReasonToMessage,
+    type HandoffPollDetail,
+    type ResolverMessages,
+    type HandoffErrorReason,
+    type HandoffPollOutcome,
+    type TerminalHandoffOutcome,
+} from './classifyHandoffPoll'

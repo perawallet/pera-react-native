@@ -156,6 +156,8 @@ export const useAccountOptions = ({
         if (!isMultisigAccount(account)) return
         onClose()
         const details: SharedAccountDetails = {
+            name: account.name ?? '',
+            address: account.address,
             participantCount: account.multisigDetails.addresses.length,
             threshold: account.multisigDetails.threshold,
             addresses: account.multisigDetails.addresses,

@@ -17,6 +17,7 @@ import {
     WalletConnectConnectionTimeoutError,
     WalletConnectInvalidSessionError,
 } from '../errors'
+import { useConnectorRegistryStore } from '../store/connectorRegistryStore'
 
 /**
  * Shared registry of live WalletConnect v1 connectors.
@@ -28,16 +29,12 @@ import {
  * signed transaction handed back after backgrounding never reaches the
  * dApp even though the UI reports success.
  *
- * This registry owns the connector map (previously module-local to
- * `useWalletConnect`) plus the socket-liveness checks and recovery the
- * hook had no place for:
- *
- *  - `isSocketOpen` reads the connector's live socket state on demand.
- *  - `ensureConnectorReady` returns a connector whose socket is verified
- *    open, recreating it from the stored session when the socket is dead —
- *    a fresh `Connector` builds a fresh `SocketTransport`, escaping the
- *    zombie-socket reconnect deadlock a reused connector cannot.
- *  - `reconnectAllConnectors` warms every dead socket (foreground hook).
+ * Connector + tombstone state lives in
+ * {@link useConnectorRegistryStore}. This file owns the side-effectful
+ * lifecycle on top — readiness checking, recreation on dead sockets, and
+ * the foreground reconnect sweep — plus two transients (in-flight
+ * readiness promises and the handler binder) that don't belong in the
+ * store.
  */
 
 /** Re-binds dApp request handlers (`algo_signTxn`, …) onto a connector. */
@@ -46,17 +43,11 @@ type HandlerBinder = (connector: WalletConnect) => void
 /** Poll cadence while waiting for a recreated socket to report open. */
 const POLL_INTERVAL_MS = 50
 
-/** The current connector per session, keyed by WC client id. */
-const connectors = new Map<string, WalletConnect>()
+// Transient runtime artifacts: not state (no React consumers, never
+// observed), so kept at module scope to avoid polluting the store.
 
 /** De-dupes concurrent readiness requests for the same session. */
 const readinessInFlight = new Map<string, Promise<WalletConnect>>()
-
-/**
- * Sessions the user explicitly disconnected. Guards a `recreateConnector`
- * already in flight from resurrecting a session deleted mid-recreation.
- */
-const tombstones = new Set<string>()
 
 /**
  * Registered by `useWalletConnect`. A recreated connector starts with no
@@ -94,7 +85,7 @@ export const setConnectorHandlerBinder = (binder: HandlerBinder): void => {
 
 /** The current connector for a session, if the registry has one. */
 export const getConnector = (clientId: string): WalletConnect | undefined =>
-    connectors.get(clientId)
+    useConnectorRegistryStore.getState().connectors[clientId]
 
 /**
  * Adopt a connector into the registry. Called by
@@ -105,8 +96,7 @@ export const registerConnector = (
     clientId: string,
     connector: WalletConnect,
 ): void => {
-    tombstones.delete(clientId)
-    connectors.set(clientId, connector)
+    useConnectorRegistryStore.getState().registerConnector(clientId, connector)
 }
 
 /**
@@ -134,9 +124,8 @@ const teardownConnector = (connector: WalletConnect): void => {
  * session abort instead of resurrecting it.
  */
 export const forgetConnector = (clientId: string): void => {
-    connectors.delete(clientId)
+    useConnectorRegistryStore.getState().forgetConnector(clientId)
     readinessInFlight.delete(clientId)
-    tombstones.add(clientId)
 }
 
 /** Resolves once `connector`'s socket reports open, or rejects on timeout. */
@@ -195,7 +184,7 @@ const recreateConnector = async (
     await waitForSocketOpen(fresh, timeoutMs)
 
     // The user may have disconnected the session while we waited.
-    if (tombstones.has(clientId)) {
+    if (useConnectorRegistryStore.getState().tombstones.has(clientId)) {
         teardownConnector(fresh)
         throw new WalletConnectInvalidSessionError(
             `WalletConnect session ${clientId} was disconnected during reconnect`,
@@ -224,7 +213,7 @@ export const ensureConnectorReady = (
         return inFlight
     }
 
-    const existing = connectors.get(clientId)
+    const existing = useConnectorRegistryStore.getState().connectors[clientId]
     if (!existing) {
         return Promise.reject(
             new WalletConnectInvalidSessionError(
@@ -259,7 +248,8 @@ export const ensureConnectorReady = (
 export const reconnectAllConnectors = (
     timeoutMs: number = WC_DELIVERY_TIMEOUT_MS,
 ): void => {
-    for (const [clientId, connector] of connectors) {
+    const connectors = useConnectorRegistryStore.getState().connectors
+    for (const [clientId, connector] of Object.entries(connectors)) {
         if (isSocketOpen(connector)) {
             continue
         }
@@ -271,8 +261,7 @@ export const reconnectAllConnectors = (
 
 /** Test-only: clears all registry state between tests. */
 export const __resetRegistryForTests = (): void => {
-    connectors.clear()
+    useConnectorRegistryStore.getState().resetState()
     readinessInFlight.clear()
-    tombstones.clear()
     handlerBinder = null
 }

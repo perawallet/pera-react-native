@@ -111,10 +111,10 @@ export const createMultisigProposeTransport = (
 
                 // Sync-flow handoff: register a pending handoff so the
                 // resolver can deliver the assembled signed bytes to the
-                // dApp once threshold is met. We do NOT softReject the WC
-                // peer here — the resolver decides between `approve`
-                // (success) and `error` / `softReject` (terminal failure)
-                // when status becomes terminal.
+                // dApp once threshold is met. The resolver decides between
+                // `approveSignedBytes` (success), `error` (terminal failure),
+                // and `reject({ kind: 'softReject', error })` (participant
+                // decline / expired) when status becomes terminal.
                 if (isExternal) {
                     const msig = getMsigMetadata(multisigAddress)
                     if (!msig) {
@@ -148,7 +148,7 @@ export const createMultisigProposeTransport = (
                             approveSignedBytes:
                                 source.callbacks?.approveSignedBytes,
                             error: source.callbacks?.error,
-                            softReject: source.callbacks?.softReject,
+                            reject: source.callbacks?.reject,
                         },
                         source,
                         registeredAt: Date.now(),

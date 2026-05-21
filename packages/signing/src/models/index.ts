@@ -18,6 +18,7 @@ import { BaseStoreState, type Nullable } from '@perawallet/wallet-core-shared'
 import type {
     Arc60Metadata,
     Arc60StdSigData,
+    RejectReason,
     SignableAnalysis,
     SourceType,
     TransportResult,
@@ -68,17 +69,8 @@ export type TransactionSignRequest = {
     signerOverrides?: Map<number, string>
     rawTransactionsBase64?: string[]
     approve?: (signedTxs: PeraSignedTransaction[]) => Promise<void>
-    reject?: () => Promise<void>
+    reject?: (reason?: RejectReason) => Promise<void>
     error?: (error: Error) => Promise<void>
-    /**
-     * Resolve the external peer cleanly with a non-fatal reason — used when
-     * the request was successfully handed off to a different flow (e.g. a
-     * multisig sign-request was created on the backend) and the peer needs
-     * to know the inline response will not arrive. Implementers (e.g. the
-     * WalletConnect handler) should surface the error to the peer via
-     * `rejectRequest` WITHOUT raising an in-app connection-error banner.
-     */
-    softReject?: (error: Error) => Promise<void>
     /**
      * Alternative delivery path: hand pre-encoded SignedTransaction bytes
      * to the peer (skipping algosdk's decode + re-encode roundtrip). Used
@@ -104,7 +96,7 @@ export type PeraArbitraryDataSignResult = {
 export type ArbitraryDataSignRequest = {
     data: PeraArbitraryDataMessage[]
     approve?: (signed: PeraArbitraryDataSignResult[]) => Promise<void>
-    reject?: () => Promise<void>
+    reject?: (reason?: RejectReason) => Promise<void>
     error?: (error: Error) => Promise<void>
 } & BaseSignRequest
 
@@ -123,7 +115,7 @@ export type Arc60SignRequest = {
      * stays consistent across legacy and ARC-60 modalities.
      */
     approve?: (signed: PeraArbitraryDataSignResult[]) => Promise<void>
-    reject?: () => Promise<void>
+    reject?: (reason?: RejectReason) => Promise<void>
     error?: (error: Error) => Promise<void>
 } & BaseSignRequest
 

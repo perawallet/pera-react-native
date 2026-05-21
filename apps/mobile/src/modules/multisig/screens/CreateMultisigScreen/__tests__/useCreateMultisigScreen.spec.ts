@@ -12,6 +12,8 @@
 
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import { DuplicateAddressError } from '@perawallet/wallet-core-contacts'
+import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useCreateMultisigScreen } from '../useCreateMultisigScreen'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useMultisigCreationStore } from '../../../hooks/useMultisigCreation'
@@ -33,11 +35,47 @@ vi.mock('@modules/bottom-sheet', () => ({
     }),
 }))
 
+const mockAccounts = vi.fn<() => { address: string }[]>(() => [])
+
+vi.mock('@perawallet/wallet-core-accounts', async () => {
+    const actual = await vi.importActual<
+        typeof import('@perawallet/wallet-core-accounts')
+    >('@perawallet/wallet-core-accounts')
+    return {
+        ...actual,
+        useAllAccounts: () => mockAccounts(),
+    }
+})
+
+const mockAddContact = vi.fn()
+const mockContacts = vi.fn<() => { address: string; name: string }[]>(() => [])
+
+vi.mock('@perawallet/wallet-core-contacts', async () => {
+    const actual = await vi.importActual<
+        typeof import('@perawallet/wallet-core-contacts')
+    >('@perawallet/wallet-core-contacts')
+    return {
+        ...actual,
+        useContacts: () => ({
+            contacts: mockContacts(),
+            addContact: mockAddContact,
+            editContact: vi.fn(),
+            deleteContact: vi.fn(),
+            findContacts: vi.fn(() => []),
+            selectedContact: null,
+            setSelectedContact: vi.fn(),
+        }),
+    }
+})
+
 describe('useCreateMultisigScreen', () => {
     const mockPush = vi.fn()
 
     beforeEach(() => {
         vi.clearAllMocks()
+        mockAccounts.mockReturnValue([])
+        mockContacts.mockReturnValue([])
+        mockAddContact.mockReset()
         ;(useAppNavigation as Mock).mockReturnValue({
             push: mockPush,
         })
@@ -147,5 +185,90 @@ describe('useCreateMultisigScreen', () => {
         })
 
         expect(mockPush).toHaveBeenCalledWith('SetThreshold')
+    })
+
+    it('isParticipantInWallet is true only for addresses that are wallet accounts', () => {
+        mockAccounts.mockReturnValue([{ address: 'ADDR1' }])
+        const { result } = renderHook(() => useCreateMultisigScreen())
+
+        expect(result.current.isParticipantInWallet('ADDR1')).toBe(true)
+        expect(result.current.isParticipantInWallet('ADDR2')).toBe(false)
+    })
+
+    it('handleRemoveParticipant removes the participant from the store', () => {
+        const store = useMultisigCreationStore.getState()
+        store.addParticipant({ address: 'ADDR1' })
+        store.addParticipant({ address: 'ADDR2' })
+
+        const { result } = renderHook(() => useCreateMultisigScreen())
+
+        act(() => {
+            result.current.handleRemoveParticipant('ADDR1')
+        })
+
+        const participants = useMultisigCreationStore.getState().participants
+        expect(participants.find(p => p.address === 'ADDR1')).toBeUndefined()
+        expect(participants).toHaveLength(1)
+    })
+
+    describe('contact auto-save', () => {
+        const ADDR = 'A'.repeat(58)
+
+        it('auto-saves a new non-wallet address as a contact', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce(ADDR)
+            const { result } = renderHook(() => useCreateMultisigScreen())
+
+            await act(async () => {
+                await result.current.handleOpenAddParticipant()
+            })
+
+            expect(mockAddContact).toHaveBeenCalledTimes(1)
+            expect(mockAddContact).toHaveBeenCalledWith({
+                name: truncateAlgorandAddress(ADDR),
+                address: ADDR,
+            })
+            expect(result.current.participants).toHaveLength(1)
+        })
+
+        it('does not save a wallet account as a contact', async () => {
+            mockAccounts.mockReturnValue([{ address: ADDR }])
+            mockRequestBottomSheet.mockResolvedValueOnce(ADDR)
+            const { result } = renderHook(() => useCreateMultisigScreen())
+
+            await act(async () => {
+                await result.current.handleOpenAddParticipant()
+            })
+
+            expect(mockAddContact).not.toHaveBeenCalled()
+            expect(result.current.participants).toHaveLength(1)
+        })
+
+        it('skips an address already saved as a contact', async () => {
+            mockContacts.mockReturnValue([{ address: ADDR, name: 'Alice' }])
+            mockRequestBottomSheet.mockResolvedValueOnce(ADDR)
+            const { result } = renderHook(() => useCreateMultisigScreen())
+
+            await act(async () => {
+                await result.current.handleOpenAddParticipant()
+            })
+
+            expect(mockAddContact).not.toHaveBeenCalled()
+            expect(result.current.participants).toHaveLength(1)
+        })
+
+        it('swallows a duplicate-contact error', async () => {
+            mockAddContact.mockImplementationOnce(() => {
+                throw new DuplicateAddressError(ADDR)
+            })
+            mockRequestBottomSheet.mockResolvedValueOnce(ADDR)
+            const { result } = renderHook(() => useCreateMultisigScreen())
+
+            await act(async () => {
+                await result.current.handleOpenAddParticipant()
+            })
+
+            expect(mockAddContact).toHaveBeenCalledTimes(1)
+            expect(result.current.participants).toHaveLength(1)
+        })
     })
 })

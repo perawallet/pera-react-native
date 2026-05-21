@@ -21,7 +21,7 @@ import {
     PWView,
 } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
-import { ParticipantCount } from '@components/ParticipantCount'
+import { MultisigInfoCard } from '@components/MultisigInfoCard'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useLanguage } from '@hooks/useLanguage'
@@ -123,40 +123,13 @@ export const ImportSharedAccountScreen = () => {
             testID='import-shared-account-screen'
         >
             <PWScrollView contentContainerStyle={styles.scrollContent}>
-                <PWView style={styles.infoCard}>
-                    <PWView style={styles.infoRow}>
-                        <PWView style={styles.infoRowLabels}>
-                            <PWText variant='h4'>
-                                {t('multisig.import.number_of_accounts')}
-                            </PWText>
-                            {isUserIncluded && (
-                                <PWText style={styles.infoRowSubLabel}>
-                                    {t('multisig.import.you_included')}
-                                </PWText>
-                            )}
-                        </PWView>
-                        <ParticipantCount
-                            count={totalParticipants}
-                            testID='import-shared-account-participant-count'
-                        />
-                    </PWView>
-                    <PWView style={styles.infoRow}>
-                        <PWView style={styles.infoRowLabels}>
-                            <PWText variant='h4'>
-                                {t('multisig.import.threshold')}
-                            </PWText>
-                            <PWText style={styles.infoRowSubLabel}>
-                                {t('multisig.import.threshold_description')}
-                            </PWText>
-                        </PWView>
-                        <PWText
-                            variant='h2'
-                            testID='import-shared-account-threshold'
-                        >
-                            {threshold}
-                        </PWText>
-                    </PWView>
-                </PWView>
+                <MultisigInfoCard
+                    totalParticipants={totalParticipants}
+                    threshold={threshold}
+                    isUserIncluded={isUserIncluded}
+                    participantCountTestID='import-shared-account-participant-count'
+                    thresholdTestID='import-shared-account-threshold'
+                />
 
                 <PWText
                     variant='h4'

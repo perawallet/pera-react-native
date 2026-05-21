@@ -11,6 +11,7 @@
  */
 
 import type { Network } from '@perawallet/wallet-core-shared'
+import { useWalletConnectHandoffsStore } from '../store/walletConnectHandoffsStore'
 import type { SourceCallbacks, SourceMetadata } from './types'
 
 /**
@@ -19,13 +20,10 @@ import type { SourceCallbacks, SourceMetadata } from './types'
  * created, so a later "threshold met" event can pick up the callbacks and
  * deliver the assembled signed bytes to the dApp.
  *
- * The registry is process-wide (module-level Map) because the propose
- * transport runs inside the signing pipeline (no React tree) and the
- * resolver hook runs at the app root — they need a shared identity that
- * survives React re-renders without going through Zustand (these entries
- * hold non-serializable function references).
- *
- * Pattern mirrors {@link ./approvalGate.ts}.
+ * Storage lives in {@link useWalletConnectHandoffsStore}; this module
+ * exposes thin imperative wrappers so non-React consumers (the propose
+ * transport, the resolver delivery code) can register/unregister without
+ * pulling in Zustand.
  */
 export type PendingWalletConnectHandoff = {
     signRequestId: string
@@ -48,85 +46,30 @@ export type PendingWalletConnectHandoff = {
     /**
      * The WC source callbacks. `approveSignedBytes` delivers the
      * assembled signed bytes (pre-encoded msgpack, original txn embedded
-     * verbatim so participant signatures verify on algod).
-     * `error` for terminal failures, `softReject` for participant
-     * decline / expired without a connection-error banner.
+     * verbatim so participant signatures verify on algod). `error` for
+     * terminal failures; `reject({ kind: 'softReject', error })` for
+     * participant decline / expired without a connection-error banner.
      */
-    callbacks: Pick<
-        SourceCallbacks,
-        'approveSignedBytes' | 'error' | 'softReject'
-    >
+    callbacks: Pick<SourceCallbacks, 'approveSignedBytes' | 'error' | 'reject'>
     /** Forwarded source metadata, useful for logging / dedup. */
     source: SourceMetadata
     /** Timestamp of registration; for diagnostics. */
     registeredAt: number
 }
 
-const handoffs = new Map<string, PendingWalletConnectHandoff>()
-const subscribers = new Set<() => void>()
-let version = 0
-
-const notify = (): void => {
-    version++
-    // Iterate over a copy so a subscriber unsubscribing during invocation
-    // doesn't interfere with the iteration order.
-    for (const cb of [...subscribers]) {
-        try {
-            cb()
-        } catch {
-            // Subscriber failures are non-fatal — log via the host's
-            // error reporter if needed. Keeping this stateless here so the
-            // signing pkg doesn't pull in app-level logging.
-        }
-    }
-}
-
-const register = (handoff: PendingWalletConnectHandoff): void => {
-    handoffs.set(handoff.signRequestId, handoff)
-    notify()
-}
-
-const get = (signRequestId: string): PendingWalletConnectHandoff | undefined =>
-    handoffs.get(signRequestId)
-
-const list = (): PendingWalletConnectHandoff[] => [...handoffs.values()]
-
-const unregister = (signRequestId: string): void => {
-    if (handoffs.delete(signRequestId)) notify()
-}
-
-/**
- * Subscribe to registry changes. Returns an unsubscribe function. Used by
- * the resolver hook to re-render when new handoffs arrive.
- */
-const subscribe = (cb: () => void): (() => void) => {
-    subscribers.add(cb)
-    return () => {
-        subscribers.delete(cb)
-    }
-}
-
-/**
- * Monotonic counter that ticks on every register/unregister. Use as the
- * snapshot for `useSyncExternalStore`; comparing list length would miss
- * a same-tick swap (one unregister + one register collapsing to the same
- * count, which would skip the effect re-run).
- */
-const getVersion = (): number => version
-
-/** Test-only: drop every entry. */
-const __resetForTests = (): void => {
-    handoffs.clear()
-    subscribers.clear()
-    version = 0
-}
-
 export const walletConnectHandoffs = {
-    register,
-    get,
-    list,
-    unregister,
-    subscribe,
-    getVersion,
-    __resetForTests,
+    register: (handoff: PendingWalletConnectHandoff): void => {
+        useWalletConnectHandoffsStore.getState().register(handoff)
+    },
+    unregister: (signRequestId: string): void => {
+        useWalletConnectHandoffsStore.getState().unregister(signRequestId)
+    },
+    get: (signRequestId: string): PendingWalletConnectHandoff | undefined =>
+        useWalletConnectHandoffsStore.getState().handoffs[signRequestId],
+    list: (): PendingWalletConnectHandoff[] =>
+        Object.values(useWalletConnectHandoffsStore.getState().handoffs),
+    /** Test-only: drop every entry. Prefer the store's `resetState` directly when possible. */
+    __resetForTests: (): void => {
+        useWalletConnectHandoffsStore.getState().resetState()
+    },
 }

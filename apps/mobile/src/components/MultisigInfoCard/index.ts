@@ -10,4 +10,5 @@
  limitations under the License
  */
 
-export { InvitationInfoCard } from './InvitationInfoCard'
+export { MultisigInfoCard } from './MultisigInfoCard'
+export type { MultisigInfoCardProps } from './MultisigInfoCard'
