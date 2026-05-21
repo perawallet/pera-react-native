@@ -16,12 +16,21 @@ export type SecurityState = BaseStoreState & {
     failedAttempts: number
     lockoutEndTime: Nullable<number>
     autoLockStartedAt: Nullable<number>
+    /**
+     * Monotonic counter that AutoLockGuard subscribes to. Any call to
+     * `requestLock` increments it, triggering the guard to flip into the
+     * locked state regardless of how long the app has been foregrounded.
+     * Used by the shake-to-lock listener; future integrations (e.g. a
+     * "lock now" menu item) can call the same action.
+     */
+    lockRequestVersion: number
 
     incrementFailedAttempts: () => void
     setFailedAttempts: (count: number) => void
     resetFailedAttempts: () => void
     setLockoutEndTime: (time: Nullable<number>) => void
     setAutoLockStartedAt: (time: Nullable<number>) => void
+    requestLock: () => void
 }
 
 export type PinEntryMode =

@@ -12,7 +12,11 @@
 
 import { useWindowDimensions } from 'react-native'
 import { PinEntry } from '@modules/security/components/PinEntry'
-import { PinEntryMode, usePinEditView } from './usePinEditView'
+import {
+    PinEntryMode,
+    type SavePinHandlerResult,
+    usePinEditView,
+} from './usePinEditView'
 import { useStyles } from './styles'
 import { PWView } from '@components/core'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -21,9 +25,15 @@ export type PinEditViewProps = {
     mode: PinEntryMode
     onSuccess: () => void
     testID?: string
+    savePinHandler?: (pin: string) => Promise<SavePinHandlerResult>
 }
 
-export const PinEditView = ({ mode, onSuccess, testID }: PinEditViewProps) => {
+export const PinEditView = ({
+    mode,
+    onSuccess,
+    testID,
+    savePinHandler,
+}: PinEditViewProps) => {
     const { height } = useWindowDimensions()
     const insets = useSafeAreaInsets()
     const styles = useStyles({
@@ -37,7 +47,7 @@ export const PinEditView = ({ mode, onSuccess, testID }: PinEditViewProps) => {
         isDisabled,
         handlePinComplete,
         handleErrorAnimationComplete,
-    } = usePinEditView({ mode, onSuccess })
+    } = usePinEditView({ mode, onSuccess, savePinHandler })
 
     return (
         <PWView

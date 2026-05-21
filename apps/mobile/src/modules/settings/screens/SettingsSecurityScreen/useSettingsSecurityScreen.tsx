@@ -13,8 +13,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import { usePinCode, useBiometrics } from '@perawallet/wallet-core-security'
 import { PinEditContent, type PinEntryMode } from '@modules/security'
+import type { SavePinHandlerResult } from '@modules/security/components/PinEditView/usePinEditView'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { usePreferences } from '@perawallet/wallet-core-settings'
+import {
+    RemoteConfigKeys,
+    useRemoteConfig,
+} from '@perawallet/wallet-core-remote-config'
 import { UserPreferences } from '@constants/user-preferences'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -26,17 +31,29 @@ type UseSettingsSecurityScreenResult = {
     isAdvancedSecurityEnabled: boolean
     isRekeySupportEnabled: boolean
     isAssetFreezeSupportEnabled: boolean
+    isShakeToLockFeatureEnabled: boolean
+    isShakeToLockEnabled: boolean
+    isDuressPinFeatureEnabled: boolean
+    isDuressPinEnabled: boolean
     handlePinToggle: (value: boolean) => void
     handleBiometricToggle: (value: boolean) => Promise<boolean>
     handleChangePinPress: () => void
     handleAdvancedSecurityToggle: (value: boolean) => void
     handleRekeyToggle: (value: boolean) => void
     handleAssetFreezeToggle: (value: boolean) => void
+    handleShakeToLockToggle: (value: boolean) => void
+    handleDuressPinToggle: (value: boolean) => Promise<void>
 }
 
 export const useSettingsSecurityScreen =
     (): UseSettingsSecurityScreenResult => {
-        const { checkPinEnabled, savePin } = usePinCode()
+        const {
+            checkPinEnabled,
+            savePin,
+            verifyPin,
+            saveDuressPin,
+            checkDuressPinEnabled,
+        } = usePinCode()
         const { setPreference, getPreference } = usePreferences()
         const { showToast } = useToast()
         const { t } = useLanguage()
@@ -47,24 +64,43 @@ export const useSettingsSecurityScreen =
             disableBiometrics,
         } = useBiometrics()
         const { request: requestBottomSheet } = useBottomSheet()
+        const remoteConfig = useRemoteConfig()
+        const isShakeToLockFeatureEnabled = remoteConfig.getBooleanValue(
+            RemoteConfigKeys.enable_motion_lock,
+            false,
+        )
+        const isDuressPinFeatureEnabled = remoteConfig.getBooleanValue(
+            RemoteConfigKeys.enable_duress_pin,
+            false,
+        )
 
         const [isPinEnabled, setIsPinEnabled] = useState(false)
+        const [isDuressPinEnabled, setIsDuressPinEnabled] = useState(false)
 
         const refreshPinState = useCallback(() => {
             checkPinEnabled().then(setIsPinEnabled)
-        }, [checkPinEnabled])
+            checkDuressPinEnabled().then(setIsDuressPinEnabled)
+        }, [checkPinEnabled, checkDuressPinEnabled])
 
         useEffect(() => {
             refreshPinState()
         }, [refreshPinState])
 
         const openPinSheet = useCallback(
-            async (mode: PinEntryMode): Promise<boolean> => {
+            async (
+                mode: PinEntryMode,
+                options?: {
+                    savePinHandler?: (
+                        pin: string,
+                    ) => Promise<SavePinHandlerResult>
+                },
+            ): Promise<boolean> => {
                 const result = await requestBottomSheet<boolean>({
                     contents: (
                         <PinEditContent
                             mode={mode}
                             testID='settings_security_pin_edit_view'
+                            savePinHandler={options?.savePinHandler}
                         />
                     ),
                     options: {
@@ -171,6 +207,74 @@ export const useSettingsSecurityScreen =
             [setPreference],
         )
 
+        const isShakeToLockEnabled = !!getPreference(
+            UserPreferences.shakeToLockEnabled,
+        )
+
+        const handleShakeToLockToggle = useCallback(
+            (value: boolean) => {
+                setPreference(UserPreferences.shakeToLockEnabled, value)
+            },
+            [setPreference],
+        )
+
+        const duressSavePinHandler = useCallback(
+            async (pin: string): Promise<SavePinHandlerResult> => {
+                // Reject if the entered duress PIN matches the regular PIN —
+                // letting them coincide would mean a normal unlock always
+                // wipes data, which is catastrophic.
+                const verifyResult = await verifyPin(pin)
+                if (verifyResult.kind === 'ok') {
+                    showToast({
+                        title: t(
+                            'settings.security.duress_pin_matches_regular',
+                        ),
+                        body: '',
+                        type: 'error',
+                    })
+                    return { ok: false, reason: 'matches-regular-pin' }
+                }
+                await saveDuressPin(pin)
+                setPreference(UserPreferences.duressPinEnabled, true)
+                setIsDuressPinEnabled(true)
+                return { ok: true }
+            },
+            [verifyPin, saveDuressPin, setPreference, showToast, t],
+        )
+
+        const handleDuressPinToggle = useCallback(
+            async (value: boolean) => {
+                if (value) {
+                    const success = await openPinSheet('setup', {
+                        savePinHandler: duressSavePinHandler,
+                    })
+                    if (!success) {
+                        // User cancelled the setup sheet — revert any
+                        // optimistic UI; nothing was written so just refresh.
+                        refreshPinState()
+                    }
+                    return
+                }
+                // Disabling: gate on the regular PIN so an unlocked-app
+                // attacker can't quietly remove the safety net.
+                const verified = await openPinSheet('verify')
+                if (!verified) {
+                    refreshPinState()
+                    return
+                }
+                await saveDuressPin(null)
+                setPreference(UserPreferences.duressPinEnabled, false)
+                setIsDuressPinEnabled(false)
+            },
+            [
+                openPinSheet,
+                duressSavePinHandler,
+                saveDuressPin,
+                setPreference,
+                refreshPinState,
+            ],
+        )
+
         return {
             isPinEnabled,
             isBiometricEnabled,
@@ -178,11 +282,17 @@ export const useSettingsSecurityScreen =
             isAdvancedSecurityEnabled,
             isRekeySupportEnabled,
             isAssetFreezeSupportEnabled,
+            isShakeToLockFeatureEnabled,
+            isShakeToLockEnabled,
+            isDuressPinFeatureEnabled,
+            isDuressPinEnabled,
             handlePinToggle,
             handleBiometricToggle,
             handleChangePinPress,
             handleAdvancedSecurityToggle,
             handleRekeyToggle,
             handleAssetFreezeToggle,
+            handleShakeToLockToggle,
+            handleDuressPinToggle,
         }
     }

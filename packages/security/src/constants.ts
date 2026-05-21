@@ -21,3 +21,4 @@ export const AUTO_LOCK_TIMEOUT_MS = 2 * 60 * 1000
 // biometric auth can confirm a PIN exists without re-prompting).
 export const PIN_RECORD_KEY_ID = 'pera.pinCode'
 export const BIOMETRIC_BLOB_KEY_ID = 'pera.biometricPinCode'
+export const DURESS_PIN_RECORD_KEY_ID = 'pera.duressPinCode'

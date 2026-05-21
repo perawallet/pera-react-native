@@ -11,13 +11,13 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { usePinCode } from '@perawallet/wallet-core-security'
+import { usePinCode, useSecurityStore } from '@perawallet/wallet-core-security'
 import {
     clearAccountsStore,
     useDeleteAllData,
 } from '@modules/settings/hooks/useDeleteAllData'
 import { AppState, AppStateStatus } from 'react-native'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, Nullable } from '@perawallet/wallet-core-shared'
 import {
     AppStateValue,
     getAppStatePlatform,
@@ -35,6 +35,9 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
     const { checkAutoLock, setAutoLockStartedAt, checkPinEnabled } =
         usePinCode()
     const { deleteAllData } = useDeleteAllData()
+    const lockRequestVersion = useSecurityStore(
+        state => state.lockRequestVersion,
+    )
 
     const [isLocked, setIsLocked] = useState(false)
     const [isInitialized, setIsInitialized] = useState(false)
@@ -42,6 +45,9 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
     const appState = useRef<AppStateValue>(AppState.currentState)
     const appStatePlatform = useRef(getAppStatePlatform()).current
     const isForegroundCheckInFlight = useRef(false)
+    // Track the lock-request version we last reacted to so that on mount we
+    // don't immediately re-fire for whatever value the store happens to hold.
+    const seenLockRequestVersionRef = useRef<Nullable<number>>(null)
 
     const recordBackground = useCallback(() => {
         setAutoLockStartedAt(Date.now())
@@ -145,6 +151,32 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
             }
         }
     }, [checkPinEnabled, isInitialized])
+
+    // Honour explicit lock requests (currently emitted by the shake-to-lock
+    // listener; see ShakeToLockHandler). The first observation seeds the ref
+    // so we don't lock on mount; subsequent changes flip isLocked to true,
+    // but only when a PIN is set — locking without a PIN to unlock with
+    // would strand the user.
+    useEffect(() => {
+        if (seenLockRequestVersionRef.current === null) {
+            seenLockRequestVersionRef.current = lockRequestVersion
+            return
+        }
+        if (lockRequestVersion === seenLockRequestVersionRef.current) {
+            return
+        }
+        seenLockRequestVersionRef.current = lockRequestVersion
+
+        let cancelled = false
+        ;(async () => {
+            const enabled = await checkPinEnabled()
+            if (cancelled || !enabled) return
+            setIsLocked(true)
+        })()
+        return () => {
+            cancelled = true
+        }
+    }, [lockRequestVersion, checkPinEnabled])
 
     useEffect(() => {
         const handleAppStateChange = (nextAppState: AppStateStatus) => {
