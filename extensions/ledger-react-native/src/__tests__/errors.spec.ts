@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, it, test, expect } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { ErrorCategory } from '@perawallet/wallet-core-shared'
 import {
     classifyLedgerError,
@@ -96,19 +96,19 @@ describe('classifyLedgerError', () => {
 })
 
 describe('classifyLedgerError with @zondax/ledger-js returnCode', () => {
-    test('classifies returnCode 0x6986 as LedgerUserRejectedError', () => {
+    it('classifies returnCode 0x6986 as LedgerUserRejectedError', () => {
         expect(classifyLedgerError({ returnCode: 0x6986 })).toBeInstanceOf(
             LedgerUserRejectedError,
         )
     })
 
-    test('classifies returnCode 0x6e00 as LedgerAppNotOpenError', () => {
+    it('classifies returnCode 0x6e00 as LedgerAppNotOpenError', () => {
         expect(classifyLedgerError({ returnCode: 0x6e00 })).toBeInstanceOf(
             LedgerAppNotOpenError,
         )
     })
 
-    test('prefers statusCode when both are present', () => {
+    it('prefers statusCode when both are present', () => {
         expect(
             classifyLedgerError({ statusCode: 0x6986, returnCode: 0x9000 }),
         ).toBeInstanceOf(LedgerUserRejectedError)
