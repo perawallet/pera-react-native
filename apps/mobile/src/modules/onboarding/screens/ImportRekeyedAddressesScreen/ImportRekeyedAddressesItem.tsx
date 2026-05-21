@@ -30,7 +30,6 @@ import { RekeyedAccountInfoContent } from './RekeyedAccountInfoContent'
 
 type ImportRekeyedAddressesItemProps = {
     account: WalletAccount
-    /** Stable list position for automation ids (0, 1, 2, …). */
     itemIndex: number
     isImported: boolean
     isSelected: boolean
@@ -59,36 +58,27 @@ export const ImportRekeyedAddressesItem = ({
         })
     }, [requestBottomSheet, account])
 
-    const rowTestID = `import_rekeyed_addresses_item_${itemIndex}`
-    const checkboxTestID = `import_rekeyed_addresses_item_checkbox_${itemIndex}`
-
-    const handleToggle = useCallback(() => {
-        onToggle(account.address)
-    }, [account.address, onToggle])
-
     return (
-        <PWView style={styles.itemContainer}>
+        <PWView
+            style={styles.itemContainer}
+            testID={`import_rekeyed_addresses_item_${itemIndex}`}
+        >
+            {!isImported && (
+                <PWView style={styles.checkboxWrapper}>
+                    <PWCheckbox
+                        checked={isSelected}
+                        onPress={() => onToggle(account.address)}
+                        containerStyle={styles.checkboxContainer}
+                        testID={`import_rekeyed_addresses_item_checkbox_${itemIndex}`}
+                    />
+                </PWView>
+            )}
+
             <PWTouchableOpacity
                 style={styles.itemContent}
-                onPress={handleToggle}
+                onPress={() => onToggle(account.address)}
                 disabled={isImported}
-                testID={rowTestID}
             >
-                {!isImported && (
-                    <PWView
-                        style={styles.checkboxWrapper}
-                        accessible={false}
-                        importantForAccessibility='no-hide-descendants'
-                    >
-                        <PWCheckbox
-                            checked={isSelected}
-                            onPress={handleToggle}
-                            containerStyle={styles.checkboxContainer}
-                            testID={checkboxTestID}
-                        />
-                    </PWView>
-                )}
-
                 <PWView style={styles.iconContainer}>
                     <PWRoundIcon
                         icon='account-rekeyed'

@@ -14,20 +14,18 @@ import { PWIcon } from '../PWIcon'
 import { PWView } from '../PWView'
 
 import { CheckBox, CheckBoxProps } from '@rneui/themed'
-import { getTestProps } from '@utils/test-id-helper'
 import { useStyles } from './styles'
 
 export type PWCheckboxProps = {
     children?: React.ReactNode
 } & CheckBoxProps
 
-export const PWCheckbox = ({ children, testID, ...props }: PWCheckboxProps) => {
+export const PWCheckbox = ({ children, ...props }: PWCheckboxProps) => {
     const styles = useStyles()
 
     return (
         <CheckBox
             {...props}
-            {...getTestProps(testID)}
             checkedIcon={
                 <PWIcon
                     name='check'
