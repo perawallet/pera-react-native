@@ -15,11 +15,14 @@ import { describe, test, expect, vi } from 'vitest'
 vi.mock('@ledgerhq/react-native-hw-transport-ble', () => ({
     default: { listen: vi.fn(), open: vi.fn(), isSupported: vi.fn() },
 }))
-vi.mock('@ledgerhq/hw-app-algorand', () => ({
-    default: class {
-        getAddress = vi.fn()
+vi.mock('@algorandfoundation/ledger-algorand-js', () => ({
+    AlgorandApp: class {
+        getAddressAndPubKey = vi.fn()
         sign = vi.fn()
+        getVersion = vi.fn()
+        signData = vi.fn()
     },
+    ScopeType: { UNKNOWN: -1, AUTH: 1 },
 }))
 vi.mock('react-native', () => ({
     Platform: { OS: 'ios', Version: 17 },

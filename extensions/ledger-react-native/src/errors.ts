@@ -320,9 +320,9 @@ export class LedgerUnsupportedDeviceError extends AppError {
 
 /**
  * Extract the APDU status code from a Ledger SDK error.
- * `@ledgerhq/hw-app-algorand` errors expose `statusCode`; `@zondax/ledger-js`
- * `ResponseError` instances expose `returnCode`. Prefer `statusCode` when both
- * are present.
+ * `@algorandfoundation/ledger-algorand-js` errors expose `returnCode` via
+ * `@zondax/ledger-js` `ResponseError`; legacy `statusCode` is also handled for
+ * compatibility. Prefer `statusCode` when both are present.
  */
 const getStatusCode = (error: unknown): Nullable<number> => {
     if (error === null || typeof error !== 'object') return null
@@ -333,7 +333,7 @@ const getStatusCode = (error: unknown): Nullable<number> => {
 }
 
 /**
- * Maps raw errors from `@ledgerhq/hw-app-algorand` or BLE transport
+ * Maps raw errors from `@algorandfoundation/ledger-algorand-js` or BLE transport
  * to typed Ledger error classes. Pass-through for already-classified
  * AppError instances so re-classification at catch sites preserves the
  * specific error type.

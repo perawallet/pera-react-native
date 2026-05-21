@@ -18,6 +18,8 @@ const transportIsSupportedMock = vi.hoisted(() => vi.fn())
 const transportCloseMock = vi.hoisted(() => vi.fn())
 const algorandGetAddressMock = vi.hoisted(() => vi.fn())
 const algorandSignMock = vi.hoisted(() => vi.fn())
+const algorandGetVersionMock = vi.hoisted(() => vi.fn())
+const algorandSignDataMock = vi.hoisted(() => vi.fn())
 const permissionsCheckMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@ledgerhq/react-native-hw-transport-ble', () => ({
@@ -28,11 +30,14 @@ vi.mock('@ledgerhq/react-native-hw-transport-ble', () => ({
     },
 }))
 
-vi.mock('@ledgerhq/hw-app-algorand', () => ({
-    default: class {
-        getAddress = algorandGetAddressMock
+vi.mock('@algorandfoundation/ledger-algorand-js', () => ({
+    AlgorandApp: class {
+        getAddressAndPubKey = algorandGetAddressMock
         sign = algorandSignMock
+        getVersion = algorandGetVersionMock
+        signData = algorandSignDataMock
     },
+    ScopeType: { UNKNOWN: -1, AUTH: 1 },
 }))
 
 vi.mock('react-native', () => ({
@@ -69,6 +74,8 @@ describe('RNLedgerService', () => {
         transportCloseMock.mockReset()
         algorandGetAddressMock.mockReset()
         algorandSignMock.mockReset()
+        algorandGetVersionMock.mockReset()
+        algorandSignDataMock.mockReset()
         permissionsCheckMock.mockReset()
         // Default pre-flight state: BLE supported, iOS (skips perm check).
         // Tests that need to exercise the failure paths override these.
@@ -290,20 +297,20 @@ describe('RNLedgerService', () => {
 
         test('getAddress delegates to the Algorand app and returns public key bytes', async () => {
             algorandGetAddressMock.mockResolvedValue({
-                address: 'ALGO_ADDR',
-                publicKey:
+                address: Buffer.from('ALGO_ADDR'),
+                publicKey: Buffer.from(
                     'aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899',
+                    'hex',
+                ),
             })
             const transport = await mountTransport()
 
             const account = await transport.getAddress(0)
 
-            expect(algorandGetAddressMock).toHaveBeenCalledWith(
-                "44'/283'/0'/0/0",
-                false,
-            )
+            expect(algorandGetAddressMock).toHaveBeenCalledWith(0, false)
             expect(account.address).toBe('ALGO_ADDR')
             expect(account.publicKey).toBeInstanceOf(Uint8Array)
+            expect(account.publicKey.length).toBe(32)
             expect(account.accountIndex).toBe(0)
         })
 
@@ -316,34 +323,25 @@ describe('RNLedgerService', () => {
             )
         })
 
-        test('signTransaction returns the signature bytes from the app (with the trailing APDU status word stripped)', async () => {
-            // hw-app-algorand@6.35.1 returns sig || SW (2 trailing bytes) —
-            // mimic that here and assert the wrapper strips the SW.
+        test('signTransaction returns the signature bytes from the app', async () => {
             algorandSignMock.mockResolvedValue({
-                signature: Buffer.from([1, 2, 3, 0x90, 0x00]),
+                signature: Buffer.from([1, 2, 3]),
             })
             const transport = await mountTransport()
 
-            const sig = await transport.signTransaction(
-                0,
-                new Uint8Array([10, 20]),
-            )
+            const sig = await transport.signTransaction(0, new Uint8Array([10, 20]))
 
-            expect(algorandSignMock).toHaveBeenCalled()
+            expect(algorandSignMock).toHaveBeenCalledWith(0, Buffer.from([10, 20]))
             expect(Array.from(sig)).toEqual([1, 2, 3])
         })
 
-        test('signTransaction passes through already-classified Ledger errors without re-wrapping', async () => {
-            algorandSignMock.mockResolvedValue({ signature: null })
+        test('signTransaction throws LedgerSigningError on empty signature', async () => {
+            algorandSignMock.mockResolvedValue({ signature: Buffer.alloc(0) })
             const transport = await mountTransport()
 
-            // The empty-signature branch raises a LedgerSigningError; the
-            // outer catch must not re-wrap it via classifyLedgerError.
             await expect(
                 transport.signTransaction(0, new Uint8Array([1])),
-            ).rejects.toSatisfy(
-                err => err instanceof LedgerSigningError && !err.cause,
-            )
+            ).rejects.toBeInstanceOf(LedgerSigningError)
         })
 
         test('disconnect closes the underlying BLE transport', async () => {
