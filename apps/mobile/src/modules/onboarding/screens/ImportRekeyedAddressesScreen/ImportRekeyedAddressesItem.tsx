@@ -30,6 +30,8 @@ import { RekeyedAccountInfoContent } from './RekeyedAccountInfoContent'
 
 type ImportRekeyedAddressesItemProps = {
     account: WalletAccount
+    /** Stable list position for automation ids (0, 1, 2, …). */
+    itemIndex: number
     isImported: boolean
     isSelected: boolean
     onToggle: (address: string) => void
@@ -37,6 +39,7 @@ type ImportRekeyedAddressesItemProps = {
 
 export const ImportRekeyedAddressesItem = ({
     account,
+    itemIndex,
     isImported,
     isSelected,
     onToggle,
@@ -56,27 +59,36 @@ export const ImportRekeyedAddressesItem = ({
         })
     }, [requestBottomSheet, account])
 
-    return (
-        <PWView
-            style={styles.itemContainer}
-            testID={`import_rekeyed_addresses_item_${account.address}`}
-        >
-            {!isImported && (
-                <PWView style={styles.checkboxWrapper}>
-                    <PWCheckbox
-                        checked={isSelected}
-                        onPress={() => onToggle(account.address)}
-                        containerStyle={styles.checkboxContainer}
-                        testID={`import_rekeyed_addresses_item_checkbox_${account.address}`}
-                    />
-                </PWView>
-            )}
+    const rowTestID = `import_rekeyed_addresses_item_${itemIndex}`
+    const checkboxTestID = `import_rekeyed_addresses_item_checkbox_${itemIndex}`
 
+    const handleToggle = useCallback(() => {
+        onToggle(account.address)
+    }, [account.address, onToggle])
+
+    return (
+        <PWView style={styles.itemContainer}>
             <PWTouchableOpacity
                 style={styles.itemContent}
-                onPress={() => onToggle(account.address)}
+                onPress={handleToggle}
                 disabled={isImported}
+                testID={rowTestID}
             >
+                {!isImported && (
+                    <PWView
+                        style={styles.checkboxWrapper}
+                        accessible={false}
+                        importantForAccessibility='no-hide-descendants'
+                    >
+                        <PWCheckbox
+                            checked={isSelected}
+                            onPress={handleToggle}
+                            containerStyle={styles.checkboxContainer}
+                            testID={checkboxTestID}
+                        />
+                    </PWView>
+                )}
+
                 <PWView style={styles.iconContainer}>
                     <PWRoundIcon
                         icon='account-rekeyed'
@@ -108,7 +120,7 @@ export const ImportRekeyedAddressesItem = ({
             <PWTouchableOpacity
                 style={styles.infoIconContainer}
                 onPress={handleOpenInfo}
-                testID={`import_rekeyed_addresses_item_info_${account.address}`}
+                testID={`import_rekeyed_addresses_item_info_${itemIndex}`}
             >
                 <PWIcon
                     name='info'
