@@ -31,7 +31,9 @@ export const useSelectDestinationScreen = () => {
     const accounts = useAllAccounts()
     const logicalTypes = useAllAccountLogicalTypes()
     const { accountBalances } = useAccountBalancesQuery(accounts)
-    const [pendingExternalAddress, setPendingExternalAddress] = useState<string | null>(null)
+    const [pendingExternalAddress, setPendingExternalAddress] = useState<
+        string | null
+    >(null)
 
     const assetIDs = useMemo(
         () => (selectedAssetId ? [selectedAssetId] : []),
@@ -46,10 +48,16 @@ export const useSelectDestinationScreen = () => {
     const navigation =
         useNavigation<StackNavigationProp<SendFundsStackParamList>>()
 
-    const { data: externalAccountInfo, isFetching: isCheckingExternalOptIn } = useOnChainAccountInformationQuery(pendingExternalAddress ?? '')
+    const { data: externalAccountInfo, isFetching: isCheckingExternalOptIn } =
+        useOnChainAccountInformationQuery(pendingExternalAddress ?? '')
 
     useEffect(() => {
-        if (!pendingExternalAddress || !selectedAsset || isCheckingExternalOptIn) return
+        if (
+            !pendingExternalAddress ||
+            !selectedAsset ||
+            isCheckingExternalOptIn
+        )
+            return
 
         const isReceiverOptedIn = externalAccountInfo?.assets.some(
             a => a.assetId === BigInt(selectedAsset.assetId),
@@ -134,6 +142,6 @@ export const useSelectDestinationScreen = () => {
         selectedAsset,
         selectedAccount,
         handleSelected,
-        isCheckingExternalOptIn
+        isCheckingExternalOptIn,
     }
 }

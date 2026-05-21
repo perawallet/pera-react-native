@@ -97,7 +97,10 @@ describe('useSelectDestinationScreen', () => {
     it('navigates to ConfirmTransaction for internal account already opted in', () => {
         ;(useAccountBalancesQuery as Mock).mockReturnValue({
             accountBalances: new Map([
-                [INTERNAL_OPTED_IN_ADDR, { assetBalances: [{ assetId: ASA_ID }] }],
+                [
+                    INTERNAL_OPTED_IN_ADDR,
+                    { assetBalances: [{ assetId: ASA_ID }] },
+                ],
             ]),
         })
 
@@ -146,7 +149,9 @@ describe('useSelectDestinationScreen', () => {
     it('navigates to ConfirmTransaction for external account already opted in on-chain', async () => {
         ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({
             data: {
-                assets: [{ assetId: BigInt(ASA_ID), amount: 100n, isFrozen: false }],
+                assets: [
+                    { assetId: BigInt(ASA_ID), amount: 100n, isFrozen: false },
+                ],
             },
             isFetching: false,
         })
