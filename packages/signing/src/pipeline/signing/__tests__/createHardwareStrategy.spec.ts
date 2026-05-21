@@ -854,6 +854,55 @@ describe('createHardwareStrategy', () => {
             expect(transport.signData).not.toHaveBeenCalled()
         })
 
+        it('rejects and does not call signData when host validation fails (domain mismatch)', async () => {
+            // Build an authenticatorData whose first 32 bytes are sha256("evil.com")
+            // instead of sha256(ARC60_DOMAIN). validateArc60AuthRequest will throw
+            // Arc60DomainMismatchError before signData is ever reached.
+            const evilRpIdHash = sha256(new TextEncoder().encode('evil.com'))
+            const mismatchedAuthData = new Uint8Array([...evilRpIdHash, 0x05])
+
+            const transport = makeArc60Transport({
+                getAppVersion: vi
+                    .fn()
+                    .mockResolvedValue({ major: 2, minor: 0, patch: 0 }),
+                getAddress: vi.fn().mockResolvedValue({
+                    address: SIGNER_ADDRESS,
+                    publicKey: new Uint8Array(32),
+                    accountIndex: 0,
+                }),
+                signData: vi.fn(),
+            })
+            const provider = makeMockProvider(transport)
+            const registry = makeRegistry(provider)
+            const strategy = createHardwareStrategy({
+                hardwareWalletRegistry: registry,
+                encodeTransaction,
+            })
+
+            // Override only the authenticatorData to the mismatched value;
+            // everything else (signer, domain string, data payload) is valid.
+            const group: AnalyzedSignableGroup = {
+                ...makeArc60Group(),
+                data: {
+                    type: 'arc60',
+                    stdSigData: {
+                        data: ARC60_DATA_BASE64,
+                        signer: SIGNER_ADDRESS,
+                        domain: ARC60_DOMAIN,
+                        authenticatorData: mismatchedAuthData,
+                    },
+                    metadata: {
+                        scope: 1,
+                        encoding: 'base64',
+                    },
+                },
+            }
+            const account = makeLedgerAccount(SIGNER_ADDRESS, 0)
+
+            await expect(strategy.sign(group, account)).rejects.toThrow()
+            expect(transport.signData).not.toHaveBeenCalled()
+        })
+
         it('still rejects legacy arbitrary-data on hardware', async () => {
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: mockRegistry,

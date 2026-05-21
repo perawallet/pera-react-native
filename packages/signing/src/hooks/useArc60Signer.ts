@@ -55,10 +55,14 @@ export const useArc60Signer = (): UseArc60SignerResult => {
             stdSigData: Arc60StdSigData,
             metadata: Arc60Metadata,
         ): Promise<Uint8Array> => {
+            // This hook is local-key-only (Algo25 / HD wallet accounts).
+            // Hardware wallet ARC-60 signing is handled by the hardware
+            // strategy (createHardwareStrategy) — a hardware account reaching
+            // this hook indicates misrouting by the caller.
             // Scope is checked here first so the hardware-wallet and rekey
             // rejections below surface before the deeper validation;
             // validateArc60AuthRequest repeats the check so it is correct when
-            // called on its own (e.g. from the hardware-wallet signing path).
+            // called on its own (e.g. from the hardware strategy path).
             if (metadata.scope !== ARC60_SCOPE_AUTH) {
                 throw new Arc60InvalidScopeError(metadata.scope)
             }
@@ -66,7 +70,7 @@ export const useArc60Signer = (): UseArc60SignerResult => {
             if (isHardwareWalletAccount(account)) {
                 throw new Arc60InvalidSignerError(
                     account.address,
-                    'hardware wallet ARC-60 signing is not supported',
+                    'hardware wallet ARC-60 signing is routed through the hardware strategy, not the local-key signer',
                 )
             }
 
