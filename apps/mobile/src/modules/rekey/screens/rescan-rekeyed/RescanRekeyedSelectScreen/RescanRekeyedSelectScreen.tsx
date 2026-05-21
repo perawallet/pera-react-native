@@ -141,6 +141,7 @@ export const RescanRekeyedSelectScreen = () => {
                                 <PWCheckbox
                                     checked={isAllSelected}
                                     containerStyle={styles.checkboxContainer}
+                                    testID='rescan-rekeyed-select-all-checkbox'
                                 />
                             </PWTouchableOpacity>
                         </PWView>
