@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useEffect } from 'react'
+import { useCallback } from 'react'
 import {
     PWDivider,
     PWIcon,
@@ -19,20 +19,19 @@ import {
     PWToolbar,
     PWView,
 } from '@components/core'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
-import { useRunAfterDelay } from '@hooks/useRunAfterDelay'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
-import { useSwapExecution } from '../../hooks/useSwapExecution'
 import { useSwapConfirmation } from './useSwapConfirmation'
+import { useSwapConfirmationActions } from './useSwapConfirmationActions'
 import { SwapAssetSection } from './SwapAssetSection'
 import { SwapDetailsSection } from './SwapDetailsSection'
 import { useStyles } from './styles'
 
-const SUCCESS_DISPLAY_MS = 3000
-
-export type SwapConfirmationResult = 'confirm'
+export type SwapConfirmationResult =
+    | { kind: 'confirm' }
+    | { kind: 'cancelled' }
+    | { kind: 'error'; message: string }
 
 export type SwapConfirmationContentProps = {
     quote: SwapQuote
@@ -43,11 +42,9 @@ export const SwapConfirmationContent = ({
 }: SwapConfirmationContentProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const { resolve, dismiss } = useBottomSheetResult<SwapConfirmationResult>()
-    const swapExecution = useSwapExecution()
-    const successCloseTimer = useRunAfterDelay()
 
-    const swapStatus = swapExecution.status
+    const { swapStatus, handleSlideConfirm, handleClose } =
+        useSwapConfirmationActions({ quoteIdStr: quote.quoteIdStr })
 
     const {
         selectedAccount,
@@ -67,26 +64,10 @@ export const SwapConfirmationContent = ({
         priceImpactStyle,
     } = useSwapConfirmation({ quote, swapStatus })
 
-    const handleSlideConfirm = useCallback(async () => {
-        if (!quote.quoteIdStr) return
-        const success = await swapExecution.execute(quote.quoteIdStr)
-        if (!success) return
-        successCloseTimer.schedule(() => {
-            resolve('confirm')
-        }, SUCCESS_DISPLAY_MS)
-    }, [quote.quoteIdStr, swapExecution, successCloseTimer, resolve])
-
-    const handleClose = useCallback(() => {
-        if (isProcessing) return
-        successCloseTimer.flush()
-        dismiss()
-    }, [isProcessing, successCloseTimer, dismiss])
-
-    // Reset execution state once on mount so a re-opened sheet starts clean.
-    useEffect(() => {
-        swapExecution.reset()
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
+    const onClosePress = useCallback(
+        () => handleClose(isProcessing),
+        [handleClose, isProcessing],
+    )
 
     return (
         <PWView style={styles.container}>
@@ -94,7 +75,7 @@ export const SwapConfirmationContent = ({
                 left={
                     <PWIcon
                         name='cross'
-                        onPress={isProcessing ? undefined : handleClose}
+                        onPress={isProcessing ? undefined : onClosePress}
                         testID='swap-confirm-close'
                     />
                 }
@@ -165,17 +146,6 @@ export const SwapConfirmationContent = ({
                 >
                     <PWText style={styles.warningText}>
                         {t('swap.quote.high_price_impact_warning')}
-                    </PWText>
-                </PWView>
-            )}
-
-            {swapStatus === 'error' && (
-                <PWView
-                    style={styles.errorBanner}
-                    testID='swap-confirm-error'
-                >
-                    <PWText style={styles.errorText}>
-                        {t('swap.execution.error')}
                     </PWText>
                 </PWView>
             )}
