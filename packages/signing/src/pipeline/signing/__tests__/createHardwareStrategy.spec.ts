@@ -11,6 +11,10 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { sha256 } from '@noble/hashes/sha2.js'
+import { canonify } from 'canonify'
+import { encodeToBase64 } from '@perawallet/wallet-core-shared'
+import { SIWA_CHAIN_ID } from '../../../utils/siwa'
 
 vi.mock('@perawallet/wallet-core-blockchain', async () => {
     const actual = await vi.importActual('@perawallet/wallet-core-blockchain')
@@ -51,6 +55,7 @@ import { createHardwareWalletRegistry } from '@perawallet/wallet-core-hardware-w
 import {
     LedgerConnectionError,
     LedgerAddressMismatchError,
+    LedgerAppOutdatedError,
     LEDGER_CONNECTION_TIMEOUT_MS,
     LEDGER_CONFIRMATION_TIMEOUT_MS,
 } from '@perawallet/wallet-core-ledger'
@@ -113,6 +118,8 @@ const makeMockTransport = (): HardwareWalletTransport => ({
         accountIndex: 0,
     }),
     signTransaction: vi.fn().mockResolvedValue(MOCK_SIGNATURE),
+    signData: vi.fn().mockResolvedValue(new Uint8Array([1, 2, 3])),
+    getAppVersion: vi.fn().mockResolvedValue({ major: 2, minor: 0, patch: 0 }),
     disconnect: vi.fn().mockResolvedValue(undefined),
 })
 
@@ -725,6 +732,131 @@ describe('createHardwareStrategy', () => {
             ).rejects.toThrow(
                 'Hardware wallet signing of arbitrary data is not supported',
             )
+        })
+    })
+
+    // =========================================================================
+    // ARC-60 hardware signing
+    // =========================================================================
+
+    // Build valid ARC-60 fixtures whose signer address equals the hardware
+    // account address so connectAndVerify + SIWA signer-match both pass.
+    const ARC60_DOMAIN = 'arc60.io'
+    const arc60RpIdHash = sha256(new TextEncoder().encode(ARC60_DOMAIN))
+    const ARC60_AUTH_DATA = new Uint8Array([...arc60RpIdHash, 0x05])
+
+    const buildArc60Siwa = (overrides: Record<string, unknown> = {}): string =>
+        canonify({
+            domain: ARC60_DOMAIN,
+            account_address: SIGNER_ADDRESS,
+            uri: 'https://arc60.io/login',
+            version: '1',
+            chain_id: SIWA_CHAIN_ID,
+            type: 'ed25519',
+            ...overrides,
+        })!
+
+    const arc60SiwaPayload = new TextEncoder().encode(buildArc60Siwa())
+    const ARC60_DATA_BASE64 = encodeToBase64(arc60SiwaPayload)
+
+    const makeArc60Group = (): AnalyzedSignableGroup => ({
+        data: {
+            type: 'arc60',
+            stdSigData: {
+                data: ARC60_DATA_BASE64,
+                signer: SIGNER_ADDRESS,
+                domain: ARC60_DOMAIN,
+                authenticatorData: ARC60_AUTH_DATA,
+            },
+            metadata: {
+                scope: 1,
+                encoding: 'base64',
+            },
+        },
+        source: { type: 'local' },
+        signerAddress: SIGNER_ADDRESS,
+        originalIndices: [0],
+        analysis: {
+            totalFees: 0n,
+            transactionSummaries: [],
+            warnings: [],
+            signableAddresses: [],
+            riskLevel: 'low',
+        },
+    })
+
+    const makeArc60Transport = (overrides?: Partial<HardwareWalletTransport>): HardwareWalletTransport => ({
+        ...makeMockTransport(),
+        ...overrides,
+    })
+
+    describe('arc60 hardware signing', () => {
+        it('signs ARC-60 with a supported app version', async () => {
+            const arc60Signature = Uint8Array.from([1, 2, 3])
+            const transport = makeArc60Transport({
+                getAppVersion: vi.fn().mockResolvedValue({ major: 2, minor: 0, patch: 0 }),
+                signData: vi.fn().mockResolvedValue(arc60Signature),
+            })
+            const provider = makeMockProvider(transport)
+            const registry = makeRegistry(provider)
+            const strategy = createHardwareStrategy({
+                hardwareWalletRegistry: registry,
+                encodeTransaction,
+            })
+            const group = makeArc60Group()
+            const account = makeLedgerAccount(SIGNER_ADDRESS, 0)
+
+            const result = await strategy.sign(group, account)
+
+            expect(transport.signData).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    accountIndex: 0,
+                    data: ARC60_DATA_BASE64,
+                    domain: ARC60_DOMAIN,
+                    scope: 1,
+                    encoding: 'base64',
+                }),
+            )
+            expect(result).toEqual({
+                signedData: { type: 'arc60', signature: arc60Signature },
+                signers: [{ address: SIGNER_ADDRESS }],
+                originalIndices: [0],
+            })
+        })
+
+        it('throws LedgerAppOutdatedError on too-old app version', async () => {
+            const transport = makeArc60Transport({
+                getAppVersion: vi.fn().mockResolvedValue({ major: 1, minor: 9, patch: 0 }),
+                signData: vi.fn(),
+            })
+            const provider = makeMockProvider(transport)
+            const registry = makeRegistry(provider)
+            const strategy = createHardwareStrategy({
+                hardwareWalletRegistry: registry,
+                encodeTransaction,
+            })
+            const group = makeArc60Group()
+            const account = makeLedgerAccount(SIGNER_ADDRESS, 0)
+
+            await expect(strategy.sign(group, account)).rejects.toBeInstanceOf(
+                LedgerAppOutdatedError,
+            )
+            expect(transport.signData).not.toHaveBeenCalled()
+        })
+
+        it('still rejects legacy arbitrary-data on hardware', async () => {
+            const strategy = createHardwareStrategy({
+                hardwareWalletRegistry: mockRegistry,
+                encodeTransaction,
+            })
+            const group = {
+                ...makeArc60Group(),
+                data: { type: 'arbitrary-data' as const, data: [] },
+            } as unknown as AnalyzedSignableGroup
+
+            await expect(
+                strategy.sign(group, makeLedgerAccount()),
+            ).rejects.toThrow(/arbitrary/i)
         })
     })
 })
