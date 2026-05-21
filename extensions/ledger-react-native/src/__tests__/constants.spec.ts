@@ -10,12 +10,14 @@
  limitations under the License
  */
 
-import { describe, test, expect } from 'vitest'
+import { describe, test, expect, it } from 'vitest'
 import { getBluetoothServiceUuids } from '@ledgerhq/devices'
 import {
     resolveDeviceModel,
     buildLedgerAccountPath,
     LEDGER_BLE_SERVICE_UUIDS,
+    MIN_ARBITRARY_SIGN_APP_VERSION,
+    isAppVersionAtLeast,
 } from '../constants'
 
 describe('resolveDeviceModel', () => {
@@ -46,5 +48,43 @@ describe('buildLedgerAccountPath', () => {
     test('builds the Algorand BIP-44 path with the given account index', () => {
         expect(buildLedgerAccountPath(0)).toBe("44'/283'/0'/0/0")
         expect(buildLedgerAccountPath(5)).toBe("44'/283'/5'/0/0")
+    })
+})
+
+describe('isAppVersionAtLeast', () => {
+    it('true when version equals the minimum', () => {
+        expect(
+            isAppVersionAtLeast(
+                MIN_ARBITRARY_SIGN_APP_VERSION,
+                MIN_ARBITRARY_SIGN_APP_VERSION,
+            ),
+        ).toBe(true)
+    })
+
+    it('false when major is lower', () => {
+        expect(
+            isAppVersionAtLeast(
+                { major: 1, minor: 99, patch: 99 },
+                { major: 2, minor: 0, patch: 0 },
+            ),
+        ).toBe(false)
+    })
+
+    it('true when minor is higher at equal major', () => {
+        expect(
+            isAppVersionAtLeast(
+                { major: 2, minor: 5, patch: 0 },
+                { major: 2, minor: 1, patch: 0 },
+            ),
+        ).toBe(true)
+    })
+
+    it('compares patch when major+minor equal', () => {
+        expect(
+            isAppVersionAtLeast(
+                { major: 2, minor: 1, patch: 0 },
+                { major: 2, minor: 1, patch: 4 },
+            ),
+        ).toBe(false)
     })
 })
