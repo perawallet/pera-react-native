@@ -14,6 +14,7 @@ import React from 'react'
 import { PWButton, PWLottie, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
+import type { HardwareSigningOperation } from '@perawallet/wallet-core-signing'
 import animationSourceLight from '@assets/animations/ledger-signing.json'
 import animationSourceDark from '@assets/animations/ledger-signing.dark.json'
 import { useStyles } from './styles'
@@ -22,6 +23,7 @@ export type LedgerAwaitingApprovalContentProps = {
     deviceName: string | null
     currentTx: number | null
     totalTxs: number | null
+    operation: HardwareSigningOperation
     onCancel: () => void
 }
 
@@ -29,6 +31,7 @@ export const LedgerAwaitingApprovalContent = ({
     deviceName,
     currentTx,
     totalTxs,
+    operation,
     onCancel,
 }: LedgerAwaitingApprovalContentProps) => {
     const { t } = useLanguage()
@@ -43,9 +46,15 @@ export const LedgerAwaitingApprovalContent = ({
         typeof totalTxs === 'number' &&
         totalTxs > 1
 
+    const contentNs =
+        operation === 'data'
+            ? 'ledger.signing.awaitingApprovalData'
+            : 'ledger.signing.awaitingApproval'
+
+    const titleKey = `${contentNs}.title` as const
     const bodyKey = deviceName
-        ? 'ledger.signing.awaitingApproval.body'
-        : 'ledger.signing.awaitingApproval.body_noDevice'
+        ? (`${contentNs}.body` as const)
+        : (`${contentNs}.body_noDevice` as const)
 
     const progressFillPercent =
         showProgress && totalTxs !== null && totalTxs > 0 && currentTx !== null
@@ -64,9 +73,7 @@ export const LedgerAwaitingApprovalContent = ({
                 testID='ledger-signing-overlay-lottie'
             />
 
-            <PWText style={styles.title}>
-                {t('ledger.signing.awaitingApproval.title')}
-            </PWText>
+            <PWText style={styles.title}>{t(titleKey)}</PWText>
 
             <PWText style={styles.body}>
                 {t(bodyKey, deviceName ? { deviceName } : undefined)}

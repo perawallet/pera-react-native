@@ -15,6 +15,14 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { LedgerErrorPresetKind } from '../types/ledgerErrorPresetKind'
 
 /**
+ * Discriminates whether the hardware-signing session is approving a
+ * transaction group or a data-signing request (ARC-60 / arbitrary-data).
+ * Drives the awaiting-approval overlay copy so the user sees context-aware
+ * instructions rather than generic transaction language.
+ */
+export type HardwareSigningOperation = 'transaction' | 'data'
+
+/**
  * Phase-accurate status for the hardware-wallet signing overlay. Not
  * persisted — this describes the live session, which is meaningless once
  * the app reloads.
@@ -46,6 +54,12 @@ type State = {
     deviceName: Nullable<string>
     error: Nullable<LedgerSigningErrorPayload>
     /**
+     * Whether this session is signing a transaction group or a data payload
+     * (ARC-60 / arbitrary-data). Defaults to 'transaction'. Used by the
+     * awaiting-approval overlay to select context-aware copy.
+     */
+    operation: HardwareSigningOperation
+    /**
      * Tracks whether the troubleshooting sheet was opened manually by the user.
      * BLE-class errors auto-show troubleshooting as a pure derivation in the
      * hook (`isBleClassError`), so no separate flag is needed here.
@@ -54,7 +68,11 @@ type State = {
 }
 
 type Actions = {
-    start: (requestId: string, deviceName: Nullable<string>) => void
+    start: (
+        requestId: string,
+        deviceName: Nullable<string>,
+        operation?: HardwareSigningOperation,
+    ) => void
     setStatus: (status: Exclude<HardwareSigningStatus, 'error'>) => void
     setProgress: (current: number, total: number) => void
     setError: (payload: LedgerSigningErrorPayload) => void
@@ -73,6 +91,7 @@ const initialState: State = {
     requestId: null,
     deviceName: null,
     error: null,
+    operation: 'transaction',
     isTroubleshootingVisible: false,
 }
 
@@ -80,12 +99,13 @@ const initialState: State = {
 // meaningless after an app reload. Same pattern as useHDImportSessionStore.
 export const useHardwareSigningStore = create<Store>(set => ({
     ...initialState,
-    start: (requestId, deviceName) =>
+    start: (requestId, deviceName, operation = 'transaction') =>
         set({
             ...initialState,
             status: 'searching',
             requestId,
             deviceName,
+            operation,
         }),
     setStatus: status => set({ status }),
     setProgress: (current, total) =>

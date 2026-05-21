@@ -40,6 +40,7 @@ const buildHardwareSigningResult = (
     totalTxs: null,
     requestId: 'req-1',
     error: null,
+    operation: 'transaction',
     resolveActiveRequest: vi.fn(() => undefined),
     dismiss: vi.fn(),
     ...overrides,

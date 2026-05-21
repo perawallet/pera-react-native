@@ -25,6 +25,7 @@ export {
 
 export {
     useHardwareSigningStore,
+    type HardwareSigningOperation,
     type HardwareSigningStatus,
     type LedgerSigningErrorPayload,
 } from './store/hardwareSigningStore'

@@ -14,6 +14,7 @@ import { useCallback } from 'react'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import {
     useHardwareSigningStore,
+    type HardwareSigningOperation,
     type HardwareSigningStatus,
     type LedgerSigningErrorPayload,
 } from '../store/hardwareSigningStore'
@@ -38,6 +39,11 @@ export type UseHardwareSigningResult = {
     requestId: Nullable<string>
     /** Typed error payload when status is 'error'. Null otherwise. */
     error: Nullable<LedgerSigningErrorPayload>
+    /**
+     * Whether this session is signing a transaction group or a data payload
+     * (ARC-60 / arbitrary-data). Drives context-aware overlay copy.
+     */
+    operation: HardwareSigningOperation
     /**
      * Resolve the active sign request from the caller's queue. Returns
      * `undefined` when the overlay has drifted ahead of the queue.
@@ -71,6 +77,7 @@ export const useHardwareSigning = (): UseHardwareSigningResult => {
     const totalTxs = useHardwareSigningStore(state => state.totalTxs)
     const requestId = useHardwareSigningStore(state => state.requestId)
     const error = useHardwareSigningStore(state => state.error)
+    const operation = useHardwareSigningStore(state => state.operation)
     const reset = useHardwareSigningStore(state => state.reset)
 
     const resolveActiveRequest = useCallback(
@@ -88,6 +95,7 @@ export const useHardwareSigning = (): UseHardwareSigningResult => {
         totalTxs,
         requestId,
         error,
+        operation,
         resolveActiveRequest,
         dismiss: reset,
     }

@@ -33,7 +33,12 @@ const hwAccount: WalletAccount = {
     },
 } as never
 
-const request = { id: 'req-1' } as SignRequest
+const request = { id: 'req-1', type: 'transactions' } as SignRequest
+const arc60Request = { id: 'req-arc60', type: 'arc60' } as SignRequest
+const arbitraryDataRequest = {
+    id: 'req-arb',
+    type: 'arbitrary-data',
+} as SignRequest
 
 describe('buildHardwareSigningCallbacks', () => {
     beforeEach(() => {
@@ -157,5 +162,30 @@ describe('buildHardwareSigningCallbacks', () => {
         expect(useHardwareSigningStore.getState().error?.kind).toBe(
             'connection_failed',
         )
+    })
+
+    describe('operation derivation', () => {
+        it('records operation="transaction" for a transactions request', () => {
+            const cbs = buildHardwareSigningCallbacks(request, hwAccount)
+            cbs.onPhaseChange?.('connecting')
+            expect(useHardwareSigningStore.getState().operation).toBe(
+                'transaction',
+            )
+        })
+
+        it('records operation="data" for an arc60 request', () => {
+            const cbs = buildHardwareSigningCallbacks(arc60Request, hwAccount)
+            cbs.onPhaseChange?.('connecting')
+            expect(useHardwareSigningStore.getState().operation).toBe('data')
+        })
+
+        it('records operation="data" for an arbitrary-data request', () => {
+            const cbs = buildHardwareSigningCallbacks(
+                arbitraryDataRequest,
+                hwAccount,
+            )
+            cbs.onPhaseChange?.('connecting')
+            expect(useHardwareSigningStore.getState().operation).toBe('data')
+        })
     })
 })

@@ -43,11 +43,16 @@ export const buildHardwareSigningCallbacks = (
             ? signerAccount.hardwareDetails.deviceName
             : null
 
+    const operation =
+        request.type === 'arc60' || request.type === 'arbitrary-data'
+            ? 'data'
+            : 'transaction'
+
     return {
         onPhaseChange: phase => {
             const store = useHardwareSigningStore.getState()
             if (phase === 'connecting') {
-                store.start(request.id, deviceName)
+                store.start(request.id, deviceName, operation)
             } else if (phase === 'awaiting-approval') {
                 store.setStatus('awaitingApproval')
             }

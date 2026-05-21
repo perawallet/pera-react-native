@@ -84,6 +84,51 @@ describe('useHardwareSigningStore', () => {
         expect(useHardwareSigningStore.getState().status).toBe('idle')
     })
 
+    describe('operation', () => {
+        it('defaults to "transaction"', () => {
+            expect(useHardwareSigningStore.getState().operation).toBe(
+                'transaction',
+            )
+        })
+
+        it('start records operation="data"', () => {
+            useHardwareSigningStore.getState().start('req-1', 'Nano X', 'data')
+            expect(useHardwareSigningStore.getState().operation).toBe('data')
+        })
+
+        it('start records operation="transaction"', () => {
+            useHardwareSigningStore
+                .getState()
+                .start('req-1', 'Nano X', 'transaction')
+            expect(useHardwareSigningStore.getState().operation).toBe(
+                'transaction',
+            )
+        })
+
+        it('start defaults operation to "transaction" when omitted', () => {
+            useHardwareSigningStore.getState().start('req-1', null)
+            expect(useHardwareSigningStore.getState().operation).toBe(
+                'transaction',
+            )
+        })
+
+        it('reset restores operation to "transaction"', () => {
+            useHardwareSigningStore.getState().start('req-1', 'Nano X', 'data')
+            useHardwareSigningStore.getState().reset()
+            expect(useHardwareSigningStore.getState().operation).toBe(
+                'transaction',
+            )
+        })
+
+        it('resetState restores operation to "transaction"', () => {
+            useHardwareSigningStore.getState().start('req-1', 'Nano X', 'data')
+            useHardwareSigningStore.getState().resetState()
+            expect(useHardwareSigningStore.getState().operation).toBe(
+                'transaction',
+            )
+        })
+    })
+
     describe('isTroubleshootingVisible', () => {
         it('defaults to false', () => {
             expect(
