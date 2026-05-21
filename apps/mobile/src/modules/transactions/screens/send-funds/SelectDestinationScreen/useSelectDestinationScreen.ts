@@ -48,14 +48,19 @@ export const useSelectDestinationScreen = () => {
     const navigation =
         useNavigation<StackNavigationProp<SendFundsStackParamList>>()
 
-    const { data: externalAccountInfo, isFetching: isCheckingExternalOptIn } =
+    const { data: externalAccountInfo, isFetching: isCheckingExternalOptIn, isSuccess: isExternalQuerySuccess, isError: isExternalQueryError } = 
         useOnChainAccountInformationQuery(pendingExternalAddress ?? '')
 
     useEffect(() => {
         if (
             !pendingExternalAddress ||
-            !selectedAsset ||
-            isCheckingExternalOptIn
+            !selectedAsset
+        )
+            return
+
+        if (
+            !isExternalQuerySuccess &&
+            !isExternalQueryError
         )
             return
 
@@ -75,7 +80,8 @@ export const useSelectDestinationScreen = () => {
     }, [
         pendingExternalAddress,
         externalAccountInfo,
-        isCheckingExternalOptIn,
+        isExternalQuerySuccess,
+        isExternalQueryError,
         selectedAsset,
         setSendMode,
         navigation,

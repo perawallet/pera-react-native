@@ -74,6 +74,8 @@ describe('useSelectDestinationScreen', () => {
         ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({
             data: undefined,
             isFetching: false,
+            isSuccess: false,
+            isError: false,
         })
     })
 
@@ -154,6 +156,8 @@ describe('useSelectDestinationScreen', () => {
                 ],
             },
             isFetching: false,
+            isSuccess: true,
+            isError: false,
         })
 
         const { result } = renderHook(() => useSelectDestinationScreen())
@@ -170,6 +174,8 @@ describe('useSelectDestinationScreen', () => {
         ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({
             data: { assets: [] },
             isFetching: false,
+            isSuccess: true,
+            isError: false,
         })
 
         const { result } = renderHook(() => useSelectDestinationScreen())
@@ -186,6 +192,8 @@ describe('useSelectDestinationScreen', () => {
         ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({
             data: undefined,
             isFetching: false,
+            isSuccess: true,
+            isError: false,
         })
 
         const { result } = renderHook(() => useSelectDestinationScreen())
