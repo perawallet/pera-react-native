@@ -100,12 +100,12 @@ export const PWInput = forwardRef<PWInputRef, PWInputProps>(
             <RNEInput
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 ref={inputRef as any}
+                {...getTestProps(testID)}
                 {...props}
                 {...{
                     adjustsFontSizeToFit,
                     minimumFontScale: resolvedMinimumFontScale,
                 }}
-                {...getTestProps(testID)}
                 containerStyle={containerStyle}
                 inputContainerStyle={[
                     styles.inputContainer,

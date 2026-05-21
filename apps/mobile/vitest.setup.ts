@@ -659,17 +659,28 @@ vi.mock('@components/core', () => {
             testID,
             isDisabled,
             disabled,
+            accessibilityLabel,
+            accessibilityIdentifier,
             ...props
         }: any) =>
             React.createElement(
                 'button',
                 {
+                    // Spread after explicit test id handling so that testID / accessibilityIdentifier win.
                     ...props,
+                    'aria-label': accessibilityLabel,
                     onClick: onPress,
                     role: 'button',
                     disabled: isDisabled ?? disabled,
-                    'data-testid': testID || 'PWTouchableOpacity',
-                    testid: testID || 'PWTouchableOpacity',
+                    // Prefer testID, then accessibilityIdentifier for deterministic test ids.
+                    'data-testid':
+                        testID ||
+                        accessibilityIdentifier ||
+                        'PWTouchableOpacity',
+                    testid:
+                        testID ||
+                        accessibilityIdentifier ||
+                        'PWTouchableOpacity',
                 },
                 children,
             ),
@@ -875,7 +886,14 @@ vi.mock('react-native', () => {
         TouchableOpacity: vi
             .fn()
             .mockImplementation(
-                ({ onPress, children, activeOpacity, testID, ...props }) => {
+                ({
+                    onPress,
+                    children,
+                    activeOpacity,
+                    testID,
+                    accessibilityLabel,
+                    ...props
+                }) => {
                     const React = require('react')
 
                     void activeOpacity
@@ -884,6 +902,7 @@ vi.mock('react-native', () => {
                         'button',
                         {
                             ...props,
+                            'aria-label': accessibilityLabel,
                             onClick: onPress,
                             ...(testID
                                 ? { 'data-testid': testID, testid: testID }
