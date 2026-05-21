@@ -395,7 +395,8 @@ const signArc60OnHardwareWallet = async (
             transport.signData({
                 accountIndex,
                 data: stdSigData.data,
-                signerPublicKey: Address.fromString(hwAccount.address).publicKey,
+                signerPublicKey: Address.fromString(hwAccount.address)
+                    .publicKey,
                 domain: stdSigData.domain,
                 authenticatorData: stdSigData.authenticatorData,
                 requestId: stdSigData.requestId,

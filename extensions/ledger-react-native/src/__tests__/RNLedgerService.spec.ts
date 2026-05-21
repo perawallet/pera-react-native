@@ -429,7 +429,9 @@ describe('RNLedgerService', () => {
         })
 
         test('signData throws LedgerSigningError on empty signature', async () => {
-            algorandSignDataMock.mockResolvedValue({ signature: new Uint8Array(0) })
+            algorandSignDataMock.mockResolvedValue({
+                signature: new Uint8Array(0),
+            })
             const transport = await mountTransport()
 
             await expect(

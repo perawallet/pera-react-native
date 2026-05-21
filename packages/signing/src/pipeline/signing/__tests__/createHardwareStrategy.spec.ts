@@ -788,7 +788,9 @@ describe('createHardwareStrategy', () => {
         },
     })
 
-    const makeArc60Transport = (overrides?: Partial<HardwareWalletTransport>): HardwareWalletTransport => ({
+    const makeArc60Transport = (
+        overrides?: Partial<HardwareWalletTransport>,
+    ): HardwareWalletTransport => ({
         ...makeMockTransport(),
         ...overrides,
     })
@@ -797,7 +799,9 @@ describe('createHardwareStrategy', () => {
         it('signs ARC-60 with a supported app version', async () => {
             const arc60Signature = Uint8Array.from([1, 2, 3])
             const transport = makeArc60Transport({
-                getAppVersion: vi.fn().mockResolvedValue({ major: 2, minor: 0, patch: 0 }),
+                getAppVersion: vi
+                    .fn()
+                    .mockResolvedValue({ major: 2, minor: 0, patch: 0 }),
                 signData: vi.fn().mockResolvedValue(arc60Signature),
             })
             const provider = makeMockProvider(transport)
@@ -830,7 +834,9 @@ describe('createHardwareStrategy', () => {
 
         it('throws LedgerAppOutdatedError on too-old app version', async () => {
             const transport = makeArc60Transport({
-                getAppVersion: vi.fn().mockResolvedValue({ major: 1, minor: 9, patch: 0 }),
+                getAppVersion: vi
+                    .fn()
+                    .mockResolvedValue({ major: 1, minor: 9, patch: 0 }),
                 signData: vi.fn(),
             })
             const provider = makeMockProvider(transport)
