@@ -17,13 +17,15 @@ import { useStyles } from './styles'
 
 type ParticipantListItemProps = {
     participant: Participant
+    index: number
     isInWallet: boolean
-    onEdit: (address: string) => void
-    onRemove: (address: string) => void
+    onEdit: (index: number) => void
+    onRemove: (index: number) => void
 }
 
 export const ParticipantListItem = ({
     participant,
+    index,
     isInWallet,
     onEdit,
     onRemove,
@@ -33,7 +35,7 @@ export const ParticipantListItem = ({
     return (
         <PWView
             style={styles.container}
-            testID={`participant_item_${participant.address}`}
+            testID={`participant_item_${index}_${participant.address}`}
         >
             <AddressDisplay
                 address={participant.address}
@@ -46,16 +48,16 @@ export const ParticipantListItem = ({
                     name='trash'
                     size='md'
                     variant='error'
-                    onPress={() => onRemove(participant.address)}
-                    testID={`participant_remove_${participant.address}`}
+                    onPress={() => onRemove(index)}
+                    testID={`participant_remove_${index}_${participant.address}`}
                 />
             ) : (
                 <PWTouchableIcon
                     name='edit-pen'
                     size='md'
                     variant='positive'
-                    onPress={() => onEdit(participant.address)}
-                    testID={`participant_edit_${participant.address}`}
+                    onPress={() => onEdit(index)}
+                    testID={`participant_edit_${index}_${participant.address}`}
                 />
             )}
         </PWView>

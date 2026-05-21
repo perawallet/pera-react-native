@@ -30,8 +30,8 @@ type UseCreateMultisigScreenResult = {
     canContinue: boolean
     isParticipantInWallet: (address: string) => boolean
     handleOpenAddParticipant: () => Promise<void>
-    handleEditParticipant: (address: string) => void
-    handleRemoveParticipant: (address: string) => void
+    handleEditParticipant: (index: number) => void
+    handleRemoveParticipant: (index: number) => void
     handleContinue: () => void
 }
 
@@ -57,8 +57,14 @@ export const useCreateMultisigScreen = (): UseCreateMultisigScreenResult => {
 
     const handleAddAddress = useCallback(
         (address: string) => {
-            if (participants.some(p => p.address === address)) return
-            addParticipant({ address })
+            // Duplicates are intentionally allowed: the Algorand multisig
+            // primitive treats the address list as ordered, distinct slots,
+            // so [A, B, B, A] is a valid composition. Carry over an existing
+            // display name so the new row matches the others immediately.
+            const existingName =
+                participants.find(p => p.address === address)?.name ??
+                contacts.find(c => c.address === address)?.name
+            addParticipant({ address, name: existingName })
 
             // Auto-save a non-wallet address as a contact so it gets a
             // friendly name and is reusable later. Skip wallet accounts and
@@ -92,15 +98,20 @@ export const useCreateMultisigScreen = (): UseCreateMultisigScreenResult => {
     }, [requestBottomSheet, handleAddAddress])
 
     const handleEditParticipant = useCallback(
-        (address: string) => {
-            navigation.push('EditParticipant', { address })
+        (index: number) => {
+            const participant = participants[index]
+            if (!participant) return
+            navigation.push('EditParticipant', {
+                index,
+                address: participant.address,
+            })
         },
-        [navigation],
+        [navigation, participants],
     )
 
     const handleRemoveParticipant = useCallback(
-        (address: string) => {
-            removeParticipant(address)
+        (index: number) => {
+            removeParticipant(index)
         },
         [removeParticipant],
     )

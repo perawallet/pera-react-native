@@ -25,7 +25,7 @@ export type NameMultisigImportParams = {
 
 export type MultisigStackParamList = {
     CreateMultisig: undefined
-    EditParticipant: { address: string }
+    EditParticipant: { index: number; address: string }
     SetThreshold: undefined
     NameMultisig: NameMultisigImportParams | undefined
     ImportSharedAccount: { address: string }

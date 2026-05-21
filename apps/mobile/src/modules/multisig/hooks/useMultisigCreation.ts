@@ -26,7 +26,7 @@ type MultisigCreationState = {
 
 type MultisigCreationActions = {
     addParticipant: (participant: Participant) => void
-    removeParticipant: (address: string) => void
+    removeParticipant: (index: number) => void
     updateParticipant: (address: string, name: Optional<string>) => void
     setThreshold: (threshold: number) => void
     setAccountName: (name: string) => void
@@ -47,9 +47,9 @@ export const useMultisigCreationStore = create<MultisigCreationStore>(set => ({
         set(state => ({
             participants: [...state.participants, participant],
         })),
-    removeParticipant: (address: string) =>
+    removeParticipant: (index: number) =>
         set(state => ({
-            participants: state.participants.filter(p => p.address !== address),
+            participants: state.participants.filter((_, i) => i !== index),
         })),
     updateParticipant: (address: string, name: Optional<string>) =>
         set(state => ({
