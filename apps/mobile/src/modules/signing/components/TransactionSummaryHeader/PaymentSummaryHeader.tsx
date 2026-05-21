@@ -64,6 +64,7 @@ export const PaymentSummaryHeader = ({
                     showSymbol
                     variant='h1'
                     style={styles.amountValue}
+                    ignorePrivacyMode
                 />
                 <PreferredCurrencyDisplay
                     sourceAmount={amount}
@@ -72,6 +73,7 @@ export const PaymentSummaryHeader = ({
                     style={styles.secondaryAmountValue}
                     precision={ALGO_ASSET.decimals}
                     minPrecision={DEFAULT_PRECISION}
+                    ignorePrivacyMode
                 />
             </PWView>
         </PWView>

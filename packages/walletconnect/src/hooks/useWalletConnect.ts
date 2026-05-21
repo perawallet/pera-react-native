@@ -87,8 +87,6 @@ export const useWalletConnect = (network: Network) => {
     handleSignDataRef.current = handleSignData
     const handleSignTransactionRef = useRef(handleSignTransaction)
     handleSignTransactionRef.current = handleSignTransaction
-    const accountsRef = useRef(accounts)
-    accountsRef.current = accounts
     const signingAccountsRef = useRef(signingAccounts)
     signingAccountsRef.current = signingAccounts
 

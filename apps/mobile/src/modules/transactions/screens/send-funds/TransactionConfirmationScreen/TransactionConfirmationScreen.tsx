@@ -73,6 +73,7 @@ export const TransactionConfirmationScreen = () => {
                         precision={asset?.decimals ?? DEFAULT_PRECISION}
                         minPrecision={isCollectible ? 0 : DEFAULT_PRECISION}
                         showSymbol
+                        ignorePrivacyMode
                         value={amount ?? new Decimal(0)}
                     />
                     {!isCollectible && (
@@ -83,6 +84,7 @@ export const TransactionConfirmationScreen = () => {
                             precision={asset?.decimals ?? DEFAULT_PRECISION}
                             minPrecision={DEFAULT_PRECISION}
                             showSymbol
+                            ignorePrivacyMode
                         />
                     )}
                 </KeyValueRow>
@@ -109,6 +111,7 @@ export const TransactionConfirmationScreen = () => {
                         precision={ALGO_ASSET.decimals}
                         minPrecision={isCollectible ? 0 : DEFAULT_PRECISION}
                         showSymbol
+                        ignorePrivacyMode
                         value={
                             params?.minFee != null
                                 ? toWholeUnits(params.minFee, ALGO_ASSET)

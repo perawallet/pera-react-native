@@ -132,6 +132,7 @@ export const KeyRegistrationDisplay = ({
                             microAlgosToAlgos(transaction.fee ?? 0n),
                         )}
                         showSymbol
+                        ignorePrivacyMode
                     />
                 </KeyValueRow>
 

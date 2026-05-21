@@ -60,6 +60,7 @@ export const TxTypeDetails = ({ tx }: { tx: PeraDisplayableTransaction }) => {
                         showSymbol
                         variant='caption'
                         style={styles.secondaryText}
+                        ignorePrivacyMode
                     />
                 )
             }
@@ -80,6 +81,7 @@ export const TxTypeDetails = ({ tx }: { tx: PeraDisplayableTransaction }) => {
                         showSymbol
                         variant='caption'
                         style={styles.secondaryText}
+                        ignorePrivacyMode
                     />
                 )
             }
