@@ -51,10 +51,10 @@ export const LedgerAwaitingApprovalContent = ({
             ? 'ledger.signing.awaitingApprovalData'
             : 'ledger.signing.awaitingApproval'
 
-    const titleKey = `${contentNs}.title` as const
+    const titleKey = `${contentNs}.title`
     const bodyKey = deviceName
-        ? (`${contentNs}.body` as const)
-        : (`${contentNs}.body_noDevice` as const)
+        ? `${contentNs}.body`
+        : `${contentNs}.body_noDevice`
 
     const progressFillPercent =
         showProgress && totalTxs !== null && totalTxs > 0 && currentTx !== null

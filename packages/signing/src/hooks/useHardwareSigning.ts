@@ -65,10 +65,10 @@ export type UseHardwareSigningResult = {
  * this hook free of that dependency means it only touches
  * `useHardwareSigningStore`, so it stays cheap to mock.
  *
- * Today the only hardware-wallet path is Ledger (transaction signing).
- * ARC-60 and arbitrary-data requests are rejected by the hardware
- * strategy before any phase callback fires, so they never drive this
- * hook's state.
+ * The hardware-wallet path is Ledger, covering both transaction signing
+ * and ARC-60 arbitrary-data signing. `operation` distinguishes the two so
+ * the overlay can show the right copy; legacy `algo_signData` arbitrary
+ * data is not supported on hardware and never drives this hook's state.
  */
 export const useHardwareSigning = (): UseHardwareSigningResult => {
     const status = useHardwareSigningStore(state => state.status)
