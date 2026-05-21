@@ -17,12 +17,13 @@ import {
     useAccountBalancesQuery,
     useAllAccountLogicalTypes,
     useAllAccounts,
+    useOnChainAccountInformationQuery,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
 import { ALGO_ASSET_ID, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { useNavigation } from '@react-navigation/native'
 import { StackNavigationProp } from '@react-navigation/stack'
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 export const useSelectDestinationScreen = () => {
     const { selectedAssetId, setDestination, setSendMode } = useSendFunds()
@@ -30,6 +31,7 @@ export const useSelectDestinationScreen = () => {
     const accounts = useAllAccounts()
     const logicalTypes = useAllAccountLogicalTypes()
     const { accountBalances } = useAccountBalancesQuery(accounts)
+    const [pendingExternalAddress, setPendingExternalAddress] = useState<string | null>(null)
 
     const assetIDs = useMemo(
         () => (selectedAssetId ? [selectedAssetId] : []),
@@ -43,6 +45,33 @@ export const useSelectDestinationScreen = () => {
 
     const navigation =
         useNavigation<StackNavigationProp<SendFundsStackParamList>>()
+
+    const { data: externalAccountInfo, isFetching: isCheckingExternalOptIn } = useOnChainAccountInformationQuery(pendingExternalAddress ?? '')
+
+    useEffect(() => {
+        if (!pendingExternalAddress || !selectedAsset || isCheckingExternalOptIn) return
+
+        const isReceiverOptedIn = externalAccountInfo?.assets.some(
+            a => a.assetId === BigInt(selectedAsset.assetId),
+        )
+
+        if (isReceiverOptedIn) {
+            setSendMode('normal')
+            navigation.navigate('ConfirmTransaction')
+        } else {
+            setSendMode('sendArc59')
+            navigation.navigate('ARC59SendSummary')
+        }
+
+        setPendingExternalAddress(null)
+    }, [
+        pendingExternalAddress,
+        externalAccountInfo,
+        isCheckingExternalOptIn,
+        selectedAsset,
+        setSendMode,
+        navigation,
+    ])
 
     const handleSelected = useCallback(
         (address: string) => {
@@ -80,11 +109,16 @@ export const useSelectDestinationScreen = () => {
                 // Express send: local account, we handle opt-in + transfer
                 setSendMode('express')
                 navigation.navigate('ExpressSend')
-            } else {
-                // ARC59: external account or local but can't sign (watch/hardware)
+                return
+            }
+
+            if (localType) {
                 setSendMode('sendArc59')
                 navigation.navigate('ARC59SendSummary')
+                return
             }
+
+            setPendingExternalAddress(address)
         },
         [
             selectedAsset,
@@ -100,5 +134,6 @@ export const useSelectDestinationScreen = () => {
         selectedAsset,
         selectedAccount,
         handleSelected,
+        isCheckingExternalOptIn
     }
 }
