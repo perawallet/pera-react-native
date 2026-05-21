@@ -13,6 +13,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { usePinCode, useBiometrics } from '@perawallet/wallet-core-security'
 import { useLanguage } from '@hooks/useLanguage'
+import { useDuressWipe } from '@modules/security/hooks/useDuressWipe'
+import { useShakeToLockHandler } from '@modules/security/hooks/useShakeToLockHandler'
 
 type UseLockScreenParams = {
     onUnlock: () => void
@@ -42,6 +44,7 @@ export const useLockScreen = ({
     } = usePinCode()
     const { checkBiometricsEnabled, authenticateWithBiometrics } =
         useBiometrics()
+    const { performDuressWipe } = useDuressWipe()
 
     const [hasError, setHasError] = useState(false)
     const [remainingSeconds, setRemainingSeconds] = useState(0)
@@ -116,18 +119,39 @@ export const useLockScreen = ({
         onUnlock,
     ])
 
+    //register shake-to-lock listener; see useShakeToLockHandler for details
+    useShakeToLockHandler()
+
     const handlePinComplete = useCallback(
         async (pin: string) => {
-            const isValid = await verifyPin(pin)
-            if (isValid) {
+            const result = await verifyPin(pin)
+            if (result.kind === 'ok') {
                 resetFailedAttempts()
                 onUnlock()
-            } else {
-                handleFailedAttempt()
-                setHasError(true)
+                return
             }
+            if (result.kind === 'duress') {
+                // Silent on this branch: no haptic, no error, no toast
+                // useDuressWipe wipes data, provisions a decoy account, and
+                // leaves us with a fresh "empty wallet" state. On any
+                // internal failure, the wipe path still drops to onboarding.
+                try {
+                    await performDuressWipe()
+                } finally {
+                    onUnlock()
+                }
+                return
+            }
+            handleFailedAttempt()
+            setHasError(true)
         },
-        [verifyPin, resetFailedAttempts, handleFailedAttempt, onUnlock],
+        [
+            verifyPin,
+            resetFailedAttempts,
+            handleFailedAttempt,
+            onUnlock,
+            performDuressWipe,
+        ],
     )
 
     const handleErrorAnimationComplete = useCallback(() => {

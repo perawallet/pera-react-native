@@ -16,12 +16,10 @@ export const useStyles = makeStyles(theme => {
     const flagTitle = {
         margin: 0,
         padding: 0,
-        lineHeight: theme.spacing.md,
     }
     const flagCaption = {
         margin: 0,
         padding: 0,
-        lineHeight: theme.spacing.md,
     }
     return {
         container: {

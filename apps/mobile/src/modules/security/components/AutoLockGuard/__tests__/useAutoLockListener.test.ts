@@ -23,6 +23,9 @@ import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
 
 vi.mock('@perawallet/wallet-core-security', () => ({
     usePinCode: vi.fn(),
+    useSecurityStore: (
+        selector: (state: { lockRequestVersion: number }) => unknown,
+    ) => selector({ lockRequestVersion: 0 }),
 }))
 
 vi.mock('@modules/settings/hooks/useDeleteAllData', () => ({

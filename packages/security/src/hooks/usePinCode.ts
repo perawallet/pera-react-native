@@ -14,6 +14,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useSecurityStore } from '../store'
 import {
     PIN_RECORD_KEY_ID,
+    DURESS_PIN_RECORD_KEY_ID,
     MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT,
     INITIAL_LOCKOUT_SECONDS,
     AUTO_LOCK_TIMEOUT_MS,
@@ -29,6 +30,11 @@ import { useBiometrics } from './useBiometrics'
 import { useKMSService, zeroBytes } from '@perawallet/wallet-core-kms'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
+export type VerifyPinResult =
+    | { kind: 'ok' }
+    | { kind: 'duress' }
+    | { kind: 'fail' }
+
 type UsePinCodeResult = {
     failedAttempts: number
     lockoutEndTime: Nullable<number>
@@ -37,12 +43,25 @@ type UsePinCodeResult = {
     checkAutoLock: () => Promise<boolean>
     checkPinEnabled: () => Promise<boolean>
     savePin: (pin: Nullable<string>) => Promise<void>
-    verifyPin: (pin: string) => Promise<boolean>
+    /**
+     * Compares the entered PIN against both the regular and duress records.
+     *
+     * - `ok`: matches the regular PIN. Caller should unlock normally.
+     * - `duress`: matches the duress PIN. Caller is responsible for triggering
+     *   the duress wipe + decoy provisioning. Treated as success for lockout
+     *   bookkeeping (`handleFailedAttempt` is NOT called) so the duress path
+     *   is always reachable, even when failed attempts have triggered a
+     *   lockout — the duress comparison also bypasses the lockout gate.
+     * - `fail`: matches neither. Caller should increment failed attempts.
+     */
+    verifyPin: (pin: string) => Promise<VerifyPinResult>
     handleFailedAttempt: () => Promise<void>
     resetFailedAttempts: () => Promise<void>
     setLockoutEndTime: (date: Nullable<number>) => Promise<void>
     getLockoutDuration: () => number
     setAutoLockStartedAt: (date: Nullable<number>) => void
+    saveDuressPin: (pin: Nullable<string>) => Promise<void>
+    checkDuressPinEnabled: () => Promise<boolean>
 }
 
 const calculateLockoutSeconds = (failedAttempts: number): number => {
@@ -105,6 +124,12 @@ export const usePinCode = (): UsePinCodeResult => {
             }
         },
         [commitSecret],
+    )
+
+    const loadDuressRecord = useCallback(
+        async (): Promise<PinRecord | null> =>
+            withSecret(DURESS_PIN_RECORD_KEY_ID, parsePinRecord),
+        [withSecret],
     )
 
     // Hydrate in-memory lockout state from the authoritative secure record.
@@ -197,12 +222,32 @@ export const usePinCode = (): UsePinCodeResult => {
     )
 
     const verifyPin = useCallback(
-        async (pin: string): Promise<boolean> => {
+        async (pin: string): Promise<VerifyPinResult> => {
+            // Check regular PIN first. If it matches, the duress record is not
+            // even loaded — preserves the fast path for the common case.
             const record = await loadRecord()
-            if (!record) return false
-            return verifyPinAgainstRecord(pin, record)
+            if (record && (await verifyPinAgainstRecord(pin, record))) {
+                return { kind: 'ok' }
+            }
+
+            // Fall through to duress. The duress comparison deliberately
+            // bypasses the lockout gate (the caller's `isLockedOut` check) —
+            // duress must be reachable even mid-lockout, otherwise an attacker
+            // could lock the user out and then demand the regular PIN. The
+            // caller treats `duress` as a success for the lockout counter as
+            // well (do NOT call handleFailedAttempt on `duress`).
+            // duress: do not emit telemetry on this branch.
+            const duressRecord = await loadDuressRecord()
+            if (
+                duressRecord &&
+                (await verifyPinAgainstRecord(pin, duressRecord))
+            ) {
+                return { kind: 'duress' }
+            }
+
+            return { kind: 'fail' }
         },
-        [loadRecord],
+        [loadRecord, loadDuressRecord],
     )
 
     const handleFailedAttempt = useCallback(async () => {
@@ -248,6 +293,32 @@ export const usePinCode = (): UsePinCodeResult => {
         return elapsed > AUTO_LOCK_TIMEOUT_MS
     }, [autoLockStartedAt, checkPinEnabled])
 
+    const checkDuressPinEnabled = useCallback(
+        async (): Promise<boolean> => hasSecret(DURESS_PIN_RECORD_KEY_ID),
+        [hasSecret],
+    )
+
+    const saveDuressPin = useCallback(
+        async (pin: Nullable<string>) => {
+            if (pin) {
+                const record = await createPinRecord(pin)
+                const bytes = serializePinRecord(record)
+                try {
+                    await commitSecret({
+                        id: DURESS_PIN_RECORD_KEY_ID,
+                        bytes,
+                    })
+                } finally {
+                    zeroBytes(bytes)
+                }
+            } else {
+                await removeSecret(DURESS_PIN_RECORD_KEY_ID)
+            }
+            forceRefresh.current += 1
+        },
+        [commitSecret, removeSecret],
+    )
+
     return {
         checkPinEnabled,
         failedAttempts,
@@ -262,5 +333,7 @@ export const usePinCode = (): UsePinCodeResult => {
         getLockoutDuration,
         setLockoutEndTime,
         setAutoLockStartedAt,
+        saveDuressPin,
+        checkDuressPinEnabled,
     }
 }

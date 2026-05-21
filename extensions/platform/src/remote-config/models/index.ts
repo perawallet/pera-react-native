@@ -17,6 +17,8 @@ export const RemoteConfigKeys = {
     staking_projects: 'staking_projects',
     swap_price_impact_low_threshold: 'swap_price_impact_low_threshold',
     swap_price_impact_high_threshold: 'swap_price_impact_high_threshold',
+    enable_motion_lock: 'enable_motion_lock',
+    enable_duress_pin: 'enable_duress_pin',
 } as const
 
 export type RemoteConfigKey =
@@ -32,6 +34,8 @@ export const RemoteConfigDefaults: Record<
     staking_projects: '',
     swap_price_impact_low_threshold: 1,
     swap_price_impact_high_threshold: 5,
+    enable_motion_lock: false,
+    enable_duress_pin: false,
 }
 
 export interface RemoteConfigService {

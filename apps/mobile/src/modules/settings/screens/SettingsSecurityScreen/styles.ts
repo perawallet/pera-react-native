@@ -16,8 +16,14 @@ export const useStyles = makeStyles(theme => ({
     container: {
         flex: 1,
         backgroundColor: theme.colors.background,
+    },
+    contentContainer: {
         gap: theme.spacing.xl,
         padding: theme.spacing.xl,
+        // Ensure tappable rows near the bottom aren't pinned right against the
+        // home indicator / system gesture area after all the new advanced
+        // security rows push the layout taller than the viewport.
+        paddingBottom: theme.spacing.xxl,
     },
     section: {
         gap: theme.spacing.xl,
