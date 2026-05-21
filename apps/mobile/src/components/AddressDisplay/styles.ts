@@ -13,6 +13,10 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => {
+    const secondaryText = {
+        color: theme.colors.textGray,
+        lineHeight: theme.spacing.lg,
+    }
     return {
         addressValueContainer: {
             flexDirection: 'row',
@@ -30,11 +34,13 @@ export const useStyles = makeStyles(theme => {
         },
         addressTextStack: {
             flexShrink: 1,
+            minWidth: 0,
             justifyContent: 'center',
         },
-        secondaryText: {
-            color: theme.colors.textGray,
+        primaryText: {
+            color: theme.colors.textMain,
         },
+        secondaryText,
         foreignAvatar: {
             width: theme.spacing.xxl,
             height: theme.spacing.xxl,

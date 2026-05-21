@@ -33,6 +33,7 @@ export const useStyles = makeStyles(theme => ({
     },
     participants: {
         gap: theme.spacing.md,
+        marginTop: theme.spacing.lg,
     },
     participant: {
         paddingVertical: theme.spacing.md,

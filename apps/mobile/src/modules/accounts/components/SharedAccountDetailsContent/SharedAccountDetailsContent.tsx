@@ -11,7 +11,7 @@
  */
 
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet'
-import { PWText, PWToolbar, PWView } from '@components/core'
+import { PWText, PWToolbar, PWTouchableIcon, PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { MultisigInfoCard } from '@components/MultisigInfoCard'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
@@ -36,7 +36,8 @@ export const SharedAccountDetailsContent = ({
 }: SharedAccountDetailsContentProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { isUserIncluded } = useSharedAccountDetailsContent(details.addresses)
+    const { isUserIncluded, isAddressInWallet, handleEditContact } =
+        useSharedAccountDetailsContent(details.addresses)
 
     return (
         <PWView style={styles.container}>
@@ -77,20 +78,41 @@ export const SharedAccountDetailsContent = ({
                         </PWText>
                         <PWView>
                             {details.addresses.map(
-                                (participantAddress, index, arr) => (
-                                    <AddressDisplay
-                                        key={participantAddress}
-                                        address={participantAddress}
-                                        forceShowIcon
-                                        textProps={{ variant: 'h4' }}
-                                        style={[
-                                            styles.participant,
-                                            index === arr.length - 1 &&
-                                                styles.participantLast,
-                                        ]}
-                                        testID={`shared_account_participant_${participantAddress}`}
-                                    />
-                                ),
+                                (participantAddress, index, arr) => {
+                                    const inWallet =
+                                        isAddressInWallet(participantAddress)
+                                    const isLast = index === arr.length - 1
+                                    return (
+                                        <AddressDisplay
+                                            key={participantAddress}
+                                            address={participantAddress}
+                                            forceShowIcon
+                                            contactAvatarVariant='highlighted'
+                                            textProps={{ variant: 'h4' }}
+                                            style={[
+                                                styles.participant,
+                                                isLast &&
+                                                    styles.participantLast,
+                                            ]}
+                                            testID={`shared_account_participant_${participantAddress}`}
+                                            trailing={
+                                                inWallet ? undefined : (
+                                                    <PWTouchableIcon
+                                                        name='edit-pen'
+                                                        size='md'
+                                                        variant='positive'
+                                                        onPress={() =>
+                                                            handleEditContact(
+                                                                participantAddress,
+                                                            )
+                                                        }
+                                                        testID={`shared_account_participant_edit_${participantAddress}`}
+                                                    />
+                                                )
+                                            }
+                                        />
+                                    )
+                                },
                             )}
                         </PWView>
                     </PWView>

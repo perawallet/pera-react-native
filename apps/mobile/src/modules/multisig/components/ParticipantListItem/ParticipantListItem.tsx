@@ -41,13 +41,14 @@ export const ParticipantListItem = ({
                 address={participant.address}
                 showCopy={false}
                 forceShowIcon
+                contactAvatarVariant='highlighted'
                 style={styles.addressDisplay}
             />
             {isInWallet ? (
                 <PWTouchableIcon
                     name='trash'
                     size='md'
-                    variant='error'
+                    variant='secondary'
                     onPress={() => onRemove(index)}
                     testID={`participant_remove_${index}_${participant.address}`}
                 />
