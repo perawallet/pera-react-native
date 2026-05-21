@@ -19,14 +19,19 @@ export * from './utils'
 export * from './pipeline'
 
 export {
+    useWalletConnectHandoffsStore,
+    type WalletConnectHandoffsStore,
+} from './store/walletConnectHandoffsStore'
+
+export {
     useHardwareSigningStore,
     type HardwareSigningStatus,
     type LedgerSigningErrorPayload,
 } from './store/hardwareSigningStore'
 
 export {
-    useWalletConnectHandoffsStore,
-    type WalletConnectHandoffsStore,
-} from './store/walletConnectHandoffsStore'
+    BLE_CLASS_ERROR_KINDS,
+    isBleClassErrorKind,
+} from './types/ledgerErrorPresetKind'
 
 export type { LedgerErrorPresetKind } from './types/ledgerErrorPresetKind'

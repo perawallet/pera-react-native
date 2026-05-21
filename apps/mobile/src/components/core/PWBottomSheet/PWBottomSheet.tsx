@@ -168,6 +168,23 @@ export const PWBottomSheet = ({
             }
             backgroundStyle={mergedBackgroundStyle}
             detached={false}
+            // App-wide stacking policy for every PWBottomSheet. Overrides
+            // gorhom's default 'switch', which calls `minimize()` on the
+            // current top sheet whenever a new modal is presented. The
+            // minimize→restore cycle is unsafe when a transient sheet
+            // opens and closes faster than the animation can settle: the
+            // underlying modal's gorhom `onDismiss` callback fires, which
+            // we wire through `handleBackdropPress` → `store.dismiss` →
+            // `store.remove`, tearing down a modal nobody asked to
+            // dismiss. The Ledger connection-issue troubleshooting overlay
+            // (opened on `setError` and dismissed ~50ms later by the actor
+            // lifecycle's `reset()`) is the path that first surfaced this,
+            // but the fix is global — 'switch' is unsafe for any
+            // sheet-over-sheet flow. 'push' keeps every modal mounted at
+            // its full snap point; the top sheet's backdrop already blocks
+            // pointer events for the sheets behind it, so we don't lose
+            // the visual hierarchy.
+            stackBehavior='push'
             keyboardBehavior='interactive'
             keyboardBlurBehavior='restore'
             enablePanDownToClose={enablePanDownToClose}

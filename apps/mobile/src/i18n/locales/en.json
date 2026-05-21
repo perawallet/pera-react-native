@@ -1534,7 +1534,10 @@
         },
         "processing": {
             "title": "Sending the transaction",
-            "subtitle": "Your transaction is being processed by the Algorand network."
+            "subtitle": "Your transaction is being processed by the Algorand network.",
+            "title_hardware": "Connecting to your Ledger device",
+            "subtitle_hardware": "Reaching out to {{deviceName}}. Make sure it is unlocked, in range, and that the Algorand app is open.",
+            "subtitle_hardware_noDevice": "Reaching out to your Ledger device. Make sure it is unlocked, in range, and that the Algorand app is open."
         },
         "success": {
             "title": "Transaction Processed",

@@ -34,6 +34,12 @@ vi.mock('@react-navigation/native', () => ({
     useNavigation: () => ({
         navigate: mockNavigate,
     }),
+    // Hook returns true by default so the existing tests' assertion model
+    // (initial render, no focus transition) matches an unmounted-then-mounted
+    // confirmation screen — the `useEffect` that resets `isSigning` runs
+    // once on first render with `isFocused === true` and is a no-op
+    // (isSigning starts at `false`).
+    useIsFocused: () => true,
 }))
 
 vi.mock('@react-navigation/stack', () => ({}))
