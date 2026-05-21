@@ -188,7 +188,7 @@ const SearchableListInner = <T,>(
                 : searchValue,
         [callerExtraData, searchValue],
     )
-    
+
     // LegendList's data-mode prop type uses `children: never`, while React's
     // intrinsic component types always add `children?: ReactNode` — so any
     // structural cast at this boundary fails. The single `any` here is
