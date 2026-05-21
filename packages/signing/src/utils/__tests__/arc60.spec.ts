@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, expect, test } from 'vitest'
+import { describe, expect, it, test } from 'vitest'
 import { sha256 } from '@noble/hashes/sha2.js'
 import { canonify } from 'canonify'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
@@ -65,15 +65,15 @@ describe('decodeArc60Data', () => {
 
 describe('verifyAuthenticatorDomain', () => {
     const domain = 'arc60.io'
-    const rpIdHash = sha256(utf8(domain))
+    const localRpIdHash = sha256(utf8(domain))
 
     test('passes when authenticatorData[0:32] matches sha256(domain)', () => {
-        const authData = new Uint8Array([...rpIdHash, 0x01, 0x02, 0x03])
+        const authData = new Uint8Array([...localRpIdHash, 0x01, 0x02, 0x03])
         expect(() => verifyAuthenticatorDomain(domain, authData)).not.toThrow()
     })
 
     test('throws Arc60DomainMismatchError on hash mismatch', () => {
-        const tampered = new Uint8Array(rpIdHash)
+        const tampered = new Uint8Array(localRpIdHash)
         tampered[0] ^= 0xff
         const authData = new Uint8Array([...tampered, 0x00])
         expect(() => verifyAuthenticatorDomain(domain, authData)).toThrow(
@@ -82,7 +82,7 @@ describe('verifyAuthenticatorDomain', () => {
     })
 
     test('throws Arc60MissingDomainError when domain is empty', () => {
-        const authData = new Uint8Array([...rpIdHash])
+        const authData = new Uint8Array([...localRpIdHash])
         expect(() => verifyAuthenticatorDomain('', authData)).toThrow(
             Arc60MissingDomainError,
         )
@@ -97,8 +97,9 @@ describe('verifyAuthenticatorDomain', () => {
 })
 
 // =============================================================================
-// Fixtures shared by validateArc60AuthRequest tests — mirrored from
-// useArc60Signer.spec.ts so the two suites use identical payloads.
+// Fixtures shared by validateArc60AuthRequest tests — use the same valid
+// signer/domain shape as useArc60Signer.spec.ts, with a realistic 37-byte
+// authenticatorData (first 32 bytes = sha256(domain)).
 // =============================================================================
 
 const DOMAIN = 'arc60.io'
@@ -211,6 +212,17 @@ describe('validateArc60AuthRequest', () => {
                     domain: DOMAIN,
                     authenticatorData: AUTH_DATA,
                 },
+                { scope: ARC60_SCOPE_AUTH, encoding: 'base64' },
+            ),
+        ).toThrow(Arc60BadJsonError)
+    })
+
+    it('throws Arc60BadJsonError when decoded data is not valid UTF-8', () => {
+        const invalidUtf8 = new Uint8Array([0xff, 0xfe, 0xff])
+        const data = encodeToBase64(invalidUtf8)
+        expect(() =>
+            validateArc60AuthRequest(
+                { data, signer: SIGNER, domain: DOMAIN, authenticatorData: AUTH_DATA },
                 { scope: ARC60_SCOPE_AUTH, encoding: 'base64' },
             ),
         ).toThrow(Arc60BadJsonError)

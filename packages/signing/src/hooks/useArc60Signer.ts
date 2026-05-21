@@ -55,6 +55,10 @@ export const useArc60Signer = (): UseArc60SignerResult => {
             stdSigData: Arc60StdSigData,
             metadata: Arc60Metadata,
         ): Promise<Uint8Array> => {
+            // Scope is checked here first so the hardware-wallet and rekey
+            // rejections below surface before the deeper validation;
+            // validateArc60AuthRequest repeats the check so it is correct when
+            // called on its own (e.g. from the hardware-wallet signing path).
             if (metadata.scope !== ARC60_SCOPE_AUTH) {
                 throw new Arc60InvalidScopeError(metadata.scope)
             }
