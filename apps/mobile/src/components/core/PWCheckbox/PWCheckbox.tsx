@@ -10,22 +10,35 @@
  limitations under the License
  */
 
+import { TouchableOpacity } from 'react-native'
+
 import { PWIcon } from '../PWIcon'
 import { PWView } from '../PWView'
 
 import { CheckBox, CheckBoxProps } from '@rneui/themed'
+import { getCheckboxTestProps } from '@utils/test-id-helper'
 import { useStyles } from './styles'
 
 export type PWCheckboxProps = {
     children?: React.ReactNode
 } & CheckBoxProps
 
-export const PWCheckbox = ({ children, ...props }: PWCheckboxProps) => {
+export const PWCheckbox = ({
+    children,
+    testID,
+    checked,
+    disabled,
+    onPress,
+    ...props
+}: PWCheckboxProps) => {
     const styles = useStyles()
 
-    return (
+    const checkbox = (
         <CheckBox
             {...props}
+            checked={checked}
+            disabled={disabled}
+            onPress={testID ? undefined : onPress}
             checkedIcon={
                 <PWIcon
                     name='check'
@@ -36,5 +49,19 @@ export const PWCheckbox = ({ children, ...props }: PWCheckboxProps) => {
         >
             {children}
         </CheckBox>
+    )
+
+    if (!testID) {
+        return checkbox
+    }
+
+    return (
+        <TouchableOpacity
+            {...getCheckboxTestProps(testID, !!checked, disabled)}
+            onPress={onPress ?? undefined}
+            disabled={disabled}
+        >
+            <PWView pointerEvents='none'>{checkbox}</PWView>
+        </TouchableOpacity>
     )
 }

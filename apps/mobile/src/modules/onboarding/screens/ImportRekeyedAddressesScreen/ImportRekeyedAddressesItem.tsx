@@ -25,6 +25,7 @@ import { CopyableText } from '@components/CopyableText'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { getContainerTestProps } from '@utils/test-id-helper'
 import { useStyles } from './styles'
 import { RekeyedAccountInfoContent } from './RekeyedAccountInfoContent'
 
@@ -61,7 +62,9 @@ export const ImportRekeyedAddressesItem = ({
     return (
         <PWView
             style={styles.itemContainer}
-            testID={`import_rekeyed_addresses_item_${itemIndex}`}
+            {...getContainerTestProps(
+                `import_rekeyed_addresses_item_${itemIndex}`,
+            )}
         >
             {!isImported && (
                 <PWView style={styles.checkboxWrapper}>

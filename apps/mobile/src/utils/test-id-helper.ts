@@ -33,3 +33,34 @@ export function getTestProps(id?: string, suffix?: string) {
         accessible: true,
     }
 }
+
+/**
+ * Screen/list wrappers: keep testID for automation without grouping
+ * child elements on iOS.
+ */
+export function getContainerTestProps(id?: string) {
+    if (!id) {
+        return {}
+    }
+
+    return {
+        testID: id,
+        accessibilityIdentifier: id,
+        accessible: false,
+    }
+}
+
+/**
+ * Checkbox automation props for Appium on iOS and Android.
+ */
+export function getCheckboxTestProps(
+    id: string,
+    checked: boolean,
+    disabled?: boolean,
+) {
+    return {
+        ...getTestProps(id),
+        accessibilityRole: 'checkbox' as const,
+        accessibilityState: { checked, disabled: !!disabled },
+    }
+}
