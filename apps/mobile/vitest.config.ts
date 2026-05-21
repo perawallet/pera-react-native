@@ -378,6 +378,20 @@ export default defineConfig({
                 ),
             },
             {
+                find: '@perawallet/wallet-core-multisig/test-handlers',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/multisig/src/test-handlers.ts',
+                ),
+            },
+            {
+                find: '@perawallet/wallet-core-multisig',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/multisig/src/index.ts',
+                ),
+            },
+            {
                 find: '@perawallet/wallet-core-device/test-handlers',
                 replacement: path.resolve(
                     __dirname,
@@ -389,6 +403,20 @@ export default defineConfig({
                 replacement: path.resolve(
                     __dirname,
                     '../../packages/device/src/index.ts',
+                ),
+            },
+            {
+                find: '@perawallet/wallet-core-banners/test-handlers',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/banners/src/test-handlers.ts',
+                ),
+            },
+            {
+                find: '@perawallet/wallet-core-banners',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/banners/src/index.ts',
                 ),
             },
             {

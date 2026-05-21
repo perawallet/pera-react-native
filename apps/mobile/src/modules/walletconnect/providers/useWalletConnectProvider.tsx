@@ -23,8 +23,14 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { ConnectionView } from '../components/ConnectionView/ConnectionView'
 import { ConnectionSuccessContent } from '../components/ConnectionSuccessContent'
 import { WalletConnectErrorContent } from '../components/WalletConnectErrorContent'
+import { useWalletConnectForegroundReconnect } from '../hooks/useWalletConnectForegroundReconnect'
 
 export const useWalletConnectProvider = () => {
+    // Revive WalletConnect bridge sockets when the app returns to the
+    // foreground — without this a backgrounded session silently drops
+    // both outgoing signed responses and incoming dApp requests.
+    useWalletConnectForegroundReconnect()
+
     const { sessionRequests, removeSessionRequest } =
         useWalletConnectSessionRequests()
     const nextRequest = sessionRequests.at(0)

@@ -1,0 +1,77 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { useEffect, useState } from 'react'
+import { type LayoutChangeEvent } from 'react-native'
+import {
+    Easing,
+    useAnimatedStyle,
+    useSharedValue,
+    withDelay,
+    withTiming,
+} from 'react-native-reanimated'
+import {
+    BANNER_REVEAL_DELAY_MS,
+    BANNER_REVEAL_DURATION_MS,
+} from '@constants/ui'
+
+export const BANNER_REVEAL_EASING = Easing.inOut(Easing.quad)
+
+export type BannerRevealResult = {
+    animatedStyle: ReturnType<typeof useAnimatedStyle>
+    isMeasured: boolean
+    onMeasureLayout: (event: LayoutChangeEvent) => void
+}
+
+// Off-screen measurement of the natural height drives a shared-value height
+// animation. `values.targetHeight` via `entering={...}` didn't propagate
+// parent reflow when content had a fixed pager height.
+export const useBannerReveal = (): BannerRevealResult => {
+    const [measuredHeight, setMeasuredHeight] = useState(0)
+    const height = useSharedValue(0)
+    const opacity = useSharedValue(0)
+
+    useEffect(() => {
+        if (measuredHeight <= 0) return
+        height.value = withDelay(
+            BANNER_REVEAL_DELAY_MS,
+            withTiming(measuredHeight, {
+                duration: BANNER_REVEAL_DURATION_MS,
+                easing: BANNER_REVEAL_EASING,
+            }),
+        )
+        opacity.value = withDelay(
+            BANNER_REVEAL_DELAY_MS,
+            withTiming(1, {
+                duration: BANNER_REVEAL_DURATION_MS,
+                easing: BANNER_REVEAL_EASING,
+            }),
+        )
+    }, [measuredHeight, height, opacity])
+
+    const animatedStyle = useAnimatedStyle(() => ({
+        height: height.value,
+        opacity: opacity.value,
+    }))
+
+    const onMeasureLayout = (event: LayoutChangeEvent) => {
+        if (measuredHeight !== 0) return
+        const h = event.nativeEvent.layout.height
+        if (h > 0) setMeasuredHeight(h)
+    }
+
+    return {
+        animatedStyle,
+        isMeasured: measuredHeight > 0,
+        onMeasureLayout,
+    }
+}

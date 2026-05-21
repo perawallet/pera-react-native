@@ -10,6 +10,7 @@
  limitations under the License
  */
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import { ALGORAND_SCHEME } from './constants'
 
 type Network = 'mainnet' | 'testnet' | 'betanet' | string
 
@@ -41,13 +42,14 @@ interface AssetQuery extends BaseParams {
     assetId: string
 }
 
-export const ALGORAND_SCHEME = 'algorand://'
 type AlgorandURI = PaymentTx | KeyRegTx | NoopTx | AppQuery | AssetQuery
+
+const ALGORAND_URI_PREFIX = `${ALGORAND_SCHEME}://`
 
 export function parseAlgorandURI(uri: string): Nullable<AlgorandURI> {
     try {
-        if (!uri.startsWith(ALGORAND_SCHEME)) return null
-        const stripped = uri.slice(ALGORAND_SCHEME.length)
+        if (!uri.startsWith(ALGORAND_URI_PREFIX)) return null
+        const stripped = uri.slice(ALGORAND_URI_PREFIX.length)
 
         // Split network/address vs query
         const [beforeQuery, query] = stripped.split('?', 2)

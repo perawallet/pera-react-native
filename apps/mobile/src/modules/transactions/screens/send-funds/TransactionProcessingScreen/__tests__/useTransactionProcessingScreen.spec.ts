@@ -131,6 +131,7 @@ const proposedResult = (
     type: 'proposed',
     signRequestId: 'sr-1',
     status: 'pending',
+    sourceType: 'local',
     ...overrides,
 })
 

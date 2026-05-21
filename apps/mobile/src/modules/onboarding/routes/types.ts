@@ -16,6 +16,7 @@ import {
     ImportAccountType,
     DerivationType,
 } from '@perawallet/wallet-core-accounts'
+import type { LedgerSelectableAccount } from '@perawallet/wallet-core-accounts'
 import type { LedgerTransportType } from '@perawallet/wallet-core-hardware-wallet'
 import type { LedgerAccount } from '@perawallet/wallet-core-ledger'
 import type { Optional } from '@perawallet/wallet-core-shared'
@@ -97,7 +98,7 @@ export type ImportFlowParamList = {
         deviceId: string
         deviceName: string
         transportType: LedgerTransportType
-        selectedAccounts: LedgerAccount[]
+        selectedAccounts: LedgerSelectableAccount[]
     }
     LedgerTroubleshooting: undefined
     AsbImportInfo: undefined
@@ -126,5 +127,9 @@ export type AddAccountStackParamList = ImportFlowParamList & {
     AddAccountHome: undefined
     SelectHDWallet: undefined
     WatchInfo: undefined
-    WatchAccount: undefined
+    WatchAccount: Optional<{
+        // Set by the watch-account / register-watch-account deeplinks so the
+        // address field starts populated and the user only has to confirm.
+        prefillAddress?: string
+    }>
 }

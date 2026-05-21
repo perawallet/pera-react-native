@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useState } from 'react'
+import { useRoute, type RouteProp } from '@react-navigation/native'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import {
     useAccountsStore,
@@ -24,6 +25,7 @@ import {
     Optional,
 } from '@perawallet/wallet-core-shared'
 import { useNfdResolve } from '@hooks/useNfdResolve'
+import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
 
 type UseWatchAccountScreenResult = {
     address: string
@@ -39,9 +41,11 @@ type UseWatchAccountScreenResult = {
 
 export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
     const navigation = useAppNavigation()
+    const route =
+        useRoute<RouteProp<AddAccountStackParamList, 'WatchAccount'>>()
     const accounts = useAllAccounts()
     const setAccounts = useAccountsStore(state => state.setAccounts)
-    const [address, setAddress] = useState('')
+    const [address, setAddress] = useState(route.params?.prefillAddress ?? '')
 
     const { resolvedAddress, isNfdResolved, isNfdResolving, nfdName } =
         useNfdResolve(address)

@@ -21,6 +21,12 @@ import {
     WalletConnectSessionRequest,
 } from '../models'
 import { useWalletConnectStore } from '../store'
+import {
+    forgetConnector,
+    getConnector,
+    registerConnector,
+    setConnectorHandlerBinder,
+} from '../connection'
 import WalletConnect from '@walletconnect/client'
 import { createRef, useCallback, useEffect, useRef } from 'react'
 import { useWalletConnectSessionRequests } from './useWalletConnectSessionRequests'
@@ -31,12 +37,7 @@ import {
     Networks,
     type Optional,
 } from '@perawallet/wallet-core-shared'
-import {
-    useAllAccounts,
-    useSigningAccounts,
-} from '@perawallet/wallet-core-accounts'
-
-const connectors = new Map<string, WalletConnect>()
+import { useSigningAccounts } from '@perawallet/wallet-core-accounts'
 
 /**
  * Surface a WalletConnect error to the UI. We go through the store rather
@@ -59,6 +60,12 @@ const triggerWCRefresh = () => {
         (walletConnectRefreshCounter.current ?? 0) + 1
 }
 
+/** Re-binds the dApp request handlers onto a (re)created connector. */
+type BindRequestHandlers = (
+    connector: WalletConnect,
+    autoConnect?: boolean,
+) => void
+
 export const useWalletConnect = (network: Network) => {
     const connections = useWalletConnectStore(
         state => state.walletConnectConnections,
@@ -68,7 +75,6 @@ export const useWalletConnect = (network: Network) => {
     )
     const { addSessionRequest } = useWalletConnectSessionRequests()
     const { handleSignData, handleSignTransaction } = useWalletConnectHandlers()
-    const accounts = useAllAccounts()
     const signingAccounts = useSigningAccounts()
 
     // Refs let the connector's registered event handlers always read the
@@ -86,6 +92,12 @@ export const useWalletConnect = (network: Network) => {
     const signingAccountsRef = useRef(signingAccounts)
     signingAccountsRef.current = signingAccounts
 
+    // Holds the latest `bindRequestHandlers`. The connector registry
+    // recreates connectors on socket recovery and re-binds handlers
+    // through this ref, so a recovered connector's handlers still read
+    // fresh hook state (network, accounts, callbacks).
+    const bindRequestHandlersRef = useRef<BindRequestHandlers>(() => {})
+
     const initWalletConnect = useCallback(() => {
         triggerWCRefresh()
     }, [])
@@ -98,22 +110,15 @@ export const useWalletConnect = (network: Network) => {
 
     const connect = useCallback(
         async ({ connection }: { connection: WalletConnectConnection }) => {
-            logger.debug('[WC] Reconnecting', { connection, network })
+            logger.debug('[WC] Reconnecting', {
+                connection,
+                network: networkRef.current,
+            })
             const { autoConnect, ...restConnection } = connection
 
-            let connector: Optional<WalletConnect> = undefined
-
-            if (connection.clientId) {
-                const storedConnector = connectors.get(connection.clientId)
-                if (storedConnector) {
-                    connector = storedConnector
-                    connector.off('algo_signData')
-                    connector.off('algo_signTxn')
-                    connector.off('disconnect')
-                    connector.off('session_request')
-                    connector.off('error')
-                }
-            }
+            let connector: Optional<WalletConnect> = connection.clientId
+                ? getConnector(connection.clientId)
+                : undefined
 
             if (!connector) {
                 connector = new WalletConnect({
@@ -122,122 +127,13 @@ export const useWalletConnect = (network: Network) => {
                 })
             }
 
-            connector.on('algo_signData', (error, payload) => {
-                logger.debug('WC algo_signData received', {
-                    error,
-                    payload,
-                    clientId: connector.clientId,
-                })
-                try {
-                    handleSignDataRef.current(
-                        connector,
-                        networkRef.current,
-                        error,
-                        payload,
-                    )
-                } catch (e) {
-                    logger.error('Failed to sign data', { error: e })
-                    connector.rejectRequest({
-                        id: payload?.id,
-                        error: e as Error,
-                    })
-                    surfaceError(e as Error)
-                }
-            })
-
-            connector.on('algo_signTxn', (error, payload) => {
-                logger.debug('WC algo_signTxn received', {
-                    error,
-                    payload,
-                    clientId: connector.clientId,
-                })
-                try {
-                    handleSignTransactionRef.current(
-                        connector,
-                        networkRef.current,
-                        error,
-                        payload,
-                    )
-                } catch (e) {
-                    connector.rejectRequest({
-                        id: payload?.id,
-                        error: e as Error,
-                    })
-                    surfaceError(e as Error)
-                }
-            })
-
-            connector.on('disconnect', () => {
-                logger.debug('WC disconnect received')
-                disconnect(connector.clientId, false)
-            })
-
-            connector.on('session_request', (error, payload) => {
-                if (error) {
-                    logger.error(error)
-                    surfaceError(error)
-                    return
-                }
-                const { peerMeta, chainId, permissions } = payload.params[0]
-
-                logger.debug('WC session_request received', { payload })
-
-                const currentNetwork = networkRef.current
-                const expectedChainId =
-                    currentNetwork === Networks.testnet
-                        ? AlgorandChainId.testnet
-                        : AlgorandChainId.mainnet
-
-                if (
-                    chainId !== AlgorandChainId.all &&
-                    chainId !== expectedChainId
-                ) {
-                    logger.debug('WC session_request rejected: wrong network', {
-                        clientId: connector.clientId,
-                        chainId,
-                        expectedChainId,
-                        network: currentNetwork,
-                    })
-                    connector.rejectSession()
-                    surfaceError(new WalletConnectInvalidNetworkError())
-                    return
-                }
-
-                if (autoConnect) {
-                    // Filter to signable accounts so later requests don't
-                    // fail with an opaque "Invalid signer".
-                    approveSession(
-                        connector.clientId,
-                        payload.params[0],
-                        signingAccountsRef.current.map(a => a.address),
-                    )
-                } else {
-                    addSessionRequest({
-                        peerMeta,
-                        chainId,
-                        permissions: permissions ?? ALL_PERMISSIONS,
-                        clientId: connector.clientId,
-                    })
-                }
-            })
-
-            connector.on('error', error => {
-                logger.error('WC error received', { error })
-                if (error) {
-                    surfaceError(error)
-                }
-            })
-
-            //accessing the connected property triggers a connection
-            if (!connector.connected) {
-                logger.debug(
-                    'WC connect connector not connected, connecting...',
-                )
-            }
-
-            connectors.set(connector.clientId, connector)
+            // Bind (or re-bind, for a reused connector) the dApp request
+            // handlers, then adopt the connector into the shared registry
+            // so its socket liveness is tracked for delivery recovery.
+            bindRequestHandlersRef.current(connector, autoConnect)
+            registerConnector(connector.clientId, connector)
         },
-        [addSessionRequest],
+        [],
     )
 
     const reconnectAllSessions = useCallback(() => {
@@ -260,7 +156,7 @@ export const useWalletConnect = (network: Network) => {
                         connected: false,
                     }
                 }
-                const connector = connectors.get(connection.clientId)
+                const connector = getConnector(connection.clientId)
                 return {
                     ...connection,
                     connected: connector?.connected ?? false,
@@ -271,14 +167,17 @@ export const useWalletConnect = (network: Network) => {
 
     const disconnect = useCallback(
         async (clientId: string, triggerDisconnect: boolean) => {
-            const connector = connectors.get(clientId)
+            const connector = getConnector(clientId)
             if (connector && connector.connected && triggerDisconnect) {
                 logger.debug('WC disconnect connector found, disconnecting...')
                 await connector.killSession({
                     message: 'User disconnected',
                 })
             }
-            connectors.delete(clientId)
+            // forgetConnector drops the connector from the registry and
+            // tombstones the session, so any in-flight socket recovery
+            // for it aborts instead of resurrecting a disconnected peer.
+            forgetConnector(clientId)
             setConnections(
                 connections.filter(session => session.clientId !== clientId),
             )
@@ -297,7 +196,7 @@ export const useWalletConnect = (network: Network) => {
                 conn => conn.clientId === clientId,
             )
 
-            const connector = connectors.get(clientId)
+            const connector = getConnector(clientId)
             if (!connector) {
                 throw new WalletConnectInvalidSessionError(
                     'No wallet connect session found.',
@@ -333,7 +232,7 @@ export const useWalletConnect = (network: Network) => {
 
     const rejectSession = useCallback(
         (clientId: string) => {
-            const connector = connectors.get(clientId)
+            const connector = getConnector(clientId)
             if (!connector) {
                 throw new WalletConnectInvalidSessionError(
                     'No wallet connect session found.',
@@ -361,6 +260,143 @@ export const useWalletConnect = (network: Network) => {
         setConnections([])
         triggerWCRefresh()
     }, [connections])
+
+    /**
+     * Registers the dApp request handlers on a connector. Always
+     * `off`s first so it is safe to call on a reused connector (clears
+     * the previous binding) or a freshly recreated one (no-op).
+     *
+     * `autoConnect` is only meaningful for a brand-new session handshake;
+     * the connector registry re-binds recovered (already-established)
+     * connectors with it omitted, where `session_request` never fires.
+     */
+    const bindRequestHandlers: BindRequestHandlers = (
+        connector,
+        autoConnect,
+    ) => {
+        connector.off('algo_signData')
+        connector.off('algo_signTxn')
+        connector.off('disconnect')
+        connector.off('session_request')
+        connector.off('error')
+
+        connector.on('algo_signData', (error, payload) => {
+            logger.debug('WC algo_signData received', {
+                error,
+                payload,
+                clientId: connector.clientId,
+            })
+            try {
+                handleSignDataRef.current(
+                    connector,
+                    networkRef.current,
+                    error,
+                    payload,
+                )
+            } catch (e) {
+                logger.error('Failed to sign data', { error: e })
+                connector.rejectRequest({
+                    id: payload?.id,
+                    error: e as Error,
+                })
+                surfaceError(e as Error)
+            }
+        })
+
+        connector.on('algo_signTxn', (error, payload) => {
+            logger.debug('WC algo_signTxn received', {
+                error,
+                payload,
+                clientId: connector.clientId,
+            })
+            try {
+                handleSignTransactionRef.current(
+                    connector,
+                    networkRef.current,
+                    error,
+                    payload,
+                )
+            } catch (e) {
+                connector.rejectRequest({
+                    id: payload?.id,
+                    error: e as Error,
+                })
+                surfaceError(e as Error)
+            }
+        })
+
+        connector.on('disconnect', () => {
+            logger.debug('WC disconnect received')
+            disconnect(connector.clientId, false)
+        })
+
+        connector.on('session_request', (error, payload) => {
+            if (error) {
+                logger.error(error)
+                surfaceError(error)
+                return
+            }
+            const { peerMeta, chainId, permissions } = payload.params[0]
+
+            logger.debug('WC session_request received', { payload })
+
+            const currentNetwork = networkRef.current
+            const expectedChainId =
+                currentNetwork === Networks.testnet
+                    ? AlgorandChainId.testnet
+                    : AlgorandChainId.mainnet
+
+            if (
+                chainId !== AlgorandChainId.all &&
+                chainId !== expectedChainId
+            ) {
+                logger.debug('WC session_request rejected: wrong network', {
+                    clientId: connector.clientId,
+                    chainId,
+                    expectedChainId,
+                    network: currentNetwork,
+                })
+                connector.rejectSession()
+                surfaceError(new WalletConnectInvalidNetworkError())
+                return
+            }
+
+            if (autoConnect) {
+                // Filter to signable accounts so later requests don't fail
+                // with an opaque "Invalid signer".
+                approveSession(
+                    connector.clientId,
+                    payload.params[0],
+                    signingAccountsRef.current.map(a => a.address),
+                )
+            } else {
+                addSessionRequest({
+                    peerMeta,
+                    chainId,
+                    permissions: permissions ?? ALL_PERMISSIONS,
+                    clientId: connector.clientId,
+                })
+            }
+        })
+
+        connector.on('error', error => {
+            logger.error('WC error received', { error })
+            if (error) {
+                surfaceError(error)
+            }
+        })
+    }
+    bindRequestHandlersRef.current = bindRequestHandlers
+
+    // Register the handler binder once so the connector registry can
+    // re-bind request handlers onto a connector it recreates during
+    // socket recovery. `autoConnect` is intentionally omitted — recovered
+    // connectors are for already-established sessions.
+    useEffect(() => {
+        setConnectorHandlerBinder(connector =>
+            bindRequestHandlersRef.current(connector),
+        )
+    }, [])
 
     return {
         connections,

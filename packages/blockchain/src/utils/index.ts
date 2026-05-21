@@ -24,6 +24,7 @@ export * from './addresses'
 export * from './transactions'
 export * from './json'
 export * from './multisig'
+export * from './assembleSignedMultisigTransactions'
 export * from './arc0001'
 
 /**

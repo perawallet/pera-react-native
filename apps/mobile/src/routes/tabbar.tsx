@@ -31,7 +31,7 @@ import { BOTTOM_TAB_HEIGHT_ANDROID, BOTTOM_TAB_HEIGHT_IOS } from '@constants/ui'
 
 export type TabBarStackParamList = {
     Home: NavigatorScreenParams<AccountStackParamsList>
-    Discover: undefined
+    Discover: { path?: string } | undefined
     Swap: Optional<SwapScreenParams>
     Fund: undefined
     Menu: undefined

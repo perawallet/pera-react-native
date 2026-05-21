@@ -10,6 +10,13 @@
  limitations under the License
  */
 
+import NetInfo from '@react-native-community/netinfo'
+import { onlineManager } from '@tanstack/react-query'
+
+NetInfo.fetch()
+    .then(state => onlineManager.setOnline(state.isConnected === true))
+    .catch(() => onlineManager.setOnline(false))
+
 import {
     initDecimalConfig,
     type Nullable,

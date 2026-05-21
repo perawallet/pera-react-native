@@ -14,6 +14,7 @@ import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useWalletConnectHandlers } from '../useWalletConnectHandlers'
 import { useWalletConnectStore } from '../../store'
+import { ensureConnectorReady } from '../../connection'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import {
     useNetwork,
@@ -25,6 +26,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import {
     useAllAccounts,
+    useSigningAccounts,
     isHardwareWalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -37,6 +39,10 @@ import { WalletConnectTransactionPayload } from 'walletconnect/src/models'
 // Mock dependencies
 vi.mock('../../store', () => ({
     useWalletConnectStore: vi.fn(),
+}))
+
+vi.mock('../../connection', () => ({
+    ensureConnectorReady: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
@@ -67,6 +73,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
             txParams: { signers?: string[] }[],
             txSenders: string[],
             signableAddresses: Set<string>,
+            multisigAddresses: ReadonlySet<string> = new Set(),
         ) => {
             const indicesToSign: number[] = []
             const signerOverrides = new Map<number, string>()
@@ -74,6 +81,12 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
                 const param = txParams[i]
                 const txSender = txSenders[i]
                 if (param.signers && param.signers.length === 0) continue
+                // Mirror production: multisig sender short-circuits the
+                // signers override and routes through the propose flow.
+                if (multisigAddresses.has(txSender)) {
+                    indicesToSign.push(i)
+                    continue
+                }
                 if (param.signers && param.signers.length > 0) {
                     const match = param.signers.find(s =>
                         signableAddresses.has(s),
@@ -104,6 +117,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     canSignArbitraryData: vi.fn(() => true),
     getAccountDisplayName: vi.fn((a: any) => a.name || a.address),
     isHardwareWalletAccount: vi.fn(() => false),
+    isMultisigAccount: vi.fn((a: any) => a?.type === 'multisig'),
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
@@ -170,10 +184,17 @@ describe('useWalletConnectHandlers', () => {
         ;(useWalletConnectStore as any).getState = () => ({
             setConnectionError: mockSetConnectionError,
         })
+        // Default: delivery callbacks resolve to a generic ready connector.
+        // Tests that assert on a specific connector override this with
+        // `mockResolvedValue(connector)`.
+        ;(ensureConnectorReady as any).mockResolvedValue({
+            approveRequest: vi.fn(),
+            rejectRequest: vi.fn(),
+        })
     })
 
     describe('handleSignData', () => {
-        it('should call addSignRequest with correct params when request is valid', () => {
+        it('should call addSignRequest with correct params when request is valid', async () => {
             const { result } = renderHook(() => useWalletConnectHandlers())
             const connector = {
                 clientId: 'test-client-id',
@@ -225,8 +246,9 @@ describe('useWalletConnectHandlers', () => {
             const { approve } = mockAddSignRequest.mock.calls[0][0]
             const signature = new Uint8Array([1, 2, 3])
 
-            act(() => {
-                approve([{ signature }])
+            ;(ensureConnectorReady as any).mockResolvedValue(connector)
+            await act(async () => {
+                await approve([{ signature }])
             })
 
             expect(connector.approveRequest).toHaveBeenCalledWith({
@@ -272,7 +294,7 @@ describe('useWalletConnectHandlers', () => {
             })
         })
 
-        it('should handle error during approval', () => {
+        it('propagates the error when approveRequest throws', async () => {
             const { result } = renderHook(() => useWalletConnectHandlers())
             const connector = {
                 clientId: 'test-client-id',
@@ -301,15 +323,14 @@ describe('useWalletConnectHandlers', () => {
             )
 
             const { approve } = mockAddSignRequest.mock.calls[0][0]
+            ;(ensureConnectorReady as any).mockResolvedValue(connector)
 
-            act(() => {
-                approve([{ signature: new Uint8Array([1]) }])
-            })
-
-            expect(connector.rejectRequest).toHaveBeenCalledWith({
-                id: 1,
-                error: expect.objectContaining({ message: 'Approval failed' }),
-            })
+            // The approve callback no longer swallows delivery failures —
+            // it rejects so the signing pipeline surfaces an honest
+            // failure instead of reporting a false success.
+            await expect(
+                approve([{ signature: new Uint8Array([1]) }]),
+            ).rejects.toThrow('Approval failed')
         })
 
         it('should handle handleSignData error', async () => {
@@ -736,7 +757,7 @@ describe('useWalletConnectHandlers', () => {
     })
 
     describe('handleSignTransaction', () => {
-        it('should call addSignRequest with correct params when request is valid', () => {
+        it('should call addSignRequest with correct params when request is valid', async () => {
             const { result } = renderHook(() => useWalletConnectHandlers())
             const connector = {
                 clientId: 'test-client-id',
@@ -783,6 +804,8 @@ describe('useWalletConnectHandlers', () => {
                 approve: expect.any(Function),
                 reject: expect.any(Function),
                 error: expect.any(Function),
+                softReject: expect.any(Function),
+                approveSignedBytes: expect.any(Function),
             })
 
             // Test success callback
@@ -801,8 +824,9 @@ describe('useWalletConnectHandlers', () => {
                 },
             ]
 
-            act(() => {
-                approve(signedTxs)
+            ;(ensureConnectorReady as any).mockResolvedValue(connector)
+            await act(async () => {
+                await approve(signedTxs)
             })
 
             expect(connector.approveRequest).toHaveBeenCalledWith({
@@ -853,7 +877,7 @@ describe('useWalletConnectHandlers', () => {
             })
         })
 
-        it('should use authAddress for from address if present', () => {
+        it('should use authAddress for from address if present', async () => {
             const { result } = renderHook(() => useWalletConnectHandlers())
             const connector = {
                 clientId: 'test-client-id',
@@ -902,8 +926,9 @@ describe('useWalletConnectHandlers', () => {
                 ],
             ]
 
-            act(() => {
-                approve(signedTxs)
+            ;(ensureConnectorReady as any).mockResolvedValue(connector)
+            await act(async () => {
+                await approve(signedTxs)
             })
 
             expect(connector.approveRequest).toHaveBeenCalledWith({
@@ -912,7 +937,7 @@ describe('useWalletConnectHandlers', () => {
             })
         })
 
-        it('should do nothing if signed transaction is missing', () => {
+        it('should do nothing if signed transaction is missing', async () => {
             const { result } = renderHook(() => useWalletConnectHandlers())
             const connector = {
                 clientId: 'test-client-id',
@@ -947,8 +972,9 @@ describe('useWalletConnectHandlers', () => {
                     mockAddSignRequest.mock.calls.length - 1
                 ][0]
 
-            act(() => {
-                approve([])
+            ;(ensureConnectorReady as any).mockResolvedValue(connector)
+            await act(async () => {
+                await approve([])
             })
 
             expect(connector.approveRequest).toHaveBeenCalledWith({
@@ -1052,7 +1078,7 @@ describe('useWalletConnectHandlers', () => {
             expect(signRequest.txs).toHaveLength(2)
         })
 
-        it('should return full-length result array with null at skipped positions', () => {
+        it('should return full-length result array with null at skipped positions', async () => {
             const { result } = renderHook(() => useWalletConnectHandlers())
             const connector = {
                 clientId: 'test-client-id',
@@ -1085,8 +1111,9 @@ describe('useWalletConnectHandlers', () => {
                 { txn: { sender: {} }, sig: new Uint8Array([1]) },
             ]
 
-            act(() => {
-                approve(signedTxs)
+            ;(ensureConnectorReady as any).mockResolvedValue(connector)
+            await act(async () => {
+                await approve(signedTxs)
             })
 
             // Result should be length 3: signed at index 0, null at indices 1 and 2
@@ -1096,7 +1123,7 @@ describe('useWalletConnectHandlers', () => {
             })
         })
 
-        it('should approve with all-null array when all transactions have signers: []', () => {
+        it('should approve with all-null array when all transactions have signers: []', async () => {
             const { result } = renderHook(() => useWalletConnectHandlers())
             const connector = {
                 clientId: 'test-client-id',
@@ -1104,6 +1131,7 @@ describe('useWalletConnectHandlers', () => {
                 approveRequest: vi.fn(),
                 rejectRequest: vi.fn(),
             }
+            ;(ensureConnectorReady as any).mockResolvedValue(connector)
             const payload = {
                 params: [
                     [
@@ -1126,11 +1154,13 @@ describe('useWalletConnectHandlers', () => {
             // Should not call addSignRequest
             expect(mockAddSignRequest).not.toHaveBeenCalled()
 
-            // Should approve directly with all nulls
-            expect(connector.approveRequest).toHaveBeenCalledWith({
-                id: 1,
-                result: [null, null],
-            })
+            // The all-null response is delivered through ensureConnectorReady.
+            await vi.waitFor(() =>
+                expect(connector.approveRequest).toHaveBeenCalledWith({
+                    id: 1,
+                    result: [null, null],
+                }),
+            )
         })
 
         it('should include transactions with non-empty signers array matching a user account', () => {
@@ -1264,13 +1294,14 @@ describe('useWalletConnectHandlers', () => {
             expect(signRequest.signerOverrides).toEqual(new Map([[0, 'addr1']]))
         })
 
-        it('should exclude transactions with signers containing only unknown addresses', () => {
+        it('should exclude transactions with signers containing only unknown addresses', async () => {
             const { result } = renderHook(() => useWalletConnectHandlers())
             const connector = {
                 clientId: 'test-client-id',
                 approveRequest: vi.fn(),
                 rejectRequest: vi.fn(),
             }
+            ;(ensureConnectorReady as any).mockResolvedValue(connector)
             const payload = {
                 params: [
                     [
@@ -1294,10 +1325,13 @@ describe('useWalletConnectHandlers', () => {
 
             // No user address matches → all filtered → approve with all-null
             expect(mockAddSignRequest).not.toHaveBeenCalled()
-            expect(connector.approveRequest).toHaveBeenCalledWith({
-                id: 1,
-                result: [null],
-            })
+            // The all-null response is delivered through ensureConnectorReady.
+            await vi.waitFor(() =>
+                expect(connector.approveRequest).toHaveBeenCalledWith({
+                    id: 1,
+                    result: [null],
+                }),
+            )
         })
 
         it('forwards the full pre-filter payload as groupContext so the pipeline can validate atomic-group integrity', () => {
@@ -1376,6 +1410,66 @@ describe('useWalletConnectHandlers', () => {
                     payload,
                 ),
             ).toThrow('Transaction limit exceeded')
+        })
+
+        it('softReject rejects WC peer + removes request, without setting connection-error banner', async () => {
+            // Reset addSignRequest impl — the previous test set a throwing
+            // mock that vi.clearAllMocks doesn't reset.
+            mockAddSignRequest.mockReset()
+            const mockRemoveSignRequest = vi.fn()
+            ;(useSigningRequest as any).mockReturnValue({
+                addSignRequest: mockAddSignRequest,
+                removeSignRequest: mockRemoveSignRequest,
+                clearLastFailedRequest: vi.fn(),
+            })
+
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            const connector = {
+                clientId: 'test-client-id',
+                accounts: ['addr1'],
+                sendTransaction: vi.fn(),
+                approveRequest: vi.fn(),
+                rejectRequest: vi.fn(),
+            }
+            const payload = {
+                params: [
+                    [
+                        {
+                            message: 'Sign tx',
+                            txn: 'encodedTxn',
+                        },
+                    ],
+                ],
+                method: 'algo_signTxn' as const,
+                jsonrpc: '2.0',
+                id: 1,
+            }
+
+            result.current.handleSignTransaction(
+                connector as any,
+                Networks.mainnet,
+                null,
+                payload,
+            )
+
+            const { softReject } =
+                mockAddSignRequest.mock.calls[
+                    mockAddSignRequest.mock.calls.length - 1
+                ][0]
+            const handoffError = new Error(
+                'Transaction handed off to multisig sign-request abc-123',
+            )
+
+            await softReject(handoffError)
+
+            expect(connector.rejectRequest).toHaveBeenCalledWith({
+                id: 1,
+                error: handoffError,
+            })
+            expect(mockRemoveSignRequest).toHaveBeenCalledTimes(1)
+            // Crucially: no connection-error banner — this is a
+            // success-path handoff, not a failure.
+            expect(mockSetConnectionError).not.toHaveBeenCalled()
         })
     })
 })

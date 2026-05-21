@@ -40,6 +40,8 @@ export type AccountInformation = {
     rewards: bigint
     /** Opted-in assets with amounts in base units (smallest indivisible unit) */
     assets: Array<{ assetId: bigint; amount: bigint; isFrozen: boolean }>
+    /** Auth (signer) address when the account is rekeyed; undefined otherwise */
+    authAddress?: string
 }
 
 export type PeraTransaction = Transaction

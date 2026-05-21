@@ -27,3 +27,14 @@ export const getSignRequestDetailQueryKey = (
 ) => {
     return [MODULE_PREFIX, 'sign-request-detail', { network, signRequestId }]
 }
+
+export const getSignRequestsWithSignaturesQueryKey = (
+    network: Network,
+    signRequestId: string,
+) => {
+    return [
+        MODULE_PREFIX,
+        'sign-request-with-signatures',
+        { network, signRequestId },
+    ]
+}

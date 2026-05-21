@@ -24,6 +24,18 @@ export const multiSigAccountResponseSchema = z.object({
 export const signResponseSchema = z.object({
     address: z.string(),
     response: z.enum(['signed', 'declined']),
+    /**
+     * Per-transaction signatures from this participant, base64-encoded.
+     * Same order as the enclosing TransactionListResponse's
+     * `raw_transactions` array; nullable entries mean "this participant
+     * didn't sign this index". Populated by the
+     * `POST /sign-requests/with-signatures/` endpoint used to finalize
+     * sync-flow (WalletConnect) multisig handoffs. Other endpoints
+     * (search, propose, cosign responses) may omit this field.
+     * Mirrors pera-android's
+     * `SignRequestTransactionListResponseItem.signatures`.
+     */
+    signatures: z.array(z.string().nullable()).optional(),
 })
 
 export const transactionListResponseSchema = z.object({
@@ -110,6 +122,33 @@ export const searchSignRequestsResponseSchema = z.object({
     results: z.array(signRequestResponseSchema).nullable().optional(),
 })
 
+/**
+ * Bulk fetch sign requests including per-participant signatures. Used by
+ * the sync-flow handoff resolver to assemble the composite multisig
+ * signed transaction once threshold is met. Mirrors pera-android's
+ * `GetSignRequestWithSignaturesRequest` + the response is a flat list
+ * (no pagination wrapper).
+ */
+export const getSignRequestsWithSignaturesRequestSchema = z.object({
+    device_id: z.string(),
+    proposed_sign_request_ids: z.array(z.string()),
+})
+
+export const getSignRequestsWithSignaturesResponseSchema = z.array(
+    signRequestResponseSchema,
+)
+
+/**
+ * Tell the backend the wallet has delivered the assembled signed
+ * transaction (e.g. via WalletConnect or in-app algod submission), so it
+ * can finalize / clean up the record and skip its own broadcast attempt
+ * (relevant when the sign-request was created with `type: "sync"`).
+ */
+export const markSignRequestsConfirmedRequestSchema = z.object({
+    device_id: z.string(),
+    proposed_sign_request_ids: z.array(z.string()),
+})
+
 export const deleteImportInboxResponseSchema = z.void()
 
 export type MultiSigAccountResponse = z.infer<
@@ -140,4 +179,13 @@ export type SearchSignRequestsRequest = z.infer<
 >
 export type SearchSignRequestsResponse = z.infer<
     typeof searchSignRequestsResponseSchema
+>
+export type GetSignRequestsWithSignaturesRequest = z.infer<
+    typeof getSignRequestsWithSignaturesRequestSchema
+>
+export type GetSignRequestsWithSignaturesResponse = z.infer<
+    typeof getSignRequestsWithSignaturesResponseSchema
+>
+export type MarkSignRequestsConfirmedRequest = z.infer<
+    typeof markSignRequestsConfirmedRequestSchema
 >

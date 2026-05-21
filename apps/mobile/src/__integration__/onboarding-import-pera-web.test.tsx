@@ -20,7 +20,13 @@ import {
     it,
     vi,
 } from 'vitest'
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import {
+    act,
+    fireEvent,
+    renderHook,
+    screen,
+    waitFor,
+} from '@testing-library/react'
 import { Notifier } from 'react-native-notifier'
 
 import { server } from '@test-utils/msw-server'
@@ -37,6 +43,10 @@ import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore
 import { usePeraWebImportFlowStore } from '@modules/onboarding/hooks/peraWebImportFlowStore'
 import { parsePeraWebQrPayload } from '@perawallet/wallet-core-backup'
 import { config } from '@perawallet/wallet-core-config'
+import { useDeepLink } from '@hooks/useDeepLink'
+import React from 'react'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { createTestQueryClient } from '@test-utils/render'
 
 import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
 import {
@@ -350,9 +360,105 @@ describe('Flow: Pera Web Import — Loading → Result pipeline', () => {
     )
 })
 
-// QR-scan ↔ deeplink dispatch coverage lives next to the other deeplink
-// unit tests:
-//   - `parseDeeplink` recognizing the JSON QR shape:
-//     apps/mobile/src/hooks/deeplink/__tests__/deeplink-parser.test.ts
-//   - `useDeepLink.handleDeepLink`'s QR-only gate:
-//     apps/mobile/src/hooks/__tests__/useDeepLink.test.ts
+describe('Entry: QR scan → deeplink dispatch → Loading pipeline', () => {
+    // useDeepLink mounts the signing pipeline (via useWalletConnect →
+    // useSigningRequest → useMultisigTransportAdapters), which calls
+    // useQueryClient. renderHook makes its own tree so we wrap it with a
+    // QueryClientProvider matching the walletconnect-pair test pattern.
+    const hookQueryClient = createTestQueryClient()
+    const HookWrapper = ({ children }: { children: React.ReactNode }) => (
+        <QueryClientProvider client={hookQueryClient}>
+            {children}
+        </QueryClientProvider>
+    )
+
+    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
+    afterEach(() => server.resetHandlers())
+    afterAll(() => server.close())
+
+    beforeEach(() => {
+        resetTestKeystore()
+        useAccountsStore.getState().setAccounts([])
+        useOnboardingStore.getState().reset()
+        usePeraWebImportFlowStore.getState().reset()
+        vi.mocked(Notifier.showNotification).mockClear()
+    })
+
+    it(
+        'Given a JSON QR payload, when handleDeepLink dispatches it with source="qr", then the flow store is seeded with the parsed payload and the loading screen completes the import',
+        async () => {
+            installBackupHandler({
+                status: 200,
+                encryptedContent: buildSingleAccountPeraWebBackup({
+                    name: 'Scanned Account',
+                }),
+            })
+
+            // Drive the real dispatcher: this exercises parseDeeplink's JSON
+            // sniff → parsePeraWebQrPayload → usePeraWebImportDeeplink →
+            // store.setQr. The dispatcher also tries to navigate via the
+            // global navigationRef, which is a noop under the integration
+            // navigator — that part is asserted in useDeepLink.test.ts.
+            // Here we assert the side effect that actually bridges to the
+            // import pipeline: the flow store ends up populated.
+            const { result } = renderHook(() => useDeepLink(), {
+                wrapper: HookWrapper,
+            })
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    buildPeraWebQrString(),
+                    true,
+                    'qr',
+                )
+            })
+
+            const seeded = usePeraWebImportFlowStore.getState().qr
+            expect(seeded).not.toBeNull()
+            expect(seeded!.backupId).toBe(PERA_WEB_BACKUP_ID)
+
+            // Mount the loading screen against the dispatcher-populated
+            // store. This is the same pipeline the production app runs:
+            // dispatcher seeds qr → navigation lands on
+            // PeraWebImportLoading → its mount hook reads qr → fetch +
+            // decrypt + import.
+            renderLoadingWithFlowStore()
+
+            await waitFor(
+                () => {
+                    expect(useAccountsStore.getState().accounts).toHaveLength(1)
+                },
+                { timeout: 10000 },
+            )
+
+            const [account] = useAccountsStore.getState().accounts
+            expect(account.type).toBe(AccountTypes.algo25)
+            expect(account.address).toBe(ALGO25_TEST_ADDRESS)
+            expect(account.name).toBe('Scanned Account')
+
+            await waitFor(() => screen.getByTestId('pera_web_import_result'))
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given the same JSON payload arrives via source="deeplink" (not a QR scan), then it is ignored and no import is staged',
+        async () => {
+            // A malicious deeplink could embed the JSON shape directly;
+            // production gates the handler on source==="qr" so a tapped link
+            // can't auto-stage an attacker-controlled backup decryption.
+            const { result } = renderHook(() => useDeepLink(), {
+                wrapper: HookWrapper,
+            })
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    buildPeraWebQrString(),
+                    true,
+                    'deeplink',
+                )
+            })
+
+            expect(usePeraWebImportFlowStore.getState().qr).toBeNull()
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+})

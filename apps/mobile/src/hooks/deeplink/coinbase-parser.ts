@@ -16,8 +16,11 @@ import {
     DeeplinkType,
 } from './types'
 import { normalizeUrl, parseQueryParams } from './utils'
+import { ALGO_SCHEME } from './constants'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+
+const ALGO_URI_PREFIX = `${ALGO_SCHEME}:`
 
 /**
  * Parse Coinbase format: algo:ASSET_ID/transfer?address=ADDRESS
@@ -27,7 +30,7 @@ export const parseCoinbaseFormat = (
 ): Nullable<AssetTransferDeeplink | AddressActionsDeeplink> => {
     const normalizedUrl = normalizeUrl(url)
 
-    if (!normalizedUrl.startsWith('algo:')) {
+    if (!normalizedUrl.startsWith(ALGO_URI_PREFIX)) {
         return null
     }
 
@@ -36,7 +39,7 @@ export const parseCoinbaseFormat = (
     const parts = normalizedUrl.split('/')
 
     if (parts.length < 2) {
-        const address = parts[0].replace('algo:', '')
+        const address = parts[0].replace(ALGO_URI_PREFIX, '')
 
         if (isValidAlgorandAddress(address)) {
             return {
@@ -48,7 +51,7 @@ export const parseCoinbaseFormat = (
         return null
     }
 
-    const assetPart = parts[0].replace('algo:', '')
+    const assetPart = parts[0].replace(ALGO_URI_PREFIX, '')
     const actionPart = parts[1].split('?')[0]
 
     if (actionPart === 'transfer' && params.address) {

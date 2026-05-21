@@ -180,6 +180,27 @@ const buildNavigationApi = (controller: StackController): NavigationApi => {
         })
     }
 
+    // Production `reset` replaces the whole stack with the given state's
+    // `routes`. The navigator renders the last route, so mapping `routes`
+    // onto the stack is enough — `index` doesn't affect what's shown.
+    const reset = (state: unknown) => {
+        const next = state as {
+            routes?: Array<{
+                name: string
+                params?: Record<string, unknown>
+                key?: string
+            }>
+        }
+        if (!next?.routes?.length) return
+        controller.setStack(
+            next.routes.map(r => ({
+                name: r.name,
+                params: r.params ?? {},
+                key: r.key ?? newRouteKey(),
+            })),
+        )
+    }
+
     return {
         navigate,
         push,
@@ -192,7 +213,7 @@ const buildNavigationApi = (controller: StackController): NavigationApi => {
         isReady: () => true,
         addListener: () => () => {},
         dispatch: () => {},
-        reset: () => {},
+        reset,
         setOptions: () => {},
         getParent: () => undefined,
         getState: () => ({

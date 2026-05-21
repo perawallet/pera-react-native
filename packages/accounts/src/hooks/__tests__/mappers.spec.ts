@@ -15,7 +15,9 @@ import { mapOnChainAccountInformation } from '../mappers'
 import type { OnChainAccountInformationResponse } from '../endpoints'
 
 const buildResponse = (
-    overrides: Partial<OnChainAccountInformationResponse> = {},
+    overrides: Partial<OnChainAccountInformationResponse> & {
+        authAddr?: { toString(): string }
+    } = {},
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): OnChainAccountInformationResponse =>
     ({
@@ -66,5 +68,21 @@ describe('mapOnChainAccountInformation', () => {
         )
 
         expect(mapped.assets).toEqual([])
+    })
+
+    it('omits authAddress when the account is not rekeyed', () => {
+        const mapped = mapOnChainAccountInformation(buildResponse())
+
+        expect(mapped.authAddress).toBeUndefined()
+    })
+
+    it('surfaces authAddress as a string when the account is rekeyed', () => {
+        const mapped = mapOnChainAccountInformation(
+            buildResponse({
+                authAddr: { toString: () => 'AUTHADDR' },
+            }),
+        )
+
+        expect(mapped.authAddress).toBe('AUTHADDR')
     })
 })
