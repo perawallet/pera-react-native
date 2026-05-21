@@ -400,54 +400,42 @@ describe('resolveSignerFor', () => {
 describe('canSignArbitraryData', () => {
     it('returns true for a standard algo25', () => {
         const a = algo25('A')
-        expect(canSignArbitraryData(a, [a])).toBe(true)
+        expect(canSignArbitraryData(a)).toBe(true)
     })
 
     it('returns true for an HD wallet account', () => {
         const a = hdWallet('A')
-        expect(canSignArbitraryData(a, [a])).toBe(true)
+        expect(canSignArbitraryData(a)).toBe(true)
     })
 
     it('returns false for a hardware wallet — Ledger has no raw-byte opcode', () => {
         const a = hardware('A')
-        expect(canSignArbitraryData(a, [a])).toBe(false)
+        expect(canSignArbitraryData(a)).toBe(false)
     })
 
     it('returns false for a multisig — no multisig signature shape for raw data', () => {
-        const participant = algo25('P1')
         const ms = multisig('M', ['P1', 'P2'])
-        expect(canSignArbitraryData(ms, [ms, participant])).toBe(false)
+        expect(canSignArbitraryData(ms)).toBe(false)
     })
 
     it('returns false for watch accounts', () => {
         const a = watch('A')
-        expect(canSignArbitraryData(a, [a])).toBe(false)
+        expect(canSignArbitraryData(a)).toBe(false)
     })
 
-    it('returns true when rekeyed to a software signer', () => {
-        const auth = algo25('S')
-        const a = watch('A', 'S')
-        expect(canSignArbitraryData(a, [a, auth])).toBe(true)
-    })
-
-    it('returns false when rekeyed to a hardware signer', () => {
-        // Software account rekeyed to a Ledger — the actual signer is the
-        // hardware, so arbitrary-data signing is unavailable.
-        const auth = hardware('S')
+    it('returns true for an algo25/HD even if rekeyed — own keypair still signs', () => {
+        // The dApp verifies the signature against the requested address's
+        // own pubkey; the on-chain auth-addr is irrelevant for off-chain
+        // data. Holding the account's own keypair is sufficient.
         const a: WalletAccount = { ...algo25('A'), rekeyAddress: 'S' }
-        expect(canSignArbitraryData(a, [a, auth])).toBe(false)
+        expect(canSignArbitraryData(a)).toBe(true)
     })
 
-    it('returns false when rekeyed to a multisig', () => {
-        const participant = algo25('P1')
-        const ms = multisig('M', ['P1', 'P2'])
-        const a = watch('A', 'M')
-        expect(canSignArbitraryData(a, [a, ms, participant])).toBe(false)
-    })
-
-    it('returns false when rekeyed but auth is missing locally', () => {
-        const a = watch('A', 'MISSING')
-        expect(canSignArbitraryData(a, [a])).toBe(false)
+    it('returns false for a watch-rekeyed account regardless of auth', () => {
+        // We hold the auth account, but the dApp expects a signature from
+        // the watch address's pubkey — which we never had.
+        const a = watch('A', 'S')
+        expect(canSignArbitraryData(a)).toBe(false)
     })
 })
 

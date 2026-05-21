@@ -76,6 +76,7 @@ export const localKeySignerActor = fromPromise<
             const accountForSigning = resolveSigningAccount(
                 signerAccount,
                 group.source,
+                group.data.type,
                 allAccounts,
             )
             return strategy.sign(group, accountForSigning)

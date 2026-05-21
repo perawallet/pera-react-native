@@ -10,17 +10,9 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
 import { canSignArbitraryData } from '../utils'
-import { useAccountsStore } from '../store'
 import type { WalletAccount } from '../models'
 
 export const useCanSignArbitraryData = (
     account: WalletAccount | null | undefined,
-): boolean => {
-    const accounts = useAccountsStore(state => state.accounts)
-    return useMemo(
-        () => (account ? canSignArbitraryData(account, accounts) : false),
-        [account, accounts],
-    )
-}
+): boolean => (account ? canSignArbitraryData(account) : false)

@@ -11,10 +11,9 @@
  */
 
 import {
+    canSignArbitraryData,
     isAlgo25Account,
     isHDWalletAccount,
-    resolveSignerForAccount,
-    useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useCallback } from 'react'
@@ -25,7 +24,6 @@ import { SIGNING_KEY_DOMAIN } from '../constants'
 const MX_PREFIX = new TextEncoder().encode('MX')
 
 export const useArbitraryDataSigner = () => {
-    const accounts = useAccountsStore(state => state.accounts)
     const { signDataWithKey } = useKMS()
 
     const signArbitraryData = useCallback(
@@ -33,32 +31,38 @@ export const useArbitraryDataSigner = () => {
             account: WalletAccount,
             data: string | string[],
         ): Promise<Uint8Array[]> => {
-            const resolution = resolveSignerForAccount(account, accounts)
-            if (resolution.kind !== 'ok') {
+            // Sign with the requested account's own key. Rekey is NOT
+            // followed: the dApp verifies against this account's pubkey.
+            if (!canSignArbitraryData(account)) {
                 return Promise.reject(
                     new Error(
-                        `Cannot sign arbitrary data for ${account.address}: ${resolution.kind}`,
+                        `Cannot sign arbitrary data for ${account.address}`,
                     ),
                 )
             }
-            const signer = resolution.signer
-
-            if (!isHDWalletAccount(signer) && !isAlgo25Account(signer)) {
+            // canSignArbitraryData ⇒ hasSigningKeys ⇒ Algo25 or HDWallet
+            // (the only types that carry keyPairId). The narrowing here is
+            // for the type system; the runtime invariant comes from above.
+            if (!isAlgo25Account(account) && !isHDWalletAccount(account)) {
                 return Promise.reject(
                     new Error(
-                        `Unsupported signer type ${signer.type} for ${account.address}`,
+                        `Unsupported account type ${account.type} for ${account.address}`,
                     ),
                 )
             }
 
             // Legacy algo_signData: dApps verify against `MX || data`.
-            const toSign = [data]
-                .flat()
-                .map(item => concatBytes(MX_PREFIX, decodeFromBase64(item)))
-
-            return signDataWithKey(signer.keyPairId, SIGNING_KEY_DOMAIN, toSign)
+            const items = [data].flat()
+            const toSign = items.map(item =>
+                concatBytes(MX_PREFIX, decodeFromBase64(item)),
+            )
+            return signDataWithKey(
+                account.keyPairId,
+                SIGNING_KEY_DOMAIN,
+                toSign,
+            )
         },
-        [accounts, signDataWithKey],
+        [signDataWithKey],
     )
 
     return {

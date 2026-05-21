@@ -17,7 +17,7 @@ export const encodeToBase64 = (bytes: Uint8Array) => {
     return fromByteArray(bytes)
 }
 
-export const decodeFromBase64 = (base64: string) => {
+export const decodeFromBase64 = (base64: string): Uint8Array => {
     return toByteArray(base64)
 }
 

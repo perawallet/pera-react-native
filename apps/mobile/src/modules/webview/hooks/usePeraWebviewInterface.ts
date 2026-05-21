@@ -24,6 +24,7 @@ import {
 import {
     AccountTypes,
     canSignWith,
+    isRekeyedAccount,
     useAllAccounts,
     useSigningAccounts,
     type WalletAccount,
@@ -104,7 +105,7 @@ const toWebviewAccountType = (
     account: WalletAccount,
     accounts: WalletAccount[],
 ): WebviewAccountType => {
-    if (account.rekeyAddress) {
+    if (isRekeyedAccount(account)) {
         return canSignWith(account, accounts)
             ? 'RekeyedSignable'
             : 'RekeyedUnsignable'

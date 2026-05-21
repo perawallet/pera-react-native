@@ -13,6 +13,7 @@
 import { useCallback, useMemo } from 'react'
 import {
     AccountTypes,
+    isRekeyedAccount,
     useCanSignWith,
     useRekeyTransition,
     type AccountType,
@@ -95,7 +96,7 @@ export const useAccountTypeInfo = ({
             }
         }
 
-        if (account.rekeyAddress) {
+        if (isRekeyedAccount(account)) {
             const i18n = canSign
                 ? REKEYED_SIGNABLE_I18N
                 : REKEYED_UNSIGNABLE_I18N

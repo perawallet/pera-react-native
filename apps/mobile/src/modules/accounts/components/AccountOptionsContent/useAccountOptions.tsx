@@ -12,10 +12,12 @@
 
 import { useCallback, useMemo } from 'react'
 import {
-    AccountTypes,
     WalletAccount,
     hasSigningKeys,
+    isAlgo25Account,
+    isHDWalletAccount,
     isMultisigAccount,
+    isRekeyedAccount,
     isWatchAccount,
     useAllAccounts,
     useCanSignWith,
@@ -80,14 +82,12 @@ export const useAccountOptions = ({
     const { openViewPassphraseFlow } = useViewPassphraseFlow()
 
     const canSign = useCanSignWith(account)
-    const isRekeyed = !!account.rekeyAddress
+    const isRekeyed = isRekeyedAccount(account)
     const showPassphrase =
-        !isRekeyed &&
-        (account.type === AccountTypes.algo25 ||
-            account.type === AccountTypes.hdWallet)
+        !isRekeyed && (isAlgo25Account(account) || isHDWalletAccount(account))
     const canUndoRekey = isRekeyed && canSign
     const showUndoRekey = canUndoRekey
-    const isHdWallet = account.type === AccountTypes.hdWallet
+    const isHdWallet = isHDWalletAccount(account)
     const isSharedAccount = isMultisigAccount(account)
     const participantCount = isMultisigAccount(account)
         ? account.multisigDetails.addresses.length

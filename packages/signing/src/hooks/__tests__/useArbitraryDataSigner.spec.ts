@@ -151,19 +151,15 @@ describe('useArbitraryDataSigner', () => {
     })
 
     describe('rekeyed accounts', () => {
-        test('delegates signing to the rekeyed auth account', async () => {
-            const auth = {
-                ...algo25Account,
-                address: 'AUTH_ADDR',
-                keyPairId: 'key-auth',
-            } as unknown as WalletAccount
+        test("signs with the requested account's OWN key even when rekeyed", async () => {
+            // The dApp verifies the signature against the requested address's
+            // own pubkey, so we use the account's own keypair — never the
+            // auth chain.
             const original = {
                 ...algo25Account,
                 address: 'ORIGINAL_ADDR',
                 rekeyAddress: 'AUTH_ADDR',
             } as unknown as WalletAccount
-
-            mockAccounts = [auth]
 
             const { result } = renderHook(() => useArbitraryDataSigner())
 
@@ -172,59 +168,28 @@ describe('useArbitraryDataSigner', () => {
             })
 
             const [childId] = mockSignDataWithKey.mock.calls[0]
-            expect(childId).toBe('key-auth')
+            expect(childId).toBe('key-algo25-ed25519')
         })
 
-        test('rejects when auth account is not in the wallet', async () => {
-            const original = {
-                ...algo25Account,
-                address: 'ORIGINAL_ADDR',
-                rekeyAddress: 'MISSING_ADDR',
+        test('rejects a watch-rekeyed account even when the auth has keys', async () => {
+            const watchSource = {
+                address: 'WATCH_ADDR',
+                type: 'watch',
+                rekeyAddress: 'AUTH_ADDR',
             } as unknown as WalletAccount
-
-            mockAccounts = []
 
             const { result } = renderHook(() => useArbitraryDataSigner())
 
             await expect(
                 act(async () => {
-                    await result.current.signArbitraryData(original, 'hello')
+                    await result.current.signArbitraryData(watchSource, 'hello')
                 }),
-            ).rejects.toThrow(/authMissing/)
-        })
-
-        test('rejects when rekeyed to a hardware wallet', async () => {
-            const auth = {
-                address: 'HW_ADDR',
-                type: 'hardware',
-                hardwareDetails: {
-                    manufacturer: 'ledger',
-                    deviceId: 'd',
-                    deviceName: 'L',
-                    accountIndex: 0,
-                    transportType: 'ble',
-                },
-            } as unknown as WalletAccount
-            const original = {
-                ...algo25Account,
-                address: 'ORIGINAL_ADDR',
-                rekeyAddress: 'HW_ADDR',
-            } as unknown as WalletAccount
-
-            mockAccounts = [auth]
-
-            const { result } = renderHook(() => useArbitraryDataSigner())
-
-            await expect(
-                act(async () => {
-                    await result.current.signArbitraryData(original, 'hello')
-                }),
-            ).rejects.toThrow(/Unsupported signer type hardware/)
+            ).rejects.toThrow(/Cannot sign arbitrary data/)
         })
     })
 
     describe('unsupported account type', () => {
-        test('rejects watch accounts with no auth', async () => {
+        test('rejects watch accounts', async () => {
             const watchAccount = {
                 address: 'WATCH_ADDR',
                 type: 'watch',
@@ -239,7 +204,7 @@ describe('useArbitraryDataSigner', () => {
                         'hello',
                     )
                 }),
-            ).rejects.toThrow(/Cannot sign arbitrary data.*watch/)
+            ).rejects.toThrow(/Cannot sign arbitrary data/)
         })
 
         test('rejects hardware wallet accounts', async () => {
@@ -261,7 +226,7 @@ describe('useArbitraryDataSigner', () => {
                 act(async () => {
                     await result.current.signArbitraryData(hwAccount, 'hello')
                 }),
-            ).rejects.toThrow(/Unsupported signer type hardware/)
+            ).rejects.toThrow(/Cannot sign arbitrary data/)
         })
     })
 })

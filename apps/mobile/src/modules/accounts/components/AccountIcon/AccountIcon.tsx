@@ -15,6 +15,7 @@ import { IconName, PWIcon, PWView } from '@components/core'
 import { useMemo } from 'react'
 import {
     AccountTypes,
+    isRekeyedAccount,
     useCanSignWith,
     useRekeyAccount,
     type AccountType,
@@ -74,7 +75,7 @@ export const AccountIcon = (props: AccountIconProps) => {
     const icon = useMemo(() => {
         if (!account) return null
 
-        const isRekeyed = !ignoreRekey && !!account.rekeyAddress
+        const isRekeyed = !ignoreRekey && isRekeyedAccount(account)
         const state: AccountDisplayState =
             displayState ??
             (isRekeyed

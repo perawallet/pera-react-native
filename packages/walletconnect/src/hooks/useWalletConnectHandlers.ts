@@ -167,7 +167,7 @@ const validateDataSignRequest = (
         const account = accounts.find(
             account => account.address === item.signer,
         )
-        if (!account || !canSignArbitraryData(account, accounts)) {
+        if (!account || !canSignArbitraryData(account)) {
             throw new WalletConnectInvalidSessionError(
                 'Signer cannot sign arbitrary data',
             )
@@ -227,7 +227,7 @@ const validateArc60Request = (
         throw new WalletConnectInvalidSessionError('Invalid signer')
     }
     const account = accounts.find(a => a.address === signer)
-    if (!account || !canSignArbitraryData(account, accounts)) {
+    if (!account || !canSignArbitraryData(account)) {
         throw new WalletConnectInvalidSessionError(
             'Signer cannot sign ARC-60 payloads',
         )

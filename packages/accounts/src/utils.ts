@@ -55,9 +55,8 @@ export const isLedgerAccount = (
     )
 }
 
-export const isRekeyedAccount = (account: WalletAccount) => {
-    return !!account.rekeyAddress
-}
+export const isRekeyedAccount = (account: Nullable<WalletAccount>): boolean =>
+    !!account?.rekeyAddress
 
 export const isAlgo25Account = (
     account: WalletAccount,
@@ -220,21 +219,19 @@ export const canSignWith = (
 ): boolean => resolveSignerForAccount(account, accounts).kind === 'ok'
 
 /**
- * True iff the wallet can sign arbitrary data (algo_signData / ARC-60).
- * Stricter than `canSignWith`: rejects hardware (no raw-byte opcode on the
- * device) and multisig (no signature shape in the spec). Resolves a single
- * rekey hop, so the rejection applies to the resolved signer.
+ * True iff the wallet can produce an arbitrary-data signature (algo_signData
+ * / ARC-60) for `account`. The dApp verifies against the requested account's
+ * own pubkey — there is no on-chain auth-addr lookup for off-chain data — so
+ * we must sign with that account's own keypair. Rekey indirection is NOT
+ * followed: a watch-rekeyed account cannot sign arbitrary data even when its
+ * auth chain is locally held.
+ *
+ * Equivalent to `hasSigningKeys`: only Algo25 / HDWallet accounts carry their
+ * own keyPairId. Hardware (no raw-byte opcode), multisig (no signature
+ * shape), and watch accounts are naturally excluded.
  */
-export const canSignArbitraryData = (
-    account: WalletAccount,
-    accounts: WalletAccount[],
-): boolean => {
-    const r = resolveSignerForAccount(account, accounts)
-    if (r.kind !== 'ok') return false
-    if (isHardwareWalletAccount(r.signer)) return false
-    if (isMultisigAccount(r.signer)) return false
-    return true
-}
+export const canSignArbitraryData = (account: WalletAccount): boolean =>
+    hasSigningKeys(account)
 
 /**
  * True iff `account` is rekeyed and the wallet can't sign for the auth
@@ -301,7 +298,7 @@ export const isEligibleRekeyTarget = (
     )
         return false
     if (!hasSigningKeys(target)) return false
-    if (target.rekeyAddress) return false
+    if (isRekeyedAccount(target)) return false
     return true
 }
 
@@ -317,7 +314,7 @@ export const isEligibleLedgerRekeyTarget = (
 ): boolean => {
     if (target.address === sourceAddress) return false
     if (target.type !== AccountTypes.hardware) return false
-    if (target.rekeyAddress) return false
+    if (isRekeyedAccount(target)) return false
     return true
 }
 
@@ -346,7 +343,7 @@ export const isEligibleSharedRekeyTarget = (
 ): boolean => {
     if (target.address === sourceAddress) return false
     if (!isMultisigAccount(target)) return false
-    if (target.rekeyAddress) return false
+    if (isRekeyedAccount(target)) return false
     return canSignViaMultisig(target, allAccounts)
 }
 

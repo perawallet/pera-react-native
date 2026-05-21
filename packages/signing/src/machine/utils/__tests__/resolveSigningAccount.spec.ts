@@ -48,31 +48,62 @@ const localSource: SourceMetadata = { type: 'local' }
 
 describe('resolveSigningAccount', () => {
     it('returns the signer itself for multisig-cosign even when the signer is rekeyed', () => {
-        const result = resolveSigningAccount(rekeyedSigner, cosignSource, [
+        const result = resolveSigningAccount(
             rekeyedSigner,
-            authAccount,
-        ])
+            cosignSource,
+            'transactions',
+            [rekeyedSigner, authAccount],
+        )
         expect(result.address).toBe(PARTICIPANT)
     })
 
-    it('follows rekey to the auth account for non-cosign sources', () => {
-        const result = resolveSigningAccount(rekeyedSigner, localSource, [
+    it('follows rekey to the auth account for transaction signing on non-cosign sources', () => {
+        const result = resolveSigningAccount(
             rekeyedSigner,
-            authAccount,
-        ])
+            localSource,
+            'transactions',
+            [rekeyedSigner, authAccount],
+        )
         expect(result.address).toBe(AUTH)
     })
 
     it('returns the signer itself when not rekeyed (regardless of source)', () => {
-        const result = resolveSigningAccount(plainSigner, localSource, [
+        const result = resolveSigningAccount(
             plainSigner,
-        ])
+            localSource,
+            'transactions',
+            [plainSigner],
+        )
         expect(result.address).toBe(PARTICIPANT)
     })
 
-    it('throws RekeyTargetNotFoundError on non-cosign source when the rekey target is missing', () => {
+    it('throws RekeyTargetNotFoundError on transactions when the rekey target is missing', () => {
         expect(() =>
-            resolveSigningAccount(rekeyedSigner, localSource, [rekeyedSigner]),
+            resolveSigningAccount(rekeyedSigner, localSource, 'transactions', [
+                rekeyedSigner,
+            ]),
         ).toThrow(RekeyTargetNotFoundError)
+    })
+
+    it('returns the signer itself for arbitrary-data even when rekeyed', () => {
+        // ARC-1 verifies against the requested account's own pubkey; the
+        // rekey hop must NOT be followed for off-chain data.
+        const result = resolveSigningAccount(
+            rekeyedSigner,
+            localSource,
+            'arbitrary-data',
+            [rekeyedSigner, authAccount],
+        )
+        expect(result.address).toBe(PARTICIPANT)
+    })
+
+    it('returns the signer itself for arc60 even when rekeyed', () => {
+        const result = resolveSigningAccount(
+            rekeyedSigner,
+            localSource,
+            'arc60',
+            [rekeyedSigner, authAccount],
+        )
+        expect(result.address).toBe(PARTICIPANT)
     })
 })

@@ -303,22 +303,16 @@ describe('useArc60Signer', () => {
         ).rejects.toBeInstanceOf(Arc60BadJsonError)
     })
 
-    test('signs via the auth account when the source is rekeyed', async () => {
-        const auth = {
-            ...algo25Account,
-            address: 'AUTH_ADDR',
-            keyPairId: 'key-auth',
-        } as unknown as WalletAccount
+    test('signs a rekeyed algo25 with its OWN keypair (not the auth chain)', async () => {
+        // The dApp verifies the signature against ORIG_ADDR's pubkey, so
+        // we sign with ORIG_ADDR's own key even though it has been rekeyed.
         const original = {
             ...algo25Account,
             address: 'ORIG_ADDR',
             rekeyAddress: 'AUTH_ADDR',
         } as unknown as WalletAccount
-        mockAccounts = [original, auth]
         mockSignDataWithKey.mockResolvedValue([new Uint8Array([1])])
 
-        // SIWA payload references ORIG_ADDR (the requested signer); the
-        // signature itself is produced with AUTH_ADDR's key.
         const origSiwa = new TextEncoder().encode(
             buildSiwa({ account_address: 'ORIG_ADDR' }),
         )
@@ -337,22 +331,41 @@ describe('useArc60Signer', () => {
         })
 
         const [childId] = mockSignDataWithKey.mock.calls[0]
-        expect(childId).toBe('key-auth')
+        expect(childId).toBe('key-algo25-ed25519')
     })
 
-    test('accepts a Ledger account rekeyed to a software signer (was rejected pre-fix)', async () => {
-        const auth = {
-            ...algo25Account,
-            address: 'AUTH_ADDR',
-            keyPairId: 'key-auth',
-        } as unknown as WalletAccount
-        const ledgerRekeyed = {
-            ...hardwareAccount,
-            address: 'LED_ADDR',
+    test('rejects a watch-rekeyed account even when the auth has keys', async () => {
+        const watchSource = {
+            address: 'WATCH_ADDR',
+            type: 'watch',
             rekeyAddress: 'AUTH_ADDR',
         } as unknown as WalletAccount
-        mockAccounts = [ledgerRekeyed, auth]
-        mockSignDataWithKey.mockResolvedValue([new Uint8Array([1])])
+
+        const watchSiwa = new TextEncoder().encode(
+            buildSiwa({ account_address: 'WATCH_ADDR' }),
+        )
+
+        const { result } = renderHook(() => useArc60Signer())
+        await expect(
+            act(async () => {
+                await result.current.signArc60(
+                    watchSource,
+                    {
+                        ...validStdSigData,
+                        data: encodeToBase64(watchSiwa),
+                        signer: 'WATCH_ADDR',
+                    },
+                    validMetadata,
+                )
+            }),
+        ).rejects.toBeInstanceOf(Arc60InvalidSignerError)
+    })
+
+    test('rejects a Ledger account (raw-byte signing unsupported on device)', async () => {
+        const ledger = {
+            ...hardwareAccount,
+            address: 'LED_ADDR',
+        } as unknown as WalletAccount
 
         const ledgerSiwa = new TextEncoder().encode(
             buildSiwa({ account_address: 'LED_ADDR' }),
@@ -362,56 +375,12 @@ describe('useArc60Signer', () => {
         await expect(
             act(async () => {
                 await result.current.signArc60(
-                    ledgerRekeyed,
+                    ledger,
                     {
                         ...validStdSigData,
                         data: encodeToBase64(ledgerSiwa),
                         signer: 'LED_ADDR',
                     },
-                    validMetadata,
-                )
-            }),
-        ).resolves.not.toThrow()
-    })
-
-    test('rejects a software account rekeyed to hardware', async () => {
-        const hw = {
-            ...hardwareAccount,
-            address: 'HW_ADDR',
-        } as unknown as WalletAccount
-        const original = {
-            ...algo25Account,
-            address: 'ORIG_ADDR',
-            rekeyAddress: 'HW_ADDR',
-        } as unknown as WalletAccount
-        mockAccounts = [original, hw]
-
-        const { result } = renderHook(() => useArc60Signer())
-        await expect(
-            act(async () => {
-                await result.current.signArc60(
-                    original,
-                    validStdSigData,
-                    validMetadata,
-                )
-            }),
-        ).rejects.toBeInstanceOf(Arc60InvalidSignerError)
-    })
-
-    test('rejects when auth account is not in the wallet', async () => {
-        const original = {
-            ...algo25Account,
-            address: 'ORIG_ADDR',
-            rekeyAddress: 'MISSING',
-        } as unknown as WalletAccount
-        mockAccounts = []
-
-        const { result } = renderHook(() => useArc60Signer())
-        await expect(
-            act(async () => {
-                await result.current.signArc60(
-                    original,
-                    validStdSigData,
                     validMetadata,
                 )
             }),

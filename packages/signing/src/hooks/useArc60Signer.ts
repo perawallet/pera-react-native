@@ -13,18 +13,12 @@
 import { useCallback } from 'react'
 import {
     assertAlgorandBip44PathMatches,
+    canSignArbitraryData,
     InvalidBip44PathError,
     isAlgo25Account,
     isHDWalletAccount,
-    isHardwareWalletAccount,
-    isMultisigAccount,
-    resolveSignerForAccount,
-    useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
-import type {
-    SignerResolution,
-    WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { SIGNING_KEY_DOMAIN } from '../constants'
 import type { Arc60Metadata, Arc60StdSigData } from '../pipeline/types'
@@ -53,25 +47,7 @@ export type UseArc60SignerResult = {
     ) => Promise<Uint8Array>
 }
 
-const describeUnsignable = (r: Exclude<SignerResolution, { kind: 'ok' }>) => {
-    switch (r.kind) {
-        case 'accountNotFound':
-            return 'account not found in wallet'
-        case 'watch':
-            return 'watch accounts cannot sign'
-        case 'authMissing':
-            return `auth account ${r.authAddress} is not in the wallet`
-        case 'authIsWatch':
-            return 'auth account is a watch and cannot sign'
-        case 'authNoLocalParticipant':
-            return 'auth multisig has no signable participant in this wallet'
-        case 'noLocalParticipant':
-            return 'multisig has no signable participant in this wallet'
-    }
-}
-
 export const useArc60Signer = (): UseArc60SignerResult => {
-    const accounts = useAccountsStore(state => state.accounts)
     const { signDataWithKey } = useKMS()
 
     const signArc60 = useCallback(
@@ -84,27 +60,13 @@ export const useArc60Signer = (): UseArc60SignerResult => {
                 throw new Arc60InvalidScopeError(metadata.scope)
             }
 
-            // Resolve to the actual signer FIRST so HW/multisig rejection
-            // applies to the auth-chain signer, not the requested account.
-            const resolution = resolveSignerForAccount(account, accounts)
-            if (resolution.kind !== 'ok') {
+            // ARC-60 verifies signatures against the requested signer's
+            // own pubkey. Rekey is NOT followed — sign with this account's
+            // own keypair or reject.
+            if (!canSignArbitraryData(account)) {
                 throw new Arc60InvalidSignerError(
                     account.address,
-                    describeUnsignable(resolution),
-                )
-            }
-            const signer = resolution.signer
-
-            if (isHardwareWalletAccount(signer)) {
-                throw new Arc60InvalidSignerError(
-                    account.address,
-                    'hardware wallet ARC-60 signing is not supported',
-                )
-            }
-            if (isMultisigAccount(signer)) {
-                throw new Arc60InvalidSignerError(
-                    account.address,
-                    'multisig ARC-60 signing is not supported',
+                    `account ${account.address} cannot sign ARC-60 payloads`,
                 )
             }
 
@@ -151,14 +113,12 @@ export const useArc60Signer = (): UseArc60SignerResult => {
                 stdSigData.authenticatorData,
             )
 
-            // hdPath validates against the signer's derivation since that's
-            // the key actually producing the signature.
-            if (isHDWalletAccount(signer)) {
+            if (isHDWalletAccount(account)) {
                 if (stdSigData.hdPath) {
                     try {
                         assertAlgorandBip44PathMatches(
                             stdSigData.hdPath,
-                            signer.hdWalletDetails,
+                            account.hdWalletDetails,
                         )
                     } catch (caught) {
                         if (caught instanceof InvalidBip44PathError) {
@@ -173,7 +133,7 @@ export const useArc60Signer = (): UseArc60SignerResult => {
                         throw caught
                     }
                 }
-            } else if (isAlgo25Account(signer)) {
+            } else if (isAlgo25Account(account)) {
                 if (stdSigData.hdPath) {
                     throw new Arc60FailedHdPathError(
                         stdSigData.hdPath,
@@ -181,21 +141,23 @@ export const useArc60Signer = (): UseArc60SignerResult => {
                     )
                 }
             } else {
+                // canSignArbitraryData ⇒ Algo25 or HDWallet; this branch is
+                // a defensive type-system fallback.
                 throw new Arc60InvalidSignerError(
                     account.address,
-                    `unsupported signer type ${signer.type}`,
+                    `unsupported account type ${account.type}`,
                 )
             }
 
             // ARC-60 payload is signed as-is — no MX prefix.
             const [signature] = await signDataWithKey(
-                signer.keyPairId,
+                account.keyPairId,
                 SIGNING_KEY_DOMAIN,
                 [payload],
             )
             return signature
         },
-        [accounts, signDataWithKey],
+        [signDataWithKey],
     )
 
     return { signArc60 }

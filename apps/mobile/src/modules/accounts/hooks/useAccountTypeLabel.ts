@@ -13,6 +13,7 @@
 import { useMemo } from 'react'
 import {
     AccountTypes,
+    isRekeyedAccount,
     useCanSignWith,
     useRekeyTransition,
 } from '@perawallet/wallet-core-accounts'
@@ -60,7 +61,7 @@ export const useAccountTypeLabel = (
     return useMemo(() => {
         if (!account) return plain('')
 
-        if (account.rekeyAddress) {
+        if (isRekeyedAccount(account)) {
             if (!canSign) {
                 return plain(t('account_info.type_no_auth'))
             }
