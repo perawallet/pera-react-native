@@ -13,6 +13,7 @@
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
     useWalletConnect,
+    useWalletConnectForegroundReconnect,
     useWalletConnectSessionRequests,
     useWalletConnectStore,
     WalletConnectSessionRequest,
@@ -23,7 +24,6 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { ConnectionView } from '../components/ConnectionView/ConnectionView'
 import { ConnectionSuccessContent } from '../components/ConnectionSuccessContent'
 import { WalletConnectErrorContent } from '../components/WalletConnectErrorContent'
-import { useWalletConnectForegroundReconnect } from '../hooks/useWalletConnectForegroundReconnect'
 
 export const useWalletConnectProvider = () => {
     // Revive WalletConnect bridge sockets when the app returns to the

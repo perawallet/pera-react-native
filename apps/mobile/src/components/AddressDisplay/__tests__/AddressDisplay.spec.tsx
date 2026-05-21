@@ -213,7 +213,7 @@ describe('AddressDisplay', () => {
             expect(screen.getByText(/ABC/)).toBeTruthy()
         })
 
-        it('renders the "(You)" label when the address matches a local account', () => {
+        it('renders the truncated address when the address matches a local account', () => {
             const address = 'ABCDEFGHIJ1234567890KLMNOPQRST'
             mockUseAllAccounts.mockReturnValue([{ name: 'My Wallet', address }])
 
@@ -225,7 +225,7 @@ describe('AddressDisplay', () => {
                 />,
             )
 
-            expect(screen.getByText('address_display.you_suffix')).toBeTruthy()
+            expect(screen.getByText(/ABC/)).toBeTruthy()
             expect(screen.queryByText('My Wallet')).toBeNull()
         })
 
@@ -249,7 +249,7 @@ describe('AddressDisplay', () => {
             expect(screen.queryByText('alice.algo')).toBeNull()
         })
 
-        it('prefers the "(You)" label over NFD and contact matches', () => {
+        it('prefers the truncated address over NFD and contact matches for a local account', () => {
             const address = 'ABCDEFGHIJ1234567890KLMNOPQRST'
             mockUseAllAccounts.mockReturnValue([{ name: 'My Wallet', address }])
             mockUseNfdForAddress.mockReturnValue({
@@ -266,7 +266,7 @@ describe('AddressDisplay', () => {
                 />,
             )
 
-            expect(screen.getByText('address_display.you_suffix')).toBeTruthy()
+            expect(screen.getByText(/ABC/)).toBeTruthy()
             expect(screen.queryByText('alice.algo')).toBeNull()
             expect(screen.queryByText('Joseph')).toBeNull()
         })

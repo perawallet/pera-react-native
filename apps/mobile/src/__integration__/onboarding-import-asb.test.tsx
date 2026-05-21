@@ -533,4 +533,59 @@ describe('Flow: Onboarding → Import from Algorand Secure Backup', () => {
         },
         SLOW_TEST_TIMEOUT_MS,
     )
+
+    it(
+        'Given the user navigates back into the backup screen after the flow has wiped the store, the displayed file is cleared and Continue is disabled',
+        async () => {
+            // Reproduces the user-reported back-nav loop: paste a backup,
+            // advance through the flow, after which `SelectAccounts` cleanup
+            // resets the store. Without the screen reacting to the cleared
+            // envelope, the local "Pasted backup" card stayed visible and
+            // tapping Next jumped to a Key screen with no envelope —
+            // which then bounced straight back here, looking broken.
+            vi.mocked(Clipboard.getStringAsync).mockResolvedValueOnce(
+                buildSingleAccountAsbBackup(),
+            )
+
+            renderAsbImportFromOnboarding()
+            await enterAsbFlow()
+
+            // Step 1: paste a backup to set the envelope + loadedFile card.
+            fireEvent.click(
+                screen.getByTestId('asb_import_backup_paste_button'),
+            )
+            await waitForButtonEnabled('asb_import_backup_continue_button')
+            // The clear (X) button only renders alongside the loaded-file
+            // card, so its presence is a reliable proxy for "the card is
+            // visible".
+            expect(
+                screen.getByTestId('asb_import_backup_clear_button'),
+            ).toBeTruthy()
+            expect(useAsbImportFlowStore.getState().envelope).not.toBeNull()
+
+            // Step 2: simulate the store wipe that the rest of the flow
+            // performs (SelectAccounts cleanup runs `reset()` on unmount;
+            // Result screen Done also calls it). What the user actually
+            // does — back-nav from Result through the stack — converges to
+            // the same observable end-state on this screen.
+            useAsbImportFlowStore.getState().reset()
+
+            // Step 3: the screen has to mirror the store. The card should
+            // disappear and Continue should disable so the user cannot
+            // advance into a Key screen with nothing to decrypt against.
+            await waitFor(() => {
+                expect(
+                    screen.queryByTestId('asb_import_backup_clear_button'),
+                ).toBeNull()
+            })
+            expect(
+                (
+                    screen.getByTestId(
+                        'asb_import_backup_continue_button',
+                    ) as HTMLButtonElement
+                ).disabled,
+            ).toBe(true)
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
 })

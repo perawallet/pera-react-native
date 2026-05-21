@@ -10,21 +10,4 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => ({
-    container: {
-        backgroundColor: theme.colors.background,
-        borderRadius: theme.spacing.sm,
-        borderWidth: theme.borders.sm,
-        borderColor: theme.colors.layerGray,
-        ...theme.shadows.md,
-    },
-    suggestionItem: {
-        paddingVertical: theme.spacing.sm,
-        paddingHorizontal: theme.spacing.md,
-    },
-    suggestionText: {
-        color: theme.colors.textMain,
-    },
-}))
+export { splitMnemonic } from './splitMnemonic'

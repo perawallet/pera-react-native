@@ -18,3 +18,8 @@ export {
 export { useExitAccountFlow } from './useExitAccountFlow'
 export { useAsbImportFlowStore } from './asbImportFlowStore'
 export { usePeraWebImportFlowStore } from './peraWebImportFlowStore'
+export { useMnemonicWordEntry } from './useMnemonicWordEntry'
+export type {
+    UseMnemonicWordEntryParams,
+    UseMnemonicWordEntryResult,
+} from './useMnemonicWordEntry'

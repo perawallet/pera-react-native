@@ -12,8 +12,8 @@
 
 import { useEffect, useRef } from 'react'
 import { AppState } from 'react-native'
-import { reconnectAllConnectors } from '@perawallet/wallet-core-walletconnect'
-import { getAppStatePlatform, isForegroundTransition } from '@utils/app-state'
+import { reconnectAllConnectors } from '../connection'
+import { getAppStatePlatform, isForegroundTransition } from '../utils/app-state'
 
 /**
  * Reconnects WalletConnect bridge sockets when the app returns to the

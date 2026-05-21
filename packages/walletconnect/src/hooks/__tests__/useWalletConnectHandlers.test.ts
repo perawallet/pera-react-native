@@ -804,7 +804,6 @@ describe('useWalletConnectHandlers', () => {
                 approve: expect.any(Function),
                 reject: expect.any(Function),
                 error: expect.any(Function),
-                softReject: expect.any(Function),
                 approveSignedBytes: expect.any(Function),
             })
 
@@ -1412,7 +1411,93 @@ describe('useWalletConnectHandlers', () => {
             ).toThrow('Transaction limit exceeded')
         })
 
-        it('softReject rejects WC peer + removes request, without setting connection-error banner', async () => {
+        it('routes a multisig-sender tx with signers: [P1] through the propose flow (no signerOverrides)', () => {
+            // Regression: the dApp can name a single participant in
+            // `signers`, but the wallet must still sign with every local
+            // participant of the multisig (which the propose transport
+            // dispatches). Routing depends on `multisigAddresses` reaching
+            // `resolveSignableTransactions` at the call site — previously
+            // unwired in prod.
+            mockAddSignRequest.mockReset()
+            ;(useAllAccounts as any).mockReturnValue([
+                { address: 'addr1', name: 'Participant', type: 'standard' },
+                {
+                    address: 'MSIG_ADDR',
+                    name: 'Multisig',
+                    type: 'multisig',
+                    multisigDetails: {
+                        version: 1,
+                        threshold: 2,
+                        addresses: ['addr1', 'P2', 'P3'],
+                    },
+                },
+            ])
+            ;(useTransactionEncoder as any).mockImplementation(() => ({
+                encodeSignedTransactions: vi.fn((txs: unknown[]) =>
+                    txs.length > 0 ? [new Uint8Array([1, 2, 3, 4])] : [],
+                ),
+                decodeTransactions: vi.fn(() => [
+                    {
+                        sender: { toString: () => 'MSIG_ADDR' },
+                        fee: 1000n,
+                    },
+                ]),
+            }))
+
+            const mockSessionsMsig = [
+                {
+                    clientId: 'test-client-id',
+                    session: {
+                        clientId: 'test-client-id',
+                        chainId: 4160,
+                        accounts: ['MSIG_ADDR'],
+                    },
+                },
+            ]
+            ;(useWalletConnectStore as any).mockImplementation(
+                (selector: any) =>
+                    selector({ walletConnectConnections: mockSessionsMsig }),
+            )
+
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            const connector = {
+                clientId: 'test-client-id',
+                approveRequest: vi.fn(),
+                rejectRequest: vi.fn(),
+            }
+            const payload = {
+                params: [
+                    [
+                        {
+                            txn: 'msig-txn',
+                            signers: ['P1'],
+                        },
+                    ],
+                ],
+                method: 'algo_signTxn' as const,
+                jsonrpc: '2.0',
+                id: 1,
+            }
+
+            result.current.handleSignTransaction(
+                connector as any,
+                Networks.mainnet,
+                null,
+                payload,
+            )
+
+            // The tx must be included so the multisig propose transport
+            // picks it up. `signerOverrides` must NOT be set — the
+            // multisig branch short-circuits the per-participant override
+            // (`signerAddress` stays at MSIG_ADDR; the transport selector
+            // routes by sender).
+            expect(mockAddSignRequest).toHaveBeenCalledTimes(1)
+            const signRequest = mockAddSignRequest.mock.calls[0][0]
+            expect(signRequest.txs).toHaveLength(1)
+            expect(signRequest.signerOverrides).toBeUndefined()
+        })
+
+        it('reject({ kind: "softReject", error }) goes through ensureConnectorReady and removes the request, without setting connection-error banner', async () => {
             // Reset addSignRequest impl — the previous test set a throwing
             // mock that vi.clearAllMocks doesn't reset.
             mockAddSignRequest.mockReset()
@@ -1431,6 +1516,11 @@ describe('useWalletConnectHandlers', () => {
                 approveRequest: vi.fn(),
                 rejectRequest: vi.fn(),
             }
+            // Soft-reject must route through ensureConnectorReady so a
+            // long-running multisig decline lands on a live socket. The
+            // mock returns the same connector so the test can assert on
+            // the eventual rejectRequest call.
+            ;(ensureConnectorReady as any).mockResolvedValue(connector)
             const payload = {
                 params: [
                     [
@@ -1452,7 +1542,7 @@ describe('useWalletConnectHandlers', () => {
                 payload,
             )
 
-            const { softReject } =
+            const { reject } =
                 mockAddSignRequest.mock.calls[
                     mockAddSignRequest.mock.calls.length - 1
                 ][0]
@@ -1460,8 +1550,12 @@ describe('useWalletConnectHandlers', () => {
                 'Transaction handed off to multisig sign-request abc-123',
             )
 
-            await softReject(handoffError)
+            await reject({ kind: 'softReject', error: handoffError })
 
+            expect(ensureConnectorReady).toHaveBeenCalledWith(
+                'test-client-id',
+                expect.any(Number),
+            )
             expect(connector.rejectRequest).toHaveBeenCalledWith({
                 id: 1,
                 error: handoffError,
@@ -1470,6 +1564,56 @@ describe('useWalletConnectHandlers', () => {
             // Crucially: no connection-error banner — this is a
             // success-path handoff, not a failure.
             expect(mockSetConnectionError).not.toHaveBeenCalled()
+        })
+
+        it('default reject() (no args) keeps the legacy direct rejectRequest path', () => {
+            // Regression: existing user-decline call sites pass no args.
+            // Default kind must be `user`, NOT go through
+            // ensureConnectorReady (a dead socket on user-initiated
+            // decline is acceptable — nobody is blocked waiting for it).
+            mockAddSignRequest.mockReset()
+            ;(useSigningRequest as any).mockReturnValue({
+                addSignRequest: mockAddSignRequest,
+                removeSignRequest: vi.fn(),
+                clearLastFailedRequest: vi.fn(),
+            })
+
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            const connector = {
+                clientId: 'test-client-id',
+                accounts: ['addr1'],
+                approveRequest: vi.fn(),
+                rejectRequest: vi.fn(),
+            }
+            const payload = {
+                params: [[{ message: 'Sign tx', txn: 'encodedTxn' }]],
+                method: 'algo_signTxn' as const,
+                jsonrpc: '2.0',
+                id: 1,
+            }
+
+            result.current.handleSignTransaction(
+                connector as any,
+                Networks.mainnet,
+                null,
+                payload,
+            )
+
+            const { reject } =
+                mockAddSignRequest.mock.calls[
+                    mockAddSignRequest.mock.calls.length - 1
+                ][0]
+            ;(ensureConnectorReady as any).mockClear()
+
+            act(() => {
+                reject()
+            })
+
+            expect(ensureConnectorReady).not.toHaveBeenCalled()
+            expect(connector.rejectRequest).toHaveBeenCalledWith({
+                id: 1,
+                error: expect.objectContaining({ message: 'User rejected' }),
+            })
         })
     })
 })

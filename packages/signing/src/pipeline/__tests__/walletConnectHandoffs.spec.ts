@@ -15,6 +15,7 @@ import {
     walletConnectHandoffs,
     type PendingWalletConnectHandoff,
 } from '../walletConnectHandoffs'
+import { useWalletConnectHandoffsStore } from '../../store/walletConnectHandoffsStore'
 
 const buildHandoff = (
     overrides: Partial<PendingWalletConnectHandoff> = {},
@@ -27,19 +28,20 @@ const buildHandoff = (
         addresses: ['A1', 'A2', 'A3'],
     },
     deviceId: 'device-1',
+    network: 'testnet',
     callbacks: {
         approveSignedBytes: vi.fn(),
         error: vi.fn(),
-        softReject: vi.fn(),
+        reject: vi.fn(),
     },
     source: { type: 'walletconnect' },
     registeredAt: Date.now(),
     ...overrides,
 })
 
-describe('walletConnectHandoffs', () => {
+describe('walletConnectHandoffs wrapper', () => {
     beforeEach(() => {
-        walletConnectHandoffs.__resetForTests()
+        useWalletConnectHandoffsStore.getState().resetState()
     })
 
     test('register + get round-trips a handoff by signRequestId', () => {
@@ -48,21 +50,10 @@ describe('walletConnectHandoffs', () => {
         expect(walletConnectHandoffs.get('sr-1')).toBe(h)
     })
 
-    test('list returns all currently-registered handoffs', () => {
-        walletConnectHandoffs.register(buildHandoff({ signRequestId: 'a' }))
-        walletConnectHandoffs.register(buildHandoff({ signRequestId: 'b' }))
-        const ids = walletConnectHandoffs
-            .list()
-            .map(h => h.signRequestId)
-            .sort()
-        expect(ids).toEqual(['a', 'b'])
-    })
-
     test('unregister drops the entry', () => {
         walletConnectHandoffs.register(buildHandoff())
         walletConnectHandoffs.unregister('sr-1')
         expect(walletConnectHandoffs.get('sr-1')).toBeUndefined()
-        expect(walletConnectHandoffs.list()).toEqual([])
     })
 
     test('re-registering with the same id replaces the entry', () => {
@@ -71,53 +62,58 @@ describe('walletConnectHandoffs', () => {
         walletConnectHandoffs.register(first)
         walletConnectHandoffs.register(second)
         expect(walletConnectHandoffs.get('sr-1')).toBe(second)
-        expect(walletConnectHandoffs.list()).toHaveLength(1)
+        expect(
+            Object.keys(useWalletConnectHandoffsStore.getState().handoffs),
+        ).toHaveLength(1)
     })
 
-    test('subscribe fires on register and unregister; unsubscribe stops it', () => {
-        const cb = vi.fn()
-        const unsub = walletConnectHandoffs.subscribe(cb)
-
+    test('__resetForTests clears the store', () => {
         walletConnectHandoffs.register(buildHandoff())
+        walletConnectHandoffs.__resetForTests()
+        expect(useWalletConnectHandoffsStore.getState().handoffs).toEqual({})
+    })
+})
+
+describe('useWalletConnectHandoffsStore', () => {
+    beforeEach(() => {
+        useWalletConnectHandoffsStore.getState().resetState()
+    })
+
+    test('subscribe fires on every register / unregister edge', () => {
+        const cb = vi.fn()
+        const unsub = useWalletConnectHandoffsStore.subscribe(cb)
+
+        useWalletConnectHandoffsStore.getState().register(buildHandoff())
         expect(cb).toHaveBeenCalledTimes(1)
 
-        walletConnectHandoffs.unregister('sr-1')
+        useWalletConnectHandoffsStore.getState().unregister('sr-1')
         expect(cb).toHaveBeenCalledTimes(2)
 
         unsub()
-        walletConnectHandoffs.register(buildHandoff())
+        useWalletConnectHandoffsStore.getState().register(buildHandoff())
         expect(cb).toHaveBeenCalledTimes(2)
     })
 
-    test('unregister of unknown id does not notify', () => {
+    test('unregister of an unknown id is a no-op', () => {
         const cb = vi.fn()
-        walletConnectHandoffs.subscribe(cb)
-        walletConnectHandoffs.unregister('does-not-exist')
+        useWalletConnectHandoffsStore.subscribe(cb)
+        useWalletConnectHandoffsStore.getState().unregister('does-not-exist')
         expect(cb).not.toHaveBeenCalled()
     })
 
-    test('subscriber throws do not break further notifications', () => {
-        const failing = vi.fn().mockImplementation(() => {
-            throw new Error('boom')
-        })
-        const ok = vi.fn()
-        walletConnectHandoffs.subscribe(failing)
-        walletConnectHandoffs.subscribe(ok)
-
-        walletConnectHandoffs.register(buildHandoff())
-        expect(failing).toHaveBeenCalled()
-        expect(ok).toHaveBeenCalled()
+    test('register replaces a same-id entry without growing the dict', () => {
+        const first = buildHandoff()
+        const second = buildHandoff({ deviceId: 'device-2' })
+        useWalletConnectHandoffsStore.getState().register(first)
+        useWalletConnectHandoffsStore.getState().register(second)
+        const dict = useWalletConnectHandoffsStore.getState().handoffs
+        expect(Object.keys(dict)).toEqual(['sr-1'])
+        expect(dict['sr-1']).toBe(second)
     })
 
-    test('__resetForTests clears handoffs AND subscribers', () => {
-        const cb = vi.fn()
-        walletConnectHandoffs.subscribe(cb)
-        walletConnectHandoffs.register(buildHandoff())
-        walletConnectHandoffs.__resetForTests()
-
-        expect(walletConnectHandoffs.list()).toEqual([])
-        // Reset clears subscribers too, so further changes don't notify.
-        walletConnectHandoffs.register(buildHandoff())
-        expect(cb).toHaveBeenCalledTimes(1) // Only from the first register
+    test('resetState clears every entry', () => {
+        useWalletConnectHandoffsStore.getState().register(buildHandoff())
+        useWalletConnectHandoffsStore.getState().resetState()
+        expect(useWalletConnectHandoffsStore.getState().handoffs).toEqual({})
     })
 })

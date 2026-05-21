@@ -10,13 +10,37 @@
  limitations under the License
  */
 
-import { assembleSignedMultisigTransactions } from '@perawallet/wallet-core-blockchain'
-import type { SignRequestResponse } from '@perawallet/wallet-core-multisig'
+import {
+    assembleSignedMultisigTransactions,
+    type ParticipantResponse,
+} from '@perawallet/wallet-core-blockchain'
 import { logger, type Network } from '@perawallet/wallet-core-shared'
 import {
     walletConnectHandoffs,
     type PendingWalletConnectHandoff,
-} from '@perawallet/wallet-core-signing'
+} from './walletConnectHandoffs'
+import type { RejectReason } from './types'
+
+/**
+ * Structural shape of the `with-signatures` detail consumed by the
+ * classifier. Mirrors a subset of `HandoffPollDetail` from
+ * `@perawallet/wallet-core-multisig` — defined here as a structural type to
+ * keep the type dependency one-way (multisig → signing), since the
+ * resolver hook lives in multisig.
+ */
+export type HandoffPollDetail = {
+    id?: string
+    status: string
+    fail_reason_display: string | null
+    transaction_lists: Array<{
+        raw_transactions: string[]
+        responses: Array<{
+            address: string
+            response: string
+            signatures?: (string | null)[] | null
+        }>
+    }>
+}
 
 /**
  * Localized strings delivered to the dApp. Built by the resolver hook from
@@ -66,7 +90,7 @@ export type TerminalHandoffOutcome = Exclude<
  * composite multisig signed-transaction bytes.
  */
 export const classifyHandoffPoll = (
-    detail: SignRequestResponse,
+    detail: HandoffPollDetail,
     handoff: PendingWalletConnectHandoff,
 ): HandoffPollOutcome => {
     switch (detail.status) {
@@ -92,7 +116,7 @@ export const classifyHandoffPoll = (
 }
 
 const classifyReadyPoll = (
-    detail: SignRequestResponse,
+    detail: HandoffPollDetail,
     handoff: PendingWalletConnectHandoff,
 ): HandoffPollOutcome => {
     const lists = detail.transaction_lists
@@ -122,11 +146,15 @@ const classifyReadyPoll = (
             participantAddresses: handoff.msigMetadata.addresses,
             version: handoff.msigMetadata.version,
             threshold: handoff.msigMetadata.threshold,
+            // The structural `HandoffPollDetail.response` is `string` to
+            // avoid a hard coupling on the multisig schema; the multisig
+            // backend only ever emits `'signed' | 'declined'`, so the cast
+            // is safe at this trust boundary.
             responses: list.responses.map(response => ({
                 address: response.address,
                 response: response.response,
-                signatures: response.signatures,
-            })),
+                signatures: response.signatures ?? undefined,
+            })) as ParticipantResponse[],
         })
         if (result.kind === 'error') {
             return {
@@ -175,7 +203,8 @@ type ResolveHandoffOutcomeArgs = {
  *    best-effort `markConfirmed` (a failure there is non-fatal — the dApp
  *    already has the bytes — but logged). If delivery itself fails, fall
  *    through to `error` so the dApp sees a rejection.
- *  - `soft-reject`: a clean `softReject`, no in-app connection-error banner.
+ *  - `soft-reject`: a clean `reject({ kind: 'softReject', error })`, no
+ *    in-app connection-error banner.
  *  - `error`: `error` — the connection-error banner is appropriate.
  */
 export const resolveHandoffOutcome = async ({
@@ -198,7 +227,7 @@ export const resolveHandoffOutcome = async ({
                 outcome.reason === 'declined'
                     ? messages.declined
                     : messages.expired
-            await notifyPeer(handoff.callbacks.softReject, message)
+            await notifySoftReject(handoff.callbacks.reject, message)
             walletConnectHandoffs.unregister(handoff.signRequestId)
             return
         }
@@ -259,6 +288,21 @@ const notifyPeer = async (
     } catch {
         // The peer callback (WC rejectRequest) failing is non-fatal — the
         // handoff is resolved regardless.
+    }
+}
+
+/**
+ * Invokes the source's `reject` callback with a `softReject` reason.
+ * Mirrors `notifyPeer`'s rejection-swallowing semantics.
+ */
+const notifySoftReject = async (
+    reject: ((reason?: RejectReason) => Promise<void>) | undefined,
+    message: string,
+): Promise<void> => {
+    try {
+        await reject?.({ kind: 'softReject', error: new Error(message) })
+    } catch {
+        // The peer callback failing is non-fatal — handoff is resolved regardless.
     }
 }
 

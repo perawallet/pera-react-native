@@ -318,6 +318,103 @@ describe('useAddressSearchView', () => {
         )
     })
 
+    it('excludes a contact whose address is already a wallet account', () => {
+        const accounts = [{ address: 'SHARED_ADDR', name: 'My Account' }]
+        const contacts = [
+            { address: 'SHARED_ADDR', name: 'Same As Account' },
+            { address: 'CONT_ONLY', name: 'Contact Only' },
+        ]
+        vi.mocked(useAllAccounts).mockReturnValue(
+            accounts as unknown as ReturnType<typeof useAllAccounts>,
+        )
+        mockFindContacts.mockReturnValue(contacts)
+
+        const { result } = renderHook(() =>
+            useAddressSearchView({ showAllContactsWhenEmpty: true }),
+        )
+
+        const accountItems = itemsOfType(
+            result.current.matchingItems,
+            'account',
+        )
+        const contactItems = itemsOfType(
+            result.current.matchingItems,
+            'contact',
+        )
+
+        expect(accountItems).toHaveLength(1)
+        expect(accountItems[0]).toEqual(
+            expect.objectContaining({
+                account: expect.objectContaining({ address: 'SHARED_ADDR' }),
+            }),
+        )
+        expect(contactItems).toHaveLength(1)
+        expect(contactItems[0]).toEqual(
+            expect.objectContaining({
+                contact: expect.objectContaining({ address: 'CONT_ONLY' }),
+            }),
+        )
+    })
+
+    it('excludes a contact whose address is a wallet account even when searching by contact name', () => {
+        const accounts = [{ address: 'OWN_ADDR_XYZ', name: 'My Account' }]
+        const contacts = [
+            { address: 'OWN_ADDR_XYZ', name: 'Alice' },
+            { address: 'CONT_ONLY', name: 'Alice Other' },
+        ]
+        vi.mocked(useAllAccounts).mockReturnValue(
+            accounts as unknown as ReturnType<typeof useAllAccounts>,
+        )
+        mockFindContacts.mockReturnValue(contacts)
+
+        const { result } = renderHook(() => useAddressSearchView())
+
+        act(() => {
+            result.current.setValue('Alice')
+        })
+
+        const contactItems = itemsOfType(
+            result.current.matchingItems,
+            'contact',
+        )
+        expect(contactItems).toHaveLength(1)
+        expect(contactItems[0]).toEqual(
+            expect.objectContaining({
+                contact: expect.objectContaining({ address: 'CONT_ONLY' }),
+            }),
+        )
+    })
+
+    it('excludes a contact whose address matches excludeAddress', () => {
+        const accounts = [{ address: 'OWN_ADDR_XYZ', name: 'My Account' }]
+        const contacts = [
+            { address: 'OWN_ADDR_XYZ', name: 'Me' },
+            { address: 'CONT_ONLY', name: 'Someone Else' },
+        ]
+        vi.mocked(useAllAccounts).mockReturnValue(
+            accounts as unknown as ReturnType<typeof useAllAccounts>,
+        )
+        mockFindContacts.mockReturnValue(contacts)
+
+        const { result } = renderHook(() =>
+            useAddressSearchView({
+                excludeAddress: 'OWN_ADDR_XYZ',
+                showAllContactsWhenEmpty: true,
+            }),
+        )
+
+        const contactItems = itemsOfType(
+            result.current.matchingItems,
+            'contact',
+        )
+        expect(contactItems).toHaveLength(1)
+        expect(contactItems[0]).toEqual(
+            expect.objectContaining({
+                contact: expect.objectContaining({ address: 'CONT_ONLY' }),
+            }),
+        )
+    })
+
     it('returns NFD results when value contains a dot', () => {
         vi.mocked(useNfdSearchQuery).mockReturnValue({
             data: [

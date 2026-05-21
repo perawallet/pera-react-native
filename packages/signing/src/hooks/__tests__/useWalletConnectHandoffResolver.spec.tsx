@@ -11,39 +11,15 @@
  */
 
 import React from 'react'
-import {
-    afterEach,
-    beforeEach,
-    describe,
-    expect,
-    it,
-    vi,
-    type Mock,
-} from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, act, waitFor } from '@testing-library/react'
-import { AppState, type AppStateStatus } from 'react-native'
-import {
-    walletConnectHandoffs,
-    type PendingWalletConnectHandoff,
-} from '@perawallet/wallet-core-signing'
 
 const mocks = vi.hoisted(() => ({
     getSignRequestsWithSignatures: vi.fn(),
     classifyHandoffPoll: vi.fn(),
     resolveHandoffOutcome: vi.fn(),
     markConfirmed: vi.fn(),
-}))
-
-vi.mock('react-i18next', () => ({
-    useTranslation: () => ({ t: (key: string) => key }),
-}))
-
-vi.mock('react-native', () => ({
-    AppState: {
-        currentState: 'active',
-        addEventListener: vi.fn(() => ({ remove: vi.fn() })),
-    },
 }))
 
 vi.mock('@perawallet/wallet-core-multisig', () => ({
@@ -58,14 +34,35 @@ vi.mock('@perawallet/wallet-core-multisig', () => ({
     }),
 }))
 
-// The classification / delivery logic has its own spec; stub it here so this
-// suite verifies only the poll → classify → resolve wiring.
-vi.mock('../../utils/classifyHandoffPoll', () => ({
-    classifyHandoffPoll: mocks.classifyHandoffPoll,
-    resolveHandoffOutcome: mocks.resolveHandoffOutcome,
-}))
+// Stub the pure classifier + delivery functions so this suite verifies only
+// the poll → classify → resolve wiring. Their own behavior is covered by
+// classifyHandoffPoll.spec.ts.
+vi.mock('../../pipeline/classifyHandoffPoll', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('../../pipeline/classifyHandoffPoll')
+        >()
+    return {
+        ...actual,
+        classifyHandoffPoll: mocks.classifyHandoffPoll,
+        resolveHandoffOutcome: mocks.resolveHandoffOutcome,
+    }
+})
 
 import { useWalletConnectHandoffResolver } from '../useWalletConnectHandoffResolver'
+import { useWalletConnectHandoffsStore } from '../../store/walletConnectHandoffsStore'
+import type { ResolverMessages } from '../../pipeline/classifyHandoffPoll'
+import type { PendingWalletConnectHandoff } from '../../pipeline/walletConnectHandoffs'
+
+const messages: ResolverMessages = {
+    declined: 'multisig.sync_sign.errors.declined',
+    expired: 'multisig.sync_sign.errors.expired',
+    failed: 'multisig.sync_sign.errors.failed',
+    noTransactions: 'multisig.sync_sign.errors.no_transactions',
+    deliveryFailed: 'multisig.sync_sign.errors.delivery_failed',
+    assemblyFailed: (reason: string) =>
+        `multisig.sync_sign.errors.assembly_failed:${reason}`,
+}
 
 const makeHandoff = (signRequestId: string): PendingWalletConnectHandoff => ({
     signRequestId,
@@ -78,10 +75,6 @@ const makeHandoff = (signRequestId: string): PendingWalletConnectHandoff => ({
     registeredAt: Date.now(),
 })
 
-const setAppState = (state: AppStateStatus): void => {
-    ;(AppState as { currentState: AppStateStatus }).currentState = state
-}
-
 let queryClient: QueryClient
 
 const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -90,11 +83,7 @@ const wrapper = ({ children }: { children: React.ReactNode }) =>
 describe('useWalletConnectHandoffResolver', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        setAppState('active')
-        ;(AppState.addEventListener as Mock).mockImplementation(() => ({
-            remove: vi.fn(),
-        }))
-        walletConnectHandoffs.__resetForTests()
+        useWalletConnectHandoffsStore.getState().resetState()
         queryClient = new QueryClient({
             defaultOptions: { queries: { retry: false } },
         })
@@ -114,10 +103,17 @@ describe('useWalletConnectHandoffResolver', () => {
                 params: { proposed_sign_request_ids: string[] },
             ) => Promise.resolve([{ id: params.proposed_sign_request_ids[0] }]),
         )
-        walletConnectHandoffs.register(makeHandoff('sr-1'))
-        walletConnectHandoffs.register(makeHandoff('sr-2'))
+        useWalletConnectHandoffsStore.getState().register(makeHandoff('sr-1'))
+        useWalletConnectHandoffsStore.getState().register(makeHandoff('sr-2'))
 
-        renderHook(() => useWalletConnectHandoffResolver(), { wrapper })
+        renderHook(
+            () =>
+                useWalletConnectHandoffResolver({
+                    isAppActive: true,
+                    messages,
+                }),
+            { wrapper },
+        )
 
         await waitFor(() => {
             const polledIds =
@@ -133,9 +129,16 @@ describe('useWalletConnectHandoffResolver', () => {
         const outcome = { kind: 'soft-reject', reason: 'declined' }
         mocks.classifyHandoffPoll.mockReturnValue(outcome)
         const handoff = makeHandoff('sr-1')
-        walletConnectHandoffs.register(handoff)
+        useWalletConnectHandoffsStore.getState().register(handoff)
 
-        renderHook(() => useWalletConnectHandoffResolver(), { wrapper })
+        renderHook(
+            () =>
+                useWalletConnectHandoffResolver({
+                    isAppActive: true,
+                    messages,
+                }),
+            { wrapper },
+        )
 
         await waitFor(() =>
             expect(mocks.resolveHandoffOutcome).toHaveBeenCalledTimes(1),
@@ -143,18 +146,23 @@ describe('useWalletConnectHandoffResolver', () => {
         expect(mocks.resolveHandoffOutcome).toHaveBeenCalledWith({
             outcome,
             handoff,
-            messages: expect.objectContaining({
-                declined: 'multisig.sync_sign.errors.declined',
-            }),
+            messages,
             markConfirmed: mocks.markConfirmed,
         })
     })
 
     it('does not deliver while the poll says keep-polling', async () => {
         mocks.classifyHandoffPoll.mockReturnValue({ kind: 'keep-polling' })
-        walletConnectHandoffs.register(makeHandoff('sr-1'))
+        useWalletConnectHandoffsStore.getState().register(makeHandoff('sr-1'))
 
-        renderHook(() => useWalletConnectHandoffResolver(), { wrapper })
+        renderHook(
+            () =>
+                useWalletConnectHandoffResolver({
+                    isAppActive: true,
+                    messages,
+                }),
+            { wrapper },
+        )
 
         await waitFor(() =>
             expect(mocks.classifyHandoffPoll).toHaveBeenCalled(),
@@ -163,21 +171,36 @@ describe('useWalletConnectHandoffResolver', () => {
     })
 
     it('does not poll while the app is backgrounded', async () => {
-        setAppState('background')
-        walletConnectHandoffs.register(makeHandoff('sr-1'))
+        useWalletConnectHandoffsStore.getState().register(makeHandoff('sr-1'))
 
-        renderHook(() => useWalletConnectHandoffResolver(), { wrapper })
+        renderHook(
+            () =>
+                useWalletConnectHandoffResolver({
+                    isAppActive: false,
+                    messages,
+                }),
+            { wrapper },
+        )
 
         await new Promise(resolve => setTimeout(resolve, 20))
         expect(mocks.getSignRequestsWithSignatures).not.toHaveBeenCalled()
     })
 
     it('starts polling a handoff registered after mount', async () => {
-        renderHook(() => useWalletConnectHandoffResolver(), { wrapper })
+        renderHook(
+            () =>
+                useWalletConnectHandoffResolver({
+                    isAppActive: true,
+                    messages,
+                }),
+            { wrapper },
+        )
         expect(mocks.getSignRequestsWithSignatures).not.toHaveBeenCalled()
 
         act(() => {
-            walletConnectHandoffs.register(makeHandoff('sr-1'))
+            useWalletConnectHandoffsStore
+                .getState()
+                .register(makeHandoff('sr-1'))
         })
 
         await waitFor(() =>
@@ -190,10 +213,17 @@ describe('useWalletConnectHandoffResolver', () => {
             kind: 'soft-reject',
             reason: 'declined',
         })
-        walletConnectHandoffs.register(makeHandoff('sr-1'))
+        useWalletConnectHandoffsStore.getState().register(makeHandoff('sr-1'))
         vi.useFakeTimers()
         try {
-            renderHook(() => useWalletConnectHandoffResolver(), { wrapper })
+            renderHook(
+                () =>
+                    useWalletConnectHandoffResolver({
+                        isAppActive: true,
+                        messages,
+                    }),
+                { wrapper },
+            )
 
             await vi.waitFor(() =>
                 expect(mocks.resolveHandoffOutcome).toHaveBeenCalledTimes(1),

@@ -24,4 +24,9 @@ export {
     type LedgerSigningErrorPayload,
 } from './store/hardwareSigningStore'
 
+export {
+    useWalletConnectHandoffsStore,
+    type WalletConnectHandoffsStore,
+} from './store/walletConnectHandoffsStore'
+
 export type { LedgerErrorPresetKind } from './types/ledgerErrorPresetKind'
