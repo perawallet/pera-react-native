@@ -700,12 +700,12 @@ importers:
 
   extensions/ledger-react-native-usb:
     dependencies:
+      '@algorandfoundation/ledger-algorand-js':
+        specifier: ^1.4.3
+        version: 1.4.3
       '@ledgerhq/errors':
         specifier: ^6.32.0
         version: 6.34.0
-      '@ledgerhq/hw-app-algorand':
-        specifier: ^6.34.1
-        version: 6.35.2
       '@ledgerhq/react-native-hid':
         specifier: ^6.39.1
         version: 6.39.2(react-native@0.83.9(@babel/core@7.29.0)(@react-native/metro-config@0.85.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.6))
@@ -4729,9 +4729,6 @@ packages:
   '@ledgerhq/errors@6.34.1':
     resolution: {integrity: sha512-Atkim7yM9bbfWN7OikiE1vbtRLABRz6rDayTHkX0rkPTs6EkMVZSgoNNDGhcYQRlUXrTz9Eko+5ixCLpJQpEWg==}
 
-  '@ledgerhq/hw-app-algorand@6.35.2':
-    resolution: {integrity: sha512-CkCjmA3yh4cOHG6LlpusLOXjDQTWM/QHuxd2fvLJGp3JOZilAJpqrtAb02kjgEhdX+DCpzOxetWdImKKv7YuxQ==}
-
   '@ledgerhq/hw-transport@6.31.9':
     resolution: {integrity: sha512-HqB2Whl2qbrzyvs9gC/GmLhIy8RO4CWzjqHS4k0bPWDZRqKa8m6H32vjrbXGO//pUL1Mlu87UwvxvLyuICdjwg==}
 
@@ -6482,9 +6479,6 @@ packages:
   bindings@1.5.0:
     resolution: {integrity: sha512-p2q/t/mhvuOj/UeLlV6566GD/guowlr0hHxClI0W9m7MWYkL1F0hLo+0Aexs9HSPCtR1SXQ0TD3MMKrXZajbiQ==}
 
-  bip32-path@0.4.2:
-    resolution: {integrity: sha512-ZBMCELjJfcNMkz5bDuJ1WrYvjlhEF5k6mQ8vUr4N7MbVRsXei7ZOg8VhhwMfNiW68NWmLkgkc6WvTickrLGprQ==}
-
   bl@4.1.0:
     resolution: {integrity: sha512-1W07cM9gS6DcLperZfFSj+bWLtaPGSOHWhPiGzXmvVJbRLdG82sH/Kn8EtW1VqWVA54AKf2h5k5BbnIbwF3h6w==}
 
@@ -7899,9 +7893,6 @@ packages:
 
   js-sha3@0.8.0:
     resolution: {integrity: sha512-gF1cRrHhIzNfToc802P800N8PpXS+evLLXfsVpowqmAFR9uwbi89WvXg2QspOmXL8QL86J4T1EpFu+yUkwJY3Q==}
-
-  js-sha512@0.8.0:
-    resolution: {integrity: sha512-PWsmefG6Jkodqt+ePTvBZCSMFgN7Clckjd0O7su3I0+BW2QWUTJNzjktHsztGLhncP2h8mcF9V9Y2Ha59pAViQ==}
 
   js-tokens@10.0.0:
     resolution: {integrity: sha512-lM/UBzQmfJRo9ABXbPWemivdCW8V2G8FHaHdypQaIy523snUjog0W71ayWXTjiR+ixeMyVHN2XcpnTd/liPg/Q==}
@@ -12752,15 +12743,6 @@ snapshots:
 
   '@ledgerhq/errors@6.34.1': {}
 
-  '@ledgerhq/hw-app-algorand@6.35.2':
-    dependencies:
-      '@ledgerhq/errors': 6.34.1
-      '@ledgerhq/hw-transport': 6.35.2
-      bip32-path: 0.4.2
-      hi-base32: 0.5.1
-      js-sha512: 0.8.0
-      tweetnacl: 1.0.3
-
   '@ledgerhq/hw-transport@6.31.9':
     dependencies:
       '@ledgerhq/devices': 8.5.0
@@ -14849,8 +14831,6 @@ snapshots:
     dependencies:
       file-uri-to-path: 1.0.0
 
-  bip32-path@0.4.2: {}
-
   bl@4.1.0:
     dependencies:
       buffer: 5.7.1
@@ -16439,8 +16419,6 @@ snapshots:
     optional: true
 
   js-sha3@0.8.0: {}
-
-  js-sha512@0.8.0: {}
 
   js-tokens@10.0.0: {}
 

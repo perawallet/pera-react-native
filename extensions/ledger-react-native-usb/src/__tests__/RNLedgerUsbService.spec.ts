@@ -29,14 +29,18 @@ vi.mock('@ledgerhq/react-native-hid', () => ({
     },
 }))
 
-vi.mock('@ledgerhq/hw-app-algorand', () => ({
-    default: class {
-        getAddress = algorandGetAddressMock
+vi.mock('@algorandfoundation/ledger-algorand-js', () => ({
+    AlgorandApp: class {
+        getAddressAndPubKey = algorandGetAddressMock
         sign = algorandSignMock
+        getVersion = vi.fn()
+        signData = vi.fn()
     },
+    ScopeType: { UNKNOWN: -1, AUTH: 1 },
 }))
 
 import { RNLedgerUsbService } from '../RNLedgerUsbService'
+import { LedgerSigningError } from '@perawallet/wallet-extension-ledger-react-native/protocol'
 
 const NANO_S_PLUS_DESCRIPTOR = {
     deviceId: 1234,
@@ -133,37 +137,47 @@ describe('RNLedgerUsbService', () => {
         expect(transportOpenMock).not.toHaveBeenCalled()
     })
 
-    test('wrapped transport.getAddress delegates to AppAlgorand and returns public-key bytes', async () => {
+    test('wrapped transport.getAddress delegates to AlgorandApp and returns public-key bytes', async () => {
         algorandGetAddressMock.mockResolvedValue({
-            address: 'ALG_ADDR',
-            publicKey:
+            address: Buffer.from('ALGO_ADDR'),
+            publicKey: Buffer.from(
                 'aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899',
+                'hex',
+            ),
         })
 
         const transport = await connectToFirstDevice()
         const account = await transport.getAddress(0)
 
-        expect(algorandGetAddressMock).toHaveBeenCalledWith(
-            "44'/283'/0'/0/0",
-            false,
-        )
-        expect(account.address).toBe('ALG_ADDR')
+        expect(algorandGetAddressMock).toHaveBeenCalledWith(0, false)
+        expect(account.address).toBe('ALGO_ADDR')
         expect(account.publicKey).toBeInstanceOf(Uint8Array)
+        expect(account.publicKey).toHaveLength(32)
         expect(account.accountIndex).toBe(0)
     })
 
-    test('wrapped transport.signTransaction returns signature bytes (with the trailing APDU status word stripped)', async () => {
-        // hw-app-algorand@6.35.1 returns sig || SW (2 trailing bytes) —
-        // mimic that here and assert the wrapper strips the SW.
+    test('wrapped transport.signTransaction returns clean signature bytes (no trailing APDU status word)', async () => {
+        // @algorandfoundation/ledger-algorand-js strips the trailing status
+        // word internally — the returned signature is already clean.
         algorandSignMock.mockResolvedValue({
-            signature: Buffer.from([1, 2, 3, 0x90, 0x00]),
+            signature: Buffer.from([1, 2, 3]),
         })
 
         const transport = await connectToFirstDevice()
         const sig = await transport.signTransaction(0, new Uint8Array([10]))
 
-        expect(algorandSignMock).toHaveBeenCalled()
+        expect(algorandSignMock).toHaveBeenCalledWith(0, Buffer.from([10]))
         expect(Array.from(sig)).toEqual([1, 2, 3])
+    })
+
+    test('signTransaction throws LedgerSigningError on empty signature', async () => {
+        algorandSignMock.mockResolvedValue({ signature: Buffer.alloc(0) })
+
+        const transport = await connectToFirstDevice()
+
+        await expect(
+            transport.signTransaction(0, new Uint8Array([1])),
+        ).rejects.toBeInstanceOf(LedgerSigningError)
     })
 
     test('wrapped transport.disconnect closes the underlying HID transport', async () => {

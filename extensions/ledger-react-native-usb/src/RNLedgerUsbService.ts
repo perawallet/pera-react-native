@@ -11,40 +11,38 @@
  */
 
 import type { HardwareWalletService } from '@perawallet/wallet-extension-platform'
-import {
-    hexToBytes,
-    bytesToHex,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import { type Nullable } from '@perawallet/wallet-core-shared'
 import type {
     HardwareWalletDevice,
     HardwareWalletTransport,
     HardwareWalletTransportProvider,
 } from '@perawallet/wallet-core-hardware-wallet'
 import TransportHID from '@ledgerhq/react-native-hid'
-import Algorand from '@ledgerhq/hw-app-algorand'
+import { AlgorandApp } from '@algorandfoundation/ledger-algorand-js'
 import {
     classifyLedgerError,
     LedgerConnectionError,
-    buildLedgerAccountPath,
-    extractLedgerSignature,
+    LedgerSigningError,
 } from '@perawallet/wallet-extension-ledger-react-native/protocol'
 
 /**
  * Wraps a connected Ledger HID (USB) transport + Algorand app instance
  * into the platform-agnostic HardwareWalletTransport interface.
+ * Uses @algorandfoundation/ledger-algorand-js for Algorand-specific APDU commands.
  */
 const createTransportWrapper = (
     hidTransport: TransportHID,
-    algorandApp: Algorand,
+    algorandApp: AlgorandApp,
 ): HardwareWalletTransport => ({
     async getAddress(accountIndex, verify = false) {
         try {
-            const path = buildLedgerAccountPath(accountIndex)
-            const result = await algorandApp.getAddress(path, verify)
+            const result = await algorandApp.getAddressAndPubKey(
+                accountIndex,
+                verify,
+            )
             return {
-                address: result.address,
-                publicKey: hexToBytes(result.publicKey),
+                address: result.address.toString(),
+                publicKey: Uint8Array.from(result.publicKey),
                 accountIndex,
             }
         } catch (error) {
@@ -54,10 +52,18 @@ const createTransportWrapper = (
 
     async signTransaction(accountIndex, txnBytes) {
         try {
-            const path = buildLedgerAccountPath(accountIndex)
-            const hexMessage = bytesToHex(txnBytes)
-            const result = await algorandApp.sign(path, hexMessage)
-            return extractLedgerSignature(result.signature)
+            // AlgorandApp.sign decodes a string message as UTF-8, so the
+            // msgpack bytes MUST be passed as a Buffer. The library strips the
+            // trailing status word, so the returned signature is already clean.
+            const result = await algorandApp.sign(
+                accountIndex,
+                Buffer.from(txnBytes),
+            )
+            const signature = Uint8Array.from(result.signature)
+            if (signature.length === 0) {
+                throw new LedgerSigningError('Empty signature returned')
+            }
+            return signature
         } catch (error) {
             throw classifyLedgerError(error)
         }
@@ -99,7 +105,7 @@ const resolveModel = (productId: Nullable<number>): string => {
 /**
  * React Native implementation of HardwareWalletService for Ledger USB (Android).
  * Uses @ledgerhq/react-native-hid for USB host communication and
- * @ledgerhq/hw-app-algorand for Algorand-specific APDU commands.
+ * @algorandfoundation/ledger-algorand-js for Algorand-specific APDU commands.
  *
  * iOS: TransportHID.isSupported() throws because the native module is
  * Android-only — the catch block in isSupported() returns false there,
@@ -167,7 +173,7 @@ export class RNLedgerUsbService implements HardwareWalletService {
                 }
                 try {
                     const hidTransport = await TransportHID.open(device)
-                    const algorandApp = new Algorand(hidTransport)
+                    const algorandApp = new AlgorandApp(hidTransport)
                     return createTransportWrapper(hidTransport, algorandApp)
                 } catch (error) {
                     throw classifyLedgerError(error)
