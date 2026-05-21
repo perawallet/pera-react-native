@@ -10,18 +10,11 @@
  limitations under the License
  */
 
-import {
-    IconName,
-    PWButton,
-    PWScrollView,
-    PWText,
-    PWView,
-} from '@components/core'
+import { PWButton, PWScrollView, PWText, PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { MultisigInfoCard } from '@components/MultisigInfoCard'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
-import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useLanguage } from '@hooks/useLanguage'
 import type { MultisigInvitationParam } from '../../routes/types'
 import { useMultisigInvitationDetailContent } from './useMultisigInvitationDetailContent'
@@ -38,13 +31,8 @@ export const MultisigInvitationDetailContent = ({
 }: MultisigInvitationDetailContentProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const isDarkMode = useIsDarkMode()
     const { resolve } =
         useBottomSheetResult<MultisigInvitationDetailContentResult>()
-
-    const participantIconName: IconName = isDarkMode
-        ? 'accounts/dark/multisig-account'
-        : 'accounts/light/multisig-account'
 
     const {
         renderedInvitation,
@@ -105,9 +93,9 @@ export const MultisigInvitationDetailContent = ({
                             <AddressDisplay
                                 key={address}
                                 address={address}
-                                addressFormat='long'
-                                iconName={participantIconName}
-                                showSecondaryAddress
+                                forceShowIcon
+                                contactAvatarVariant='highlighted'
+                                textProps={{ variant: 'h4' }}
                                 style={[
                                     styles.participantRow,
                                     index === arr.length - 1 &&
@@ -128,7 +116,7 @@ export const MultisigInvitationDetailContent = ({
                     isLoading={isIgnoring}
                     isDisabled={isIgnoring}
                     paddingStyle='dense'
-                    style={styles.bottomButton}
+                    style={styles.ignoreButton}
                     testID='multisig_invitation_ignore_button'
                 />
                 <PWButton
@@ -137,7 +125,7 @@ export const MultisigInvitationDetailContent = ({
                     onPress={handleAccept}
                     isDisabled={isIgnoring}
                     paddingStyle='dense'
-                    style={styles.bottomButton}
+                    style={styles.acceptButton}
                     testID='multisig_invitation_accept_button'
                 />
             </PWView>

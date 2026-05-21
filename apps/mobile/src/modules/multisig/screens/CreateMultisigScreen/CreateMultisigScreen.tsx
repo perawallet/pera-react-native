@@ -52,10 +52,11 @@ export const CreateMultisigScreen = () => {
                     style={styles.scrollArea}
                     contentContainerStyle={styles.scrollContent}
                 >
-                    {participants.map(participant => (
+                    {participants.map((participant, index) => (
                         <ParticipantListItem
-                            key={participant.address}
+                            key={`${index}-${participant.address}`}
                             participant={participant}
+                            index={index}
                             isInWallet={isParticipantInWallet(
                                 participant.address,
                             )}

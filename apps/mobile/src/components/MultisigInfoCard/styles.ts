@@ -17,12 +17,12 @@ export const useStyles = makeStyles(theme => ({
         backgroundColor: theme.colors.layerGrayLighter,
         borderRadius: theme.borderRadius.lg,
         padding: theme.spacing.md,
-        gap: theme.spacing.md,
+        gap: theme.spacing.lg,
     },
     row: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
+        alignItems: 'flex-start',
     },
     rowLabels: {
         flexShrink: 1,
