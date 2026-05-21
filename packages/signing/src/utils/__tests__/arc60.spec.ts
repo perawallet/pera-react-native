@@ -123,7 +123,9 @@ const buildSiwa = (overrides: Record<string, unknown> = {}): string =>
 const validSiwaPayload = utf8(buildSiwa())
 const validData = encodeToBase64(validSiwaPayload)
 
-const mismatchedData = encodeToBase64(utf8(buildSiwa({ account_address: 'OTHER_ADDR' })))
+const mismatchedData = encodeToBase64(
+    utf8(buildSiwa({ account_address: 'OTHER_ADDR' })),
+)
 
 const makeAuthData = (domain: string): Uint8Array => {
     const hash = sha256(utf8(domain))
@@ -188,7 +190,9 @@ describe('validateArc60AuthRequest', () => {
     })
 
     test('throws Arc60BadJsonError when SIWA domain does not match request domain', () => {
-        const wrongDomainData = encodeToBase64(utf8(buildSiwa({ domain: 'evil.io' })))
+        const wrongDomainData = encodeToBase64(
+            utf8(buildSiwa({ domain: 'evil.io' })),
+        )
         expect(() =>
             validateArc60AuthRequest(
                 {
@@ -222,7 +226,12 @@ describe('validateArc60AuthRequest', () => {
         const data = encodeToBase64(invalidUtf8)
         expect(() =>
             validateArc60AuthRequest(
-                { data, signer: SIGNER, domain: DOMAIN, authenticatorData: AUTH_DATA },
+                {
+                    data,
+                    signer: SIGNER,
+                    domain: DOMAIN,
+                    authenticatorData: AUTH_DATA,
+                },
                 { scope: ARC60_SCOPE_AUTH, encoding: 'base64' },
             ),
         ).toThrow(Arc60BadJsonError)

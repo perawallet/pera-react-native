@@ -13,6 +13,7 @@
 import { Platform, PermissionsAndroid } from 'react-native'
 import type { HardwareWalletService } from '@perawallet/wallet-extension-platform'
 import { type Nullable } from '@perawallet/wallet-core-shared'
+import type { HardwareWalletArbitrarySignRequest } from '@perawallet/wallet-core-hardware-wallet'
 import TransportBLE from '@ledgerhq/react-native-hw-transport-ble'
 import { AlgorandApp } from '@algorandfoundation/ledger-algorand-js'
 import type {
@@ -27,7 +28,7 @@ import {
     LedgerPermissionDeniedError,
     LedgerSigningError,
 } from './errors'
-import { resolveDeviceModel } from './constants'
+import { resolveDeviceModel, buildLedgerAccountPath } from './constants'
 
 /**
  * Pre-flight check that BLE scan + connect permissions are granted at sign time
@@ -101,6 +102,41 @@ const createTransportWrapper = (
             const result = await algorandApp.sign(
                 accountIndex,
                 Buffer.from(txnBytes),
+            )
+            const signature = Uint8Array.from(result.signature)
+            if (signature.length === 0) {
+                throw new LedgerSigningError('Empty signature returned')
+            }
+            return signature
+        } catch (error) {
+            throw classifyLedgerError(error)
+        }
+    },
+
+    async getAppVersion() {
+        try {
+            const { major, minor, patch } = await algorandApp.getVersion()
+            return { major, minor, patch }
+        } catch (error) {
+            throw classifyLedgerError(error)
+        }
+    },
+
+    async signData(
+        request: HardwareWalletArbitrarySignRequest,
+    ): Promise<Uint8Array> {
+        try {
+            const result = await algorandApp.signData(
+                {
+                    data: request.data,
+                    signer: request.signerPublicKey,
+                    domain: request.domain,
+                    // Library field is spelled `authenticationData`.
+                    authenticationData: request.authenticatorData,
+                    requestId: request.requestId,
+                    hdPath: buildLedgerAccountPath(request.accountIndex),
+                },
+                { scope: request.scope, encoding: request.encoding },
             )
             const signature = Uint8Array.from(result.signature)
             if (signature.length === 0) {

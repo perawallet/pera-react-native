@@ -329,9 +329,15 @@ describe('RNLedgerService', () => {
             })
             const transport = await mountTransport()
 
-            const sig = await transport.signTransaction(0, new Uint8Array([10, 20]))
+            const sig = await transport.signTransaction(
+                0,
+                new Uint8Array([10, 20]),
+            )
 
-            expect(algorandSignMock).toHaveBeenCalledWith(0, Buffer.from([10, 20]))
+            expect(algorandSignMock).toHaveBeenCalledWith(
+                0,
+                Buffer.from([10, 20]),
+            )
             expect(Array.from(sig)).toEqual([1, 2, 3])
         })
 
@@ -360,6 +366,65 @@ describe('RNLedgerService', () => {
             await transport.disconnect()
 
             expect(transportCloseMock).toHaveBeenCalled()
+        })
+
+        test('getAppVersion delegates to the app and returns the version triple', async () => {
+            algorandGetVersionMock.mockResolvedValue({
+                major: 2,
+                minor: 1,
+                patch: 3,
+            })
+            const transport = await mountTransport()
+
+            const version = await transport.getAppVersion()
+
+            expect(version).toEqual({ major: 2, minor: 1, patch: 3 })
+        })
+
+        test('signData maps the request onto the app and returns signature bytes', async () => {
+            algorandSignDataMock.mockResolvedValue({
+                signature: Uint8Array.from([9, 8, 7]),
+            })
+            const transport = await mountTransport()
+
+            const sig = await transport.signData({
+                accountIndex: 0,
+                data: 'e30=',
+                signerPublicKey: new Uint8Array(32),
+                domain: 'example.com',
+                authenticatorData: new Uint8Array(37),
+                requestId: undefined,
+                scope: 1,
+                encoding: 'base64',
+            })
+
+            expect(algorandSignDataMock).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    data: 'e30=',
+                    domain: 'example.com',
+                    hdPath: "44'/283'/0'/0/0",
+                    authenticationData: expect.any(Uint8Array),
+                }),
+                { scope: 1, encoding: 'base64' },
+            )
+            expect(Array.from(sig)).toEqual([9, 8, 7])
+        })
+
+        test('signData translates app errors through classifyLedgerError', async () => {
+            algorandSignDataMock.mockRejectedValue({ returnCode: 0x6986 })
+            const transport = await mountTransport()
+
+            await expect(
+                transport.signData({
+                    accountIndex: 0,
+                    data: 'e30=',
+                    signerPublicKey: new Uint8Array(32),
+                    domain: 'example.com',
+                    authenticatorData: new Uint8Array(37),
+                    scope: 1,
+                    encoding: 'base64',
+                }),
+            ).rejects.toBeInstanceOf(LedgerUserRejectedError)
         })
     })
 

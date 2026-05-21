@@ -16,6 +16,7 @@ import type {
     HardwareWalletDevice,
     HardwareWalletTransport,
     HardwareWalletTransportProvider,
+    HardwareWalletArbitrarySignRequest,
 } from '@perawallet/wallet-core-hardware-wallet'
 import TransportHID from '@ledgerhq/react-native-hid'
 import { AlgorandApp } from '@algorandfoundation/ledger-algorand-js'
@@ -23,6 +24,7 @@ import {
     classifyLedgerError,
     LedgerConnectionError,
     LedgerSigningError,
+    buildLedgerAccountPath,
 } from '@perawallet/wallet-extension-ledger-react-native/protocol'
 
 /**
@@ -58,6 +60,41 @@ const createTransportWrapper = (
             const result = await algorandApp.sign(
                 accountIndex,
                 Buffer.from(txnBytes),
+            )
+            const signature = Uint8Array.from(result.signature)
+            if (signature.length === 0) {
+                throw new LedgerSigningError('Empty signature returned')
+            }
+            return signature
+        } catch (error) {
+            throw classifyLedgerError(error)
+        }
+    },
+
+    async getAppVersion() {
+        try {
+            const { major, minor, patch } = await algorandApp.getVersion()
+            return { major, minor, patch }
+        } catch (error) {
+            throw classifyLedgerError(error)
+        }
+    },
+
+    async signData(
+        request: HardwareWalletArbitrarySignRequest,
+    ): Promise<Uint8Array> {
+        try {
+            const result = await algorandApp.signData(
+                {
+                    data: request.data,
+                    signer: request.signerPublicKey,
+                    domain: request.domain,
+                    // Library field is spelled `authenticationData`.
+                    authenticationData: request.authenticatorData,
+                    requestId: request.requestId,
+                    hdPath: buildLedgerAccountPath(request.accountIndex),
+                },
+                { scope: request.scope, encoding: request.encoding },
             )
             const signature = Uint8Array.from(result.signature)
             if (signature.length === 0) {

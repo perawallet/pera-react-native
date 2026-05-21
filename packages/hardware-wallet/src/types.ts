@@ -54,6 +54,40 @@ export type HardwareWalletDerivedAccount = {
 }
 
 /**
+ * App version reported by a hardware wallet device application.
+ */
+export type HardwareWalletAppVersion = {
+    major: number
+    minor: number
+    patch: number
+}
+
+/**
+ * Arbitrary-data signing request forwarded to the device. Kept manufacturer-
+ * and standard-agnostic so this package does not depend on the signing
+ * package's ARC-60 types. The signing strategy maps an ARC-60 request onto
+ * this shape; the transport derives the BIP-44 path from `accountIndex`.
+ */
+export type HardwareWalletArbitrarySignRequest = {
+    /** Sequential index on the device (0, 1, 2...) — authoritative for the key. */
+    accountIndex: number
+    /** Encoded payload to sign (e.g. base64 string). */
+    data: string
+    /** 32-byte Ed25519 public key of the signer (informational to the device). */
+    signerPublicKey: Uint8Array
+    /** Origin requesting the signature. */
+    domain: string
+    /** Authenticator data; first 32 bytes = sha256(domain). */
+    authenticatorData: Uint8Array
+    /** Optional unique request id. */
+    requestId?: string
+    /** ARC-60 scope (1 = AUTH). */
+    scope: number
+    /** Encoding of `data` (e.g. 'base64'). */
+    encoding: string
+}
+
+/**
  * Connection lifecycle states for UI feedback.
  */
 export type HardwareWalletConnectionStatus =
@@ -90,6 +124,19 @@ export type HardwareWalletTransport = {
         accountIndex: number,
         txnBytes: Uint8Array,
     ) => Promise<Uint8Array>
+
+    /**
+     * Sign arbitrary data on the device (ARC-60 AUTH scope). The user must
+     * physically confirm on the device. The device computes the signing
+     * payload itself from the provided fields.
+     * @returns Ed25519 signature bytes
+     */
+    signData: (
+        request: HardwareWalletArbitrarySignRequest,
+    ) => Promise<Uint8Array>
+
+    /** Read the version of the device's wallet application. */
+    getAppVersion: () => Promise<HardwareWalletAppVersion>
 
     /** Disconnect from the device and release resources. */
     disconnect: () => Promise<void>
