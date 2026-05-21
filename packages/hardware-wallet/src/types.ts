@@ -83,7 +83,7 @@ export type HardwareWalletArbitrarySignRequest = {
     requestId?: string
     /** ARC-60 scope (1 = AUTH). */
     scope: number
-    /** Encoding of `data` (e.g. 'base64'). */
+    /** Encoding of `data`. Currently only 'base64' is supported by the Algorand app. */
     encoding: string
 }
 

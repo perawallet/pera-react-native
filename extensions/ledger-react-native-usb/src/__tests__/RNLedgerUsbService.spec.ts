@@ -241,6 +241,7 @@ describe('RNLedgerUsbService', () => {
                 domain: 'example.com',
                 hdPath: "44'/283'/0'/0/0",
                 authenticationData: expect.any(Uint8Array),
+                signer: expect.any(Uint8Array),
             }),
             { scope: 1, encoding: 'base64' },
         )
@@ -262,6 +263,32 @@ describe('RNLedgerUsbService', () => {
                 encoding: 'base64',
             }),
         ).rejects.toBeInstanceOf(LedgerUserRejectedError)
+    })
+
+    test('signData throws LedgerSigningError on empty signature', async () => {
+        algorandSignDataMock.mockResolvedValue({ signature: new Uint8Array(0) })
+        const transport = await connectToFirstDevice()
+
+        await expect(
+            transport.signData({
+                accountIndex: 0,
+                data: 'e30=',
+                signerPublicKey: new Uint8Array(32),
+                domain: 'example.com',
+                authenticatorData: new Uint8Array(37),
+                scope: 1,
+                encoding: 'base64',
+            }),
+        ).rejects.toBeInstanceOf(LedgerSigningError)
+    })
+
+    test('getAppVersion translates app errors through classifyLedgerError', async () => {
+        algorandGetVersionMock.mockRejectedValue({ returnCode: 0x6986 })
+        const transport = await connectToFirstDevice()
+
+        await expect(transport.getAppVersion()).rejects.toBeInstanceOf(
+            LedgerUserRejectedError,
+        )
     })
 
     test('isSupported delegates to TransportHID.isSupported', async () => {
