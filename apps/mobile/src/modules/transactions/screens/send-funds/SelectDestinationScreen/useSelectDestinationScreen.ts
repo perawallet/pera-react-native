@@ -48,21 +48,17 @@ export const useSelectDestinationScreen = () => {
     const navigation =
         useNavigation<StackNavigationProp<SendFundsStackParamList>>()
 
-    const { data: externalAccountInfo, isFetching: isCheckingExternalOptIn, isSuccess: isExternalQuerySuccess, isError: isExternalQueryError } = 
-        useOnChainAccountInformationQuery(pendingExternalAddress ?? '')
+    const {
+        data: externalAccountInfo,
+        isFetching: isCheckingExternalOptIn,
+        isSuccess: isExternalQuerySuccess,
+        isError: isExternalQueryError,
+    } = useOnChainAccountInformationQuery(pendingExternalAddress ?? '')
 
     useEffect(() => {
-        if (
-            !pendingExternalAddress ||
-            !selectedAsset
-        )
-            return
+        if (!pendingExternalAddress || !selectedAsset) return
 
-        if (
-            !isExternalQuerySuccess &&
-            !isExternalQueryError
-        )
-            return
+        if (!isExternalQuerySuccess && !isExternalQueryError) return
 
         const isReceiverOptedIn = externalAccountInfo?.assets.some(
             a => a.assetId === BigInt(selectedAsset.assetId),
