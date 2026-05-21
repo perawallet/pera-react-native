@@ -21,7 +21,10 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
     return {
         ...actual,
         Address: {
-            fromString: (addr: string) => ({ address: addr }),
+            fromString: (addr: string) => ({
+                address: addr,
+                publicKey: new Uint8Array(32).fill(0xaa),
+            }),
         },
     }
 })
@@ -815,6 +818,7 @@ describe('createHardwareStrategy', () => {
                     domain: ARC60_DOMAIN,
                     scope: 1,
                     encoding: 'base64',
+                    signerPublicKey: expect.any(Uint8Array),
                 }),
             )
             expect(result).toEqual({

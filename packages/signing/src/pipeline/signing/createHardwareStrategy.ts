@@ -279,6 +279,11 @@ export type SignTransactionsOnHardwareWalletOptions = {
     callbacks?: SigningCallbacks
 }
 
+export type SignArc60OnHardwareWalletOptions = Omit<
+    SignTransactionsOnHardwareWalletOptions,
+    'encodeTransaction'
+>
+
 /**
  * Connect to the hardware device, verify the on-device address matches the
  * account's expected address, sign the given transactions sequentially, then
@@ -345,7 +350,7 @@ const signArc60OnHardwareWallet = async (
     hwAccount: HardwareWalletAccount,
     stdSigData: Arc60StdSigData,
     metadata: Arc60Metadata,
-    options: SignTransactionsOnHardwareWalletOptions,
+    options: SignArc60OnHardwareWalletOptions,
 ): Promise<Uint8Array> => {
     const { registry, callbacks } = options
 
@@ -385,7 +390,6 @@ const signArc60OnHardwareWallet = async (
 
         callbacks?.onSigningStart?.()
         callbacks?.onProgress?.(1, 1)
-        callbacks?.onPhaseChange?.('awaiting-approval')
 
         const signature = await withTimeout(
             transport.signData({
@@ -446,12 +450,11 @@ export const createHardwareStrategy = (
 
             if (group.data.type === 'arc60') {
                 const signature = await signArc60OnHardwareWallet(
-                    account as HardwareWalletAccount,
+                    account,
                     group.data.stdSigData,
                     group.data.metadata,
                     {
                         registry: hardwareWalletRegistry,
-                        encodeTransaction,
                         callbacks,
                     },
                 )
