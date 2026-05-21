@@ -15,50 +15,64 @@ import { ParticipantCount } from '@components/ParticipantCount'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
-type InvitationInfoCardProps = {
-    threshold: number
+export type MultisigInfoCardProps = {
     totalParticipants: number
+    threshold: number
     isUserIncluded: boolean
+    testID?: string
+    participantCountTestID?: string
+    thresholdTestID?: string
 }
 
-export const InvitationInfoCard = ({
-    threshold,
+/**
+ * Filled card summarising a shared (multisig) account: the participant count
+ * and the signing threshold. Shared across the shared-account detail sheet,
+ * the import screen and the invitation sheet.
+ */
+export const MultisigInfoCard = ({
     totalParticipants,
+    threshold,
     isUserIncluded,
-}: InvitationInfoCardProps) => {
+    testID,
+    participantCountTestID,
+    thresholdTestID,
+}: MultisigInfoCardProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
 
     return (
-        <PWView style={styles.container}>
+        <PWView
+            style={styles.container}
+            testID={testID}
+        >
             <PWView style={styles.row}>
                 <PWView style={styles.rowLabels}>
                     <PWText variant='h4'>
-                        {t('multisig.invitation.number_of_accounts_label')}
+                        {t('multisig.info_card.number_of_accounts')}
                     </PWText>
                     {isUserIncluded && (
                         <PWText style={styles.rowSubLabel}>
-                            {t('multisig.invitation.you_included')}
+                            {t('multisig.info_card.you_included')}
                         </PWText>
                     )}
                 </PWView>
                 <ParticipantCount
                     count={totalParticipants}
-                    testID='multisig_invitation_participant_count'
+                    testID={participantCountTestID}
                 />
             </PWView>
             <PWView style={styles.row}>
                 <PWView style={styles.rowLabels}>
                     <PWText variant='h4'>
-                        {t('multisig.invitation.threshold_label')}
+                        {t('multisig.info_card.threshold')}
                     </PWText>
                     <PWText style={styles.rowSubLabel}>
-                        {t('multisig.invitation.threshold_description')}
+                        {t('multisig.info_card.threshold_description')}
                     </PWText>
                 </PWView>
                 <PWText
                     variant='h2'
-                    testID='multisig_invitation_threshold_value'
+                    testID={thresholdTestID}
                 >
                     {threshold}
                 </PWText>

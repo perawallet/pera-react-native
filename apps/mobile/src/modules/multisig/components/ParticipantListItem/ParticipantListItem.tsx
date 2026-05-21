@@ -17,12 +17,16 @@ import { useStyles } from './styles'
 
 type ParticipantListItemProps = {
     participant: Participant
+    isInWallet: boolean
     onEdit: (address: string) => void
+    onRemove: (address: string) => void
 }
 
 export const ParticipantListItem = ({
     participant,
+    isInWallet,
     onEdit,
+    onRemove,
 }: ParticipantListItemProps) => {
     const styles = useStyles()
 
@@ -37,13 +41,23 @@ export const ParticipantListItem = ({
                 forceShowIcon
                 style={styles.addressDisplay}
             />
-            <PWTouchableIcon
-                name='edit-pen'
-                size='md'
-                variant='positive'
-                onPress={() => onEdit(participant.address)}
-                testID={`participant_edit_${participant.address}`}
-            />
+            {isInWallet ? (
+                <PWTouchableIcon
+                    name='trash'
+                    size='md'
+                    variant='error'
+                    onPress={() => onRemove(participant.address)}
+                    testID={`participant_remove_${participant.address}`}
+                />
+            ) : (
+                <PWTouchableIcon
+                    name='edit-pen'
+                    size='md'
+                    variant='positive'
+                    onPress={() => onEdit(participant.address)}
+                    testID={`participant_edit_${participant.address}`}
+                />
+            )}
         </PWView>
     )
 }

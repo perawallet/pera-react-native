@@ -46,33 +46,35 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
         width: theme.spacing.xl,
         color: theme.colors.textGray,
     },
+    labelFocused: {
+        width: theme.spacing.xl,
+        color: theme.colors.textMain,
+    },
     inputWrap: {
         flex: 1,
     },
     inputOuter: {
         paddingHorizontal: 0,
+        flexShrink: 1,
     },
     inputContainer: {
+        backgroundColor: theme.colors.background,
         borderBottomWidth: theme.borders.sm,
-        borderBottomColor: theme.colors.layerGrayLighter,
+        borderBottomColor: theme.colors.layerGray,
+        flexShrink: 1,
     },
     inputContainerFocused: {
+        backgroundColor: theme.colors.background,
         borderBottomWidth: theme.borders.sm,
         borderBottomColor: theme.colors.textMain,
+        flexShrink: 1,
     },
-    suggestionsRow: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: theme.spacing.sm,
-    },
-    suggestionPill: {
-        paddingHorizontal: theme.spacing.md,
-        paddingVertical: theme.spacing.sm,
-        backgroundColor: theme.colors.layerGrayLighter,
-        borderRadius: theme.borderRadius.md,
+    input: {
+        flexShrink: 1,
+        backgroundColor: 'transparent',
     },
     footer: {
         padding: theme.spacing.xl,
-        paddingBottom: theme.spacing.xxl + insets.bottom,
+        paddingBottom: theme.spacing.md + insets.bottom,
     },
 }))

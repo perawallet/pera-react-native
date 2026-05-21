@@ -11,19 +11,14 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import type { EdgeInsets } from 'react-native-safe-area-context'
 
-const CARD_MAX_WIDTH = 420
 const HEADER_IMAGE_HEIGHT = 220
 
-export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
+type StyleProps = { screenWidth: number }
+
+export const useStyles = makeStyles((theme, { screenWidth }: StyleProps) => ({
     overlay: {
-        position: 'absolute',
-        bottom: insets.bottom,
-        left: theme.spacing.lg,
-        right: theme.spacing.lg,
-        maxWidth: CARD_MAX_WIDTH,
-        alignSelf: 'center',
+        width: screenWidth - theme.spacing.lg * 2,
         borderRadius: theme.borderRadius.lg,
         backgroundColor: theme.colors.background,
         padding: 0,

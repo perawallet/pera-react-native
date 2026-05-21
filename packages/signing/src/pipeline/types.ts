@@ -136,6 +136,28 @@ export const isInteractiveSource = (
     (INTERACTIVE_SOURCES as readonly SourceType[]).includes(sourceType)
 
 /**
+ * External sources whose signed result is delivered back to an out-of-app
+ * caller via {@link SourceCallbacks} rather than submitted to algod. The
+ * transport selector routes these to the WalletConnect / callback transport
+ * (non-multisig) or the multisig propose transport's sync-flow handoff
+ * (multisig). A strict subset of {@link INTERACTIVE_SOURCES} — excludes
+ * `multisig-cosign` (its own transport) and `arc60` / `gift-card`.
+ *
+ * Adding a new external callback source means appending it here only.
+ */
+export const EXTERNAL_CALLBACK_SOURCES = [
+    'walletconnect',
+    'webview',
+    'deeplink',
+] as const satisfies readonly SourceType[]
+
+export const isExternalCallbackSource = (
+    sourceType: SourceType | undefined,
+): boolean =>
+    sourceType !== undefined &&
+    (EXTERNAL_CALLBACK_SOURCES as readonly SourceType[]).includes(sourceType)
+
+/**
  * Metadata about where signable data came from
  */
 export interface SourceMetadata {
@@ -168,12 +190,40 @@ export interface SourceMetadata {
 }
 
 /**
+ * Why a sign request is being rejected at the peer. `'user'` is the
+ * common path (the user tapped Decline). `'softReject'` is used when the
+ * request was handed off to another flow (e.g. a multisig sign-request
+ * created on the backend) and the peer needs to know the inline response
+ * will not arrive — implementers must NOT raise an in-app connection-error
+ * banner, this is a success-path event.
+ */
+export type RejectReason =
+    | { kind: 'user' }
+    | { kind: 'softReject'; error: Error }
+
+/**
  * Callbacks for external sources (WalletConnect, etc.)
  */
 export interface SourceCallbacks {
     approve?: (result: SigningResult) => Promise<void>
-    reject?: () => Promise<void>
+    reject?: (reason?: RejectReason) => Promise<void>
     error?: (error: Error) => Promise<void>
+    /**
+     * Alternative delivery path: hand pre-encoded canonical msgpack
+     * SignedTransaction bytes to the external peer without going through
+     * algosdk's decode + re-encode round-trip.
+     *
+     * Required for the multisig sync-flow handoff: the resolver assembles
+     * per-participant subsigs into a composite multisig SignedTransaction
+     * and must embed the original raw transaction bytes verbatim, because
+     * canonical-msgpack rules can differ across SDKs and re-encoding may
+     * produce bytes whose signatures algod won't verify.
+     *
+     * Length and order MUST match the original request — implementers
+     * (e.g. WC handler) align each item with the corresponding txn in
+     * the original `algo_signTxn` request before responding.
+     */
+    approveSignedBytes?: (bytes: Uint8Array[]) => Promise<void>
 }
 
 /**
@@ -446,6 +496,15 @@ export interface ProposedTransportResult {
     type: 'proposed'
     signRequestId: string
     status: SignRequestStatus
+    /**
+     * Source the propose was triggered from. External sources
+     * (`walletconnect` / `webview` / `deeplink`) are sync-flow handoffs:
+     * listeners use this to fire a "request created" toast and the
+     * transport itself uses it to resolve the external peer via
+     * `softReject`. `'local'` propose is the legacy proposer-initiated
+     * path from in-app screens (Send, etc.).
+     */
+    sourceType: SourceType
 }
 
 /**

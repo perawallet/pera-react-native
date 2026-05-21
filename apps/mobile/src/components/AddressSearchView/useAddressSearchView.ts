@@ -79,15 +79,25 @@ export const useAddressSearchView = (
         [value, accounts, excludeAddress, excludeTypes, addressIsValid],
     )
 
-    const matchingContacts = useMemo(
-        () =>
-            addressIsValid
-                ? []
-                : value.length || showAllContactsWhenEmpty
-                  ? findContacts({ keyword: value })
-                  : [],
-        [value, findContacts, addressIsValid, showAllContactsWhenEmpty],
-    )
+    const matchingContacts = useMemo(() => {
+        if (addressIsValid) return []
+        if (!value.length && !showAllContactsWhenEmpty) return []
+        // A contact must not appear under "Contacts" if its address is:
+        // - any wallet account (so an account saved as a contact only shows under "My Accounts")
+        // - the explicitly-excluded address (e.g. the FROM account in a send flow)
+        const excludedAddresses = new Set(accounts.map(a => a.address))
+        if (excludeAddress) excludedAddresses.add(excludeAddress)
+        return findContacts({ keyword: value }).filter(
+            c => !excludedAddresses.has(c.address),
+        )
+    }, [
+        value,
+        findContacts,
+        addressIsValid,
+        showAllContactsWhenEmpty,
+        accounts,
+        excludeAddress,
+    ])
 
     const matchingItems = useMemo(() => {
         const items: AddressSearchItem[] = []

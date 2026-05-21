@@ -123,4 +123,118 @@ describe('resolveSignableTransactions', () => {
         expect(result.signerOverrides.get(0)).toBe('addr1')
         expect(result.signerOverrides.has(1)).toBe(false)
     })
+
+    // =========================================================================
+    // Multisig sender routing
+    //
+    // When the wallet locally holds the multisig sender, the ARC-0001 `signers`
+    // field should be ignored for routing — the wallet auto-signs with every
+    // local participant via the multisig propose flow, mirroring pera-android.
+    // =========================================================================
+
+    describe('multisig sender routing', () => {
+        const multisigSignable = new Set([
+            'addr1',
+            'addr2',
+            'participantA',
+            'participantB',
+            'MSIG_ADDR',
+        ])
+        const multisigAddresses = new Set(['MSIG_ADDR'])
+
+        test('multisig sender + signers=[participant]: include, no override', () => {
+            const result = resolveSignableTransactions(
+                [{ signers: ['participantA'] }],
+                ['MSIG_ADDR'],
+                multisigSignable,
+                multisigAddresses,
+            )
+
+            expect(result.indicesToSign).toEqual([0])
+            expect(result.signerOverrides.size).toBe(0)
+        })
+
+        test('multisig sender + signers absent: include, no override (regression)', () => {
+            const result = resolveSignableTransactions(
+                [{}],
+                ['MSIG_ADDR'],
+                multisigSignable,
+                multisigAddresses,
+            )
+
+            expect(result.indicesToSign).toEqual([0])
+            expect(result.signerOverrides.size).toBe(0)
+        })
+
+        test('multisig sender + signers=[] (dApp opt-out): skip even for multisig', () => {
+            const result = resolveSignableTransactions(
+                [{ signers: [] }],
+                ['MSIG_ADDR'],
+                multisigSignable,
+                multisigAddresses,
+            )
+
+            expect(result.indicesToSign).toEqual([])
+        })
+
+        test('multisig sender + signers=[participantWeDontHave]: still include, no override', () => {
+            // Wallet doesn't hold `participantX`, only `participantA`. The
+            // multisig strategy will still auto-sign with the participants
+            // we do have — propose carries whatever we collected.
+            const limitedSignable = new Set(['participantA', 'MSIG_ADDR'])
+            const result = resolveSignableTransactions(
+                [{ signers: ['participantX'] }],
+                ['MSIG_ADDR'],
+                limitedSignable,
+                multisigAddresses,
+            )
+
+            expect(result.indicesToSign).toEqual([0])
+            expect(result.signerOverrides.size).toBe(0)
+        })
+
+        test('non-multisig sender + signers=[participant]: existing override path', () => {
+            // Regression: when the sender is NOT a local multisig, the
+            // standard ARC-0001 override path still applies.
+            const result = resolveSignableTransactions(
+                [{ signers: ['addr1'] }],
+                ['contract-addr'],
+                multisigSignable,
+                multisigAddresses,
+            )
+
+            expect(result.indicesToSign).toEqual([0])
+            expect(result.signerOverrides.get(0)).toBe('addr1')
+        })
+
+        test('mixed group: multisig sender at [0], regular at [1]', () => {
+            const result = resolveSignableTransactions(
+                [
+                    { signers: ['participantA'] }, // tx[0]: multisig sender → no override
+                    { signers: ['addr1'] }, // tx[1]: regular contract sender → override
+                ],
+                ['MSIG_ADDR', 'contract-addr'],
+                multisigSignable,
+                multisigAddresses,
+            )
+
+            expect(result.indicesToSign).toEqual([0, 1])
+            expect(result.signerOverrides.has(0)).toBe(false)
+            expect(result.signerOverrides.get(1)).toBe('addr1')
+        })
+
+        test('omitting multisigAddresses defaults to empty set (backward compat)', () => {
+            // Without the multisig set, the existing override behavior
+            // applies even when the sender is in fact a multisig in some
+            // other context. Callers that don't care opt out cleanly.
+            const result = resolveSignableTransactions(
+                [{ signers: ['participantA'] }],
+                ['MSIG_ADDR'],
+                multisigSignable,
+            )
+
+            expect(result.indicesToSign).toEqual([0])
+            expect(result.signerOverrides.get(0)).toBe('participantA')
+        })
+    })
 })

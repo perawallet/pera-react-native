@@ -15,6 +15,7 @@ import { useStyles } from './styles'
 import { StyleProp, TextStyle, TextProps } from 'react-native'
 import { type FontWeight, type TypographyVariant } from '@theme/typography'
 import { DEFAULT_MINIMUM_FONT_SCALE } from '../constants'
+import { getTestProps } from '@utils/test-id-helper'
 
 export type PWTextProps = {
     children?: React.ReactNode
@@ -46,6 +47,7 @@ export const PWText = ({
     minimumFontScale,
     selectable,
     onPress,
+    testID,
     ...props
 }: PWTextProps) => {
     const styles = useStyles({ variant, weight })
@@ -63,6 +65,7 @@ export const PWText = ({
             minimumFontScale={resolvedMinimumFontScale}
             selectable={selectable}
             onPress={onPress}
+            {...getTestProps(testID)}
             {...props}
         >
             {children}

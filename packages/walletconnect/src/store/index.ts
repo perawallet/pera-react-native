@@ -11,3 +11,4 @@
  */
 
 export * from './store'
+export * from './connectorRegistryStore'

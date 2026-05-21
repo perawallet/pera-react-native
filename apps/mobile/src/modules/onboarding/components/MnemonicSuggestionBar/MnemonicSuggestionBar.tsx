@@ -14,36 +14,37 @@ import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 
 import { useStyles } from './styles'
 
-export type WordSuggestionDropdownProps = {
+export type MnemonicSuggestionBarProps = {
     suggestions: string[]
     onSelectSuggestion: (word: string) => void
+    /** testID prefix; each pill is `${testIDPrefix}_${word}`. */
+    testIDPrefix?: string
 }
 
-export const WordSuggestionDropdown = ({
+/**
+ * Sticky horizontal pill bar with wordlist completions for the focused
+ * mnemonic slot. Renders nothing when there are no suggestions, so callers
+ * can place it unconditionally between scroll and footer.
+ */
+export const MnemonicSuggestionBar = ({
     suggestions,
     onSelectSuggestion,
-}: WordSuggestionDropdownProps) => {
+    testIDPrefix = 'mnemonic_suggestion',
+}: MnemonicSuggestionBarProps) => {
     const styles = useStyles()
 
-    if (suggestions.length === 0) {
-        return null
-    }
+    if (suggestions.length === 0) return null
 
     return (
-        <PWView style={styles.container}>
+        <PWView style={styles.bar}>
             {suggestions.map(word => (
                 <PWTouchableOpacity
                     key={word}
-                    style={styles.suggestionItem}
                     onPress={() => onSelectSuggestion(word)}
-                    testID={`suggestion-${word}`}
+                    style={styles.pill}
+                    testID={`${testIDPrefix}_${word}`}
                 >
-                    <PWText
-                        variant='body'
-                        style={styles.suggestionText}
-                    >
-                        {word}
-                    </PWText>
+                    <PWText variant='h4'>{word}</PWText>
                 </PWTouchableOpacity>
             ))}
         </PWView>

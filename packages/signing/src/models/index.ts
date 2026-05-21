@@ -18,6 +18,7 @@ import { BaseStoreState, type Nullable } from '@perawallet/wallet-core-shared'
 import type {
     Arc60Metadata,
     Arc60StdSigData,
+    RejectReason,
     SignableAnalysis,
     SourceType,
     TransportResult,
@@ -68,8 +69,16 @@ export type TransactionSignRequest = {
     signerOverrides?: Map<number, string>
     rawTransactionsBase64?: string[]
     approve?: (signedTxs: PeraSignedTransaction[]) => Promise<void>
-    reject?: () => Promise<void>
+    reject?: (reason?: RejectReason) => Promise<void>
     error?: (error: Error) => Promise<void>
+    /**
+     * Alternative delivery path: hand pre-encoded SignedTransaction bytes
+     * to the peer (skipping algosdk's decode + re-encode roundtrip). Used
+     * by the multisig sync-flow resolver to deliver the assembled
+     * composite multisig signed transaction with the original txn bytes
+     * embedded verbatim — critical so per-participant signatures verify.
+     */
+    approveSignedBytes?: (bytes: Uint8Array[]) => Promise<void>
 } & BaseSignRequest
 
 export type PeraArbitraryDataMessage = {
@@ -87,7 +96,7 @@ export type PeraArbitraryDataSignResult = {
 export type ArbitraryDataSignRequest = {
     data: PeraArbitraryDataMessage[]
     approve?: (signed: PeraArbitraryDataSignResult[]) => Promise<void>
-    reject?: () => Promise<void>
+    reject?: (reason?: RejectReason) => Promise<void>
     error?: (error: Error) => Promise<void>
 } & BaseSignRequest
 
@@ -106,7 +115,7 @@ export type Arc60SignRequest = {
      * stays consistent across legacy and ARC-60 modalities.
      */
     approve?: (signed: PeraArbitraryDataSignResult[]) => Promise<void>
-    reject?: () => Promise<void>
+    reject?: (reason?: RejectReason) => Promise<void>
     error?: (error: Error) => Promise<void>
 } & BaseSignRequest
 

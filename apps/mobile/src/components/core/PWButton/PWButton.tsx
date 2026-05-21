@@ -14,10 +14,15 @@ import { PWText } from '@components/core/PWText'
 import { useStyles } from './styles'
 import { PWIcon, IconName, PWIconVariant } from '@components/core/PWIcon'
 import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
-import { ActivityIndicator, StyleProp, ViewStyle } from 'react-native'
+import {
+    ActivityIndicator,
+    StyleProp,
+    TouchableOpacityProps,
+    ViewStyle,
+} from 'react-native'
 import { getTestProps } from '@utils/test-id-helper'
 
-export type PWButtonProps = {
+export type PWButtonProps = TouchableOpacityProps & {
     variant:
         | 'primary'
         | 'secondary'
@@ -31,14 +36,12 @@ export type PWButtonProps = {
     title?: string
     icon?: IconName
     iconRight?: IconName
-    onPress?: () => void
     minWidth?: number
     style?: StyleProp<ViewStyle>
     isDisabled?: boolean
     isLoading?: boolean
     rounded?: boolean
     paddingStyle?: 'none' | 'dense' | 'normal'
-    testID?: string
 }
 
 const ICON_VARIANT_MAP: Record<string, PWIconVariant> = {

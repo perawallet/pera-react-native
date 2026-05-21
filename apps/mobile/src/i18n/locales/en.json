@@ -133,9 +133,6 @@
         "edit_contact": "Edit Contact",
         "edit_contact_subtitle": "Update {{name}}"
     },
-    "address_display": {
-        "you_suffix": "{{address}} (You)"
-    },
     "address_entry": {
         "scan_qr": "Scan QR Code",
         "address": "Address",
@@ -826,10 +823,6 @@
         },
         "import": {
             "title": "Shared Account",
-            "number_of_accounts": "Number of accounts",
-            "you_included": "You're a participant",
-            "threshold": "Threshold",
-            "threshold_description": "Minimum number of accounts \nrequired to confirm a transaction",
             "accounts_heading": "Accounts ({{count}})",
             "ignore": "Ignore",
             "add_to_accounts": "Add to Accounts",
@@ -850,10 +843,13 @@
             "done": "Done"
         },
         "detail": {
-            "title": "Shared account details",
-            "number_of_accounts": "Number of accounts",
-            "threshold": "Threshold",
             "accounts_title": "Accounts ({{count}})"
+        },
+        "info_card": {
+            "number_of_accounts": "Number of accounts",
+            "you_included": "You included",
+            "threshold": "Threshold",
+            "threshold_description": "Minimum number of accounts \nrequired to confirm a transaction"
         },
         "export": {
             "title": "Export/Share Account",
@@ -864,10 +860,6 @@
         "invitation": {
             "sheet_title": "Shared Account",
             "title": "Shared Account Invitation",
-            "number_of_accounts_label": "Number of accounts",
-            "you_included": "You included",
-            "threshold_label": "Threshold",
-            "threshold_description": "Minimum number of accounts \nrequired to confirm a transaction",
             "accounts_heading": "Accounts ({{count}})",
             "add_to_accounts": "Add to Accounts",
             "ignore": "Ignore",
@@ -923,6 +915,16 @@
             "error": {
                 "title": "Could not cancel",
                 "body": "We couldn't cancel this transaction. Please try again."
+            }
+        },
+        "sync_sign": {
+            "errors": {
+                "declined": "Multisig sign request declined by a participant",
+                "expired": "Multisig sign request expired before threshold was reached",
+                "failed": "Multisig sign request failed",
+                "no_transactions": "Multisig sign request has no transactions",
+                "assembly_failed": "Multisig assembly failed: {{reason}}",
+                "delivery_failed": "Failed to deliver signed transaction to dApp"
             }
         }
     },
@@ -1087,6 +1089,10 @@
                 "body": "Enter the 12-word recovery key that was generated when the Algorand Secure Backup file was created.",
                 "continue": "Continue",
                 "decrypting": "Unlocking your backup…",
+                "too_many_words_title": "Invalid recovery key",
+                "too_many_words_body": "The recovery key you pasted contains too many words.",
+                "insufficient_slots_title": "Invalid recovery key",
+                "insufficient_slots_body": "The recovery key you pasted does not fit in the remaining slots.",
                 "errors": {
                     "title": "Backup could not be unlocked",
                     "empty_file": "The backup file is empty.",

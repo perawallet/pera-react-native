@@ -43,6 +43,7 @@ export default defineConfig({
             external: [
                 'react',
                 'react/jsx-runtime',
+                'react-native',
                 'zustand',
                 '@perawallet/wallet-core-accounts',
                 '@perawallet/wallet-core-blockchain',

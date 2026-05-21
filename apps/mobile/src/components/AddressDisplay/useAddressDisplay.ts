@@ -23,7 +23,6 @@ import { useContacts, type Contact } from '@perawallet/wallet-core-contacts'
 import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
 import { useClipboard } from '@hooks/useClipboard'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
-import { useLanguage } from '@hooks/useLanguage'
 import type { IconName } from '@components/core'
 
 export type AddressFormat = 'short' | 'long' | 'full'
@@ -59,17 +58,15 @@ const resolveUnifiedLabels = ({
     nfdName,
     truncatedAddress,
     showSecondaryAddress,
-    youSuffix,
 }: {
     account: WalletAccount | null
     contact: Contact | null
     nfdName: Optional<string>
     truncatedAddress: string
     showSecondaryAddress: boolean
-    youSuffix: string
 }): ResolvedLabels => {
     if (account) {
-        return { primary: youSuffix, secondary: undefined }
+        return { primary: truncatedAddress, secondary: undefined }
     }
 
     if (contact) {
@@ -110,7 +107,6 @@ export const useAddressDisplay = ({
     const isDarkMode = useIsDarkMode()
     const accounts = useAllAccounts()
     const { findContacts } = useContacts()
-    const { t } = useLanguage()
 
     const isAddressOnly = displayType === 'address-only'
 
@@ -160,11 +156,8 @@ export const useAddressDisplay = ({
                 nfdName,
                 truncatedAddress,
                 showSecondaryAddress,
-                youSuffix: t('address_display.you_suffix', {
-                    address: truncatedAddress,
-                }),
             }),
-        [account, contact, nfdName, truncatedAddress, showSecondaryAddress, t],
+        [account, contact, nfdName, truncatedAddress, showSecondaryAddress],
     )
 
     return {

@@ -21,6 +21,17 @@ export const PERA_CLIENT_META = {
 
 export const ALL_PERMISSIONS = Object.values(AlgorandPermission)
 
+/**
+ * How long to wait for a WalletConnect bridge socket to (re)open before a
+ * delivery attempt is treated as failed.
+ *
+ * iOS suspends the socket while the app is backgrounded; on return the
+ * connector registry recreates it and waits up to this budget for the
+ * `transport_open` event before throwing a
+ * `WalletConnectConnectionTimeoutError`.
+ */
+export const WC_DELIVERY_TIMEOUT_MS = 8000
+
 export {
     MAX_DATA_SIGN_REQUESTS,
     MAX_TRANSACTION_SIGN_REQUESTS,

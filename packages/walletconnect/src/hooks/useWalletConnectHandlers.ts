@@ -20,10 +20,12 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import {
+    WalletConnectConnectionTimeoutError,
     WalletConnectInvalidNetworkError,
     WalletConnectInvalidSessionError,
     WalletConnectSignRequestError,
 } from '../errors'
+import { ensureConnectorReady } from '../connection'
 import { useWalletConnectStore } from '../store'
 import {
     PeraSignedTransaction,
@@ -37,6 +39,7 @@ import {
     type Arc60StdSigData,
     type PeraArbitraryDataMessage,
     type PeraArbitraryDataSignResult,
+    type RejectReason,
     type TransactionSignRequest,
     resolveSignableTransactions,
     useSigningRequest,
@@ -48,15 +51,57 @@ import {
     WalletConnectConnection,
     WalletConnectTransactionPayload,
 } from '../models'
-import { MAX_DATA_SIGN_REQUESTS } from '../constants'
+import { MAX_DATA_SIGN_REQUESTS, WC_DELIVERY_TIMEOUT_MS } from '../constants'
 import { arc60PayloadSchema } from '../schema'
 import {
     canSignWithAccount,
     isHardwareWalletAccount,
+    isMultisigAccount,
     useAllAccounts,
     useSigningAccounts,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+
+// A delivery-connection timeout is owned by the signing machine
+// (retryable via the inline error sheet). The error callback receives
+// both the raw error and a wrapping `TransportError` whose cause is
+// exposed as `originalError`, so check both shapes.
+const isConnectionTimeout = (error: unknown): boolean =>
+    error instanceof WalletConnectConnectionTimeoutError ||
+    (error instanceof Error &&
+        (error as { originalError?: unknown }).originalError instanceof
+            WalletConnectConnectionTimeoutError)
+
+/**
+ * Guarantee a live bridge socket before responding — WC v1 silently
+ * queues into a dead socket once the app has been backgrounded.
+ * `ensureConnectorReady` throws `WalletConnectConnectionTimeoutError` if
+ * it can't be revived; the signing pipeline surfaces that as a retryable
+ * failure.
+ */
+const deliverApprove = async (
+    clientId: string,
+    id: number,
+    result: unknown,
+): Promise<void> => {
+    const readyConnector = await ensureConnectorReady(
+        clientId,
+        WC_DELIVERY_TIMEOUT_MS,
+    )
+    await readyConnector.approveRequest({ id, result })
+}
+
+const deliverReject = async (
+    clientId: string,
+    id: number,
+    error: Error,
+): Promise<void> => {
+    const readyConnector = await ensureConnectorReady(
+        clientId,
+        WC_DELIVERY_TIMEOUT_MS,
+    )
+    readyConnector.rejectRequest({ id, error })
+}
 
 const validateRequest = (
     connector: WalletConnect,
@@ -279,31 +324,33 @@ export const useWalletConnectHandlers = () => {
                 stdSigData,
                 metadata,
                 approve: async (signed: PeraArbitraryDataSignResult[]) => {
-                    try {
-                        // ARC-60 produces a single signature; the WC bridge
-                        // mirrors the legacy `algo_signData` response shape
-                        // (array of base64 strings) for consistency.
-                        const result = signed.map(item =>
-                            encodeToBase64(item.signature),
-                        )
-                        await connector.approveRequest({
-                            id: payload.id,
-                            result,
-                        })
-                    } catch (err) {
-                        connector.rejectRequest({
-                            id: payload.id,
-                            error: err as Error,
-                        })
-                    }
+                    // ARC-60 produces a single signature; the WC bridge
+                    // mirrors the legacy `algo_signData` response shape
+                    // (array of base64 strings) for consistency.
+                    const result = signed.map(item =>
+                        encodeToBase64(item.signature),
+                    )
+                    await deliverApprove(connector.clientId, payload.id, result)
                 },
-                reject: async () => {
+                reject: async (reason: RejectReason = { kind: 'user' }) => {
+                    if (reason.kind === 'softReject') {
+                        await deliverReject(
+                            connector.clientId,
+                            payload.id,
+                            reason.error,
+                        )
+                        removeSignRequest(signRequest)
+                        return
+                    }
                     connector.rejectRequest({
                         id: payload.id,
                         error: new Error('User rejected'),
                     })
                 },
                 error: async (err: Error) => {
+                    if (isConnectionTimeout(err)) {
+                        return
+                    }
                     connector.rejectRequest({
                         id: payload.id,
                         error: err,
@@ -313,10 +360,9 @@ export const useWalletConnectHandlers = () => {
                         .setConnectionError(
                             new WalletConnectSignRequestError(err.message),
                         )
-                    // Pull the request out of the queue and clear the
-                    // failed-request flag so the WC error bottom sheet is the
-                    // only surface — otherwise we'd also flash the signing
-                    // pipeline's full-screen "Signing Failed" view.
+                    // The WC error bottom sheet is the only surface here;
+                    // clearing the failed-request flag suppresses the
+                    // signing pipeline's full-screen "Signing Failed" view.
                     clearLastFailedRequest()
                     removeSignRequest(signRequest)
                 },
@@ -377,31 +423,36 @@ export const useWalletConnectHandlers = () => {
                 sourceMetadata: connector.session?.peerMeta,
                 data: params,
                 approve: async (signedData: PeraArbitraryDataSignResult[]) => {
-                    try {
-                        if (signedData) {
-                            const result = signedData.map(item =>
-                                encodeToBase64(item.signature),
-                            )
-                            const toSend = {
-                                id: payload.id,
-                                result,
-                            }
-                            await connector.approveRequest(toSend)
-                        }
-                    } catch (error) {
-                        connector.rejectRequest({
-                            id: payload.id,
-                            error: error as Error,
-                        })
+                    if (signedData) {
+                        const result = signedData.map(item =>
+                            encodeToBase64(item.signature),
+                        )
+                        await deliverApprove(
+                            connector.clientId,
+                            payload.id,
+                            result,
+                        )
                     }
                 },
-                reject: async () => {
+                reject: async (reason: RejectReason = { kind: 'user' }) => {
+                    if (reason.kind === 'softReject') {
+                        await deliverReject(
+                            connector.clientId,
+                            payload.id,
+                            reason.error,
+                        )
+                        removeSignRequest(signRequest)
+                        return
+                    }
                     connector.rejectRequest({
                         id: payload.id,
                         error: new Error('User rejected'),
                     })
                 },
                 error: async (error: Error) => {
+                    if (isConnectionTimeout(error)) {
+                        return
+                    }
                     connector.rejectRequest({
                         id: payload.id,
                         error,
@@ -462,18 +513,32 @@ export const useWalletConnectHandlers = () => {
             const signableAddresses = new Set(
                 signingAccounts.map(a => a.address),
             )
+            const multisigAddresses = new Set(
+                accounts.filter(isMultisigAccount).map(a => a.address),
+            )
             const { indicesToSign, signerOverrides } =
                 resolveSignableTransactions(
                     paramOne,
                     allTxnObjects.map(tx => tx.sender.toString()),
                     signableAddresses,
+                    multisigAddresses,
                 )
 
-            // If no transactions need signing, approve with all-null array
+            // If no transactions need signing, approve with all-null array.
+            // Fire-and-forget: this delivers outside the signing machine
+            // (no review/retry UI), so a delivery failure is logged, not
+            // surfaced.
             if (indicesToSign.length === 0) {
-                connector.approveRequest({
-                    id: payload.id,
-                    result: new Array(paramOne.length).fill(null),
+                const allNullResult = new Array(paramOne.length).fill(null)
+                void deliverApprove(
+                    connector.clientId,
+                    payload.id,
+                    allNullResult,
+                ).catch(error => {
+                    logger.error(
+                        'WC: failed to deliver all-null sign response',
+                        { error, clientId: connector.clientId },
+                    )
                 })
                 return
             }
@@ -509,19 +574,29 @@ export const useWalletConnectHandlers = () => {
                             result[indicesToSign[i]] = encodeToBase64(encoded)
                         }
                     })
-
-                    connector.approveRequest({
-                        id: payload.id,
-                        result,
-                    })
+                    await deliverApprove(connector.clientId, payload.id, result)
                 },
-                reject: async () => {
+                reject: async (reason: RejectReason = { kind: 'user' }) => {
+                    if (reason.kind === 'softReject') {
+                        // Propose handoff succeeded; reject the WC peer
+                        // cleanly without raising the connection-error banner.
+                        await deliverReject(
+                            connector.clientId,
+                            payload.id,
+                            reason.error,
+                        )
+                        removeSignRequest(signRequest)
+                        return
+                    }
                     connector.rejectRequest({
                         id: payload.id,
                         error: new Error('User rejected'),
                     })
                 },
                 error: async (error: Error) => {
+                    if (isConnectionTimeout(error)) {
+                        return
+                    }
                     connector.rejectRequest({
                         id: payload.id,
                         error,
@@ -534,11 +609,28 @@ export const useWalletConnectHandlers = () => {
                     clearLastFailedRequest()
                     removeSignRequest(signRequest)
                 },
+                // Sync-flow multisig success delivery: encodes the
+                // assembled multisig bytes verbatim (no algosdk
+                // decode/re-encode, so participant signatures still verify
+                // on algod) into the original request positions via
+                // `indicesToSign`.
+                approveSignedBytes: async (signedBytes: Uint8Array[]) => {
+                    const result: Nullable<string>[] = new Array(
+                        paramOne.length,
+                    ).fill(null)
+                    signedBytes.forEach((bytes, i) => {
+                        const idx = indicesToSign[i]
+                        if (idx === undefined) return
+                        result[idx] = encodeToBase64(bytes)
+                    })
+                    await deliverApprove(connector.clientId, payload.id, result)
+                },
             } as TransactionSignRequest
             addSignRequest(signRequest)
         },
         [
             connections,
+            accounts,
             addSignRequest,
             removeSignRequest,
             clearLastFailedRequest,

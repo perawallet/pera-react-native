@@ -143,7 +143,8 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
     const algokit = useAlgorandClient()
     const { network } = useNetwork()
     const allAccounts = useAllAccounts()
-    const { proposeSignRequest, addSignatures } = useMultisigTransportAdapters()
+    const { proposeSignRequest, addSignatures, getMsigMetadata, getDeviceId } =
+        useMultisigTransportAdapters()
 
     // Stable refs so the actor subscription callback never becomes stale
     const removeSignRequestFromStoreRef = useRef(removeSignRequestFromStore)
@@ -177,6 +178,8 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                     network,
                     proposeSignRequest,
                     addSignatures,
+                    getMsigMetadata,
+                    getDeviceId,
                 }),
                 network,
                 // Hardware-wallet actor consumes this. Ledger adds the "TX"
@@ -203,6 +206,8 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
             network,
             proposeSignRequest,
             addSignatures,
+            getMsigMetadata,
+            getDeviceId,
             allAccounts,
         ],
     )

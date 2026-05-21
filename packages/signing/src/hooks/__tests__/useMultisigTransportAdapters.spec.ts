@@ -23,6 +23,8 @@ const mocks = vi.hoisted(() => ({
     addSignature: vi.fn(),
     useNetwork: vi.fn(),
     encodeTransactionRaw: vi.fn(),
+    useAllAccounts: vi.fn(),
+    useDeviceID: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
@@ -30,6 +32,16 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useTransactionEncoder: () => ({
         encodeTransactionRaw: mocks.encodeTransactionRaw,
     }),
+}))
+
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    useAllAccounts: () => mocks.useAllAccounts(),
+    isMultisigAccount: (a: { type?: string } | null | undefined) =>
+        a?.type === 'multisig',
+}))
+
+vi.mock('@perawallet/wallet-core-device', () => ({
+    useDeviceID: (network: string) => mocks.useDeviceID(network),
 }))
 
 vi.mock('@perawallet/wallet-core-multisig', async () => {
@@ -112,6 +124,18 @@ describe('useMultisigTransportAdapters', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mocks.useNetwork.mockReturnValue({ network: 'testnet' })
+        mocks.useAllAccounts.mockReturnValue([
+            {
+                type: 'multisig',
+                address: 'MSIG',
+                multisigDetails: {
+                    version: 1,
+                    threshold: 2,
+                    addresses: ['A', 'B'],
+                },
+            },
+        ])
+        mocks.useDeviceID.mockReturnValue('device-1')
         // Encode each txn to a deterministic, distinguishable byte sequence
         mocks.encodeTransactionRaw.mockImplementation(
             (txn: { tag: string }) =>
@@ -138,6 +162,7 @@ describe('useMultisigTransportAdapters', () => {
                 signers: [
                     { address: 'PARTICIPANT_A', signatures: ['c2lnQTA='] },
                 ],
+                type: 'async',
             })
 
             expect(mocks.proposeSignRequest).toHaveBeenCalledTimes(1)
@@ -177,6 +202,7 @@ describe('useMultisigTransportAdapters', () => {
                 multisigAddress: 'MSIG',
                 signedData,
                 signers,
+                type: 'async',
             })
 
             // Propose carries proposer (signers[0]) only
@@ -222,6 +248,7 @@ describe('useMultisigTransportAdapters', () => {
                 multisigAddress: 'MSIG',
                 signedData,
                 signers,
+                type: 'async',
             })
 
             const [, params] = mocks.proposeSignRequest.mock.calls[0]
@@ -238,6 +265,7 @@ describe('useMultisigTransportAdapters', () => {
                 multisigAddress: 'MSIG',
                 signedData,
                 signers,
+                type: 'async',
             })
 
             // Propose succeeded; status falls back to propose's status when cosigns fail
@@ -262,6 +290,7 @@ describe('useMultisigTransportAdapters', () => {
                 multisigAddress: 'MSIG',
                 signedData,
                 signers,
+                type: 'async',
             })
 
             expect(setQueryDataSpy).toHaveBeenCalledWith(
@@ -293,6 +322,7 @@ describe('useMultisigTransportAdapters', () => {
                 signers: [
                     { address: 'PARTICIPANT_A', signatures: ['c2lnQTA='] },
                 ],
+                type: 'async',
             })
 
             expect(setQueryDataSpy).toHaveBeenCalledWith(
@@ -316,6 +346,7 @@ describe('useMultisigTransportAdapters', () => {
                         signatures: [new Uint8Array([1])],
                     },
                     signers: [{ address: 'A', signatures: ['x'] }],
+                    type: 'async',
                 }),
             ).rejects.toThrow(/transaction data/)
 
@@ -330,6 +361,7 @@ describe('useMultisigTransportAdapters', () => {
                     multisigAddress: 'MSIG',
                     signedData: { type: 'transactions', signed: [] },
                     signers: [],
+                    type: 'async',
                 }),
             ).rejects.toThrow(/at least one signer/)
 
@@ -347,6 +379,7 @@ describe('useMultisigTransportAdapters', () => {
                     signed: [{ txn: { tag: 'TXN_1' } as any }],
                 },
                 signers: [{ address: 'A' /* no signatures field */ }],
+                type: 'async',
             })
 
             const [, params] = mocks.proposeSignRequest.mock.calls[0]

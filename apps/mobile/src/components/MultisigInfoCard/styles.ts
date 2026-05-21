@@ -15,18 +15,17 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     container: {
         backgroundColor: theme.colors.layerGrayLighter,
-        borderRadius: theme.spacing.md,
-        paddingHorizontal: theme.spacing.lg,
+        borderRadius: theme.borderRadius.lg,
+        padding: theme.spacing.md,
+        gap: theme.spacing.md,
     },
     row: {
         flexDirection: 'row',
-        alignItems: 'center',
         justifyContent: 'space-between',
-        paddingVertical: theme.spacing.md,
-        gap: theme.spacing.md,
+        alignItems: 'center',
     },
     rowLabels: {
-        flex: 1,
+        flexShrink: 1,
         gap: theme.spacing.xxs,
     },
     rowSubLabel: {

@@ -123,3 +123,32 @@ describe('resolveInitialContext — group integrity validation', () => {
         )
     })
 })
+
+describe('resolveInitialContext — source callbacks', () => {
+    it('threads reject and approveSignedBytes from a walletconnect request into source metadata', () => {
+        // Multisig sync-flow handoff: createMultisigProposeTransport reads
+        // these off source.callbacks to register the handoff, and the
+        // resolver fires them to deliver to / soft-reject the dApp. They
+        // must survive the SignRequest → SourceMetadata conversion.
+        const approve = vi.fn()
+        const reject = vi.fn()
+        const approveSignedBytes = vi.fn()
+        const request: TransactionSignRequest = {
+            id: 'req-callbacks',
+            type: 'transactions',
+            transport: 'callback',
+            sourceType: 'walletconnect',
+            txs: [makePayment(userAddr, 1n)],
+            approve,
+            reject,
+            approveSignedBytes,
+        }
+
+        const context = resolveInitialContext(baseInput(request))
+        const { callbacks } = context.signableGroups![0].source
+
+        expect(callbacks?.reject).toBe(reject)
+        expect(callbacks?.approveSignedBytes).toBe(approveSignedBytes)
+        expect(callbacks?.approve).toBeDefined()
+    })
+})

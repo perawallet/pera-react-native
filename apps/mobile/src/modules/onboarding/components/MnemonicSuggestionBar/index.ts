@@ -10,5 +10,7 @@
  limitations under the License
  */
 
-export { WordSuggestionDropdown } from './WordSuggestionDropdown'
-export type { WordSuggestionDropdownProps } from './WordSuggestionDropdown'
+export {
+    MnemonicSuggestionBar,
+    type MnemonicSuggestionBarProps,
+} from './MnemonicSuggestionBar'
