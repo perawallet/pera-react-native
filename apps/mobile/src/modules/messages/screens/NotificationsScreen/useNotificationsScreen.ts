@@ -14,6 +14,7 @@ import { useEffect } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import {
     type PeraNotification,
+    useInboxStatus,
     useNotificationsListQuery,
     useMarkNotificationsAsReadMutation,
 } from '@perawallet/wallet-core-messages'
@@ -30,6 +31,7 @@ export type UseNotificationsScreenResult = {
 
 export const useNotificationsScreen = (): UseNotificationsScreenResult => {
     const navigation = useNavigation()
+    const { hasUnreadNotifications } = useInboxStatus()
     const {
         data,
         isPending,
@@ -44,15 +46,13 @@ export const useNotificationsScreen = (): UseNotificationsScreenResult => {
 
     useEffect(() => {
         const unsubscribe = navigation.addListener('blur', () => {
-            const hasUnread = notifications.some(n => n.isUnread)
-
-            if (notifications.length > 0 && hasUnread) {
+            if (notifications.length > 0 && hasUnreadNotifications) {
                 markAsRead(parseInt(notifications[0].id, 10))
             }
         })
 
         return unsubscribe
-    }, [navigation, notifications, markAsRead])
+    }, [navigation, notifications, markAsRead, hasUnreadNotifications])
 
     const loadMoreItems = async () => {
         await fetchNextPage()
