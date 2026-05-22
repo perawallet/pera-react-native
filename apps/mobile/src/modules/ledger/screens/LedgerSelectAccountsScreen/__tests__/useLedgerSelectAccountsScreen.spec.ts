@@ -90,9 +90,9 @@ const { mockPrefetch, mockRequest, mockQueryClient, mockRekeyedScan } =
 // useLedgerAccountPreview is included because the screen hook imports
 // LedgerAccountInfoContent (whose hook chain references it) at module load;
 // it is never invoked in these specs (the sheet content is not rendered).
-// AccountTypes / AccountLogicalTypes / useAccountLogicalType / useRekeyTransition
-// are needed because useLedgerAccountInfoContent → AccountDisplay →
-// useAccountTypeLabel pulls these in at module evaluation time.
+// AccountTypes / useRekeyTransition are needed because
+// useLedgerAccountInfoContent → AccountDisplay → useAccountTypeLabel pulls
+// these in at module evaluation time.
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => [],
     prefetchLedgerAccountPreview: mockPrefetch,
@@ -105,16 +105,6 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         multisig: 'multisig',
         watch: 'watch',
     },
-    AccountLogicalTypes: {
-        HdKey: 'HdKey',
-        Algo25: 'Algo25',
-        LedgerBle: 'LedgerBle',
-        Multisig: 'Multisig',
-        NoAuth: 'NoAuth',
-        Rekeyed: 'Rekeyed',
-        RekeyedAuth: 'RekeyedAuth',
-    },
-    useAccountLogicalType: vi.fn().mockReturnValue(null),
     useRekeyTransition: vi.fn().mockReturnValue(null),
 }))
 

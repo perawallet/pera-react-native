@@ -60,7 +60,9 @@ describe('useLedgerSigningDriver', () => {
         })
         rerender()
         expect(requestBottomSheetMock).toHaveBeenCalledTimes(1)
-        expect(requestBottomSheetMock.mock.calls[0][0].id).toBe('req-1')
+        expect(requestBottomSheetMock.mock.calls[0][0].id).toBe(
+            'ledger-signing:req-1',
+        )
     })
 
     it('keeps the sheet closed during the silent BLE-scan phase', () => {
@@ -97,6 +99,6 @@ describe('useLedgerSigningDriver', () => {
             useHardwareSigningStore.getState().reset()
         })
         rerender()
-        expect(dismissMock).toHaveBeenCalledWith('req-1')
+        expect(dismissMock).toHaveBeenCalledWith('ledger-signing:req-1')
     })
 })

@@ -15,6 +15,7 @@ import {
     useHardwareSigning,
     useHardwareSigningStore,
     useSigningRequest,
+    type HardwareSigningOperation,
     type HardwareSigningStatus,
 } from '@perawallet/wallet-core-signing'
 import { useLanguage } from '@hooks/useLanguage'
@@ -29,6 +30,7 @@ export type UseLedgerSigningContentResult = {
     deviceName: string | null
     currentTx: number | null
     totalTxs: number | null
+    operation: HardwareSigningOperation
     error: LedgerErrorPreset | null
     onCancel: () => void
     onRetry: () => void
@@ -57,6 +59,7 @@ export const useLedgerSigningContent = (): UseLedgerSigningContentResult => {
         currentTx,
         totalTxs,
         error: errorPayload,
+        operation,
         resolveActiveRequest,
         dismiss,
     } = useHardwareSigning()
@@ -115,6 +118,7 @@ export const useLedgerSigningContent = (): UseLedgerSigningContentResult => {
         deviceName,
         currentTx,
         totalTxs,
+        operation,
         error,
         onCancel,
         onRetry,

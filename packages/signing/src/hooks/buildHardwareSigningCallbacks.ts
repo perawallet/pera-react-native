@@ -17,7 +17,10 @@ import {
 import { useHardwareSigningStore } from '../store'
 import type { SigningCallbacks } from '../pipeline/types'
 import { type SignRequest } from '../models'
-import { classifyLedgerErrorKind } from '../utils/classifyLedgerErrorKind'
+import {
+    classifyLedgerErrorKind,
+    isLedgerError,
+} from '../utils/classifyLedgerErrorKind'
 
 /**
  * Build SigningCallbacks that drive the hardware-signing UI store.
@@ -43,11 +46,16 @@ export const buildHardwareSigningCallbacks = (
             ? signerAccount.hardwareDetails.deviceName
             : null
 
+    const operation =
+        request.type === 'arc60' || request.type === 'arbitrary-data'
+            ? 'data'
+            : 'transaction'
+
     return {
         onPhaseChange: phase => {
             const store = useHardwareSigningStore.getState()
             if (phase === 'connecting') {
-                store.start(request.id, deviceName)
+                store.start(request.id, deviceName, operation)
             } else if (phase === 'awaiting-approval') {
                 store.setStatus('awaitingApproval')
             }
@@ -65,6 +73,16 @@ export const buildHardwareSigningCallbacks = (
             useHardwareSigningStore.getState().setProgress(current, total)
         },
         onError: error => {
+            // Only genuine Ledger device/transport errors drive the hardware
+            // overlay (and, for BLE-class kinds, the troubleshooting sheet).
+            // Non-device failures — e.g. an ARC-60 validation error, which the
+            // strategy wraps in a SigningError — must NOT set the store error:
+            // the lifecycle's terminal handler keys its "is this a BLE-class
+            // failure?" check off `hardwareStore.error?.kind`, so setting any
+            // kind here would keep the troubleshooting sheet pinned open
+            // instead of letting the failure surface as the inline red error
+            // in the sign-request sheet.
+            if (!isLedgerError(error)) return
             const kind = classifyLedgerErrorKind(error)
             useHardwareSigningStore.getState().setError({ kind, cause: error })
         },

@@ -91,6 +91,7 @@ const buildSiwa = (overrides: Record<string, unknown> = {}): string =>
         account_address: 'HD_ADDR',
         uri: 'https://arc60.io/login',
         version: '1',
+        nonce: 'abc123',
         chain_id: SIWA_CHAIN_ID,
         type: 'ed25519',
         ...overrides,

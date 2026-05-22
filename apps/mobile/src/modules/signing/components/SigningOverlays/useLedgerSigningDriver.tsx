@@ -34,7 +34,15 @@ export const useLedgerSigningDriver = (): void => {
     const openIdRef = useRef<string | null>(null)
 
     useEffect(() => {
-        const sheetId = isVisible && requestId ? requestId : null
+        // Namespace the Ledger sheet id so it can never collide with the
+        // sign-request sheet, which `useSignRequestDriver` registers under the
+        // bare `request.id`. During the transition into hardware signing both
+        // drivers are briefly active for the same request; without distinct
+        // ids the bottom-sheet manager (keyed by sheet id) renders two
+        // children with the same React key and omits one — which made the
+        // Ledger sheet vanish mid-signing.
+        const sheetId =
+            isVisible && requestId ? `ledger-signing:${requestId}` : null
 
         if (!sheetId) {
             if (openIdRef.current) {

@@ -2353,6 +2353,11 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             (account: any) =>
                 !!account?.keyPairId && account?.type !== 'hardware',
         ),
+        canSignArc60: vi.fn(
+            (account: any) =>
+                (!!account?.keyPairId && account?.type !== 'hardware') ||
+                account?.type === 'hardware',
+        ),
         isRekeyedUnsignable: vi.fn(() => false),
         canInitiateRekey: vi.fn((account: any) => !!account?.keyPairId),
         getRekeyAccount: vi.fn(() => null),

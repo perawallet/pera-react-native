@@ -14,6 +14,7 @@ import { useCallback } from 'react'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import {
     useHardwareSigningStore,
+    type HardwareSigningOperation,
     type HardwareSigningStatus,
     type LedgerSigningErrorPayload,
 } from '../store/hardwareSigningStore'
@@ -39,6 +40,11 @@ export type UseHardwareSigningResult = {
     /** Typed error payload when status is 'error'. Null otherwise. */
     error: Nullable<LedgerSigningErrorPayload>
     /**
+     * Whether this session is signing a transaction group or a data payload
+     * (ARC-60 / arbitrary-data). Drives context-aware overlay copy.
+     */
+    operation: HardwareSigningOperation
+    /**
      * Resolve the active sign request from the caller's queue. Returns
      * `undefined` when the overlay has drifted ahead of the queue.
      */
@@ -59,10 +65,10 @@ export type UseHardwareSigningResult = {
  * this hook free of that dependency means it only touches
  * `useHardwareSigningStore`, so it stays cheap to mock.
  *
- * Today the only hardware-wallet path is Ledger (transaction signing).
- * ARC-60 and arbitrary-data requests are rejected by the hardware
- * strategy before any phase callback fires, so they never drive this
- * hook's state.
+ * The hardware-wallet path is Ledger, covering both transaction signing
+ * and ARC-60 arbitrary-data signing. `operation` distinguishes the two so
+ * the overlay can show the right copy; legacy `algo_signData` arbitrary
+ * data is not supported on hardware and never drives this hook's state.
  */
 export const useHardwareSigning = (): UseHardwareSigningResult => {
     const status = useHardwareSigningStore(state => state.status)
@@ -71,6 +77,7 @@ export const useHardwareSigning = (): UseHardwareSigningResult => {
     const totalTxs = useHardwareSigningStore(state => state.totalTxs)
     const requestId = useHardwareSigningStore(state => state.requestId)
     const error = useHardwareSigningStore(state => state.error)
+    const operation = useHardwareSigningStore(state => state.operation)
     const reset = useHardwareSigningStore(state => state.reset)
 
     const resolveActiveRequest = useCallback(
@@ -88,6 +95,7 @@ export const useHardwareSigning = (): UseHardwareSigningResult => {
         totalTxs,
         requestId,
         error,
+        operation,
         resolveActiveRequest,
         dismiss: reset,
     }

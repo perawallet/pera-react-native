@@ -45,7 +45,7 @@ export default defineConfig({
                 '@ledgerhq/devices',
                 '@ledgerhq/errors',
                 '@ledgerhq/react-native-hid',
-                '@ledgerhq/hw-app-algorand',
+                '@algorandfoundation/ledger-algorand-js',
                 '@ledgerhq/hw-transport',
                 '@perawallet/wallet-core-hardware-wallet',
                 '@perawallet/wallet-core-shared',
