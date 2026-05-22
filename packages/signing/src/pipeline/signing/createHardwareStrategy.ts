@@ -42,12 +42,8 @@ import type {
 } from '../types'
 import { CannotSignError, HardwareWalletError, SigningError } from '../errors'
 import {
-    LedgerAppNotOpenError,
     LedgerAppOutdatedError,
     LedgerConnectionError,
-    LedgerDisconnectedError,
-    LedgerTimeoutError,
-    LedgerUserRejectedError,
     LedgerAddressMismatchError,
     LEDGER_CONNECTION_TIMEOUT_MS,
     LEDGER_CONFIRMATION_TIMEOUT_MS,
@@ -55,15 +51,7 @@ import {
     isAppVersionAtLeast,
 } from '@perawallet/wallet-core-ledger'
 import { validateArc60AuthRequest } from '../../utils/arc60'
-
-const isClassifiedLedgerError = (error: unknown): boolean =>
-    error instanceof LedgerConnectionError ||
-    error instanceof LedgerAppNotOpenError ||
-    error instanceof LedgerAppOutdatedError ||
-    error instanceof LedgerUserRejectedError ||
-    error instanceof LedgerDisconnectedError ||
-    error instanceof LedgerTimeoutError ||
-    error instanceof LedgerAddressMismatchError
+import { isLedgerError } from '../../utils/classifyLedgerErrorKind'
 
 /**
  * Factory for the `rejectWith` callback of the shared `withTimeout` helper,
@@ -263,7 +251,7 @@ const toClassifiedError = (error: unknown): Error => {
     if (
         error instanceof CannotSignError ||
         error instanceof HardwareWalletError ||
-        isClassifiedLedgerError(error)
+        isLedgerError(error)
     ) {
         return error as Error
     }

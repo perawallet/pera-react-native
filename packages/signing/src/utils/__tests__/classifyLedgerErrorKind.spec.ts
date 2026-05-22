@@ -29,7 +29,11 @@ import {
     LedgerUnsupportedDeviceError,
     LedgerUserRejectedError,
 } from '@perawallet/wallet-core-ledger'
-import { classifyLedgerErrorKind } from '../classifyLedgerErrorKind'
+import { SigningError } from '../../pipeline/errors'
+import {
+    classifyLedgerErrorKind,
+    isLedgerError,
+} from '../classifyLedgerErrorKind'
 
 describe('classifyLedgerErrorKind', () => {
     const cases: Array<[Error, ReturnType<typeof classifyLedgerErrorKind>]> = [
@@ -68,5 +72,48 @@ describe('classifyLedgerErrorKind', () => {
         expect(classifyLedgerErrorKind('string')).toBe('connection_failed')
         expect(classifyLedgerErrorKind(null)).toBe('connection_failed')
         expect(classifyLedgerErrorKind(undefined)).toBe('connection_failed')
+    })
+})
+
+describe('isLedgerError', () => {
+    const ledgerErrors: Error[] = [
+        new LedgerBluetoothDisabledError(),
+        new LedgerPermissionDeniedError(),
+        new LedgerScanTimeoutError('x'),
+        new LedgerUserRejectedError(),
+        new LedgerAppNotOpenError(),
+        new LedgerAddressMismatchError('A', 'B'),
+        new LedgerSigningError('x'),
+        new LedgerSigningFailedError('x'),
+        new LedgerTransmissionError('x'),
+        new LedgerPublicKeyReadError(),
+        new LedgerNetworkError(),
+        new LedgerUnsupportedDeviceError(),
+        new LedgerAppOutdatedError(),
+        new LedgerDisconnectedError(),
+        new LedgerTimeoutError('x'),
+        new LedgerConnectionError('x'),
+    ]
+
+    it.each(ledgerErrors)('returns true for %s', error => {
+        expect(isLedgerError(error)).toBe(true)
+    })
+
+    it('returns false for a generic Error', () => {
+        expect(isLedgerError(new Error('boom'))).toBe(false)
+    })
+
+    it('returns false for a SigningError wrapping a non-device failure', () => {
+        // The hardware strategy wraps ARC-60 validation failures (and any
+        // other non-device error) in a SigningError before reaching onError.
+        // Such a wrapper must NOT be treated as a device error, so the failure
+        // surfaces inline rather than in the troubleshooting sheet.
+        expect(isLedgerError(new SigningError('domain mismatch'))).toBe(false)
+    })
+
+    it('returns false for non-Error values', () => {
+        expect(isLedgerError('string')).toBe(false)
+        expect(isLedgerError(null)).toBe(false)
+        expect(isLedgerError(undefined)).toBe(false)
     })
 })

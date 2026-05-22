@@ -754,6 +754,7 @@ describe('createHardwareStrategy', () => {
             account_address: SIGNER_ADDRESS,
             uri: 'https://arc60.io/login',
             version: '1',
+            nonce: 'abc123',
             chain_id: SIWA_CHAIN_ID,
             type: 'ed25519',
             ...overrides,
