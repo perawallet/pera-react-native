@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import { SignRequest, useSigningRequest } from '@perawallet/wallet-core-signing'
+import {
+    SignRequest,
+    useSigningPipeline,
+    useSigningRequest,
+} from '@perawallet/wallet-core-signing'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { SigningRoutes } from '@modules/signing/routes'
@@ -70,11 +74,9 @@ export const SignRequestView = ({ request }: SignRequestViewProps) => {
     const styles = useStyles()
     const { lastFailedRequest, clearLastFailedRequest, removeSignRequest } =
         useSigningRequest()
+    const { resolved } = useSigningPipeline()
 
-    const isSupported =
-        request.type === 'transactions' ||
-        request.type === 'arbitrary-data' ||
-        request.type === 'arc60'
+    const isSupported = resolved !== null
 
     if (!isSupported) {
         return (
@@ -98,7 +100,7 @@ export const SignRequestView = ({ request }: SignRequestViewProps) => {
         // callback also dismisses the sign request. Don't double-show the
         // full-screen failed view here — render nothing while the queue
         // settles.
-        if (request.sourceType === 'walletconnect') {
+        if (resolved?.source.kind === 'walletconnect') {
             return null
         }
 
@@ -126,7 +128,7 @@ export const SignRequestView = ({ request }: SignRequestViewProps) => {
         )
     }
 
-    const isMultisigCosign = request.sourceType === 'multisig-cosign'
+    const isMultisigCosign = resolved?.source.kind === 'multisig-cosign'
     const handleClose = () => {
         removeSignRequest(request)
     }

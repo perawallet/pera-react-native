@@ -26,7 +26,9 @@ import type {
     SigningConfiguration,
     SigningPipeline,
     MachineSnapshot,
+    ResolvedSignRequest,
 } from './types'
+import { buildResolvedSignRequest } from './buildResolvedSignRequest'
 import {
     EMPTY_TRANSACTIONS,
     EMPTY_LIST_ITEMS,
@@ -137,6 +139,8 @@ export const useSigningPipeline = (
 
     const [stage, setStage] = useState<PipelineStage>('idle')
     const [error, setError] = useState<Nullable<Error>>(null)
+    const [resolved, setResolved] =
+        useState<Nullable<ResolvedSignRequest>>(null)
 
     // Keep onEvent in a ref so the subscription closure never goes stale
     const onEventRef = useRef(onEvent)
@@ -149,27 +153,41 @@ export const useSigningPipeline = (
         if (!currentActorRef) {
             setStage('idle')
             setError(null)
+            setResolved(null)
             prevStageRef.current = null
             return
         }
 
-        const subscription = (currentActorRef as AnyActorRef).subscribe(
-            rawSnapshot => {
-                const snapshot = rawSnapshot as MachineSnapshot
-                const newStage = deriveStage(snapshot)
+        const actor = currentActorRef as AnyActorRef
 
-                setStage(newStage)
-                setError(snapshot.context.error)
+        // Seed from the current snapshot so a late-mount picks up state
+        // without waiting for the next machine transition. Guard against
+        // mocks/actors that don't implement getSnapshot().
+        const getSnapshot = (actor as { getSnapshot?: () => unknown })
+            .getSnapshot
+        if (typeof getSnapshot === 'function') {
+            const initialSnapshot = getSnapshot.call(actor) as MachineSnapshot
+            if (initialSnapshot?.context) {
+                setResolved(buildResolvedSignRequest(initialSnapshot.context))
+            }
+        }
 
-                if (newStage !== prevStageRef.current) {
-                    const event = deriveEvent(snapshot, newStage)
-                    if (event) {
-                        onEventRef.current?.(event)
-                    }
-                    prevStageRef.current = newStage
+        const subscription = actor.subscribe(rawSnapshot => {
+            const snapshot = rawSnapshot as MachineSnapshot
+            const newStage = deriveStage(snapshot)
+
+            setStage(newStage)
+            setError(snapshot.context.error)
+            setResolved(buildResolvedSignRequest(snapshot.context))
+
+            if (newStage !== prevStageRef.current) {
+                const event = deriveEvent(snapshot, newStage)
+                if (event) {
+                    onEventRef.current?.(event)
                 }
-            },
-        )
+                prevStageRef.current = newStage
+            }
+        })
 
         return () => {
             subscription.unsubscribe()
@@ -228,5 +246,6 @@ export const useSigningPipeline = (
         next,
         fail,
         retry,
+        resolved,
     }
 }

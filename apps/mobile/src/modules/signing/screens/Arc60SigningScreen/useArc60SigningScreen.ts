@@ -10,13 +10,12 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import {
     type Arc60ParsedPayload,
     type Arc60SignRequest,
-    parseArc60ForDisplay,
     useSigningPipeline,
 } from '@perawallet/wallet-core-signing'
 import {
@@ -47,16 +46,10 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
         (pipeline.currentRequest as Optional<Arc60SignRequest>) ?? null
 
     const account = useFindAccountByAddress(request?.stdSigData.signer ?? '')
-    const parsed = useMemo(
-        () =>
-            request
-                ? parseArc60ForDisplay(
-                      request.stdSigData.data,
-                      request.metadata.encoding,
-                  )
-                : null,
-        [request],
-    )
+    const parsed =
+        pipeline.resolved?.kind.type === 'arc60'
+            ? pipeline.resolved.kind.parsed
+            : null
 
     // Local optimistic flag: flips true the instant the user taps Confirm so
     // the spinner is visible immediately, before the actor's stage transition

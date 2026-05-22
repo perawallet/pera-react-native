@@ -13,7 +13,13 @@
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { Decimal } from 'decimal.js'
 
-import type { SigningMachineContext } from '../machine/context'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+
+import type {
+    SigningMachineContext,
+    ResolvedSignerType,
+} from '../machine/context'
 import type {
     PipelineStage,
     SigningPipelineEvent,
@@ -24,7 +30,7 @@ import type {
     RequestStructure,
     TransactionListItem,
 } from '../utils/classification'
-import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import type { parseArc60ForDisplay } from '../utils/parseArc60ForDisplay'
 
 /**
  * Configuration passed to useSigningPipeline.
@@ -84,10 +90,53 @@ export type SigningPipeline = {
 
     /** Retry after a retryable failure (sends RETRY). No-op when not retryable. */
     retry: () => void
+
+    /** Resolved state derived from machine context. Null when the queue is empty. */
+    resolved: Nullable<ResolvedSignRequest>
 }
 
 export type MachineSnapshot = {
     value: unknown
     context: SigningMachineContext
     matches: (stateValue: string) => boolean
+}
+
+// =============================================================================
+// Resolved request types
+// =============================================================================
+
+type Arc60ParsedForDisplay = ReturnType<typeof parseArc60ForDisplay>
+
+export type SourceKind =
+    | 'local'
+    | 'walletconnect'
+    | 'webview'
+    | 'multisig-cosign'
+    | 'deeplink'
+    | 'gift-card'
+    | 'arc60'
+
+export type TransportKind =
+    | 'algod'
+    | 'callback'
+    | 'multisig-propose'
+    | 'multisig-cosign'
+
+export type ResolvedRequestKind =
+    | {
+          type: 'transactions'
+          isMultisigCosign: boolean
+          cosignSignerAddress: Nullable<string>
+          hasMultiple: boolean
+      }
+    | { type: 'arbitrary-data'; isSingle: boolean }
+    | { type: 'arc60'; parsed: Arc60ParsedForDisplay }
+
+export type ResolvedSignRequest = {
+    signerType: ResolvedSignerType
+    signerAccount: WalletAccount
+    groupSignerTypes: ReadonlyMap<string, ResolvedSignerType>
+    source: { kind: SourceKind; isInteractive: boolean }
+    transport: { kind: TransportKind }
+    kind: ResolvedRequestKind
 }
