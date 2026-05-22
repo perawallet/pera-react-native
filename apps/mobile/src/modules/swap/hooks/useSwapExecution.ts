@@ -51,13 +51,27 @@ export type SwapExecutionStatus =
     | 'success'
     | 'error'
 
+export type SwapExecutionErrorPhase =
+    | 'prepare'
+    | 'signing'
+    | 'submission'
+    | 'status-update'
+
 export type SwapExecutionError = {
-    phase: 'prepare' | 'signing' | 'submission' | 'status-update'
+    phase: SwapExecutionErrorPhase
     message: string
 }
 
+// Returned inline by `execute` so callers can branch on the outcome
+// synchronously after `await`. React state (`status`, `error`) has not
+// re-rendered yet at that point, so reading those fields would be stale.
+export type SwapExecutionOutcome =
+    | { kind: 'success' }
+    | { kind: 'cancelled' }
+    | { kind: 'error'; phase: SwapExecutionErrorPhase; message: string }
+
 type UseSwapExecutionResult = {
-    execute: (quoteIdStr: string) => Promise<boolean>
+    execute: (quoteIdStr: string) => Promise<SwapExecutionOutcome>
     status: SwapExecutionStatus
     error: Nullable<SwapExecutionError>
     txIds: string[]
@@ -83,7 +97,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
     const { mutateAsync: updateSwapStatus } = useUpdateSwapStatusMutation()
 
     const execute = useCallback(
-        async (quoteIdStr: string): Promise<boolean> => {
+        async (quoteIdStr: string): Promise<SwapExecutionOutcome> => {
             setError(null)
             setTxIds([])
 
@@ -102,25 +116,30 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                         : 'Failed to prepare transactions'
                 setError({ phase: 'prepare', message })
                 setStatus('error')
-                return false
+                return { kind: 'error', phase: 'prepare', message }
             }
 
             const groups = prepareResult.transactionGroups ?? []
             if (groups.length === 0) {
-                setError({
-                    phase: 'prepare',
-                    message: 'No transaction groups returned',
-                })
+                const message = 'No transaction groups returned'
+                setError({ phase: 'prepare', message })
                 setStatus('error')
-                return false
+                return { kind: 'error', phase: 'prepare', message }
             }
 
             // Decode every group up-front and collect the txns the user
-            // needs to sign into a single flat array.
-            const { plans, unsignedTxs } = buildGroupPlans(groups, {
-                decodeTransaction,
-                decodeSignedTransaction,
-            })
+            // needs to sign into a single flat array. `groupContext` is the
+            // full ordered list (pre-signed + user-signable, every group
+            // concatenated) — required by the signing-machine analyzer's
+            // group-integrity check, which recomputes the group hash over
+            // the same payload the backend signed.
+            const { plans, unsignedTxs, groupContext } = buildGroupPlans(
+                groups,
+                {
+                    decodeTransaction,
+                    decodeSignedTransaction,
+                },
+            )
 
             // Phase 2: Sign transactions via the signing pipeline.
             // Skip the pipeline entirely when every txn is already pre-signed.
@@ -138,6 +157,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                                   ),
                               },
                               unsignedTxs,
+                              groupContext,
                           )
                         : []
             } catch (e) {
@@ -149,13 +169,14 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                       : 'Failed to sign transactions'
                 setError({ phase: 'signing', message })
                 setStatus('error')
-                if (!isRejection) {
-                    void reportSwapFailure(
-                        updateSwapStatus,
-                        prepareResult.swapIdStr,
-                    )
+                if (isRejection) {
+                    return { kind: 'cancelled' }
                 }
-                return false
+                void reportSwapFailure(
+                    updateSwapStatus,
+                    prepareResult.swapIdStr,
+                )
+                return { kind: 'error', phase: 'signing', message }
             }
 
             // Phase 3: Submit transactions
@@ -173,13 +194,14 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                     collectedTxIds.push(...ids)
                 }
             } catch (e) {
-                setError({ phase: 'submission', message: getMessage(e).body })
+                const message = getMessage(e).body
+                setError({ phase: 'submission', message })
                 setStatus('error')
                 void reportSwapFailure(
                     updateSwapStatus,
                     prepareResult.swapIdStr,
                 )
-                return false
+                return { kind: 'error', phase: 'submission', message }
             }
 
             setTxIds(collectedTxIds)
@@ -205,7 +227,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
             }
 
             setStatus('success')
-            return true
+            return { kind: 'success' }
         },
         [
             prepareTransactions,

@@ -33,6 +33,11 @@ export type GroupPlan = {
 export type BuildGroupPlansResult = {
     plans: GroupPlan[]
     unsignedTxs: PeraTransaction[]
+    // Full ordered list of every txn across every group (pre-signed slots
+    // contribute their inner unsigned-form), passed to the signing pipeline
+    // as `groupContext` so `validateTransactionGroupIntegrity` can recompute
+    // the group hash over the same payload the backend signed.
+    groupContext: PeraTransaction[]
 }
 
 type GroupDecoders = {
@@ -54,6 +59,7 @@ export const buildGroupPlans = (
 ): BuildGroupPlansResult => {
     const plans: GroupPlan[] = []
     const unsignedTxs: PeraTransaction[] = []
+    const groupContext: PeraTransaction[] = []
 
     for (const group of groups) {
         const signed = group.signedTransactions ?? []
@@ -66,14 +72,15 @@ export const buildGroupPlans = (
             const unsignedEntry = unsigned[i]
             if (signedEntry) {
                 const bytes = decodeFromBase64(signedEntry)
-                slots.push({
-                    kind: 'preSigned',
-                    signed: decodeSignedTransaction(bytes),
-                })
+                const signedTxn = decodeSignedTransaction(bytes)
+                slots.push({ kind: 'preSigned', signed: signedTxn })
+                groupContext.push(signedTxn.txn)
             } else if (unsignedEntry) {
                 const bytes = decodeFromBase64(unsignedEntry)
                 const flatIndex = unsignedTxs.length
-                unsignedTxs.push(decodeTransaction(bytes))
+                const unsignedTxn = decodeTransaction(bytes)
+                unsignedTxs.push(unsignedTxn)
+                groupContext.push(unsignedTxn)
                 slots.push({ kind: 'toSign', flatIndex })
             }
         }
@@ -81,7 +88,7 @@ export const buildGroupPlans = (
         plans.push({ slots })
     }
 
-    return { plans, unsignedTxs }
+    return { plans, unsignedTxs, groupContext }
 }
 
 /**

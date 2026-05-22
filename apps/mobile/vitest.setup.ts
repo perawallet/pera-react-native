@@ -59,6 +59,24 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
             getToken: vi.fn().mockResolvedValue('mock-token'),
         },
         remoteConfig: {
+            initializeRemoteConfig: vi.fn(),
+            getStringValue: vi
+                .fn()
+                .mockImplementation(
+                    (_key: string, fallback?: string) => fallback ?? '',
+                ),
+            getBooleanValue: vi
+                .fn()
+                .mockImplementation(
+                    (_key: string, fallback?: boolean) => fallback ?? false,
+                ),
+            getNumberValue: vi
+                .fn()
+                .mockImplementation(
+                    (_key: string, fallback?: number) => fallback ?? 0,
+                ),
+            // Firebase-style remnants retained for any callers that haven't
+            // migrated to the RemoteConfigService API.
             fetchAndActivate: vi.fn().mockResolvedValue(true),
             getValue: vi.fn().mockReturnValue({ asString: () => '' }),
             getBoolean: vi.fn().mockReturnValue(false),
@@ -2515,6 +2533,16 @@ vi.mock('@perawallet/wallet-extension-platform', () => ({
     })),
     RemoteConfigDefaults: {
         welcome_message: 'Hello',
+    },
+    RemoteConfigKeys: {
+        welcome_message: 'welcome_message',
+        fee_warning_standard_fee: 'fee_warning_standard_fee',
+        fee_warning_usd_threshold: 'fee_warning_usd_threshold',
+        staking_projects: 'staking_projects',
+        swap_price_impact_low_threshold: 'swap_price_impact_low_threshold',
+        swap_price_impact_high_threshold: 'swap_price_impact_high_threshold',
+        enable_motion_lock: 'enable_motion_lock',
+        enable_duress_pin: 'enable_duress_pin',
     },
     AnalyticsServiceContainerKey: 'AnalyticsService',
     useNotificationsListQuery: vi.fn(() => ({

@@ -31,3 +31,28 @@ export type LedgerErrorPresetKind =
     | 'address_mismatch'
     | 'network_error'
     | 'unsupported_device'
+
+/**
+ * Subset of error kinds where the user-facing remediation lives in the
+ * troubleshooting bottom sheet rather than the inline error UI. Consumed
+ * by both the actor lifecycle (via `isBleClassErrorKind`) and the UI
+ * presets (which alias this set as `TROUBLESHOOTABLE_KINDS`), so the two
+ * cannot drift.
+ *
+ * For these kinds we leave the hardware-signing store in `error` state on
+ * a terminal failure so the troubleshooting sheet stays open until the
+ * user closes it. Other failure kinds reset the store synchronously to
+ * free up the next signing request.
+ */
+export const BLE_CLASS_ERROR_KINDS: ReadonlySet<LedgerErrorPresetKind> =
+    new Set([
+        'bluetooth_disabled',
+        'bluetooth_permission',
+        'scan_timeout',
+        'connection_failed',
+        'connection_lost',
+    ])
+
+export const isBleClassErrorKind = (
+    kind: LedgerErrorPresetKind | undefined,
+): boolean => kind !== undefined && BLE_CLASS_ERROR_KINDS.has(kind)

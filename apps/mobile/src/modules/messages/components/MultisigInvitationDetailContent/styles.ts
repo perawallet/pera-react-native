@@ -17,8 +17,8 @@ export const useStyles = makeStyles(theme => ({
         flex: 1,
     },
     scrollContent: {
-        paddingHorizontal: theme.spacing.md,
-        paddingBottom: theme.spacing.lg,
+        paddingHorizontal: theme.spacing.xl,
+        paddingBottom: theme.spacing.xxl,
         gap: theme.spacing.lg,
     },
     header: {
@@ -39,11 +39,10 @@ export const useStyles = makeStyles(theme => ({
         marginTop: theme.spacing.sm,
     },
     participantRow: {
-        gap: theme.spacing.md,
         paddingVertical: theme.spacing.md,
-        paddingHorizontal: theme.spacing.lg,
         borderBottomWidth: theme.borders.sm,
         borderBottomColor: theme.colors.divider,
+        justifyContent: 'space-between',
     },
     participantRowLast: {
         borderBottomWidth: 0,
@@ -51,11 +50,14 @@ export const useStyles = makeStyles(theme => ({
     bottomBar: {
         flexDirection: 'row',
         gap: theme.spacing.md,
-        paddingHorizontal: theme.spacing.md,
+        paddingHorizontal: theme.spacing.xl,
         paddingTop: theme.spacing.md,
         paddingBottom: theme.spacing.md,
     },
-    bottomButton: {
+    ignoreButton: {
         flex: 1,
+    },
+    acceptButton: {
+        flex: 2,
     },
 }))

@@ -57,6 +57,7 @@ export const TransactionConfirmationScreen = () => {
         isRecipientBelowMbr,
         recipientMbrDisplay,
         isRecipientInfoPending,
+        isSigning,
     } = useTransactionConfirmationScreen()
 
     if (!isReady) {
@@ -185,7 +186,7 @@ export const TransactionConfirmationScreen = () => {
                     <PWSlideToConfirm
                         title={t('common.slide_to_confirm.label')}
                         onConfirm={handleConfirm}
-                        isLoading={isRecipientInfoPending}
+                        isLoading={isRecipientInfoPending || isSigning}
                         isDisabled={
                             isRecipientBelowMbr || isRecipientInfoPending
                         }

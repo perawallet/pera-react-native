@@ -12,7 +12,10 @@
 
 import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { useSwapExecution } from '../useSwapExecution'
+import {
+    useSwapExecution,
+    type SwapExecutionOutcome,
+} from '../useSwapExecution'
 import type { PrepareTransactionsResult } from '@perawallet/wallet-core-swaps'
 import type {
     PeraSignedTransaction,
@@ -225,12 +228,12 @@ describe('useSwapExecution', () => {
     it('executes full flow: prepare → pipeline sign → submit → update status', async () => {
         const { result } = renderHook(() => useSwapExecution())
 
-        let success: Optional<boolean>
+        let outcome: Optional<SwapExecutionOutcome>
         await act(async () => {
-            success = await result.current.execute('quote-123')
+            outcome = await result.current.execute('quote-123')
         })
 
-        expect(success).toBe(true)
+        expect(outcome).toEqual({ kind: 'success' })
         expect(result.current.status).toBe('success')
         expect(mockPrepareTransactions).toHaveBeenCalledWith({
             quote: 'quote-123',
@@ -249,6 +252,12 @@ describe('useSwapExecution', () => {
         // sheets.
         expect(request.sourceType).toBe('local')
         expect(request.txs).toHaveLength(2)
+        // groupContext must cover every slot in the backend's prepare result
+        // (all-unsigned in this case → same as `txs`). The signing-machine
+        // analyzer recomputes the group hash over `groupContext`, so if we
+        // ever stop passing it, swap groups with backend-pre-signed slots
+        // will fail validation.
+        expect(request.groupContext).toHaveLength(2)
 
         expect(mockSendRawTransaction).toHaveBeenCalled()
         expect(mockUpdateSwapStatus).toHaveBeenCalledWith({
@@ -296,6 +305,10 @@ describe('useSwapExecution', () => {
         const request = mockAddSignRequest.mock
             .calls[0][0] as TransactionSignRequest
         expect(request.txs).toHaveLength(1)
+        // groupContext, on the other hand, must cover ALL 3 slots so the
+        // analyzer recomputes the right group hash. This was the regression
+        // that made every mixed-group swap fail with `blockchain_error`.
+        expect(request.groupContext).toHaveLength(3)
 
         // Verify the encoder received the slots in the correct interleaved order.
         expect(mockEncodeSignedTransactions).toHaveBeenCalledTimes(1)
@@ -368,12 +381,16 @@ describe('useSwapExecution', () => {
 
         const { result } = renderHook(() => useSwapExecution())
 
-        let success: Optional<boolean>
+        let outcome: Optional<SwapExecutionOutcome>
         await act(async () => {
-            success = await result.current.execute('quote-789')
+            outcome = await result.current.execute('quote-789')
         })
 
-        expect(success).toBe(false)
+        expect(outcome).toEqual({
+            kind: 'error',
+            phase: 'prepare',
+            message: 'Prepare failed',
+        })
         expect(result.current.status).toBe('error')
         expect(result.current.error).toEqual({
             phase: 'prepare',
@@ -386,12 +403,12 @@ describe('useSwapExecution', () => {
 
         const { result } = renderHook(() => useSwapExecution())
 
-        let success: Optional<boolean>
+        let outcome: Optional<SwapExecutionOutcome>
         await act(async () => {
-            success = await result.current.execute('quote-reject')
+            outcome = await result.current.execute('quote-reject')
         })
 
-        expect(success).toBe(false)
+        expect(outcome).toEqual({ kind: 'cancelled' })
         expect(result.current.status).toBe('error')
         expect(result.current.error?.phase).toBe('signing')
         expect(result.current.error?.message).toBe(
@@ -407,12 +424,16 @@ describe('useSwapExecution', () => {
 
         const { result } = renderHook(() => useSwapExecution())
 
-        let success: Optional<boolean>
+        let outcome: Optional<SwapExecutionOutcome>
         await act(async () => {
-            success = await result.current.execute('quote-pipeline-error')
+            outcome = await result.current.execute('quote-pipeline-error')
         })
 
-        expect(success).toBe(false)
+        expect(outcome).toEqual({
+            kind: 'error',
+            phase: 'signing',
+            message: 'Pipeline boom',
+        })
         expect(result.current.status).toBe('error')
         expect(result.current.error?.phase).toBe('signing')
         expect(result.current.error?.message).toBe('Pipeline boom')
@@ -431,12 +452,15 @@ describe('useSwapExecution', () => {
 
         const { result } = renderHook(() => useSwapExecution())
 
-        let success: Optional<boolean>
+        let outcome: Optional<SwapExecutionOutcome>
         await act(async () => {
-            success = await result.current.execute('quote-submit-fail')
+            outcome = await result.current.execute('quote-submit-fail')
         })
 
-        expect(success).toBe(false)
+        expect(outcome?.kind).toBe('error')
+        if (outcome?.kind === 'error') {
+            expect(outcome.phase).toBe('submission')
+        }
         expect(result.current.status).toBe('error')
         expect(result.current.error?.phase).toBe('submission')
 
@@ -453,12 +477,12 @@ describe('useSwapExecution', () => {
 
         const { result } = renderHook(() => useSwapExecution())
 
-        let success: Optional<boolean>
+        let outcome: Optional<SwapExecutionOutcome>
         await act(async () => {
-            success = await result.current.execute('quote-status-fail')
+            outcome = await result.current.execute('quote-status-fail')
         })
 
-        expect(success).toBe(true)
+        expect(outcome).toEqual({ kind: 'success' })
         expect(result.current.status).toBe('success')
     })
 
@@ -489,12 +513,16 @@ describe('useSwapExecution', () => {
 
         const { result } = renderHook(() => useSwapExecution())
 
-        let success: Optional<boolean>
+        let outcome: Optional<SwapExecutionOutcome>
         await act(async () => {
-            success = await result.current.execute('quote-empty')
+            outcome = await result.current.execute('quote-empty')
         })
 
-        expect(success).toBe(false)
+        expect(outcome).toEqual({
+            kind: 'error',
+            phase: 'prepare',
+            message: 'No transaction groups returned',
+        })
         expect(result.current.error?.phase).toBe('prepare')
         expect(result.current.error?.message).toBe(
             'No transaction groups returned',

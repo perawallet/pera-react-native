@@ -134,7 +134,8 @@ describe('useSetThresholdScreen', () => {
         const arg = mockRequestBottomSheet.mock.calls[0][0]
         expect(arg.options).toEqual({
             size: 'auto',
-            enablePanDownToClose: true,
+            enablePanDownToClose: false,
+            enableCloseOnBackdropPress: false,
         })
     })
 })

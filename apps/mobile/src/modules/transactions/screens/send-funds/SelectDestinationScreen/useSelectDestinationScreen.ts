@@ -16,12 +16,13 @@ import {
     canSignWith,
     useAccountBalancesQuery,
     useAllAccounts,
+    useOnChainAccountInformationQuery,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
 import { ALGO_ASSET_ID, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { useNavigation } from '@react-navigation/native'
 import { StackNavigationProp } from '@react-navigation/stack'
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 export const useSelectDestinationScreen = () => {
     const { selectedAssetId, setDestination, setSendMode } = useSendFunds()
@@ -41,6 +42,10 @@ export const useSelectDestinationScreen = () => {
 
     const navigation =
         useNavigation<StackNavigationProp<SendFundsStackParamList>>()
+
+    const [pendingAddress, setPendingAddress] = useState<string>()
+    const { data: pendingOnChainInfo, isError: pendingCheckFailed } =
+        useOnChainAccountInformationQuery(pendingAddress ?? '')
 
     const handleSelected = useCallback(
         (address: string) => {
@@ -83,6 +88,7 @@ export const useSelectDestinationScreen = () => {
                 setSendMode('sendArc59')
                 navigation.navigate('ARC59SendSummary')
             }
+            setPendingAddress(address)
         },
         [
             selectedAsset,
@@ -94,9 +100,36 @@ export const useSelectDestinationScreen = () => {
         ],
     )
 
+    useEffect(() => {
+        if (!pendingAddress || !selectedAsset) return
+        if (pendingOnChainInfo === undefined && !pendingCheckFailed) return
+
+        const isReceiverOptedIn =
+            pendingOnChainInfo?.assets.some(
+                a => a.assetId === BigInt(selectedAsset.assetId),
+            ) ?? false
+
+        if (isReceiverOptedIn) {
+            setSendMode('normal')
+            navigation.navigate('ConfirmTransaction')
+        } else {
+            setSendMode('sendArc59')
+            navigation.navigate('ARC59SendSummary')
+        }
+        setPendingAddress(undefined)
+    }, [
+        pendingAddress,
+        pendingOnChainInfo,
+        pendingCheckFailed,
+        selectedAsset,
+        setSendMode,
+        navigation,
+    ])
+
     return {
         selectedAsset,
         selectedAccount,
         handleSelected,
+        isCheckingDestination: pendingAddress !== undefined,
     }
 }

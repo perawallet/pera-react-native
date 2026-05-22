@@ -10,16 +10,22 @@
  limitations under the License
  */
 
-import { PWView } from '@components/core'
+import { PWScrollView } from '@components/core'
 import { FeatureFlagOverrides } from '@modules/settings/components/FeatureFlagOverrides/FeatureFlagOverrides'
 import { useStyles } from './styles'
+import { SafeAreaView } from 'react-native-safe-area-context'
 
 export const SettingsDeveloperFeatureFlagsScreen = () => {
     const styles = useStyles()
 
     return (
-        <PWView style={styles.container}>
-            <FeatureFlagOverrides />
-        </PWView>
+        <SafeAreaView
+            edges={['bottom']}
+            style={styles.container}
+        >
+            <PWScrollView contentContainerStyle={styles.scrollContainer}>
+                <FeatureFlagOverrides />
+            </PWScrollView>
+        </SafeAreaView>
     )
 }

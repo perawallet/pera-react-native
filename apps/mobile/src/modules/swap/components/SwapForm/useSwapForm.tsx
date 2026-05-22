@@ -122,7 +122,7 @@ export const useSwapForm = (): UseSwapFormResult => {
 
     const { invalidate: invalidateAccountBalances } =
         useAccountBalancesInvalidator()
-    const { successToast } = useToast()
+    const { successToast, errorToast } = useToast()
     const { t } = useLanguage()
 
     const { data: payAssets } = useAssetsQuery([fromAsset])
@@ -398,7 +398,11 @@ export const useSwapForm = (): UseSwapFormResult => {
                 enableCloseOnBackdropPress: false,
             },
         })
-        if (result !== 'confirm') return
+        if (!result || result.kind === 'cancelled') return
+        if (result.kind === 'error') {
+            errorToast(t('swap.execution.error_title'), result.message)
+            return
+        }
 
         invalidateAccountBalances()
 
@@ -422,6 +426,7 @@ export const useSwapForm = (): UseSwapFormResult => {
         requestBottomSheet,
         invalidateAccountBalances,
         successToast,
+        errorToast,
         t,
         resetQuoteMutation,
     ])

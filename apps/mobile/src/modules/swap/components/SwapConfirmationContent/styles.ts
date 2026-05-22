@@ -120,16 +120,6 @@ export const useStyles = makeStyles(theme => {
         warningText: {
             color: theme.colors.negative,
         },
-        errorBanner: {
-            marginHorizontal: theme.spacing.lg,
-            marginTop: theme.spacing.md,
-            padding: theme.spacing.md,
-            backgroundColor: theme.colors.negativeLighter,
-            borderRadius: theme.spacing.sm,
-        },
-        errorText: {
-            color: theme.colors.negative,
-        },
         confirmButton: {
             marginHorizontal: theme.spacing.lg,
             marginTop: theme.spacing.xxl,

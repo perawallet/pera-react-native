@@ -120,7 +120,7 @@ describe('useCreateMultisigScreen', () => {
         expect(result.current.canContinue).toBe(true)
     })
 
-    it('ignores duplicate addresses', async () => {
+    it('allows duplicate addresses', async () => {
         mockRequestBottomSheet
             .mockResolvedValueOnce('ADDR1')
             .mockResolvedValueOnce('ADDR1')
@@ -134,7 +134,31 @@ describe('useCreateMultisigScreen', () => {
             await result.current.handleOpenAddParticipant()
         })
 
-        expect(result.current.participants).toHaveLength(1)
+        expect(result.current.participants).toHaveLength(2)
+        expect(result.current.participants[0]?.address).toBe('ADDR1')
+        expect(result.current.participants[1]?.address).toBe('ADDR1')
+    })
+
+    it('preserves participant order across duplicate adds', async () => {
+        mockRequestBottomSheet
+            .mockResolvedValueOnce('A')
+            .mockResolvedValueOnce('B')
+            .mockResolvedValueOnce('B')
+            .mockResolvedValueOnce('A')
+        const { result } = renderHook(() => useCreateMultisigScreen())
+
+        for (let i = 0; i < 4; i++) {
+            await act(async () => {
+                await result.current.handleOpenAddParticipant()
+            })
+        }
+
+        expect(result.current.participants.map(p => p.address)).toEqual([
+            'A',
+            'B',
+            'B',
+            'A',
+        ])
     })
 
     it('skips adding when the sheet is dismissed (resolves undefined)', async () => {
@@ -165,15 +189,19 @@ describe('useCreateMultisigScreen', () => {
         })
     })
 
-    it('navigates to EditParticipant on edit', () => {
+    it('navigates to EditParticipant on edit with index and address', () => {
+        useMultisigCreationStore.getState().addParticipant({ address: 'ADDR1' })
+        useMultisigCreationStore.getState().addParticipant({ address: 'ADDR2' })
+
         const { result } = renderHook(() => useCreateMultisigScreen())
 
         act(() => {
-            result.current.handleEditParticipant('ADDR1')
+            result.current.handleEditParticipant(1)
         })
 
         expect(mockPush).toHaveBeenCalledWith('EditParticipant', {
-            address: 'ADDR1',
+            index: 1,
+            address: 'ADDR2',
         })
     })
 
@@ -195,7 +223,7 @@ describe('useCreateMultisigScreen', () => {
         expect(result.current.isParticipantInWallet('ADDR2')).toBe(false)
     })
 
-    it('handleRemoveParticipant removes the participant from the store', () => {
+    it('handleRemoveParticipant removes the participant at the given index', () => {
         const store = useMultisigCreationStore.getState()
         store.addParticipant({ address: 'ADDR1' })
         store.addParticipant({ address: 'ADDR2' })
@@ -203,12 +231,28 @@ describe('useCreateMultisigScreen', () => {
         const { result } = renderHook(() => useCreateMultisigScreen())
 
         act(() => {
-            result.current.handleRemoveParticipant('ADDR1')
+            result.current.handleRemoveParticipant(0)
         })
 
         const participants = useMultisigCreationStore.getState().participants
-        expect(participants.find(p => p.address === 'ADDR1')).toBeUndefined()
         expect(participants).toHaveLength(1)
+        expect(participants[0].address).toBe('ADDR2')
+    })
+
+    it('handleRemoveParticipant only removes the targeted duplicate', () => {
+        const store = useMultisigCreationStore.getState()
+        store.addParticipant({ address: 'ADDR1' })
+        store.addParticipant({ address: 'ADDR1' })
+
+        const { result } = renderHook(() => useCreateMultisigScreen())
+
+        act(() => {
+            result.current.handleRemoveParticipant(1)
+        })
+
+        const participants = useMultisigCreationStore.getState().participants
+        expect(participants).toHaveLength(1)
+        expect(participants[0].address).toBe('ADDR1')
     })
 
     describe('contact auto-save', () => {
@@ -254,6 +298,48 @@ describe('useCreateMultisigScreen', () => {
 
             expect(mockAddContact).not.toHaveBeenCalled()
             expect(result.current.participants).toHaveLength(1)
+        })
+
+        it('hydrates name from an existing contact on duplicate adds', async () => {
+            mockContacts.mockReturnValue([{ address: ADDR, name: 'Alice' }])
+            mockRequestBottomSheet
+                .mockResolvedValueOnce(ADDR)
+                .mockResolvedValueOnce(ADDR)
+            const { result } = renderHook(() => useCreateMultisigScreen())
+
+            await act(async () => {
+                await result.current.handleOpenAddParticipant()
+            })
+            await act(async () => {
+                await result.current.handleOpenAddParticipant()
+            })
+
+            expect(result.current.participants).toHaveLength(2)
+            expect(result.current.participants[0]?.name).toBe('Alice')
+            expect(result.current.participants[1]?.name).toBe('Alice')
+            expect(mockAddContact).not.toHaveBeenCalled()
+        })
+
+        it('does not auto-save a contact a second time on duplicate add', async () => {
+            mockRequestBottomSheet
+                .mockResolvedValueOnce(ADDR)
+                .mockResolvedValueOnce(ADDR)
+            mockAddContact.mockImplementation(c => {
+                mockContacts.mockReturnValue([
+                    { address: c.address, name: c.name },
+                ])
+            })
+            const { result } = renderHook(() => useCreateMultisigScreen())
+
+            await act(async () => {
+                await result.current.handleOpenAddParticipant()
+            })
+            await act(async () => {
+                await result.current.handleOpenAddParticipant()
+            })
+
+            expect(result.current.participants).toHaveLength(2)
+            expect(mockAddContact).toHaveBeenCalledTimes(1)
         })
 
         it('swallows a duplicate-contact error', async () => {

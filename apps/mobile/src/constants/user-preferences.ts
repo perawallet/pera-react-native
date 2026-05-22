@@ -17,6 +17,8 @@ export const UserPreferences = {
     advancedSecurityEnabled: 'advanced-security-enabled',
     rekeySupportEnabled: 'rekey-support-enabled',
     assetFreezeSupportEnabled: 'asset-freeze-support-enabled',
+    shakeToLockEnabled: 'shake-to-lock-enabled',
+    duressPinEnabled: 'duress-pin-enabled',
 
     transactionRequestFaqShown: 'transaction-request-faq-shown',
     stakingDisclaimerAccepted: 'staking-disclaimer-accepted',
