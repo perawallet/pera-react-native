@@ -11,8 +11,9 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { EdgeInsets } from 'react-native-safe-area-context'
 
-export const useStyles = makeStyles(theme => {
+export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
     return {
         container: {
             flex: 1,
@@ -24,12 +25,14 @@ export const useStyles = makeStyles(theme => {
         content: {
             flex: 1,
             backgroundColor: theme.colors.background,
+            paddingTop: insets.top + theme.spacing.sm,
         },
         // Clips the content under the animated rounded corners while the
         // home banner is visible. The radius itself is driven by a
         // Reanimated shared value on AccountScreen.
         contentClipped: {
             overflow: 'hidden',
+            paddingTop: theme.spacing.sm,
         },
         iconBar: {
             paddingVertical: 0,

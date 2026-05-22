@@ -10,12 +10,8 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
-import { PWDropdown, PWDropdownItem, PWIcon, PWView } from '@components/core'
-import { usePreferences, useSettings } from '@perawallet/wallet-core-settings'
-import { UserPreferences } from '@constants/user-preferences'
-import { useLanguage } from '@hooks/useLanguage'
-import { useAppNavigation } from '@hooks/useAppNavigation'
+import { PWDropdown, PWIcon, PWView } from '@components/core'
+import { useAccountHeaderMenu } from './useAccountHeaderMenu'
 
 export type AccountHeaderMenuProps = {
     testID?: string
@@ -24,46 +20,7 @@ export type AccountHeaderMenuProps = {
 export const AccountHeaderMenu = ({
     testID = 'account_header_menu',
 }: AccountHeaderMenuProps) => {
-    const { t } = useLanguage()
-    const navigation = useAppNavigation()
-    const { getPreference, setPreference } = usePreferences()
-    const { privacyMode, setPrivacyMode } = useSettings()
-
-    const chartVisible = !!getPreference(UserPreferences.chartVisible)
-
-    const items: PWDropdownItem[] = useMemo(
-        () => [
-            {
-                label: chartVisible
-                    ? t('portfolio.hide_chart')
-                    : t('portfolio.show_chart'),
-                icon: chartVisible ? 'text-document' : 'chart',
-                onPress: () =>
-                    setPreference(UserPreferences.chartVisible, !chartVisible),
-            },
-            {
-                label: privacyMode
-                    ? t('common.exit_stealth_mode')
-                    : t('common.enter_stealth_mode'),
-                icon: 'eye',
-                onPress: () => setPrivacyMode(!privacyMode),
-            },
-            {
-                label: t('search.title'),
-                icon: 'magnifying-glass',
-                onPress: () =>
-                    navigation.navigate('Search', { screen: 'SearchScreen' }),
-            },
-        ],
-        [
-            chartVisible,
-            privacyMode,
-            t,
-            setPreference,
-            setPrivacyMode,
-            navigation,
-        ],
-    )
+    const { items } = useAccountHeaderMenu()
 
     return (
         <PWView testID={testID}>

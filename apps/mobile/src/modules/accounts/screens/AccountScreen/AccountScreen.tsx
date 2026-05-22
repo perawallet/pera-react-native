@@ -31,9 +31,11 @@ import { AccountTabNavigator } from '@modules/accounts/components/AccountTabNavi
 import { NotificationsIcon } from '@modules/messages/components/NotificationsIcon'
 import { AccountHeaderMenu } from '@components/AccountHeaderMenu'
 import { HomeBannersStrip } from '@modules/banners'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export const AccountScreen = () => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles(insets)
     const account = useSelectedAccount()
     const scannerState = useModalState()
     const { t } = useLanguage()

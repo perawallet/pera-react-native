@@ -14,6 +14,7 @@ import { useEffect, useState } from 'react'
 import { type LayoutChangeEvent } from 'react-native'
 import {
     Easing,
+    type SharedValue,
     useAnimatedStyle,
     useSharedValue,
     withDelay,
@@ -28,6 +29,9 @@ export const BANNER_REVEAL_EASING = Easing.inOut(Easing.quad)
 
 export type BannerRevealResult = {
     animatedStyle: ReturnType<typeof useAnimatedStyle>
+    // 0 → 1 over the reveal. Exposed so callers can drive sibling animations
+    // (e.g. a safe-area overlay fade) in lockstep with the height animation.
+    progress: SharedValue<number>
     isMeasured: boolean
     onMeasureLayout: (event: LayoutChangeEvent) => void
 }
@@ -39,6 +43,7 @@ export const useBannerReveal = (): BannerRevealResult => {
     const [measuredHeight, setMeasuredHeight] = useState(0)
     const height = useSharedValue(0)
     const opacity = useSharedValue(0)
+    const progress = useSharedValue(0)
 
     useEffect(() => {
         if (measuredHeight <= 0) return
@@ -56,7 +61,14 @@ export const useBannerReveal = (): BannerRevealResult => {
                 easing: BANNER_REVEAL_EASING,
             }),
         )
-    }, [measuredHeight, height, opacity])
+        progress.value = withDelay(
+            BANNER_REVEAL_DELAY_MS,
+            withTiming(1, {
+                duration: BANNER_REVEAL_DURATION_MS,
+                easing: BANNER_REVEAL_EASING,
+            }),
+        )
+    }, [measuredHeight, height, opacity, progress])
 
     const animatedStyle = useAnimatedStyle(() => ({
         height: height.value,
@@ -71,6 +83,7 @@ export const useBannerReveal = (): BannerRevealResult => {
 
     return {
         animatedStyle,
+        progress,
         isMeasured: measuredHeight > 0,
         onMeasureLayout,
     }

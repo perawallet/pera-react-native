@@ -32,3 +32,15 @@ export const UserPreferences = {
 
 export type UserPreferences =
     (typeof UserPreferences)[keyof typeof UserPreferences]
+
+// Preferences that gate first-run prompts, disclaimers, or one-shot warnings.
+// The developer "Clear one-time flags" action iterates this list — add new
+// keys here so they reset alongside the others.
+export const OneTimeUserPreferenceFlags = [
+    UserPreferences.transactionInfoAgreed,
+    UserPreferences.transactionRequestFaqShown,
+    UserPreferences.stakingDisclaimerAccepted,
+    UserPreferences.expressSendWarningDismissed,
+    UserPreferences.swapIntroductionSeen,
+    UserPreferences._securityPinSetupPrompt,
+] as const
