@@ -65,10 +65,15 @@ export const resolveDeviceModel = (
 export const ALGORAND_BIP44_PREFIX = "44'/283'"
 
 /**
- * Construct the full BIP-44 path for a Ledger Algorand account.
+ * Construct the full BIP-32 derivation path for a Ledger Algorand account,
+ * in the canonical `m/`-prefixed form (e.g. `m/44'/283'/0'/0/0`).
+ *
+ * The `m/` prefix is required by `@algorandfoundation/ledger-algorand-js`'s
+ * `serializePath` (used by `signData`); it rejects bare `44'/283'/…` paths
+ * with "Path should start with \"m/\"".
  */
 export const buildLedgerAccountPath = (accountIndex: number): string =>
-    `${ALGORAND_BIP44_PREFIX}/${accountIndex}'/0/0`
+    `m/${ALGORAND_BIP44_PREFIX}/${accountIndex}'/0/0`
 
 /**
  * APDU status codes used to classify Ledger responses.

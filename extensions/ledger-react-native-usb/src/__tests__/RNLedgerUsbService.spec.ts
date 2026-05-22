@@ -239,7 +239,7 @@ describe('RNLedgerUsbService', () => {
             expect.objectContaining({
                 data: 'e30=',
                 domain: 'example.com',
-                hdPath: "44'/283'/0'/0/0",
+                hdPath: "m/44'/283'/0'/0/0",
                 authenticationData: expect.any(Uint8Array),
                 signer: expect.any(Uint8Array),
             }),

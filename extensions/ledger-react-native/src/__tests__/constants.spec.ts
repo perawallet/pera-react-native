@@ -45,9 +45,11 @@ describe('resolveDeviceModel', () => {
 })
 
 describe('buildLedgerAccountPath', () => {
-    test('builds the Algorand BIP-44 path with the given account index', () => {
-        expect(buildLedgerAccountPath(0)).toBe("44'/283'/0'/0/0")
-        expect(buildLedgerAccountPath(5)).toBe("44'/283'/5'/0/0")
+    test('builds the m/-prefixed Algorand BIP-44 path with the given account index', () => {
+        // `@algorandfoundation/ledger-algorand-js` serializePath (used by
+        // signData) requires the canonical "m/"-prefixed BIP-32 form.
+        expect(buildLedgerAccountPath(0)).toBe("m/44'/283'/0'/0/0")
+        expect(buildLedgerAccountPath(5)).toBe("m/44'/283'/5'/0/0")
     })
 })
 
