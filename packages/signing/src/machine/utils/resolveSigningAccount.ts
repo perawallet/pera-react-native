@@ -14,7 +14,7 @@ import {
     resolveAuthAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { SourceMetadata } from '../../pipeline/types'
+import type { SignableData, SourceMetadata } from '../../pipeline/types'
 
 /**
  * Picks the account whose key produces the signature for a signable group.
@@ -22,9 +22,12 @@ import type { SourceMetadata } from '../../pipeline/types'
  * - `multisig-cosign` source: the participant slot is bound to its ORIGINAL
  *   pubkey at multisig creation. Rekey indirection MUST NOT be followed —
  *   the participant signs with its own key.
- * - Any other source: standard rekey rule — resolve the single rekey hop to
- *   the auth account, which holds the signing key. Rekey indirection is not
- *   transitive, so this is one hop, not a chain.
+ * - `arbitrary-data` / `arc60` data: the dApp verifies the signature off-chain
+ *   against the requested account's own pubkey. There is no auth-addr lookup
+ *   for off-chain data, so the rekey hop MUST NOT be followed.
+ * - Transactions (any other shape): standard rekey rule — resolve the single
+ *   rekey hop to the auth account, which holds the signing key. Rekey
+ *   indirection is not transitive, so this is one hop, not a chain.
  *
  * This is the single canonical statement of the rule. Both the machine
  * dispatcher (which classifies each group's signer type) and the local-key
@@ -34,8 +37,12 @@ import type { SourceMetadata } from '../../pipeline/types'
 export const resolveSigningAccount = (
     signerAccount: WalletAccount,
     source: SourceMetadata,
+    dataType: SignableData['type'],
     allAccounts: WalletAccount[],
 ): WalletAccount => {
     if (source.type === 'multisig-cosign') return signerAccount
+    if (dataType === 'arbitrary-data' || dataType === 'arc60') {
+        return signerAccount
+    }
     return resolveAuthAccount(signerAccount, allAccounts)
 }

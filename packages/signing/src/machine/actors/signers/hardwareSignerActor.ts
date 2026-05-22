@@ -71,6 +71,7 @@ export const hardwareSignerActor = fromPromise<
         const accountForSigning = resolveSigningAccount(
             signerAccount,
             group.source,
+            group.data.type,
             allAccounts,
         )
 

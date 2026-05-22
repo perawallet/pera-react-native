@@ -51,7 +51,7 @@ export const AccountAssetList = ({
     const {
         balances,
         isPending,
-        isWatch,
+        isReadOnly,
         assetSortMode,
         headerState,
         setSearchFilter,
@@ -75,7 +75,7 @@ export const AccountAssetList = ({
     const renderItem = useCallback(
         ({ item }: { item: AssetWithAccountBalance }) => {
             const isSwipeable =
-                !renderItemProps.isWatch &&
+                !renderItemProps.isReadOnly &&
                 item.assetId !== ALGO_ASSET_ID &&
                 item.amount.isZero()
 
@@ -107,7 +107,7 @@ export const AccountAssetList = ({
                         <PWText variant='h4'>
                             {t('account_details.assets.title')}
                         </PWText>
-                        {!isWatch && (
+                        {!isReadOnly && (
                             <PWView style={styles.titleBarButtonContainer}>
                                 <PWButton
                                     icon='sliders'

@@ -12,12 +12,10 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import {
-    AccountTypes,
     WalletAccount,
     isHDWalletAccount,
     isLedgerAccount,
-    isSigningLogicalType,
-    useAccountLogicalType,
+    useCanSignWith,
     useHDWalletGroups,
     useLedgerDeviceGroups,
     useAccountInformationQuery,
@@ -66,11 +64,7 @@ export const useAccountInfoCard = ({
 
     const isHDWallet = isHDWalletAccount(account)
     const isLedger = isLedgerAccount(account)
-    const isMultisig = account.type === AccountTypes.multisig
-    const logicalType =
-        useAccountLogicalType(account.address) ??
-        (isMultisig ? 'Multisig' : 'NoAuth')
-    const showMinBalance = isSigningLogicalType(logicalType)
+    const showMinBalance = useCanSignWith(account)
     const accountType = useAccountTypeLabel(account)
 
     const handleToggleExpanded = useCallback(() => {

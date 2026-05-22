@@ -13,11 +13,10 @@
 import { useCallback } from 'react'
 import {
     assertAlgorandBip44PathMatches,
+    canSignArbitraryData,
     InvalidBip44PathError,
     isAlgo25Account,
     isHDWalletAccount,
-    isHardwareWalletAccount,
-    useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
@@ -25,12 +24,15 @@ import { SIGNING_KEY_DOMAIN } from '../constants'
 import type { Arc60Metadata, Arc60StdSigData } from '../pipeline/types'
 import {
     ARC60_SCOPE_AUTH,
+    Arc60BadJsonError,
     Arc60FailedHdPathError,
     Arc60InvalidScopeError,
     Arc60InvalidSignerError,
     buildArc60AuthSigningPayload,
-    validateArc60AuthRequest,
+    decodeArc60Data,
+    verifyAuthenticatorDomain,
 } from '../utils/arc60'
+import { parseSiwa } from '../utils/siwa'
 
 export type UseArc60SignerResult = {
     /**
@@ -46,7 +48,6 @@ export type UseArc60SignerResult = {
 }
 
 export const useArc60Signer = (): UseArc60SignerResult => {
-    const accounts = useAccountsStore(state => state.accounts)
     const { signDataWithKey } = useKMS()
 
     const signArc60 = useCallback(
@@ -55,46 +56,57 @@ export const useArc60Signer = (): UseArc60SignerResult => {
             stdSigData: Arc60StdSigData,
             metadata: Arc60Metadata,
         ): Promise<Uint8Array> => {
-            // This hook is local-key-only (Algo25 / HD wallet accounts).
-            // Hardware wallet ARC-60 signing is handled by the hardware
-            // strategy (createHardwareStrategy) — a hardware account reaching
-            // this hook indicates misrouting by the caller.
-            // Scope is checked here first so the hardware-wallet and rekey
-            // rejections below surface before the deeper validation;
-            // validateArc60AuthRequest repeats the check so it is correct when
-            // called on its own (e.g. from the hardware strategy path).
             if (metadata.scope !== ARC60_SCOPE_AUTH) {
                 throw new Arc60InvalidScopeError(metadata.scope)
             }
 
-            if (isHardwareWalletAccount(account)) {
+            // ARC-60 verifies signatures against the requested signer's
+            // own pubkey. Rekey is NOT followed — sign with this account's
+            // own keypair or reject.
+            if (!canSignArbitraryData(account)) {
                 throw new Arc60InvalidSignerError(
                     account.address,
-                    'hardware wallet ARC-60 signing is routed through the hardware strategy, not the local-key signer',
+                    `account ${account.address} cannot sign ARC-60 payloads`,
                 )
             }
 
-            // Rekey: recurse into the auth account and validate hdPath against
-            // the *signing* account's actual derivation, not the original.
-            if (account.rekeyAddress) {
-                const rekeyedAccount = accounts.find(
-                    a => a.address === account.rekeyAddress,
-                )
-                if (!rekeyedAccount) {
-                    throw new Arc60InvalidSignerError(
-                        account.address,
-                        `no rekeyed account found for ${account.rekeyAddress}`,
-                    )
-                }
-                return signArc60(rekeyedAccount, stdSigData, metadata)
-            }
-
-            // Shared ARC-60 AUTH validation: scope, domain binding, base64
-            // decode, UTF-8 + canonical SIWA parse, signer/domain checks.
-            const { decodedData } = validateArc60AuthRequest(
-                stdSigData,
-                metadata,
+            // Domain binding — verify before doing any signing work.
+            verifyAuthenticatorDomain(
+                stdSigData.domain,
+                stdSigData.authenticatorData,
             )
+
+            const decodedData = decodeArc60Data(
+                stdSigData.data,
+                metadata.encoding,
+            )
+
+            // AUTH scope is strict SIWA: parse + canonicalize before signing
+            // so the dApp can't slip arbitrary bytes through the AUTH path.
+            let jsonString: string
+            try {
+                jsonString = new TextDecoder('utf-8', { fatal: true }).decode(
+                    decodedData,
+                )
+            } catch (caught) {
+                throw new Arc60BadJsonError(
+                    'decoded payload is not valid UTF-8',
+                    caught instanceof Error ? caught : undefined,
+                )
+            }
+            const siwa = parseSiwa(jsonString)
+
+            if (siwa.domain !== stdSigData.domain) {
+                throw new Arc60BadJsonError(
+                    `SIWA domain "${siwa.domain}" does not match request domain "${stdSigData.domain}"`,
+                )
+            }
+            if (siwa.account_address !== stdSigData.signer) {
+                throw new Arc60InvalidSignerError(
+                    stdSigData.signer,
+                    `SIWA account_address "${siwa.account_address}" does not match request signer`,
+                )
+            }
 
             const payload = buildArc60AuthSigningPayload(
                 decodedData,
@@ -129,15 +141,15 @@ export const useArc60Signer = (): UseArc60SignerResult => {
                     )
                 }
             } else {
+                // canSignArbitraryData ⇒ Algo25 or HDWallet; this branch is
+                // a defensive type-system fallback.
                 throw new Arc60InvalidSignerError(
                     account.address,
                     `unsupported account type ${account.type}`,
                 )
             }
 
-            // ARC-60 specifies the signing payload exactly — no MX prefix.
-            // Both HD and algo25 accounts route through the same direct
-            // sign on their child key.
+            // ARC-60 payload is signed as-is — no MX prefix.
             const [signature] = await signDataWithKey(
                 account.keyPairId,
                 SIGNING_KEY_DOMAIN,
@@ -145,7 +157,7 @@ export const useArc60Signer = (): UseArc60SignerResult => {
             )
             return signature
         },
-        [accounts, signDataWithKey],
+        [signDataWithKey],
     )
 
     return { signArc60 }

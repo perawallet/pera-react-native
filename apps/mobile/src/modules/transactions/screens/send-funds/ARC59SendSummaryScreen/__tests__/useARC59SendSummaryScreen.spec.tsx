@@ -125,7 +125,7 @@ const mockSummary = {
 }
 
 describe('useARC59SendSummaryScreen', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
         vi.clearAllMocks()
         mockRequestBottomSheet.mockResolvedValue(undefined)
         ;(useSendFunds as Mock).mockReturnValue({
@@ -133,6 +133,20 @@ describe('useARC59SendSummaryScreen', () => {
             destination: 'RECEIVERADDR',
             amount: '50',
             setArc59Summary: mockSetArc59Summary,
+        })
+
+        // Reset query mocks to known defaults — `vi.clearAllMocks()` clears
+        // call history but not return values set via `mockReturnValue`
+        const { useArc59SendSummaryQuery } =
+            await import('@perawallet/wallet-core-asa-inbox')
+        const { useAccountInformationQuery } =
+            await import('@perawallet/wallet-core-accounts')
+        ;(useArc59SendSummaryQuery as Mock).mockReturnValue({
+            data: null,
+            isLoading: true,
+        })
+        ;(useAccountInformationQuery as Mock).mockReturnValue({
+            data: { amount: 10_000_000n, minBalance: 100_000n },
         })
     })
 
@@ -210,5 +224,25 @@ describe('useARC59SendSummaryScreen', () => {
 
         expect(result.current.fee).toBe(0.3)
         expect(result.current.isLoading).toBe(false)
+    })
+
+    it('redirects to InsufficientBalance when sender lacks ALGO for the inbox fees', async () => {
+        const { useArc59SendSummaryQuery } =
+            await import('@perawallet/wallet-core-asa-inbox')
+        const { useAccountInformationQuery } =
+            await import('@perawallet/wallet-core-accounts')
+        ;(useArc59SendSummaryQuery as Mock).mockReturnValue({
+            data: mockSummary,
+            isLoading: false,
+        })
+        ;(useAccountInformationQuery as Mock).mockReturnValue({
+            data: { amount: 250_000n, minBalance: 100_000n },
+        })
+
+        renderHook(() => useARC59SendSummaryScreen())
+
+        expect(mockReplace).toHaveBeenCalledWith('InsufficientBalance', {
+            requiredBalance: '0.300000 ALGO',
+        })
     })
 })

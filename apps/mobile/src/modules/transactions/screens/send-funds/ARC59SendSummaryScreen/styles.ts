@@ -19,7 +19,7 @@ export const useStyles = makeStyles(theme => ({
         borderRadius: theme.spacing.md,
     },
     content: {
-        flex: 1,
+        flexGrow: 1,
         paddingTop: theme.spacing.lg,
     },
     title: {

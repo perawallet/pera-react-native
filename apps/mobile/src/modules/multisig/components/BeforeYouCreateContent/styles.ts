@@ -21,12 +21,15 @@ export const useStyles = makeStyles(theme => ({
     icon: {
         marginVertical: theme.spacing.md,
     },
+    title: {
+        textAlign: 'center',
+    },
     warningItem: {
         flexDirection: 'row',
         alignItems: 'flex-start',
         gap: theme.spacing.lg,
         width: '100%',
-        paddingHorizontal: theme.spacing.md,
+        marginTop: theme.spacing.xs,
     },
     numberBadge: {
         width: theme.spacing.xxl,
@@ -49,5 +52,6 @@ export const useStyles = makeStyles(theme => ({
     },
     linkContainer: {
         alignSelf: 'flex-start',
+        marginVertical: theme.spacing.md,
     },
 }))

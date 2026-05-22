@@ -22,8 +22,12 @@ import {
     useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
 import {
-    useAllAccountLogicalTypes,
+    AccountTypes,
+    canSignWith,
+    isRekeyedAccount,
+    useAllAccounts,
     useSigningAccounts,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useCallback } from 'react'
@@ -64,6 +68,51 @@ type WebviewMessage = {
     params?: Record<string, unknown>
 }
 
+/**
+ * Type identifiers we expose to dApps over the webview bridge. The Pera SDK
+ * currently accepts the legacy names (`HdKey`, `LedgerBle`, `NoAuth`,
+ * `Rekeyed`, `RekeyedAuth`, `Joint`); the webapp side is being updated to the
+ * names below in lockstep with this change.
+ */
+type WebviewAccountType =
+    | 'Algo25'
+    | 'HDWallet'
+    | 'Hardware'
+    | 'Multisig'
+    | 'Unsignable'
+    | 'RekeyedSignable'
+    | 'RekeyedUnsignable'
+
+const BASE_WEBVIEW_TYPE: Record<
+    WalletAccount['type'],
+    Exclude<WebviewAccountType, 'RekeyedSignable' | 'RekeyedUnsignable'>
+> = {
+    [AccountTypes.algo25]: 'Algo25',
+    [AccountTypes.hdWallet]: 'HDWallet',
+    [AccountTypes.hardware]: 'Hardware',
+    [AccountTypes.multisig]: 'Multisig',
+    [AccountTypes.watch]: 'Unsignable',
+}
+
+/**
+ * Maps an account onto the type identifier we hand to the webapp. Only
+ * invoked on `signingAccounts`, which has already filtered out non-signing
+ * accounts — `Unsignable` and `RekeyedUnsignable` won't actually be emitted
+ * in practice, but the full mapping is kept here so the bridge remains
+ * self-contained should the upstream filter ever loosen.
+ */
+const toWebviewAccountType = (
+    account: WalletAccount,
+    accounts: WalletAccount[],
+): WebviewAccountType => {
+    if (isRekeyedAccount(account)) {
+        return canSignWith(account, accounts)
+            ? 'RekeyedSignable'
+            : 'RekeyedUnsignable'
+    }
+    return BASE_WEBVIEW_TYPE[account.type]
+}
+
 export const usePeraWebviewInterface = (
     webview: Nullable<WebView>,
     securedConnection: boolean,
@@ -73,7 +122,7 @@ export const usePeraWebviewInterface = (
 ) => {
     const { showToast } = useToast()
     const signingAccounts = useSigningAccounts()
-    const logicalTypes = useAllAccountLogicalTypes()
+    const allAccounts = useAllAccounts()
     const { network } = useNetwork()
     const deviceID = useDeviceID(network)
     const darkmode = useIsDarkMode()
@@ -319,13 +368,13 @@ export const usePeraWebviewInterface = (
                     const payload = signingAccounts.map(account => ({
                         name: account.name ?? '',
                         address: account.address,
-                        type: logicalTypes.get(account.address) ?? 'NoAuth',
+                        type: toWebviewAccountType(account, allAccounts),
                     }))
                     sendMessageToWebview(message.id, payload, webview)
                 },
             )
         },
-        [securedConnection, sourceUrl, signingAccounts, logicalTypes, webview],
+        [securedConnection, sourceUrl, signingAccounts, allAccounts, webview],
     )
 
     const getSettings = useCallback(

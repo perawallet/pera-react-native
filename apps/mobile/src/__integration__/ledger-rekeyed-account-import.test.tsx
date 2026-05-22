@@ -32,8 +32,7 @@ import {
 } from '@test-utils/database-setup'
 import {
     AccountTypes,
-    AccountLogicalTypes,
-    deriveAccountLogicalType,
+    canSignWith,
     useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -190,8 +189,8 @@ describe('Flow: Ledger rekeyed-account import', () => {
 
             fireEvent.click(addBtn)
 
-            // Assert the accounts are persisted with the correct types and
-            // that deriveAccountLogicalType returns RekeyedAuth
+            // Persisted accounts have the right types and the watch resolves
+            // as signable via the hardware auth account.
             await waitFor(
                 () => {
                     const accounts = useAccountsStore.getState().accounts
@@ -202,9 +201,7 @@ describe('Flow: Ledger rekeyed-account import', () => {
                     expect(watch?.type).toBe(AccountTypes.watch)
                     expect(watch?.rekeyAddress).toBe(LEDGER_ADDRESS)
                     expect(hw?.type).toBe(AccountTypes.hardware)
-                    expect(deriveAccountLogicalType(watch!, accounts)).toBe(
-                        AccountLogicalTypes.RekeyedAuth,
-                    )
+                    expect(canSignWith(watch!, accounts)).toBe(true)
                 },
                 { timeout: 10000 },
             )

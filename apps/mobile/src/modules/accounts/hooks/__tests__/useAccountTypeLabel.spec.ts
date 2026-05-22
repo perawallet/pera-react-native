@@ -14,7 +14,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useAccountTypeLabel } from '../useAccountTypeLabel'
 import type {
-    AccountLogicalType,
     MultiSigAccount,
     RekeyTransition,
     WalletAccount,
@@ -33,7 +32,7 @@ vi.mock('@hooks/useLanguage', () => ({
     }),
 }))
 
-const mockUseAccountLogicalType = vi.fn<() => AccountLogicalType | null>()
+const mockUseCanSignWith = vi.fn<() => boolean>()
 const mockUseRekeyTransition = vi.fn<() => RekeyTransition | null>()
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
@@ -42,15 +41,23 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         >()
     return {
         ...actual,
-        useAccountLogicalType: () => mockUseAccountLogicalType(),
+        useCanSignWith: () => mockUseCanSignWith(),
         useRekeyTransition: () => mockUseRekeyTransition(),
     }
 })
 
-const algo25Account: WalletAccount = {
+const accountOfType = (type: WalletAccount['type']): WalletAccount =>
+    ({
+        type,
+        address: `${type.toUpperCase()}_ADDR`,
+        keyPairId: 'key-1',
+    }) as WalletAccount
+
+const rekeyedAccount: WalletAccount = {
     type: 'algo25',
-    address: 'ALGO25ADDR',
+    address: 'REKEYED_ADDR',
     keyPairId: 'key-1',
+    rekeyAddress: 'AUTH_ADDR',
 }
 
 const multisigAccount: MultiSigAccount = {
@@ -62,7 +69,7 @@ const multisigAccount: MultiSigAccount = {
 describe('useAccountTypeLabel', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockUseAccountLogicalType.mockReturnValue('Algo25')
+        mockUseCanSignWith.mockReturnValue(true)
         mockUseRekeyTransition.mockReturnValue(null)
     })
 
@@ -76,14 +83,14 @@ describe('useAccountTypeLabel', () => {
     })
 
     it.each([
-        ['HdKey', 'account_info.type_universal_wallet'],
-        ['Algo25', 'account_info.type_algo25'],
-        ['LedgerBle', 'account_info.type_ledger'],
-        ['NoAuth', 'account_info.type_watch'],
-        ['Rekeyed', 'account_info.type_no_auth'],
-    ] as const)('maps %s to a plain label %s', (logicalType, expected) => {
-        mockUseAccountLogicalType.mockReturnValue(logicalType)
-        const { result } = renderHook(() => useAccountTypeLabel(algo25Account))
+        ['hdWallet', 'account_info.type_universal_wallet'],
+        ['algo25', 'account_info.type_algo25'],
+        ['hardware', 'account_info.type_ledger'],
+        ['watch', 'account_info.type_watch'],
+    ] as const)('maps non-rekeyed %s account to label %s', (type, expected) => {
+        const { result } = renderHook(() =>
+            useAccountTypeLabel(accountOfType(type)),
+        )
         expect(result.current).toEqual({
             label: expected,
             main: expected,
@@ -92,7 +99,6 @@ describe('useAccountTypeLabel', () => {
     })
 
     it('uses a plain shared account label for a multisig account', () => {
-        mockUseAccountLogicalType.mockReturnValue('Multisig')
         const { result } = renderHook(() =>
             useAccountTypeLabel(multisigAccount),
         )
@@ -104,12 +110,12 @@ describe('useAccountTypeLabel', () => {
     })
 
     it('splits the transition qualifier for a rekeyed signable account', () => {
-        mockUseAccountLogicalType.mockReturnValue('RekeyedAuth')
+        mockUseCanSignWith.mockReturnValue(true)
         mockUseRekeyTransition.mockReturnValue({
-            from: 'Algo25',
-            to: 'LedgerBle',
+            from: 'algo25',
+            to: 'hardware',
         })
-        const { result } = renderHook(() => useAccountTypeLabel(algo25Account))
+        const { result } = renderHook(() => useAccountTypeLabel(rekeyedAccount))
         expect(result.current).toEqual({
             label: 'Rekeyed (Standard to Ledger)',
             main: 'Rekeyed',
@@ -118,12 +124,23 @@ describe('useAccountTypeLabel', () => {
     })
 
     it('falls back to a plain rekeyed label when the auth account is unknown', () => {
-        mockUseAccountLogicalType.mockReturnValue('RekeyedAuth')
+        mockUseCanSignWith.mockReturnValue(true)
         mockUseRekeyTransition.mockReturnValue(null)
-        const { result } = renderHook(() => useAccountTypeLabel(algo25Account))
+        const { result } = renderHook(() => useAccountTypeLabel(rekeyedAccount))
         expect(result.current).toEqual({
             label: 'account_info.type_rekeyed',
             main: 'account_info.type_rekeyed',
+            qualifier: null,
+        })
+    })
+
+    it('renders the no-auth label for a rekeyed account when we cannot sign', () => {
+        mockUseCanSignWith.mockReturnValue(false)
+        mockUseRekeyTransition.mockReturnValue(null)
+        const { result } = renderHook(() => useAccountTypeLabel(rekeyedAccount))
+        expect(result.current).toEqual({
+            label: 'account_info.type_no_auth',
+            main: 'account_info.type_no_auth',
             qualifier: null,
         })
     })

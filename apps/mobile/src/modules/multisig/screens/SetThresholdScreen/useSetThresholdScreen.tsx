@@ -52,7 +52,11 @@ export const useSetThresholdScreen = (): UseSetThresholdScreenResult => {
     const handleContinue = useCallback(async () => {
         const result = await requestBottomSheet<'proceed'>({
             contents: <BeforeYouCreateContent />,
-            options: { size: 'auto', enablePanDownToClose: true },
+            options: {
+                size: 'auto',
+                enablePanDownToClose: false,
+                enableCloseOnBackdropPress: false,
+            },
         })
         if (result !== 'proceed') return
         navigation.push('NameMultisig')

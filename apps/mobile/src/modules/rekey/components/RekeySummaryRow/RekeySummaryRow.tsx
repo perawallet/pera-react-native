@@ -15,24 +15,21 @@ import { PWText, PWView } from '@components/core'
 import { AccountIcon } from '@modules/accounts/components/AccountIcon'
 import { useStyles } from './styles'
 
-import type {
-    AccountLogicalType,
-    WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 export type RekeySummaryRowProps = {
     account: WalletAccount | null
     /**
-     * Project a different logical type than the one currently stored. Used by
-     * the undo-rekey "after" row so the source renders as its base type
-     * (HdKey / Algo25 / LedgerBle) instead of its current Rekeyed glyph.
+     * Render the icon for the account's base type, ignoring its rekey state.
+     * Used by the undo-rekey "after" row to preview what the source will look
+     * like once the rekey is undone.
      */
-    logicalTypeOverride?: AccountLogicalType
+    ignoreRekey?: boolean
 }
 
 export const RekeySummaryRow = ({
     account,
-    logicalTypeOverride,
+    ignoreRekey,
 }: RekeySummaryRowProps) => {
     const styles = useStyles()
 
@@ -45,7 +42,7 @@ export const RekeySummaryRow = ({
             <AccountIcon
                 account={account}
                 size='lg'
-                logicalTypeOverride={logicalTypeOverride}
+                ignoreRekey={ignoreRekey}
             />
             <PWView style={styles.text}>
                 <PWText

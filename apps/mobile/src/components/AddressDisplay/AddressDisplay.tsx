@@ -21,6 +21,7 @@ import {
 } from '@components/core'
 import { CopyableText } from '@components/CopyableText'
 import { ContactAvatar } from '@components/ContactAvatar'
+import type { ContactAvatarVariant } from '@components/ContactAvatar/styles'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { AccountIcon } from '@modules/accounts/components/AccountIcon'
 import { SvgProps } from 'react-native-svg'
@@ -41,6 +42,13 @@ export type AddressDisplayProps = {
     showSecondaryAddress?: boolean
     textProps?: PWTextProps
     iconProps?: SvgProps
+    contactAvatarVariant?: ContactAvatarVariant
+    /**
+     * Node rendered to the right of the address content. When provided, the
+     * row is not wrapped in `CopyableText` — only the trailing node is
+     * interactive. Takes precedence over `showCopy`.
+     */
+    trailing?: ReactNode
 } & PWTouchableOpacityProps
 
 export const AddressDisplay = ({
@@ -53,6 +61,8 @@ export const AddressDisplay = ({
     showSecondaryAddress = false,
     textProps,
     iconProps,
+    contactAvatarVariant = 'default',
+    trailing,
     ...rest
 }: AddressDisplayProps) => {
     const styles = useStyles()
@@ -122,13 +132,39 @@ export const AddressDisplay = ({
             />
         )
     } else if (contact) {
+        const showSecondary = contact.name !== truncatedAddress
+        const primaryText = (
+            <PWText
+                style={textProps?.style ?? styles.primaryText}
+                variant={textProps?.variant ?? 'h4'}
+                numberOfLines={1}
+                ellipsizeMode='tail'
+            >
+                {contact.name}
+            </PWText>
+        )
         content = (
             <PWView style={styles.contactContainer}>
                 <ContactAvatar
                     size='md'
                     contact={contact}
+                    variant={contactAvatarVariant}
                 />
-                <PWText {...textProps}>{contact.name}</PWText>
+                {showSecondary ? (
+                    <PWView style={styles.addressTextStack}>
+                        {primaryText}
+                        <PWText
+                            variant='caption'
+                            style={styles.secondaryText}
+                            numberOfLines={1}
+                            ellipsizeMode='middle'
+                        >
+                            {truncatedAddress}
+                        </PWText>
+                    </PWView>
+                ) : (
+                    primaryText
+                )}
             </PWView>
         )
     } else {
@@ -139,7 +175,7 @@ export const AddressDisplay = ({
                     <PWView style={styles.foreignAvatar}>
                         <PWIcon
                             name='person'
-                            size='sm'
+                            size='md'
                             variant='white'
                         />
                     </PWView>
@@ -159,6 +195,18 @@ export const AddressDisplay = ({
                 ) : (
                     <PWText {...textProps}>{truncatedAddress}</PWText>
                 )}
+            </PWView>
+        )
+    }
+
+    if (trailing) {
+        return (
+            <PWView
+                {...rest}
+                style={[styles.addressValueContainer, rest.style]}
+            >
+                {content}
+                {trailing}
             </PWView>
         )
     }
@@ -183,7 +231,7 @@ export const AddressDisplay = ({
             {content}
             <PWIcon
                 name='copy'
-                size='sm'
+                size='md'
                 variant='secondary'
                 {...iconProps}
                 onPress={copyAddress}

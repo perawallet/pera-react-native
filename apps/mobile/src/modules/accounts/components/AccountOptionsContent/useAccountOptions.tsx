@@ -14,11 +14,13 @@ import { useCallback, useMemo } from 'react'
 import {
     WalletAccount,
     hasSigningKeys,
+    isAlgo25Account,
+    isHDWalletAccount,
     isMultisigAccount,
-    isSigningLogicalType,
+    isRekeyedAccount,
     isWatchAccount,
-    useAccountLogicalType,
     useAllAccounts,
+    useCanSignWith,
     useFindAccountByAddress,
     useRemoveAccountById,
     useUpdateAccount,
@@ -79,13 +81,13 @@ export const useAccountOptions = ({
     const { request: requestBottomSheet } = useBottomSheet()
     const { openViewPassphraseFlow } = useViewPassphraseFlow()
 
-    const logicalType = useAccountLogicalType(account.address) ?? 'NoAuth'
-    const showPassphrase = logicalType === 'Algo25' || logicalType === 'HdKey'
-    const isRekeyed = logicalType === 'Rekeyed' || logicalType === 'RekeyedAuth'
-    const canUndoRekey = logicalType === 'RekeyedAuth'
+    const canSign = useCanSignWith(account)
+    const isRekeyed = isRekeyedAccount(account)
+    const showPassphrase =
+        !isRekeyed && (isAlgo25Account(account) || isHDWalletAccount(account))
+    const canUndoRekey = isRekeyed && canSign
     const showUndoRekey = canUndoRekey
-    const isHdWallet = logicalType === 'HdKey'
-    const canSign = isSigningLogicalType(logicalType)
+    const isHdWallet = isHDWalletAccount(account)
     const isSharedAccount = isMultisigAccount(account)
     const participantCount = isMultisigAccount(account)
         ? account.multisigDetails.addresses.length

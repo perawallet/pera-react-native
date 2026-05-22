@@ -55,6 +55,7 @@ export const FeeDisplay = ({ transaction, label }: FeeDisplayProps) => {
                         minPrecision={DEFAULT_PRECISION}
                         value={fee.mul(-1)}
                         showSymbol
+                        ignorePrivacyMode
                         style={fee.greaterThan(0) ? styles.value : undefined}
                     />
                     {showWarning && (

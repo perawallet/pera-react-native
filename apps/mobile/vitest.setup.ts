@@ -2348,7 +2348,37 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             (account: any) => account?.type === 'multisig',
         ),
         hasSigningKeys: vi.fn((account: any) => !!account?.keyPairId),
-        canSignWithAccount: vi.fn((account: any) => !!account?.keyPairId),
+        canSignWith: vi.fn((account: any) => !!account?.keyPairId),
+        canSignArbitraryData: vi.fn(
+            (account: any) =>
+                !!account?.keyPairId && account?.type !== 'hardware',
+        ),
+        isRekeyedUnsignable: vi.fn(() => false),
+        canInitiateRekey: vi.fn((account: any) => !!account?.keyPairId),
+        getRekeyAccount: vi.fn(() => null),
+        getSignerFor: vi.fn(
+            (address: string, accs: any[] = []) =>
+                accs.find((a: any) => a.address === address) ?? null,
+        ),
+        resolveSignerFor: vi.fn((address: string, accs: any[] = []) => {
+            const signer = accs.find((a: any) => a.address === address)
+            return signer ? { kind: 'ok', signer } : { kind: 'accountNotFound' }
+        }),
+        resolveSignerForAccount: vi.fn((account: any) =>
+            account?.keyPairId
+                ? { kind: 'ok', signer: account }
+                : { kind: 'watch', account },
+        ),
+        useCanSignWith: vi.fn((account: any) => !!account?.keyPairId),
+        useCanSignArbitraryData: vi.fn(
+            (account: any) =>
+                !!account?.keyPairId && account?.type !== 'hardware',
+        ),
+        useIsRekeyedUnsignable: vi.fn(() => false),
+        useCanInitiateRekey: vi.fn((account: any) => !!account?.keyPairId),
+        useRekeyAccount: vi.fn(() => null),
+        useSignerFor: vi.fn(() => null),
+        useSignerResolution: vi.fn(() => ({ kind: 'accountNotFound' })),
         useAccountAssetBalanceQuery: vi.fn(() => ({
             data: null,
             isPending: false,
@@ -2367,15 +2397,6 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             hardware: 'hardware',
             multisig: 'multisig',
             watch: 'watch',
-        },
-        AccountLogicalTypes: {
-            Algo25: 'Algo25',
-            HdKey: 'HdKey',
-            LedgerBle: 'LedgerBle',
-            Multisig: 'Multisig',
-            Rekeyed: 'Rekeyed',
-            RekeyedAuth: 'RekeyedAuth',
-            NoAuth: 'NoAuth',
         },
         useOwnedAssets: vi.fn(() => ({
             assets: [],

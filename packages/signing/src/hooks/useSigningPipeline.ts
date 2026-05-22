@@ -14,10 +14,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import type { AnyActorRef } from 'xstate'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { mapToDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
-import {
-    canSignWithAccount,
-    useAllAccounts,
-} from '@perawallet/wallet-core-accounts'
+import { canSignWith, useAllAccounts } from '@perawallet/wallet-core-accounts'
 import type { PipelineStage, TransactionSignRequest } from '../models'
 import {
     createTransactionListItems,
@@ -82,9 +79,7 @@ export const useSigningPipeline = (
         const listItems = createTransactionListItems(allTransactions)
 
         const signableAddresses = new Set(
-            accounts
-                .filter(a => canSignWithAccount(a, accounts))
-                .map(a => a.address),
+            accounts.filter(a => canSignWith(a, accounts)).map(a => a.address),
         )
 
         const userAccountAddresses = new Set(accounts.map(a => a.address))

@@ -28,7 +28,10 @@ const mockPickFromGallery = vi.fn<() => Promise<string | null>>(() =>
     Promise.resolve(null),
 )
 
-const mockRouteParams = { address: ADDR1 }
+const mockRouteParams: { index: number; address: string } = {
+    index: 0,
+    address: ADDR1,
+}
 
 vi.mock('@react-navigation/native', async () => {
     const actual = await vi.importActual<object>('@react-navigation/native')
@@ -87,6 +90,8 @@ describe('useEditParticipantScreen', () => {
         vi.clearAllMocks()
         mockFindContacts.mockReturnValue([])
         mockPickFromGallery.mockResolvedValue(null)
+        mockRouteParams.index = 0
+        mockRouteParams.address = ADDR1
 
         const store = useMultisigCreationStore.getState()
         store.resetState()
@@ -209,6 +214,26 @@ describe('useEditParticipantScreen', () => {
         const participants = useMultisigCreationStore.getState().participants
         expect(participants.find(p => p.address === ADDR1)).toBeUndefined()
         expect(participants).toHaveLength(1)
+        expect(mockGoBack).toHaveBeenCalled()
+    })
+
+    it('handleRemove only removes the targeted duplicate row', () => {
+        const store = useMultisigCreationStore.getState()
+        store.resetState()
+        store.addParticipant({ address: ADDR1 })
+        store.addParticipant({ address: ADDR1 })
+        mockRouteParams.index = 1
+        mockRouteParams.address = ADDR1
+
+        const { result } = renderHook(() => useEditParticipantScreen())
+
+        act(() => {
+            result.current.handleRemove()
+        })
+
+        const participants = useMultisigCreationStore.getState().participants
+        expect(participants).toHaveLength(1)
+        expect(participants[0].address).toBe(ADDR1)
         expect(mockGoBack).toHaveBeenCalled()
     })
 })

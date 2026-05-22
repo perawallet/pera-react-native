@@ -51,7 +51,7 @@ export const CollectibleDetailScreen = ({
         asset,
         collectible,
         isPending,
-        isWatch,
+        isReadOnly,
         traits,
         media,
         accountAddress,
@@ -149,7 +149,7 @@ export const CollectibleDetailScreen = ({
                 </PWView>
 
                 <PWView style={styles.contentContainer}>
-                    {!isOptedInNotOwned && !isWatch && (
+                    {!isOptedInNotOwned && !isReadOnly && (
                         <PWView style={styles.actionButtonsContainer}>
                             <RoundButton
                                 title={t('common.send')}
@@ -175,7 +175,7 @@ export const CollectibleDetailScreen = ({
                         </PWView>
                     )}
 
-                    {isOptedInNotOwned && !isWatch && (
+                    {isOptedInNotOwned && !isReadOnly && (
                         <PWView style={styles.optOutNotice}>
                             <PWView style={styles.optOutNoticeRow}>
                                 <PWIcon

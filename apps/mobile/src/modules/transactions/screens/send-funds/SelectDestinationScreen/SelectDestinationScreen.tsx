@@ -18,12 +18,14 @@ import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { useSelectDestinationScreen } from './useSelectDestinationScreen'
+import { LoadingView } from '@components/LoadingView'
 
 export const SelectDestinationScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
 
-    const { selectedAsset, handleSelected } = useSelectDestinationScreen()
+    const { selectedAsset, handleSelected, isCheckingExternalOptIn } =
+        useSelectDestinationScreen()
 
     useNavigationHeader({
         title: selectedAsset ? (
@@ -44,6 +46,10 @@ export const SelectDestinationScreen = () => {
                 body={t('send_funds.destination.error_body')}
             />
         )
+    }
+
+    if (isCheckingExternalOptIn) {
+        return <LoadingView variant='circle' />
     }
 
     return (

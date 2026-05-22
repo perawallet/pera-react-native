@@ -18,6 +18,8 @@ import {
     hasSigningKeys,
     isHardwareWalletAccount,
     isMultisigAccount,
+    RekeyTargetNotFoundError,
+    resolveAuthAccount,
 } from '@perawallet/wallet-core-accounts'
 
 /**
@@ -70,24 +72,24 @@ export const getLocalParticipants = (
 }
 
 /**
- * Check if a multisig account has enough local participants to meet threshold.
- *
- * @param account - The multisig account
- * @param allAccounts - All accounts in the wallet
- * @returns True if threshold can be met with local accounts
+ * True iff a multisig has enough local participants to meet threshold.
+ * Resolves a single rekey hop.
  */
 export const canMeetThresholdLocally = (
     account: WalletAccount,
     allAccounts: WalletAccount[],
 ): boolean => {
-    if (!isMultisigAccount(account)) {
-        return false
+    let target: WalletAccount
+    try {
+        target = resolveAuthAccount(account, allAccounts)
+    } catch (e) {
+        if (e instanceof RekeyTargetNotFoundError) return false
+        throw e
     }
+    if (!isMultisigAccount(target)) return false
 
-    const multisigAccount = account as MultiSigAccount
-    const localParticipants = getLocalParticipants(account, allAccounts)
-
-    return localParticipants.length >= multisigAccount.multisigDetails.threshold
+    const localParticipants = getLocalParticipants(target, allAccounts)
+    return localParticipants.length >= target.multisigDetails.threshold
 }
 
 /**

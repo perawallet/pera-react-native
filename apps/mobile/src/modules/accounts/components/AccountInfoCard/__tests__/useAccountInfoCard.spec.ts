@@ -40,7 +40,7 @@ vi.mock('@hooks/useLanguage', () => ({
 const mockUseAccountInformationQuery = vi.fn()
 const mockUseHDWalletGroups = vi.fn()
 const mockUseLedgerDeviceGroups = vi.fn()
-const mockUseAccountLogicalType = vi.fn()
+const mockUseCanSignWith = vi.fn<() => boolean>()
 const mockUseRekeyTransition = vi.fn<() => RekeyTransition | null>()
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
@@ -54,8 +54,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
             mockUseAccountInformationQuery(...args),
         useHDWalletGroups: () => mockUseHDWalletGroups(),
         useLedgerDeviceGroups: () => mockUseLedgerDeviceGroups(),
-        useAccountLogicalType: (...args: unknown[]) =>
-            mockUseAccountLogicalType(...args),
+        useCanSignWith: () => mockUseCanSignWith(),
         useRekeyTransition: () => mockUseRekeyTransition(),
     }
 })
@@ -132,13 +131,7 @@ describe('useAccountInfoCard', () => {
             ],
             hasMultipleLedgerDevices: false,
         })
-        mockUseAccountLogicalType.mockImplementation((address: string) => {
-            if (address === hdAccount.address) return 'HdKey'
-            if (address === ledgerAccount.address) return 'LedgerBle'
-            if (address === watchAccount.address) return 'NoAuth'
-            if (address === multisigAccount.address) return 'Multisig'
-            return null
-        })
+        mockUseCanSignWith.mockReturnValue(true)
         mockUseRekeyTransition.mockReturnValue(null)
     })
 
@@ -223,29 +216,27 @@ describe('useAccountInfoCard', () => {
         )
     })
 
-    test('RekeyedAuth account with a transition shows the "Rekeyed (from to to)" label', () => {
-        mockUseAccountLogicalType.mockImplementation((address: string) =>
-            address === ledgerAccount.address ? 'RekeyedAuth' : null,
-        )
+    test('RekeyedSignable account with a transition shows the "Rekeyed (from to to)" label', () => {
+        mockUseCanSignWith.mockReturnValue(true)
         mockUseRekeyTransition.mockReturnValue({
-            from: 'Algo25',
-            to: 'LedgerBle',
+            from: 'algo25',
+            to: 'hardware',
         })
+        const rekeyed = { ...ledgerAccount, rekeyAddress: 'AUTH' }
         const { result } = renderHook(() =>
-            useAccountInfoCard({ account: ledgerAccount, onClose: vi.fn() }),
+            useAccountInfoCard({ account: rekeyed, onClose: vi.fn() }),
         )
         expect(result.current.accountType.label).toBe(
             'account_info.type_rekeyed_transition',
         )
     })
 
-    test('RekeyedAuth account without a known auth account falls back to generic label', () => {
-        mockUseAccountLogicalType.mockImplementation((address: string) =>
-            address === ledgerAccount.address ? 'RekeyedAuth' : null,
-        )
+    test('RekeyedSignable account without a known auth account falls back to generic label', () => {
+        mockUseCanSignWith.mockReturnValue(true)
         mockUseRekeyTransition.mockReturnValue(null)
+        const rekeyed = { ...ledgerAccount, rekeyAddress: 'AUTH' }
         const { result } = renderHook(() =>
-            useAccountInfoCard({ account: ledgerAccount, onClose: vi.fn() }),
+            useAccountInfoCard({ account: rekeyed, onClose: vi.fn() }),
         )
         expect(result.current.accountType.label).toBe(
             'account_info.type_rekeyed',

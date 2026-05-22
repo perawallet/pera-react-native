@@ -12,12 +12,12 @@
 
 import { Contact } from '@perawallet/wallet-core-contacts'
 import { PWIcon, PWIconSize, PWImage, PWView } from '@components/core'
-import { useStyles } from './styles'
+import { useStyles, type ContactAvatarVariant } from './styles'
 
 const placeholderIconSize = {
     xs: 'xs',
     sm: 'xs',
-    md: 'sm',
+    md: 'md',
     lg: 'md',
     xl: 'lg',
     xxl: 'xl',
@@ -26,10 +26,15 @@ const placeholderIconSize = {
 export type ContactAvatarProps = {
     size: PWIconSize
     contact?: Contact
+    variant?: ContactAvatarVariant
 }
 
-export const ContactAvatar = ({ size, contact }: ContactAvatarProps) => {
-    const styles = useStyles({ size })
+export const ContactAvatar = ({
+    size,
+    contact,
+    variant = 'default',
+}: ContactAvatarProps) => {
+    const styles = useStyles({ size, variant })
 
     return (
         <PWView style={styles.container}>
@@ -43,7 +48,7 @@ export const ContactAvatar = ({ size, contact }: ContactAvatarProps) => {
                 <PWIcon
                     name='person'
                     size={placeholderIconSize[size]}
-                    variant='primary'
+                    variant={variant === 'highlighted' ? 'white' : 'secondary'}
                 />
             )}
         </PWView>

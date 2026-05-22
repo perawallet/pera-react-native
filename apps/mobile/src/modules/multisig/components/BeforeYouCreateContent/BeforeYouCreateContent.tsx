@@ -34,11 +34,14 @@ export const BeforeYouCreateContent = () => {
             <PWIcon
                 name='info'
                 variant='primary'
-                size='xl'
+                size='xxl'
                 style={styles.icon}
             />
 
-            <PWText variant='h3'>
+            <PWText
+                variant='h3'
+                style={styles.title}
+            >
                 {t('multisig.before_you_create.title')}
             </PWText>
 
@@ -78,7 +81,7 @@ export const BeforeYouCreateContent = () => {
 
             <PWView style={styles.linkContainer}>
                 <PWButton
-                    variant='link'
+                    variant='linkPositive'
                     icon='info'
                     title={t('multisig.before_you_create.learn_more')}
                     paddingStyle='none'

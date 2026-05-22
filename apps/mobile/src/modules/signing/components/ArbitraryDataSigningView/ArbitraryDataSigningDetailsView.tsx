@@ -76,6 +76,7 @@ export const ArbitraryDataSigningDetailsView = ({
                             showSymbol
                             precision={2}
                             minPrecision={2}
+                            ignorePrivacyMode
                         />
                     </KeyValueRow>
                     <KeyValueRow
@@ -87,6 +88,7 @@ export const ArbitraryDataSigningDetailsView = ({
                             showSymbol
                             precision={2}
                             minPrecision={2}
+                            ignorePrivacyMode
                         />
                     </KeyValueRow>
                 </PWView>

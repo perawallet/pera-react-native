@@ -15,8 +15,10 @@ import { IconName, PWIcon, PWView } from '@components/core'
 import { useMemo } from 'react'
 import {
     AccountTypes,
-    useAccountLogicalType,
-    type AccountLogicalType,
+    isRekeyedAccount,
+    useCanSignWith,
+    useRekeyAccount,
+    type AccountType,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
@@ -26,54 +28,78 @@ import { AccountIconSize, useStyles } from './styles'
 const THEME_TOKEN = '__theme__'
 const FALLBACK_ASSET = `accounts/${THEME_TOKEN}/unknown-account`
 
+export type AccountDisplayState =
+    | 'base'
+    | 'rekeyedSignable'
+    | 'rekeyedUnsignable'
+
 export type AccountIconProps = {
     account?: WalletAccount
     size?: AccountIconSize
-    logicalTypeOverride?: AccountLogicalType
     /**
-     * Override the resolved logical type. Useful when projecting a different
-     * state than what's currently stored — e.g. showing a post-undo-rekey
-     * preview where the source should appear as its base type.
+     * When true, render the icon for the account's base `type` and ignore
+     * its rekey state. Used by the undo-rekey preview to show what the
+     * source would look like once the rekey is undone.
      */
+    ignoreRekey?: boolean
+    /**
+     * Force the display state. Use for accounts not yet in the store
+     * (e.g. import previews) where `canSignWith` can't resolve from store
+     * state alone.
+     */
+    displayState?: AccountDisplayState
 } & SvgProps
 
-const iconNames = {
-    Algo25: `accounts/${THEME_TOKEN}/algo25-account`,
-    HdKey: `accounts/${THEME_TOKEN}/hdwallet-account`,
-    LedgerBle: `accounts/${THEME_TOKEN}/ledger-account`,
-    Multisig: `accounts/${THEME_TOKEN}/multisig-account`,
-    Rekeyed: `accounts/${THEME_TOKEN}/noauth-account`,
-    RekeyedAuth: `accounts/${THEME_TOKEN}/rekeyed-standard`,
-    NoAuth: `accounts/${THEME_TOKEN}/watch-account`,
-} satisfies Record<AccountLogicalType, string>
-
-const resolveIconAsset = (
-    logicalType: AccountLogicalType,
-    account: WalletAccount,
-): string => {
-    if (logicalType === 'RekeyedAuth') {
-        if (account.type === AccountTypes.hardware) {
-            return `accounts/${THEME_TOKEN}/rekeyed-ledger`
-        }
-        if (account.type === AccountTypes.multisig) {
-            return `accounts/${THEME_TOKEN}/rekeyed-multisig`
-        }
-    }
-    return iconNames[logicalType] ?? FALLBACK_ASSET
+const BASE_ICON: Record<AccountType, string> = {
+    [AccountTypes.algo25]: `accounts/${THEME_TOKEN}/algo25-account`,
+    [AccountTypes.hdWallet]: `accounts/${THEME_TOKEN}/hdwallet-account`,
+    [AccountTypes.hardware]: `accounts/${THEME_TOKEN}/ledger-account`,
+    [AccountTypes.multisig]: `accounts/${THEME_TOKEN}/multisig-account`,
+    [AccountTypes.watch]: `accounts/${THEME_TOKEN}/watch-account`,
 }
 
+const REKEYED_SIGNABLE_ICON: Partial<Record<AccountType, string>> = {
+    [AccountTypes.hardware]: `accounts/${THEME_TOKEN}/rekeyed-ledger`,
+    [AccountTypes.multisig]: `accounts/${THEME_TOKEN}/rekeyed-multisig`,
+}
+const REKEYED_SIGNABLE_DEFAULT = `accounts/${THEME_TOKEN}/rekeyed-standard`
+const REKEYED_UNSIGNABLE_ICON = `accounts/${THEME_TOKEN}/noauth-account`
+
 export const AccountIcon = (props: AccountIconProps) => {
-    const { account, size = 'md', logicalTypeOverride, ...rest } = props
+    const { account, size = 'md', ignoreRekey, displayState, ...rest } = props
     const darkmode = useIsDarkMode()
-    const resolvedType = useAccountLogicalType(account?.address)
-    const logicalType = logicalTypeOverride ?? resolvedType
+    const rekeyAccount = useRekeyAccount(account?.address)
+    const canSign = useCanSignWith(account)
     const styles = useStyles({ size })
 
     const icon = useMemo(() => {
-        if (!account || !logicalType) return null
+        if (!account) return null
+
+        const isRekeyed = !ignoreRekey && isRekeyedAccount(account)
+        const state: AccountDisplayState =
+            displayState ??
+            (isRekeyed
+                ? canSign
+                    ? 'rekeyedSignable'
+                    : 'rekeyedUnsignable'
+                : 'base')
+
+        let asset: string
+        switch (state) {
+            case 'rekeyedSignable':
+                asset =
+                    REKEYED_SIGNABLE_ICON[account.type] ??
+                    REKEYED_SIGNABLE_DEFAULT
+                break
+            case 'rekeyedUnsignable':
+                asset = REKEYED_UNSIGNABLE_ICON
+                break
+            case 'base':
+                asset = BASE_ICON[account.type] ?? FALLBACK_ASSET
+                break
+        }
 
         const theme = darkmode ? 'dark' : 'light'
-        const asset = resolveIconAsset(logicalType, account)
         const iconName: IconName = asset.replaceAll(
             THEME_TOKEN,
             theme,
@@ -85,7 +111,19 @@ export const AccountIcon = (props: AccountIconProps) => {
                 size={size}
             />
         )
-    }, [account, logicalType, darkmode, rest, size])
+        // rekeyAccount keeps the memo invalidating when the auth account
+        // changes (which can flip canSign).
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [
+        account,
+        ignoreRekey,
+        displayState,
+        canSign,
+        rekeyAccount,
+        darkmode,
+        size,
+        rest,
+    ])
 
     if (!icon) return <></>
 

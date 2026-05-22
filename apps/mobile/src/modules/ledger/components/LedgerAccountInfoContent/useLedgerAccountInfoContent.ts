@@ -14,14 +14,13 @@ import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import {
     useLedgerAccountPreview,
-    AccountLogicalTypes,
     AccountTypes,
-    type AccountLogicalType,
     type AssetWithAccountBalance,
     type WalletAccount,
     type HardwareWalletAccount,
     type WatchAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { AccountDisplayState } from '@modules/accounts/components/AccountIcon'
 import { useLanguage } from '@hooks/useLanguage'
 
 export type LedgerInfoListItem =
@@ -32,7 +31,9 @@ export type LedgerInfoListItem =
           account: WalletAccount
           algoBalance: Decimal
           algoUsdPrice: Decimal
-          logicalTypeOverride: AccountLogicalType
+          // Forced because the synth account isn't yet in the store, so
+          // AccountIcon can't derive signability from canSignWith.
+          displayStateOverride?: AccountDisplayState
       }
     | {
           kind: 'asset'
@@ -44,7 +45,7 @@ export type LedgerInfoListItem =
           kind: 'rekeyAddress'
           key: string
           account: WalletAccount
-          logicalTypeOverride: AccountLogicalType
+          displayStateOverride?: AccountDisplayState
       }
 
 type UseLedgerAccountInfoContentResult = {
@@ -107,10 +108,13 @@ export const useLedgerAccountInfoContent = (
                 account: synthAccount,
                 algoBalance: preview.algoBalance,
                 algoUsdPrice,
-                logicalTypeOverride:
-                    preview.rekey.kind === 'rekeyedTo'
-                        ? AccountLogicalTypes.RekeyedAuth
-                        : AccountLogicalTypes.LedgerBle,
+                // For the rekeyed-to case the synth is a watch + rekey,
+                // and the auth Ledger isn't in the store yet — force the
+                // signable icon. For the plain Ledger case the base type
+                // already yields the right icon, no override needed.
+                ...(preview.rekey.kind === 'rekeyedTo'
+                    ? { displayStateOverride: 'rekeyedSignable' as const }
+                    : {}),
             },
             {
                 kind: 'sectionHeader',
@@ -163,7 +167,7 @@ export const useLedgerAccountInfoContent = (
                     kind: 'rekeyAddress',
                     key: `rekey-${preview.rekey.authAddress}`,
                     account: authSynthAccount,
-                    logicalTypeOverride: AccountLogicalTypes.LedgerBle,
+                    // synth is hardware — base icon resolves to Ledger.
                 },
             )
         } else if (preview.rekey.kind === 'canSignFor') {
@@ -182,7 +186,9 @@ export const useLedgerAccountInfoContent = (
                     kind: 'rekeyAddress',
                     key: `rekey-${addr}`,
                     account: watchSynth,
-                    logicalTypeOverride: AccountLogicalTypes.RekeyedAuth,
+                    // Address is rekeyed to this Ledger — display as
+                    // signable even though the synth carries no rekey.
+                    displayStateOverride: 'rekeyedSignable',
                 })
             })
         }

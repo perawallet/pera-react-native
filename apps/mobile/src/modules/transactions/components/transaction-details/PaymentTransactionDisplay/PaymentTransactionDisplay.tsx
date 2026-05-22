@@ -80,6 +80,7 @@ export const PaymentTransactionDisplay = ({
                         value={Decimal(amount)}
                         showSymbol
                         style={amountStyle}
+                        ignorePrivacyMode
                     />
                 </KeyValueRow>
 
@@ -104,6 +105,7 @@ export const PaymentTransactionDisplay = ({
                             microAlgosToAlgos(transaction.fee ?? 0n),
                         )}
                         showSymbol
+                        ignorePrivacyMode
                     />
                 </KeyValueRow>
 

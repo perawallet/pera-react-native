@@ -10,7 +10,13 @@
  limitations under the License
  */
 
-import { PWButton, PWSlideToConfirm, PWText, PWView } from '@components/core'
+import {
+    PWButton,
+    PWScrollView,
+    PWSlideToConfirm,
+    PWText,
+    PWView,
+} from '@components/core'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
@@ -44,7 +50,7 @@ export const ARC59SendSummaryScreen = () => {
 
     return (
         <PWView style={styles.container}>
-            <PWView style={styles.content}>
+            <PWScrollView contentContainerStyle={styles.content}>
                 <PWText
                     variant='h3'
                     style={styles.title}
@@ -84,6 +90,7 @@ export const ARC59SendSummaryScreen = () => {
                             precision={asset?.decimals ?? DEFAULT_PRECISION}
                             minPrecision={DEFAULT_PRECISION}
                             variant='h4'
+                            ignorePrivacyMode
                         />
                     </PWView>
 
@@ -98,6 +105,7 @@ export const ARC59SendSummaryScreen = () => {
                             currency={'ALGO'}
                             precision={ALGO_ASSET.decimals}
                             minPrecision={DEFAULT_PRECISION}
+                            ignorePrivacyMode
                         />
                     </PWView>
 
@@ -105,7 +113,7 @@ export const ARC59SendSummaryScreen = () => {
                         {t('send_funds.arc59_summary.disclaimer')}
                     </PWText>
                 </PWView>
-            </PWView>
+            </PWScrollView>
 
             <SafeAreaView
                 edges={['bottom']}

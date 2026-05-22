@@ -12,9 +12,11 @@
 
 import { useCallback, useMemo } from 'react'
 import {
-    useAccountLogicalType,
+    AccountTypes,
+    isRekeyedAccount,
+    useCanSignWith,
     useRekeyTransition,
-    type AccountLogicalType,
+    type AccountType,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
@@ -40,39 +42,37 @@ type UseAccountTypeInfoResult = {
     handleLearnMore: () => void
 }
 
-const I18N_MAP = {
-    Algo25: {
+const TYPE_I18N: Record<AccountType, { title: string; description: string }> = {
+    [AccountTypes.algo25]: {
         title: 'account_type_info.standard_title',
         description: 'account_type_info.standard_description',
     },
-    HdKey: {
+    [AccountTypes.hdWallet]: {
         title: 'account_type_info.hd_wallet_title',
         description: 'account_type_info.hd_wallet_description',
     },
-    LedgerBle: {
+    [AccountTypes.hardware]: {
         title: 'account_type_info.ledger_title',
         description: 'account_type_info.ledger_description',
     },
-    Multisig: {
+    [AccountTypes.multisig]: {
         title: 'account_type_info.multisig_title',
         description: 'account_type_info.multisig_description',
     },
-    Rekeyed: {
-        title: 'account_type_info.no_auth_title',
-        description: 'account_type_info.no_auth_description',
-    },
-    RekeyedAuth: {
-        title: 'account_type_info.rekeyed_standard_title',
-        description: 'account_type_info.rekeyed_standard_description',
-    },
-    NoAuth: {
+    [AccountTypes.watch]: {
         title: 'account_type_info.watch_title',
         description: 'account_type_info.watch_description',
     },
-} satisfies Record<AccountLogicalType, { title: string; description: string }>
+}
 
-const LEARN_MORE_URL_MAP: Partial<Record<AccountLogicalType, string>> = {
-    LedgerBle: config.ledgerAccountSupportUrl,
+const REKEYED_UNSIGNABLE_I18N = {
+    title: 'account_type_info.no_auth_title',
+    description: 'account_type_info.no_auth_description',
+}
+
+const REKEYED_SIGNABLE_I18N = {
+    title: 'account_type_info.rekeyed_standard_title',
+    description: 'account_type_info.rekeyed_standard_description',
 }
 
 export const useAccountTypeInfo = ({
@@ -80,9 +80,7 @@ export const useAccountTypeInfo = ({
 }: UseAccountTypeInfoParams): UseAccountTypeInfoResult => {
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
-    const logicalType: AccountLogicalType =
-        useAccountLogicalType(account.address) ?? 'NoAuth'
-
+    const canSign = useCanSignWith(account)
     const rekeyTransition = useRekeyTransition(account.address)
 
     const { title, titleQualifier, description } = useMemo(() => {
@@ -97,18 +95,33 @@ export const useAccountTypeInfo = ({
                 description: t(descriptionKey),
             }
         }
-        return {
-            title: t(I18N_MAP[logicalType].title),
-            titleQualifier: null,
-            description: t(I18N_MAP[logicalType].description),
+
+        if (isRekeyedAccount(account)) {
+            const i18n = canSign
+                ? REKEYED_SIGNABLE_I18N
+                : REKEYED_UNSIGNABLE_I18N
+            return {
+                title: t(i18n.title),
+                titleQualifier: null,
+                description: t(i18n.description),
+            }
         }
-    }, [rekeyTransition, logicalType, t])
+
+        const i18n = TYPE_I18N[account.type]
+        return {
+            title: t(i18n.title),
+            titleQualifier: null,
+            description: t(i18n.description),
+        }
+    }, [account, canSign, rekeyTransition, t])
 
     const handleLearnMore = useCallback(() => {
         const url =
-            LEARN_MORE_URL_MAP[logicalType] ?? config.accountTypeSupportUrl
+            account.type === AccountTypes.hardware
+                ? config.ledgerAccountSupportUrl
+                : config.accountTypeSupportUrl
         pushWebView({ url })
-    }, [pushWebView, logicalType])
+    }, [pushWebView, account.type])
 
     return {
         title,

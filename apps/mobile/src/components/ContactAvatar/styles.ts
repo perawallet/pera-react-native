@@ -13,11 +13,14 @@
 import { makeStyles } from '@rneui/themed'
 import { PWIconSize } from '@components/core'
 
+export type ContactAvatarVariant = 'default' | 'highlighted'
+
 type StyleProps = {
     size: PWIconSize
+    variant: ContactAvatarVariant
 }
 
-export const useStyles = makeStyles((theme, { size }: StyleProps) => {
+export const useStyles = makeStyles((theme, { size, variant }: StyleProps) => {
     const containerSize = {
         xs: theme.spacing.lg,
         sm: theme.spacing.xl,
@@ -33,7 +36,10 @@ export const useStyles = makeStyles((theme, { size }: StyleProps) => {
             height: containerSize,
             borderRadius: containerSize,
             overflow: 'hidden',
-            backgroundColor: theme.colors.layerGrayLighter,
+            backgroundColor:
+                variant === 'highlighted'
+                    ? theme.colors.wallet1Icon
+                    : theme.colors.layerGrayLighter,
             alignItems: 'center',
             justifyContent: 'center',
         },

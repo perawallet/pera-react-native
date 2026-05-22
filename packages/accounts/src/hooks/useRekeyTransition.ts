@@ -11,7 +11,7 @@
  */
 
 import { useMemo } from 'react'
-import { rekeyTransitionFor, type RekeyTransition } from '../logical-type'
+import { rekeyTransitionFor, type RekeyTransition } from '../utils'
 import { useAccountsStore } from '../store'
 
 export const useRekeyTransition = (

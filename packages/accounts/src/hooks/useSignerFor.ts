@@ -10,12 +10,17 @@
  limitations under the License
  */
 
-import { useAllAccountLogicalTypes } from './useAllAccountLogicalTypes'
-import type { AccountLogicalType } from '../logical-type'
+import { useMemo } from 'react'
+import { getSignerFor } from '../utils'
+import { useAccountsStore } from '../store'
+import type { WalletAccount } from '../models'
 
-export const useAccountLogicalType = (
+export const useSignerFor = (
     address: string | undefined | null,
-): AccountLogicalType | null => {
-    const map = useAllAccountLogicalTypes()
-    return address ? (map.get(address) ?? null) : null
+): WalletAccount | null => {
+    const accounts = useAccountsStore(state => state.accounts)
+    return useMemo(
+        () => (address ? getSignerFor(address, accounts) : null),
+        [address, accounts],
+    )
 }

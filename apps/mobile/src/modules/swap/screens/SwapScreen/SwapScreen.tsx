@@ -15,7 +15,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { config } from '@perawallet/wallet-core-config'
 import { PWIcon, PWText, PWToolbar, PWView } from '@components/core'
 import {
-    isSigningAccount,
+    canSignWith,
     useAllAccounts,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -32,7 +32,7 @@ export const SwapScreen = () => {
     const styles = useStyles()
     const accounts = useAllAccounts()
     const swapAccountFilter = useCallback(
-        (account: WalletAccount) => isSigningAccount(account, accounts),
+        (account: WalletAccount) => canSignWith(account, accounts),
         [accounts],
     )
     const { pushWebView } = useWebView()

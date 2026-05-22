@@ -11,26 +11,18 @@
  */
 
 import { useMemo } from 'react'
-import {
-    deriveAccountLogicalType,
-    type AccountLogicalType,
-} from '../logical-type'
+import { resolveSignerFor, type SignerResolution } from '../utils'
 import { useAccountsStore } from '../store'
 
-export const useAllAccountLogicalTypes = (): Map<
-    string,
-    AccountLogicalType
-> => {
+export const useSignerResolution = (
+    address: string | undefined | null,
+): SignerResolution => {
     const accounts = useAccountsStore(state => state.accounts)
-
-    return useMemo(() => {
-        const map = new Map<string, AccountLogicalType>()
-        for (const account of accounts) {
-            map.set(
-                account.address,
-                deriveAccountLogicalType(account, accounts),
-            )
-        }
-        return map
-    }, [accounts])
+    return useMemo(
+        () =>
+            address
+                ? resolveSignerFor(address, accounts)
+                : { kind: 'accountNotFound' },
+        [address, accounts],
+    )
 }

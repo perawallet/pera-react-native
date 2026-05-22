@@ -84,6 +84,7 @@ const SearchableListInner = <T,>(
         onScrollEndDrag,
         // children is part of the React props type but not used by the list.
         children: _children,
+        extraData: callerExtraData,
         ...listProps
     } = props
 
@@ -180,6 +181,14 @@ const SearchableListInner = <T,>(
         ],
     )
 
+    const augmentedExtraData = useMemo(
+        () =>
+            callerExtraData !== undefined
+                ? [callerExtraData, searchValue]
+                : searchValue,
+        [callerExtraData, searchValue],
+    )
+
     // LegendList's data-mode prop type uses `children: never`, while React's
     // intrinsic component types always add `children?: ReactNode` — so any
     // structural cast at this boundary fails. The single `any` here is
@@ -196,6 +205,7 @@ const SearchableListInner = <T,>(
         ListFooterComponent: augmentedFooter,
         stickyIndices: [0],
         maintainVisibleContentPosition: true,
+        extraData: augmentedExtraData,
         onLayout: handleListLayout,
         onContentSizeChange: handleContentSizeChange,
         onScroll: handleScroll,
