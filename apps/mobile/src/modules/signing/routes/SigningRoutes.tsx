@@ -55,7 +55,12 @@ const getInitialRouteConfig = (request: SignRequest): InitialRouteConfig => {
     }
 
     const txRequest = request as TransactionSignRequest
-    const isSingleTransaction = txRequest.txs.length === 1
+    // `txs` is just the signable subset for filtered requests (e.g. WC
+    // groups where some entries belong to other signers). `groupContext`
+    // carries the full pre-filter payload — use it so a 2-tx group with
+    // only one signable slot still opens the list view, not single.
+    const fullPayloadLength = (txRequest.groupContext ?? txRequest.txs).length
+    const isSingleTransaction = fullPayloadLength === 1
 
     if (isSingleTransaction) {
         return { name: 'SingleTransaction' }

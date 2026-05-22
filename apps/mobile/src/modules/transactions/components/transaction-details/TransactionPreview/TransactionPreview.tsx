@@ -65,7 +65,10 @@ export const TransactionPreview = ({
                 type={type}
                 size='sm'
             />
-            <TxTypeDetails tx={transaction} />
+            <TxTypeDetails
+                tx={transaction}
+                isExternal={isExternal}
+            />
             <PWView style={styles.rightContent}>
                 {isExternal && (
                     <PWTouchableOpacity

@@ -10,11 +10,10 @@
  limitations under the License
  */
 
-import { PWButton, PWView } from '@components/core'
+import { PWButton } from '@components/core'
 import { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { useLanguage } from '@hooks/useLanguage'
 import { useCallback, useMemo } from 'react'
-import { useStyles } from './styles'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { ViewTextDetailsContent } from '../../ViewTextDetailsContent'
@@ -25,7 +24,6 @@ export const TransactionNoteRow = ({
     transaction: PeraDisplayableTransaction
 }) => {
     const { t } = useLanguage()
-    const styles = useStyles()
     const { request: requestBottomSheet } = useBottomSheet()
 
     const note = useMemo(() => {
@@ -52,15 +50,13 @@ export const TransactionNoteRow = ({
     }
 
     return (
-        <PWView style={styles.container}>
-            <KeyValueRow title={t('transactions.common.note')}>
-                <PWButton
-                    variant='linkPositive'
-                    title={t('transactions.common.view_note')}
-                    onPress={handleOpen}
-                    paddingStyle='none'
-                />
-            </KeyValueRow>
-        </PWView>
+        <KeyValueRow title={t('transactions.common.note')}>
+            <PWButton
+                variant='linkPositive'
+                title={t('transactions.common.view_note')}
+                onPress={handleOpen}
+                paddingStyle='none'
+            />
+        </KeyValueRow>
     )
 }

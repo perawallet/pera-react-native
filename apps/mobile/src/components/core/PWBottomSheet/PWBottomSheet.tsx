@@ -160,19 +160,9 @@ export const PWBottomSheet = ({
             ref={bottomSheetModalRef}
             snapPoints={defaults.snapPoints}
             enableDynamicSizing={defaults.enableDynamicSizing}
-            // Don't let gorhom touch underlying modals when a new one opens.
-            // The default 'switch' calls `minimize()` on the previous top,
-            // and in practice (see the WC-connect flow over a webview sheet)
-            // the underlying modal gets fully DISMISSED rather than just
-            // minimized — tearing the webview down. With 'push' the
-            // underlying stays mounted at its current snap point, hidden
-            // behind the new modal's backdrop, and naturally re-appears
-            // when the topmost dismisses.
             stackBehavior='push'
             // Never let the sheet rise above the status bar, even when its
-            // dynamically-sized content (e.g. an expanded HD wallet tree)
-            // would otherwise push it past the configured snap point. Skip
-            // for `full`-size sheets which intentionally cover everything.
+            // dynamically-sized content
             topInset={size === 'full' ? 0 : insets.top}
             backdropComponent={renderBackdrop}
             onDismiss={handleDismiss}
@@ -182,23 +172,6 @@ export const PWBottomSheet = ({
             }
             backgroundStyle={mergedBackgroundStyle}
             detached={false}
-            // App-wide stacking policy for every PWBottomSheet. Overrides
-            // gorhom's default 'switch', which calls `minimize()` on the
-            // current top sheet whenever a new modal is presented. The
-            // minimize→restore cycle is unsafe when a transient sheet
-            // opens and closes faster than the animation can settle: the
-            // underlying modal's gorhom `onDismiss` callback fires, which
-            // we wire through `handleBackdropPress` → `store.dismiss` →
-            // `store.remove`, tearing down a modal nobody asked to
-            // dismiss. The Ledger connection-issue troubleshooting overlay
-            // (opened on `setError` and dismissed ~50ms later by the actor
-            // lifecycle's `reset()`) is the path that first surfaced this,
-            // but the fix is global — 'switch' is unsafe for any
-            // sheet-over-sheet flow. 'push' keeps every modal mounted at
-            // its full snap point; the top sheet's backdrop already blocks
-            // pointer events for the sheets behind it, so we don't lose
-            // the visual hierarchy.
-            stackBehavior='push'
             keyboardBehavior='interactive'
             keyboardBlurBehavior='restore'
             enablePanDownToClose={enablePanDownToClose}

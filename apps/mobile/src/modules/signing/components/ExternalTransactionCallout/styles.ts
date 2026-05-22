@@ -25,4 +25,7 @@ export const useStyles = makeStyles(theme => ({
         flex: 1,
         gap: theme.spacing.xs,
     },
+    icon: {
+        marginTop: theme.spacing.xs,
+    },
 }))

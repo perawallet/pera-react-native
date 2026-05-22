@@ -1720,7 +1720,7 @@
             "signing_with": "Signing Account"
         },
         "external_transaction": {
-            "pill_label": "Other signer",
+            "pill_label": "Signed",
             "sheet_title": "Other signer",
             "sheet_body": "This transaction has already been signed or will be signed by another party. It's shown here only for completeness.",
             "sheet_dismiss": "Got it",

@@ -79,11 +79,11 @@ export const TransactionDetailsScreen = () => {
     if (transaction) {
         return (
             <PWScrollView contentContainerStyle={styles.contentContainer}>
-                {isExternal && <ExternalTransactionCallout />}
                 <TransactionDisplay
                     transaction={transaction}
                     onInnerTransactionsPress={handleInnerTransactionPress}
                 />
+                {isExternal && <ExternalTransactionCallout />}
                 {groupTransactions.length > 1 && (
                     <GroupTransactionsPanel
                         groupTransactions={groupTransactions}

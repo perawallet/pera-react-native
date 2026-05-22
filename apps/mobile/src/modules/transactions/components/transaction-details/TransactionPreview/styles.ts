@@ -39,14 +39,14 @@ export const useStyles = makeStyles(theme => {
         externalPill: {
             flexDirection: 'row',
             alignItems: 'center',
-            gap: theme.spacing.xs,
+            gap: theme.spacing.xxs,
             paddingHorizontal: theme.spacing.sm,
             paddingVertical: theme.spacing.xs,
             borderRadius: theme.borderRadius.sm,
-            backgroundColor: theme.colors.layerGrayLighter,
         },
         externalPillText: {
-            color: theme.colors.textGray,
+            color: theme.colors.textMain,
+            maxWidth: theme.spacing.xxl,
         },
         primaryText: {
             color: theme.colors.textMain,

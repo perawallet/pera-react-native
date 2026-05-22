@@ -34,7 +34,13 @@ const getInnerTransactionCount = (tx: PeraDisplayableTransaction): number => {
     return tx.innerTxns?.length ?? 0
 }
 
-export const TxTypeDetails = ({ tx }: { tx: PeraDisplayableTransaction }) => {
+export const TxTypeDetails = ({
+    tx,
+    isExternal,
+}: {
+    tx: PeraDisplayableTransaction
+    isExternal?: boolean
+}) => {
     const txType = getTransactionType(tx)
     const { t } = useLanguage()
     const styles = useStyles()
@@ -134,7 +140,9 @@ export const TxTypeDetails = ({ tx }: { tx: PeraDisplayableTransaction }) => {
 
     return (
         <PWView style={styles.content}>
-            <PWText style={styles.primaryText}>
+            <PWText
+                style={isExternal ? styles.secondaryText : styles.primaryText}
+            >
                 {t(`transactions.type.${tx.txType}`)}
             </PWText>
             {secondary}

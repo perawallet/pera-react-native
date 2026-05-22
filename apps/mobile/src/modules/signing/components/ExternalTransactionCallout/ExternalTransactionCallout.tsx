@@ -23,6 +23,7 @@ export const ExternalTransactionCallout = () => {
             <PWIcon
                 name='info'
                 size='sm'
+                style={styles.icon}
             />
             <PWView style={styles.textColumn}>
                 <PWText variant='bodySemibold'>
