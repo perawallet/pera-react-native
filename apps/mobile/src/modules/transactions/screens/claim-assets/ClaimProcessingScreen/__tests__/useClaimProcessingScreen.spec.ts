@@ -19,17 +19,21 @@ import { Decimal } from 'decimal.js'
 const mockGoBack = vi.fn()
 const mockReplace = vi.fn()
 
+const { mockRouteParams } = vi.hoisted(() => ({
+    mockRouteParams: {
+        mode: 'claimArc59' as string,
+        assetIndex: 0,
+        shouldClaimAlgo: false,
+    },
+}))
+
 vi.mock('@react-navigation/native', () => ({
     useNavigation: () => ({
         goBack: mockGoBack,
         replace: mockReplace,
     }),
     useRoute: () => ({
-        params: {
-            mode: 'claimArc59' as const,
-            assetIndex: 0,
-            shouldClaimAlgo: false,
-        },
+        params: mockRouteParams,
     }),
 }))
 
@@ -53,6 +57,11 @@ vi.mock('@hooks/useErrorToast', () => ({
     useErrorToast: () => ({ showError: mockShowError }),
 }))
 
+const { mockUseFindAccountByAddress, mockUseClaimAssets } = vi.hoisted(() => ({
+    mockUseFindAccountByAddress: vi.fn(),
+    mockUseClaimAssets: vi.fn(),
+}))
+
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
         await importOriginal<
@@ -60,30 +69,25 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         >()
     return {
         ...actual,
-        useFindAccountByAddress: vi.fn(() => ({
-            address: 'test-address',
-            name: 'Test',
-        })),
+        useFindAccountByAddress: mockUseFindAccountByAddress,
         useAccountBalancesInvalidator: vi.fn(() => ({ invalidate: vi.fn() })),
     }
 })
 
+const defaultAssetRequest = {
+    asset: {
+        assetId: '123',
+        name: 'Test Asset',
+        decimals: 0,
+        totalSupply: new Decimal(1),
+        creator: { address: 'CREATOR' },
+    },
+}
+
+const defaultAccount = { address: 'test-address', name: 'Test' }
+
 vi.mock('@modules/transactions/hooks', () => ({
-    useClaimAssets: () => ({
-        assetRequests: [
-            {
-                asset: {
-                    assetId: '123',
-                    name: 'Test Asset',
-                    decimals: 0,
-                    totalSupply: new Decimal(1),
-                    creator: { address: 'CREATOR' },
-                },
-            },
-        ],
-        accountAddress: 'test-address',
-        setOnFinished: vi.fn(),
-    }),
+    useClaimAssets: mockUseClaimAssets,
 }))
 
 vi.mock('@components/core', () => ({
@@ -111,33 +115,130 @@ vi.mock('react-native', () => ({
 describe('useClaimProcessingScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockRouteParams.mode = 'claimArc59'
+        mockRouteParams.assetIndex = 0
+        mockRouteParams.shouldClaimAlgo = false
+        mockUseFindAccountByAddress.mockReturnValue(defaultAccount)
+        mockUseClaimAssets.mockReturnValue({
+            assetRequests: [defaultAssetRequest],
+            accountAddress: 'test-address',
+            setOnFinished: vi.fn(),
+        })
     })
 
-    it('calls navigation.goBack and does not show an error toast when user cancels the signing overlay', async () => {
-        mockExecute.mockRejectedValueOnce(new UserRejectedSigningError())
+    describe('claimArc59 mode', () => {
+        it('navigates to ClaimSuccess with variant "claim" on successful execution', async () => {
+            mockExecute.mockResolvedValueOnce('tx-id-123')
 
-        renderHook(() => useClaimProcessingScreen())
+            renderHook(() => useClaimProcessingScreen())
 
-        // Allow microtasks to flush
-        await new Promise(resolve => setTimeout(resolve, 0))
+            await new Promise(resolve => setTimeout(resolve, 0))
 
-        expect(mockGoBack).toHaveBeenCalled()
-        expect(mockShowError).not.toHaveBeenCalled()
+            expect(mockReplace).toHaveBeenCalledWith('ClaimSuccess', {
+                transactionId: 'tx-id-123',
+                variant: 'claim',
+            })
+        })
+
+        it('calls navigation.goBack and does not show an error toast when user cancels the signing overlay', async () => {
+            mockExecute.mockRejectedValueOnce(new UserRejectedSigningError())
+
+            renderHook(() => useClaimProcessingScreen())
+
+            await new Promise(resolve => setTimeout(resolve, 0))
+
+            expect(mockGoBack).toHaveBeenCalled()
+            expect(mockShowError).not.toHaveBeenCalled()
+        })
+
+        it('shows an error toast and navigates back when execution fails with a non-cancel error', async () => {
+            const executeError = new Error('Network error')
+            mockExecute.mockRejectedValueOnce(executeError)
+
+            renderHook(() => useClaimProcessingScreen())
+
+            await new Promise(resolve => setTimeout(resolve, 0))
+
+            expect(mockShowError).toHaveBeenCalledWith(
+                executeError,
+                undefined,
+                expect.anything(),
+            )
+            expect(mockGoBack).toHaveBeenCalled()
+        })
     })
 
-    it('shows an error toast and navigates back when execution fails with a non-cancel error', async () => {
-        const executeError = new Error('Network error')
-        mockExecute.mockRejectedValueOnce(executeError)
+    describe('rejectArc59 mode', () => {
+        beforeEach(() => {
+            mockRouteParams.mode = 'rejectArc59'
+        })
 
-        renderHook(() => useClaimProcessingScreen())
+        it('navigates to ClaimSuccess with variant "reject" on successful execution', async () => {
+            mockExecute.mockResolvedValueOnce('tx-id-456')
 
-        await new Promise(resolve => setTimeout(resolve, 0))
+            renderHook(() => useClaimProcessingScreen())
 
-        expect(mockShowError).toHaveBeenCalledWith(
-            executeError,
-            undefined,
-            expect.anything(),
-        )
-        expect(mockGoBack).toHaveBeenCalled()
+            await new Promise(resolve => setTimeout(resolve, 0))
+
+            expect(mockReplace).toHaveBeenCalledWith('ClaimSuccess', {
+                transactionId: 'tx-id-456',
+                variant: 'reject',
+            })
+        })
+
+        it('calls navigation.goBack and does not show an error toast when user cancels', async () => {
+            mockExecute.mockRejectedValueOnce(new UserRejectedSigningError())
+
+            renderHook(() => useClaimProcessingScreen())
+
+            await new Promise(resolve => setTimeout(resolve, 0))
+
+            expect(mockGoBack).toHaveBeenCalled()
+            expect(mockShowError).not.toHaveBeenCalled()
+        })
+
+        it('shows an error toast and navigates back when execution fails', async () => {
+            const executeError = new Error('Reject failed')
+            mockExecute.mockRejectedValueOnce(executeError)
+
+            renderHook(() => useClaimProcessingScreen())
+
+            await new Promise(resolve => setTimeout(resolve, 0))
+
+            expect(mockShowError).toHaveBeenCalledWith(
+                executeError,
+                undefined,
+                expect.anything(),
+            )
+            expect(mockGoBack).toHaveBeenCalled()
+        })
+    })
+
+    describe('null guard', () => {
+        it('navigates back immediately without calling execute when asset is not found', async () => {
+            mockUseClaimAssets.mockReturnValue({
+                assetRequests: [],
+                accountAddress: 'test-address',
+                setOnFinished: vi.fn(),
+            })
+
+            renderHook(() => useClaimProcessingScreen())
+
+            await new Promise(resolve => setTimeout(resolve, 0))
+
+            expect(mockGoBack).toHaveBeenCalled()
+            expect(mockExecute).not.toHaveBeenCalled()
+        })
+
+        it('navigates back immediately without calling execute when account is not found', async () => {
+            mockUseFindAccountByAddress.mockReturnValue(undefined)
+
+            renderHook(() => useClaimProcessingScreen())
+
+            await new Promise(resolve => setTimeout(resolve, 0))
+
+            expect(mockGoBack).toHaveBeenCalled()
+            expect(mockExecute).not.toHaveBeenCalled()
+        })
     })
 })

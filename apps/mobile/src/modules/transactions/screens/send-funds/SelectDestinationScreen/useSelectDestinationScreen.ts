@@ -120,7 +120,7 @@ export const useSelectDestinationScreen = () => {
                 return
             }
 
-            if (localType) {
+            if (receiver) {
                 setSendMode('sendArc59')
                 navigation.navigate('ARC59SendSummary')
                 return

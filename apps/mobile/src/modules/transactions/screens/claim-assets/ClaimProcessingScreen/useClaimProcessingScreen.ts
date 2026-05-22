@@ -60,12 +60,21 @@ export const useClaimProcessingScreen = () => {
             () => true,
         )
 
-        const sendParams = {
+        // Guard against stale or missing state — if either is absent the
+        // screen was opened in an invalid state; go back immediately rather
+        // than crashing synchronously inside the effect (which would leave
+        // the spinner hung forever because `.catch()` never gets registered).
+        if (!asset || !account) {
+            navigation.goBack()
+            return () => subscription.remove()
+        }
+
+        const sendParams: SendClaimParams = {
             sendMode: mode,
             sender: account,
             asset: asset.asset,
             shouldClaimAlgo,
-        } as SendClaimParams
+        }
 
         execute({
             params: sendParams,
