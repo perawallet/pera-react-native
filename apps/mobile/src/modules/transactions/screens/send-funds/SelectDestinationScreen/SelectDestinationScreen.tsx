@@ -24,7 +24,7 @@ export const SelectDestinationScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
 
-    const { selectedAsset, handleSelected, isCheckingDestination } =
+    const { selectedAsset, handleSelected, isCheckingExternalOptIn } =
         useSelectDestinationScreen()
 
     useNavigationHeader({
@@ -48,7 +48,7 @@ export const SelectDestinationScreen = () => {
         )
     }
 
-    if (isCheckingDestination) {
+    if (isCheckingExternalOptIn) {
         return <LoadingView variant='circle' />
     }
 
