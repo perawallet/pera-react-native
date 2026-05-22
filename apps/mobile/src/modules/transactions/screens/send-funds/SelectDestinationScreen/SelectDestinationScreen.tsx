@@ -24,7 +24,8 @@ export const SelectDestinationScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
 
-    const { selectedAsset, handleSelected, isCheckingExternalOptIn } = useSelectDestinationScreen()
+    const { selectedAsset, handleSelected, isCheckingExternalOptIn } =
+        useSelectDestinationScreen()
 
     useNavigationHeader({
         title: selectedAsset ? (
