@@ -160,7 +160,6 @@ export const PWBottomSheet = ({
             ref={bottomSheetModalRef}
             snapPoints={defaults.snapPoints}
             enableDynamicSizing={defaults.enableDynamicSizing}
-
             stackBehavior='push'
             // Never let the sheet rise above the status bar, even when its
             // dynamically-sized content
