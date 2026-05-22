@@ -113,6 +113,10 @@ vi.mock('../../machine/createSigningMachine')
  */
 const makeMockActor = (requestId: string) => {
     let subscriberCb: Nullable<(snapshot: unknown) => void> = null
+    // Drives `getSnapshot().matches(...)`; rejectRequest reads this to decide
+    // between the approval gate and a direct USER_REJECTED send. Defaults to a
+    // pre-approval state so the gate path is exercised unless a test opts in.
+    let currentState = 'awaiting_user'
 
     const actor = {
         id: requestId,
@@ -122,6 +126,14 @@ const makeMockActor = (requestId: string) => {
         start: vi.fn(),
         stop: vi.fn(),
         send: vi.fn(),
+        getSnapshot: () => ({
+            value: currentState,
+            matches: (s: string) => s === currentState,
+        }),
+        // Test helper: set the state reported by getSnapshot().
+        setState: (state: string) => {
+            currentState = state
+        },
         // Test helper: simulate actor reaching a terminal state
         simulateDone: (matchedState: string, request: SignRequest) => {
             subscriberCb?.({
@@ -335,6 +347,33 @@ describe('useSigningRequest', () => {
             })
 
             await expect(resolution).resolves.toBe('rejected')
+        })
+
+        test('sends USER_REJECTED directly to a failed actor (gate already spent)', () => {
+            // After a retryable failure the actor is parked in `failed`, past
+            // the approval gate the user already resolved by approving. The
+            // gate is one-shot, so `approvalGate.reject` would be a no-op and
+            // the cancel tap would be silently dropped. rejectRequest must
+            // send USER_REJECTED straight to the actor instead.
+            const actor = makeMockActor('tx-1')
+            vi.mocked(createSigningMachine).mockReturnValue(actor as any)
+
+            const { result } = renderHook(() => useSigningRequest())
+            const request = makeTxRequest({
+                transport: 'callback',
+                sourceType: 'walletconnect',
+            })
+
+            act(() => {
+                result.current.addSignRequest(request)
+            })
+            actor.setState('failed')
+
+            act(() => {
+                result.current.rejectRequest(request)
+            })
+
+            expect(actor.send).toHaveBeenCalledWith({ type: 'USER_REJECTED' })
         })
 
         test('when no actor, calls reject callback and removes request for callback transport', () => {
