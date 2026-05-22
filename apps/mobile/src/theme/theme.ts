@@ -125,10 +125,10 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
 
             // Banner
             bannerContentBg: palette.gray[700],
-            bannerBg: palette.gray[700],
+            bannerBg: palette.turquoise[200],
             bannerButton: 'rgba(255, 255, 255, 0.12)',
             bannerIconBg: 'rgba(31, 142, 157, 0.2)',
-            bannerText: palette.white,
+            bannerText: palette.turquoise[900],
 
             // Alert
             alertNegative: palette.salmon[600],
@@ -320,10 +320,10 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
 
             // Banner
             bannerContentBg: palette.gray[700],
-            bannerBg: palette.turquoise[600],
-            bannerButton: 'rgba(24, 24, 27, 0.12)',
-            bannerIconBg: 'rgba(24, 24, 27, 0.2)',
-            bannerText: palette.white,
+            bannerBg: palette.turquoise[200],
+            bannerButton: 'rgba(255, 255, 255, 0.12)',
+            bannerIconBg: 'rgba(31, 142, 157, 0.2)',
+            bannerText: palette.turquoise[900],
 
             // Alert
             alertNegative: palette.salmon[500],

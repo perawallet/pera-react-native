@@ -11,7 +11,8 @@
  */
 
 import { memo } from 'react'
-import Animated from 'react-native-reanimated'
+import Animated, { useAnimatedStyle } from 'react-native-reanimated'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CompactBanner } from '@modules/banners/components/CompactBanner'
 import { PWView } from '@components/core'
 import { useBannerReveal } from '../animations'
@@ -19,10 +20,16 @@ import { useHomeBannersStrip } from './useHomeBannersStrip'
 import { useStyles } from './styles'
 
 const HomeBannersStripComponent = () => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles(insets)
     const { isVisible, current, additionalCount, onPress } =
         useHomeBannersStrip()
-    const { animatedStyle, isMeasured, onMeasureLayout } = useBannerReveal()
+    const { animatedStyle, progress, isMeasured, onMeasureLayout } =
+        useBannerReveal()
+
+    const insetOverlayStyle = useAnimatedStyle(() => ({
+        opacity: 1 - progress.value,
+    }))
 
     if (!isVisible || !current) return null
 
@@ -47,9 +54,15 @@ const HomeBannersStripComponent = () => {
                     {content}
                 </PWView>
             )}
-            <Animated.View style={[styles.wrapper, animatedStyle]}>
-                {isMeasured && content}
-            </Animated.View>
+            <PWView style={styles.wrapper}>
+                <Animated.View style={[styles.inner, animatedStyle]}>
+                    {isMeasured && content}
+                </Animated.View>
+                <Animated.View
+                    style={[styles.insetOverlay, insetOverlayStyle]}
+                    pointerEvents='none'
+                />
+            </PWView>
         </>
     )
 }

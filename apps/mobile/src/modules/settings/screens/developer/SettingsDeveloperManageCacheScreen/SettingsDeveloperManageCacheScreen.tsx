@@ -17,6 +17,9 @@ import { useToast } from '@hooks/useToast'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { getSyncService } from '@perawallet/wallet-core-background'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useBannersStore } from '@perawallet/wallet-core-banners'
+import { usePreferences } from '@perawallet/wallet-core-settings'
+import { OneTimeUserPreferenceFlags } from '@constants/user-preferences'
 import { useStyles } from './styles'
 
 export const SettingsDeveloperManageCacheScreen = () => {
@@ -25,6 +28,8 @@ export const SettingsDeveloperManageCacheScreen = () => {
     const { showToast } = useToast()
     const accounts = useAllAccounts()
     const { network } = useNetwork()
+    const resetBanners = useBannersStore(state => state.resetState)
+    const { deletePreference } = usePreferences()
     const [isRefreshing, setIsRefreshing] = useState(false)
 
     const handleRefreshCache = async () => {
@@ -51,6 +56,24 @@ export const SettingsDeveloperManageCacheScreen = () => {
         }
     }
 
+    const handleResetBanners = () => {
+        resetBanners()
+        showToast({
+            title: t('settings.developer.reset_banners_success_title'),
+            body: t('settings.developer.reset_banners_success_body'),
+            type: 'success',
+        })
+    }
+
+    const handleClearOneTimeFlags = () => {
+        OneTimeUserPreferenceFlags.forEach(deletePreference)
+        showToast({
+            title: t('settings.developer.clear_one_time_flags_success_title'),
+            body: t('settings.developer.clear_one_time_flags_success_body'),
+            type: 'success',
+        })
+    }
+
     return (
         <PWView style={styles.container}>
             <PWButton
@@ -60,6 +83,18 @@ export const SettingsDeveloperManageCacheScreen = () => {
                 onPress={handleRefreshCache}
                 isLoading={isRefreshing}
                 isDisabled={isRefreshing}
+            />
+            <PWButton
+                variant='secondary'
+                title={t('settings.developer.reset_banners')}
+                icon='bell'
+                onPress={handleResetBanners}
+            />
+            <PWButton
+                variant='secondary'
+                title={t('settings.developer.clear_one_time_flags')}
+                icon='trash'
+                onPress={handleClearOneTimeFlags}
             />
         </PWView>
     )

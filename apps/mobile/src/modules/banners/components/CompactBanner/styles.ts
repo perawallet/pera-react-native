@@ -19,7 +19,7 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         justifyContent: 'space-between',
         gap: theme.spacing.sm,
-        paddingVertical: theme.spacing.md,
+        paddingVertical: theme.spacing.lg,
         paddingHorizontal: theme.spacing.lg,
         backgroundColor: theme.colors.bannerBg,
     },
