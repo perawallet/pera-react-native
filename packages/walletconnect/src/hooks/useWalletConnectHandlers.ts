@@ -55,6 +55,7 @@ import { MAX_DATA_SIGN_REQUESTS, WC_DELIVERY_TIMEOUT_MS } from '../constants'
 import { arc60PayloadSchema } from '../schema'
 import {
     canSignArbitraryData,
+    isHardwareWalletAccount,
     isMultisigAccount,
     useAllAccounts,
     useSigningAccounts,
@@ -249,7 +250,13 @@ const validateArc60Request = (
         throw new WalletConnectInvalidSessionError('Invalid signer')
     }
     const account = accounts.find(a => a.address === signer)
-    if (!account || !canSignArbitraryData(account)) {
+    // Local-key accounts (Algo25/HD) sign ARC-60 via KMS; hardware (Ledger)
+    // accounts sign it on-device via the hardware signing strategy. Watch and
+    // multisig accounts can do neither, so they're rejected here.
+    if (
+        !account ||
+        (!canSignArbitraryData(account) && !isHardwareWalletAccount(account))
+    ) {
         throw new WalletConnectInvalidSessionError(
             'Signer cannot sign ARC-60 payloads',
         )

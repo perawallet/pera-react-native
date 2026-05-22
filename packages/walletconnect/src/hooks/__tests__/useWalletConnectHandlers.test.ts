@@ -25,6 +25,7 @@ import {
     Networks,
 } from '@perawallet/wallet-core-shared'
 import {
+    canSignArbitraryData,
     useAllAccounts,
     useSigningAccounts,
     isHardwareWalletAccount,
@@ -604,6 +605,44 @@ describe('useWalletConnectHandlers', () => {
                     transport: 'callback',
                     sourceType: 'walletconnect',
                 }),
+            )
+        })
+
+        it('queues an arc60 sign request for a Ledger (hardware) signer', () => {
+            // Hardware accounts can't sign locally (`canSignArbitraryData`
+            // false) but DO sign ARC-60 on-device via the hardware strategy,
+            // so the ARC-60 gate must let them through.
+            ;(canSignArbitraryData as any).mockReturnValue(false)
+            ;(isHardwareWalletAccount as any).mockReturnValue(true)
+            ;(useAllAccounts as any).mockReturnValue([
+                {
+                    address: 'addr1',
+                    name: 'Ledger',
+                    type: 'hardware',
+                    hardwareDetails: {
+                        manufacturer: 'ledger',
+                        deviceId: 'test-device',
+                        deviceName: 'Ledger Nano X',
+                        accountIndex: 0,
+                        transportType: 'ble',
+                    },
+                },
+            ])
+
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            const connector = { clientId: 'test-client-id' } as any
+
+            expect(() =>
+                result.current.handleSignData(
+                    connector,
+                    Networks.mainnet,
+                    null,
+                    arc60Payload(),
+                ),
+            ).not.toThrow()
+
+            expect(mockAddSignRequest).toHaveBeenCalledWith(
+                expect.objectContaining({ type: 'arc60' }),
             )
         })
 
