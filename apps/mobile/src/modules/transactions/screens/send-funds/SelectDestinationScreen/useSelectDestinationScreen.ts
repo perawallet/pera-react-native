@@ -120,16 +120,12 @@ export const useSelectDestinationScreen = () => {
                 return
             }
 
-            // Known local account we can't sign for (watch/hardware): there's
-            // no on-chain opt-in we can perform on its behalf — route to ARC59.
             if (receiver) {
                 setSendMode('sendArc59')
                 navigation.navigate('ARC59SendSummary')
                 return
             }
 
-            // Truly external address: check on-chain opt-in status before
-            // deciding between a normal transfer and ARC59.
             setPendingExternalAddress(address)
         },
         [
