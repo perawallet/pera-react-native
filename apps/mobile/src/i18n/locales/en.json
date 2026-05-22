@@ -1534,7 +1534,10 @@
         },
         "processing": {
             "title": "Sending the transaction",
-            "subtitle": "Your transaction is being processed by the Algorand network."
+            "subtitle": "Your transaction is being processed by the Algorand network.",
+            "title_hardware": "Connecting to your Ledger device",
+            "subtitle_hardware": "Reaching out to {{deviceName}}. Make sure it is unlocked, in range, and that the Algorand app is open.",
+            "subtitle_hardware_noDevice": "Reaching out to your Ledger device. Make sure it is unlocked, in range, and that the Algorand app is open."
         },
         "success": {
             "title": "Transaction Processed",
@@ -1660,7 +1663,18 @@
             "advanced_security_settings": "Advanced Security Settings",
             "advanced_security_settings_description": "Enable advanced security options such as re-key support.",
             "enable_asset_freeze_support": "Enable Asset Freeze Support",
-            "enable_asset_freeze_support_description": "Once you enable this, you can confirm transaction requests to freeze or unfreeze assets on accounts. This may prevent the target account from transacting with the specified asset."
+            "enable_asset_freeze_support_description": "Once you enable this, you can confirm transaction requests to freeze or unfreeze assets on accounts. This may prevent the target account from transacting with the specified asset.",
+            "shake_to_lock": "Shake to Lock",
+            "shake_to_lock_description": "Automatically lock the wallet when the phone is shaken or jerked sharply. Useful if the phone is snatched or you want a quick way to lock from any screen.",
+            "shake_to_lock_info_title": "Shake to Lock",
+            "shake_to_lock_info_body": "When this is on, Pera listens for sudden movement using the phone's motion sensor while you have the wallet open. A hard shake or sharp jerk will instantly lock the wallet, so you can shake your phone to lock it in a hurry. Requires PIN to be enabled.",
+            "shake_to_lock_requires_pin": "Enable PIN to use this feature.",
+            "duress_pin": "Duress PIN",
+            "duress_pin_description": "An alternative PIN that silently wipes the wallet when entered at the lock screen. Wiped data cannot be recovered — make sure you have your recovery passphrase backed up before enabling this.",
+            "duress_pin_info_title": "Duress PIN",
+            "duress_pin_info_body": "Set up an alternative PIN you can enter under duress. If you ever enter it at the lock screen instead of your real PIN, Pera will silently delete all of your accounts and replace them with a fresh empty wallet so it looks like you simply have no funds. Keep biometrics on if you like — under duress, cancel the biometric prompt and type the duress PIN by hand. The duress PIN must be different from your regular PIN.\n\nImportant: a duress wipe is permanent. Anything stored only on this device (accounts you haven't backed up elsewhere) cannot be recovered afterwards. Make sure you have your recovery passphrase saved before turning this on.",
+            "duress_pin_requires_pin": "Enable PIN to use this feature.",
+            "duress_pin_matches_regular": "Your duress PIN must be different from your regular PIN."
         },
         "notifications": {
             "push_notifications": "Push Notifications",
@@ -2042,7 +2056,7 @@
             "signing": "Signing...",
             "submitting": "Submitting...",
             "finalizing": "Finalizing...",
-            "error": "Transaction failed. Please try again.",
+            "error_title": "Swap Failed",
             "success_title": "Swap Complete",
             "success_body": "{{fromAsset}} to {{toAsset}} swap successfully completed",
             "user_rejected": "Swap cancelled"

@@ -22,7 +22,26 @@ export const TransactionProcessingScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
 
-    useTransactionProcessingScreen()
+    const { isHardwareSender, hardwareDeviceName } =
+        useTransactionProcessingScreen()
+
+    // Hardware-wallet sends start with a silent BLE-scan / connect phase
+    // (LedgerConnectionError after ~20s on a cold pair). Without a
+    // device-aware copy here the user stares at "Sending the transaction"
+    // until either the device prompts (and the LedgerSigningContent sheet
+    // takes over) or the connect times out.
+    const titleKey = isHardwareSender
+        ? 'send_funds.processing.title_hardware'
+        : 'send_funds.processing.title'
+    const subtitleKey = isHardwareSender
+        ? hardwareDeviceName
+            ? 'send_funds.processing.subtitle_hardware'
+            : 'send_funds.processing.subtitle_hardware_noDevice'
+        : 'send_funds.processing.subtitle'
+    const subtitleParams =
+        isHardwareSender && hardwareDeviceName
+            ? { deviceName: hardwareDeviceName }
+            : undefined
 
     return (
         <PWView style={styles.container}>
@@ -38,10 +57,10 @@ export const TransactionProcessingScreen = () => {
                 variant='h3'
                 style={styles.title}
             >
-                {t('send_funds.processing.title')}
+                {t(titleKey)}
             </PWText>
             <PWText style={styles.subtitle}>
-                {t('send_funds.processing.subtitle')}
+                {t(subtitleKey, subtitleParams)}
             </PWText>
         </PWView>
     )

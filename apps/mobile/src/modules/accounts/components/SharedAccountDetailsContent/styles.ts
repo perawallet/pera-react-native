@@ -13,6 +13,9 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
+    container: {
+        flex: 1,
+    },
     scrollContent: {
         paddingHorizontal: theme.spacing.xl,
         paddingBottom: theme.spacing.xxl,
@@ -30,6 +33,7 @@ export const useStyles = makeStyles(theme => ({
     },
     participants: {
         gap: theme.spacing.md,
+        marginTop: theme.spacing.lg,
     },
     participant: {
         paddingVertical: theme.spacing.md,

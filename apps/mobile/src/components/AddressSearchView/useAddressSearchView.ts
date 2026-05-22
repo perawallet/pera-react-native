@@ -74,7 +74,10 @@ export const useAddressSearchView = (
                       a =>
                           a.address !== excludeAddress &&
                           (!excludeTypes || !excludeTypes.includes(a.type)) &&
-                          (!value?.length || a.address.includes(value)),
+                          (!value?.length ||
+                              a.address
+                                  .toLowerCase()
+                                  .includes(value.toLowerCase())),
                   ),
         [value, accounts, excludeAddress, excludeTypes, addressIsValid],
     )

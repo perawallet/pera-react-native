@@ -47,6 +47,7 @@ export const requestSwapSignatures = (
     addSignRequest: AddSignRequestFn,
     source: { name: string; description: string },
     unsignedTxs: PeraTransaction[],
+    groupContext: PeraTransaction[],
 ): Promise<PeraSignedTransaction[]> =>
     new Promise((resolve, reject) => {
         const request: TransactionSignRequest = {
@@ -55,6 +56,11 @@ export const requestSwapSignatures = (
             transport: 'callback',
             sourceType: 'local',
             txs: unsignedTxs,
+            // Full atomic group as the backend assembled it (pre-signed +
+            // user-signable slots). The signing-machine analyzer recomputes
+            // the group hash over this payload, not the wallet-signable
+            // subset — see validateTransactionGroupIntegrity.
+            groupContext,
             sourceMetadata: source,
             approve: async signed => {
                 resolve(signed)

@@ -15,11 +15,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { PinEditView } from '../PinEditView'
 import type { PinEntryMode } from '../PinEditView'
+import type { SavePinHandlerResult } from '../PinEditView/usePinEditView'
 import { useStyles } from './styles'
 
 export type PinEditContentProps = {
     mode: PinEntryMode
     testID?: string
+    savePinHandler?: (pin: string) => Promise<SavePinHandlerResult>
 }
 
 /**
@@ -28,7 +30,11 @@ export type PinEditContentProps = {
  * `dismiss()`. For inline navigation usage (where the screen header
  * already provides back/close), render `PinEditView` directly.
  */
-export const PinEditContent = ({ mode, testID }: PinEditContentProps) => {
+export const PinEditContent = ({
+    mode,
+    testID,
+    savePinHandler,
+}: PinEditContentProps) => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
     const { resolve, dismiss } = useBottomSheetResult<boolean>()
@@ -50,6 +56,7 @@ export const PinEditContent = ({ mode, testID }: PinEditContentProps) => {
             <PinEditView
                 mode={mode}
                 onSuccess={() => resolve(true)}
+                savePinHandler={savePinHandler}
             />
         </PWView>
     )

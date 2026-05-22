@@ -104,9 +104,14 @@ export const LEDGER_CONFIRMATION_TIMEOUT_MS = 30_000
 
 /**
  * Maximum time to wait for a BLE connection to the Ledger device.
- * Matches the 10-second timeout used by native iOS.
+ *
+ * 20 seconds matches the native iOS BLE-connect timeout in
+ * `TransactionController.swift` and covers the first-pair latency seen on
+ * Android (~5-15s for the OS-level scan + ATT handshake when the device is
+ * not in cache). A previous value of 10s reproducibly fired before the
+ * device finished pairing on cold-start, leaving the user with no UI.
  */
-export const LEDGER_CONNECTION_TIMEOUT_MS = 10_000
+export const LEDGER_CONNECTION_TIMEOUT_MS = 20_000
 
 /**
  * Stop scanning for accounts after this many consecutive indices

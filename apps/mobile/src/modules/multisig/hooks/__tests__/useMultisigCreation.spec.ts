@@ -44,7 +44,7 @@ describe('useMultisigCreationStore', () => {
         expect(result.current.participants[0].address).toBe('ADDR1')
     })
 
-    it('removes a participant by address', () => {
+    it('removes a participant by index', () => {
         const { result } = renderHook(() => useMultisigCreationStore())
 
         act(() => {
@@ -57,11 +57,46 @@ describe('useMultisigCreationStore', () => {
         })
 
         act(() => {
-            result.current.removeParticipant('ADDR1')
+            result.current.removeParticipant(0)
         })
 
         expect(result.current.participants).toHaveLength(1)
         expect(result.current.participants[0].address).toBe('ADDR2')
+    })
+
+    it('removes only the targeted index when duplicates are present', () => {
+        const { result } = renderHook(() => useMultisigCreationStore())
+
+        act(() => {
+            result.current.addParticipant({ address: 'ADDR1' })
+            result.current.addParticipant({ address: 'ADDR1' })
+        })
+
+        act(() => {
+            result.current.removeParticipant(1)
+        })
+
+        expect(result.current.participants).toHaveLength(1)
+        expect(result.current.participants[0].address).toBe('ADDR1')
+    })
+
+    it('updates every row matching an address', () => {
+        const { result } = renderHook(() => useMultisigCreationStore())
+
+        act(() => {
+            result.current.addParticipant({ address: 'ADDR1' })
+            result.current.addParticipant({ address: 'ADDR1' })
+            result.current.addParticipant({ address: 'ADDR2' })
+        })
+
+        act(() => {
+            result.current.updateParticipant('ADDR1', 'Alice')
+        })
+
+        expect(result.current.participants).toHaveLength(3)
+        expect(result.current.participants[0].name).toBe('Alice')
+        expect(result.current.participants[1].name).toBe('Alice')
+        expect(result.current.participants[2].name).toBeUndefined()
     })
 
     it('sets the threshold', () => {

@@ -11,6 +11,7 @@
  */
 
 import {
+    BLE_CLASS_ERROR_KINDS,
     classifyLedgerErrorKind,
     type LedgerErrorPresetKind,
 } from '@perawallet/wallet-core-signing'
@@ -27,13 +28,11 @@ export type LedgerErrorPreset = {
 
 type Translate = (key: string, options?: Record<string, unknown>) => string
 
-const TROUBLESHOOTABLE_KINDS: ReadonlySet<LedgerErrorPresetKind> = new Set([
-    'bluetooth_disabled',
-    'bluetooth_permission',
-    'scan_timeout',
-    'connection_failed',
-    'connection_lost',
-])
+// Aliased so the existing local name remains the call-site identifier;
+// the source of truth lives in `@perawallet/wallet-core-signing` so the
+// actor lifecycle and the UI agree on which kinds keep the troubleshooting
+// sheet open.
+const TROUBLESHOOTABLE_KINDS = BLE_CLASS_ERROR_KINDS
 
 const NON_RETRYABLE_KINDS: ReadonlySet<LedgerErrorPresetKind> = new Set([
     'address_mismatch',

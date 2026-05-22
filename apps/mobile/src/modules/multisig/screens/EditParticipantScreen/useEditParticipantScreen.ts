@@ -41,7 +41,7 @@ export const useEditParticipantScreen = (): UseEditParticipantScreenResult => {
     const navigation = useAppNavigation()
     const route =
         useRoute<RouteProp<MultisigStackParamList, 'EditParticipant'>>()
-    const { address } = route.params
+    const { index, address } = route.params
 
     const { findContacts, addContact, editContact } = useContacts()
     const removeParticipant = useMultisigCreationStore(
@@ -119,9 +119,9 @@ export const useEditParticipantScreen = (): UseEditParticipantScreenResult => {
     const handleDone = handleSubmit(onDone)
 
     const handleRemove = useCallback(() => {
-        removeParticipant(address)
+        removeParticipant(index)
         navigation.goBack()
-    }, [removeParticipant, address, navigation])
+    }, [removeParticipant, index, navigation])
 
     return {
         address,

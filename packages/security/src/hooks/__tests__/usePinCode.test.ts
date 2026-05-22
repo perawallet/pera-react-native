@@ -15,6 +15,7 @@ import { renderHook, act, waitFor } from '@testing-library/react'
 
 const kmsMocks = vi.hoisted(() => ({
     pinBytes: null as Uint8Array | null,
+    duressPinBytes: null as Uint8Array | null,
     biometricBytes: null as Uint8Array | null,
     commitSecret: vi.fn(),
     withSecret: vi.fn(),
@@ -44,6 +45,7 @@ import { usePinCode } from '../usePinCode'
 import { useSecurityStore } from '../../store'
 import {
     PIN_RECORD_KEY_ID,
+    DURESS_PIN_RECORD_KEY_ID,
     MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT,
     INITIAL_LOCKOUT_SECONDS,
 } from '../../constants'
@@ -77,7 +79,9 @@ const wireBlobMocks = () => {
             // the test.
             const copy = new Uint8Array(bytes)
             if (id === PIN_RECORD_KEY_ID) kmsMocks.pinBytes = copy
-            if (id !== PIN_RECORD_KEY_ID) kmsMocks.biometricBytes = copy
+            else if (id === DURESS_PIN_RECORD_KEY_ID)
+                kmsMocks.duressPinBytes = copy
+            else kmsMocks.biometricBytes = copy
         },
     )
     kmsMocks.withSecret.mockImplementation(
@@ -85,7 +89,9 @@ const wireBlobMocks = () => {
             const stash =
                 id === PIN_RECORD_KEY_ID
                     ? kmsMocks.pinBytes
-                    : kmsMocks.biometricBytes
+                    : id === DURESS_PIN_RECORD_KEY_ID
+                      ? kmsMocks.duressPinBytes
+                      : kmsMocks.biometricBytes
             if (!stash) return null
             // Mirror production `withSecret`: hand the handler a fresh
             // decrypted copy and zero THAT copy in finally. The stashed
@@ -105,10 +111,13 @@ const wireBlobMocks = () => {
     kmsMocks.hasSecret.mockImplementation((id: string) =>
         id === PIN_RECORD_KEY_ID
             ? kmsMocks.pinBytes !== null
-            : kmsMocks.biometricBytes !== null,
+            : id === DURESS_PIN_RECORD_KEY_ID
+              ? kmsMocks.duressPinBytes !== null
+              : kmsMocks.biometricBytes !== null,
     )
     kmsMocks.removeSecret.mockImplementation(async (id: string) => {
         if (id === PIN_RECORD_KEY_ID) kmsMocks.pinBytes = null
+        else if (id === DURESS_PIN_RECORD_KEY_ID) kmsMocks.duressPinBytes = null
         else kmsMocks.biometricBytes = null
     })
 }
@@ -287,7 +296,7 @@ describe('usePinCode', () => {
         expect(disableBiometrics).toHaveBeenCalled()
     }, 30_000)
 
-    test('verifyPin returns true for correct PIN against a hashed record', async () => {
+    test('verifyPin returns `ok` for correct PIN against a hashed record', async () => {
         setupMock({ failedAttempts: 0, lockoutEndTime: null })
 
         const record = await createPinRecord('123456')
@@ -295,14 +304,16 @@ describe('usePinCode', () => {
 
         const { result } = renderHook(() => usePinCode())
 
-        let isValid = false
+        let outcome: Awaited<
+            ReturnType<typeof result.current.verifyPin>
+        > | null = null
         await act(async () => {
-            isValid = await result.current.verifyPin('123456')
+            outcome = await result.current.verifyPin('123456')
         })
-        expect(isValid).toBe(true)
+        expect(outcome).toEqual({ kind: 'ok' })
     }, 30_000)
 
-    test('verifyPin returns false for incorrect PIN against a hashed record', async () => {
+    test('verifyPin returns `fail` for incorrect PIN against a hashed record', async () => {
         setupMock({ failedAttempts: 0, lockoutEndTime: null })
 
         const record = await createPinRecord('123456')
@@ -310,23 +321,27 @@ describe('usePinCode', () => {
 
         const { result } = renderHook(() => usePinCode())
 
-        let isValid = true
+        let outcome: Awaited<
+            ReturnType<typeof result.current.verifyPin>
+        > | null = null
         await act(async () => {
-            isValid = await result.current.verifyPin('654321')
+            outcome = await result.current.verifyPin('654321')
         })
-        expect(isValid).toBe(false)
+        expect(outcome).toEqual({ kind: 'fail' })
     }, 30_000)
 
-    test('verifyPin returns false when no PIN stored', async () => {
+    test('verifyPin returns `fail` when no PIN stored', async () => {
         setupMock({ failedAttempts: 0, lockoutEndTime: null })
 
         const { result } = renderHook(() => usePinCode())
 
-        let isValid = true
+        let outcome: Awaited<
+            ReturnType<typeof result.current.verifyPin>
+        > | null = null
         await act(async () => {
-            isValid = await result.current.verifyPin('123456')
+            outcome = await result.current.verifyPin('123456')
         })
-        expect(isValid).toBe(false)
+        expect(outcome).toEqual({ kind: 'fail' })
     })
 
     test('hydrates lockout state from the stored record on mount', async () => {

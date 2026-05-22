@@ -26,6 +26,7 @@ const initialState = {
     failedAttempts: 0,
     lockoutEndTime: null,
     autoLockStartedAt: null,
+    lockRequestVersion: 0,
 }
 
 export const useSecurityStore: UseBoundStore<
@@ -45,6 +46,10 @@ export const useSecurityStore: UseBoundStore<
                 set({ lockoutEndTime: time }),
             setAutoLockStartedAt: (date: Nullable<number>) =>
                 set({ autoLockStartedAt: date }),
+            requestLock: () =>
+                set(state => ({
+                    lockRequestVersion: state.lockRequestVersion + 1,
+                })),
             resetState: () => set(initialState),
         }),
         {

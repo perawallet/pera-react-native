@@ -20,6 +20,22 @@ vi.mock('@perawallet/wallet-core-security', () => ({
     useBiometrics: vi.fn(),
 }))
 
+const { mockPerformDuressWipe } = vi.hoisted(() => ({
+    mockPerformDuressWipe: vi.fn(),
+}))
+
+vi.mock('@modules/security/hooks/useDuressWipe', () => ({
+    useDuressWipe: () => ({ performDuressWipe: mockPerformDuressWipe }),
+}))
+
+// Stubbed to keep `expo-sensors` (and its `__DEV__`-touching transitive deps
+// from `expo-modules-core`) out of the import graph for unit tests. The
+// hook's own behaviour is covered in
+// `apps/mobile/src/modules/security/hooks/__tests__/useShakeToLockHandler.spec.ts`.
+vi.mock('@modules/security/hooks/useShakeToLockHandler', () => ({
+    useShakeToLockHandler: vi.fn(),
+}))
+
 describe('useLockScreen', () => {
     const mockVerifyPin = vi.fn()
     const mockHandleFailedAttempt = vi.fn()
@@ -110,7 +126,7 @@ describe('useLockScreen', () => {
 
     describe('handlePinComplete', () => {
         it('should call onUnlock when PIN is valid', async () => {
-            mockVerifyPin.mockResolvedValue(true)
+            mockVerifyPin.mockResolvedValue({ kind: 'ok' })
 
             const { result } = renderHook(() =>
                 useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
@@ -126,7 +142,7 @@ describe('useLockScreen', () => {
         })
 
         it('should handle failed attempt when PIN is invalid', async () => {
-            mockVerifyPin.mockResolvedValue(false)
+            mockVerifyPin.mockResolvedValue({ kind: 'fail' })
 
             const { result } = renderHook(() =>
                 useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
@@ -144,7 +160,7 @@ describe('useLockScreen', () => {
 
     describe('handleErrorAnimationComplete', () => {
         it('should reset hasError to false', async () => {
-            mockVerifyPin.mockResolvedValue(false)
+            mockVerifyPin.mockResolvedValue({ kind: 'fail' })
 
             const { result } = renderHook(() =>
                 useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
