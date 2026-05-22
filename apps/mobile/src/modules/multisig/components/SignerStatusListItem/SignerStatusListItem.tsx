@@ -78,6 +78,7 @@ export const SignerStatusListItem = ({
                 address={address}
                 showCopy={false}
                 forceShowIcon
+                contactAvatarVariant='highlighted'
                 style={styles.addressDisplay}
             />
             {action ? (
