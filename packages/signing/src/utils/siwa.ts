@@ -32,7 +32,12 @@ export const siwaSchema = z.object({
     uri: z.string().min(1),
     version: z.string().min(1),
     statement: z.string().optional(),
-    nonce: z.string().optional(),
+    // Required anti-replay token. ARC-60's AUTH scope is modeled on CAIP-122
+    // (the chain-agnostic "Sign-In With X"), where `nonce` is mandatory: a
+    // signed SIWA payload with no nonce is replayable, defeating the whole
+    // point of the authentication challenge. Reject (rather than silently
+    // sign) when it is absent or empty.
+    nonce: z.string().min(1),
     'issued-at': z.string().optional(),
     'expiration-time': z.string().optional(),
     'not-before': z.string().optional(),
