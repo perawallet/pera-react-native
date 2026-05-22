@@ -59,18 +59,34 @@ export const useBottomSheetStore: UseBoundStore<StoreApi<BottomSheetStore>> =
             const promise = new Promise<Optional<T>>(res => {
                 resolver = res
             })
-            set(state => ({
-                requests: [
-                    ...state.requests,
-                    {
-                        id,
-                        contents: req.contents,
-                        options: req.options,
-                        isVisible: true,
-                        resolver: resolver as (value: unknown) => void,
-                    },
-                ],
-            }))
+            set(state => {
+                const entry: InternalRequest = {
+                    id,
+                    contents: req.contents,
+                    options: req.options,
+                    isVisible: true,
+                    resolver: resolver as (value: unknown) => void,
+                }
+                // Dedupe by id. A driver can re-request a sheet whose previous
+                // instance is still in the list mid-dismiss (isVisible: false,
+                // not yet `remove`d). Appending a second entry with the same id
+                // makes the manager render two children with the same React
+                // key — React then omits one, so the sheet silently vanishes
+                // (and logs a duplicate-key warning). Replace the stale entry
+                // in place instead, resolving its promise so the prior caller
+                // doesn't hang.
+                const existing = state.requests.find(r => r.id === id)
+                if (existing) {
+                    pendingValues.delete(id)
+                    existing.resolver(undefined)
+                    return {
+                        requests: state.requests.map(r =>
+                            r.id === id ? entry : r,
+                        ),
+                    }
+                }
+                return { requests: [...state.requests, entry] }
+            })
             return promise
         },
         requestByType: (type, props, options) => {

@@ -105,8 +105,17 @@ export const LEDGER_STATUS_CODES = {
 /** Maximum time to scan for Ledger devices (BLE or USB) before showing a timeout message. */
 export const LEDGER_SCAN_TIMEOUT_MS = 30_000
 
-/** Maximum time to wait for user confirmation on the Ledger device. */
-export const LEDGER_CONFIRMATION_TIMEOUT_MS = 30_000
+/**
+ * Maximum time to wait for the user to review and confirm on the Ledger
+ * device. This is a backstop against a silently-dropped BLE link mid-sign —
+ * NOT a bound on the user's reading time. It must comfortably exceed how long
+ * a person spends reviewing a transaction or ARC-60 data payload on-device
+ * (scrolling a multi-screen message can easily exceed 30s), otherwise the
+ * sign call is aborted and the signing sheet tears down while the device is
+ * still prompting. 5 minutes is generous enough to never cut off a genuine
+ * review while still bounding a dead link.
+ */
+export const LEDGER_CONFIRMATION_TIMEOUT_MS = 300_000
 
 /**
  * Maximum time to wait for a BLE connection to the Ledger device.
