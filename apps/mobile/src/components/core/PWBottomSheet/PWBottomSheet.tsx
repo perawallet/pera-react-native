@@ -160,15 +160,6 @@ export const PWBottomSheet = ({
             ref={bottomSheetModalRef}
             snapPoints={defaults.snapPoints}
             enableDynamicSizing={defaults.enableDynamicSizing}
-            // Don't let gorhom touch underlying modals when a new one opens.
-            // The default 'switch' calls `minimize()` on the previous top,
-            // and in practice (see the WC-connect flow over a webview sheet)
-            // the underlying modal gets fully DISMISSED rather than just
-            // minimized — tearing the webview down. With 'push' the
-            // underlying stays mounted at its current snap point, hidden
-            // behind the new modal's backdrop, and naturally re-appears
-            // when the topmost dismisses.
-            stackBehavior='push'
             // Never let the sheet rise above the status bar, even when its
             // dynamically-sized content (e.g. an expanded HD wallet tree)
             // would otherwise push it past the configured snap point. Skip
