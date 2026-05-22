@@ -29,6 +29,9 @@ export const useSelectDestinationScreen = () => {
     const selectedAccount = useSelectedAccount()
     const accounts = useAllAccounts()
     const { accountBalances } = useAccountBalancesQuery(accounts)
+    const [pendingExternalAddress, setPendingExternalAddress] = useState<
+        string | null
+    >(null)
 
     const assetIDs = useMemo(
         () => (selectedAssetId ? [selectedAssetId] : []),
@@ -43,9 +46,40 @@ export const useSelectDestinationScreen = () => {
     const navigation =
         useNavigation<StackNavigationProp<SendFundsStackParamList>>()
 
-    const [pendingAddress, setPendingAddress] = useState<string>()
-    const { data: pendingOnChainInfo, isError: pendingCheckFailed } =
-        useOnChainAccountInformationQuery(pendingAddress ?? '')
+    const {
+        data: externalAccountInfo,
+        isFetching: isCheckingExternalOptIn,
+        isSuccess: isExternalQuerySuccess,
+        isError: isExternalQueryError,
+    } = useOnChainAccountInformationQuery(pendingExternalAddress ?? '')
+
+    useEffect(() => {
+        if (!pendingExternalAddress || !selectedAsset) return
+
+        if (!isExternalQuerySuccess && !isExternalQueryError) return
+
+        const isReceiverOptedIn = externalAccountInfo?.assets.some(
+            a => a.assetId === BigInt(selectedAsset.assetId),
+        )
+
+        if (isReceiverOptedIn) {
+            setSendMode('normal')
+            navigation.navigate('ConfirmTransaction')
+        } else {
+            setSendMode('sendArc59')
+            navigation.navigate('ARC59SendSummary')
+        }
+
+        setPendingExternalAddress(null)
+    }, [
+        pendingExternalAddress,
+        externalAccountInfo,
+        isExternalQuerySuccess,
+        isExternalQueryError,
+        selectedAsset,
+        setSendMode,
+        navigation,
+    ])
 
     const handleSelected = useCallback(
         (address: string) => {
@@ -83,12 +117,16 @@ export const useSelectDestinationScreen = () => {
                 // Express send: local account, we handle opt-in + transfer
                 setSendMode('express')
                 navigation.navigate('ExpressSend')
-            } else {
-                // ARC59: external account or local but can't sign (watch/hardware)
+                return
+            }
+
+            if (receiver) {
                 setSendMode('sendArc59')
                 navigation.navigate('ARC59SendSummary')
+                return
             }
-            setPendingAddress(address)
+
+            setPendingExternalAddress(address)
         },
         [
             selectedAsset,
@@ -100,36 +138,10 @@ export const useSelectDestinationScreen = () => {
         ],
     )
 
-    useEffect(() => {
-        if (!pendingAddress || !selectedAsset) return
-        if (pendingOnChainInfo === undefined && !pendingCheckFailed) return
-
-        const isReceiverOptedIn =
-            pendingOnChainInfo?.assets.some(
-                a => a.assetId === BigInt(selectedAsset.assetId),
-            ) ?? false
-
-        if (isReceiverOptedIn) {
-            setSendMode('normal')
-            navigation.navigate('ConfirmTransaction')
-        } else {
-            setSendMode('sendArc59')
-            navigation.navigate('ARC59SendSummary')
-        }
-        setPendingAddress(undefined)
-    }, [
-        pendingAddress,
-        pendingOnChainInfo,
-        pendingCheckFailed,
-        selectedAsset,
-        setSendMode,
-        navigation,
-    ])
-
     return {
         selectedAsset,
         selectedAccount,
         handleSelected,
-        isCheckingDestination: pendingAddress !== undefined,
+        isCheckingExternalOptIn,
     }
 }
