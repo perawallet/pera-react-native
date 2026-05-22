@@ -492,13 +492,11 @@ export const usePeraWebviewInterface = (
                             webview,
                         )
                         // guardrails-ignore-next-line no-error-toast-in-catch reason: dApp signing path surfaces raw error message verbatim for diagnosis
-                        showToast(
-                            {
-                                title: t('errors.signing.title'),
-                                body: (e as Error).message,
-                                type: 'error',
-                            },
-                        )
+                        showToast({
+                            title: t('errors.signing.title'),
+                            body: (e as Error).message,
+                            type: 'error',
+                        })
                     }
                 },
             )
