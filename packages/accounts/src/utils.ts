@@ -260,6 +260,17 @@ export const isRekeyedUnsignable = (
     resolveSignerForAccount(account, accounts).kind !== 'ok'
 
 /**
+ * True iff `account` is a multisig account this wallet cannot sign for —
+ * either a multisig with no local signable participant, or one rekeyed to an
+ * account it can't sign for. Mirrors `isRekeyedUnsignable`: distinguishes the
+ * "multisig we can't sign for" display state from a signable multisig.
+ */
+export const isMultisigUnsignable = (
+    account: WalletAccount,
+    accounts: WalletAccount[],
+): boolean => isMultisigAccount(account) && !canSignWith(account, accounts)
+
+/**
  * True iff the user can initiate a rekey from `account`. Aliased to
  * `canSignWith` — the rekey txn itself must be signed by the current auth
  * chain — but exported under the intent-revealing name.

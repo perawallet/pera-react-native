@@ -18,4 +18,13 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.xl,
         backgroundColor: theme.colors.background,
     },
+    cannotSignNotice: {
+        gap: theme.spacing.xxs,
+        padding: theme.spacing.md,
+        borderRadius: theme.borderRadius.lg,
+        backgroundColor: theme.colors.negativeLighter,
+    },
+    cannotSignBody: {
+        color: theme.colors.textGray,
+    },
 }))

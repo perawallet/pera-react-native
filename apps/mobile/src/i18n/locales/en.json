@@ -386,6 +386,7 @@
         "hd_wallet_description": "Wallet that lets you derive new accounts, all using same key.",
         "multisig_title": "Shared Account",
         "multisig_description": "Your account is a shared account. Transactions for this account must be approved by multiple signers.",
+        "multisig_no_auth_description": "This is a shared account, but none of its signer accounts are in your wallet. You can't sign transactions for it. To sign, add one of its signer accounts to your wallet.",
         "learn_more": "Learn More"
     },
     "min_balance_info": {
@@ -848,6 +849,7 @@
         "info_card": {
             "number_of_accounts": "Number of accounts",
             "you_included": "You included",
+            "cannot_sign_warning": "You can't sign — none of the signer accounts are in your wallet",
             "threshold": "Threshold",
             "threshold_description": "Minimum number of accounts \nrequired to confirm a transaction"
         },
@@ -1780,6 +1782,10 @@
         "signing_failed": {
             "title": "Signing Failed",
             "body": "This signing request could not be completed. The requesting application has been notified."
+        },
+        "cannot_sign": {
+            "title": "You can't sign this account",
+            "body": "This is a shared account and none of its signer accounts are in your wallet. Add a signer account to sign transactions for it."
         },
         "transaction_request_faq": {
             "title": "Transaction Request FAQ",

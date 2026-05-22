@@ -14,6 +14,12 @@ import React, { useCallback, useMemo } from 'react'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import {
+    isMultisigUnsignable as isMultisigUnsignableAccount,
+    useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
+import {
+    isTransactionRequest,
+    resolveSignerAddress,
     type SignRequest,
     type SigningPipelineEvent,
     useSigningPipeline,
@@ -40,6 +46,7 @@ export type UseSigningActionButtonsResult = {
     hasMultipleTransactions: boolean
     currentRequest: Optional<SignRequest>
     isMultisigCosign: boolean
+    isMultisigUnsignable: boolean
     cosignSignerAddress: string
 }
 
@@ -52,6 +59,7 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
     const { showError } = useErrorToast()
     const { t } = useLanguage()
     const { currentRequest } = useSigningRequest()
+    const allAccounts = useAllAccounts()
 
     const navigation =
         useNavigation<StackNavigationProp<SigningStackParamList>>()
@@ -105,7 +113,26 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
         return presentTypes[0]
     }, [warnings, getPreference])
 
+    // A sign request can target a multisig account the user holds no signable
+    // participant of — e.g. a transaction deeplink, or a WC session connected
+    // while the account was still signable. The pipeline would only fail late
+    // with a generic toast, so block it here with a clear message.
+    // `multisig-cosign` requests pin a signable participant and are excluded.
+    const isMultisigUnsignable = useMemo(() => {
+        if (!currentRequest) return false
+        if (currentRequest.sourceType === 'multisig-cosign') return false
+        if (!isTransactionRequest(currentRequest)) return false
+        const signerAddress = resolveSignerAddress(currentRequest)
+        if (!signerAddress) return false
+        const signerAccount = allAccounts.find(
+            account => account.address === signerAddress,
+        )
+        if (!signerAccount) return false
+        return isMultisigUnsignableAccount(signerAccount, allAccounts)
+    }, [currentRequest, allAccounts])
+
     const handleSignAndSend = useCallback(() => {
+        if (isMultisigUnsignable) return
         if (guardedWarningType !== null) {
             void (async () => {
                 const result =
@@ -129,7 +156,13 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
             return
         }
         pipeline.next()
-    }, [guardedWarningType, pipeline, requestBottomSheet, navigation])
+    }, [
+        isMultisigUnsignable,
+        guardedWarningType,
+        pipeline,
+        requestBottomSheet,
+        navigation,
+    ])
 
     const handleReject = useCallback(() => {
         pipeline.fail()
@@ -149,6 +182,7 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
         hasMultipleTransactions: allTransactions.length > 1,
         currentRequest,
         isMultisigCosign,
+        isMultisigUnsignable,
         cosignSignerAddress,
     }
 }

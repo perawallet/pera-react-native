@@ -31,4 +31,7 @@ export const useStyles = makeStyles(theme => ({
     rowSubLabel: {
         color: theme.colors.textGray,
     },
+    rowWarningLabel: {
+        color: theme.colors.negative,
+    },
 }))

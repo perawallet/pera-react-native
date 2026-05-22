@@ -133,6 +133,38 @@ describe('useImportSharedAccountScreen', () => {
         expect(result.current.isUserIncluded).toBe(true)
     })
 
+    it('reports canUserSign true when a held participant has its own key', () => {
+        mockUseAllAccounts.mockReturnValue([
+            { address: 'P2', type: 'algo25', keyPairId: 'kp' } as WalletAccount,
+        ])
+
+        const { result } = renderHook(() => useImportSharedAccountScreen())
+
+        expect(result.current.isUserIncluded).toBe(true)
+        expect(result.current.canUserSign).toBe(true)
+    })
+
+    it('reports canUserSign false when the held participant is watch-only', () => {
+        mockUseAllAccounts.mockReturnValue([
+            { address: 'P2', type: 'watch' } as WalletAccount,
+        ])
+
+        const { result } = renderHook(() => useImportSharedAccountScreen())
+
+        // Membership is satisfied, but a watch-only participant cannot sign.
+        expect(result.current.isUserIncluded).toBe(true)
+        expect(result.current.canUserSign).toBe(false)
+    })
+
+    it('reports canUserSign false when no participant is held', () => {
+        mockUseAllAccounts.mockReturnValue([])
+
+        const { result } = renderHook(() => useImportSharedAccountScreen())
+
+        expect(result.current.isUserIncluded).toBe(false)
+        expect(result.current.canUserSign).toBe(false)
+    })
+
     it('flags and disables when the shared account is already imported', () => {
         mockUseAllAccounts.mockReturnValue([
             { address: SCANNED_ADDRESS, type: 'multisig' } as WalletAccount,

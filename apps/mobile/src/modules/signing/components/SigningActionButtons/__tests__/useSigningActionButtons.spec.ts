@@ -14,11 +14,16 @@ import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { useSigningActionButtons } from '../useSigningActionButtons'
 import {
+    isTransactionRequest,
     useSigningPipeline,
     useSigningRequest,
     type TransactionWarning,
     type SigningPipelineEvent,
 } from '@perawallet/wallet-core-signing'
+import {
+    isMultisigUnsignable,
+    useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { useNavigation } from '@react-navigation/native'
 import { useErrorToast } from '@hooks/useErrorToast'
@@ -27,6 +32,21 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningPipeline: vi.fn(),
     useSigningRequest: vi.fn(),
+    isTransactionRequest: vi.fn(() => false),
+    resolveSignerAddress: vi.fn((req: { txs?: { sender?: unknown }[] }) => {
+        const sender = req?.txs?.[0]?.sender as
+            | { toString?: () => string }
+            | string
+            | undefined
+        if (!sender) return undefined
+        if (typeof sender === 'string') return sender
+        return sender.toString?.()
+    }),
+}))
+
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    useAllAccounts: vi.fn(() => []),
+    isMultisigUnsignable: vi.fn(() => false),
 }))
 
 vi.mock('@perawallet/wallet-core-settings', () => ({
@@ -292,6 +312,65 @@ describe('useSigningActionButtons', () => {
             })
 
             expect(showError).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('unsignable multisig', () => {
+        const multisigAccount = {
+            type: 'multisig',
+            address: 'MS_ADDR',
+            multisigDetails: { threshold: 2, addresses: ['P1', 'P2'] },
+        } as never
+
+        const txRequest = (overrides: object = {}) => ({
+            id: 'r1',
+            transport: 'algod',
+            txs: [{ sender: 'MS_ADDR' }],
+            ...overrides,
+        })
+
+        beforeEach(() => {
+            ;(isTransactionRequest as unknown as Mock).mockReturnValue(true)
+            ;(useAllAccounts as Mock).mockReturnValue([multisigAccount])
+        })
+
+        it('blocks an unsignable multisig and does not advance the pipeline', () => {
+            ;(isMultisigUnsignable as Mock).mockReturnValue(true)
+            ;(useSigningRequest as Mock).mockReturnValue({
+                currentRequest: txRequest(),
+            })
+
+            const { result } = renderHook(() => useSigningActionButtons())
+
+            expect(result.current.isMultisigUnsignable).toBe(true)
+
+            act(() => {
+                result.current.handleSignAndSend()
+            })
+
+            expect(mockNext).not.toHaveBeenCalled()
+        })
+
+        it('does not block a multisig-cosign request', () => {
+            ;(isMultisigUnsignable as Mock).mockReturnValue(true)
+            ;(useSigningRequest as Mock).mockReturnValue({
+                currentRequest: txRequest({ sourceType: 'multisig-cosign' }),
+            })
+
+            const { result } = renderHook(() => useSigningActionButtons())
+
+            expect(result.current.isMultisigUnsignable).toBe(false)
+        })
+
+        it('does not block when the signer is a signable account', () => {
+            ;(isMultisigUnsignable as Mock).mockReturnValue(false)
+            ;(useSigningRequest as Mock).mockReturnValue({
+                currentRequest: txRequest(),
+            })
+
+            const { result } = renderHook(() => useSigningActionButtons())
+
+            expect(result.current.isMultisigUnsignable).toBe(false)
         })
     })
 })

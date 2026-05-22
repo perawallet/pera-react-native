@@ -41,6 +41,7 @@ export const ImportSharedAccountScreen = () => {
         participantAddresses,
         totalParticipants,
         isUserIncluded,
+        canUserSign,
         isAlreadyImported,
         isAddDisabled,
         handleAddAccount,
@@ -127,6 +128,7 @@ export const ImportSharedAccountScreen = () => {
                     totalParticipants={totalParticipants}
                     threshold={threshold}
                     isUserIncluded={isUserIncluded}
+                    canUserSign={canUserSign}
                     participantCountTestID='import-shared-account-participant-count'
                     thresholdTestID='import-shared-account-threshold'
                 />

@@ -85,7 +85,9 @@ export const useAccountTypeLabel = (
             case AccountTypes.hardware:
                 return plain(t('account_info.type_ledger'))
             case AccountTypes.multisig:
-                return plain(t('account_info.type_multisig'))
+                return canSign
+                    ? plain(t('account_info.type_multisig'))
+                    : plain(t('account_info.type_no_auth'))
             case AccountTypes.watch:
                 return plain(t('account_info.type_watch'))
             default:

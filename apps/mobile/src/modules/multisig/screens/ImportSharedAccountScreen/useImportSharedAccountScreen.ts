@@ -13,7 +13,11 @@
 import { useCallback, useMemo } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import {
+    hasSigningKeys,
+    isHardwareWalletAccount,
+    useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
 import {
     useMultisigAccountDetailQuery,
     useDeleteImportInboxMutation,
@@ -31,6 +35,7 @@ type UseImportSharedAccountScreenResult = {
     participantAddresses: string[]
     totalParticipants: number
     isUserIncluded: boolean
+    canUserSign: boolean
     isAlreadyImported: boolean
     isAddDisabled: boolean
     handleAddAccount: () => void
@@ -68,6 +73,19 @@ export const useImportSharedAccountScreen =
         const isUserIncluded = useMemo(() => {
             const participantSet = new Set(participantAddresses)
             return accounts.some(a => participantSet.has(a.address))
+        }, [accounts, participantAddresses])
+
+        // Stricter than `isUserIncluded`: a participant counts only if the
+        // wallet can sign with its OWN key (own keypair or hardware). A
+        // watch-only participant is "included" yet still cannot co-sign — so
+        // the import screen warns whenever this is false.
+        const canUserSign = useMemo(() => {
+            const participantSet = new Set(participantAddresses)
+            return accounts.some(
+                a =>
+                    participantSet.has(a.address) &&
+                    (hasSigningKeys(a) || isHardwareWalletAccount(a)),
+            )
         }, [accounts, participantAddresses])
 
         const isAlreadyImported = useMemo(
@@ -122,6 +140,7 @@ export const useImportSharedAccountScreen =
             participantAddresses,
             totalParticipants,
             isUserIncluded,
+            canUserSign,
             isAlreadyImported,
             isAddDisabled,
             handleAddAccount,

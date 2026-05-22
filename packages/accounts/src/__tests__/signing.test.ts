@@ -17,6 +17,7 @@ import {
     canSignWith,
     getRekeyAccount,
     getSignerFor,
+    isMultisigUnsignable,
     isRekeyedUnsignable,
     rekeyTransitionFor,
     resolveSignerFor,
@@ -473,6 +474,49 @@ describe('isRekeyedUnsignable', () => {
         const auth = algo25('S')
         const a = watch('A', 'S')
         expect(isRekeyedUnsignable(a, [a, auth])).toBe(false)
+    })
+})
+
+describe('isMultisigUnsignable', () => {
+    it('returns true for a multisig with no local participants', () => {
+        const ms = multisig('M', ['P1', 'P2'])
+        expect(isMultisigUnsignable(ms, [ms])).toBe(true)
+    })
+
+    it('returns false for a multisig with one local signable participant', () => {
+        const participant = algo25('P1')
+        const ms = multisig('M', ['P1', 'P2'])
+        expect(isMultisigUnsignable(ms, [ms, participant])).toBe(false)
+    })
+
+    it('returns true when the only local participant is watch-only', () => {
+        const participant = watch('P1')
+        const ms = multisig('M', ['P1', 'P2'])
+        expect(isMultisigUnsignable(ms, [ms, participant])).toBe(true)
+    })
+
+    it('returns false for a non-multisig account', () => {
+        const a = algo25('A')
+        expect(isMultisigUnsignable(a, [a])).toBe(false)
+    })
+
+    it('returns true for a multisig rekeyed to an unsignable multisig', () => {
+        const authMs = multisig('M', ['P1', 'P2'])
+        const a: MultiSigAccount = {
+            ...multisig('A', ['P3', 'P4']),
+            rekeyAddress: 'M',
+        }
+        expect(isMultisigUnsignable(a, [a, authMs])).toBe(true)
+    })
+
+    it('returns false for a multisig rekeyed to a signable multisig', () => {
+        const participant = algo25('P1')
+        const authMs = multisig('M', ['P1', 'P2'])
+        const a: MultiSigAccount = {
+            ...multisig('A', ['P3', 'P4']),
+            rekeyAddress: 'M',
+        }
+        expect(isMultisigUnsignable(a, [a, authMs, participant])).toBe(false)
     })
 })
 
