@@ -14,9 +14,9 @@ import { act, renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 import { useSendFunds } from '@modules/transactions/hooks'
 import {
-    isSigningLogicalType,
+    canSignWith,
     useAccountBalancesQuery,
-    useAllAccountLogicalTypes,
+    useAllAccounts,
     useOnChainAccountInformationQuery,
 } from '@perawallet/wallet-core-accounts'
 import { useSelectDestinationScreen } from '../useSelectDestinationScreen'
@@ -34,9 +34,8 @@ vi.mock('@modules/transactions/hooks', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    isSigningLogicalType: vi.fn(),
+    canSignWith: vi.fn(),
     useAccountBalancesQuery: vi.fn(),
-    useAllAccountLogicalTypes: vi.fn(),
     useAllAccounts: vi.fn(() => []),
     useOnChainAccountInformationQuery: vi.fn(),
     useSelectedAccount: vi.fn(() => ({ address: 'SENDERADDR' })),
@@ -69,7 +68,8 @@ describe('useSelectDestinationScreen', () => {
             accountBalances: new Map(),
         })
 
-        ;(useAllAccountLogicalTypes as Mock).mockReturnValue(new Map())
+        ;(useAllAccounts as Mock).mockReturnValue([])
+        ;(canSignWith as Mock).mockReturnValue(false)
 
         ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({
             data: undefined,
@@ -117,10 +117,10 @@ describe('useSelectDestinationScreen', () => {
     })
 
     it('navigates to ExpressSend for internal signable account not opted in', () => {
-        ;(useAllAccountLogicalTypes as Mock).mockReturnValue(
-            new Map([[INTERNAL_SIGNABLE_ADDR, 'standard']]),
-        )
-        ;(isSigningLogicalType as Mock).mockReturnValue(true)
+        ;(useAllAccounts as Mock).mockReturnValue([
+            { address: INTERNAL_SIGNABLE_ADDR },
+        ])
+        ;(canSignWith as Mock).mockReturnValue(true)
 
         const { result } = renderHook(() => useSelectDestinationScreen())
 
@@ -133,10 +133,10 @@ describe('useSelectDestinationScreen', () => {
     })
 
     it('navigates to ARC59SendSummary for internal watch account not opted in', () => {
-        ;(useAllAccountLogicalTypes as Mock).mockReturnValue(
-            new Map([[INTERNAL_WATCH_ADDR, 'watch']]),
-        )
-        ;(isSigningLogicalType as Mock).mockReturnValue(false)
+        ;(useAllAccounts as Mock).mockReturnValue([
+            { address: INTERNAL_WATCH_ADDR },
+        ])
+        ;(canSignWith as Mock).mockReturnValue(false)
 
         const { result } = renderHook(() => useSelectDestinationScreen())
 
