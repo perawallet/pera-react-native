@@ -12,3 +12,5 @@
 
 export { AccountHeaderMenu } from './AccountHeaderMenu'
 export type { AccountHeaderMenuProps } from './AccountHeaderMenu'
+export { useAccountHeaderMenu } from './useAccountHeaderMenu'
+export type { UseAccountHeaderMenuResult } from './useAccountHeaderMenu'

@@ -55,6 +55,7 @@ export const PWIcon = ({
             positive: theme.colors.positive,
             brand: theme.colors.primary,
             favorite: theme.colors.favorite,
+            banner: theme.colors.bannerText,
         }),
         [theme],
     )
@@ -71,6 +72,7 @@ export const PWIcon = ({
             positive: theme.colors.textGray,
             brand: theme.colors.textGray,
             favorite: theme.colors.textGray,
+            banner: theme.colors.textGray,
         }),
         [theme],
     )

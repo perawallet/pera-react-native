@@ -21,7 +21,7 @@ import { AccountScreen } from '@modules/accounts/screens/AccountScreen'
 import { AssetDetailsScreen } from '@modules/assets/screens/AssetDetailsScreen'
 import { CollectibleDetailScreen } from '@modules/assets/screens/CollectibleDetailScreen'
 import { RemoveAssetsScreen } from '@modules/accounts/screens/RemoveAssetsScreen'
-import { fullScreenLayout, safeAreaLayoutWithTabBar } from '@layouts/index'
+import { fullScreenLayout } from '@layouts/index'
 
 import { AccountStackParamsList } from './types'
 export type { AccountStackParamsList } from './types'
@@ -45,7 +45,7 @@ export const AccountStackNavigator = () => {
             <AccountStack.Screen
                 name='AccountDetails'
                 options={{ headerShown: false }}
-                layout={safeAreaLayoutWithTabBar}
+                layout={fullScreenLayout}
                 component={AccountScreen}
             />
             <AccountStack.Screen

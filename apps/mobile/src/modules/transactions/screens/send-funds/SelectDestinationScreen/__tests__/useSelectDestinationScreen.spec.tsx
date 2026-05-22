@@ -25,6 +25,11 @@ const mockNavigate = vi.fn()
 const mockSetSendMode = vi.fn()
 const mockSetDestination = vi.fn()
 
+const { mockCanSignWith, mockUseAllAccounts } = vi.hoisted(() => ({
+    mockCanSignWith: vi.fn(),
+    mockUseAllAccounts: vi.fn(),
+}))
+
 vi.mock('@react-navigation/native', () => ({
     useNavigation: () => ({ navigate: mockNavigate }),
 }))
@@ -34,9 +39,9 @@ vi.mock('@modules/transactions/hooks', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    canSignWith: vi.fn(),
+    canSignWith: mockCanSignWith,
     useAccountBalancesQuery: vi.fn(),
-    useAllAccounts: vi.fn(() => []),
+    useAllAccounts: mockUseAllAccounts,
     useOnChainAccountInformationQuery: vi.fn(),
     useSelectedAccount: vi.fn(() => ({ address: 'SENDERADDR' })),
 }))
@@ -58,6 +63,9 @@ describe('useSelectDestinationScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
 
+        mockUseAllAccounts.mockReturnValue([])
+        mockCanSignWith.mockReturnValue(false)
+
         ;(useSendFunds as Mock).mockReturnValue({
             selectedAssetId: ASA_ID,
             setDestination: mockSetDestination,
@@ -70,7 +78,6 @@ describe('useSelectDestinationScreen', () => {
 
         ;(useAllAccounts as Mock).mockReturnValue([])
         ;(canSignWith as Mock).mockReturnValue(false)
-
         ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({
             data: undefined,
             isFetching: false,
@@ -117,10 +124,10 @@ describe('useSelectDestinationScreen', () => {
     })
 
     it('navigates to ExpressSend for internal signable account not opted in', () => {
-        ;(useAllAccounts as Mock).mockReturnValue([
-            { address: INTERNAL_SIGNABLE_ADDR },
+        mockUseAllAccounts.mockReturnValue([
+            { address: INTERNAL_SIGNABLE_ADDR, name: 'Signable' },
         ])
-        ;(canSignWith as Mock).mockReturnValue(true)
+        mockCanSignWith.mockReturnValue(true)
 
         const { result } = renderHook(() => useSelectDestinationScreen())
 
@@ -133,10 +140,10 @@ describe('useSelectDestinationScreen', () => {
     })
 
     it('navigates to ARC59SendSummary for internal watch account not opted in', () => {
-        ;(useAllAccounts as Mock).mockReturnValue([
-            { address: INTERNAL_WATCH_ADDR },
+        mockUseAllAccounts.mockReturnValue([
+            { address: INTERNAL_WATCH_ADDR, name: 'Watch' },
         ])
-        ;(canSignWith as Mock).mockReturnValue(false)
+        mockCanSignWith.mockReturnValue(false)
 
         const { result } = renderHook(() => useSelectDestinationScreen())
 

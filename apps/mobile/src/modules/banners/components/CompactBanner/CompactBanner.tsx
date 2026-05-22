@@ -78,7 +78,7 @@ export const CompactBanner = ({
                     <BannerIcon
                         type={primary.type}
                         size='md'
-                        variant='white'
+                        variant='banner'
                     />
                     <Animated.View style={[styles.textWrapper, pulseStyle]}>
                         <PWText
@@ -105,7 +105,7 @@ export const CompactBanner = ({
                     <PWIcon
                         name='chevron-right'
                         size='md'
-                        variant='white'
+                        variant='banner'
                     />
                 </PWView>
             </PWView>

@@ -23,3 +23,4 @@ export type PWIconVariant =
     | 'positive'
     | 'brand'
     | 'favorite'
+    | 'banner'
