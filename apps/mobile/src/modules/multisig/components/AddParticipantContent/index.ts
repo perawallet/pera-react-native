@@ -11,4 +11,7 @@
  */
 
 export { AddParticipantContent } from './AddParticipantContent'
-export type { AddParticipantContentProps } from './AddParticipantContent'
+export type {
+    AddParticipantContentProps,
+    AddParticipantResult,
+} from './AddParticipantContent'

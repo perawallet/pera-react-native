@@ -21,6 +21,7 @@ import {
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useContacts } from '@perawallet/wallet-core-contacts'
 import { useIsMultisigAddressQuery } from '@perawallet/wallet-core-multisig'
+import { type Optional } from '@perawallet/wallet-core-shared'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -30,6 +31,16 @@ const EXCLUDE_TYPES: AccountType[] = [AccountTypes.multisig]
 
 export type AddParticipantContentProps = Record<string, never>
 
+/**
+ * Value the add-participant bottom sheet resolves with. `nfdName` is set
+ * only when the user picked an NFD search result, so the caller can save
+ * the contact under the NFD name instead of a truncated address.
+ */
+export type AddParticipantResult = {
+    address: string
+    nfdName?: string
+}
+
 export const AddParticipantContent = () => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -38,7 +49,8 @@ export const AddParticipantContent = () => {
     const accounts = useAllAccounts()
     const { contacts } = useContacts()
     const [selectedAddress, setSelectedAddress] = useState('')
-    const { resolve, dismiss } = useBottomSheetResult<string>()
+    const [selectedNfdName, setSelectedNfdName] = useState<Optional<string>>()
+    const { resolve, dismiss } = useBottomSheetResult<AddParticipantResult>()
 
     const isLocalEntity = useMemo(
         () =>
@@ -65,13 +77,16 @@ export const AddParticipantContent = () => {
                 type: 'error',
             })
             setSelectedAddress('')
+            setSelectedNfdName(undefined)
             return
         }
 
-        resolve(selectedAddress)
+        resolve({ address: selectedAddress, nfdName: selectedNfdName })
         setSelectedAddress('')
+        setSelectedNfdName(undefined)
     }, [
         selectedAddress,
+        selectedNfdName,
         multisigCheck.data?.isMultisig,
         multisigCheck.isFetching,
         resolve,
@@ -80,15 +95,16 @@ export const AddParticipantContent = () => {
     ])
 
     const handleSelected = useCallback(
-        (address: string) => {
+        (address: string, nfdName?: string) => {
             const isLocal =
                 accounts.some(a => a.address === address) ||
                 contacts.some(c => c.address === address)
             if (isLocal) {
-                resolve(address)
+                resolve({ address, nfdName })
                 return
             }
             setSelectedAddress(address)
+            setSelectedNfdName(nfdName)
         },
         [accounts, contacts, resolve],
     )
