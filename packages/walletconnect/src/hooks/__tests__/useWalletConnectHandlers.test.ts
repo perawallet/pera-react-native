@@ -107,19 +107,28 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     ),
 }))
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useAllAccounts: vi.fn(() => [
-        { address: 'addr1', name: 'Account 1', type: 'standard' },
-    ]),
-    useSigningAccounts: vi.fn(() => [
-        { address: 'addr1', name: 'Account 1', type: 'standard' },
-    ]),
-    canSignWith: vi.fn(() => true),
-    canSignArbitraryData: vi.fn(() => true),
-    getAccountDisplayName: vi.fn((a: any) => a.name || a.address),
-    isHardwareWalletAccount: vi.fn(() => false),
-    isMultisigAccount: vi.fn((a: any) => a?.type === 'multisig'),
-}))
+vi.mock('@perawallet/wallet-core-accounts', () => {
+    const canSignArbitraryData = vi.fn(() => true)
+    const isHardwareWalletAccount = vi.fn(() => false)
+    return {
+        useAllAccounts: vi.fn(() => [
+            { address: 'addr1', name: 'Account 1', type: 'standard' },
+        ]),
+        useSigningAccounts: vi.fn(() => [
+            { address: 'addr1', name: 'Account 1', type: 'standard' },
+        ]),
+        canSignWith: vi.fn(() => true),
+        canSignArbitraryData,
+        // Mirror the real composition so tests that toggle the two predicates
+        // exercise canSignArc60 without setting it directly.
+        canSignArc60: vi.fn(
+            (a: any) => canSignArbitraryData(a) || isHardwareWalletAccount(a),
+        ),
+        getAccountDisplayName: vi.fn((a: any) => a.name || a.address),
+        isHardwareWalletAccount,
+        isMultisigAccount: vi.fn((a: any) => a?.type === 'multisig'),
+    }
+})
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
     const actual = await vi.importActual('@perawallet/wallet-core-shared')
