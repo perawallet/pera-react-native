@@ -11,13 +11,16 @@
  */
 
 import { useMemo } from 'react'
+import { getRekeyAccount } from '../utils'
 import { useAccountsStore } from '../store'
-import { canSignWith } from '../utils'
+import type { WalletAccount } from '../models'
 
-export const useSigningAccounts = () => {
+export const useRekeyAccount = (
+    address: string | undefined | null,
+): WalletAccount | null => {
     const accounts = useAccountsStore(state => state.accounts)
     return useMemo(
-        () => accounts.filter(account => canSignWith(account, accounts)),
-        [accounts],
+        () => (address ? getRekeyAccount(address, accounts) : null),
+        [address, accounts],
     )
 }

@@ -14,9 +14,8 @@ import { useCallback, useEffect, useMemo } from 'react'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
-    isSigningLogicalType,
     useAccountBalancesQuery,
-    useAccountLogicalType,
+    useCanSignWith,
     useSortedAssetBalances,
     WalletAccount,
     AssetWithAccountBalance,
@@ -49,7 +48,7 @@ import { OptOutConfirmationContent } from './OptOutConfirmationContent'
 type UseAccountAssetListResult = {
     balances: AssetWithAccountBalance[]
     isPending: boolean
-    isWatch: boolean
+    isReadOnly: boolean
     hideZeroBalance: boolean
     assetSortMode: AssetSortMode
     searchFilter: string
@@ -63,7 +62,7 @@ type UseAccountAssetListResult = {
     getEmptyTitle: () => string
     getEmptyBody: () => string
     renderItemProps: {
-        isWatch: boolean
+        isReadOnly: boolean
         assetPrices: AssetPrices
         goToAssetScreen: (asset: AssetWithAccountBalance) => void
         handleOptOut: (item: AssetWithAccountBalance) => void
@@ -152,8 +151,7 @@ export const useAccountAssetList = ({
         return sortedBalances.filter(b => matchingAssetIds.has(b.assetId))
     }, [sortedBalances, searchFilter, matchingAssetIds])
 
-    const logicalType = useAccountLogicalType(account.address)
-    const isWatch = !logicalType || !isSigningLogicalType(logicalType)
+    const isReadOnly = !useCanSignWith(account)
 
     const goToAssetScreen = useCallback(
         (item: AssetWithAccountBalance) => {
@@ -229,7 +227,7 @@ export const useAccountAssetList = ({
 
     const handleOpenManage = useCallback(async () => {
         const action = await requestBottomSheet<ManageAssetsAction>({
-            contents: <ManageAssetsContent isWatchAccount={isWatch} />,
+            contents: <ManageAssetsContent isReadOnly={isReadOnly} />,
             options: { size: 'auto', enablePanDownToClose: true },
         })
         if (!action) return
@@ -246,7 +244,7 @@ export const useAccountAssetList = ({
         } else if (action === 'remove') {
             navigation.navigate('RemoveAssets')
         }
-    }, [requestBottomSheet, isWatch, navigation])
+    }, [requestBottomSheet, isReadOnly, navigation])
 
     const hasActiveFilter =
         hideZeroBalance || !displayNfts || !effectiveDisplayOptedInNfts
@@ -267,18 +265,18 @@ export const useAccountAssetList = ({
 
     const renderItemProps = useMemo(
         () => ({
-            isWatch,
+            isReadOnly,
             assetPrices,
             goToAssetScreen,
             handleOptOut,
         }),
-        [isWatch, assetPrices, goToAssetScreen, handleOptOut],
+        [isReadOnly, assetPrices, goToAssetScreen, handleOptOut],
     )
 
     return {
         balances,
         isPending: isPending || isLoading,
-        isWatch,
+        isReadOnly,
         hideZeroBalance,
         assetSortMode,
         searchFilter,

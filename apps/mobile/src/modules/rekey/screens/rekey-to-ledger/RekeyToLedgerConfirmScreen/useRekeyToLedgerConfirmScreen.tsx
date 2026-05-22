@@ -14,6 +14,7 @@ import { useCallback } from 'react'
 import { useRoute } from '@react-navigation/native'
 import {
     getAccountDisplayName,
+    isRekeyedAccount,
     useFindAccountByAddress,
 } from '@perawallet/wallet-core-accounts'
 import { config } from '@perawallet/wallet-core-config'
@@ -74,7 +75,7 @@ export const useRekeyToLedgerConfirmScreen =
             targetAddress,
         )
 
-        const hasPreviousRekey = !!source?.rekeyAddress
+        const hasPreviousRekey = isRekeyedAccount(source)
 
         const submit = useCallback(async () => {
             if (!source || !target) {

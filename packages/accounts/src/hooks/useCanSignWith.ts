@@ -10,14 +10,9 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
-import { useAccountsStore } from '../store'
-import { canSignWith } from '../utils'
+import { useSignerFor } from './useSignerFor'
+import type { WalletAccount } from '../models'
 
-export const useSigningAccounts = () => {
-    const accounts = useAccountsStore(state => state.accounts)
-    return useMemo(
-        () => accounts.filter(account => canSignWith(account, accounts)),
-        [accounts],
-    )
-}
+export const useCanSignWith = (
+    account: WalletAccount | null | undefined,
+): boolean => useSignerFor(account?.address) !== null

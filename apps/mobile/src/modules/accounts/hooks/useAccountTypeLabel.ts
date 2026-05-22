@@ -13,7 +13,8 @@
 import { useMemo } from 'react'
 import {
     AccountTypes,
-    useAccountLogicalType,
+    isRekeyedAccount,
+    useCanSignWith,
     useRekeyTransition,
 } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
@@ -39,6 +40,12 @@ export type AccountTypeLabel = {
     qualifier: string | null
 }
 
+const plain = (label: string): AccountTypeLabel => ({
+    label,
+    main: label,
+    qualifier: null,
+})
+
 /**
  * Resolves the human-readable account type label (e.g. "Ledger Account",
  * "Rekeyed (Standard to Ledger)"). Shared by the account info card and the
@@ -48,48 +55,41 @@ export const useAccountTypeLabel = (
     account: WalletAccount | null | undefined,
 ): AccountTypeLabel => {
     const { t } = useLanguage()
-    const isMultisig = account?.type === AccountTypes.multisig
-    const logicalType =
-        useAccountLogicalType(account?.address) ??
-        (isMultisig ? 'Multisig' : 'NoAuth')
+    const canSign = useCanSignWith(account)
     const rekeyTransition = useRekeyTransition(account?.address)
 
     return useMemo(() => {
-        const plain = (label: string): AccountTypeLabel => ({
-            label,
-            main: label,
-            qualifier: null,
-        })
-
         if (!account) return plain('')
 
-        switch (logicalType) {
-            case 'HdKey':
-                return plain(t('account_info.type_universal_wallet'))
-            case 'Algo25':
-                return plain(t('account_info.type_algo25'))
-            case 'LedgerBle':
-                return plain(t('account_info.type_ledger'))
-            case 'Multisig':
-                return plain(t('account_info.type_multisig'))
-            case 'NoAuth':
-                return plain(t('account_info.type_watch'))
-            case 'Rekeyed':
+        if (isRekeyedAccount(account)) {
+            if (!canSign) {
                 return plain(t('account_info.type_no_auth'))
-            case 'RekeyedAuth': {
-                if (!rekeyTransition) {
-                    return plain(t('account_info.type_rekeyed'))
-                }
-                const { labelKey, fromKey, toKey } =
-                    getRekeyLabelI18n(rekeyTransition)
-                const label = t(labelKey, {
-                    from: t(fromKey),
-                    to: t(toKey),
-                })
-                return { label, ...splitAccountTypeLabel(label) }
             }
+            if (!rekeyTransition) {
+                return plain(t('account_info.type_rekeyed'))
+            }
+            const { labelKey, fromKey, toKey } =
+                getRekeyLabelI18n(rekeyTransition)
+            const label = t(labelKey, {
+                from: t(fromKey),
+                to: t(toKey),
+            })
+            return { label, ...splitAccountTypeLabel(label) }
+        }
+
+        switch (account.type) {
+            case AccountTypes.hdWallet:
+                return plain(t('account_info.type_universal_wallet'))
+            case AccountTypes.algo25:
+                return plain(t('account_info.type_algo25'))
+            case AccountTypes.hardware:
+                return plain(t('account_info.type_ledger'))
+            case AccountTypes.multisig:
+                return plain(t('account_info.type_multisig'))
+            case AccountTypes.watch:
+                return plain(t('account_info.type_watch'))
             default:
                 return plain(t('account_info.type_unknown'))
         }
-    }, [account, logicalType, rekeyTransition, t])
+    }, [account, canSign, rekeyTransition, t])
 }

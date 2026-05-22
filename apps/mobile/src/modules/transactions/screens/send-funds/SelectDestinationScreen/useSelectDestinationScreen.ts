@@ -13,9 +13,8 @@
 import { useSendFunds } from '@modules/transactions/hooks'
 import { SendFundsStackParamList } from '@modules/transactions/routes/send-funds'
 import {
-    isSigningLogicalType,
+    canSignWith,
     useAccountBalancesQuery,
-    useAllAccountLogicalTypes,
     useAllAccounts,
     useOnChainAccountInformationQuery,
     useSelectedAccount,
@@ -29,7 +28,6 @@ export const useSelectDestinationScreen = () => {
     const { selectedAssetId, setDestination, setSendMode } = useSendFunds()
     const selectedAccount = useSelectedAccount()
     const accounts = useAllAccounts()
-    const logicalTypes = useAllAccountLogicalTypes()
     const { accountBalances } = useAccountBalancesQuery(accounts)
     const [pendingExternalAddress, setPendingExternalAddress] = useState<
         string | null
@@ -111,9 +109,9 @@ export const useSelectDestinationScreen = () => {
             }
 
             // Check if receiver is a local account we can sign for
-            const localType = logicalTypes.get(address)
+            const receiver = accounts.find(a => a.address === address)
             const isLocalSignable =
-                !!localType && isSigningLogicalType(localType)
+                !!receiver && canSignWith(receiver, accounts)
 
             if (isLocalSignable) {
                 // Express send: local account, we handle opt-in + transfer
@@ -132,7 +130,7 @@ export const useSelectDestinationScreen = () => {
         },
         [
             selectedAsset,
-            logicalTypes,
+            accounts,
             accountBalances,
             setSendMode,
             setDestination,

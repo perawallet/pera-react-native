@@ -104,6 +104,7 @@ export const buildGroupSignerTypeMap = (
         const authAccount = resolveSigningAccount(
             signerAccount,
             group.source,
+            group.data.type,
             allAccounts,
         )
         map.set(

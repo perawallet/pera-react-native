@@ -17,8 +17,7 @@ import { PWFlatList } from '@components/core'
 import {
     useSelectedAccount,
     useAccountBalancesQuery,
-    useAccountLogicalType,
-    isSigningLogicalType,
+    useCanSignWith,
 } from '@perawallet/wallet-core-accounts'
 import {
     useAssetsQuery,
@@ -104,7 +103,7 @@ const sortCollectibles = (
 
 export const useAccountNfts = (): UseAccountNftsResult => {
     const account = useSelectedAccount()
-    const logicalType = useAccountLogicalType(account?.address)
+    const canOptIn = useCanSignWith(account)
     const [searchFilter, setSearchFilter] = useState('')
 
     const sortMode = useCollectiblePreferencesStore(
@@ -184,11 +183,6 @@ export const useAccountNfts = (): UseAccountNftsResult => {
             openFilterSheet()
         }
     }, [requestBottomSheet, openSortSheet, openFilterSheet])
-
-    const canOptIn = useMemo(
-        () => !!logicalType && isSigningLogicalType(logicalType),
-        [logicalType],
-    )
 
     const { accountBalances, isPending } = useAccountBalancesQuery(
         account ? [account] : [],

@@ -151,7 +151,12 @@ describe('PWBottomSheet', () => {
         expect(screen.queryByText('Sheet Content')).toBeNull()
     })
 
-    it('calls onBackdropPress when dismissed', () => {
+    it('does NOT fire onBackdropPress on programmatic dismiss', () => {
+        // Regression: handleDismiss used to fan out to both onBackdropPress
+        // and onDismiss on every gorhom-dismissal, which produced a
+        // redundant `store.dismiss(...)` cycle and tore down the underlying
+        // sheet (the WebView under a WC connection sheet, in practice).
+        // onBackdropPress is reserved for genuine backdrop-press gestures.
         const onBackdropPress = vi.fn()
 
         const { rerender } = render(
@@ -165,7 +170,6 @@ describe('PWBottomSheet', () => {
 
         expect(screen.getByText('Sheet Content')).toBeTruthy()
 
-        // Toggle visibility off triggers dismiss(), which calls onDismiss
         rerender(
             <PWBottomSheet
                 isVisible={false}
@@ -175,7 +179,7 @@ describe('PWBottomSheet', () => {
             </PWBottomSheet>,
         )
 
-        expect(onBackdropPress).toHaveBeenCalledOnce()
+        expect(onBackdropPress).not.toHaveBeenCalled()
     })
 
     it.each([

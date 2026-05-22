@@ -64,6 +64,7 @@ export const AssetTransferSummaryHeader = ({
                         showSymbol
                         variant='h1'
                         style={styles.amountValue}
+                        ignorePrivacyMode
                     />
                 )}
                 {amount.isZero() ? null : (
@@ -75,6 +76,7 @@ export const AssetTransferSummaryHeader = ({
                         showSymbol
                         variant='h4'
                         style={styles.secondaryAmountValue}
+                        ignorePrivacyMode
                     />
                 )}
             </PWView>

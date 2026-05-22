@@ -98,6 +98,7 @@ export const AssetFreezeDisplay = ({
                         minPrecision={2}
                         value={microAlgosToAlgos(transaction.fee ?? 0n)}
                         showSymbol
+                        ignorePrivacyMode
                     />
                 </KeyValueRow>
 

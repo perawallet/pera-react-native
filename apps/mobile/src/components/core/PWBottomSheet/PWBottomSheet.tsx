@@ -124,16 +124,21 @@ export const PWBottomSheet = ({
                 disappearsOnIndex={-1}
                 appearsOnIndex={0}
                 pressBehavior={enableCloseOnBackdropPress ? 'close' : 'none'}
+                onPress={onBackdropPress}
                 style={styles.backdrop}
             />
         ),
-        [styles.backdrop],
+        [styles.backdrop, enableCloseOnBackdropPress, onBackdropPress],
     )
 
+    // Gorhom fires this on actual dismissal completion (animation finished
+    // with status DISMISSED). `onBackdropPress` is intentionally NOT
+    // invoked here — that's reserved for the genuine backdrop-press
+    // gesture path. Fanning it out at dismiss caused a redundant
+    // `store.dismiss(...)` cycle that tore down the underlying sheet.
     const handleDismiss = useCallback(() => {
-        onBackdropPress?.()
         onDismiss?.()
-    }, [onBackdropPress, onDismiss])
+    }, [onDismiss])
 
     // Pan-down / backdrop dismissals bypass the isVisible flow. Listen to the
     // animation transitioning toward index -1 (closed) and dismiss the
@@ -155,6 +160,15 @@ export const PWBottomSheet = ({
             ref={bottomSheetModalRef}
             snapPoints={defaults.snapPoints}
             enableDynamicSizing={defaults.enableDynamicSizing}
+            // Don't let gorhom touch underlying modals when a new one opens.
+            // The default 'switch' calls `minimize()` on the previous top,
+            // and in practice (see the WC-connect flow over a webview sheet)
+            // the underlying modal gets fully DISMISSED rather than just
+            // minimized — tearing the webview down. With 'push' the
+            // underlying stays mounted at its current snap point, hidden
+            // behind the new modal's backdrop, and naturally re-appears
+            // when the topmost dismisses.
+            stackBehavior='push'
             // Never let the sheet rise above the status bar, even when its
             // dynamically-sized content (e.g. an expanded HD wallet tree)
             // would otherwise push it past the configured snap point. Skip

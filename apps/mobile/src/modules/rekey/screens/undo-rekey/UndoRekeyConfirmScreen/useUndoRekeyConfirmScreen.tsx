@@ -13,8 +13,7 @@
 import { useCallback } from 'react'
 import { useRoute } from '@react-navigation/native'
 import {
-    AccountLogicalTypes,
-    baseTypeFor,
+    AccountTypes,
     getAccountDisplayName,
     useFindAccountByAddress,
 } from '@perawallet/wallet-core-accounts'
@@ -116,8 +115,7 @@ export const useUndoRekeyConfirmScreen =
             const currentAuthName = currentAuth
                 ? getAccountDisplayName(currentAuth)
                 : ''
-            const willBecomeNoAuth =
-                baseTypeFor(source) === AccountLogicalTypes.NoAuth
+            const willBecomeNoAuth = source.type === AccountTypes.watch
             const i18nPrefix = willBecomeNoAuth
                 ? 'rekey.undo.no_auth_warning'
                 : 'rekey.undo.warning'

@@ -10,13 +10,13 @@
  limitations under the License
  */
 
-import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import { useKMS } from '@perawallet/wallet-core-kms'
-import { useCallback } from 'react'
 import {
+    canSignArbitraryData,
     isAlgo25Account,
     isHDWalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { useKMS } from '@perawallet/wallet-core-kms'
+import { useCallback } from 'react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { decodeFromBase64, concatBytes } from '@perawallet/wallet-core-shared'
 import { SIGNING_KEY_DOMAIN } from '../constants'
@@ -24,7 +24,6 @@ import { SIGNING_KEY_DOMAIN } from '../constants'
 const MX_PREFIX = new TextEncoder().encode('MX')
 
 export const useArbitraryDataSigner = () => {
-    const accounts = useAccountsStore(state => state.accounts)
     const { signDataWithKey } = useKMS()
 
     const signArbitraryData = useCallback(
@@ -32,39 +31,38 @@ export const useArbitraryDataSigner = () => {
             account: WalletAccount,
             data: string | string[],
         ): Promise<Uint8Array[]> => {
-            if (account.rekeyAddress) {
-                const rekeyedAccount =
-                    accounts.find(a => a.address === account.rekeyAddress) ??
-                    null
-                if (!rekeyedAccount) {
-                    return Promise.reject(
-                        `No rekeyed account found for ${account.rekeyAddress}`,
-                    )
-                }
-                return signArbitraryData(rekeyedAccount, data)
-            }
-
-            if (!isHDWalletAccount(account) && !isAlgo25Account(account)) {
+            // Sign with the requested account's own key. Rekey is NOT
+            // followed: the dApp verifies against this account's pubkey.
+            if (!canSignArbitraryData(account)) {
                 return Promise.reject(
-                    `Unsupported account type ${account.type} for ${account.address}`,
+                    new Error(
+                        `Cannot sign arbitrary data for ${account.address}`,
+                    ),
+                )
+            }
+            // canSignArbitraryData ⇒ hasSigningKeys ⇒ Algo25 or HDWallet
+            // (the only types that carry keyPairId). The narrowing here is
+            // for the type system; the runtime invariant comes from above.
+            if (!isAlgo25Account(account) && !isHDWalletAccount(account)) {
+                return Promise.reject(
+                    new Error(
+                        `Unsupported account type ${account.type} for ${account.address}`,
+                    ),
                 )
             }
 
-            // Match the legacy algo_signData spec: dApps verify the
-            // signature against `MX || data`. Both account types share
-            // this prefix and route through the same `keyStore.sign`
-            // dispatch on the child key.
-            const toSign = [data]
-                .flat()
-                .map(item => concatBytes(MX_PREFIX, decodeFromBase64(item)))
-
+            // Legacy algo_signData: dApps verify against `MX || data`.
+            const items = [data].flat()
+            const toSign = items.map(item =>
+                concatBytes(MX_PREFIX, decodeFromBase64(item)),
+            )
             return signDataWithKey(
                 account.keyPairId,
                 SIGNING_KEY_DOMAIN,
                 toSign,
             )
         },
-        [accounts, signDataWithKey],
+        [signDataWithKey],
     )
 
     return {

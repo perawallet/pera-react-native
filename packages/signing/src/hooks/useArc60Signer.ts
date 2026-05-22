@@ -13,11 +13,10 @@
 import { useCallback } from 'react'
 import {
     assertAlgorandBip44PathMatches,
+    canSignArbitraryData,
     InvalidBip44PathError,
     isAlgo25Account,
     isHDWalletAccount,
-    isHardwareWalletAccount,
-    useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
@@ -49,7 +48,6 @@ export type UseArc60SignerResult = {
 }
 
 export const useArc60Signer = (): UseArc60SignerResult => {
-    const accounts = useAccountsStore(state => state.accounts)
     const { signDataWithKey } = useKMS()
 
     const signArc60 = useCallback(
@@ -62,26 +60,14 @@ export const useArc60Signer = (): UseArc60SignerResult => {
                 throw new Arc60InvalidScopeError(metadata.scope)
             }
 
-            if (isHardwareWalletAccount(account)) {
+            // ARC-60 verifies signatures against the requested signer's
+            // own pubkey. Rekey is NOT followed — sign with this account's
+            // own keypair or reject.
+            if (!canSignArbitraryData(account)) {
                 throw new Arc60InvalidSignerError(
                     account.address,
-                    'hardware wallet ARC-60 signing is not supported',
+                    `account ${account.address} cannot sign ARC-60 payloads`,
                 )
-            }
-
-            // Rekey: recurse into the auth account and validate hdPath against
-            // the *signing* account's actual derivation, not the original.
-            if (account.rekeyAddress) {
-                const rekeyedAccount = accounts.find(
-                    a => a.address === account.rekeyAddress,
-                )
-                if (!rekeyedAccount) {
-                    throw new Arc60InvalidSignerError(
-                        account.address,
-                        `no rekeyed account found for ${account.rekeyAddress}`,
-                    )
-                }
-                return signArc60(rekeyedAccount, stdSigData, metadata)
             }
 
             // Domain binding — verify before doing any signing work.
@@ -155,15 +141,15 @@ export const useArc60Signer = (): UseArc60SignerResult => {
                     )
                 }
             } else {
+                // canSignArbitraryData ⇒ Algo25 or HDWallet; this branch is
+                // a defensive type-system fallback.
                 throw new Arc60InvalidSignerError(
                     account.address,
                     `unsupported account type ${account.type}`,
                 )
             }
 
-            // ARC-60 specifies the signing payload exactly — no MX prefix.
-            // Both HD and algo25 accounts route through the same direct
-            // sign on their child key.
+            // ARC-60 payload is signed as-is — no MX prefix.
             const [signature] = await signDataWithKey(
                 account.keyPairId,
                 SIGNING_KEY_DOMAIN,
@@ -171,7 +157,7 @@ export const useArc60Signer = (): UseArc60SignerResult => {
             )
             return signature
         },
-        [accounts, signDataWithKey],
+        [signDataWithKey],
     )
 
     return { signArc60 }

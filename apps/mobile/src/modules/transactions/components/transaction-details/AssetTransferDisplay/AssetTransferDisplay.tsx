@@ -119,6 +119,7 @@ export const AssetTransferDisplay = ({
                             value={amount}
                             showSymbol
                             style={amountStyle}
+                            ignorePrivacyMode
                         />
                     </KeyValueRow>
                 )}
@@ -167,6 +168,7 @@ export const AssetTransferDisplay = ({
                         minPrecision={2}
                         value={microAlgosToAlgos(transaction.fee ?? 0n)}
                         showSymbol
+                        ignorePrivacyMode
                     />
                 </KeyValueRow>
 

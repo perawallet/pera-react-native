@@ -11,13 +11,16 @@
  */
 
 import { useMemo } from 'react'
+import { isRekeyedUnsignable } from '../utils'
 import { useAccountsStore } from '../store'
-import { canSignWith } from '../utils'
+import type { WalletAccount } from '../models'
 
-export const useSigningAccounts = () => {
+export const useIsRekeyedUnsignable = (
+    account: WalletAccount | null | undefined,
+): boolean => {
     const accounts = useAccountsStore(state => state.accounts)
     return useMemo(
-        () => accounts.filter(account => canSignWith(account, accounts)),
-        [accounts],
+        () => (account ? isRekeyedUnsignable(account, accounts) : false),
+        [account, accounts],
     )
 }

@@ -36,14 +36,11 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
     }),
 }))
 
-const mockIsHDWalletAccount = vi.fn()
-const mockIsAlgo25Account = vi.fn()
-const mockIsHardwareWalletAccount = vi.fn()
 let mockAccounts: WalletAccount[] = []
 
+// Real account helpers (resolveSignerForAccount, type guards, BIP44 validation)
+// — only the store is stubbed.
 vi.mock('@perawallet/wallet-core-accounts', async () => {
-    // Keep the real BIP44 helpers (pure, no store deps) so hdPath validation
-    // exercises the production code path from the accounts package.
     const actual = await vi.importActual<object>(
         '@perawallet/wallet-core-accounts',
     )
@@ -51,10 +48,6 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
         ...actual,
         useAccountsStore: (selector: any) =>
             selector({ accounts: mockAccounts }),
-        isHDWalletAccount: (...args: any[]) => mockIsHDWalletAccount(...args),
-        isAlgo25Account: (...args: any[]) => mockIsAlgo25Account(...args),
-        isHardwareWalletAccount: (...args: any[]) =>
-            mockIsHardwareWalletAccount(...args),
     }
 })
 
@@ -79,6 +72,13 @@ const algo25Account = {
 const hardwareAccount = {
     address: 'HW_ADDR',
     type: 'hardware',
+    hardwareDetails: {
+        manufacturer: 'ledger',
+        deviceId: 'd',
+        deviceName: 'L',
+        accountIndex: 0,
+        transportType: 'ble',
+    },
 } as unknown as WalletAccount
 
 const domain = 'arc60.io'
@@ -112,9 +112,6 @@ describe('useArc60Signer', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockAccounts = []
-        mockIsHDWalletAccount.mockReturnValue(false)
-        mockIsAlgo25Account.mockReturnValue(false)
-        mockIsHardwareWalletAccount.mockReturnValue(false)
         mockSignDataWithKey.mockResolvedValue([new Uint8Array([0])])
     })
 
@@ -131,7 +128,6 @@ describe('useArc60Signer', () => {
     })
 
     test('rejects hardware wallet accounts', async () => {
-        mockIsHardwareWalletAccount.mockReturnValue(true)
         const { result } = renderHook(() => useArc60Signer())
         await expect(
             act(async () => {
@@ -145,7 +141,6 @@ describe('useArc60Signer', () => {
     })
 
     test('rejects when authenticatorData rpIdHash mismatches', async () => {
-        mockIsHDWalletAccount.mockReturnValue(true)
         const tampered = new Uint8Array(validAuthData)
         tampered[0] ^= 0xff
         const { result } = renderHook(() => useArc60Signer())
@@ -161,7 +156,6 @@ describe('useArc60Signer', () => {
     })
 
     test('signs an HD account via signDataWithKey with sha256(data)||sha256(authenticatorData) payload', async () => {
-        mockIsHDWalletAccount.mockReturnValue(true)
         const sigBytes = new Uint8Array([1, 2, 3])
         mockSignDataWithKey.mockResolvedValue([sigBytes])
 
@@ -180,15 +174,12 @@ describe('useArc60Signer', () => {
         const [childId, _domain, items] = mockSignDataWithKey.mock.calls[0]
         expect(childId).toBe('key-hd-child')
         const payload = items[0] as Uint8Array
-        // First 32 bytes = sha256(decoded data)
         expect(payload.slice(0, 32)).toEqual(sha256(samplePayload))
-        // Last 32 bytes = sha256(authenticatorData)
         expect(payload.slice(32)).toEqual(sha256(validAuthData))
         expect(payload.length).toBe(64)
     })
 
     test('rejects when hdPath does not match the signer derivation', async () => {
-        mockIsHDWalletAccount.mockReturnValue(true)
         const { result } = renderHook(() => useArc60Signer())
         await expect(
             act(async () => {
@@ -196,7 +187,6 @@ describe('useArc60Signer', () => {
                     hdAccount,
                     {
                         ...validStdSigData,
-                        // different keyIndex than the signer's hdWalletDetails
                         hdPath: "m/44'/283'/0'/0/99",
                     },
                     validMetadata,
@@ -206,7 +196,6 @@ describe('useArc60Signer', () => {
     })
 
     test('accepts a matching hdPath', async () => {
-        mockIsHDWalletAccount.mockReturnValue(true)
         mockSignDataWithKey.mockResolvedValue([new Uint8Array([1])])
         const { result } = renderHook(() => useArc60Signer())
         await expect(
@@ -221,7 +210,6 @@ describe('useArc60Signer', () => {
     })
 
     test('rejects hdPath on Algo25 accounts', async () => {
-        mockIsAlgo25Account.mockReturnValue(true)
         const algo25Siwa = new TextEncoder().encode(
             buildSiwa({ account_address: 'ALGO25_ADDR' }),
         )
@@ -243,7 +231,6 @@ describe('useArc60Signer', () => {
     })
 
     test('signs an Algo25 account via signDataWithKey with no MX prefix', async () => {
-        mockIsAlgo25Account.mockReturnValue(true)
         mockSignDataWithKey.mockResolvedValue([new Uint8Array([7])])
         const algo25Siwa = new TextEncoder().encode(
             buildSiwa({ account_address: 'ALGO25_ADDR' }),
@@ -265,15 +252,12 @@ describe('useArc60Signer', () => {
         const [childId, _domain, items] = mockSignDataWithKey.mock.calls[0]
         expect(childId).toBe('key-algo25-ed25519')
         const payload = items[0] as Uint8Array
-        // Must NOT start with "MX"
         expect(payload[0]).not.toBe('M'.charCodeAt(0))
         expect(payload[1]).not.toBe('X'.charCodeAt(0))
-        // Must start with sha256(decoded data)
         expect(payload.slice(0, 32)).toEqual(sha256(algo25Siwa))
     })
 
     test('rejects when SIWA domain does not match request domain', async () => {
-        mockIsHDWalletAccount.mockReturnValue(true)
         const mismatched = new TextEncoder().encode(
             buildSiwa({ domain: 'evil.io' }),
         )
@@ -290,7 +274,6 @@ describe('useArc60Signer', () => {
     })
 
     test('rejects when SIWA account_address does not match request signer', async () => {
-        mockIsHDWalletAccount.mockReturnValue(true)
         const mismatched = new TextEncoder().encode(
             buildSiwa({ account_address: 'OTHER_ADDR' }),
         )
@@ -307,7 +290,6 @@ describe('useArc60Signer', () => {
     })
 
     test('rejects when payload is not canonical SIWA JSON', async () => {
-        mockIsHDWalletAccount.mockReturnValue(true)
         const nonSiwa = new TextEncoder().encode('{"not":"siwa"}')
         const { result } = renderHook(() => useArc60Signer())
         await expect(
@@ -321,29 +303,87 @@ describe('useArc60Signer', () => {
         ).rejects.toBeInstanceOf(Arc60BadJsonError)
     })
 
-    test('delegates to the rekeyed account when present', async () => {
-        const rekeyed = {
-            ...algo25Account,
-            address: 'REKEY_ADDR',
-        } as unknown as WalletAccount
+    test('signs a rekeyed algo25 with its OWN keypair (not the auth chain)', async () => {
+        // The dApp verifies the signature against ORIG_ADDR's pubkey, so
+        // we sign with ORIG_ADDR's own key even though it has been rekeyed.
         const original = {
             ...algo25Account,
             address: 'ORIG_ADDR',
-            rekeyAddress: 'REKEY_ADDR',
+            rekeyAddress: 'AUTH_ADDR',
         } as unknown as WalletAccount
-        mockAccounts = [rekeyed]
-        mockIsAlgo25Account.mockReturnValue(true)
         mockSignDataWithKey.mockResolvedValue([new Uint8Array([1])])
+
+        const origSiwa = new TextEncoder().encode(
+            buildSiwa({ account_address: 'ORIG_ADDR' }),
+        )
 
         const { result } = renderHook(() => useArc60Signer())
         await act(async () => {
             await result.current.signArc60(
                 original,
-                validStdSigData,
+                {
+                    ...validStdSigData,
+                    data: encodeToBase64(origSiwa),
+                    signer: 'ORIG_ADDR',
+                },
                 validMetadata,
             )
         })
 
-        expect(mockSignDataWithKey).toHaveBeenCalled()
+        const [childId] = mockSignDataWithKey.mock.calls[0]
+        expect(childId).toBe('key-algo25-ed25519')
+    })
+
+    test('rejects a watch-rekeyed account even when the auth has keys', async () => {
+        const watchSource = {
+            address: 'WATCH_ADDR',
+            type: 'watch',
+            rekeyAddress: 'AUTH_ADDR',
+        } as unknown as WalletAccount
+
+        const watchSiwa = new TextEncoder().encode(
+            buildSiwa({ account_address: 'WATCH_ADDR' }),
+        )
+
+        const { result } = renderHook(() => useArc60Signer())
+        await expect(
+            act(async () => {
+                await result.current.signArc60(
+                    watchSource,
+                    {
+                        ...validStdSigData,
+                        data: encodeToBase64(watchSiwa),
+                        signer: 'WATCH_ADDR',
+                    },
+                    validMetadata,
+                )
+            }),
+        ).rejects.toBeInstanceOf(Arc60InvalidSignerError)
+    })
+
+    test('rejects a Ledger account (raw-byte signing unsupported on device)', async () => {
+        const ledger = {
+            ...hardwareAccount,
+            address: 'LED_ADDR',
+        } as unknown as WalletAccount
+
+        const ledgerSiwa = new TextEncoder().encode(
+            buildSiwa({ account_address: 'LED_ADDR' }),
+        )
+
+        const { result } = renderHook(() => useArc60Signer())
+        await expect(
+            act(async () => {
+                await result.current.signArc60(
+                    ledger,
+                    {
+                        ...validStdSigData,
+                        data: encodeToBase64(ledgerSiwa),
+                        signer: 'LED_ADDR',
+                    },
+                    validMetadata,
+                )
+            }),
+        ).rejects.toBeInstanceOf(Arc60InvalidSignerError)
     })
 })

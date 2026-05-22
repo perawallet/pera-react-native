@@ -90,6 +90,7 @@ export const ARC59SendSummaryScreen = () => {
                             precision={asset?.decimals ?? DEFAULT_PRECISION}
                             minPrecision={DEFAULT_PRECISION}
                             variant='h4'
+                            ignorePrivacyMode
                         />
                     </PWView>
 
@@ -104,6 +105,7 @@ export const ARC59SendSummaryScreen = () => {
                             currency={'ALGO'}
                             precision={ALGO_ASSET.decimals}
                             minPrecision={DEFAULT_PRECISION}
+                            ignorePrivacyMode
                         />
                     </PWView>
 

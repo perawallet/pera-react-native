@@ -20,21 +20,19 @@ const mockFindContacts = vi.fn(() => [] as unknown[])
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => mockUseAllAccounts(),
-    useAccountLogicalType: () => 'Algo25',
+    useCanSignWith: () => true,
+    useRekeyAccount: () => null,
+    useSignerFor: () => null,
     AccountTypes: {
-        software: 'software',
+        algo25: 'algo25',
+        hdWallet: 'hdWallet',
         hardware: 'hardware',
-    },
-    AccountLogicalTypes: {
-        Algo25: 'Algo25',
-        HdKey: 'HdKey',
-        LedgerBle: 'LedgerBle',
-        Multisig: 'Multisig',
-        Rekeyed: 'Rekeyed',
-        RekeyedAuth: 'RekeyedAuth',
-        NoAuth: 'NoAuth',
+        multisig: 'multisig',
+        watch: 'watch',
     },
     isMultisigAccount: () => false,
+    isRekeyedAccount: (account: { rekeyAddress?: string } | null | undefined) =>
+        !!account?.rekeyAddress,
 }))
 
 vi.mock('@perawallet/wallet-core-contacts', () => ({

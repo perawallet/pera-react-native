@@ -50,7 +50,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
             isPending: false,
         })),
         useAllAccounts: vi.fn(() => []),
-        useAccountLogicalType: vi.fn(() => 'Algo25'),
+        useCanSignWith: vi.fn(() => true),
     }
 })
 
@@ -101,7 +101,7 @@ describe('useAccountOverviewHeader', () => {
         vi.clearAllMocks()
     })
 
-    it('returns canSign true when account logical type is signing', () => {
+    it('returns canSign true when canSignWith returns true', () => {
         const { result } = renderHook(
             () => useAccountOverviewHeader(mockAccount),
             { wrapper },
@@ -110,10 +110,10 @@ describe('useAccountOverviewHeader', () => {
         expect(result.current.canSign).toBe(true)
     })
 
-    it('returns canSign false when account logical type is NoAuth', async () => {
-        const { useAccountLogicalType } =
+    it('returns canSign false when canSignWith returns false', async () => {
+        const { useCanSignWith } =
             await import('@perawallet/wallet-core-accounts')
-        vi.mocked(useAccountLogicalType).mockReturnValue('NoAuth')
+        vi.mocked(useCanSignWith).mockReturnValue(false)
 
         const { result } = renderHook(
             () => useAccountOverviewHeader(mockAccount),

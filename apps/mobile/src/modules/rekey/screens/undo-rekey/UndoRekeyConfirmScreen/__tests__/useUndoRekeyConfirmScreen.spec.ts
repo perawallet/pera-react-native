@@ -60,11 +60,10 @@ vi.mock('@modules/webview', () => ({
 const mockSourceAccount = {
     address: 'SRC',
     name: 'Source',
+    type: 'algo25' as 'algo25' | 'watch',
     rekeyAddress: 'AUTH' as string | undefined,
 }
-const mockAuthAccount = { address: 'AUTH', name: 'Auth' }
-
-let mockBaseType = 'Algo25'
+const mockAuthAccount = { address: 'AUTH', name: 'Auth', type: 'algo25' }
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
@@ -78,7 +77,6 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
             if (address === 'AUTH') return mockAuthAccount
             return undefined
         },
-        baseTypeFor: () => mockBaseType,
     }
 })
 
@@ -111,7 +109,7 @@ describe('useUndoRekeyConfirmScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockSourceAccount.rekeyAddress = 'AUTH'
-        mockBaseType = 'Algo25'
+        mockSourceAccount.type = 'algo25'
         mockSubmitAsync.mockReset()
         mockRequestBottomSheet.mockReset()
     })
@@ -182,7 +180,7 @@ describe('useUndoRekeyConfirmScreen', () => {
     })
 
     it('uses the destructive no-auth warning variant when the source will become no-auth', async () => {
-        mockBaseType = 'NoAuth'
+        mockSourceAccount.type = 'watch'
         mockRequestBottomSheet.mockReturnValueOnce(new Promise(() => {}))
         const { result } = renderHook(() => useUndoRekeyConfirmScreen())
 
