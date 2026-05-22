@@ -60,7 +60,6 @@ import { useDeepLink } from '@hooks/useDeepLink'
 import { parseDeeplink } from '@hooks/deeplink/parser'
 import { parseWalletConnectUri } from '@hooks/deeplink/walletconnect-parser'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
-import { bottomSheetNotifier } from '@components/core'
 
 type WebviewMessage = {
     id: string
@@ -498,10 +497,6 @@ export const usePeraWebviewInterface = (
                                 title: t('errors.signing.title'),
                                 body: (e as Error).message,
                                 type: 'error',
-                            },
-                            {
-                                notifier:
-                                    bottomSheetNotifier.current ?? undefined,
                             },
                         )
                     }
