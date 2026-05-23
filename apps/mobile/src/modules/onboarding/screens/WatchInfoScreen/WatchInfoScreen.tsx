@@ -12,6 +12,7 @@
 
 import React from 'react'
 import { PWButton, PWIcon, PWScreen, PWText, PWView } from '@components/core'
+import { ScreenHeader } from '@components/ScreenHeader'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWatchInfoScreen } from './useWatchInfoScreen'
@@ -64,18 +65,10 @@ export const WatchInfoScreen = () => {
                     width={160}
                     height={160}
                 />
-                <PWText
-                    variant='h1'
-                    style={styles.title}
-                >
-                    {t('onboarding.watch_account.info_title')}
-                </PWText>
-                <PWText
-                    variant='h4'
-                    style={styles.description}
-                >
-                    {t('onboarding.watch_account.info_description')}
-                </PWText>
+                <ScreenHeader
+                    title={t('onboarding.watch_account.info_title')}
+                    description={t('onboarding.watch_account.info_description')}
+                />
             </PWView>
         </PWScreen>
     )

@@ -12,18 +12,9 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
+export const useStyles = makeStyles(() => ({
     content: {
         flex: 1,
         alignItems: 'flex-start',
-        paddingTop: theme.spacing.xl,
-        gap: theme.spacing.lg,
-    },
-    title: {
-        textAlign: 'left',
-    },
-    description: {
-        textAlign: 'left',
-        color: theme.colors.textGray,
     },
 }))

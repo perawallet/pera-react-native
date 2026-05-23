@@ -20,18 +20,10 @@ export const useStyles = makeStyles(theme => ({
         justifyContent: 'flex-start',
         alignItems: 'flex-start',
         paddingTop: theme.spacing.xl,
-        gap: theme.spacing.lg,
     },
     image: {
         width: IMAGE_SIZE,
         height: IMAGE_SIZE,
-    },
-    title: {
-        textAlign: 'left',
-    },
-    description: {
-        textAlign: 'left',
-        color: theme.colors.textGray,
     },
     warningRow: {
         flexDirection: 'row',

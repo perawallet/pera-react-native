@@ -23,14 +23,6 @@ export const useStyles = makeStyles(theme => {
         content: {
             flex: 1,
         },
-        title: {
-            marginBottom: theme.spacing.sm,
-            marginTop: theme.spacing.sm,
-        },
-        description: {
-            marginBottom: theme.spacing.xl,
-            color: theme.colors.textGray,
-        },
         list: {
             flex: 1,
         },

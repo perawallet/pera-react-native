@@ -11,14 +11,9 @@
  */
 
 import React from 'react'
-import {
-    PWButton,
-    PWRoundIcon,
-    PWScreen,
-    PWText,
-    PWView,
-} from '@components/core'
+import { PWButton, PWScreen, PWView } from '@components/core'
 import { QRScannerView } from '@components/QRScannerView'
+import { ScreenHeader } from '@components/ScreenHeader'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { usePeraWebImportInfoScreen } from './usePeraWebImportInfoScreen'
@@ -47,22 +42,11 @@ export const PeraWebImportInfoScreen = () => {
                 }
             >
                 <PWView style={styles.content}>
-                    <PWRoundIcon
+                    <ScreenHeader
                         icon='globe'
-                        size='xxl'
+                        title={t('onboarding.pera_web_import.info.title')}
+                        description={t('onboarding.pera_web_import.info.body')}
                     />
-                    <PWText
-                        variant='h1'
-                        style={styles.title}
-                    >
-                        {t('onboarding.pera_web_import.info.title')}
-                    </PWText>
-                    <PWText
-                        variant='h4'
-                        style={styles.description}
-                    >
-                        {t('onboarding.pera_web_import.info.body')}
-                    </PWText>
                 </PWView>
             </PWScreen>
 

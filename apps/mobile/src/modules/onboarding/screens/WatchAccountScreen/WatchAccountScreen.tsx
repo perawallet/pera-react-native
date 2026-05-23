@@ -14,6 +14,7 @@ import React from 'react'
 import { ActivityIndicator } from 'react-native'
 import { PWButton, PWScreen, PWText, PWView } from '@components/core'
 import { AddressEntryField } from '@components/AddressEntryField'
+import { ScreenHeader } from '@components/ScreenHeader'
 import { useWatchAccountScreen } from './useWatchAccountScreen'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
@@ -61,13 +62,10 @@ export const WatchAccountScreen = () => {
             }
         >
             <PWView style={styles.contentContainer}>
-                <PWText variant='h1'>
-                    {t('onboarding.watch_account.title')}
-                </PWText>
-
-                <PWText style={styles.description}>
-                    {t('onboarding.watch_account.description')}
-                </PWText>
+                <ScreenHeader
+                    title={t('onboarding.watch_account.title')}
+                    description={t('onboarding.watch_account.description')}
+                />
 
                 <AddressEntryField
                     testID='watch_account_address_input'

@@ -25,6 +25,7 @@ import { type HDWalletGroup } from '@perawallet/wallet-core-accounts'
 import { ALGO_ASSET, ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
+import { ScreenHeader } from '@components/ScreenHeader'
 import { Decimal } from 'decimal.js'
 import { useStyles } from './styles'
 import { useSelectHDWalletScreen } from './useSelectHDWalletScreen'
@@ -122,18 +123,12 @@ export const SelectHDWalletScreen = () => {
                 }
             >
                 <PWView style={styles.content}>
-                    <PWText
-                        variant='h1'
-                        style={styles.title}
-                    >
-                        {t('onboarding.select_hd_wallet.title')}
-                    </PWText>
-                    <PWText
-                        variant='body'
-                        style={styles.description}
-                    >
-                        {t('onboarding.select_hd_wallet.description')}
-                    </PWText>
+                    <ScreenHeader
+                        title={t('onboarding.select_hd_wallet.title')}
+                        description={t(
+                            'onboarding.select_hd_wallet.description',
+                        )}
+                    />
                     <PWFlatList
                         style={styles.list}
                         data={hdWalletGroups}

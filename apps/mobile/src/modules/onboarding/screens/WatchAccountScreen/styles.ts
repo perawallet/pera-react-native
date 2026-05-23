@@ -15,11 +15,7 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     contentContainer: {
         flex: 1,
-        paddingTop: theme.spacing.xl,
         gap: theme.spacing.xl,
-    },
-    description: {
-        color: theme.colors.textGray,
     },
     nfdStatus: {
         flexDirection: 'row',
