@@ -15,7 +15,7 @@ import { FeatureFlagOverrides } from '@modules/settings/components/FeatureFlagOv
 
 export const SettingsDeveloperFeatureFlagsScreen = () => {
     return (
-        <PWScreen horizontalPadding='md'>
+        <PWScreen>
             <FeatureFlagOverrides />
         </PWScreen>
     )

@@ -44,10 +44,7 @@ export const NotificationsScreen = () => {
     } = useNotificationsScreen()
 
     return (
-        <PWScreen
-            scroll={false}
-            horizontalPadding='md'
-        >
+        <PWScreen scroll={false}>
             <PWFlatList
                 data={notifications}
                 renderItem={renderItem}

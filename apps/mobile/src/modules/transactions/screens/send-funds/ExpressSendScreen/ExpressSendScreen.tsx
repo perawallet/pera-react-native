@@ -28,7 +28,6 @@ export const ExpressSendScreen = () => {
 
     return (
         <PWScreen
-            horizontalPadding='md'
             contentContainerStyle={styles.content}
             footerStyle={styles.footer}
             footer={

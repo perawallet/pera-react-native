@@ -54,7 +54,7 @@ export const SettingsDeveloperNodeSettingsScreen = () => {
     }
 
     return (
-        <PWScreen horizontalPadding='md'>
+        <PWScreen>
             <PWView style={styles.container}>
                 <PWRadioButton
                     testID='node_settings_mainnet_radio'

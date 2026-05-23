@@ -61,7 +61,6 @@ export const useStyles = makeStyles(theme => {
         nextButton: {
             width: 'auto',
             alignSelf: 'stretch',
-            marginHorizontal: theme.spacing.lg,
         },
         secondaryButton: {
             paddingVertical: theme.spacing.xs,

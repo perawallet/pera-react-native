@@ -118,7 +118,6 @@ export const ImportSharedAccountScreen = () => {
 
     return (
         <PWScreen
-            horizontalPadding='md'
             contentContainerStyle={styles.scrollContent}
             testID='import-shared-account-screen'
             footer={

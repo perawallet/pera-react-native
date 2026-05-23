@@ -42,7 +42,10 @@ export const useStyles = makeStyles(
                 paddingHorizontal,
             },
             footer: {
-                paddingHorizontal,
+                // Bottom CTAs share one screen gutter (xl) regardless of the
+                // body's horizontalPadding — including full-bleed `none`
+                // screens — so every screen's footer aligns to the same edge.
+                paddingHorizontal: theme.spacing.xl,
                 paddingVertical: theme.spacing.md,
             },
         }

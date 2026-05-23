@@ -46,7 +46,6 @@ export const TransactionProcessingScreen = () => {
     return (
         <PWScreen
             scroll={false}
-            horizontalPadding='md'
             contentContainerStyle={styles.contentContainer}
         >
             <PWView style={styles.spinnerCircle}>

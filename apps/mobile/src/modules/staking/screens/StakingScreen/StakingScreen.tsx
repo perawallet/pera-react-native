@@ -76,7 +76,6 @@ export const StakingScreen = () => {
     return (
         <PWScreen
             scroll={false}
-            horizontalPadding='md'
             keyboard='none'
             style={styles.container}
             testID='staking-screen'

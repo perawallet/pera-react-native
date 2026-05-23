@@ -66,7 +66,6 @@ export const TransactionConfirmationScreen = () => {
 
     return (
         <PWScreen
-            horizontalPadding='md'
             contentContainerStyle={styles.scrollContent}
             footer={
                 <PWView style={styles.buttonContainer}>

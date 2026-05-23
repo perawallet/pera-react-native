@@ -49,10 +49,7 @@ export const InboxScreen = () => {
     )
 
     return (
-        <PWScreen
-            scroll={false}
-            horizontalPadding='md'
-        >
+        <PWScreen scroll={false}>
             <PWFlatList
                 data={inboxItems}
                 renderItem={renderItem}

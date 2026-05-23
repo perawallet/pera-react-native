@@ -30,7 +30,4 @@ export const useStyles = makeStyles(theme => ({
         paddingHorizontal: theme.spacing.xl,
         backgroundColor: theme.colors.background,
     },
-    footer: {
-        paddingHorizontal: theme.spacing.xl,
-    },
 }))

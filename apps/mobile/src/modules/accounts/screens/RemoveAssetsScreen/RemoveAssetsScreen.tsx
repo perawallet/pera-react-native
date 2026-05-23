@@ -93,7 +93,6 @@ export const RemoveAssetsScreen = () => {
     return (
         <PWScreen
             scroll={false}
-            horizontalPadding='md'
             keyboard='none'
             footer={
                 isRemoveSelectedVisible ? (
