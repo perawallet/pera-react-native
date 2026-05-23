@@ -21,6 +21,7 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
+import { ScreenHeader } from '@components/ScreenHeader'
 import { LedgerDeviceItem } from '../../components/LedgerDeviceItem'
 import { LedgerCompositeIcon } from '../../components/LedgerCompositeIcon'
 import { useStyles } from './styles'
@@ -91,23 +92,13 @@ export const LedgerScanScreen = () => {
 
     return (
         <PWScreen scroll={false}>
-            <PWView style={styles.header}>
-                <PWView style={styles.icon}>
-                    <LedgerCompositeIcon />
-                </PWView>
-                <PWText
-                    variant='h1'
-                    style={styles.title}
-                >
-                    {t('ledger.scan.title')}
-                </PWText>
-                <PWText
-                    variant='h4'
-                    style={styles.description}
-                >
-                    {t('ledger.scan.description')}
-                </PWText>
+            <PWView style={styles.icon}>
+                <LedgerCompositeIcon />
             </PWView>
+            <ScreenHeader
+                title={t('ledger.scan.title')}
+                description={t('ledger.scan.description')}
+            />
 
             {isPermissionDenied ? (
                 <PWView

@@ -11,7 +11,8 @@
  */
 
 import React from 'react'
-import { PWButton, PWIcon, PWScreen, PWText, PWView } from '@components/core'
+import { PWButton, PWScreen, PWText, PWView } from '@components/core'
+import { ScreenHeader } from '@components/ScreenHeader'
 
 import { useStyles } from './styles'
 import { useLedgerInstructionsScreen } from './useLedgerInstructionsScreen'
@@ -57,26 +58,11 @@ export const LedgerInstructionsScreen = () => {
                 </PWView>
             }
         >
-            <PWView style={styles.iconContainer}>
-                <PWIcon
-                    name='wallet'
-                    size='xxl'
-                />
-            </PWView>
-
-            <PWText
-                variant='h1'
-                style={styles.title}
-            >
-                {t(titleKey)}
-            </PWText>
-
-            <PWText
-                variant='h4'
-                style={styles.description}
-            >
-                {t(descriptionKey)}
-            </PWText>
+            <ScreenHeader
+                icon='wallet'
+                title={t(titleKey)}
+                description={t(descriptionKey)}
+            />
 
             <PWView style={styles.instructionsList}>
                 {instructions.map(({ step, key }) => (

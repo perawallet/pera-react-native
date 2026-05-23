@@ -11,6 +11,7 @@
  */
 
 import { PWButton, PWScreen, PWText, PWView } from '@components/core'
+import { ScreenHeader } from '@components/ScreenHeader'
 import { useStyles } from './styles'
 import { useLedgerTroubleshootingScreen } from './useLedgerTroubleshootingScreen'
 
@@ -34,18 +35,10 @@ export const LedgerTroubleshootingScreen = () => {
                 </PWView>
             }
         >
-            <PWText
-                variant='h1'
-                style={styles.title}
-            >
-                {t('ledger.troubleshooting.title')}
-            </PWText>
-            <PWText
-                variant='h4'
-                style={styles.description}
-            >
-                {t('ledger.troubleshooting.description')}
-            </PWText>
+            <ScreenHeader
+                title={t('ledger.troubleshooting.title')}
+                description={t('ledger.troubleshooting.description')}
+            />
 
             <PWText
                 variant='h3'

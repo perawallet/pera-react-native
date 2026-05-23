@@ -13,15 +13,7 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    heroIcon: {
-        marginTop: theme.spacing.lg,
-        marginBottom: theme.spacing.lg,
-    },
-    title: {
-        marginBottom: theme.spacing.sm,
-    },
     description: {
-        marginBottom: theme.spacing.xl,
         color: theme.colors.textGray,
     },
     selectAllRow: {

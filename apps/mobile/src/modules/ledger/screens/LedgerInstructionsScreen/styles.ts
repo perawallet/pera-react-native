@@ -13,20 +13,6 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    iconContainer: {
-        alignItems: 'center',
-        marginTop: theme.spacing.xxl,
-        marginBottom: theme.spacing.xl,
-    },
-    title: {
-        textAlign: 'center',
-        marginBottom: theme.spacing.sm,
-    },
-    description: {
-        textAlign: 'center',
-        color: theme.colors.textGray,
-        marginBottom: theme.spacing.xxl,
-    },
     instructionsList: {
         gap: theme.spacing.lg,
     },

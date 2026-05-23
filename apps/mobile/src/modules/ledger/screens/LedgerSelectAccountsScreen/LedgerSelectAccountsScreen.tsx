@@ -16,10 +16,9 @@ import {
     PWTouchableOpacity,
     PWButton,
     PWCheckbox,
-    PWIcon,
     PWFlatList,
-    PWView,
 } from '@components/core'
+import { ScreenHeader } from '@components/ScreenHeader'
 import type { LedgerSelectableAccount } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 
@@ -107,27 +106,13 @@ export const LedgerSelectAccountsScreen = () => {
                 />
             }
         >
-            <PWView style={styles.heroIcon}>
-                <PWIcon
-                    name='wallet'
-                    size='xl'
-                />
-            </PWView>
-
-            <PWText
-                variant='h1'
-                style={styles.title}
-            >
-                {t('ledger.select_accounts.title', {
+            <ScreenHeader
+                icon='wallet'
+                title={t('ledger.select_accounts.title', {
                     count: selectableAccounts.length,
                 })}
-            </PWText>
-            <PWText
-                variant='h4'
-                style={styles.description}
-            >
-                {t('ledger.select_accounts.description')}
-            </PWText>
+                description={t('ledger.select_accounts.description')}
+            />
 
             {showSelectAll && (
                 <PWTouchableOpacity

@@ -15,13 +15,6 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     iconContainer: {
         marginTop: theme.spacing.xxl,
-        marginBottom: theme.spacing.xl,
-    },
-    title: {
-        marginBottom: theme.spacing.sm,
-    },
-    description: {
-        color: theme.colors.textGray,
     },
     footer: {
         gap: theme.spacing.sm,

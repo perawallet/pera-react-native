@@ -16,15 +16,7 @@ const BULLET_SIZE = 6
 
 export const useStyles = makeStyles(theme => ({
     content: {
-        paddingTop: theme.spacing.xl,
         paddingBottom: theme.spacing.xxl,
-    },
-    title: {
-        marginBottom: theme.spacing.sm,
-    },
-    description: {
-        color: theme.colors.textGray,
-        marginBottom: theme.spacing.xxl,
     },
     sectionTitle: {
         marginTop: theme.spacing.xl,

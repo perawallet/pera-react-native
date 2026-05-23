@@ -16,10 +16,10 @@ import {
     PWButton,
     PWIcon,
     PWScreen,
-    PWText,
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
+import { ScreenHeader } from '@components/ScreenHeader'
 
 import { useStyles } from './styles'
 import { useLedgerPairScreen } from './useLedgerPairScreen'
@@ -71,19 +71,10 @@ export const LedgerPairScreen = () => {
                 />
             </PWView>
 
-            <PWText
-                variant='h1'
-                style={styles.title}
-            >
-                {t('ledger.pair.title')}
-            </PWText>
-
-            <PWText
-                variant='h4'
-                style={styles.description}
-            >
-                {t('ledger.pair.description')}
-            </PWText>
+            <ScreenHeader
+                title={t('ledger.pair.title')}
+                description={t('ledger.pair.description')}
+            />
         </PWScreen>
     )
 }
