@@ -20,6 +20,7 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
+import { ScreenHeader } from '@components/ScreenHeader'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useAsbImportBackupScreen } from './useAsbImportBackupScreen'
@@ -51,22 +52,10 @@ export const AsbImportBackupScreen = () => {
             }
         >
             <PWView style={styles.content}>
-                <PWText
-                    variant='h1'
-                    style={styles.title}
-                    numberOfLines={3}
-                    ellipsizeMode='tail'
-                >
-                    {t('onboarding.asb_import.backup.title')}
-                </PWText>
-                <PWText
-                    variant='h4'
-                    style={styles.description}
-                    numberOfLines={4}
-                    ellipsizeMode='tail'
-                >
-                    {t('onboarding.asb_import.backup.body')}
-                </PWText>
+                <ScreenHeader
+                    title={t('onboarding.asb_import.backup.title')}
+                    description={t('onboarding.asb_import.backup.body')}
+                />
 
                 <PWView style={styles.dropZoneWrap}>
                     {loadedFile ? (

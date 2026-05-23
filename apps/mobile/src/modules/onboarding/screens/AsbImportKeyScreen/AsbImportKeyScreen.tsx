@@ -19,6 +19,7 @@ import {
     PWText,
     PWView,
 } from '@components/core'
+import { ScreenHeader } from '@components/ScreenHeader'
 import { useLanguage } from '@hooks/useLanguage'
 import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
 import { MnemonicSuggestionBar } from '@modules/onboarding/components/MnemonicSuggestionBar'
@@ -69,15 +70,10 @@ export const AsbImportKeyScreen = () => {
                     </>
                 }
             >
-                <PWText variant='h1'>
-                    {t('onboarding.asb_import.key.title')}
-                </PWText>
-                <PWText
-                    variant='h4'
-                    style={styles.description}
-                >
-                    {t('onboarding.asb_import.key.body')}
-                </PWText>
+                <ScreenHeader
+                    title={t('onboarding.asb_import.key.title')}
+                    description={t('onboarding.asb_import.key.body')}
+                />
 
                 <PWView style={styles.columns}>
                     {[0, 1].map(column => {

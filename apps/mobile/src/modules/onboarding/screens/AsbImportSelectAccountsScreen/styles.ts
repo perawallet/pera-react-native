@@ -15,14 +15,7 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     content: {
         flex: 1,
-        paddingTop: theme.spacing.xl,
         gap: theme.spacing.md,
-    },
-    title: {
-        textAlign: 'left',
-    },
-    description: {
-        color: theme.colors.textGray,
     },
     headerRow: {
         flexDirection: 'row',

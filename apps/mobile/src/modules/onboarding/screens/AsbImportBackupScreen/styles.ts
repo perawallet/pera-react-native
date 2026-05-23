@@ -16,17 +16,9 @@ export const useStyles = makeStyles(theme => ({
     content: {
         flex: 1,
         alignItems: 'stretch',
-        paddingTop: theme.spacing.xl,
         gap: theme.spacing.lg,
         width: '100%',
         minWidth: 0,
-    },
-    title: {
-        textAlign: 'left',
-    },
-    description: {
-        textAlign: 'left',
-        color: theme.colors.textGray,
     },
     dropZoneWrap: {
         flex: 1,

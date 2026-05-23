@@ -14,11 +14,7 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     scrollContent: {
-        paddingTop: theme.spacing.xl,
         gap: theme.spacing.lg,
-    },
-    description: {
-        color: theme.colors.textGray,
     },
     columns: {
         flexDirection: 'row',

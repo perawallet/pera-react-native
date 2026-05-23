@@ -11,13 +11,8 @@
  */
 
 import React from 'react'
-import {
-    PWButton,
-    PWRoundIcon,
-    PWScreen,
-    PWText,
-    PWView,
-} from '@components/core'
+import { PWButton, PWScreen, PWView } from '@components/core'
+import { ScreenHeader } from '@components/ScreenHeader'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useAsbImportInfoScreen } from './useAsbImportInfoScreen'
@@ -40,22 +35,11 @@ export const AsbImportInfoScreen = () => {
             }
         >
             <PWView style={styles.content}>
-                <PWRoundIcon
+                <ScreenHeader
                     icon='shield-check'
-                    size='xxl'
+                    title={t('onboarding.asb_import.info.title')}
+                    description={t('onboarding.asb_import.info.body')}
                 />
-                <PWText
-                    variant='h1'
-                    style={styles.title}
-                >
-                    {t('onboarding.asb_import.info.title')}
-                </PWText>
-                <PWText
-                    variant='h4'
-                    style={styles.description}
-                >
-                    {t('onboarding.asb_import.info.body')}
-                </PWText>
             </PWView>
         </PWScreen>
     )

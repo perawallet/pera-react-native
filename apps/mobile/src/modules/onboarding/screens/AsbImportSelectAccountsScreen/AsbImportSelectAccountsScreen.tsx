@@ -21,6 +21,7 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
+import { ScreenHeader } from '@components/ScreenHeader'
 import { SelectableAccountCheckboxRow } from '@modules/accounts/components/SelectableAccountCheckboxRow'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
@@ -85,20 +86,12 @@ export const AsbImportSelectAccountsScreen = () => {
                 }
             >
                 <PWView style={styles.content}>
-                    <PWText
-                        variant='h1'
-                        style={styles.title}
-                    >
-                        {t('onboarding.asb_import.select.title')}
-                    </PWText>
-                    <PWText
-                        variant='h4'
-                        style={styles.description}
-                    >
-                        {t('onboarding.asb_import.select.body', {
+                    <ScreenHeader
+                        title={t('onboarding.asb_import.select.title')}
+                        description={t('onboarding.asb_import.select.body', {
                             count: items.length,
                         })}
-                    </PWText>
+                    />
 
                     {!areAllImported && (
                         <PWView style={styles.headerRow}>
