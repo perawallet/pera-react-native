@@ -39,7 +39,13 @@ export const AccountTabNavigator = ({
     const [swipeEnabled, setSwipeEnabled] = useState(true)
 
     return (
-        <Tab.Navigator screenOptions={{ swipeEnabled }}>
+        <Tab.Navigator
+            style={{ flex: 1 }}
+            screenOptions={{
+                swipeEnabled,
+                sceneStyle: { flex: 1 },
+            }}
+        >
             <Tab.Screen
                 name='Overview'
                 options={{

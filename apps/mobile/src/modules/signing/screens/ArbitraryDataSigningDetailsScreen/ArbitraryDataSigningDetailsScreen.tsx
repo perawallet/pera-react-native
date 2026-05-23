@@ -10,30 +10,28 @@
  limitations under the License
  */
 
-import { PWView } from '@components/core'
+import { PWScreen } from '@components/core'
 import {
     type ArbitraryDataSignRequest,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
 import { ArbitraryDataSigningDetailsView } from '@modules/signing/components/ArbitraryDataSigningView/ArbitraryDataSigningDetailsView'
 import type { SigningStackScreenProps } from '@modules/signing/routes'
-import { useStyles } from './styles'
 
 export const ArbitraryDataSigningDetailsScreen = ({
     route,
 }: SigningStackScreenProps<'ArbitraryDataSigningDetails'>) => {
-    const styles = useStyles()
     const { currentRequest } = useSigningRequest()
     const request = currentRequest as ArbitraryDataSignRequest
 
     if (!request) return null
 
     return (
-        <PWView style={styles.container}>
+        <PWScreen scroll={false}>
             <ArbitraryDataSigningDetailsView
                 request={request}
                 dataMessage={route.params.message}
             />
-        </PWView>
+        </PWScreen>
     )
 }

@@ -25,12 +25,10 @@ import { EmptyView } from '@components/EmptyView'
 import { LoadingView } from '@components/LoadingView'
 import { SearchableList } from '@components/SearchableList'
 import { useLanguage } from '@hooks/useLanguage'
-import { KeyboardAvoidingView } from 'react-native'
 import { SwipeableAssetItem } from './SwipeableAssetItem'
 import { BackupReminderBanner } from '../BackupReminderBanner'
 import { useAccountAssetList } from './useAccountAssetList'
 
-const TAB_AND_HEADER_HEIGHT = 100
 export type AccountAssetListProps = {
     account: WalletAccount
     scrollEnabled?: boolean
@@ -104,9 +102,14 @@ export const AccountAssetList = ({
                 <>
                     {header}
                     <PWView style={styles.titleBar}>
-                        <PWText variant='h4'>
-                            {t('account_details.assets.title')}
-                        </PWText>
+                        <PWView style={styles.titleBarTitleContainer}>
+                            <PWText
+                                variant='h3'
+                                truncate
+                            >
+                                {t('account_details.assets.title')}
+                            </PWText>
+                        </PWView>
                         {!isReadOnly && (
                             <PWView style={styles.titleBarButtonContainer}>
                                 <PWButton
@@ -114,6 +117,7 @@ export const AccountAssetList = ({
                                     variant='helper'
                                     paddingStyle='dense'
                                     onPress={handleOpenManage}
+                                    style={styles.manageButton}
                                 />
                                 <PWButton
                                     icon='plus'
@@ -123,6 +127,7 @@ export const AccountAssetList = ({
                                     variant='helper'
                                     paddingStyle='dense'
                                     onPress={handleOpenAddAsset}
+                                    style={styles.addAssetButton}
                                 />
                             </PWView>
                         )}
@@ -133,49 +138,48 @@ export const AccountAssetList = ({
     )
 
     return (
-        <KeyboardAvoidingView
-            keyboardVerticalOffset={TAB_AND_HEADER_HEIGHT}
-            enabled
-            behavior='padding'
-            style={styles.keyboardAvoidingViewContainer}
+        <PWTouchableOpacity
+            style={styles.container}
+            onPress={headerState.open}
         >
-            <PWTouchableOpacity
-                style={styles.keyboardAvoidingViewContainer}
-                onPress={headerState.open}
-            >
-                <SearchableList
-                    ref={listRef}
-                    data={balances}
-                    renderItem={renderItem}
-                    scrollEnabled={scrollEnabled}
-                    keyExtractor={item => item.assetId}
-                    estimatedItemSize={72}
-                    recycleItems
-                    automaticallyAdjustKeyboardInsets
-                    keyboardDismissMode='interactive'
-                    contentContainerStyle={styles.rootContainer}
-                    ListHeaderComponent={listHeader}
-                    searchPlaceholder={t(
-                        'account_details.assets.search_placeholder',
-                    )}
-                    onSearchChange={setSearchFilter}
-                    ListEmptyComponent={
-                        isPending ? (
-                            <LoadingView
-                                variant='skeleton'
-                                size='sm'
-                                count={8}
-                                style={styles.loading}
-                            />
-                        ) : (
-                            <EmptyView
-                                title={getEmptyTitle()}
-                                body={getEmptyBody()}
-                            />
-                        )
-                    }
-                />
-            </PWTouchableOpacity>
-        </KeyboardAvoidingView>
+            <SearchableList
+                ref={listRef}
+                data={balances}
+                renderItem={renderItem}
+                scrollEnabled={scrollEnabled}
+                keyExtractor={item => item.assetId}
+                estimatedItemSize={72}
+                ItemSeparatorComponent={ItemSeparator}
+                recycleItems
+                automaticallyAdjustKeyboardInsets
+                contentContainerStyle={styles.rootContainer}
+                ListHeaderComponent={listHeader}
+                searchPlaceholder={t(
+                    'account_details.assets.search_placeholder',
+                )}
+                onSearchChange={setSearchFilter}
+                ListEmptyComponent={
+                    isPending ? (
+                        <LoadingView
+                            variant='skeleton'
+                            size='sm'
+                            count={8}
+                            style={styles.loading}
+                        />
+                    ) : (
+                        <EmptyView
+                            title={getEmptyTitle()}
+                            body={getEmptyBody()}
+                        />
+                    )
+                }
+            />
+        </PWTouchableOpacity>
     )
+}
+
+const ItemSeparator = () => {
+    const styles = useStyles()
+
+    return <PWView style={styles.separator} />
 }

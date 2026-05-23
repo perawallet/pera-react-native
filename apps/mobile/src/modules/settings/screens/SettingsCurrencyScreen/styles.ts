@@ -18,7 +18,12 @@ export const useStyles = makeStyles(theme => {
             flex: 1,
             flexDirection: 'column',
             gap: theme.spacing.md,
-            paddingHorizontal: theme.spacing.xl,
+        },
+        description: {
+            color: theme.colors.textGray,
+        },
+        descriptionEmphasis: {
+            color: theme.colors.textMain,
         },
     }
 })

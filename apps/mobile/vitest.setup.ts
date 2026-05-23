@@ -630,6 +630,22 @@ vi.mock('@components/core', () => {
             }),
         ),
         PWScrollView: createMockComponent('PWScrollView'),
+        PWScreen: ({ children, footer, testID, style, ...props }: any) =>
+            React.createElement(
+                'div',
+                {
+                    ...props,
+                    style,
+                    'data-testid': testID || 'PWScreen',
+                },
+                children,
+                footer &&
+                    React.createElement(
+                        'div',
+                        { key: 'footer', 'data-testid': 'PWScreen-footer' },
+                        footer,
+                    ),
+            ),
         PWSkeleton: createMockComponent('PWSkeleton'),
         PWSwitch: ({ value, onValueChange, testID, ...props }: any) =>
             React.createElement('input', {
@@ -949,20 +965,6 @@ vi.mock('react-native', () => {
                         children,
                     )
                 },
-            ),
-        KeyboardAvoidingView: vi
-            .fn()
-            .mockImplementation(({ testID, ...props }) =>
-                require('react').createElement(
-                    'div',
-                    {
-                        ...props,
-                        ...(testID
-                            ? { 'data-testid': testID, testid: testID }
-                            : {}),
-                    },
-                    props.children,
-                ),
             ),
         View: vi.fn().mockImplementation(({ testID, ...props }) =>
             require('react').createElement(
@@ -1430,14 +1432,22 @@ vi.mock('@react-navigation/native', () => ({
         const React = require('react')
         return React.createContext(undefined)
     })(),
+    NavigationContext: (() => {
+        const React = require('react')
+        return React.createContext(undefined)
+    })(),
 }))
 
-vi.mock('@react-navigation/bottom-tabs', () => ({
-    createBottomTabNavigator: vi.fn(() => ({
-        Navigator: ({ children }: any) => children,
-        Screen: ({ children }: any) => children,
-    })),
-}))
+vi.mock('@react-navigation/bottom-tabs', () => {
+    const React = require('react')
+    return {
+        createBottomTabNavigator: vi.fn(() => ({
+            Navigator: ({ children }: any) => children,
+            Screen: ({ children }: any) => children,
+        })),
+        BottomTabBarHeightContext: React.createContext(undefined),
+    }
+})
 
 vi.mock('@react-navigation/native-stack', () => {
     const React = require('react')

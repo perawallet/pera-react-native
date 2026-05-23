@@ -27,13 +27,16 @@ export const KeyValueRow = (props: KeyValueRowProps) => {
             {...rest}
             style={[rest.style, styles.container]}
         >
-            <PWText
-                variant='bodyCompact'
-                style={styles.label}
-                {...titleProps}
-            >
-                {title}
-            </PWText>
+            <PWView style={styles.labelContainer}>
+                <PWText
+                    variant='bodyCompact'
+                    style={styles.label}
+                    truncate
+                    {...titleProps}
+                >
+                    {title}
+                </PWText>
+            </PWView>
             <PWView style={styles.childContainer}>{children}</PWView>
         </PWView>
     )

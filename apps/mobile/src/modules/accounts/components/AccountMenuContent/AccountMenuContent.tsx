@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWIcon, PWToolbar } from '@components/core'
+import { PWIcon, PWToolbar, PWView } from '@components/core'
 import { AccountMenu } from '@modules/accounts/components/AccountMenu'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
@@ -58,11 +58,11 @@ export const AccountMenuContent = ({
     ) : undefined
 
     return (
-        <>
+        <PWView style={styles.container}>
             <PWToolbar
                 left={closeIconPosition === 'left' ? closeIcon : searchIcon}
                 right={closeIconPosition === 'right' ? closeIcon : searchIcon}
-                paddingStyle='dense'
+                paddingStyle='none'
                 style={styles.toolbar}
             />
             <AccountMenu
@@ -73,6 +73,6 @@ export const AccountMenuContent = ({
                 hideDefaultHeader={hideDefaultHeader}
                 accountFilter={accountFilter}
             />
-        </>
+        </PWView>
     )
 }

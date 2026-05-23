@@ -11,9 +11,8 @@
  */
 
 import { useCallback } from 'react'
-import { Keyboard, KeyboardAvoidingView, Platform } from 'react-native'
 
-import { PWButton, PWView } from '@components/core'
+import { PWButton, PWScreen, PWView } from '@components/core'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { ContactForm } from '@components/ContactForm'
 import { PhotoPermissionDeniedSheet } from '@components/PhotoPermissionDeniedSheet'
@@ -57,7 +56,6 @@ export const EditContactScreen = () => {
     })
 
     const openDeleteConfirm = useCallback(async () => {
-        Keyboard.dismiss()
         const confirmed = await requestBottomSheet<boolean>({
             contents: (
                 <ConfirmActionContent
@@ -75,10 +73,7 @@ export const EditContactScreen = () => {
     }, [requestBottomSheet, t, removeContact])
 
     return (
-        <KeyboardAvoidingView
-            style={styles.flex}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
+        <PWScreen>
             <ContactForm
                 control={control}
                 address={
@@ -112,6 +107,6 @@ export const EditContactScreen = () => {
                 onClose={permissionDenied.close}
                 onOpenSettings={permissionDenied.openSettings}
             />
-        </KeyboardAvoidingView>
+        </PWScreen>
     )
 }

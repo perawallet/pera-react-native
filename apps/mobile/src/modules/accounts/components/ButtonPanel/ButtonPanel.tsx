@@ -33,6 +33,7 @@ export const ButtonPanel = () => {
                 variant='primary'
                 onPress={handleSwap}
                 testID='swap_button'
+                style={themeStyle.button}
             />
             <RoundButton
                 title={t('account_details.button_panel.send')}
@@ -40,6 +41,7 @@ export const ButtonPanel = () => {
                 variant='secondary'
                 onPress={handleSend}
                 testID='send_button'
+                style={themeStyle.button}
             />
             <RoundButton
                 title={t('account_details.button_panel.receive')}
@@ -47,6 +49,7 @@ export const ButtonPanel = () => {
                 variant='secondary'
                 onPress={handleReceive}
                 testID='receive_button'
+                style={themeStyle.button}
             />
             <RoundButton
                 title={t('account_details.button_panel.more')}
@@ -54,6 +57,7 @@ export const ButtonPanel = () => {
                 variant='secondary'
                 onPress={handleMore}
                 testID='more_button'
+                style={themeStyle.button}
             />
         </PWView>
     )

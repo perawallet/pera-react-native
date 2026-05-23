@@ -11,7 +11,7 @@
  */
 
 import React from 'react'
-import { PWView, PWFlatList, PWLoadingOverlay } from '@components/core'
+import { PWFlatList, PWLoadingOverlay, PWScreen } from '@components/core'
 
 import { useStyles } from './styles'
 import { useImportRekeyedAddressesScreen } from './useImportRekeyedAddressesScreen'
@@ -34,42 +34,49 @@ export const ImportRekeyedAddressesScreen = () => {
     } = useImportRekeyedAddressesScreen()
 
     return (
-        <PWView
-            style={styles.container}
-            testID='import_rekeyed_addresses_screen'
-        >
-            <PWFlatList
-                style={styles.list}
-                contentContainerStyle={styles.listContent}
-                showsVerticalScrollIndicator={false}
-                ListHeaderComponent={() => (
-                    <ImportRekeyedAddressesHeader
-                        accountsCount={accounts.length}
+        <>
+            <PWScreen
+                scroll={false}
+                horizontalPadding='none'
+                testID='import_rekeyed_addresses_screen'
+                footer={
+                    <ImportRekeyedAddressesFooter
+                        onContinue={handleContinue}
+                        onSkip={handleSkip}
+                        canContinue={canContinue}
                     />
-                )}
-                data={accounts}
-                extraData={selectedAddresses}
-                keyExtractor={item => item.address}
-                renderItem={({ item }) => (
-                    <ImportRekeyedAddressesItem
-                        account={item}
-                        isImported={alreadyImportedAddresses.has(item.address)}
-                        isSelected={selectedAddresses.has(item.address)}
-                        onToggle={toggleSelection}
-                    />
-                )}
-            />
-            <ImportRekeyedAddressesFooter
-                onContinue={handleContinue}
-                onSkip={handleSkip}
-                canContinue={canContinue}
-            />
+                }
+            >
+                <PWFlatList
+                    style={styles.list}
+                    contentContainerStyle={styles.listContent}
+                    showsVerticalScrollIndicator={false}
+                    ListHeaderComponent={() => (
+                        <ImportRekeyedAddressesHeader
+                            accountsCount={accounts.length}
+                        />
+                    )}
+                    data={accounts}
+                    extraData={selectedAddresses}
+                    keyExtractor={item => item.address}
+                    renderItem={({ item }) => (
+                        <ImportRekeyedAddressesItem
+                            account={item}
+                            isImported={alreadyImportedAddresses.has(
+                                item.address,
+                            )}
+                            isSelected={selectedAddresses.has(item.address)}
+                            onToggle={toggleSelection}
+                        />
+                    )}
+                />
+            </PWScreen>
             <PWLoadingOverlay
                 isVisible={isImporting}
                 title={t(
                     'onboarding.import_rekeyed_addresses.importing_accounts',
                 )}
             />
-        </PWView>
+        </>
     )
 }

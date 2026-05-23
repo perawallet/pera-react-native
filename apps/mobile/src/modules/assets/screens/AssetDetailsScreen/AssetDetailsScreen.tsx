@@ -25,7 +25,7 @@ import { LoadingView } from '@components/LoadingView'
 import { useLanguage } from '@hooks/useLanguage'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { AccountStackParamsList } from '@modules/accounts/routes'
-import { PWView, PWText } from '@components/core'
+import { PWScreen, PWText, PWView } from '@components/core'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { AccountHeaderMenu } from '@components/AccountHeaderMenu'
 
@@ -61,14 +61,15 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
             <PWView style={styles.headerTitleContainer}>
                 <PWText
                     variant='h4'
-                    numberOfLines={1}
+                    truncate
                 >
                     {account?.name || getAccountDisplayName(account)}
                 </PWText>
                 <PWText
                     variant='caption'
                     style={styles.headerSubtitle}
-                    numberOfLines={1}
+                    truncate
+                    ellipsizeMode='middle'
                 >
                     {accountDisplayName}
                 </PWText>
@@ -90,7 +91,10 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
     }
 
     return (
-        <PWView
+        <PWScreen
+            scroll={false}
+            horizontalPadding='none'
+            keyboard='none'
             style={styles.contentContainer}
             testID='asset_details_screen'
         >
@@ -124,6 +128,6 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
                     )}
                 </Tab.Screen>
             </Tab.Navigator>
-        </PWView>
+        </PWScreen>
     )
 }

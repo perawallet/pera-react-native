@@ -11,16 +11,44 @@
  */
 
 import { getTestProps } from '@utils/test-id-helper'
-import { ScrollViewProps } from 'react-native'
+import { ScrollViewProps, StyleSheet } from 'react-native'
 import { ScrollView } from 'react-native-gesture-handler'
+import { useStyles } from './styles'
 
 export type PWScrollViewProps = ScrollViewProps & {
     testID?: string
 }
 
-export const PWScrollView = ({ testID, ...props }: PWScrollViewProps) => {
+export const PWScrollView = ({
+    testID,
+    keyboardShouldPersistTaps,
+    contentContainerStyle,
+    ...props
+}: PWScrollViewProps) => {
+    const styles = useStyles()
+
+    // Guarantee the content clears the bottom edge — but only when the caller
+    // hasn't already set a bottom-affecting padding. RN edge-specificity makes
+    // an explicit `paddingBottom` win over a caller's `paddingVertical`, so a
+    // blind merge would silently override their value; this opts out instead.
+    const callerPadding = StyleSheet.flatten(contentContainerStyle) ?? {}
+    const hasBottomPadding =
+        callerPadding.paddingBottom != null ||
+        callerPadding.paddingVertical != null ||
+        callerPadding.padding != null
+    const resolvedContentContainerStyle = hasBottomPadding
+        ? contentContainerStyle
+        : [styles.contentContainer, contentContainerStyle]
+
     return (
         <ScrollView
+            // Default to `'handled'` so taps on touchable children fire
+            // normally while taps on the scroll background still dismiss
+            // the keyboard. RN's default of `'never'` swallows the tap on
+            // the first interaction, which makes buttons appear unresponsive
+            // when an input above them is focused.
+            keyboardShouldPersistTaps={keyboardShouldPersistTaps ?? 'handled'}
+            contentContainerStyle={resolvedContentContainerStyle}
             {...getTestProps(testID)}
             {...props}
         />

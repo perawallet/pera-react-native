@@ -60,9 +60,12 @@ export const useStyles = makeStyles(
                 alignItems: 'center',
                 borderColor,
                 borderWidth,
+                minWidth: 0,
+                maxWidth: '100%',
             },
             titleStyle: {
                 color,
+                flexShrink: 1,
             },
         }
     },

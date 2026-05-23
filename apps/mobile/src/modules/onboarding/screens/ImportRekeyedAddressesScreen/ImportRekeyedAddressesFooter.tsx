@@ -13,7 +13,6 @@
 import React from 'react'
 import { PWView, PWButton } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useStyles } from './styles'
 
 type ImportRekeyedAddressesFooterProps = {
@@ -27,12 +26,11 @@ export const ImportRekeyedAddressesFooter = ({
     onSkip,
     canContinue,
 }: ImportRekeyedAddressesFooterProps) => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles(insets)
+    const styles = useStyles()
     const { t } = useLanguage()
 
     return (
-        <PWView style={styles.footer}>
+        <PWView style={styles.footerInner}>
             <PWButton
                 testID='import_rekeyed_addresses_continue_button'
                 title={t('onboarding.import_rekeyed_addresses.continue')}

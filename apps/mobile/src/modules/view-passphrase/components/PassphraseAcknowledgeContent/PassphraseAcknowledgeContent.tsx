@@ -18,6 +18,7 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { usePassphraseAcknowledgeContent } from './usePassphraseAcknowledgeContent'
@@ -48,8 +49,9 @@ export const PassphraseAcknowledgeContent = ({
     })
 
     return (
-        <PWView
-            style={styles.body}
+        <BottomSheetScrollView
+            contentContainerStyle={styles.body}
+            showsVerticalScrollIndicator={false}
             testID={testID}
         >
             <PWIcon
@@ -109,6 +111,6 @@ export const PassphraseAcknowledgeContent = ({
                     testID={`${testID}_cancel`}
                 />
             </PWView>
-        </PWView>
+        </BottomSheetScrollView>
     )
 }

@@ -31,6 +31,8 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        gap: theme.spacing.md,
+        minWidth: 0,
     },
     accountTypeRow: {
         flexDirection: 'row',
@@ -41,15 +43,18 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.sm,
-        flexShrink: 1,
+        flex: 1,
+        minWidth: 0,
     },
     accountTypeBlock: {
-        flexShrink: 1,
+        flex: 1,
+        minWidth: 0,
     },
     accountTypeMainRow: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.sm,
+        minWidth: 0,
     },
     accountTypeText: {
         flexShrink: 1,

@@ -14,16 +14,7 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
-        flex: 1,
-        backgroundColor: theme.colors.background,
-    },
-    contentContainer: {
         gap: theme.spacing.xl,
-        padding: theme.spacing.xl,
-        // Ensure tappable rows near the bottom aren't pinned right against the
-        // home indicator / system gesture area after all the new advanced
-        // security rows push the layout taller than the viewport.
-        paddingBottom: theme.spacing.xxl,
     },
     section: {
         gap: theme.spacing.xl,
@@ -34,13 +25,26 @@ export const useStyles = makeStyles(theme => ({
     listItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        width: '100%',
+        minWidth: 0,
+        gap: theme.spacing.md,
     },
     listItemContent: {
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.md,
+        minWidth: 0,
+    },
+    listItemLabel: {
+        flex: 1,
+        minWidth: 0,
+    },
+    trailingContainer: {
+        flexShrink: 0,
+    },
+    listItemAccessory: {
+        flexShrink: 0,
     },
     listItemSubtitle: {
         color: theme.colors.textGray,

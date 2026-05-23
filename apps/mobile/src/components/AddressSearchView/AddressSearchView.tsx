@@ -193,9 +193,7 @@ export const AddressSearchView = ({
                     keyExtractor={keyExtractor}
                     ListEmptyComponent={listEmptyComponent}
                     inBottomSheet
-                    keyboardShouldPersistTaps='handled'
                     style={styles.list}
-                    contentContainerStyle={styles.contentContainer}
                 />
             </PWView>
         )
@@ -213,7 +211,6 @@ export const AddressSearchView = ({
                 SearchInputComponent={AddressSearchInput}
                 ListEmptyComponent={listEmptyComponent}
                 style={styles.list}
-                contentContainerStyle={styles.contentContainer}
             />
         </PWView>
     )

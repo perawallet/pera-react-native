@@ -13,14 +13,8 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        flex: 1,
-        backgroundColor: theme.colors.background,
-    },
     scrollContent: {
-        paddingHorizontal: theme.spacing.md,
         paddingTop: theme.spacing.md,
-        paddingBottom: theme.spacing.lg,
         gap: theme.spacing.lg,
     },
     toolbarTitle: {
@@ -58,12 +52,6 @@ export const useStyles = makeStyles(theme => ({
     stateBody: {
         color: theme.colors.textGray,
         textAlign: 'center',
-    },
-    bottomBar: {
-        paddingHorizontal: theme.spacing.md,
-        paddingTop: theme.spacing.md,
-        paddingBottom: theme.spacing.md,
-        gap: theme.spacing.sm,
     },
     bottomActions: {
         flexDirection: 'row',

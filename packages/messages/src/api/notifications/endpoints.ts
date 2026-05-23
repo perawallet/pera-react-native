@@ -16,8 +16,6 @@ import {
     notificationsListResponseSchema,
     type NotificationStatusResponse,
     type NotificationsListResponse,
-    messageStatusResponseSchema,
-    MessageStatusResponse,
 } from './schema'
 
 const getNotificationStatusEndpoint = (deviceID: string) =>
@@ -90,18 +88,4 @@ export const updateNotificationEnabled = async (
     })
 
     return notificationStatusResponseSchema.parse(response.data)
-}
-
-export const fetchMessageStatus = async (
-    network: Network,
-    deviceID: string,
-): Promise<MessageStatusResponse> => {
-    const response = await queryClient<MessageStatusResponse>({
-        backend: 'pera',
-        network,
-        method: 'GET',
-        url: `/api/v3/devices/${deviceID}/message-status`,
-    })
-
-    return messageStatusResponseSchema.parse(response.data)
 }

@@ -11,11 +11,11 @@
  */
 
 import React from 'react'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
     PWButton,
     PWIcon,
     PWRoundIcon,
+    PWScreen,
     PWText,
     PWTouchableOpacity,
     PWView,
@@ -25,8 +25,7 @@ import { useStyles } from './styles'
 import { useAsbImportBackupScreen } from './useAsbImportBackupScreen'
 
 export const AsbImportBackupScreen = () => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles(insets)
+    const styles = useStyles()
     const { t } = useLanguage()
     const {
         loadedFile,
@@ -38,17 +37,33 @@ export const AsbImportBackupScreen = () => {
     } = useAsbImportBackupScreen()
 
     return (
-        <PWView style={styles.root}>
+        <PWScreen
+            scroll={false}
+            horizontalPadding='xl'
+            footer={
+                <PWButton
+                    variant='primary'
+                    title={t('onboarding.asb_import.backup.continue')}
+                    onPress={handleContinue}
+                    isDisabled={!canContinue}
+                    testID='asb_import_backup_continue_button'
+                />
+            }
+        >
             <PWView style={styles.content}>
                 <PWText
                     variant='h1'
                     style={styles.title}
+                    numberOfLines={3}
+                    ellipsizeMode='tail'
                 >
                     {t('onboarding.asb_import.backup.title')}
                 </PWText>
                 <PWText
                     variant='h4'
                     style={styles.description}
+                    numberOfLines={4}
+                    ellipsizeMode='tail'
                 >
                     {t('onboarding.asb_import.backup.body')}
                 </PWText>
@@ -63,7 +78,7 @@ export const AsbImportBackupScreen = () => {
                             <PWText
                                 variant='h4'
                                 style={styles.fileName}
-                                numberOfLines={1}
+                                truncate
                             >
                                 {loadedFile.name}
                             </PWText>
@@ -91,6 +106,8 @@ export const AsbImportBackupScreen = () => {
                             <PWText
                                 variant='body'
                                 style={styles.dropZoneLabel}
+                                numberOfLines={2}
+                                ellipsizeMode='tail'
                             >
                                 {t(
                                     'onboarding.asb_import.backup.pick_file_button',
@@ -112,22 +129,14 @@ export const AsbImportBackupScreen = () => {
                         <PWText
                             variant='link'
                             style={styles.pasteLabel}
+                            numberOfLines={2}
+                            ellipsizeMode='tail'
                         >
                             {t('onboarding.asb_import.backup.paste_button')}
                         </PWText>
                     </PWTouchableOpacity>
                 </PWView>
             </PWView>
-
-            <PWView style={styles.footer}>
-                <PWButton
-                    variant='primary'
-                    title={t('onboarding.asb_import.backup.continue')}
-                    onPress={handleContinue}
-                    isDisabled={!canContinue}
-                    testID='asb_import_backup_continue_button'
-                />
-            </PWView>
-        </PWView>
+        </PWScreen>
     )
 }

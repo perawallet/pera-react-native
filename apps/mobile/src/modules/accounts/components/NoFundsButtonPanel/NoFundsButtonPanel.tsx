@@ -28,18 +28,21 @@ export const NoFundsButtonPanel = () => {
                 icon='algo'
                 variant='primary'
                 onPress={handleBuyAlgo}
+                style={themeStyle.button}
             />
             <RoundButton
                 title={t('account_details.no_balance.receive')}
                 icon='inflow'
                 variant='secondary'
                 onPress={handleReceive}
+                style={themeStyle.button}
             />
             <RoundButton
                 title={t('account_details.no_balance.more')}
                 icon='ellipsis'
                 variant='secondary'
                 onPress={handleMore}
+                style={themeStyle.button}
             />
         </PWView>
     )

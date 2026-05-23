@@ -12,7 +12,8 @@
 
 import { SvgProps } from 'react-native-svg'
 import { useTheme } from '@rneui/themed'
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
+import { Keyboard, type GestureResponderEvent } from 'react-native'
 import { ICON_LIBRARY, IconName } from './constants'
 import { PWIconSize, PWIconVariant } from './types'
 
@@ -26,10 +27,21 @@ export const PWIcon = ({
     name,
     size = 'md',
     variant = 'primary',
+    onPress,
     ...rest
 }: PWIconProps) => {
     const { theme } = useTheme()
     const IconComponent = ICON_LIBRARY[name]
+
+    // SVG onPress bypasses PWTouchableOpacity. Fire onPress before
+    // Keyboard.dismiss so bottom-sheet open animations don't race.
+    const handlePress = useCallback(
+        (event: GestureResponderEvent) => {
+            onPress?.(event)
+            Keyboard.dismiss()
+        },
+        [onPress],
+    )
 
     const sizeMap: Record<PWIconSize, number> = useMemo(
         () => ({
@@ -79,7 +91,7 @@ export const PWIcon = ({
 
     if (!IconComponent) return null
 
-    const resolvedSize = sizeMap[size] ?? theme.spacing.xl
+    const resolvedSize = sizeMap[size]
     const resolvedColor = rest.disabled
         ? disabledColors[variant]
         : variantColors[variant]
@@ -89,6 +101,7 @@ export const PWIcon = ({
             width={resolvedSize}
             height={resolvedSize}
             color={resolvedColor}
+            onPress={onPress ? handlePress : undefined}
             {...rest}
         />
     )

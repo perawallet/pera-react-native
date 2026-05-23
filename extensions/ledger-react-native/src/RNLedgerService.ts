@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { Buffer } from 'buffer'
 import { Platform, PermissionsAndroid } from 'react-native'
 import type { HardwareWalletService } from '@perawallet/wallet-extension-platform'
 import { type Nullable } from '@perawallet/wallet-core-shared'

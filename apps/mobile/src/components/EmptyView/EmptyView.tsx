@@ -73,12 +73,19 @@ export const EmptyView = (props: EmptyViewProps) => {
             {!!title && (
                 <PWText
                     variant='h3'
-                    style={styles.text}
+                    style={styles.titleText}
+                    truncate
                 >
                     {title}
                 </PWText>
             )}
-            <PWText style={styles.text}>{body}</PWText>
+            <PWText
+                style={styles.text}
+                numberOfLines={3}
+                ellipsizeMode='tail'
+            >
+                {body}
+            </PWText>
             {button}
         </PWView>
     )

@@ -43,6 +43,16 @@ export default defineConfig({
                 ),
             },
             {
+                // react-native-keyboard-controller ships untranspiled
+                // sources that vitest can't parse; tests don't need real
+                // keyboard tracking, so route through a passthrough stub.
+                find: 'react-native-keyboard-controller',
+                replacement: path.resolve(
+                    __dirname,
+                    './src/test-utils/keyboard-controller-stub.tsx',
+                ),
+            },
+            {
                 // `@walletconnect/client` (v1) opens a relay socket on
                 // construction — no good in jsdom. Route every consumer
                 // (including the deep `@perawallet/wallet-core-walletconnect`

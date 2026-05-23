@@ -14,7 +14,7 @@ import {
     PWButton,
     PWDivider,
     PWIcon,
-    PWScrollView,
+    PWScreen,
     PWSlideToConfirm,
     PWText,
     PWTouchableOpacity,
@@ -31,12 +31,10 @@ import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-blockchain'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { EmptyView } from '@components/EmptyView'
 
 export const AssetClaimDetailScreen = () => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles(insets)
+    const styles = useStyles()
     const { t } = useLanguage()
     const {
         request,
@@ -57,137 +55,136 @@ export const AssetClaimDetailScreen = () => {
     }
 
     return (
-        <PWView style={styles.container}>
-            <PWScrollView contentContainerStyle={styles.scrollContent}>
-                <PWView style={styles.amountSection}>
-                    <AssetNameBadge
-                        name={request.asset.name ?? ''}
-                        verificationTier={
-                            request.asset.peraMetadata?.verificationTier
-                        }
-                    />
-                    <CurrencyDisplay
-                        variant='h2'
-                        value={amount}
-                        currency={request.asset?.unitName ?? ''}
-                        precision={request.asset?.decimals}
-                        minPrecision={DEFAULT_PRECISION}
-                    />
-                    <PreferredCurrencyDisplay
-                        sourceAmount={amount}
-                        sourceAssetId={request.asset?.assetId}
-                        precision={DEFAULT_PRECISION}
-                        showSymbol
-                        style={styles.usdText}
-                    />
-                </PWView>
-
-                {request.id && (
-                    <>
-                        <PWView style={styles.assetIdRow}>
-                            <CopyableText copyValue={request.id}>
-                                <PWText style={styles.usdText}>
-                                    {request.id}
-                                </PWText>
-                            </CopyableText>
-                            <PWTouchableOpacity
-                                style={styles.copyIdPill}
-                                onPress={handleCopyAssetId}
-                            >
-                                <PWText variant='caption'>
-                                    {t('messages.claim.copy_id')}
-                                </PWText>
-                            </PWTouchableOpacity>
-                        </PWView>
-
-                        <PWDivider style={styles.separator} />
-                    </>
-                )}
-
-                <PWView style={styles.accountRow}>
-                    <PWText style={styles.headerLabelText}>
-                        {t('messages.claim.account')}
-                    </PWText>
-                    {receiverAccount && (
-                        <AccountDisplay
-                            account={receiverAccount}
-                            showChevron={false}
-                        />
-                    )}
-                </PWView>
-
-                <PWDivider style={styles.separator} />
-
-                <PWView style={styles.sendersSection}>
-                    <PWView style={styles.sendersHeader}>
-                        <PWText style={styles.headerLabelText}>
-                            {t('messages.claim.senders')}
-                        </PWText>
-                        <PWText style={styles.headerLabelText}>
-                            {t('messages.claim.amount')}
-                        </PWText>
-                    </PWView>
-                    {request.senders.results.map((senderItem, index) => (
-                        <PWView
-                            key={`${senderItem.sender.address}-${index}`}
-                            style={styles.senderRow}
-                        >
-                            <AddressDisplay
-                                address={senderItem.sender.address}
-                                showCopy={false}
-                            />
-                            <CurrencyDisplay
-                                value={baseUnitsToDisplayUnits(
-                                    senderItem.amount,
-                                    request.asset.decimals,
-                                )}
-                                currency={request.asset?.unitName ?? ''}
-                                precision={request.asset?.decimals}
-                                minPrecision={DEFAULT_PRECISION}
-                                prefix={'+'}
-                                style={styles.senderAmountText}
-                            />
-                        </PWView>
-                    ))}
-                </PWView>
-            </PWScrollView>
-
-            {!request.microAlgoGainOnClaim.isZero() && (
+        <PWScreen
+            footer={
                 <>
-                    <PWDivider style={styles.separator} />
-                    <PWView style={styles.algoGainRow}>
-                        <PWIcon
-                            name='info'
-                            variant='secondary'
-                            style={styles.algoGainIcon}
+                    {!request.microAlgoGainOnClaim.isZero() && (
+                        <>
+                            <PWDivider style={styles.separator} />
+                            <PWView style={styles.algoGainRow}>
+                                <PWIcon
+                                    name='info'
+                                    variant='secondary'
+                                    style={styles.algoGainIcon}
+                                />
+                                <PWText
+                                    variant='caption'
+                                    style={styles.algoGainText}
+                                >
+                                    {t('arc59.claim.algo_gain', {
+                                        amount: baseUnitsToDisplayUnits(
+                                            request.microAlgoGainOnClaim,
+                                            6,
+                                        ),
+                                    })}
+                                </PWText>
+                            </PWView>
+                        </>
+                    )}
+                    <PWView style={styles.footer}>
+                        <PWSlideToConfirm
+                            title={t('common.slide_to_confirm.label')}
+                            onConfirm={handleClaim}
+                            testID='arc59_claim_confirm_slide'
                         />
-                        <PWText
-                            variant='caption'
-                            style={styles.algoGainText}
-                        >
-                            {t('arc59.claim.algo_gain', {
-                                amount: baseUnitsToDisplayUnits(
-                                    request.microAlgoGainOnClaim,
-                                    6,
-                                ),
-                            })}
-                        </PWText>
+                        <PWButton
+                            variant='linkNeutral'
+                            title={t('arc59.claim.reject')}
+                            onPress={handleRejectPress}
+                        />
                     </PWView>
+                </>
+            }
+        >
+            <PWView style={styles.amountSection}>
+                <AssetNameBadge
+                    name={request.asset.name ?? ''}
+                    verificationTier={
+                        request.asset.peraMetadata?.verificationTier
+                    }
+                />
+                <CurrencyDisplay
+                    variant='h2'
+                    value={amount}
+                    currency={request.asset?.unitName ?? ''}
+                    precision={request.asset?.decimals}
+                    minPrecision={DEFAULT_PRECISION}
+                />
+                <PreferredCurrencyDisplay
+                    sourceAmount={amount}
+                    sourceAssetId={request.asset?.assetId}
+                    precision={DEFAULT_PRECISION}
+                    showSymbol
+                    style={styles.usdText}
+                />
+            </PWView>
+
+            {request.id && (
+                <>
+                    <PWView style={styles.assetIdRow}>
+                        <CopyableText copyValue={request.id}>
+                            <PWText style={styles.usdText}>{request.id}</PWText>
+                        </CopyableText>
+                        <PWTouchableOpacity
+                            style={styles.copyIdPill}
+                            onPress={handleCopyAssetId}
+                        >
+                            <PWText variant='caption'>
+                                {t('messages.claim.copy_id')}
+                            </PWText>
+                        </PWTouchableOpacity>
+                    </PWView>
+
+                    <PWDivider style={styles.separator} />
                 </>
             )}
 
-            <PWView style={styles.footer}>
-                <PWSlideToConfirm
-                    title={t('common.slide_to_confirm.label')}
-                    onConfirm={handleClaim}
-                    testID='arc59_claim_confirm_slide'
-                />
-                <PWButton
-                    variant='linkNeutral'
-                    title={t('arc59.claim.reject')}
-                    onPress={handleRejectPress}
-                />
+            <PWView style={styles.accountRow}>
+                <PWText style={styles.headerLabelText}>
+                    {t('messages.claim.account')}
+                </PWText>
+                {receiverAccount && (
+                    <AccountDisplay
+                        account={receiverAccount}
+                        showChevron={false}
+                    />
+                )}
             </PWView>
-        </PWView>
+
+            <PWDivider style={styles.separator} />
+
+            <PWView style={styles.sendersSection}>
+                <PWView style={styles.sendersHeader}>
+                    <PWText style={styles.headerLabelText}>
+                        {t('messages.claim.senders')}
+                    </PWText>
+                    <PWText style={styles.headerLabelText}>
+                        {t('messages.claim.amount')}
+                    </PWText>
+                </PWView>
+                {request.senders.results.map((senderItem, index) => (
+                    <PWView
+                        key={`${senderItem.sender.address}-${index}`}
+                        style={styles.senderRow}
+                    >
+                        <AddressDisplay
+                            address={senderItem.sender.address}
+                            showCopy={false}
+                        />
+                        <CurrencyDisplay
+                            value={baseUnitsToDisplayUnits(
+                                senderItem.amount,
+                                request.asset.decimals,
+                            )}
+                            currency={request.asset?.unitName ?? ''}
+                            precision={request.asset?.decimals}
+                            minPrecision={DEFAULT_PRECISION}
+                            prefix={'+'}
+                            style={styles.senderAmountText}
+                        />
+                    </PWView>
+                ))}
+            </PWView>
+        </PWScreen>
     )
 }

@@ -13,35 +13,55 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
+    content: {
+        paddingHorizontal: theme.spacing.xl,
+        width: '100%',
+    },
     optionsContainer: {
         gap: theme.spacing.md,
         marginTop: theme.spacing.lg,
-        paddingHorizontal: theme.spacing.xl,
         paddingBottom: theme.spacing['4xl'],
+        width: '100%',
     },
     optionBox: {
         borderWidth: theme.borders.sm,
         borderColor: theme.colors.layerGray,
         borderRadius: theme.spacing.lg,
-        paddingHorizontal: theme.spacing.xl,
+        paddingHorizontal: theme.spacing.lg,
         paddingVertical: theme.spacing.md,
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.md,
+        width: '100%',
+        minWidth: 0,
+        overflow: 'hidden',
     },
     optionContent: {
         flex: 1,
+        minWidth: 0,
         justifyContent: 'space-between',
         gap: theme.spacing.sm,
     },
     optionTopContent: {
         gap: theme.spacing.xs,
-        maxWidth: '80%',
+        width: '100%',
+        minWidth: 0,
     },
     optionHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: theme.spacing.md,
+        gap: theme.spacing.sm,
+        width: '100%',
+        minWidth: 0,
+    },
+    optionTitleContainer: {
+        flex: 1,
+        minWidth: 0,
+    },
+    optionChipContainer: {
+        flexShrink: 1,
+        minWidth: 0,
+        maxWidth: '45%',
     },
     optionBody: {
         color: theme.colors.textGray,
@@ -56,5 +76,6 @@ export const useStyles = makeStyles(theme => ({
         backgroundColor: theme.colors.layerGrayLighter,
         alignItems: 'center',
         justifyContent: 'center',
+        flexShrink: 0,
     },
 }))

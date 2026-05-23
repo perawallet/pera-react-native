@@ -12,17 +12,15 @@
 
 import React from 'react'
 import { ActivityIndicator } from 'react-native'
-import { PWButton, PWText, PWView } from '@components/core'
+import { PWButton, PWScreen, PWText, PWView } from '@components/core'
 import { AddressEntryField } from '@components/AddressEntryField'
-import { useBottomSafeAreaPadding } from '@hooks/useBottomSafeAreaPadding'
 import { useWatchAccountScreen } from './useWatchAccountScreen'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 
 export const WatchAccountScreen = () => {
-    const bottomPadding = useBottomSafeAreaPadding()
-    const styles = useStyles(bottomPadding)
+    const styles = useStyles()
     const { t } = useLanguage()
     const {
         address,
@@ -50,7 +48,18 @@ export const WatchAccountScreen = () => {
               : undefined
 
     return (
-        <PWView style={styles.rootContainer}>
+        <PWScreen
+            scroll={false}
+            footer={
+                <PWButton
+                    testID='watch_account_submit_button'
+                    variant='primary'
+                    title={t('onboarding.watch_account.watch_button')}
+                    onPress={handleWatchAccount}
+                    isDisabled={!isValidAddress || isDuplicateAddress}
+                />
+            }
+        >
             <PWView style={styles.contentContainer}>
                 <PWText variant='h1'>
                     {t('onboarding.watch_account.title')}
@@ -95,16 +104,6 @@ export const WatchAccountScreen = () => {
                     </PWView>
                 )}
             </PWView>
-
-            <PWView style={styles.footerContainer}>
-                <PWButton
-                    testID='watch_account_submit_button'
-                    variant='primary'
-                    title={t('onboarding.watch_account.watch_button')}
-                    onPress={handleWatchAccount}
-                    isDisabled={!isValidAddress || isDuplicateAddress}
-                />
-            </PWView>
-        </PWView>
+        </PWScreen>
     )
 }

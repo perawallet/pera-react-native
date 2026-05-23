@@ -328,7 +328,7 @@ export const PWWebView = (props: PWWebViewProps) => {
 
             <PWScrollView
                 style={styles.flex}
-                contentContainerStyle={styles.flex}
+                contentContainerStyle={styles.scrollContent}
             >
                 {renderWebView()}
             </PWScrollView>

@@ -16,22 +16,26 @@ export const useStyles = makeStyles(theme => ({
     container: {
         marginTop: theme.spacing.xl,
         gap: theme.spacing.md,
+        width: '100%',
+        minWidth: 0,
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: theme.spacing.md,
+        gap: theme.spacing.md,
+        minWidth: 0,
     },
     title: {
         color: theme.colors.textMain,
+        flex: 1,
+        minWidth: 0,
     },
     list: {
-        marginHorizontal: -theme.spacing.sm,
+        width: '100%',
     },
     listContent: {
-        gap: theme.spacing.md,
-        paddingHorizontal: theme.spacing.lg,
+        gap: theme.spacing.sm,
     },
     chip: {
         flexDirection: 'row',

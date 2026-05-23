@@ -14,18 +14,21 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
-        alignItems: 'center',
-        justifyContent: 'center',
+        alignItems: 'stretch',
         gap: theme.spacing.lg,
         paddingVertical: theme.spacing.lg,
+        width: '100%',
     },
     detailRow: {
         flexDirection: 'row',
         alignItems: 'center',
+        alignSelf: 'stretch',
         gap: theme.spacing.md,
         overflow: 'hidden',
         flexWrap: 'nowrap',
-        flexShrink: 1,
+        flex: 1,
+        minWidth: 0,
+        width: '100%',
     },
     amountPositive: {
         marginVertical: theme.spacing.sm,
@@ -36,8 +39,8 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.negative,
     },
     detailContainer: {
-        paddingHorizontal: theme.spacing.sm,
         gap: theme.spacing.lg,
+        width: '100%',
     },
     divider: {
         marginTop: theme.spacing.xs,

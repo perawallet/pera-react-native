@@ -64,13 +64,15 @@ export const useStyles = makeStyles((theme, { isDisabled }: StyleProps) => ({
     },
     label: {
         position: 'absolute',
-        left: 0,
-        right: 0,
+        left: THUMB_SIZE + TRACK_INSET,
+        right: TRACK_INSET,
         alignItems: 'center',
         justifyContent: 'center',
     },
     labelTextBase: {
         color: theme.colors.textMain,
+        width: '100%',
+        textAlign: 'center',
     },
     labelOverlayClip: {
         position: 'absolute',
@@ -86,6 +88,8 @@ export const useStyles = makeStyles((theme, { isDisabled }: StyleProps) => ({
     },
     labelTextOverlay: {
         color: theme.colors.buttonFloatIconMain,
+        width: '100%',
+        textAlign: 'center',
     },
     thumb: {
         width: THUMB_SIZE,

@@ -14,6 +14,7 @@ import { useCallback, useEffect, useRef } from 'react'
 import {
     PWFlatList,
     PWIcon,
+    PWScreen,
     PWText,
     PWTouchableOpacity,
     PWView,
@@ -155,7 +156,11 @@ export const SearchScreen = () => {
     const showNoResults = hasQuery && !isLoading && !hasResults
 
     return (
-        <PWView style={styles.container}>
+        <PWScreen
+            scroll={false}
+            horizontalPadding='lg'
+            keyboard='avoid'
+        >
             <SearchInput
                 value={value}
                 onChangeText={setValue}
@@ -171,7 +176,6 @@ export const SearchScreen = () => {
                 keyExtractor={keyExtractor}
                 estimatedItemSize={ESTIMATED_ROW_SIZE}
                 style={styles.list}
-                contentContainerStyle={styles.contentContainer}
                 ListEmptyComponent={
                     showNoResults ? (
                         <EmptyView
@@ -199,6 +203,6 @@ export const SearchScreen = () => {
                     )
                 }
             />
-        </PWView>
+        </PWScreen>
     )
 }

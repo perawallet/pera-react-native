@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useInboxStatus, useInboxQuery } from '@perawallet/wallet-core-messages'
+import { useInboxStatus } from '@perawallet/wallet-core-messages'
 import { useSpotBannersQuery } from '@perawallet/wallet-core-banners'
 import { SvgProps } from 'react-native-svg'
 import { PWBadge, PWIcon, PWTouchableOpacity, PWView } from '@components/core'
@@ -24,8 +24,7 @@ const MAX_INBOX_COUNT_DISPLAY = 9
 
 export const NotificationsIcon = (props: NotificationsIconProps) => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
-    const { hasUnreadNotifications } = useInboxStatus()
-    const { data: inboxData } = useInboxQuery()
+    const { unreadInboxCount, hasUnreadNotifications } = useInboxStatus()
     // Spot banners live on the Messages screen above the tabs, so any
     // outstanding spot banner is also an "unread" signal the icon should
     // surface.
@@ -37,14 +36,13 @@ export const NotificationsIcon = (props: NotificationsIconProps) => {
         navigation.navigate('Messages')
     }
 
-    const inboxCount = inboxData?.length ?? 0
-    const showCountBadge = inboxCount > 0
+    const showCountBadge = unreadInboxCount > 0
     const showDotBadge =
         !showCountBadge && (hasUnreadNotifications || hasSpotBanners)
     const countLabel =
-        inboxCount > MAX_INBOX_COUNT_DISPLAY
+        unreadInboxCount > MAX_INBOX_COUNT_DISPLAY
             ? `${MAX_INBOX_COUNT_DISPLAY}+`
-            : String(inboxCount)
+            : String(unreadInboxCount)
 
     return (
         <PWTouchableOpacity

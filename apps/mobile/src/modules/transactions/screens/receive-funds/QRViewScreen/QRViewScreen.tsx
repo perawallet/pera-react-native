@@ -14,7 +14,7 @@ import { useWindowDimensions } from 'react-native'
 import { useTheme } from '@rneui/themed'
 import QRCode from 'react-native-qrcode-svg'
 
-import { PWButton, PWIcon, PWText, PWView } from '@components/core'
+import { PWButton, PWIcon, PWScreen, PWText, PWView } from '@components/core'
 import { CopyableText } from '@components/CopyableText'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
@@ -76,7 +76,27 @@ export const QRViewScreen = () => {
     }
 
     return (
-        <PWView style={styles.container}>
+        <PWScreen
+            scroll={false}
+            footer={
+                <PWView style={styles.buttonContainer}>
+                    <PWButton
+                        title={t('receive_funds.qrview.copy_address')}
+                        variant='primary'
+                        icon='copy'
+                        testID='receive_copy_address_button'
+                        onPress={handleCopyAddress}
+                    />
+                    <PWButton
+                        title={t('receive_funds.qrview.share')}
+                        variant='secondary'
+                        icon='share'
+                        testID='receive_share_address_button'
+                        onPress={handleShareAddress}
+                    />
+                </PWView>
+            }
+        >
             <PWView style={styles.contentContainer}>
                 <PWView style={styles.qrContainer}>
                     <QRCode
@@ -96,22 +116,6 @@ export const QRViewScreen = () => {
                     </CopyableText>
                 </PWView>
             </PWView>
-            <PWView style={styles.buttonContainer}>
-                <PWButton
-                    title={t('receive_funds.qrview.copy_address')}
-                    variant='primary'
-                    icon='copy'
-                    testID='receive_copy_address_button'
-                    onPress={handleCopyAddress}
-                />
-                <PWButton
-                    title={t('receive_funds.qrview.share')}
-                    variant='secondary'
-                    icon='share'
-                    testID='receive_share_address_button'
-                    onPress={handleShareAddress}
-                />
-            </PWView>
-        </PWView>
+        </PWScreen>
     )
 }

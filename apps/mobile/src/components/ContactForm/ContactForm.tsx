@@ -12,7 +12,6 @@
 
 import { type ReactNode, useCallback, useRef, useState } from 'react'
 import { ActivityIndicator } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
     type Control,
     Controller,
@@ -25,7 +24,6 @@ import {
     PWIcon,
     PWInput,
     type PWInputRef,
-    PWScrollView,
     PWText,
     PWTouchableOpacity,
     PWView,
@@ -68,10 +66,7 @@ export const ContactForm = <T extends FieldValues>({
     children,
 }: ContactFormProps<T>) => {
     const { t } = useLanguage()
-    const insets = useSafeAreaInsets()
-    const styles = useStyles({
-        scrollPaddingBottom: Math.max(insets.bottom, 24),
-    })
+    const styles = useStyles()
     const [scannerVisible, setScannerVisible] = useState(false)
     const addressInputRef = useRef<PWInputRef>(null)
 
@@ -97,12 +92,7 @@ export const ContactForm = <T extends FieldValues>({
     const handleCloseScanner = useCallback(() => setScannerVisible(false), [])
 
     return (
-        <PWScrollView
-            style={styles.flex}
-            contentContainerStyle={styles.container}
-            keyboardShouldPersistTaps='handled'
-            keyboardDismissMode='interactive'
-        >
+        <>
             <PWView style={styles.avatarWrapper}>
                 {onPickImage ? (
                     <PWTouchableOpacity
@@ -214,6 +204,6 @@ export const ContactForm = <T extends FieldValues>({
                     title={t('address_entry.scan_qr')}
                 />
             )}
-        </PWScrollView>
+        </>
     )
 }

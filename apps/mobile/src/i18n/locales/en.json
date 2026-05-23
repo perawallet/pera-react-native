@@ -1593,7 +1593,7 @@
     "settings": {
         "currency": {
             "title": "Main Currency",
-            "description": "Your main currency is {{preferredCurrency}}, and secondary currency is {{fallbackCurrency}}.",
+            "description": "Your main currency is <0>{{preferredCurrency}}</0>, and secondary currency is <0>{{fallbackCurrency}}</0>.",
             "search_placeholder": "Search"
         },
         "main": {

@@ -119,11 +119,6 @@ export const SwapToAssetSelectionList = ({
                 keyExtractor={item =>
                     isSkeletonItem(item) ? item.id : item.dexAsset.assetId
                 }
-                ItemSeparatorComponent={() => (
-                    <PWView style={styles.separator} />
-                )}
-                keyboardDismissMode='on-drag'
-                contentContainerStyle={styles.listContent}
                 ListEmptyComponent={
                     !isLoading && debouncedSearchFilter ? (
                         <EmptyView

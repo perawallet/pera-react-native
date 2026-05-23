@@ -13,14 +13,6 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        flex: 1,
-        backgroundColor: theme.colors.background,
-    },
-    content: {
-        flex: 1,
-        paddingHorizontal: theme.spacing.xl,
-    },
     iconContainer: {
         alignItems: 'center',
         marginTop: theme.spacing.xxl,
@@ -56,9 +48,7 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textMain,
     },
     footer: {
-        padding: theme.spacing.xl,
         borderTopWidth: theme.borders.sm,
         borderTopColor: theme.colors.layerGrayLighter,
-        backgroundColor: theme.colors.background,
     },
 }))

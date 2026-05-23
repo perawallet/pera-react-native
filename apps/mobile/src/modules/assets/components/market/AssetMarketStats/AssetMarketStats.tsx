@@ -44,7 +44,10 @@ export const AssetMarketStats = ({ assetDetails }: AssetMarketStatsProps) => {
 
     return (
         <PWView style={styles.container}>
-            <PWText style={styles.sectionTitle}>
+            <PWText
+                style={styles.sectionTitle}
+                truncate
+            >
                 {t('asset_details.markets.stats')}
             </PWText>
             <PWView style={styles.statsContainer}>

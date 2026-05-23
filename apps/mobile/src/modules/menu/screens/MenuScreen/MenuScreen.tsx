@@ -10,7 +10,13 @@
  limitations under the License
  */
 
-import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
+import {
+    PWIcon,
+    PWScreen,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
 import { useStyles } from './styles'
 
 import { PanelButton } from '@components/PanelButton'
@@ -76,16 +82,24 @@ export const MenuScreen = () => {
     }
 
     return (
-        <PWView style={styles.container}>
+        <PWScreen
+            scroll={false}
+            horizontalPadding='lg'
+            keyboard='none'
+            style={styles.container}
+        >
             <PWView style={styles.iconBar}>
-                <PWView style={styles.iconBarColumn} />
-                <PWText
-                    variant='h4'
-                    style={styles.iconBarColumn}
-                >
-                    {t('menu.title')}
-                </PWText>
-                <PWView style={styles.iconBarColumn}>
+                <PWView style={styles.iconBarSide} />
+                <PWView style={styles.titleContainer}>
+                    <PWText
+                        variant='h4'
+                        style={styles.title}
+                        truncate
+                    >
+                        {t('menu.title')}
+                    </PWText>
+                </PWView>
+                <PWView style={styles.iconBarActions}>
                     <PWTouchableOpacity
                         onPress={scanner.open}
                         testID='menu_button'
@@ -151,6 +165,6 @@ export const MenuScreen = () => {
                 onClose={scanner.close}
                 animationType='slide'
             />
-        </PWView>
+        </PWScreen>
     )
 }

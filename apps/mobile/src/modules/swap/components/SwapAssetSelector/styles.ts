@@ -21,6 +21,9 @@ export const useStyles = makeStyles((theme, { variant }: StyleProps) => ({
             variant === 'pay'
                 ? theme.colors.layerGrayLightest
                 : theme.colors.layerGray,
+        flexShrink: 1,
+        minWidth: 0,
+        maxWidth: '48%',
     },
     content: {
         flexDirection: 'row',
@@ -28,10 +31,16 @@ export const useStyles = makeStyles((theme, { variant }: StyleProps) => ({
         gap: theme.spacing.sm,
         paddingVertical: theme.spacing.md,
         paddingHorizontal: theme.spacing.md,
+        minWidth: 0,
     },
     icon: {
         width: theme.spacing.xl,
         height: theme.spacing.xl,
         borderRadius: theme.spacing.xl / 2,
+        flexShrink: 0,
+    },
+    assetName: {
+        flexShrink: 1,
+        minWidth: 0,
     },
 }))

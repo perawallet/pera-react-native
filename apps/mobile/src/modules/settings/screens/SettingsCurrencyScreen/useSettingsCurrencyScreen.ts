@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import { useInvalidateAssetPrices } from '@perawallet/wallet-core-assets'
+import {
+    ALGO_ASSET_UNIT_NAME,
+    useInvalidateAssetPrices,
+} from '@perawallet/wallet-core-assets'
 import {
     Currency,
     useCurrenciesQuery,
@@ -52,7 +55,7 @@ export const useSettingsCurrencyScreen = () => {
             setFallbackCurrency('USD')
         } else {
             setPreferredCurrency(currency.id)
-            setFallbackCurrency(currency.id)
+            setFallbackCurrency(ALGO_ASSET_UNIT_NAME)
         }
         invalidateAssetPrices()
     }

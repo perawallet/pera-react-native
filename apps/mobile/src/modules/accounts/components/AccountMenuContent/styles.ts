@@ -13,7 +13,13 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
+    container: {
+        flex: 1,
+        paddingHorizontal: theme.spacing.xl,
+        minWidth: 0,
+        overflow: 'hidden',
+    },
     toolbar: {
-        marginHorizontal: theme.spacing.sm,
+        width: '100%',
     },
 }))

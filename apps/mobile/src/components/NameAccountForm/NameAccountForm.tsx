@@ -15,15 +15,13 @@ import {
     PWButton,
     PWInput,
     PWLoadingOverlay,
+    PWScreen,
     PWText,
     PWTouchableIcon,
     PWView,
 } from '@components/core'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { KeyboardAvoidingView, Platform } from 'react-native'
 import { useStyles } from './styles'
 
-const HEADER_HEIGHT = 50
 export type NameAccountFormProps = {
     title: string
     description: string
@@ -54,12 +52,20 @@ export const NameAccountForm = ({
     const styles = useStyles()
 
     return (
-        <KeyboardAvoidingView
-            style={styles.mainContainer}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={HEADER_HEIGHT}
-        >
-            <PWView style={styles.content}>
+        <>
+            <PWScreen
+                scroll={false}
+                footer={
+                    <PWButton
+                        variant='primary'
+                        title={finishButtonTitle}
+                        onPress={onFinish}
+                        isLoading={isLoading}
+                        isDisabled={isDisabled ?? isLoading}
+                        testID='name_account_finish_button'
+                    />
+                }
+            >
                 <PWView style={styles.headerContainer}>
                     <PWText variant='h1'>{title}</PWText>
                     <PWText
@@ -93,26 +99,12 @@ export const NameAccountForm = ({
                         ) : undefined
                     }
                 />
-            </PWView>
-
-            <SafeAreaView
-                edges={['bottom']}
-                style={styles.footer}
-            >
-                <PWButton
-                    variant='primary'
-                    title={finishButtonTitle}
-                    onPress={onFinish}
-                    isLoading={isLoading}
-                    isDisabled={isDisabled ?? isLoading}
-                    testID='name_account_finish_button'
-                />
-            </SafeAreaView>
+            </PWScreen>
 
             <PWLoadingOverlay
                 isVisible={isLoading}
                 title={loadingTitle}
             />
-        </KeyboardAvoidingView>
+        </>
     )
 }

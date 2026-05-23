@@ -10,7 +10,13 @@
  limitations under the License
  */
 
-import { TouchableOpacity, TouchableOpacityProps } from 'react-native'
+import { useCallback } from 'react'
+import {
+    Keyboard,
+    TouchableOpacity,
+    type GestureResponderEvent,
+    type TouchableOpacityProps,
+} from 'react-native'
 import { getTestProps } from '@utils/test-id-helper'
 
 export type PWTouchableOpacityProps = {} & TouchableOpacityProps
@@ -21,12 +27,26 @@ export const PWTouchableOpacity = ({
     children,
     activeOpacity,
     testID,
+    onPress,
     ...rest
 }: PWTouchableOpacityProps) => {
+    // Fire onPress first, then dismiss the keyboard. Doing it the other
+    // way around races with libraries (e.g. @gorhom/bottom-sheet) whose
+    // open animations get cancelled mid-flight if the keyboard hide is
+    // already in motion when the action commits.
+    const handlePress = useCallback(
+        (event: GestureResponderEvent) => {
+            onPress?.(event)
+            Keyboard.dismiss()
+        },
+        [onPress],
+    )
+
     return (
         <TouchableOpacity
             {...getTestProps(testID)}
             {...rest}
+            onPress={onPress ? handlePress : undefined}
             activeOpacity={activeOpacity ?? DEFAULT_ACTIVE_OPACITY}
         >
             {children}

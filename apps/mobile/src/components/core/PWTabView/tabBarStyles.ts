@@ -12,18 +12,19 @@
 
 import { makeStyles } from '@rneui/themed'
 import { TextStyle } from 'react-native'
-import { getTypography } from '@theme/typography'
+import { getFontWeightVariant } from '@theme/typography'
 
 export const useStyles = makeStyles(theme => {
     const title: TextStyle = {
-        ...getTypography(theme, 'body'),
-        fontWeight: '600',
+        ...getFontWeightVariant(theme, 'bodyLarge', 500),
         textTransform: 'none',
+        flexShrink: 1,
+        minWidth: 0,
     }
 
     return {
         externalContainer: {
-            paddingHorizontal: theme.spacing.md,
+            paddingHorizontal: theme.spacing.xl,
             paddingVertical: theme.spacing.sm,
             backgroundColor: theme.colors.background,
         },
@@ -38,10 +39,17 @@ export const useStyles = makeStyles(theme => {
         labelContainer: {
             alignItems: 'center',
             justifyContent: 'center',
+            alignSelf: 'stretch',
+            width: '100%',
+            paddingHorizontal: theme.spacing.xs,
         },
         labelTextContainer: {
             flexDirection: 'row',
+            alignItems: 'center',
             gap: theme.spacing.xs,
+            maxWidth: '100%',
+            minWidth: 0,
+            flexShrink: 1,
         },
         activeLayer: {
             position: 'absolute',
@@ -50,8 +58,10 @@ export const useStyles = makeStyles(theme => {
             right: 0,
             bottom: 0,
             justifyContent: 'center',
+            alignItems: 'center',
             flexDirection: 'row',
             gap: theme.spacing.xs,
+            paddingHorizontal: theme.spacing.xs,
         },
         indicatorWrapper: {
             position: 'absolute',
@@ -76,9 +86,11 @@ export const useStyles = makeStyles(theme => {
         },
         tab: {
             flex: 1,
+            minWidth: 0,
             alignItems: 'center',
             justifyContent: 'center',
             height: '100%',
+            overflow: 'hidden',
         },
     }
 })

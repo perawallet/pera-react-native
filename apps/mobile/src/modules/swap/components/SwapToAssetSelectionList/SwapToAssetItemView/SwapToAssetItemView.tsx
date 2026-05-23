@@ -12,22 +12,16 @@
 
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
-import type { DexSwapAsset } from '@perawallet/wallet-core-swaps'
-import { isAlgoAsset } from '@perawallet/wallet-core-assets'
-import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 import {
-    PWIcon,
-    PWText,
-    PWTouchableOpacity,
-    type PWTouchableOpacityProps,
-    PWView,
-} from '@components/core'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
-import { CopyableText } from '@components/CopyableText'
-import { getVerificationIcon } from '@modules/assets/utils/verification'
-import { AssetIcon } from '@modules/assets/components'
-import { useStyles } from './styles'
+    DEFAULT_ASSET_METADATA,
+    type PeraAsset,
+    type PeraAssetVerificationTier,
+} from '@perawallet/wallet-core-assets'
+import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
+import { AccountAssetItemView } from '@modules/assets/components'
+import { type PWTouchableOpacityProps } from '@components/core'
+
+import type { DexSwapAsset } from '@perawallet/wallet-core-swaps'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type SwapToAssetItemViewProps = {
@@ -38,76 +32,39 @@ export type SwapToAssetItemViewProps = {
 export const SwapToAssetItemView = ({
     dexAsset,
     balance,
-    onPress,
     ...rest
 }: SwapToAssetItemViewProps) => {
-    const styles = useStyles()
+    const accountBalance = useMemo<AssetWithAccountBalance>(() => {
+        const asset: PeraAsset = {
+            assetId: dexAsset.assetId,
+            name: dexAsset.name,
+            unitName: dexAsset.unitName,
+            decimals: dexAsset.decimals ?? 0,
+            creator: { address: '' },
+            totalSupply: dexAsset.total
+                ? new Decimal(dexAsset.total)
+                : new Decimal(0),
+            peraMetadata: {
+                ...DEFAULT_ASSET_METADATA,
+                verificationTier:
+                    dexAsset.verificationTier as PeraAssetVerificationTier,
+            },
+        }
 
-    const isAlgo = isAlgoAsset(dexAsset.assetId)
-
-    const verificationIconName = useMemo(() => {
-        if (isAlgo) return 'assets/trusted' as const
-        return getVerificationIcon(dexAsset.verificationTier)
-    }, [isAlgo, dexAsset.verificationTier])
+        return {
+            assetId: dexAsset.assetId,
+            asset,
+            amount: balance ?? new Decimal(0),
+            algoValue: new Decimal(0),
+        }
+    }, [dexAsset, balance])
 
     return (
-        <PWTouchableOpacity
-            onPress={onPress}
+        <AccountAssetItemView
+            accountBalance={accountBalance}
+            logoUrl={dexAsset.logo}
+            showBalance={balance !== null}
             {...rest}
-            style={[styles.container, rest.style]}
-        >
-            <AssetIcon
-                asset={dexAsset}
-                logoUrl={dexAsset.logo}
-                size='lg'
-            />
-            <PWView style={styles.dataContainer}>
-                <PWView style={styles.unitContainer}>
-                    <PWView style={styles.row}>
-                        <PWText
-                            style={styles.primaryUnit}
-                            numberOfLines={1}
-                        >
-                            {isAlgo ? 'Algo' : dexAsset.name}
-                        </PWText>
-                        {verificationIconName ? (
-                            <PWIcon
-                                name={verificationIconName}
-                                size='xs'
-                            />
-                        ) : null}
-                    </PWView>
-                    <CopyableText copyValue={dexAsset.assetId}>
-                        <PWText
-                            style={styles.secondaryUnit}
-                            numberOfLines={1}
-                        >
-                            {dexAsset.unitName}
-                            {!isAlgo && ` - ${dexAsset.assetId}`}
-                        </PWText>
-                    </CopyableText>
-                </PWView>
-                {balance !== null ? (
-                    <PWView style={styles.amountContainer}>
-                        <CurrencyDisplay
-                            currency={dexAsset.unitName ?? ''}
-                            value={balance}
-                            precision={dexAsset.decimals ?? 0}
-                            minPrecision={DEFAULT_PRECISION}
-                            showSymbol
-                            style={styles.primaryAmount}
-                        />
-                        <PreferredCurrencyDisplay
-                            sourceAmount={balance}
-                            sourceAssetId={dexAsset.assetId}
-                            precision={DEFAULT_PRECISION}
-                            minPrecision={DEFAULT_PRECISION}
-                            showSymbol
-                            style={styles.secondaryAmount}
-                        />
-                    </PWView>
-                ) : null}
-            </PWView>
-        </PWTouchableOpacity>
+        />
     )
 }

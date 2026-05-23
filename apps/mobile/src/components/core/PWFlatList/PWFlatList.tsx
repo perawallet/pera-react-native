@@ -13,6 +13,7 @@
 import React, { forwardRef, useImperativeHandle, useRef } from 'react'
 import { LegendList, LegendListProps, LegendListRef } from '@legendapp/list'
 import { useBottomSheetScrollableCreator } from '@gorhom/bottom-sheet'
+import { useStyles } from './styles'
 
 export type PWFlatListRef = {
     scrollToOffset: (params: { offset: number; animated?: boolean }) => void
@@ -30,7 +31,23 @@ export type PWFlatListProps<T> = LegendListProps<T> & {
 }
 
 export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
-    ({ inBottomSheet, ...props }, ref) => {
+    (
+        {
+            inBottomSheet,
+            contentContainerStyle,
+            style,
+            // Default to `'handled'` so taps on touchable rows fire normally
+            // while taps on the scroll background still dismiss the keyboard;
+            // RN's `'never'` default swallows the first tap when an input
+            // above the list is focused. Mirrors PWScrollView.
+            keyboardShouldPersistTaps = 'handled',
+            // Drag the list to dismiss the keyboard, following the finger.
+            keyboardDismissMode = 'interactive',
+            ...props
+        },
+        ref,
+    ) => {
+        const styles = useStyles()
         const innerRef = useRef<LegendListRef>(null)
         const BottomSheetScrollable = useBottomSheetScrollableCreator()
 
@@ -40,22 +57,46 @@ export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
             scrollToEnd: options => innerRef.current?.scrollToEnd(options),
         }))
 
+        const keyboardProps = {
+            keyboardShouldPersistTaps,
+            keyboardDismissMode,
+        }
+
+        const mergedContentContainerStyle = props.horizontal
+            ? [styles.gap, contentContainerStyle]
+            : [
+                  styles.gap,
+                  styles.verticalContentContainer,
+                  contentContainerStyle,
+              ]
+
+        // LegendList needs a bounded height to scroll vertically.
+        const selfBounded =
+            props.horizontal || props.scrollEnabled === false
+        const outerStyle = selfBounded ? style : [styles.fill, style]
+
         if (inBottomSheet) {
             return (
                 <LegendList
-                    {...(props ?? {})}
+                    {...props}
+                    {...keyboardProps}
                     ref={innerRef}
+                    style={style}
+                    contentContainerStyle={mergedContentContainerStyle}
                     renderScrollComponent={BottomSheetScrollable}
                 />
             )
-        } else {
-            return (
-                <LegendList
-                    {...(props ?? {})}
-                    ref={innerRef}
-                />
-            )
         }
+
+        return (
+            <LegendList
+                {...props}
+                {...keyboardProps}
+                ref={innerRef}
+                style={outerStyle}
+                contentContainerStyle={mergedContentContainerStyle}
+            />
+        )
     },
 ) as <T>(
     props: PWFlatListProps<T> & React.RefAttributes<PWFlatListRef>,

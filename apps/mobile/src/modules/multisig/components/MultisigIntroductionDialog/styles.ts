@@ -19,15 +19,20 @@ type StyleProps = { screenWidth: number }
 export const useStyles = makeStyles((theme, { screenWidth }: StyleProps) => ({
     overlay: {
         width: screenWidth - theme.spacing.lg * 2,
+        maxWidth: '100%',
         borderRadius: theme.borderRadius.lg,
         backgroundColor: theme.colors.background,
         padding: 0,
+        overflow: 'hidden',
     },
     backdrop: {
         backgroundColor: theme.colors.backdropModalBg,
     },
     container: {
         alignItems: 'center',
+        width: '100%',
+        minWidth: 0,
+        overflow: 'hidden',
         paddingHorizontal: theme.spacing.xl,
         paddingBottom: theme.spacing['3xl'],
     },
@@ -39,10 +44,13 @@ export const useStyles = makeStyles((theme, { screenWidth }: StyleProps) => ({
     },
     titleContainer: {
         alignItems: 'center',
+        width: '100%',
+        minWidth: 0,
         marginBottom: theme.spacing.lg,
     },
     title: {
         textAlign: 'center',
+        width: '100%',
     },
     bulletContainer: {
         width: '100%',
@@ -51,6 +59,7 @@ export const useStyles = makeStyles((theme, { screenWidth }: StyleProps) => ({
     },
     bulletItem: {
         width: '100%',
+        minWidth: 0,
         flexDirection: 'row',
         alignItems: 'flex-start',
         gap: theme.spacing.lg,
@@ -64,6 +73,7 @@ export const useStyles = makeStyles((theme, { screenWidth }: StyleProps) => ({
         backgroundColor: theme.colors.background,
         alignItems: 'center',
         justifyContent: 'center',
+        flexShrink: 0,
     },
     numberText: {
         color: theme.colors.textMain,
@@ -71,10 +81,13 @@ export const useStyles = makeStyles((theme, { screenWidth }: StyleProps) => ({
     },
     bulletText: {
         flex: 1,
+        minWidth: 0,
         color: theme.colors.textGray,
         paddingTop: theme.spacing.xs,
     },
     continueButton: {
+        alignSelf: 'stretch',
         width: '100%',
+        minWidth: 0,
     },
 }))

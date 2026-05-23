@@ -11,17 +11,10 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { SafeAreaView } from 'react-native-safe-area-context'
 import { Trans } from 'react-i18next'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 import { config } from '@perawallet/wallet-core-config'
-import {
-    PWButton,
-    PWIcon,
-    PWScrollView,
-    PWText,
-    PWView,
-} from '@components/core'
+import { PWButton, PWIcon, PWScreen, PWText, PWView } from '@components/core'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { ScreenHeader } from '@components/ScreenHeader'
 import { useWebView } from '@modules/webview'
@@ -62,9 +55,49 @@ export const UndoRekeyConfirmScreen = () => {
     if (!source) return null
 
     return (
-        <PWView
-            style={styles.container}
+        <PWScreen
             testID='undo-rekey-confirm-screen'
+            contentContainerStyle={styles.scrollContent}
+            footer={
+                <PWView style={styles.footer}>
+                    {currentAuth && (
+                        <PWView style={styles.currentAuthRow}>
+                            <PWText
+                                variant='bodyLarge'
+                                style={styles.rowLabel}
+                            >
+                                {t('rekey.undo.confirm.current_auth_label')}
+                            </PWText>
+                            <RekeySummaryRow account={currentAuth} />
+                        </PWView>
+                    )}
+                    <PWView style={styles.row}>
+                        <PWText
+                            variant='bodyLarge'
+                            style={styles.rowLabel}
+                        >
+                            {t('rekey.undo.confirm.fee_label')}
+                        </PWText>
+                        <CurrencyDisplay
+                            currency='ALGO'
+                            value={feeAlgos}
+                            precision={ALGO_ASSET.decimals}
+                            minPrecision={3}
+                            variant='bodyLarge'
+                        />
+                    </PWView>
+
+                    <PWButton
+                        variant='primary'
+                        title={t('rekey.undo.confirm.cta')}
+                        onPress={handleContinuePress}
+                        isLoading={isSubmitting}
+                        isDisabled={feePending}
+                        style={styles.cta}
+                        testID='undo-rekey-confirm-cta'
+                    />
+                </PWView>
+            }
         >
             <ScreenHeader
                 title={t('rekey.undo.confirm.title')}
@@ -75,75 +108,31 @@ export const UndoRekeyConfirmScreen = () => {
                     />
                 }
             />
-            <PWScrollView contentContainerStyle={styles.scrollContent}>
-                <PWView style={styles.summarySection}>
-                    <PWText
-                        variant='bodyLarge'
-                        style={styles.summaryLabel}
-                    >
-                        {t('rekey.undo.confirm.summary_label')}
-                    </PWText>
+            <PWView style={styles.summarySection}>
+                <PWText
+                    variant='bodyLarge'
+                    style={styles.summaryLabel}
+                >
+                    {t('rekey.undo.confirm.summary_label')}
+                </PWText>
 
-                    <PWView style={styles.summaryCard}>
-                        <RekeySummaryRow account={source} />
-                        <PWView style={styles.arrowRow}>
-                            <PWIcon
-                                name='arrow-down'
-                                size='sm'
-                                variant='secondary'
-                            />
-                        </PWView>
-                        <RekeySummaryRow
-                            account={source}
-                            ignoreRekey
+                <PWView style={styles.summaryCard}>
+                    <RekeySummaryRow account={source} />
+                    <PWView style={styles.arrowRow}>
+                        <PWIcon
+                            name='arrow-down'
+                            size='sm'
+                            variant='secondary'
                         />
                     </PWView>
-                </PWView>
-
-                <PWView style={styles.spacer} />
-            </PWScrollView>
-
-            <SafeAreaView
-                edges={['bottom']}
-                style={styles.footer}
-            >
-                {currentAuth && (
-                    <PWView style={styles.currentAuthRow}>
-                        <PWText
-                            variant='bodyLarge'
-                            style={styles.rowLabel}
-                        >
-                            {t('rekey.undo.confirm.current_auth_label')}
-                        </PWText>
-                        <RekeySummaryRow account={currentAuth} />
-                    </PWView>
-                )}
-                <PWView style={styles.row}>
-                    <PWText
-                        variant='bodyLarge'
-                        style={styles.rowLabel}
-                    >
-                        {t('rekey.undo.confirm.fee_label')}
-                    </PWText>
-                    <CurrencyDisplay
-                        currency='ALGO'
-                        value={feeAlgos}
-                        precision={ALGO_ASSET.decimals}
-                        minPrecision={3}
-                        variant='bodyLarge'
+                    <RekeySummaryRow
+                        account={source}
+                        ignoreRekey
                     />
                 </PWView>
+            </PWView>
 
-                <PWButton
-                    variant='primary'
-                    title={t('rekey.undo.confirm.cta')}
-                    onPress={handleContinuePress}
-                    isLoading={isSubmitting}
-                    isDisabled={feePending}
-                    style={styles.cta}
-                    testID='undo-rekey-confirm-cta'
-                />
-            </SafeAreaView>
-        </PWView>
+            <PWView style={styles.spacer} />
+        </PWScreen>
     )
 }

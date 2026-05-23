@@ -58,6 +58,7 @@ export const ChartPeriodSelection = ({
                                     ? styles.selectedText
                                     : styles.unselectedText
                             }
+                            truncate
                         >
                             {t(label)}
                         </PWText>

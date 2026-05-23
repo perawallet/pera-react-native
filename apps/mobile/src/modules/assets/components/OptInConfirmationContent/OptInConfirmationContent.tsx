@@ -10,13 +10,7 @@
  limitations under the License
  */
 
-import {
-    PWButton,
-    PWHeader,
-    PWSlideToConfirm,
-    PWText,
-    PWView,
-} from '@components/core'
+import { PWButton, PWSlideToConfirm, PWText, PWView } from '@components/core'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { AddressDisplay } from '@components/AddressDisplay'
 import {
@@ -26,7 +20,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { MIN_TXN_FEE } from '@perawallet/wallet-core-blockchain'
 import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { AssetNameBadge } from '@modules/assets/components/AssetNameBadge'
 import { useLanguage } from '@hooks/useLanguage'
 import { useClipboard } from '@hooks/useClipboard'
@@ -62,11 +56,7 @@ export const OptInConfirmationContent = ({
 
     return (
         <PWView style={styles.container}>
-            <PWHeader
-                leftIcon='cross'
-                onLeftPress={dismiss}
-                title={t('add_asset.confirmation.title')}
-            />
+            <SheetHeader title={t('add_asset.confirmation.title')} />
 
             <PWView style={styles.body}>
                 <PWView style={styles.assetNameRow}>
@@ -94,6 +84,7 @@ export const OptInConfirmationContent = ({
                     <PWText
                         variant='body'
                         style={styles.rowLabel}
+                        truncate
                     >
                         {assetId}
                     </PWText>
@@ -113,13 +104,16 @@ export const OptInConfirmationContent = ({
                     <PWText
                         variant='body'
                         style={styles.rowLabel}
+                        truncate
                     >
                         {t('add_asset.confirmation.account_label')}
                     </PWText>
-                    <AddressDisplay
-                        address={accountAddress}
-                        showCopy={false}
-                    />
+                    <PWView style={styles.rowTrailing}>
+                        <AddressDisplay
+                            address={accountAddress}
+                            showCopy={false}
+                        />
+                    </PWView>
                 </PWView>
 
                 <PWView style={styles.divider} />
@@ -128,6 +122,7 @@ export const OptInConfirmationContent = ({
                     <PWText
                         variant='body'
                         style={styles.rowLabel}
+                        truncate
                     >
                         {t('add_asset.confirmation.fee_label')}
                     </PWText>

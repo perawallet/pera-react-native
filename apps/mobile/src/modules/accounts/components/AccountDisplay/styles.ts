@@ -24,16 +24,19 @@ export const useStyles = makeStyles(
                 flexDirection: 'row',
                 alignItems: 'center',
                 gap: theme.spacing.md,
+                flex: 1,
                 flexShrink: 1,
                 minWidth: 0,
+                overflow: 'hidden',
                 ...(noBorder && {
                     borderWidth: 0,
                 }),
             },
             textContainer: {
-                flexShrink: 1,
+                flex: 1,
                 minWidth: 0,
                 justifyContent: 'center',
+                overflow: 'hidden',
             },
             text: {
                 color: theme.colors.textMain,

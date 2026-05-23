@@ -31,7 +31,11 @@ export const useMessagesScreen = () => {
     const openSettingsModal = useCallback(() => {
         void requestBottomSheet({
             contents: <NotificationSettingsContent />,
-            options: { size: 'auto', enablePanDownToClose: true },
+            options: {
+                size: 'lg',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
         })
     }, [requestBottomSheet])
 

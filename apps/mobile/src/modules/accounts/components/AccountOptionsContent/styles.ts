@@ -31,8 +31,11 @@ export const useStyles = makeStyles(theme => ({
         minHeight: theme.spacing['3xl'] + theme.spacing.lg,
         paddingHorizontal: theme.spacing.xl,
         gap: theme.spacing.lg,
+        minWidth: 0,
     },
     optionTextContainer: {
+        flex: 1,
+        minWidth: 0,
         flexDirection: 'column',
     },
     optionSubtitle: {

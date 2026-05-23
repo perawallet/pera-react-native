@@ -11,14 +11,14 @@
  */
 
 import { useLayoutEffect } from 'react'
-import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import {
-    PWView,
-    PWText,
     PWButton,
     PWIcon,
+    PWScreen,
+    PWText,
     PWTouchableOpacity,
+    PWView,
 } from '@components/core'
 
 import { useStyles } from './styles'
@@ -44,48 +44,46 @@ export const LedgerPairScreen = () => {
     }, [navigation, handleOpenSupport])
 
     return (
-        <PWView style={styles.container}>
-            <PWView style={styles.content}>
-                <PWView style={styles.iconContainer}>
-                    <PWIcon
-                        name='ledger'
-                        size='xxl'
-                        variant='positive'
+        <PWScreen
+            scroll={false}
+            footer={
+                <PWView style={styles.footer}>
+                    <PWButton
+                        testID='ledger_pair_primary_button'
+                        title={t('ledger.pair.cta')}
+                        onPress={handlePair}
+                        variant='primary'
+                    />
+                    <PWButton
+                        testID='ledger_pair_how_does_it_work_button'
+                        title={t('ledger.pair.how_does_it_work')}
+                        onPress={handleOpenHowDoesItWork}
+                        variant='secondary'
                     />
                 </PWView>
-
-                <PWText
-                    variant='h1'
-                    style={styles.title}
-                >
-                    {t('ledger.pair.title')}
-                </PWText>
-
-                <PWText
-                    variant='h4'
-                    style={styles.description}
-                >
-                    {t('ledger.pair.description')}
-                </PWText>
+            }
+        >
+            <PWView style={styles.iconContainer}>
+                <PWIcon
+                    name='ledger'
+                    size='xxl'
+                    variant='positive'
+                />
             </PWView>
 
-            <SafeAreaView
-                edges={['bottom']}
-                style={styles.footer}
+            <PWText
+                variant='h1'
+                style={styles.title}
             >
-                <PWButton
-                    testID='ledger_pair_primary_button'
-                    title={t('ledger.pair.cta')}
-                    onPress={handlePair}
-                    variant='primary'
-                />
-                <PWButton
-                    testID='ledger_pair_how_does_it_work_button'
-                    title={t('ledger.pair.how_does_it_work')}
-                    onPress={handleOpenHowDoesItWork}
-                    variant='secondary'
-                />
-            </SafeAreaView>
-        </PWView>
+                {t('ledger.pair.title')}
+            </PWText>
+
+            <PWText
+                variant='h4'
+                style={styles.description}
+            >
+                {t('ledger.pair.description')}
+            </PWText>
+        </PWScreen>
     )
 }

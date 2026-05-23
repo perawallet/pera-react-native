@@ -30,7 +30,7 @@ import { StyleProp, ViewStyle } from 'react-native'
 export type NotificationSettingsListProps = {
     style?: StyleProp<ViewStyle>
     contentContainerStyle?: StyleProp<ViewStyle>
-    scrollEnabled?: boolean
+    inBottomSheet?: boolean
     testID?: string
 }
 
@@ -59,16 +59,21 @@ const AccountNotificationItem = ({
 
     return (
         <PWView style={styles.accountItem}>
-            <AccountDisplay
-                account={account}
-                showChevron={false}
-                iconProps={iconProps}
-                textProps={textProps}
-            />
-            <PWSwitch
-                value={isEnabled}
-                onValueChange={onToggle}
-            />
+            <PWView style={styles.accountInfo}>
+                <AccountDisplay
+                    account={account}
+                    showChevron={false}
+                    iconProps={iconProps}
+                    textProps={textProps}
+                    style={styles.accountDisplay}
+                />
+            </PWView>
+            <PWView style={styles.switchContainer}>
+                <PWSwitch
+                    value={isEnabled}
+                    onValueChange={onToggle}
+                />
+            </PWView>
         </PWView>
     )
 }
@@ -76,7 +81,7 @@ const AccountNotificationItem = ({
 export const NotificationSettingsList = ({
     style,
     contentContainerStyle,
-    scrollEnabled,
+    inBottomSheet,
     testID,
 }: NotificationSettingsListProps) => {
     const { t } = useLanguage()
@@ -98,11 +103,8 @@ export const NotificationSettingsList = ({
             extraData={disabledAccounts}
             keyExtractor={item => item.address}
             style={style}
-            scrollEnabled={scrollEnabled}
-            contentContainerStyle={[
-                styles.scrollContent,
-                contentContainerStyle,
-            ]}
+            inBottomSheet={inBottomSheet}
+            contentContainerStyle={contentContainerStyle}
             testID={testID}
             ListEmptyComponent={
                 <EmptyView
@@ -122,22 +124,34 @@ export const NotificationSettingsList = ({
             ListHeaderComponent={
                 <PWView style={styles.header}>
                     <PWView style={styles.headerRow}>
-                        <PWText variant='body'>
-                            {t('settings.notifications.push_notifications')}
-                        </PWText>
-                        <PWSwitch
-                            value={isSystemNotificationEnabled}
-                            onValueChange={handleSystemNotificationToggle}
-                            disabled={isSystemNotificationLoading}
-                        />
+                        <PWView style={styles.headerLabelContainer}>
+                            <PWText
+                                variant='body'
+                                truncate
+                            >
+                                {t('settings.notifications.push_notifications')}
+                            </PWText>
+                        </PWView>
+                        <PWView style={styles.switchContainer}>
+                            <PWSwitch
+                                value={isSystemNotificationEnabled}
+                                onValueChange={handleSystemNotificationToggle}
+                                disabled={isSystemNotificationLoading}
+                            />
+                        </PWView>
                     </PWView>
                     <PWView style={styles.headerRow}>
-                        <PWText
-                            variant='caption'
-                            style={styles.grayText}
-                        >
-                            {t('settings.notifications.account_notifications')}
-                        </PWText>
+                        <PWView style={styles.headerLabelContainer}>
+                            <PWText
+                                variant='caption'
+                                style={styles.grayText}
+                                truncate
+                            >
+                                {t(
+                                    'settings.notifications.account_notifications',
+                                )}
+                            </PWText>
+                        </PWView>
                     </PWView>
                 </PWView>
             }

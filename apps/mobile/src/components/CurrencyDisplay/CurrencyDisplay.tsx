@@ -134,6 +134,7 @@ export const CurrencyDisplay = (props: CurrencyDisplayProps) => {
             <PWView style={themeStyle.textContainer}>
                 <PWText
                     variant={variant}
+                    truncate
                     {...rest}
                 >
                     {prefix ? prefix : ''}

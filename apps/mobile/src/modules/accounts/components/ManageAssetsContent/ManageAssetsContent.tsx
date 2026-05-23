@@ -10,14 +10,8 @@
  limitations under the License
  */
 
-import {
-    PWIcon,
-    PWText,
-    PWToolbar,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
+import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
@@ -32,18 +26,12 @@ export const ManageAssetsContent = ({
 }: ManageAssetsContentProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { resolve, dismiss } = useBottomSheetResult<ManageAssetsAction>()
+    const { resolve } = useBottomSheetResult<ManageAssetsAction>()
 
     return (
         <>
-            <PWToolbar
-                left={
-                    <PWIcon
-                        name='cross'
-                        onPress={dismiss}
-                    />
-                }
-                center={
+            <SheetHeader
+                title={
                     <PWText
                         variant='bodyLarge'
                         weight={500}
@@ -51,7 +39,6 @@ export const ManageAssetsContent = ({
                         {t('manage_assets.title')}
                     </PWText>
                 }
-                paddingStyle='dense'
             />
             <PWView style={styles.container}>
                 <PWTouchableOpacity

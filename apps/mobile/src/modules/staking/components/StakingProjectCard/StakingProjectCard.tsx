@@ -64,6 +64,7 @@ export const StakingProjectCard = ({
                     <PWText
                         variant='h4'
                         numberOfLines={1}
+                        style={styles.title}
                         testID={`staking-project-title-${project.id}`}
                     >
                         {project.title}

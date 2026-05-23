@@ -19,6 +19,9 @@ export const useStyles = makeStyles(theme => ({
         justifyContent: 'center',
         textAlign: 'center',
         gap: theme.spacing.xl,
+        paddingHorizontal: theme.spacing.xl,
+        width: '100%',
+        minWidth: 0,
     },
     iconContainer: {
         width: theme.spacing['4xl'],
@@ -31,5 +34,13 @@ export const useStyles = makeStyles(theme => ({
     text: {
         color: theme.colors.textMain,
         textAlign: 'center',
+        width: '100%',
+        minWidth: 0,
+    },
+    titleText: {
+        color: theme.colors.textMain,
+        textAlign: 'center',
+        width: '100%',
+        minWidth: 0,
     },
 }))

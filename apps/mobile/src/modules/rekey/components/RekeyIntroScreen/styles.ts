@@ -12,15 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles((theme, bottomPadding: number) => ({
-    root: {
-        flex: 1,
-        backgroundColor: theme.colors.background,
-    },
-    scrollContent: {
-        flexGrow: 1,
-        paddingBottom: theme.spacing.xl,
-    },
+export const useStyles = makeStyles(theme => ({
     hero: {
         width: '100%',
         aspectRatio: 2,
@@ -43,11 +35,6 @@ export const useStyles = makeStyles((theme, bottomPadding: number) => ({
     },
     listSection: {
         gap: theme.spacing.lg,
-    },
-    footer: {
-        paddingHorizontal: theme.spacing.xl,
-        paddingTop: theme.spacing.lg,
-        paddingBottom: bottomPadding,
     },
     cta: {
         paddingVertical: theme.spacing.lg,

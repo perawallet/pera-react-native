@@ -10,11 +10,17 @@
  limitations under the License
  */
 
-import { useTheme } from '@rneui/themed'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { makeStyles } from '@rneui/themed'
 
-export const useBottomSafeAreaPadding = (): number => {
-    const insets = useSafeAreaInsets()
-    const { theme } = useTheme()
-    return insets.bottom + theme.spacing.lg
-}
+export const useStyles = makeStyles(theme => ({
+    fill: {
+        flex: 1,
+    },
+    gap: {
+        gap: theme.spacing.md,
+    },
+    verticalContentContainer: {
+        flexGrow: 1,
+        paddingBottom: theme.spacing.xl,
+    },
+}))

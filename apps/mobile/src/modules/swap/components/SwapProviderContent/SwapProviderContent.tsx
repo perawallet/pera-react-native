@@ -16,11 +16,10 @@ import {
     PWIcon,
     PWImage,
     PWText,
-    PWToolbar,
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -44,7 +43,7 @@ export const SwapProviderContent = ({
     const { t } = useLanguage()
     const styles = useStyles()
     const { theme } = useTheme()
-    const { resolve, dismiss } = useBottomSheetResult<SwapProviderResult>()
+    const { resolve } = useBottomSheetResult<SwapProviderResult>()
 
     const { userSelection, rows, handleSelect } = useSwapProviderContent({
         quotes,
@@ -57,19 +56,9 @@ export const SwapProviderContent = ({
 
     return (
         <>
-            <PWToolbar
-                left={
-                    <PWIcon
-                        name='cross'
-                        onPress={dismiss}
-                    />
-                }
-                center={
-                    <PWText variant='h4'>
-                        {t('swap.provider.change_title')}
-                    </PWText>
-                }
-                right={
+            <SheetHeader
+                title={t('swap.provider.change_title')}
+                rightAction={
                     <PWTouchableOpacity
                         onPress={handleApply}
                         testID='swap-provider-apply'

@@ -25,11 +25,14 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         justifyContent: 'space-between',
         marginBottom: theme.spacing.md,
+        width: '100%',
+        minWidth: 0,
     },
     headerIcons: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.sm,
+        flexShrink: 0,
     },
     chartContainer: {
         gap: theme.spacing.md,
@@ -39,10 +42,12 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
+        minWidth: 0,
     },
     primaryValueContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
+        minWidth: 0,
     },
 }))

@@ -15,6 +15,7 @@ import {
     PWButton,
     PWFlatList,
     PWIcon,
+    PWScreen,
     PWSkeleton,
     PWText,
     PWTouchableOpacity,
@@ -29,15 +30,13 @@ import {
     StakingProjectCard,
 } from '@modules/staking/components'
 import type { StakingProject } from '@modules/staking/models'
-import { useBottomSafeAreaPadding } from '@hooks/useBottomSafeAreaPadding'
 import { useStakingScreen } from './useStakingScreen'
 import { useStyles } from './styles'
 
 const SKELETON_COUNT = 5
 
 export const StakingScreen = () => {
-    const bottomPadding = useBottomSafeAreaPadding()
-    const styles = useStyles(bottomPadding)
+    const styles = useStyles()
     const { t } = useLanguage()
     const navigation = useNavigation()
     const {
@@ -76,7 +75,10 @@ export const StakingScreen = () => {
     )
 
     return (
-        <PWView
+        <PWScreen
+            scroll={false}
+            horizontalPadding='none'
+            keyboard='none'
             style={styles.container}
             testID='staking-screen'
         >
@@ -162,6 +164,6 @@ export const StakingScreen = () => {
                     />
                 )}
             </StakingErrorBoundary>
-        </PWView>
+        </PWScreen>
     )
 }

@@ -19,10 +19,8 @@ const DOT_GAP = 12
 export const useStyles = makeStyles(theme => ({
     container: {
         flex: 1,
-        backgroundColor: theme.colors.background,
         justifyContent: 'center',
         alignItems: 'center',
-        padding: theme.spacing.xl,
         gap: theme.spacing.xxl,
     },
     topRow: {

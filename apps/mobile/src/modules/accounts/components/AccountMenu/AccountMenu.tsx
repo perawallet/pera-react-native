@@ -53,12 +53,15 @@ export const AccountMenu = (props: AccountMenuProps) => {
                         style={styles.titleBar}
                         accessible={false}
                     >
-                        <PWText
-                            variant='h3'
-                            style={styles.activeTitle}
-                        >
-                            {t('account_menu.title')}
-                        </PWText>
+                        <PWView style={styles.titleBarTitleContainer}>
+                            <PWText
+                                variant='h3'
+                                style={styles.activeTitle}
+                                truncate
+                            >
+                                {t('account_menu.title')}
+                            </PWText>
+                        </PWView>
                         <PWView
                             style={styles.titleBarButtonContainer}
                             accessible={false}
@@ -96,19 +99,11 @@ export const AccountMenu = (props: AccountMenuProps) => {
                             />
                         </PWTouchableOpacity>
                     )}
-                    ItemSeparatorComponent={ListSeparator}
                     estimatedItemSize={64}
                     showsVerticalScrollIndicator={false}
-                    contentContainerStyle={styles.accountContainer}
                     inBottomSheet
                 />
             </PWView>
         </PWView>
     )
-}
-
-const ListSeparator = () => {
-    const styles = useStyles()
-
-    return <PWView style={styles.listSeparator} />
 }

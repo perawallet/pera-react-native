@@ -18,13 +18,8 @@ export const useStyles = makeStyles(theme => ({
         flex: 1,
         backgroundColor: theme.colors.background,
     },
-    scroll: {
-        flex: 1,
-    },
     scrollContent: {
-        paddingHorizontal: theme.spacing.xl,
         paddingTop: theme.spacing.xl,
-        paddingBottom: theme.spacing.xl,
         gap: theme.spacing.lg,
     },
     title: {
@@ -57,10 +52,6 @@ export const useStyles = makeStyles(theme => ({
     },
     wordText: {
         ...getTypography(theme, 'mono'),
-    },
-    footer: {
-        padding: theme.spacing.xl,
-        paddingBottom: theme.spacing.xxl,
     },
     loading: {
         flex: 1,

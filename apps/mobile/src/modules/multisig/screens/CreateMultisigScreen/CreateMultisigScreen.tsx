@@ -10,16 +10,14 @@
  limitations under the License
  */
 
-import { PWButton, PWScrollView, PWText, PWView } from '@components/core'
-import { useBottomSafeAreaPadding } from '@hooks/useBottomSafeAreaPadding'
+import { PWButton, PWScreen, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { ParticipantListItem } from '../../components/ParticipantListItem'
 import { useCreateMultisigScreen } from './useCreateMultisigScreen'
 import { useStyles } from './styles'
 
 export const CreateMultisigScreen = () => {
-    const bottomPadding = useBottomSafeAreaPadding()
-    const styles = useStyles(bottomPadding)
+    const styles = useStyles()
     const { t } = useLanguage()
     const {
         participants,
@@ -32,58 +30,52 @@ export const CreateMultisigScreen = () => {
     } = useCreateMultisigScreen()
 
     return (
-        <PWView style={styles.container}>
-            <PWView style={styles.content}>
-                <PWView style={styles.headerContainer}>
-                    <PWText variant='h1'>{t('multisig.create.title')}</PWText>
-                    <PWText style={styles.description}>
-                        {t('multisig.create.description')}
-                    </PWText>
-                </PWView>
-
-                <PWText variant='h4'>
-                    {t('multisig.create.accounts_section')}
-                </PWText>
-                <PWText style={styles.description}>
-                    {t('multisig.create.accounts_subtitle')}
-                </PWText>
-
-                <PWScrollView
-                    style={styles.scrollArea}
-                    contentContainerStyle={styles.scrollContent}
-                >
-                    {participants.map((participant, index) => (
-                        <ParticipantListItem
-                            key={`${index}-${participant.address}`}
-                            participant={participant}
-                            index={index}
-                            isInWallet={isParticipantInWallet(
-                                participant.address,
-                            )}
-                            onEdit={handleEditParticipant}
-                            onRemove={handleRemoveParticipant}
-                        />
-                    ))}
-                    <PWButton
-                        variant='linkPositive'
-                        icon='plus'
-                        title={t('multisig.create.add_account')}
-                        onPress={handleOpenAddParticipant}
-                        testID='add_participant_button'
-                        paddingStyle='none'
-                        style={styles.addButton}
-                    />
-                </PWScrollView>
-
+        <PWScreen
+            footer={
                 <PWButton
                     variant='primary'
                     title={t('common.continue.label')}
                     onPress={handleContinue}
                     isDisabled={!canContinue}
-                    style={styles.continueButton}
                     testID='create_multisig_continue_button'
                 />
+            }
+        >
+            <PWView style={styles.headerContainer}>
+                <PWText variant='h1'>{t('multisig.create.title')}</PWText>
+                <PWText style={styles.description}>
+                    {t('multisig.create.description')}
+                </PWText>
             </PWView>
-        </PWView>
+
+            <PWText variant='h4'>
+                {t('multisig.create.accounts_section')}
+            </PWText>
+            <PWText style={styles.description}>
+                {t('multisig.create.accounts_subtitle')}
+            </PWText>
+
+            <PWView style={styles.scrollArea}>
+                {participants.map((participant, index) => (
+                    <ParticipantListItem
+                        key={`${index}-${participant.address}`}
+                        participant={participant}
+                        index={index}
+                        isInWallet={isParticipantInWallet(participant.address)}
+                        onEdit={handleEditParticipant}
+                        onRemove={handleRemoveParticipant}
+                    />
+                ))}
+                <PWButton
+                    variant='linkPositive'
+                    icon='plus'
+                    title={t('multisig.create.add_account')}
+                    onPress={handleOpenAddParticipant}
+                    testID='add_participant_button'
+                    paddingStyle='none'
+                    style={styles.addButton}
+                />
+            </PWView>
+        </PWScreen>
     )
 }

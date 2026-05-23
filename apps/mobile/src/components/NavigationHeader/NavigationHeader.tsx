@@ -82,6 +82,7 @@ export const NavigationHeader = (props: NavigationHeaderProps) => {
                         <PWText
                             variant='h4'
                             style={styles.title}
+                            truncate
                         >
                             {title}
                         </PWText>

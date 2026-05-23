@@ -35,6 +35,7 @@ export const InfoButtonContent = ({
                 <PWText
                     variant='h3'
                     style={styles.title}
+                    truncate
                 >
                     {title}
                 </PWText>

@@ -23,7 +23,8 @@
     "@perawallet/wallet-extension-ledger-react-native": "workspace:*",
     "@ledgerhq/errors": "^6.32.0",
     "@algorandfoundation/ledger-algorand-js": "^1.4.3",
-    "@ledgerhq/react-native-hid": "^6.39.1"
+    "@ledgerhq/react-native-hid": "^6.39.1",
+    "buffer": "^6.0.3"
   },
   "devDependencies": {
     "typescript": "catalog:",

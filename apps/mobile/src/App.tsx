@@ -67,6 +67,7 @@ SplashScreen.preventAutoHideAsync()
 
 import { NotifierWrapper } from 'react-native-notifier'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { KeyboardProvider } from 'react-native-keyboard-controller'
 import { logger, updateBackendHeaders } from '@perawallet/wallet-core-shared'
 import { EmptyView } from '@components/EmptyView/EmptyView'
 
@@ -163,11 +164,13 @@ const AppContent = () => {
                 {!bootstrapped && <PWText>{t('common.loading.label')}</PWText>}
                 {bootstrapped && persister && (
                     <GestureHandlerRootView>
-                        <NotifierWrapper>
-                            <QueryProvider persister={persister}>
-                                <RootComponent fcmToken={fcmToken} />
-                            </QueryProvider>
-                        </NotifierWrapper>
+                        <KeyboardProvider>
+                            <NotifierWrapper>
+                                <QueryProvider persister={persister}>
+                                    <RootComponent fcmToken={fcmToken} />
+                                </QueryProvider>
+                            </NotifierWrapper>
+                        </KeyboardProvider>
                     </GestureHandlerRootView>
                 )}
             </SafeAreaProvider>

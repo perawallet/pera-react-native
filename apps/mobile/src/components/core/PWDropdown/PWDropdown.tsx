@@ -13,9 +13,11 @@
 import { IconName, PWIcon } from '@components/core/PWIcon'
 import { PWText } from '@components/core/PWText'
 import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
+import { PWView } from '@components/core/PWView'
 import { useRef, useState } from 'react'
-import { Modal, Pressable, View, Dimensions } from 'react-native'
-import { useStyles } from './styles'
+import { Modal, Pressable, View, useWindowDimensions } from 'react-native'
+import { useTheme } from '@rneui/themed'
+import { DROPDOWN_MIN_WIDTH, useStyles } from './styles'
 
 export type PWDropdownItem = {
     label: string
@@ -35,7 +37,9 @@ export const PWDropdown = ({
     items,
     align = 'right',
 }: PWDropdownProps) => {
-    const styles = useStyles()
+    const { width: windowWidth } = useWindowDimensions()
+    const { theme } = useTheme()
+    const styles = useStyles({ windowWidth })
     const [visible, setVisible] = useState(false)
     const [position, setPosition] = useState<{
         top: number
@@ -50,18 +54,28 @@ export const PWDropdown = ({
 
         if (view.measure) {
             view.measure((_x, _y, width, height, pageX, pageY) => {
-                const windowWidth = Dimensions.get('window').width
+                const horizontalInset = theme.spacing.xl
                 const top = pageY + height
 
                 if (align === 'right') {
                     setPosition({
                         top,
-                        right: windowWidth - (pageX + width),
+                        right: Math.max(
+                            horizontalInset,
+                            windowWidth - (pageX + width),
+                        ),
                     })
                 } else {
+                    const left = Math.max(
+                        horizontalInset,
+                        Math.min(
+                            pageX,
+                            windowWidth - horizontalInset - DROPDOWN_MIN_WIDTH,
+                        ),
+                    )
                     setPosition({
                         top,
-                        left: pageX,
+                        left,
                     })
                 }
                 setVisible(true)
@@ -123,16 +137,19 @@ export const PWDropdown = ({
                                         }
                                     />
                                 )}
-                                <PWText
-                                    variant='h4'
-                                    style={
-                                        item.variant === 'destructive'
-                                            ? styles.labelDestructive
-                                            : styles.label
-                                    }
-                                >
-                                    {item.label}
-                                </PWText>
+                                <PWView style={styles.labelContainer}>
+                                    <PWText
+                                        variant='h4'
+                                        truncate
+                                        style={
+                                            item.variant === 'destructive'
+                                                ? styles.labelDestructive
+                                                : styles.label
+                                        }
+                                    >
+                                        {item.label}
+                                    </PWText>
+                                </PWView>
                             </PWTouchableOpacity>
                         ))}
                     </Pressable>

@@ -17,13 +17,11 @@ import { usePinSecurityPrompt } from './usePinSecurityPrompt'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { PromptViewProps } from '@modules/prompts/models'
-import { PWImage, PWTouchableOpacity } from '@components/core'
+import { PWImage, PWScrollView, PWTouchableOpacity } from '@components/core'
 import lockImage from '@assets/images/lock.webp'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export const PinSecurityPrompt = (props: PromptViewProps) => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles({ insets })
+    const styles = useStyles()
     const { t } = useLanguage()
     const { handleSetPinCode, handleNotNow, handleDontAskAgain } =
         usePinSecurityPrompt(props)
@@ -41,27 +39,32 @@ export const PinSecurityPrompt = (props: PromptViewProps) => {
                 </PWTouchableOpacity>
             </PWView>
 
-            <PWImage
-                source={lockImage}
-                width={150}
-                height={175}
-            />
+            <PWScrollView
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+            >
+                <PWImage
+                    source={lockImage}
+                    width={150}
+                    height={175}
+                />
 
-            <PWView style={styles.content}>
-                <PWText
-                    variant='h1'
-                    style={styles.title}
-                >
-                    {t('prompts.security.pin_title')}
-                </PWText>
+                <PWView style={styles.content}>
+                    <PWText
+                        variant='h1'
+                        style={styles.title}
+                    >
+                        {t('prompts.security.pin_title')}
+                    </PWText>
 
-                <PWText
-                    variant='body'
-                    style={styles.description}
-                >
-                    {t('prompts.security.pin_description')}
-                </PWText>
-            </PWView>
+                    <PWText
+                        variant='body'
+                        style={styles.description}
+                    >
+                        {t('prompts.security.pin_description')}
+                    </PWText>
+                </PWView>
+            </PWScrollView>
 
             <PWView style={styles.buttonContainer}>
                 <PWButton

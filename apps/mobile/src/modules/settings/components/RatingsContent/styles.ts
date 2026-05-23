@@ -18,6 +18,8 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.md,
         padding: theme.spacing.xl,
         paddingBottom: theme.spacing['4xl'],
+        width: '100%',
+        minWidth: 0,
     },
     buttonContainer: {
         flexDirection: 'row',
@@ -25,9 +27,17 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         gap: theme.spacing['3xl'],
         marginVertical: theme.spacing.xl,
+        width: '100%',
     },
     bottomSheetMessage: {
         textAlign: 'center',
         color: theme.colors.textGray,
+        width: '100%',
+        minWidth: 0,
+    },
+    title: {
+        textAlign: 'center',
+        width: '100%',
+        minWidth: 0,
     },
 }))

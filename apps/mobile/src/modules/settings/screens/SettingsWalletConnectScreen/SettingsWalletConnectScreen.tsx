@@ -10,22 +10,28 @@
  limitations under the License
  */
 
-import { PWButton, PWFlatList, PWIcon, PWView } from '@components/core'
-import { EmptyView } from '@components/EmptyView'
-import { QRScannerView } from '@components/QRScannerView'
-import { useLanguage } from '@hooks/useLanguage'
-import { useModalState } from '@hooks/useModalState'
+import { useState } from 'react'
+import { Dialog, Text, useTheme } from '@rneui/themed'
 import {
     useWalletConnect,
     type WalletConnectConnection,
 } from '@perawallet/wallet-core-walletconnect'
-import { useStyles } from './styles'
-import { WalletConnectSessionItem } from '@modules/settings/components/WalletConnect/WalletConnectSessionItem'
-import { Dialog, Text, useTheme } from '@rneui/themed'
-import { useState } from 'react'
-import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+
+import {
+    PWButton,
+    PWFlatList,
+    PWIcon,
+    PWScreen,
+    PWView,
+} from '@components/core'
+import { EmptyView } from '@components/EmptyView'
+import { QRScannerView } from '@components/QRScannerView'
+import { useLanguage } from '@hooks/useLanguage'
+import { useModalState } from '@hooks/useModalState'
+import { useNavigationHeader } from '@hooks/useNavigationHeader'
+import { WalletConnectSessionItem } from '@modules/settings/components/WalletConnect/WalletConnectSessionItem'
+import { useStyles } from './styles'
 
 const renderItem = ({ item }: { item: WalletConnectConnection }) => {
     return <WalletConnectSessionItem session={item} />
@@ -37,8 +43,7 @@ export const SettingsWalletConnectScreen = () => {
     const { connections, deleteAllSessions } = useWalletConnect(network)
     const scannerState = useModalState()
     const deleteState = useModalState()
-    const insets = useSafeAreaInsets()
-    const styles = useStyles(insets)
+    const styles = useStyles()
     const { theme } = useTheme()
     const [isLoading, setIsLoading] = useState(false)
 
@@ -67,8 +72,9 @@ export const SettingsWalletConnectScreen = () => {
     }
 
     return (
-        <PWView
-            style={styles.container}
+        <PWScreen
+            scroll={false}
+            horizontalPadding='none'
             testID='wallet_connect_screen'
         >
             <PWFlatList
@@ -131,6 +137,6 @@ export const SettingsWalletConnectScreen = () => {
                     />
                 </Dialog.Actions>
             </Dialog>
-        </PWView>
+        </PWScreen>
     )
 }

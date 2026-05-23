@@ -10,20 +10,18 @@
  limitations under the License
  */
 
-import { PWButton, PWText, PWView } from '@components/core'
+import { useMemo } from 'react'
+import { PWButton, PWScreen, PWText, PWView } from '@components/core'
 import { ParticipantCount } from '@components/ParticipantCount'
-import { useBottomSafeAreaPadding } from '@hooks/useBottomSafeAreaPadding'
 import { useLanguage } from '@hooks/useLanguage'
+import { KeyValueRow } from '@components/KeyValueRow'
+import { TypographyVariant } from '@theme/typography'
 import { ThresholdStepper } from '../../components/ThresholdStepper'
 import { useSetThresholdScreen } from './useSetThresholdScreen'
 import { useStyles } from './styles'
-import { KeyValueRow } from '@components/KeyValueRow'
-import { useMemo } from 'react'
-import { TypographyVariant } from '@theme/typography'
 
 export const SetThresholdScreen = () => {
-    const bottomPadding = useBottomSafeAreaPadding()
-    const styles = useStyles(bottomPadding)
+    const styles = useStyles()
     const { t } = useLanguage()
     const {
         threshold,
@@ -41,55 +39,53 @@ export const SetThresholdScreen = () => {
     }, [styles])
 
     return (
-        <PWView style={styles.container}>
-            <PWView style={styles.content}>
-                <PWView style={styles.headerContainer}>
-                    <PWText variant='h1'>
-                        {t('multisig.threshold.title')}
-                    </PWText>
-                    <PWText
-                        variant='h4'
-                        style={styles.description}
-                    >
-                        {t('multisig.threshold.description')}
-                    </PWText>
-                </PWView>
-
-                <PWView style={styles.summaryContainer}>
-                    <KeyValueRow
-                        title={t('multisig.threshold.number_of_accounts')}
-                        titleProps={keyValueTitleProps}
-                    >
-                        <PWView style={styles.participantCount}>
-                            <ParticipantCount
-                                count={participantCount}
-                                size='h1'
-                            />
-                        </PWView>
-                    </KeyValueRow>
-
-                    <KeyValueRow
-                        title={t('multisig.threshold.required_signatures')}
-                        titleProps={keyValueTitleProps}
-                    >
-                        <ThresholdStepper
-                            value={threshold}
-                            min={1}
-                            max={participantCount}
-                            onIncrement={handleIncrement}
-                            onDecrement={handleDecrement}
-                        />
-                    </KeyValueRow>
-                </PWView>
-
+        <PWScreen
+            scroll={false}
+            footer={
                 <PWButton
                     variant='primary'
                     title={t('common.continue.label')}
                     onPress={handleContinue}
-                    style={styles.continueButton}
                     testID='set_threshold_continue_button'
                 />
+            }
+        >
+            <PWView style={styles.headerContainer}>
+                <PWText variant='h1'>{t('multisig.threshold.title')}</PWText>
+                <PWText
+                    variant='h4'
+                    style={styles.description}
+                >
+                    {t('multisig.threshold.description')}
+                </PWText>
             </PWView>
-        </PWView>
+
+            <PWView style={styles.summaryContainer}>
+                <KeyValueRow
+                    title={t('multisig.threshold.number_of_accounts')}
+                    titleProps={keyValueTitleProps}
+                >
+                    <PWView style={styles.participantCount}>
+                        <ParticipantCount
+                            count={participantCount}
+                            size='h1'
+                        />
+                    </PWView>
+                </KeyValueRow>
+
+                <KeyValueRow
+                    title={t('multisig.threshold.required_signatures')}
+                    titleProps={keyValueTitleProps}
+                >
+                    <ThresholdStepper
+                        value={threshold}
+                        min={1}
+                        max={participantCount}
+                        onIncrement={handleIncrement}
+                        onDecrement={handleDecrement}
+                    />
+                </KeyValueRow>
+            </PWView>
+        </PWScreen>
     )
 }

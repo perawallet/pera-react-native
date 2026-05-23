@@ -22,12 +22,12 @@ export const useStyles = makeStyles(theme => {
             gap: theme.spacing.sm,
             marginTop: theme.spacing.xs,
         },
-        buttonBase: {
-            width: theme.spacing['3xl'],
+        buttonBase: { 
             alignItems: 'center',
             justifyContent: 'center',
             borderRadius: theme.spacing.sm,
             paddingVertical: theme.spacing.xs,
+            paddingHorizontal: theme.spacing.lg,
         },
         selectedButtonContainer: {
             backgroundColor: theme.colors.layerGrayLighter,
@@ -37,9 +37,11 @@ export const useStyles = makeStyles(theme => {
         },
         selectedText: {
             color: theme.colors.textMain,
+            textAlign: 'center',
         },
         unselectedText: {
             color: theme.colors.textGray,
+            textAlign: 'center',
         },
     }
 })

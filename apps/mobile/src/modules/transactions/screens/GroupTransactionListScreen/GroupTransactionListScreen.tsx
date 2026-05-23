@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { PWFlatList, PWView } from '@components/core'
+import { PWFlatList, PWScreen } from '@components/core'
 import { LoadingView } from '@components/LoadingView'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
@@ -19,10 +19,8 @@ import { TransactionPreview } from '@modules/transactions/components/transaction
 import { GroupDetailHeader } from '@modules/signing/screens/GroupDetailScreen'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { useGroupTransactionListScreen } from './useGroupTransactionListScreen'
-import { useStyles } from './styles'
 
 export const GroupTransactionListScreen = () => {
-    const styles = useStyles()
     const { t } = useLanguage()
     const {
         transactions,
@@ -40,11 +38,6 @@ export const GroupTransactionListScreen = () => {
             />
         ),
         [handleTransactionPress],
-    )
-
-    const ItemSeparator = useCallback(
-        () => <PWView style={styles.itemSeparator} />,
-        [styles.itemSeparator],
     )
 
     if (isLoading) {
@@ -66,17 +59,14 @@ export const GroupTransactionListScreen = () => {
     }
 
     return (
-        <PWView style={styles.container}>
-            <PWView style={styles.contentContainer}>
-                <GroupDetailHeader transactionCount={transactions.length} />
-                <PWFlatList
-                    data={transactions}
-                    renderItem={renderItem}
-                    keyExtractor={keyExtractor}
-                    ItemSeparatorComponent={ItemSeparator}
-                    recycleItems
-                />
-            </PWView>
-        </PWView>
+        <PWScreen scroll={false}>
+            <GroupDetailHeader transactionCount={transactions.length} />
+            <PWFlatList
+                data={transactions}
+                renderItem={renderItem}
+                keyExtractor={keyExtractor}
+                recycleItems
+            />
+        </PWScreen>
     )
 }

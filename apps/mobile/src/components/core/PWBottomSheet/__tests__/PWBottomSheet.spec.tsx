@@ -184,7 +184,7 @@ describe('PWBottomSheet', () => {
 
     it.each([
         ['auto', true, undefined],
-        ['lg', false, ['90%']],
+        ['lg', false, ['96%']],
         ['md', false, ['50%']],
         ['full', false, ['100%']],
     ] as [PWBottomSheetSize, boolean, Optional<string[]>][])(

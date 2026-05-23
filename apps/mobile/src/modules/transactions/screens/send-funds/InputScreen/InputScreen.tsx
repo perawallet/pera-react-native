@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWButton, PWIcon, PWText, PWView } from '@components/core'
+import { PWButton, PWIcon, PWScreen, PWText, PWView } from '@components/core'
 import { Decimal } from 'decimal.js'
 
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
@@ -126,7 +126,20 @@ export const InputScreen = () => {
     }
 
     return (
-        <PWView style={styles.container}>
+        <PWScreen
+            scroll={false}
+            horizontalPadding='none'
+            contentContainerStyle={styles.contentContainer}
+            footer={
+                <PWButton
+                    variant='primary'
+                    title={t('send_funds.input.next')}
+                    style={styles.nextButton}
+                    onPress={handleNext}
+                    isDisabled={!cryptoValue}
+                />
+            }
+        >
             <PWView style={styles.mainContentContainer}>
                 <CurrencyDisplay
                     currency={asset.unitName ?? ''}
@@ -190,14 +203,6 @@ export const InputScreen = () => {
                 accountBalance={accountAssetBalance}
                 style={styles.assetDisplay}
             />
-
-            <PWButton
-                variant='primary'
-                title={t('send_funds.input.next')}
-                style={styles.nextButton}
-                onPress={handleNext}
-                isDisabled={!cryptoValue}
-            />
-        </PWView>
+        </PWScreen>
     )
 }

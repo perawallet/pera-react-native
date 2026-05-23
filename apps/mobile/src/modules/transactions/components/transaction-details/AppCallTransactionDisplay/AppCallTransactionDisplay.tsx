@@ -71,16 +71,21 @@ export const AppCallTransactionDisplay = ({
 
             <PWView style={styles.detailContainer}>
                 {!isAppCreation(transaction) && (
-                    <KeyValueRow title={t('transactions.app_call.app_id')}>
-                        <ApplicationDisplay
-                            applicationId={appId}
-                            valueOnlyOnFallback
-                        />
+                    <KeyValueRow
+                        verticalAlignment='top'
+                        title={t('transactions.app_call.app_id')}
+                    >
+                        <PWView style={styles.detailRow}>
+                            <ApplicationDisplay
+                                applicationId={appId}
+                                valueOnlyOnFallback
+                            />
+                        </PWView>
                     </KeyValueRow>
                 )}
 
                 <KeyValueRow title={t('transactions.app_call.on_completion')}>
-                    <PWText>{appCall.onCompletion}</PWText>
+                    <PWText truncate>{appCall.onCompletion}</PWText>
                 </KeyValueRow>
 
                 <KeyValueRow title={t('transactions.common.fee')}>

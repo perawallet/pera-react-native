@@ -16,7 +16,14 @@ export const useStyles = makeStyles(theme => ({
     container: {
         gap: theme.spacing.xl,
         flexDirection: 'row',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         justifyContent: 'center',
+        width: '100%',
+    },
+    button: {
+        flex: 1,
+        minWidth: 0,
+        maxWidth: `${100 / 3}%`,
+        alignItems: 'center',
     },
 }))

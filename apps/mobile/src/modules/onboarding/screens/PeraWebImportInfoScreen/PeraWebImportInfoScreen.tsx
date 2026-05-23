@@ -11,16 +11,20 @@
  */
 
 import React from 'react'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { PWButton, PWRoundIcon, PWText, PWView } from '@components/core'
+import {
+    PWButton,
+    PWRoundIcon,
+    PWScreen,
+    PWText,
+    PWView,
+} from '@components/core'
 import { QRScannerView } from '@components/QRScannerView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { usePeraWebImportInfoScreen } from './usePeraWebImportInfoScreen'
 
 export const PeraWebImportInfoScreen = () => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles(insets)
+    const styles = useStyles()
     const { t } = useLanguage()
     const {
         handleScan,
@@ -31,7 +35,17 @@ export const PeraWebImportInfoScreen = () => {
 
     return (
         <>
-            <PWView style={styles.root}>
+            <PWScreen
+                scroll={false}
+                footer={
+                    <PWButton
+                        variant='primary'
+                        title={t('onboarding.pera_web_import.info.scan_button')}
+                        onPress={handleScan}
+                        testID='pera_web_import_info_scan_button'
+                    />
+                }
+            >
                 <PWView style={styles.content}>
                     <PWRoundIcon
                         icon='globe'
@@ -50,16 +64,7 @@ export const PeraWebImportInfoScreen = () => {
                         {t('onboarding.pera_web_import.info.body')}
                     </PWText>
                 </PWView>
-
-                <PWView style={styles.footer}>
-                    <PWButton
-                        variant='primary'
-                        title={t('onboarding.pera_web_import.info.scan_button')}
-                        onPress={handleScan}
-                        testID='pera_web_import_info_scan_button'
-                    />
-                </PWView>
-            </PWView>
+            </PWScreen>
 
             <QRScannerView
                 isVisible={isQRScannerVisible}

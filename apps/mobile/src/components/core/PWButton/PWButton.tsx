@@ -11,6 +11,7 @@
  */
 
 import { PWText } from '@components/core/PWText'
+import { PWView } from '@components/core/PWView'
 import { useStyles } from './styles'
 import { PWIcon, IconName, PWIconVariant } from '@components/core/PWIcon'
 import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
@@ -104,13 +105,15 @@ export const PWButton = ({
                 />
             )}
             {!!title && !isLoading && (
-                <PWText
-                    variant='h4'
-                    style={styles.titleStyle}
-                    numberOfLines={1}
-                >
-                    {title}
-                </PWText>
+                <PWView style={styles.titleContainer}>
+                    <PWText
+                        variant='h4'
+                        style={styles.titleStyle}
+                        truncate
+                    >
+                        {title}
+                    </PWText>
+                </PWView>
             )}
             {!!iconRight && !isLoading && (
                 <PWIcon

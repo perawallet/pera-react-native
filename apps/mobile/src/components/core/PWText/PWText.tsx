@@ -29,6 +29,12 @@ export type PWTextProps = {
     weight?: FontWeight
     numberOfLines?: number
     ellipsizeMode?: TextProps['ellipsizeMode']
+    /**
+     * Single-line tail truncation that also shrinks within row layouts.
+     * Sets `numberOfLines=1` and `ellipsizeMode='tail'` (both still
+     * overridable) plus `flexShrink: 1` / `minWidth: 0`.
+     */
+    truncate?: boolean
     adjustsFontSizeToFit?: TextProps['adjustsFontSizeToFit']
     minimumFontScale?: TextProps['minimumFontScale']
     selectable?: TextProps['selectable']
@@ -43,6 +49,7 @@ export const PWText = ({
     weight,
     numberOfLines,
     ellipsizeMode,
+    truncate,
     adjustsFontSizeToFit,
     minimumFontScale,
     selectable,
@@ -58,9 +65,9 @@ export const PWText = ({
 
     return (
         <RNEText
-            style={[styles.text, style]}
-            numberOfLines={numberOfLines}
-            ellipsizeMode={ellipsizeMode}
+            style={[styles.text, truncate && styles.truncate, style]}
+            numberOfLines={numberOfLines ?? (truncate ? 1 : undefined)}
+            ellipsizeMode={ellipsizeMode ?? (truncate ? 'tail' : undefined)}
             adjustsFontSizeToFit={adjustsFontSizeToFit}
             minimumFontScale={resolvedMinimumFontScale}
             selectable={selectable}

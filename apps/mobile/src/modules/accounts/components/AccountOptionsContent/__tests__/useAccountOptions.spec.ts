@@ -51,6 +51,10 @@ vi.mock('@modules/view-passphrase', () => ({
     }),
 }))
 
+vi.mock('@modules/accounts/hooks/useMultisigDetailsBackfill', () => ({
+    useMultisigDetailsBackfill: () => ({ isBackfilling: false }),
+}))
+
 vi.mock('@hooks/useClipboard', () => ({
     useClipboard: () => ({
         copyToClipboard: mockCopyToClipboard,

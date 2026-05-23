@@ -15,6 +15,8 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(
     (theme, paddingStyle: 'dense' | 'normal' | 'none') => ({
         container: {
+            alignSelf: 'flex-start',
+            width: '100%',
             flexDirection: 'row',
             alignItems: 'center',
             paddingHorizontal: theme.spacing.md,
@@ -22,6 +24,7 @@ export const useStyles = makeStyles(
             minHeight: paddingStyle === 'normal' ? theme.spacing['4xl'] : 0,
         },
         leftSlotContainer: {
+            alignSelf: 'flex-start',
             alignItems: 'flex-start',
             flexShrink: 1,
             minWidth: 0,
@@ -29,6 +32,7 @@ export const useStyles = makeStyles(
             overflow: 'hidden',
         },
         centerSlotContainer: {
+            alignSelf: 'flex-start',
             alignItems: 'center',
             justifyContent: 'center',
             flexGrow: 1,
@@ -36,6 +40,7 @@ export const useStyles = makeStyles(
             minWidth: 0,
         },
         rightSlotContainer: {
+            alignSelf: 'flex-start',
             flexDirection: 'row',
             justifyContent: 'flex-end',
             alignItems: 'center',

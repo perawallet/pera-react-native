@@ -10,16 +10,9 @@
  limitations under the License
  */
 
-import {
-    PWButton,
-    PWIcon,
-    PWRadioButton,
-    PWText,
-    PWToolbar,
-    PWView,
-} from '@components/core'
+import { PWButton, PWRadioButton, PWText, PWView } from '@components/core'
 import { AccountSortModes } from '@perawallet/wallet-core-accounts'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useAccountSortContent } from './useAccountSortContent'
 import { DraggableAccountList } from './DraggableAccountList'
 import { useStyles } from './styles'
@@ -40,15 +33,9 @@ export const AccountSortContent = (_: AccountSortContentProps = {}) => {
 
     return (
         <>
-            <PWToolbar
-                left={
-                    <PWIcon
-                        name='cross'
-                        onPress={dismiss}
-                    />
-                }
-                center={<PWText variant='h4'>{t('account_sort.title')}</PWText>}
-                right={
+            <SheetHeader
+                title={t('account_sort.title')}
+                rightAction={
                     <PWButton
                         variant='linkPositive'
                         title={t('account_sort.done')}
@@ -56,7 +43,6 @@ export const AccountSortContent = (_: AccountSortContentProps = {}) => {
                         paddingStyle='none'
                     />
                 }
-                paddingStyle='dense'
                 style={styles.toolbar}
             />
 

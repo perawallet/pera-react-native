@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { PWButton, PWIcon, PWText, PWToolbar, PWView } from '@components/core'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { PWButton, PWView } from '@components/core'
+import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { FilterRow } from './FilterRow'
 import { useStyles } from './styles'
@@ -34,15 +34,9 @@ export const AssetFilterContent = (_: AssetFilterContentProps = {}) => {
 
     return (
         <>
-            <PWToolbar
-                left={
-                    <PWIcon
-                        name='cross'
-                        onPress={dismiss}
-                    />
-                }
-                center={<PWText variant='h4'>{t('asset_filter.title')}</PWText>}
-                right={
+            <SheetHeader
+                title={t('asset_filter.title')}
+                rightAction={
                     <PWButton
                         variant='linkPositive'
                         title={t('asset_filter.done')}
@@ -50,7 +44,6 @@ export const AssetFilterContent = (_: AssetFilterContentProps = {}) => {
                         paddingStyle='none'
                     />
                 }
-                paddingStyle='dense'
                 style={styles.toolbar}
             />
 

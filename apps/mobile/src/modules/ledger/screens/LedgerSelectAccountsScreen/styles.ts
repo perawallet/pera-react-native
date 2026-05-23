@@ -13,14 +13,6 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        flex: 1,
-        backgroundColor: theme.colors.background,
-    },
-    content: {
-        flex: 1,
-        paddingHorizontal: theme.spacing.xl,
-    },
     heroIcon: {
         marginTop: theme.spacing.lg,
         marginBottom: theme.spacing.lg,
@@ -43,18 +35,11 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.linkPrimary,
         marginRight: theme.spacing.xs,
     },
-    listContent: {
-        paddingBottom: theme.spacing.xl,
-    },
     checkboxContainer: {
         padding: 0,
         margin: 0,
         marginLeft: 0,
         marginRight: 0,
         backgroundColor: 'transparent',
-    },
-    footer: {
-        padding: theme.spacing.xl,
-        backgroundColor: theme.colors.background,
     },
 }))

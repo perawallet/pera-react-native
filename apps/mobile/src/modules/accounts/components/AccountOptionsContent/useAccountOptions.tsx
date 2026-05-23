@@ -34,6 +34,7 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useViewPassphraseFlow } from '@modules/view-passphrase'
 import { ExportShareAccountContent } from '@modules/multisig/components/ExportShareAccountContent'
+import { useMultisigDetailsBackfill } from '@modules/accounts/hooks/useMultisigDetailsBackfill'
 import { SharedAccountDetailsContent } from '../SharedAccountDetailsContent'
 import { IconName } from '@components/core'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
@@ -81,6 +82,8 @@ export const useAccountOptions = ({
     const { request: requestBottomSheet } = useBottomSheet()
     const { openViewPassphraseFlow } = useViewPassphraseFlow()
 
+    useMultisigDetailsBackfill(account)
+
     const canSign = useCanSignWith(account)
     const isRekeyed = isRekeyedAccount(account)
     const showPassphrase =
@@ -90,7 +93,7 @@ export const useAccountOptions = ({
     const isHdWallet = isHDWalletAccount(account)
     const isSharedAccount = isMultisigAccount(account)
     const participantCount = isMultisigAccount(account)
-        ? account.multisigDetails.addresses.length
+        ? (account.multisigDetails?.addresses.length ?? 0)
         : 0
 
     const authAccount = useFindAccountByAddress(account.rekeyAddress ?? '')
@@ -155,7 +158,7 @@ export const useAccountOptions = ({
     }, [onClose, requestBottomSheet, account.address])
 
     const handleOpenSharedAccountDetail = useCallback(async () => {
-        if (!isMultisigAccount(account)) return
+        if (!isMultisigAccount(account) || !account.multisigDetails) return
         onClose()
         const details: SharedAccountDetails = {
             name: account.name ?? '',

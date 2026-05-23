@@ -11,15 +11,16 @@
  */
 
 import { useState } from 'react'
-import { PWButton, PWView } from '@components/core'
-import { useLanguage } from '@hooks/useLanguage'
-import { useToast } from '@hooks/useToast'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { getSyncService } from '@perawallet/wallet-core-background'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useBannersStore } from '@perawallet/wallet-core-banners'
 import { usePreferences } from '@perawallet/wallet-core-settings'
+
+import { PWButton, PWScreen } from '@components/core'
 import { OneTimeUserPreferenceFlags } from '@constants/user-preferences'
+import { useLanguage } from '@hooks/useLanguage'
+import { useToast } from '@hooks/useToast'
 import { useStyles } from './styles'
 
 export const SettingsDeveloperManageCacheScreen = () => {
@@ -75,7 +76,10 @@ export const SettingsDeveloperManageCacheScreen = () => {
     }
 
     return (
-        <PWView style={styles.container}>
+        <PWScreen
+            horizontalPadding='lg'
+            contentContainerStyle={styles.content}
+        >
             <PWButton
                 variant='primary'
                 title={t('settings.developer.refresh_cache')}
@@ -96,6 +100,6 @@ export const SettingsDeveloperManageCacheScreen = () => {
                 icon='trash'
                 onPress={handleClearOneTimeFlags}
             />
-        </PWView>
+        </PWScreen>
     )
 }

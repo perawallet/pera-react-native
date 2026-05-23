@@ -20,6 +20,11 @@ export const useStyles = makeStyles(theme => {
             paddingHorizontal: theme.spacing.md,
             justifyContent: 'space-between',
             alignItems: 'center',
+            gap: theme.spacing.md,
+        },
+        content: {
+            flexShrink: 1,
+            minWidth: 0,
         },
         radioContainer: {
             borderWidth: theme.borders.sm,
@@ -29,6 +34,7 @@ export const useStyles = makeStyles(theme => {
             height: theme.spacing.xl,
             justifyContent: 'center',
             alignItems: 'center',
+            flexShrink: 0,
         },
         selectedBorder: {
             borderColor: theme.colors.positive,

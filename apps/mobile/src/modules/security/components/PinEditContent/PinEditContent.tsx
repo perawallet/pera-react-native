@@ -11,7 +11,6 @@
  */
 
 import { PWIcon, PWTouchableOpacity, PWView } from '@components/core'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { PinEditView } from '../PinEditView'
 import type { PinEntryMode } from '../PinEditView'
@@ -35,8 +34,7 @@ export const PinEditContent = ({
     testID,
     savePinHandler,
 }: PinEditContentProps) => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles(insets)
+    const styles = useStyles()
     const { resolve, dismiss } = useBottomSheetResult<boolean>()
 
     return (

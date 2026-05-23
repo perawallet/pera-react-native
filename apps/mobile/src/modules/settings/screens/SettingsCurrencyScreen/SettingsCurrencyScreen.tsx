@@ -10,15 +10,29 @@
  limitations under the License
  */
 
-import { Text } from '@rneui/themed'
-
-import { useStyles } from './styles'
-import { PWView, PWRadioButton, PWFlatList } from '@components/core'
+import { useCallback } from 'react'
+import { Trans } from 'react-i18next'
+import { useTheme } from '@rneui/themed'
 import { Currency } from '@perawallet/wallet-core-currencies'
+
+import {
+    PWScreen,
+    PWRadioButton,
+    PWFlatList,
+    PWView,
+    PWDivider,
+    PWText,
+} from '@components/core'
 import { SearchInput } from '@components/SearchInput'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSettingsCurrencyScreen } from './useSettingsCurrencyScreen'
-import { useCallback } from 'react'
+import { useStyles } from './styles'
+
+const ItemSeparator = () => {
+    const { theme } = useTheme()
+
+    return <PWDivider color={theme.colors.layerGrayLighter} />
+}
 
 export const SettingsCurrencyScreen = () => {
     const styles = useStyles()
@@ -38,41 +52,70 @@ export const SettingsCurrencyScreen = () => {
         ({ item }: { item: Currency }) => {
             return (
                 <PWRadioButton
-                    title={`${item.name} (${item.id})`}
                     onPress={() => setCurrency(item)}
                     isSelected={preferredCurrency === item.id}
                     testID={`settings_currency_item_${item.id.toLowerCase()}`}
-                />
+                >
+                    <PWText variant='bodyLarge'>
+                        <PWText
+                            variant='bodyLarge'
+                            weight={700}
+                        >
+                            {item.id}
+                        </PWText>
+                        {` (${item.name})`}
+                    </PWText>
+                </PWRadioButton>
             )
         },
         [preferredCurrency, setCurrency],
     )
 
     return (
-        <PWView
-            style={styles.container}
+        <PWScreen
+            scroll={false}
             testID='settings_currency_screen'
         >
-            <Text h3>{t('settings.currency.title')}</Text>
-            <Text>
-                {t('settings.currency.description', {
-                    preferredCurrency,
-                    fallbackCurrency,
-                })}
-            </Text>
-            <SearchInput
-                placeholder={t('settings.currency.search_placeholder')}
-                value={search}
-                onChangeText={setSearch}
-                testID='settings_currency_search_input'
-            />
-            <PWFlatList
-                data={filteredData}
-                renderItem={renderItem}
-                keyExtractor={keyExtractor}
-                extraData={preferredCurrency}
-                testID='settings_currency_list'
-            />
-        </PWView>
+            <PWView style={styles.container}>
+                <PWText
+                    variant='bodyLarge'
+                    weight={500}
+                >
+                    {t('settings.currency.title')}
+                </PWText>
+                <PWText
+                    variant='footnoteMedium'
+                    weight={400}
+                    style={styles.description}
+                >
+                    <Trans
+                        i18nKey='settings.currency.description'
+                        values={{ preferredCurrency, fallbackCurrency }}
+                        components={[
+                            <PWText
+                                key='emphasis'
+                                variant='footnoteMedium'
+                                weight={400}
+                                style={styles.descriptionEmphasis}
+                            />,
+                        ]}
+                    />
+                </PWText>
+                <SearchInput
+                    placeholder={t('settings.currency.search_placeholder')}
+                    value={search}
+                    onChangeText={setSearch}
+                    testID='settings_currency_search_input'
+                />
+                <PWFlatList
+                    data={filteredData}
+                    renderItem={renderItem}
+                    keyExtractor={keyExtractor}
+                    extraData={preferredCurrency}
+                    ItemSeparatorComponent={ItemSeparator}
+                    testID='settings_currency_list'
+                />
+            </PWView>
+        </PWScreen>
     )
 }

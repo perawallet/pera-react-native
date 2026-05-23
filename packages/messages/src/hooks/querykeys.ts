@@ -29,13 +29,6 @@ export const getNotificationStatusQueryKey = (
     return [MODULE_PREFIX, 'notification-status', { deviceID, network }]
 }
 
-export const getMessageStatusQueryKey = (
-    network: Network,
-    deviceID: string,
-) => {
-    return [MODULE_PREFIX, 'message-status', { deviceID, network }]
-}
-
 export const getInboxQueryKey = (
     network: Network,
     deviceID: string,

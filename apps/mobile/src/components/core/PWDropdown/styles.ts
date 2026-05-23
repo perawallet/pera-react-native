@@ -12,9 +12,13 @@
 
 import { makeStyles } from '@rneui/themed'
 
-const DROPDOWN_MIN_WIDTH = 200
+export const DROPDOWN_MIN_WIDTH = 200
 
-export const useStyles = makeStyles(theme => ({
+type StyleProps = {
+    windowWidth: number
+}
+
+export const useStyles = makeStyles((theme, { windowWidth }: StyleProps) => ({
     modalOverlay: {
         flex: 1,
         backgroundColor: 'transparent',
@@ -26,6 +30,8 @@ export const useStyles = makeStyles(theme => ({
         paddingVertical: theme.spacing.sm,
         paddingHorizontal: theme.spacing.md,
         minWidth: DROPDOWN_MIN_WIDTH,
+        maxWidth: windowWidth - theme.spacing.xl * 2,
+        overflow: 'hidden',
         ...theme.shadows.md,
         borderWidth: theme.borders.sm,
         borderColor: theme.colors.layerGray,
@@ -36,6 +42,11 @@ export const useStyles = makeStyles(theme => ({
         paddingVertical: theme.spacing.md,
         paddingHorizontal: theme.spacing.md,
         gap: theme.spacing.md,
+        minWidth: 0,
+    },
+    labelContainer: {
+        flex: 1,
+        minWidth: 0,
     },
     label: {
         color: theme.colors.textMain,

@@ -11,19 +11,12 @@
  */
 
 import React from 'react'
-import {
-    PWButton,
-    PWIcon,
-    PWRoundIcon,
-    PWText,
-    PWToolbar,
-    PWView,
-} from '@components/core'
+import { PWButton, PWRoundIcon, PWText, PWView } from '@components/core'
 import { CopyableText } from '@components/CopyableText'
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { useLanguage } from '@hooks/useLanguage'
 import { AccountAssetItemView } from '@modules/assets/components/AssetItem'
@@ -54,17 +47,7 @@ export const RekeyedAccountInfoContent = ({
 
     return (
         <>
-            <PWToolbar
-                left={
-                    <PWIcon
-                        name='cross'
-                        variant='secondary'
-                        onPress={dismiss}
-                    />
-                }
-                center={<PWText variant='h4'>{accountDisplayName}</PWText>}
-                paddingStyle='dense'
-            />
+            <SheetHeader title={accountDisplayName} />
 
             <BottomSheetScrollView
                 showsVerticalScrollIndicator={false}
@@ -90,7 +73,7 @@ export const RekeyedAccountInfoContent = ({
                         <CopyableText copyValue={account.address}>
                             <PWText
                                 variant='body'
-                                numberOfLines={1}
+                                truncate
                                 ellipsizeMode='middle'
                             >
                                 {account.address}
@@ -166,7 +149,7 @@ export const RekeyedAccountInfoContent = ({
                                 <CopyableText copyValue={authAddress}>
                                     <PWText
                                         variant='body'
-                                        numberOfLines={1}
+                                        truncate
                                         ellipsizeMode='middle'
                                     >
                                         {authAddress}

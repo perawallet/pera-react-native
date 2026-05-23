@@ -11,20 +11,16 @@
  */
 
 import { useCallback } from 'react'
-import {
-    PWFlatList,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
-import { useLanguage } from '@hooks/useLanguage'
 import { useNavigation } from '@react-navigation/native'
-import type { StackNavigationProp } from '@react-navigation/stack'
 import { useAllAccounts, WalletAccount } from '@perawallet/wallet-core-accounts'
-import { AccountWithBalance } from '@modules/accounts/components/AccountWithBalance'
+import { PWFlatList, PWScreen, PWText, PWView } from '@components/core'
+import { useLanguage } from '@hooks/useLanguage'
+import { SelectableAccountRow } from '@modules/accounts/components/SelectableAccountRow'
 import { useBidali } from '../../hooks/useBidali'
-import type { BidaliStackParamList } from '../../routes/types'
 import { useStyles } from './styles'
+
+import type { StackNavigationProp } from '@react-navigation/stack'
+import type { BidaliStackParamList } from '../../routes/types'
 
 export const BidaliAccountSelectionScreen = () => {
     const styles = useStyles()
@@ -44,9 +40,10 @@ export const BidaliAccountSelectionScreen = () => {
 
     const renderItem = useCallback(
         ({ item }: { item: WalletAccount }) => (
-            <PWTouchableOpacity onPress={() => handleSelected(item)}>
-                <AccountWithBalance account={item} />
-            </PWTouchableOpacity>
+            <SelectableAccountRow
+                account={item}
+                onSelect={handleSelected}
+            />
         ),
         [handleSelected],
     )
@@ -54,7 +51,11 @@ export const BidaliAccountSelectionScreen = () => {
     const keyExtractor = useCallback((item: WalletAccount) => item.address, [])
 
     return (
-        <PWView style={styles.container}>
+        <PWScreen
+            scroll={false}
+            horizontalPadding='none'
+            keyboard='none'
+        >
             <PWView style={styles.header}>
                 <PWText variant='h1'>
                     {t('giftCard.accountSelection.title')}
@@ -70,6 +71,6 @@ export const BidaliAccountSelectionScreen = () => {
                 renderItem={renderItem}
                 keyExtractor={keyExtractor}
             />
-        </PWView>
+        </PWScreen>
     )
 }

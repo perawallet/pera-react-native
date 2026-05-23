@@ -13,7 +13,6 @@
 import { makeStyles } from '@rneui/themed'
 
 const CHECK_ICON_RADIUS = 20
-const DATE_PICKER_HEIGHT = 200
 
 export const useStyles = makeStyles(theme => {
     return {
@@ -21,26 +20,44 @@ export const useStyles = makeStyles(theme => {
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
-            paddingHorizontal: theme.spacing.lg,
+            paddingHorizontal: theme.spacing.xl,
             paddingVertical: theme.spacing.md,
+            width: '100%',
+            minWidth: 0,
+            gap: theme.spacing.sm,
         },
         headerSpacer: {
             width: theme.spacing.xl,
+            flexShrink: 0,
+        },
+        headerAction: {
+            flexShrink: 0,
+        },
+        titleContainer: {
+            flex: 1,
+            minWidth: 0,
+            alignItems: 'center',
         },
         title: {
             color: theme.colors.textMain,
+            textAlign: 'center',
+            width: '100%',
         },
         listItem: {
             flexDirection: 'row',
             alignItems: 'center',
             paddingVertical: theme.spacing.lg,
-            paddingHorizontal: theme.spacing.lg,
+            paddingHorizontal: theme.spacing.xl,
+            width: '100%',
+            minWidth: 0,
         },
         listIcon: {
             marginRight: theme.spacing.md,
+            flexShrink: 0,
         },
         listContent: {
             flex: 1,
+            minWidth: 0,
         },
         listTitle: {
             color: theme.colors.textMain,
@@ -53,22 +70,30 @@ export const useStyles = makeStyles(theme => {
             backgroundColor: theme.colors.positive + '1A', // 10% opacity roughly
             borderRadius: CHECK_ICON_RADIUS,
             padding: theme.spacing.xs,
+            flexShrink: 0,
         },
         customRangeContainer: {
-            paddingHorizontal: theme.spacing.lg,
+            paddingHorizontal: theme.spacing.xl,
+            paddingBottom: theme.spacing.xl,
+            width: '100%',
+            minWidth: 0,
+            overflow: 'hidden',
         },
         dateInputsContainer: {
             flexDirection: 'row',
             justifyContent: 'space-between',
             marginTop: theme.spacing.md,
             marginBottom: theme.spacing.xl,
+            width: '100%',
+            minWidth: 0,
+            gap: theme.spacing.md,
         },
         dateInputWrapper: {
             flex: 1,
+            minWidth: 0,
             borderBottomWidth: theme.borders.sm,
             borderBottomColor: theme.colors.layerGray,
             paddingBottom: theme.spacing.xs,
-            marginHorizontal: theme.spacing.xs,
         },
         activeDateInput: {
             borderBottomColor: theme.colors.textMain,
@@ -81,21 +106,13 @@ export const useStyles = makeStyles(theme => {
         dateValue: {
             color: theme.colors.textMain,
         },
-        datePickerContainer: {
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: DATE_PICKER_HEIGHT,
-        },
-        datePicker: {
-            height: DATE_PICKER_HEIGHT,
-            width: '100%' as const,
-        },
         doneButton: {
             color: theme.colors.positive,
+            flexShrink: 0,
         },
         closeButton: {
             marginTop: theme.spacing.lg,
-            marginHorizontal: theme.spacing.lg,
+            marginHorizontal: theme.spacing.xl,
         },
     }
 })

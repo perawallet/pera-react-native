@@ -13,15 +13,8 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        flex: 1,
-        paddingHorizontal: theme.spacing.xl,
-    },
     feeContainer: {
         paddingVertical: theme.spacing.lg,
-    },
-    contentContainer: {
-        flexGrow: 1,
     },
     listHeader: {
         alignItems: 'center',
@@ -32,9 +25,6 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textGray,
         marginBottom: theme.spacing.sm,
         paddingTop: theme.spacing.md,
-    },
-    itemSeparator: {
-        height: theme.spacing.md,
     },
     groupPreviewContainer: {
         flexDirection: 'row',

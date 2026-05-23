@@ -11,17 +11,8 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { EdgeInsets } from 'react-native-safe-area-context'
 
-export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
-    container: {
-        flex: 1,
-        paddingHorizontal: theme.spacing.xl,
-        marginBottom: insets.bottom,
-    },
-    scrollContent: {
-        flex: 1,
-    },
+export const useStyles = makeStyles(theme => ({
     amountSection: {
         flexGrow: 1,
         alignItems: 'center',
@@ -68,7 +59,6 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
     },
     footer: {
         gap: theme.spacing.md,
-        marginBottom: theme.spacing.xl,
     },
     usdText: {
         color: theme.colors.textGray,

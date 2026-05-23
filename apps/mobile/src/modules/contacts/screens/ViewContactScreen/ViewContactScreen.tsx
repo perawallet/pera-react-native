@@ -12,7 +12,7 @@
 
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 
-import { PWText, PWTouchableIcon, PWView } from '@components/core'
+import { PWScreen, PWText, PWTouchableIcon, PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { ContactAvatar } from '@components/ContactAvatar'
 import { EmptyView } from '@components/EmptyView'
@@ -56,7 +56,7 @@ export const ViewContactScreen = () => {
     }
 
     return (
-        <PWView style={styles.container}>
+        <PWScreen contentContainerStyle={styles.container}>
             <PWView style={styles.header}>
                 <ContactAvatar
                     contact={selectedContact}
@@ -118,6 +118,6 @@ export const ViewContactScreen = () => {
                     </PWText>
                 </PWView>
             )}
-        </PWView>
+        </PWScreen>
     )
 }

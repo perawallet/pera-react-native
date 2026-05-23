@@ -13,20 +13,12 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        flex: 1,
-        paddingHorizontal: theme.spacing.lg,
-    },
     searchField: {
         borderRadius: theme.spacing.sm,
         paddingHorizontal: theme.spacing.sm,
     },
     list: {
         flex: 1,
-    },
-    contentContainer: {
-        flexGrow: 1,
-        gap: theme.spacing.sm,
     },
     sectionHeader: {
         marginTop: theme.spacing.lg,

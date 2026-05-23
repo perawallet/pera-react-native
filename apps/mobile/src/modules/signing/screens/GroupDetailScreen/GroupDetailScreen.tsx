@@ -11,15 +11,13 @@
  */
 
 import { useCallback } from 'react'
-import { PWFlatList, PWView } from '@components/core'
+import { PWFlatList, PWScreen } from '@components/core'
 import { TransactionPreview } from '@modules/transactions/components/transaction-details/TransactionPreview'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { GroupDetailHeader } from './GroupDetailHeader'
-import { useStyles } from './styles'
 import { useGroupDetailScreen } from './useGroupDetailScreen'
 
 export const GroupDetailScreen = () => {
-    const styles = useStyles()
     const { transactions, handleTransactionPress, keyExtractor } =
         useGroupDetailScreen()
 
@@ -33,23 +31,15 @@ export const GroupDetailScreen = () => {
         [handleTransactionPress],
     )
 
-    const ItemSeparator = useCallback(
-        () => <PWView style={styles.itemSeparator} />,
-        [styles.itemSeparator],
-    )
-
     return (
-        <PWView style={styles.container}>
-            <PWView style={styles.contentContainer}>
-                <GroupDetailHeader transactionCount={transactions.length} />
-                <PWFlatList
-                    data={transactions}
-                    renderItem={renderItem}
-                    keyExtractor={keyExtractor}
-                    ItemSeparatorComponent={ItemSeparator}
-                    recycleItems
-                />
-            </PWView>
-        </PWView>
+        <PWScreen scroll={false}>
+            <GroupDetailHeader transactionCount={transactions.length} />
+            <PWFlatList
+                data={transactions}
+                renderItem={renderItem}
+                keyExtractor={keyExtractor}
+                recycleItems
+            />
+        </PWScreen>
     )
 }

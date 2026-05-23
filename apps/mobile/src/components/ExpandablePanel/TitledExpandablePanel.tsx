@@ -62,8 +62,17 @@ export const TitledExpandablePanel = ({
                 onPress={onPress}
                 style={styles.header}
             >
-                {typeof title === 'string' ? <PWText>{title}</PWText> : title}
-                <PWTouchableOpacity onPress={handleIconPress}>
+                {typeof title === 'string' ? (
+                    <PWView style={styles.titleContainer}>
+                        <PWText truncate>{title}</PWText>
+                    </PWView>
+                ) : (
+                    title
+                )}
+                <PWTouchableOpacity
+                    onPress={handleIconPress}
+                    style={styles.chevronContainer}
+                >
                     <Animated.View style={iconStyle}>
                         <PWIcon
                             name='chevron-right'

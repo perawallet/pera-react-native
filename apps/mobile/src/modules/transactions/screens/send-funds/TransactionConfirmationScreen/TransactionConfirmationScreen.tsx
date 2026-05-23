@@ -13,11 +13,11 @@
 import {
     PWDivider,
     PWIcon,
+    PWScreen,
     PWSlideToConfirm,
     PWText,
     PWTouchableOpacity,
     PWView,
-    PWScrollView,
 } from '@components/core'
 import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 
@@ -65,117 +65,10 @@ export const TransactionConfirmationScreen = () => {
     }
 
     return (
-        <PWView style={styles.container}>
-            <PWScrollView contentContainerStyle={styles.scrollContent}>
-                <KeyValueRow title={t('send_funds.confirmation.amount')}>
-                    <CurrencyDisplay
-                        variant='h3'
-                        currency={asset?.unitName ?? ''}
-                        precision={asset?.decimals ?? DEFAULT_PRECISION}
-                        minPrecision={isCollectible ? 0 : DEFAULT_PRECISION}
-                        showSymbol
-                        ignorePrivacyMode
-                        value={amount ?? new Decimal(0)}
-                    />
-                    {!isCollectible && (
-                        <PreferredCurrencyDisplay
-                            style={styles.secondaryAmount}
-                            sourceAmount={amount}
-                            sourceAssetId={selectedAssetId ?? ''}
-                            precision={asset?.decimals ?? DEFAULT_PRECISION}
-                            minPrecision={DEFAULT_PRECISION}
-                            showSymbol
-                            ignorePrivacyMode
-                        />
-                    )}
-                </KeyValueRow>
-                <PWDivider />
-                {!!selectedAccount && (
-                    <KeyValueRow title={t('send_funds.confirmation.account')}>
-                        <AccountDisplay
-                            account={selectedAccount}
-                            showChevron={false}
-                        />
-                    </KeyValueRow>
-                )}
-                {!!destination && (
-                    <KeyValueRow title={t('send_funds.confirmation.to')}>
-                        <AddressDisplay
-                            address={destination}
-                            showCopy={false}
-                        />
-                    </KeyValueRow>
-                )}
-                <KeyValueRow title={t('send_funds.confirmation.fee')}>
-                    <CurrencyDisplay
-                        currency='ALGO'
-                        precision={ALGO_ASSET.decimals}
-                        minPrecision={isCollectible ? 0 : DEFAULT_PRECISION}
-                        showSymbol
-                        ignorePrivacyMode
-                        value={
-                            params?.minFee != null
-                                ? toWholeUnits(params.minFee, ALGO_ASSET)
-                                : null
-                        }
-                        isLoading={paramsPending}
-                    />
-                </KeyValueRow>
-                <PWDivider />
-                {currentBalance && (
-                    <KeyValueRow
-                        title={t('send_funds.confirmation.current_balance')}
-                    >
-                        <CurrencyDisplay
-                            currency={asset?.unitName ?? ''}
-                            precision={asset?.decimals ?? DEFAULT_PRECISION}
-                            minPrecision={isCollectible ? 0 : DEFAULT_PRECISION}
-                            showSymbol
-                            value={currentBalance.amount}
-                            isLoading={currentBalancePending}
-                        />
-                        {!isCollectible && (
-                            <PreferredCurrencyDisplay
-                                sourceAmount={currentBalance.amount}
-                                sourceAssetId={selectedAssetId ?? ''}
-                                precision={asset?.decimals ?? DEFAULT_PRECISION}
-                                minPrecision={DEFAULT_PRECISION}
-                                showSymbol
-                                style={styles.secondaryAmount}
-                            />
-                        )}
-                    </KeyValueRow>
-                )}
-                <PWDivider />
-                <KeyValueRow title={t('send_funds.confirmation.note')}>
-                    {!!note && <PWText>{note}</PWText>}
-                    {!!note && (
-                        <PWTouchableOpacity
-                            onPress={openNote}
-                            style={styles.linkContainer}
-                        >
-                            <PWIcon
-                                name='edit-pen'
-                                variant='link'
-                                size='sm'
-                            />
-                            <PWText style={styles.link}>
-                                {t('send_funds.confirmation.edit')}
-                            </PWText>
-                        </PWTouchableOpacity>
-                    )}
-                    {!note && (
-                        <PWTouchableOpacity>
-                            <PWText
-                                style={styles.link}
-                                onPress={openNote}
-                            >
-                                {t('send_funds.add_note.button')}
-                            </PWText>
-                        </PWTouchableOpacity>
-                    )}
-                </KeyValueRow>
-
+        <PWScreen
+            horizontalPadding='md'
+            contentContainerStyle={styles.scrollContent}
+            footer={
                 <PWView style={styles.buttonContainer}>
                     {isCloseAccount && <CloseAccountWarning />}
                     {isRecipientBelowMbr && (
@@ -193,7 +86,116 @@ export const TransactionConfirmationScreen = () => {
                         testID='send_confirm_button'
                     />
                 </PWView>
-            </PWScrollView>
-        </PWView>
+            }
+        >
+            <KeyValueRow title={t('send_funds.confirmation.amount')}>
+                <CurrencyDisplay
+                    variant='h3'
+                    currency={asset?.unitName ?? ''}
+                    precision={asset?.decimals ?? DEFAULT_PRECISION}
+                    minPrecision={isCollectible ? 0 : DEFAULT_PRECISION}
+                    showSymbol
+                    ignorePrivacyMode
+                    value={amount ?? new Decimal(0)}
+                />
+                {!isCollectible && (
+                    <PreferredCurrencyDisplay
+                        style={styles.secondaryAmount}
+                        sourceAmount={amount}
+                        sourceAssetId={selectedAssetId ?? ''}
+                        precision={asset?.decimals ?? DEFAULT_PRECISION}
+                        minPrecision={DEFAULT_PRECISION}
+                        showSymbol
+                        ignorePrivacyMode
+                    />
+                )}
+            </KeyValueRow>
+            <PWDivider />
+            {!!selectedAccount && (
+                <KeyValueRow title={t('send_funds.confirmation.account')}>
+                    <AccountDisplay
+                        account={selectedAccount}
+                        showChevron={false}
+                    />
+                </KeyValueRow>
+            )}
+            {!!destination && (
+                <KeyValueRow title={t('send_funds.confirmation.to')}>
+                    <AddressDisplay
+                        address={destination}
+                        showCopy={false}
+                    />
+                </KeyValueRow>
+            )}
+            <KeyValueRow title={t('send_funds.confirmation.fee')}>
+                <CurrencyDisplay
+                    currency='ALGO'
+                    precision={ALGO_ASSET.decimals}
+                    minPrecision={isCollectible ? 0 : DEFAULT_PRECISION}
+                    showSymbol
+                    ignorePrivacyMode
+                    value={
+                        params?.minFee != null
+                            ? toWholeUnits(params.minFee, ALGO_ASSET)
+                            : null
+                    }
+                    isLoading={paramsPending}
+                />
+            </KeyValueRow>
+            <PWDivider />
+            {currentBalance && (
+                <KeyValueRow
+                    title={t('send_funds.confirmation.current_balance')}
+                >
+                    <CurrencyDisplay
+                        currency={asset?.unitName ?? ''}
+                        precision={asset?.decimals ?? DEFAULT_PRECISION}
+                        minPrecision={isCollectible ? 0 : DEFAULT_PRECISION}
+                        showSymbol
+                        value={currentBalance.amount}
+                        isLoading={currentBalancePending}
+                    />
+                    {!isCollectible && (
+                        <PreferredCurrencyDisplay
+                            sourceAmount={currentBalance.amount}
+                            sourceAssetId={selectedAssetId ?? ''}
+                            precision={asset?.decimals ?? DEFAULT_PRECISION}
+                            minPrecision={DEFAULT_PRECISION}
+                            showSymbol
+                            style={styles.secondaryAmount}
+                        />
+                    )}
+                </KeyValueRow>
+            )}
+            <PWDivider />
+            <KeyValueRow title={t('send_funds.confirmation.note')}>
+                {!!note && <PWText>{note}</PWText>}
+                {!!note && (
+                    <PWTouchableOpacity
+                        onPress={openNote}
+                        style={styles.linkContainer}
+                    >
+                        <PWIcon
+                            name='edit-pen'
+                            variant='link'
+                            size='sm'
+                        />
+                        <PWText style={styles.link}>
+                            {t('send_funds.confirmation.edit')}
+                        </PWText>
+                    </PWTouchableOpacity>
+                )}
+                {!note && (
+                    <PWTouchableOpacity>
+                        <PWText
+                            style={styles.link}
+                            onPress={openNote}
+                        >
+                            {t('send_funds.add_note.button')}
+                        </PWText>
+                    </PWTouchableOpacity>
+                )}
+            </KeyValueRow>
+        </PWScreen>
     )
 }

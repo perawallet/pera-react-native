@@ -17,6 +17,7 @@ import {
 } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 
+import { PWScreen } from '@components/core'
 import { LoadingView } from '@components/LoadingView'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
@@ -28,9 +29,6 @@ import {
 import { TransactionDisplay } from '@modules/transactions/components/TransactionDisplay'
 import { GroupTransactionsPanel } from '@modules/transactions/components/transaction-details'
 import type { SigningStackParamList } from '@modules/signing/routes'
-import { useStyles } from './styles'
-import { PWScrollView } from '@components/core'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 type NavigationProp = StackNavigationProp<
     SigningStackParamList,
@@ -43,8 +41,6 @@ type TransactionDetailsRouteProp = RouteProp<
 >
 
 export const TransactionDetailsScreen = () => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles(insets)
     const navigation = useNavigation<NavigationProp>()
     const { t } = useLanguage()
     const route = useRoute<TransactionDetailsRouteProp>()
@@ -76,7 +72,10 @@ export const TransactionDetailsScreen = () => {
 
     if (transaction) {
         return (
-            <PWScrollView contentContainerStyle={styles.contentContainer}>
+            <PWScreen
+                keyboard='none'
+                horizontalPadding='xl'
+            >
                 <TransactionDisplay
                     transaction={transaction}
                     onInnerTransactionsPress={handleInnerTransactionPress}
@@ -90,7 +89,7 @@ export const TransactionDetailsScreen = () => {
                         onGroupTransactionPress={handleGroupTransactionPress}
                     />
                 )}
-            </PWScrollView>
+            </PWScreen>
         )
     }
 

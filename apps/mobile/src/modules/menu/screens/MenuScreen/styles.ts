@@ -15,23 +15,35 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => {
     return {
         container: {
-            flex: 1,
             backgroundColor: theme.colors.background,
-            paddingHorizontal: theme.spacing.lg,
             paddingTop: theme.spacing.xl,
         },
         iconBar: {
             flexDirection: 'row',
             alignItems: 'center',
-            justifyContent: 'flex-end',
             gap: theme.spacing.lg,
             paddingHorizontal: theme.spacing.sm,
+            flexShrink: 0,
+            width: '100%',
         },
-        iconBarColumn: {
+        iconBarSide: {
             width: '33.3333%',
+            flexShrink: 0,
+        },
+        titleContainer: {
+            flex: 1,
+            minWidth: 0,
+            alignItems: 'center',
+        },
+        title: {
+            width: '100%',
+            textAlign: 'center',
+        },
+        iconBarActions: {
+            width: '33.3333%',
+            flexShrink: 0,
             flexDirection: 'row',
             justifyContent: 'flex-end',
-            textAlign: 'center',
             gap: theme.spacing.lg,
         },
         menuContainer: {

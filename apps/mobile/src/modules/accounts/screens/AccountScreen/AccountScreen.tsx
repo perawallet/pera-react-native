@@ -33,6 +33,8 @@ import { AccountHeaderMenu } from '@components/AccountHeaderMenu'
 import { HomeBannersStrip } from '@modules/banners'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
+const AnimatedPWView = Animated.createAnimatedComponent(PWView)
+
 export const AccountScreen = () => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
@@ -68,16 +70,22 @@ export const AccountScreen = () => {
                 onFinish={() => setShouldPlayConfetti(false)}
             />
             {hasHomeBanner && <HomeBannersStrip />}
-            <Animated.View
+            <AnimatedPWView
                 style={[
                     styles.content,
+                    hasHomeBanner && styles.contentWithBanner,
                     hasHomeBanner && styles.contentClipped,
-                    animatedCornerStyle,
+                    hasHomeBanner ? animatedCornerStyle : undefined,
                 ]}
             >
                 <PWToolbar
+                    paddingStyle='none'
                     style={styles.iconBar}
-                    left={<AccountSelection />}
+                    left={
+                        <AccountSelection
+                            triggerStyle={styles.accountSelectionTrigger}
+                        />
+                    }
                     right={
                         <PWView style={styles.iconBarSection}>
                             <AccountHeaderMenu testID='account_screen_dropdown' />
@@ -91,11 +99,13 @@ export const AccountScreen = () => {
                         </PWView>
                     }
                 />
-                <AccountTabNavigator
-                    account={account}
-                    chartVisible={chartVisible}
-                />
-            </Animated.View>
+                <PWView style={styles.tabNavigator}>
+                    <AccountTabNavigator
+                        account={account}
+                        chartVisible={chartVisible}
+                    />
+                </PWView>
+            </AnimatedPWView>
             <QRScannerView
                 isVisible={scannerState.isOpen}
                 onSuccess={scannerState.close}

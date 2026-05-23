@@ -11,14 +11,8 @@
  */
 
 import React from 'react'
-import {
-    PWIcon,
-    PWText,
-    PWToolbar,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
+import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
@@ -29,23 +23,12 @@ export type ManageNftsContentProps = Record<string, never>
 export const ManageNftsContent = (_: ManageNftsContentProps = {}) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { resolve, dismiss } = useBottomSheetResult<ManageNftsAction>()
+    const { resolve } = useBottomSheetResult<ManageNftsAction>()
 
     return (
         <>
-            <PWToolbar
-                left={
-                    <PWIcon
-                        name='cross'
-                        onPress={dismiss}
-                    />
-                }
-                center={
-                    <PWText variant='h4'>
-                        {t('account_details.nfts.manage_title')}
-                    </PWText>
-                }
-                paddingStyle='dense'
+            <SheetHeader
+                title={t('account_details.nfts.manage_title')}
                 style={styles.toolbar}
             />
 

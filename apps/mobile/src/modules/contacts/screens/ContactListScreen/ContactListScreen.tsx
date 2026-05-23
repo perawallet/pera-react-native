@@ -11,20 +11,17 @@
  */
 
 import { useCallback } from 'react'
-import { KeyboardAvoidingView, Platform } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Contact } from '@perawallet/wallet-core-contacts'
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 
 import {
     PWButton,
     PWFlatList,
     PWIcon,
-    PWText,
+    PWScreen,
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
-import { ContactAvatar } from '@components/ContactAvatar'
+import { AddressDisplay } from '@components/AddressDisplay'
 import { EmptyView } from '@components/EmptyView'
 import { SearchInput } from '@components/SearchInput'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -56,29 +53,16 @@ const ContactRow = ({ contact, onShowQR, onSelect }: ContactRowProps) => {
             onPress={handlePress}
             style={styles.contactContainer}
         >
-            <ContactAvatar
-                contact={contact}
-                size='md'
-            />
-            <PWView style={styles.contactTextContainer}>
-                <PWText
-                    style={styles.contactName}
-                    numberOfLines={1}
-                    ellipsizeMode='tail'
-                >
-                    {contact.name}
-                </PWText>
-                <PWText
-                    variant='body'
-                    style={styles.contactAddress}
-                >
-                    {truncateAlgorandAddress(contact.address)}
-                </PWText>
-            </PWView>
-            <PWIcon
-                name='qr'
-                variant='primary'
-                onPress={handleShowQR}
+            <AddressDisplay
+                address={contact.address}
+                showCopy={false}
+                trailing={
+                    <PWIcon
+                        name='qr'
+                        variant='primary'
+                        onPress={handleShowQR}
+                    />
+                }
             />
         </PWTouchableOpacity>
     )
@@ -87,8 +71,7 @@ const ContactRow = ({ contact, onShowQR, onSelect }: ContactRowProps) => {
 export const ContactListScreen = () => {
     const navigation = useAppNavigation()
     const { t } = useLanguage()
-    const insets = useSafeAreaInsets()
-    const styles = useStyles({ listPaddingBottom: Math.max(insets.bottom, 24) })
+    const styles = useStyles()
 
     const onNavigateAddContact = useCallback(
         () => navigation.navigate('AddContact'),
@@ -135,52 +118,46 @@ export const ContactListScreen = () => {
 
     if (isEmpty) {
         return (
-            <>
-                <EmptyView
-                    icon='contacts'
-                    title={t('contacts.list.no_contacts_title')}
-                    body={t('contacts.list.no_contacts_body')}
-                    button={
-                        <PWButton
-                            title={t('contacts.list.add_contact')}
-                            onPress={goToAddContact}
-                            variant='primary'
-                            style={styles.emptyButton}
-                        />
-                    }
-                />
-            </>
+            <EmptyView
+                icon='contacts'
+                title={t('contacts.list.no_contacts_title')}
+                body={t('contacts.list.no_contacts_body')}
+                button={
+                    <PWButton
+                        title={t('contacts.list.add_contact')}
+                        onPress={goToAddContact}
+                        variant='primary'
+                        style={styles.emptyButton}
+                    />
+                }
+            />
         )
     }
 
     return (
-        <>
-            <KeyboardAvoidingView
-                style={styles.flex}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            >
-                <PWView style={styles.searchWrapper}>
-                    <SearchInput
-                        placeholder={t('contacts.list.search_placeholder')}
-                        value={search}
-                        onChangeText={onSearchChange}
-                    />
-                </PWView>
-                <PWFlatList
-                    data={contacts}
-                    keyExtractor={keyExtractor}
-                    contentContainerStyle={styles.listContent}
-                    keyboardShouldPersistTaps='handled'
-                    keyboardDismissMode='interactive'
-                    renderItem={renderItem}
-                    ListEmptyComponent={
-                        <EmptyView
-                            title={t('contacts.list.no_matching_title')}
-                            body={t('contacts.list.no_matching_body')}
-                        />
-                    }
+        <PWScreen
+            scroll={false}
+            horizontalPadding='none'
+        >
+            <PWView style={styles.searchWrapper}>
+                <SearchInput
+                    placeholder={t('contacts.list.search_placeholder')}
+                    value={search}
+                    onChangeText={onSearchChange}
                 />
-            </KeyboardAvoidingView>
-        </>
+            </PWView>
+            <PWFlatList
+                data={contacts}
+                keyExtractor={keyExtractor}
+                contentContainerStyle={styles.listContent}
+                renderItem={renderItem}
+                ListEmptyComponent={
+                    <EmptyView
+                        title={t('contacts.list.no_matching_title')}
+                        body={t('contacts.list.no_matching_body')}
+                    />
+                }
+            />
+        </PWScreen>
     )
 }

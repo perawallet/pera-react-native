@@ -42,7 +42,12 @@ export const PWListItem = ({
         >
             <PWView style={styles.labelContainer}>
                 <PWIcon name={icon} />
-                <PWText style={styles.title}>{title}</PWText>
+                <PWText
+                    style={styles.title}
+                    numberOfLines={1}
+                >
+                    {title}
+                </PWText>
             </PWView>
             <PWIcon
                 name='chevron-right'

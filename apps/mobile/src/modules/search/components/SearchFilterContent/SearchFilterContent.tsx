@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-import { PWHeader, PWSwitch, PWText, PWView } from '@components/core'
+import { PWSwitch, PWText, PWView } from '@components/core'
 import { SEARCH_SCOPES, type SearchScope } from '@perawallet/wallet-core-search'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { SheetHeader } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
@@ -33,15 +33,10 @@ export const SearchFilterContent = ({
 }: SearchFilterContentProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { dismiss } = useBottomSheetResult<void>()
 
     return (
         <PWView style={styles.container}>
-            <PWHeader
-                title={t('search.filter.title')}
-                rightIcon='cross'
-                onRightPress={dismiss}
-            />
+            <SheetHeader title={t('search.filter.title')} />
             {SEARCH_SCOPES.map(scope => {
                 const enabled = scopes.includes(scope)
                 return (

@@ -22,10 +22,6 @@ export const useStyles = makeStyles(theme => {
         alignSelf: 'flex-end' as const,
     }
     return {
-        rootContainer: {
-            flex: 1,
-            flexDirection: 'column',
-        },
         imageContainer: {
             display: 'flex',
             flexDirection: 'row',

@@ -12,8 +12,9 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
-    container: {
-        gap: theme.spacing.lg,
+export const useStyles = makeStyles(() => ({
+    title: {
+        width: '100%',
+        textAlign: 'center',
     },
 }))

@@ -116,12 +116,14 @@ export const AssetActionButtons = ({
                     icon='copy'
                     variant='primary'
                     onPress={handleCopyAddress}
+                    style={styles.buttonTwo}
                 />
                 <RoundButton
                     title={t('asset_details.action_buttons.receive')}
                     icon='inflow'
                     variant='secondary'
                     onPress={openReceiveFunds}
+                    style={styles.buttonTwo}
                 />
             </PWView>
         )
@@ -134,24 +136,28 @@ export const AssetActionButtons = ({
                 icon='swap'
                 variant='primary'
                 onPress={handleSwap}
+                style={styles.buttonFour}
             />
             <RoundButton
                 title={t('asset_details.action_buttons.buy')}
                 icon='dollar'
                 variant='secondary'
                 onPress={() => goToRootPage('Fund')}
+                style={styles.buttonFour}
             />
             <RoundButton
                 title={t('asset_details.action_buttons.send')}
                 icon='outflow'
                 variant='secondary'
                 onPress={handleSend}
+                style={styles.buttonFour}
             />
             <RoundButton
                 title={t('asset_details.action_buttons.receive')}
                 icon='inflow'
                 variant='secondary'
                 onPress={openReceiveFunds}
+                style={styles.buttonFour}
             />
         </PWView>
     )

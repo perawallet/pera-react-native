@@ -22,18 +22,31 @@ export const useStyles = makeStyles(theme => {
             flexDirection: 'row',
             gap: theme.spacing.md,
             alignItems: 'center',
+            flex: 1,
+            minWidth: 0,
+        },
+        contentContainer: {
+            flex: 1,
+            minWidth: 0,
+            overflow: 'hidden',
+        },
+        copyIconContainer: {
+            flexShrink: 0,
         },
         contactContainer: {
             flexDirection: 'row',
             gap: theme.spacing.md,
             alignItems: 'center',
+            minWidth: 0,
+            flex: 1,
         },
         unifiedTextContainer: {
             flex: 1,
+            minWidth: 0,
             justifyContent: 'center',
         },
         addressTextStack: {
-            flexShrink: 1,
+            flex: 1,
             minWidth: 0,
             justifyContent: 'center',
         },
@@ -48,6 +61,7 @@ export const useStyles = makeStyles(theme => {
             backgroundColor: theme.colors.wallet1Icon,
             alignItems: 'center',
             justifyContent: 'center',
+            flexShrink: 0,
         },
     }
 })

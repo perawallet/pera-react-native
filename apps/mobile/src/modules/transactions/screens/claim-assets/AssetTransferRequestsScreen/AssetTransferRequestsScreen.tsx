@@ -13,7 +13,7 @@
 import { useCallback } from 'react'
 import { useTheme } from '@rneui/themed'
 import type { Arc59AssetRequest } from '@perawallet/wallet-core-asa-inbox'
-import { PWDivider, PWFlatList, PWText } from '@components/core'
+import { PWDivider, PWFlatList, PWScreen, PWText } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { AssetTransferRequestItem } from '@modules/transactions/components/claim-assets/AssetTransferRequestItem'
@@ -63,24 +63,28 @@ export const AssetTransferRequestsScreen = () => {
     )
 
     return (
-        <PWFlatList
-            data={assetRequests}
-            renderItem={renderItem}
-            style={styles.container}
-            contentContainerStyle={styles.contentContainer}
-            keyExtractor={keyExtractor}
-            ItemSeparatorComponent={renderSeparator}
-            ListEmptyComponent={
-                <EmptyView
-                    isLoading={isPending}
-                    loadingStyle={styles.loadingView}
-                    style={styles.emptyView}
-                    icon='inbox'
-                    title={t('arc59.requests.empty_title')}
-                    body={t('arc59.requests.empty_body')}
-                />
-            }
-            estimatedItemSize={theme.spacing.xxl}
-        />
+        <PWScreen
+            scroll={false}
+            horizontalPadding='none'
+        >
+            <PWFlatList
+                data={assetRequests}
+                renderItem={renderItem}
+                contentContainerStyle={styles.contentContainer}
+                keyExtractor={keyExtractor}
+                ItemSeparatorComponent={renderSeparator}
+                ListEmptyComponent={
+                    <EmptyView
+                        isLoading={isPending}
+                        loadingStyle={styles.loadingView}
+                        style={styles.emptyView}
+                        icon='inbox'
+                        title={t('arc59.requests.empty_title')}
+                        body={t('arc59.requests.empty_body')}
+                    />
+                }
+                estimatedItemSize={theme.spacing.xxl}
+            />
+        </PWScreen>
     )
 }

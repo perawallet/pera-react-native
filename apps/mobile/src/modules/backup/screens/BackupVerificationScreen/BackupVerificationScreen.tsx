@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWButton, PWScrollView, PWText, PWView } from '@components/core'
+import { PWButton, PWScreen, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
 import { BackupQuizItem } from '../../components/BackupQuizItem'
@@ -27,32 +27,9 @@ export const BackupVerificationScreen = () => {
         useBackupVerificationScreen()
 
     return (
-        <PWView style={styles.root}>
-            <PWScrollView
-                style={styles.scroll}
-                contentContainerStyle={styles.scrollContent}
-            >
-                <PWText
-                    variant='h1'
-                    style={styles.title}
-                >
-                    {t('backup.verification.title')}
-                </PWText>
-                <PWView style={styles.quizList}>
-                    {items.map((item, i) => (
-                        <BackupQuizItem
-                            key={`${item.position}-${i}`}
-                            position={item.position}
-                            options={item.options}
-                            selectedWord={item.selectedWord}
-                            onSelect={word => onSelect(i, word)}
-                            testID={`backup_verification_item_${i}`}
-                        />
-                    ))}
-                </PWView>
-            </PWScrollView>
-
-            <PWView style={styles.footer}>
+        <PWScreen
+            contentContainerStyle={styles.scrollContent}
+            footer={
                 <PWButton
                     title={t('backup.verification.cta_next')}
                     variant='primary'
@@ -60,7 +37,26 @@ export const BackupVerificationScreen = () => {
                     onPress={onSubmit}
                     testID='backup_verification_next'
                 />
+            }
+        >
+            <PWText
+                variant='h1'
+                style={styles.title}
+            >
+                {t('backup.verification.title')}
+            </PWText>
+            <PWView style={styles.quizList}>
+                {items.map((item, i) => (
+                    <BackupQuizItem
+                        key={`${item.position}-${i}`}
+                        position={item.position}
+                        options={item.options}
+                        selectedWord={item.selectedWord}
+                        onSelect={word => onSelect(i, word)}
+                        testID={`backup_verification_item_${i}`}
+                    />
+                ))}
             </PWView>
-        </PWView>
+        </PWScreen>
     )
 }

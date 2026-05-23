@@ -11,17 +11,17 @@
  */
 
 import React from 'react'
-import { SafeAreaView } from 'react-native-safe-area-context'
 import {
     PWButton,
     PWCheckbox,
-    PWChip,
     PWFlatList,
     PWLoadingOverlay,
+    PWScreen,
     PWText,
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
+import { SelectableAccountCheckboxRow } from '@modules/accounts/components/SelectableAccountCheckboxRow'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import {
@@ -56,120 +56,95 @@ export const AsbImportSelectAccountsScreen = () => {
         const displayName = item.name?.trim() || shortAddress(item.address)
 
         return (
-            <PWTouchableOpacity
-                style={styles.row}
-                onPress={() => toggleSelection(item.address)}
-                disabled={isImported}
-            >
-                <PWView style={styles.rowText}>
-                    <PWText
-                        variant='body'
-                        style={styles.rowTitle}
-                        numberOfLines={1}
-                    >
-                        {displayName}
-                    </PWText>
-                    <PWText
-                        variant='caption'
-                        style={styles.rowSubtitle}
-                        numberOfLines={1}
-                    >
-                        {shortAddress(item.address)}
-                    </PWText>
-                </PWView>
-
-                {isImported ? (
-                    <PWChip
-                        title={t(
-                            'onboarding.asb_import.select.already_imported',
-                        )}
-                        variant='secondary'
-                    />
-                ) : (
-                    <PWCheckbox
-                        checked={isSelected}
-                        onPress={() => toggleSelection(item.address)}
-                        testID={`asb_import_select_item_${item.address}`}
-                    />
+            <SelectableAccountCheckboxRow
+                title={displayName}
+                subtitle={shortAddress(item.address)}
+                isSelected={isSelected}
+                isImported={isImported}
+                importedLabel={t(
+                    'onboarding.asb_import.select.already_imported',
                 )}
-            </PWTouchableOpacity>
+                onToggle={() => toggleSelection(item.address)}
+                checkboxTestID={`asb_import_select_item_${item.address}`}
+            />
         )
     }
 
     return (
-        <PWView style={styles.root}>
-            <PWView style={styles.content}>
-                <PWText
-                    variant='h1'
-                    style={styles.title}
-                >
-                    {t('onboarding.asb_import.select.title')}
-                </PWText>
-                <PWText
-                    variant='h4'
-                    style={styles.description}
-                >
-                    {t('onboarding.asb_import.select.body', {
-                        count: items.length,
-                    })}
-                </PWText>
-
-                {!areAllImported && (
-                    <PWView style={styles.headerRow}>
-                        <PWText
-                            variant='bodySemibold'
-                            style={styles.headerCount}
-                        >
-                            {t('onboarding.asb_import.select.count', {
-                                count: importableCount,
-                            })}
-                        </PWText>
-                        <PWTouchableOpacity
-                            onPress={toggleSelectAll}
-                            style={styles.selectAll}
-                            testID='asb_import_select_select_all'
-                        >
-                            <PWText
-                                variant='link'
-                                style={styles.selectAllText}
-                            >
-                                {t('onboarding.asb_import.select.select_all')}
-                            </PWText>
-                            <PWCheckbox
-                                checked={isAllSelected}
-                                onPress={toggleSelectAll}
-                            />
-                        </PWTouchableOpacity>
-                    </PWView>
-                )}
-
-                <PWFlatList
-                    data={items}
-                    renderItem={renderItem}
-                    keyExtractor={item => item.address}
-                    extraData={selectedAddresses}
-                    contentContainerStyle={styles.list}
-                    showsVerticalScrollIndicator={false}
-                />
-            </PWView>
-
-            <SafeAreaView
-                edges={['bottom']}
-                style={styles.footer}
+        <>
+            <PWScreen
+                scroll={false}
+                footer={
+                    <PWButton
+                        variant='primary'
+                        title={t('onboarding.asb_import.select.continue')}
+                        onPress={handleContinue}
+                        isDisabled={!canContinue}
+                        testID='asb_import_select_continue_button'
+                    />
+                }
             >
-                <PWButton
-                    variant='primary'
-                    title={t('onboarding.asb_import.select.continue')}
-                    onPress={handleContinue}
-                    isDisabled={!canContinue}
-                    testID='asb_import_select_continue_button'
-                />
-            </SafeAreaView>
+                <PWView style={styles.content}>
+                    <PWText
+                        variant='h1'
+                        style={styles.title}
+                    >
+                        {t('onboarding.asb_import.select.title')}
+                    </PWText>
+                    <PWText
+                        variant='h4'
+                        style={styles.description}
+                    >
+                        {t('onboarding.asb_import.select.body', {
+                            count: items.length,
+                        })}
+                    </PWText>
+
+                    {!areAllImported && (
+                        <PWView style={styles.headerRow}>
+                            <PWText
+                                variant='bodySemibold'
+                                style={styles.headerCount}
+                            >
+                                {t('onboarding.asb_import.select.count', {
+                                    count: importableCount,
+                                })}
+                            </PWText>
+                            <PWTouchableOpacity
+                                onPress={toggleSelectAll}
+                                style={styles.selectAll}
+                                testID='asb_import_select_select_all'
+                            >
+                                <PWText
+                                    variant='link'
+                                    style={styles.selectAllText}
+                                >
+                                    {t(
+                                        'onboarding.asb_import.select.select_all',
+                                    )}
+                                </PWText>
+                                <PWCheckbox
+                                    checked={isAllSelected}
+                                    onPress={toggleSelectAll}
+                                />
+                            </PWTouchableOpacity>
+                        </PWView>
+                    )}
+
+                    <PWFlatList
+                        data={items}
+                        renderItem={renderItem}
+                        keyExtractor={item => item.address}
+                        extraData={selectedAddresses}
+                        showsVerticalScrollIndicator={false}
+                    />
+                </PWView>
+            </PWScreen>
 
             <PWLoadingOverlay
                 isVisible={isProcessing}
                 title={t('onboarding.asb_import.select.importing')}
             />
-        </PWView>
+        </>
     )
 }

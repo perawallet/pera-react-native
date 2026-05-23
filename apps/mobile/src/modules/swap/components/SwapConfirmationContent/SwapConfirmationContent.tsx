@@ -11,14 +11,8 @@
  */
 
 import { useCallback } from 'react'
-import {
-    PWDivider,
-    PWIcon,
-    PWSlideToConfirm,
-    PWText,
-    PWToolbar,
-    PWView,
-} from '@components/core'
+import { PWDivider, PWSlideToConfirm, PWText, PWView } from '@components/core'
+import { SheetHeader } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
@@ -71,15 +65,10 @@ export const SwapConfirmationContent = ({
 
     return (
         <PWView style={styles.container}>
-            <PWToolbar
-                left={
-                    <PWIcon
-                        name='cross'
-                        onPress={isProcessing ? undefined : onClosePress}
-                        testID='swap-confirm-close'
-                    />
-                }
-                center={
+            <SheetHeader
+                onClose={onClosePress}
+                testID='swap-confirm'
+                title={
                     <PWView style={styles.headerCenter}>
                         <PWText variant='h4'>
                             {t('swap.quote.confirm_swap')}
@@ -95,7 +84,6 @@ export const SwapConfirmationContent = ({
                         )}
                     </PWView>
                 }
-                paddingStyle='dense'
             />
 
             <PWView style={styles.assetsGroup}>

@@ -15,9 +15,11 @@ import { useStyles } from './styles'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useDeeplinkListener } from '@hooks/useDeeplinkListener'
 
-export type SafeAreaLayoutProps = ViewProps & {
-    isTabBarVisible?: boolean
-}
+export type SafeAreaLayoutProps = ViewProps
+
+// Bottom edge is intentionally omitted — PWScreen owns the bottom safe area
+// (it knows whether there's a sticky footer to anchor).
+const SAFE_AREA_EDGES = ['top', 'left', 'right'] as const
 
 export const SafeAreaLayout = (props: SafeAreaLayoutProps) => {
     const styles = useStyles()
@@ -28,11 +30,7 @@ export const SafeAreaLayout = (props: SafeAreaLayoutProps) => {
     return (
         <SafeAreaView
             style={styles.contentContainer}
-            edges={
-                props.isTabBarVisible
-                    ? ['top', 'left', 'right']
-                    : ['top', 'left', 'right', 'bottom']
-            }
+            edges={SAFE_AREA_EDGES}
             {...props}
         />
     )

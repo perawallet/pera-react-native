@@ -13,6 +13,11 @@
 import type { ReactNode } from 'react'
 import { PWIcon, PWText, PWToolbar } from '@components/core'
 import { useBottomSheetResult } from '../../hooks/useBottomSheetResult'
+import { useBottomSheetPanDownEnabled } from '../../hooks/useBottomSheetPanDownEnabled'
+
+import type { StyleProp, ViewStyle } from 'react-native'
+
+import { useStyles } from './styles'
 
 export type SheetHeaderProps = {
     title: ReactNode
@@ -21,6 +26,8 @@ export type SheetHeaderProps = {
     /** Override the default close behaviour (which calls `dismiss()`). */
     onClose?: () => void
     paddingStyle?: 'normal' | 'dense' | 'none'
+    /** Extra style forwarded to the underlying toolbar container. */
+    style?: StyleProp<ViewStyle>
     testID?: string
 }
 
@@ -30,31 +37,42 @@ export type SheetHeaderProps = {
  * title (and, optionally, a right-slot action). Designed for use inside
  * a sheet rendered by `BottomSheetManager` — must be mounted under a
  * `BottomSheetIdContext`.
+ *
+ * The close (X) is dropped when the host sheet enables pan-down-to-close,
+ * since the drag handle then provides dismissal; sheets without pan-down
+ * keep the X so they stay dismissable.
  */
 export const SheetHeader = ({
     title,
     rightAction,
     onClose,
     paddingStyle = 'dense',
+    style,
     testID,
 }: SheetHeaderProps) => {
+    const styles = useStyles()
     const { dismiss } = useBottomSheetResult()
+    const isPanDownEnabled = useBottomSheetPanDownEnabled()
     const handleClose = onClose ?? dismiss
 
     return (
         <PWToolbar
             left={
-                <PWIcon
-                    name='cross'
-                    variant='secondary'
-                    onPress={handleClose}
-                    testID={testID ? `${testID}-close` : undefined}
-                />
+                isPanDownEnabled ? undefined : (
+                    <PWIcon
+                        name='cross'
+                        variant='secondary'
+                        onPress={handleClose}
+                        testID={testID ? `${testID}-close` : undefined}
+                    />
+                )
             }
             center={
                 typeof title === 'string' ? (
                     <PWText
                         variant='h4'
+                        truncate
+                        style={styles.title}
                         testID={testID ? `${testID}-title` : undefined}
                     >
                         {title}
@@ -65,6 +83,7 @@ export const SheetHeader = ({
             }
             right={rightAction}
             paddingStyle={paddingStyle}
+            style={style}
             testID={testID}
         />
     )

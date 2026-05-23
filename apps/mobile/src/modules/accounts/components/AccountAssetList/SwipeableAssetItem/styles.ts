@@ -15,7 +15,7 @@ import { DEFAULT_SWIPE_ACTION_WIDTH } from '@components/core'
 
 export const useStyles = makeStyles(theme => ({
     itemContainer: {
-        marginVertical: theme.spacing.md,
+        marginVertical: theme.spacing.lg,
     },
     swipeableContent: {
         backgroundColor: theme.colors.background,
@@ -26,6 +26,6 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         width: DEFAULT_SWIPE_ACTION_WIDTH,
         borderRadius: theme.spacing.sm,
-        marginVertical: theme.spacing.md,
+        marginVertical: theme.spacing.lg,
     },
 }))

@@ -27,14 +27,6 @@ const bottomSheetLayout = ({ children }: { children: React.ReactNode }) => {
     return <BottomSheetLayout>{children}</BottomSheetLayout>
 }
 
-const safeAreaLayoutWithTabBar = ({
-    children,
-}: {
-    children: React.ReactNode
-}) => {
-    return <SafeAreaLayout isTabBarVisible>{children}</SafeAreaLayout>
-}
-
 const fullScreenLayout = ({ children }: { children: React.ReactNode }) => {
     return <FullScreenLayout>{children}</FullScreenLayout>
 }
@@ -43,7 +35,6 @@ export {
     headeredLayout,
     safeAreaLayout,
     bottomSheetLayout,
-    safeAreaLayoutWithTabBar,
     fullScreenLayout,
     FullScreenLayout,
     HeaderedLayout,

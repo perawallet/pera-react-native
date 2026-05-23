@@ -17,8 +17,11 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.xs,
+        flex: 1,
+        minWidth: 0,
     },
     name: {
         flexShrink: 1,
+        minWidth: 0,
     },
 }))

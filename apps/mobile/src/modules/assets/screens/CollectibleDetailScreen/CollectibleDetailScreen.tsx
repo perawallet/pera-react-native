@@ -17,7 +17,7 @@ import {
     PWButton,
     PWChip,
     PWIcon,
-    PWScrollView,
+    PWScreen,
     PWText,
     PWTouchableIcon,
     PWView,
@@ -94,8 +94,13 @@ export const CollectibleDetailScreen = ({
     const quantity = assetAmount.toNumber()
 
     return (
-        <PWView style={styles.container}>
-            <PWScrollView contentContainerStyle={styles.scrollContent}>
+        <>
+            <PWScreen
+                horizontalPadding='none'
+                keyboard='none'
+                style={styles.container}
+                contentContainerStyle={styles.scrollContent}
+            >
                 <PWView style={styles.contentContainer}>
                     <PWView style={styles.titleSection}>
                         <PWText
@@ -211,12 +216,12 @@ export const CollectibleDetailScreen = ({
                         collectible={collectible}
                     />
                 </PWView>
-            </PWScrollView>
+            </PWScreen>
             <ModelViewerBottomSheet
                 isVisible={modelViewerModal.isOpen}
                 onClose={modelViewerModal.close}
                 modelUrl={modelViewerUrl ?? ''}
             />
-        </PWView>
+        </>
     )
 }

@@ -40,12 +40,18 @@ export type AccountAssetItemViewProps = {
     accountBalance: AssetWithAccountBalance
     usdPrice?: Decimal
     iconSize?: PWIconSize
+    /** Direct logo URL forwarded to the asset icon, bypassing Prism optimization. */
+    logoUrl?: string
+    /** When false, the balance/value column is omitted. Defaults to true. */
+    showBalance?: boolean
 } & PWTouchableOpacityProps
 
 export const AccountAssetItemView = ({
     accountBalance,
     usdPrice,
     iconSize,
+    logoUrl,
+    showBalance = true,
     onPress,
     ...rest
 }: AccountAssetItemViewProps) => {
@@ -142,18 +148,21 @@ export const AccountAssetItemView = ({
         >
             <AssetIcon
                 asset={asset}
+                logoUrl={logoUrl}
                 size={iconSize ?? 'lg'}
             />
             <PWView style={styles.dataContainer}>
                 <PWView style={styles.unitContainer}>
                     <PWView style={styles.row}>
                         <PWText
+                            variant='bodyLarge'
+                            weight={500}
                             style={
                                 isSuspicious
                                     ? styles.suspiciousName
                                     : styles.primaryUnit
                             }
-                            numberOfLines={1}
+                            truncate
                         >
                             {displayName}
                         </PWText>
@@ -182,33 +191,44 @@ export const AccountAssetItemView = ({
                     ) : (
                         <CopyableText copyValue={String(asset.assetId)}>
                             <PWText
+                                variant='footnoteMedium'
+                                weight={400}
                                 style={styles.secondaryUnit}
-                                numberOfLines={1}
+                                truncate
+                                ellipsizeMode='middle'
                             >
                                 {secondaryText}
                             </PWText>
                         </CopyableText>
                     )}
                 </PWView>
-                <PWView style={styles.amountContainer}>
-                    <CurrencyDisplay
-                        currency={asset.unitName ?? ''}
-                        value={accountBalance.amount}
-                        precision={asset.decimals}
-                        minPrecision={2}
-                        showSymbol
-                        style={styles.primaryAmount}
-                    />
-                    <PreferredCurrencyDisplay
-                        sourceAmount={accountBalance.amount}
-                        sourceAssetId={accountBalance.assetId}
-                        usdPrice={usdPrice}
-                        precision={2}
-                        minPrecision={2}
-                        showSymbol
-                        style={styles.secondaryAmount}
-                    />
-                </PWView>
+                {showBalance ? (
+                    <PWView style={styles.amountContainer}>
+                        <CurrencyDisplay
+                            variant='bodyLarge'
+                            weight={500}
+                            currency={asset.unitName ?? ''}
+                            value={accountBalance.amount}
+                            precision={asset.decimals}
+                            minPrecision={2}
+                            showSymbol
+                            numberOfLines={1}
+                            style={styles.primaryAmount}
+                        />
+                        <PreferredCurrencyDisplay
+                            variant='footnoteMedium'
+                            weight={400}
+                            sourceAmount={accountBalance.amount}
+                            sourceAssetId={accountBalance.assetId}
+                            usdPrice={usdPrice}
+                            precision={2}
+                            minPrecision={2}
+                            showSymbol
+                            numberOfLines={1}
+                            style={styles.secondaryAmount}
+                        />
+                    </PWView>
+                ) : null}
             </PWView>
         </PWTouchableOpacity>
     )

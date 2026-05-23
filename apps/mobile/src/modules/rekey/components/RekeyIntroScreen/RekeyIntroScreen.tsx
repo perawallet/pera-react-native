@@ -12,14 +12,7 @@
 
 import { useMemo } from 'react'
 import heroImage from '@assets/images/rekey-hero.jpg'
-import {
-    PWButton,
-    PWImage,
-    PWScrollView,
-    PWText,
-    PWView,
-} from '@components/core'
-import { useBottomSafeAreaPadding } from '@hooks/useBottomSafeAreaPadding'
+import { PWButton, PWImage, PWScreen, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { NumberedList } from '../NumberedList'
 import { useRekeyIntroScreen } from './useRekeyIntroScreen'
@@ -40,8 +33,7 @@ export const RekeyIntroScreen = ({
     expectationCount,
     navConfig,
 }: RekeyIntroScreenProps) => {
-    const bottomPadding = useBottomSafeAreaPadding()
-    const styles = useStyles(bottomPadding)
+    const styles = useStyles()
     const { t } = useLanguage()
 
     const expectations = useMemo(
@@ -56,47 +48,10 @@ export const RekeyIntroScreen = ({
         useRekeyIntroScreen(navConfig)
 
     return (
-        <PWView
-            style={styles.root}
+        <PWScreen
+            horizontalPadding='none'
             testID={`${testIdPrefix}-intro-screen`}
-        >
-            <PWScrollView contentContainerStyle={styles.scrollContent}>
-                <PWImage
-                    source={heroImage}
-                    style={styles.hero}
-                    resizeMode='cover'
-                />
-
-                <PWView style={styles.body}>
-                    <PWText variant='h1'>{t(`${i18nBaseKey}.title`)}</PWText>
-
-                    <PWText
-                        variant='bodyLarge'
-                        style={styles.bodyText}
-                    >
-                        {t(`${i18nBaseKey}.body`)}{' '}
-                        <PWText
-                            variant='bodyLarge'
-                            style={styles.learnMore}
-                            onPress={handleLearnMore}
-                        >
-                            {t(`${i18nBaseKey}.learn_more`)}
-                        </PWText>
-                    </PWText>
-
-                    <PWView style={styles.listSection}>
-                        <PWText
-                            variant='bodySemibold'
-                            style={styles.expectLabel}
-                        >
-                            {t(`${i18nBaseKey}.expect_label`)}
-                        </PWText>
-                        <NumberedList items={expectations} />
-                    </PWView>
-                </PWView>
-            </PWScrollView>
-
-            <PWView style={styles.footer}>
+            footer={
                 <PWButton
                     variant='primary'
                     title={t(`${i18nBaseKey}.cta`)}
@@ -104,7 +59,41 @@ export const RekeyIntroScreen = ({
                     style={styles.cta}
                     testID={`${testIdPrefix}-intro-start`}
                 />
+            }
+        >
+            <PWImage
+                source={heroImage}
+                style={styles.hero}
+                resizeMode='cover'
+            />
+
+            <PWView style={styles.body}>
+                <PWText variant='h1'>{t(`${i18nBaseKey}.title`)}</PWText>
+
+                <PWText
+                    variant='bodyLarge'
+                    style={styles.bodyText}
+                >
+                    {t(`${i18nBaseKey}.body`)}{' '}
+                    <PWText
+                        variant='bodyLarge'
+                        style={styles.learnMore}
+                        onPress={handleLearnMore}
+                    >
+                        {t(`${i18nBaseKey}.learn_more`)}
+                    </PWText>
+                </PWText>
+
+                <PWView style={styles.listSection}>
+                    <PWText
+                        variant='bodySemibold'
+                        style={styles.expectLabel}
+                    >
+                        {t(`${i18nBaseKey}.expect_label`)}
+                    </PWText>
+                    <NumberedList items={expectations} />
+                </PWView>
             </PWView>
-        </PWView>
+        </PWScreen>
     )
 }

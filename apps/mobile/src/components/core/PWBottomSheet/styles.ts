@@ -11,7 +11,6 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { Platform } from 'react-native'
 import { EdgeInsets } from 'react-native-safe-area-context'
 
 export const useStyles = makeStyles(
@@ -34,8 +33,7 @@ export const useStyles = makeStyles(
         },
         innerContainer: {
             flexGrow: 1,
-            paddingBottom:
-                (Platform.OS === 'ios' ? insets.bottom : 0) + theme.spacing.md,
+            paddingBottom: isFull ? theme.spacing.md : insets.bottom,
         },
         hidden: {
             display: 'none',

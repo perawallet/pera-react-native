@@ -14,21 +14,30 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
-        paddingHorizontal: theme.spacing.lg,
         gap: theme.spacing.sm,
         marginTop: theme.spacing.lg,
+        width: '100%',
+        minWidth: 0,
     },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        gap: theme.spacing.md,
         paddingVertical: theme.spacing.sm,
+        minWidth: 0,
     },
     headerTitle: {
         color: theme.colors.textMain,
+        flex: 1,
+        minWidth: 0,
     },
     headerLabel: {
         color: theme.colors.textGray,
+        flexShrink: 1,
+        minWidth: 0,
+        maxWidth: '45%',
+        textAlign: 'right',
     },
     itemContainer: {
         flexDirection: 'row',
@@ -41,12 +50,13 @@ export const useStyles = makeStyles(theme => ({
         minWidth: theme.spacing.md,
     },
     itemLabelContainer: {
-        flexGrow: 1,
-        flexShrink: 1,
+        flex: 1,
+        minWidth: 0,
     },
     itemVolume: {
         color: theme.colors.textGray,
         textAlign: 'right',
+        flexShrink: 0,
     },
     skeletonRow: {
         height: theme.spacing['3xl'],

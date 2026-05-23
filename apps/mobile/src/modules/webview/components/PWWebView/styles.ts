@@ -25,6 +25,12 @@ export const useStyles = makeStyles(theme => {
         flex: {
             flex: 1,
         },
+        // The webview fills the scroll area — opt out of PWScrollView's
+        // default bottom padding so there's no gap below it.
+        scrollContent: {
+            flex: 1,
+            paddingBottom: 0,
+        },
         webview: {
             alignItems: 'flex-start',
             justifyContent: 'flex-start',

@@ -13,8 +13,8 @@
 import { useWindowDimensions } from 'react-native'
 import { useTheme } from '@rneui/themed'
 import QRCode from 'react-native-qrcode-svg'
-import { PWButton, PWIcon, PWText, PWToolbar, PWView } from '@components/core'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { PWButton, PWText, PWView } from '@components/core'
+import { SheetHeader } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useExportShareAccountContent } from './useExportShareAccountContent'
 import { useStyles } from './styles'
@@ -30,23 +30,15 @@ export const ExportShareAccountContent = ({
     const { width } = useWindowDimensions()
     const { theme } = useTheme()
     const styles = useStyles()
-    const { dismiss } = useBottomSheetResult<void>()
     const { exportUrl, handleCopyUrl, handleShareUrl } =
         useExportShareAccountContent({ accountAddress })
 
     return (
         <PWView style={styles.container}>
-            <PWToolbar
-                left={
-                    <PWIcon
-                        name='cross'
-                        onPress={dismiss}
-                    />
-                }
-                center={
+            <SheetHeader
+                title={
                     <PWText variant='h3'>{t('multisig.export.title')}</PWText>
                 }
-                paddingStyle='dense'
             />
             <PWView style={styles.qrSection}>
                 <QRCode

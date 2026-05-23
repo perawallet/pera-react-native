@@ -13,25 +13,50 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
+    screen: {
         flex: 1,
+        width: '100%',
+        minWidth: 0,
+        overflow: 'hidden',
     },
     toolbar: {
-        paddingLeft: theme.spacing.xl,
+        flexShrink: 0,
+        width: '100%',
+        paddingHorizontal: theme.spacing.xl,
+    },
+    formWrapper: {
+        flex: 1,
+        minHeight: 0,
+        width: '100%',
+        minWidth: 0,
+        overflow: 'hidden',
     },
     titleSection: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.sm,
+        flexShrink: 1,
+        minWidth: 0,
+        overflow: 'hidden',
     },
     selectHeader: {
         paddingTop: theme.spacing.sm,
         gap: theme.spacing.md,
+        width: '100%',
+        minWidth: 0,
+    },
+    selectTitle: {
+        minWidth: 0,
     },
     selectDescription: {
         color: theme.colors.textGray,
+        minWidth: 0,
     },
     accountTrigger: {
+        flex: 0,
+        flexShrink: 1,
+        minWidth: 0,
+        maxWidth: '100%',
         borderWidth: theme.borders.sm,
         borderColor: theme.colors.layerGray,
     },

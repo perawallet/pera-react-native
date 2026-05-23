@@ -13,14 +13,6 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        flex: 1,
-        backgroundColor: theme.colors.background,
-    },
-    scrollContent: {
-        flexGrow: 1,
-        paddingHorizontal: theme.spacing.xl,
-    },
     heroIcon: {
         alignItems: 'center',
         marginTop: theme.spacing.lg,
@@ -37,10 +29,5 @@ export const useStyles = makeStyles(theme => ({
     },
     cardList: {
         gap: theme.spacing.md,
-    },
-    footer: {
-        paddingHorizontal: theme.spacing.xl,
-        paddingBottom: theme.spacing.lg,
-        backgroundColor: theme.colors.background,
     },
 }))

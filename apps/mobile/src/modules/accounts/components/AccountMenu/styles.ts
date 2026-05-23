@@ -17,34 +17,37 @@ export const useStyles = makeStyles(theme => {
         portfolioContainer: {
             paddingTop: theme.spacing.md,
         },
-        accountContainer: {
-            paddingBottom: theme.spacing['3xl'],
-        },
-        listSeparator: {
-            height: theme.spacing.md,
-        },
         container: {
             padding: 0,
-            paddingHorizontal: theme.spacing.lg,
             margin: 0,
             flex: 1,
             overflow: 'hidden',
             gap: theme.spacing.md,
+            minWidth: 0,
         },
         mainContent: {
             flex: 1,
             gap: theme.spacing.md,
+            minWidth: 0,
         },
         titleBar: {
             gap: theme.spacing.md,
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
+            width: '100%',
+            minWidth: 0,
+        },
+        titleBarTitleContainer: {
+            flex: 1,
+            minWidth: 0,
         },
         titleBarButtonContainer: {
             flexDirection: 'row',
             gap: theme.spacing.md,
             alignItems: 'center',
+            flexShrink: 1,
+            minWidth: 0,
         },
         activeTitle: {
             color: theme.colors.textMain,

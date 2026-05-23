@@ -10,15 +10,13 @@
  limitations under the License
  */
 
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { BannerCarousel } from '@modules/banners/components/BannerCarousel'
-import { PWIcon, PWTouchableOpacity, PWView } from '@components/core'
+import { PWIcon, PWScreen, PWTouchableOpacity, PWView } from '@components/core'
 import { useBannersCarouselModalScreen } from './useBannersCarouselModalScreen'
 import { useStyles } from './styles'
 
 export const BannersCarouselModalScreen = () => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles({ bottomInset: insets.bottom })
+    const styles = useStyles()
     const {
         banners,
         initialIndex,
@@ -30,7 +28,10 @@ export const BannersCarouselModalScreen = () => {
     } = useBannersCarouselModalScreen()
 
     return (
-        <PWView
+        <PWScreen
+            scroll={false}
+            horizontalPadding='none'
+            keyboard='none'
             style={styles.root}
             testID='banners_carousel_modal'
         >
@@ -56,6 +57,6 @@ export const BannersCarouselModalScreen = () => {
                     />
                 </PWTouchableOpacity>
             ) : null}
-        </PWView>
+        </PWScreen>
     )
 }

@@ -28,6 +28,7 @@
     "@ledgerhq/devices": "^8.13.0",
     "@ledgerhq/errors": "^6.32.0",
     "@ledgerhq/react-native-hw-transport-ble": "^6.39.1",
+    "buffer": "^6.0.3",
     "react-native": "0.83.9"
   },
   "devDependencies": {

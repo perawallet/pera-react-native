@@ -11,9 +11,8 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { EdgeInsets } from 'react-native-safe-area-context'
 
-export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
+export const useStyles = makeStyles(theme => {
     return {
         sectionContainer: {
             gap: theme.spacing.xxl,
@@ -28,11 +27,6 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
         },
         sectionRow: {
             paddingHorizontal: theme.spacing.xs,
-        },
-        scrollView: {
-            flex: 1,
-            marginHorizontal: theme.spacing.lg,
-            marginBottom: insets.bottom,
         },
     }
 })

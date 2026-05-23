@@ -11,19 +11,12 @@
  */
 
 import React from 'react'
-import {
-    PWButton,
-    PWIcon,
-    PWRadioButton,
-    PWText,
-    PWToolbar,
-    PWView,
-} from '@components/core'
+import { PWButton, PWRadioButton, PWView } from '@components/core'
 import {
     useCollectiblePreferencesStore,
     type CollectibleSortMode,
 } from '@perawallet/wallet-core-assets'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
@@ -47,19 +40,9 @@ export const NftSortContent = (_: NftSortContentProps = {}) => {
 
     return (
         <>
-            <PWToolbar
-                left={
-                    <PWIcon
-                        name='cross'
-                        onPress={dismiss}
-                    />
-                }
-                center={
-                    <PWText variant='h4'>
-                        {t('account_details.nfts.sort')}
-                    </PWText>
-                }
-                right={
+            <SheetHeader
+                title={t('account_details.nfts.sort')}
+                rightAction={
                     <PWButton
                         variant='linkPositive'
                         title={t('account_details.nfts.filter_done')}
@@ -67,7 +50,6 @@ export const NftSortContent = (_: NftSortContentProps = {}) => {
                         paddingStyle='none'
                     />
                 }
-                paddingStyle='dense'
                 style={styles.toolbar}
             />
 

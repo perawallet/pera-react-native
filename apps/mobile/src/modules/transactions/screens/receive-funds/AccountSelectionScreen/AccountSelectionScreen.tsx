@@ -14,15 +14,13 @@ import { useCallback } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 
-import { PWFlatList, PWTouchableOpacity } from '@components/core'
+import { PWFlatList, PWScreen } from '@components/core'
 import { useAllAccounts, WalletAccount } from '@perawallet/wallet-core-accounts'
-import { AccountWithBalance } from '@modules/accounts/components/AccountWithBalance'
+import { SelectableAccountRow } from '@modules/accounts/components/SelectableAccountRow'
 import { useReceiveFunds } from '@modules/transactions/hooks'
 import type { ReceiveFundsStackParamList } from '../../../routes/receive-funds/types'
-import { useStyles } from './styles'
 
 export const AccountSelectionScreen = () => {
-    const styles = useStyles()
     const accounts = useAllAccounts()
     const { setSelectedAccount } = useReceiveFunds()
     const navigation =
@@ -38,9 +36,10 @@ export const AccountSelectionScreen = () => {
 
     const renderItem = useCallback(
         ({ item }: { item: WalletAccount }) => (
-            <PWTouchableOpacity onPress={() => handleSelected(item)}>
-                <AccountWithBalance account={item} />
-            </PWTouchableOpacity>
+            <SelectableAccountRow
+                account={item}
+                onSelect={handleSelected}
+            />
         ),
         [handleSelected],
     )
@@ -48,12 +47,13 @@ export const AccountSelectionScreen = () => {
     const keyExtractor = useCallback((item: WalletAccount) => item.address, [])
 
     return (
-        <PWFlatList
-            inBottomSheet
-            contentContainerStyle={styles.container}
-            data={accounts}
-            renderItem={renderItem}
-            keyExtractor={keyExtractor}
-        />
+        <PWScreen scroll={false}>
+            <PWFlatList
+                inBottomSheet
+                data={accounts}
+                renderItem={renderItem}
+                keyExtractor={keyExtractor}
+            />
+        </PWScreen>
     )
 }

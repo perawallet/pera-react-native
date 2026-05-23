@@ -64,6 +64,8 @@ export const MultisigIntroductionDialog = ({
                     <PWText
                         variant='h3'
                         style={styles.title}
+                        numberOfLines={2}
+                        ellipsizeMode='tail'
                     >
                         {t('multisig.introduction.title')}
                     </PWText>

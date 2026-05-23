@@ -11,7 +11,7 @@
  */
 
 import { ActivityIndicator } from 'react-native'
-import { PWButton, PWScrollView, PWText, PWView } from '@components/core'
+import { PWButton, PWScreen, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
 import { PinEditView } from '@modules/security'
@@ -72,46 +72,42 @@ export const BackupReminderMnemonicScreen = () => {
     }
 
     return (
-        <PWView style={styles.root}>
-            <PWScrollView
-                style={styles.scroll}
-                contentContainerStyle={styles.scrollContent}
-            >
-                <PWText
-                    variant='h1'
-                    style={styles.title}
-                >
-                    {t('backup.mnemonic.title')}
-                </PWText>
-                <PWText
-                    variant='h4'
-                    style={styles.description}
-                >
-                    {t('backup.mnemonic.body')}
-                </PWText>
-                <PWView style={styles.grid}>
-                    {words.map((word, i) => (
-                        <PWView
-                            key={`${i}-${word}`}
-                            style={styles.wordCell}
-                        >
-                            <PWText style={styles.wordIndex}>
-                                {String(i + 1)}
-                            </PWText>
-                            <PWText style={styles.wordText}>{word}</PWText>
-                        </PWView>
-                    ))}
-                </PWView>
-            </PWScrollView>
-
-            <PWView style={styles.footer}>
+        <PWScreen
+            contentContainerStyle={styles.scrollContent}
+            footer={
                 <PWButton
                     title={t('backup.mnemonic.cta_continue')}
                     variant='primary'
                     onPress={onContinue}
                     testID='backup_mnemonic_continue'
                 />
+            }
+        >
+            <PWText
+                variant='h1'
+                style={styles.title}
+            >
+                {t('backup.mnemonic.title')}
+            </PWText>
+            <PWText
+                variant='h4'
+                style={styles.description}
+            >
+                {t('backup.mnemonic.body')}
+            </PWText>
+            <PWView style={styles.grid}>
+                {words.map((word, i) => (
+                    <PWView
+                        key={`${i}-${word}`}
+                        style={styles.wordCell}
+                    >
+                        <PWText style={styles.wordIndex}>
+                            {String(i + 1)}
+                        </PWText>
+                        <PWText style={styles.wordText}>{word}</PWText>
+                    </PWView>
+                ))}
             </PWView>
-        </PWView>
+        </PWScreen>
     )
 }

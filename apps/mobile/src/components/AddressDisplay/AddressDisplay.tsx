@@ -89,7 +89,7 @@ export const AddressDisplay = ({
         const { primary, secondary } = unifiedLabels
 
         content = (
-            <>
+            <PWView style={styles.contactContainer}>
                 {account ? (
                     <AccountIcon
                         account={account}
@@ -104,7 +104,7 @@ export const AddressDisplay = ({
                 <PWView style={styles.unifiedTextContainer}>
                     <PWText
                         variant={textProps?.variant ?? 'h4'}
-                        numberOfLines={1}
+                        truncate
                         ellipsizeMode='middle'
                         {...textProps}
                     >
@@ -114,14 +114,14 @@ export const AddressDisplay = ({
                         <PWText
                             variant='caption'
                             style={styles.secondaryText}
-                            numberOfLines={1}
+                            truncate
                             ellipsizeMode='middle'
                         >
                             {secondary}
                         </PWText>
                     )}
                 </PWView>
-            </>
+            </PWView>
         )
     } else if (account) {
         content = (
@@ -137,8 +137,7 @@ export const AddressDisplay = ({
             <PWText
                 style={textProps?.style ?? styles.primaryText}
                 variant={textProps?.variant ?? 'h4'}
-                numberOfLines={1}
-                ellipsizeMode='tail'
+                truncate
             >
                 {contact.name}
             </PWText>
@@ -156,7 +155,7 @@ export const AddressDisplay = ({
                         <PWText
                             variant='caption'
                             style={styles.secondaryText}
-                            numberOfLines={1}
+                            truncate
                             ellipsizeMode='middle'
                         >
                             {truncatedAddress}
@@ -182,18 +181,29 @@ export const AddressDisplay = ({
                 )}
                 {nfdName ? (
                     <PWView style={styles.addressTextStack}>
-                        <PWText {...textProps}>{nfdName}</PWText>
+                        <PWText
+                            {...textProps}
+                            truncate
+                        >
+                            {nfdName}
+                        </PWText>
                         <PWText
                             variant='caption'
                             style={styles.secondaryText}
-                            numberOfLines={1}
+                            truncate
                             ellipsizeMode='middle'
                         >
                             {truncatedAddress}
                         </PWText>
                     </PWView>
                 ) : (
-                    <PWText {...textProps}>{truncatedAddress}</PWText>
+                    <PWText
+                        {...textProps}
+                        truncate
+                        ellipsizeMode='middle'
+                    >
+                        {truncatedAddress}
+                    </PWText>
                 )}
             </PWView>
         )
@@ -205,8 +215,8 @@ export const AddressDisplay = ({
                 {...rest}
                 style={[styles.addressValueContainer, rest.style]}
             >
-                {content}
-                {trailing}
+                <PWView style={styles.contentContainer}>{content}</PWView>
+                <PWView style={styles.copyIconContainer}>{trailing}</PWView>
             </PWView>
         )
     }
@@ -217,7 +227,7 @@ export const AddressDisplay = ({
                 {...rest}
                 style={[styles.addressValueContainer, rest.style]}
             >
-                {content}
+                <PWView style={styles.contentContainer}>{content}</PWView>
             </PWView>
         )
     }
@@ -228,14 +238,16 @@ export const AddressDisplay = ({
             copyValue={address}
             style={[styles.addressValueContainer, rest.style]}
         >
-            {content}
-            <PWIcon
-                name='copy'
-                size='md'
-                variant='secondary'
-                {...iconProps}
-                onPress={copyAddress}
-            />
+            <PWView style={styles.contentContainer}>{content}</PWView>
+            <PWView style={styles.copyIconContainer}>
+                <PWIcon
+                    name='copy'
+                    size='md'
+                    variant='secondary'
+                    {...iconProps}
+                    onPress={copyAddress}
+                />
+            </PWView>
         </CopyableText>
     )
 }

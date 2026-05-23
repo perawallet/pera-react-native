@@ -11,15 +11,8 @@
  */
 
 import React from 'react'
-import {
-    PWButton,
-    PWIcon,
-    PWSwitch,
-    PWText,
-    PWToolbar,
-    PWView,
-} from '@components/core'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { PWButton, PWSwitch, PWText, PWView } from '@components/core'
+import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
@@ -42,19 +35,9 @@ export const NftFilterContent = ({
 
     return (
         <>
-            <PWToolbar
-                left={
-                    <PWIcon
-                        name='cross'
-                        onPress={dismiss}
-                    />
-                }
-                center={
-                    <PWText variant='h4'>
-                        {t('account_details.nfts.filter_title')}
-                    </PWText>
-                }
-                right={
+            <SheetHeader
+                title={t('account_details.nfts.filter_title')}
+                rightAction={
                     <PWButton
                         variant='linkPositive'
                         title={t('account_details.nfts.filter_done')}
@@ -62,7 +45,6 @@ export const NftFilterContent = ({
                         paddingStyle='none'
                     />
                 }
-                paddingStyle='dense'
                 style={styles.toolbar}
             />
 

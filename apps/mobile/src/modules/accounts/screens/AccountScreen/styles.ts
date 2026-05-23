@@ -24,6 +24,8 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
         },
         content: {
             flex: 1,
+            flexDirection: 'column',
+            minHeight: 0,
             backgroundColor: theme.colors.background,
             paddingTop: insets.top + theme.spacing.sm,
         },
@@ -32,14 +34,28 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
         // Reanimated shared value on AccountScreen.
         contentClipped: {
             overflow: 'hidden',
+        },
+        contentWithBanner: {
             paddingTop: theme.spacing.sm,
         },
         iconBar: {
+            alignSelf: 'flex-start',
+            width: '100%',
+            flexGrow: 0,
+            flexShrink: 0,
             paddingVertical: 0,
+            paddingHorizontal: theme.spacing.xl,
+        },
+        accountSelectionTrigger: {
+            flex: 0,
         },
         iconBarSection: {
             flexDirection: 'row',
             gap: theme.spacing.lg,
+        },
+        tabNavigator: {
+            flex: 1,
+            minHeight: 0,
         },
     }
 })

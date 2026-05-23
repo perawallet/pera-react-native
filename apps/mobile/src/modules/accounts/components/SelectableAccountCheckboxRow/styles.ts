@@ -13,32 +13,36 @@
 import { makeStyles } from '@rneui/themed'
 
 type StyleProps = {
-    isImported: boolean
+    isImported?: boolean
 }
 
 export const useStyles = makeStyles((theme, { isImported }: StyleProps) => ({
     container: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: theme.spacing.md,
-        paddingHorizontal: theme.spacing.md,
-        backgroundColor: theme.colors.background,
-        borderRadius: theme.borderRadius.md,
-        borderWidth: theme.borders.md,
-        borderColor: theme.colors.layerGrayLighter,
-        opacity: isImported ? 0.6 : 1,
-        marginBottom: theme.spacing.md,
         gap: theme.spacing.md,
-    },
-    checkbox: {
-        margin: 0,
-        padding: 0,
+        width: '100%',
+        backgroundColor: theme.colors.layerGrayLightest,
+        borderWidth: theme.borders.sm,
+        borderColor: theme.colors.layerGray,
+        borderRadius: theme.spacing.lg,
+        padding: theme.spacing.md,
+        opacity: isImported ? 0.6 : 1,
     },
     textContainer: {
         flex: 1,
         gap: theme.spacing.xxs,
     },
+    titleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xs,
+    },
     title: {
         color: theme.colors.textMain,
+        flexShrink: 1,
+    },
+    subtitle: {
+        color: theme.colors.textGray,
     },
 }))

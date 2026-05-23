@@ -13,18 +13,9 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        flex: 1,
-    },
-    contentContainer: {
-        paddingHorizontal: theme.spacing.xl,
-    },
     transactionListHeaderText: {
         color: theme.colors.textGray,
         marginBottom: theme.spacing.sm,
         paddingTop: theme.spacing.md,
-    },
-    itemSeparator: {
-        height: theme.spacing.sm,
     },
 }))

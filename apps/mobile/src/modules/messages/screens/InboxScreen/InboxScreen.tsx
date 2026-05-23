@@ -13,11 +13,11 @@
 import { useCallback } from 'react'
 import { useTheme } from '@rneui/themed'
 import { type InboxItem as InboxItemModel } from '@perawallet/wallet-core-messages'
-import { EmptyView } from '@components/EmptyView'
-import { PWFlatList, PWView } from '@components/core'
 import { RefreshControl } from 'react-native-gesture-handler'
+
+import { EmptyView } from '@components/EmptyView'
+import { PWFlatList, PWScreen, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { InboxItem } from '@modules/messages/components/InboxItem/InboxItem'
 import { useStyles } from './styles'
 import { useInboxScreen } from './useInboxScreen'
@@ -25,8 +25,7 @@ import { useInboxScreen } from './useInboxScreen'
 const ESTIMATED_INBOX_ITEM_SIZE = 72
 
 export const InboxScreen = () => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles(insets)
+    const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
 
@@ -50,15 +49,15 @@ export const InboxScreen = () => {
     )
 
     return (
-        <PWView style={styles.container}>
+        <PWScreen
+            scroll={false}
+            horizontalPadding='md'
+        >
             <PWFlatList
                 data={inboxItems}
                 renderItem={renderItem}
-                style={styles.container}
-                contentContainerStyle={styles.messageContainer}
                 keyExtractor={keyExtractor}
                 ListHeaderComponent={<PWView style={styles.listEdgeSpacer} />}
-                ListFooterComponent={<PWView style={styles.listEdgeSpacer} />}
                 ListEmptyComponent={
                     <EmptyView
                         isLoading={isPending}
@@ -79,6 +78,6 @@ export const InboxScreen = () => {
                     />
                 }
             />
-        </PWView>
+        </PWScreen>
     )
 }

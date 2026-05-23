@@ -18,19 +18,25 @@ export const useStyles = makeStyles(theme => {
             flexDirection: 'row',
             alignItems: 'center',
             gap: theme.spacing.lg,
+            width: '100%',
+            minWidth: 0,
         },
         dataContainer: {
             flexDirection: 'row',
             justifyContent: 'space-between',
             alignItems: 'center',
-            flexGrow: 1,
+            flex: 1,
+            minWidth: 0,
         },
         unitContainer: {
-            flexShrink: 1,
+            flex: 1,
+            minWidth: 0,
         },
         amountContainer: {
             alignItems: 'flex-end',
-            flexShrink: 0,
+            flexShrink: 1,
+            minWidth: 0,
+            maxWidth: '45%',
         },
         suspiciousName: {
             color: theme.colors.error,
@@ -41,23 +47,30 @@ export const useStyles = makeStyles(theme => {
         },
         primaryUnit: {
             flexShrink: 1,
+            minWidth: 0,
         },
         secondaryUnit: {
             color: theme.colors.textGrayLighter,
+            flexShrink: 1,
         },
         primaryAmount: {
             textAlign: 'right',
+            flexShrink: 1,
+            minWidth: 0,
         },
         secondaryAmount: {
             textAlign: 'right',
             color: theme.colors.textGray,
             alignSelf: 'flex-end',
+            flexShrink: 1,
+            minWidth: 0,
         },
         row: {
             flexDirection: 'row',
             gap: theme.spacing.xs,
             alignItems: 'center',
             flexShrink: 1,
+            minWidth: 0,
         },
     }
 })

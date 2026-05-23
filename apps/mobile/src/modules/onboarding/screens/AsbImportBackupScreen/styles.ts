@@ -11,20 +11,15 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { EdgeInsets } from 'react-native-safe-area-context'
 
-export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
-    root: {
-        flex: 1,
-        backgroundColor: theme.colors.background,
-        marginBottom: insets.bottom,
-    },
+export const useStyles = makeStyles(theme => ({
     content: {
         flex: 1,
         alignItems: 'stretch',
-        paddingHorizontal: theme.spacing.xl,
         paddingTop: theme.spacing.xl,
         gap: theme.spacing.lg,
+        width: '100%',
+        minWidth: 0,
     },
     title: {
         textAlign: 'left',
@@ -33,34 +28,39 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
         textAlign: 'left',
         color: theme.colors.textGray,
     },
-    // The whole picker area is grouped so the drop zone + paste link sit
-    // vertically aligned, with the paste link visually anchored to the
-    // bottom of the drop zone.
     dropZoneWrap: {
         flex: 1,
         justifyContent: 'center',
         gap: theme.spacing.lg,
+        width: '100%',
+        minWidth: 0,
     },
     dropZone: {
         backgroundColor: theme.colors.layerGrayLighter,
         borderRadius: theme.borderRadius.lg,
         paddingVertical: theme.spacing.xxl,
-        paddingHorizontal: theme.spacing.xl,
+        paddingHorizontal: theme.spacing.lg,
         alignItems: 'center',
         justifyContent: 'center',
         gap: theme.spacing.md,
+        width: '100%',
+        minWidth: 0,
     },
     dropZoneLabel: {
         color: theme.colors.textMain,
+        textAlign: 'center',
     },
     pasteRow: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         gap: theme.spacing.sm,
+        width: '100%',
+        minWidth: 0,
     },
     pasteLabel: {
         color: theme.colors.linkPrimary,
+        flexShrink: 1,
     },
     fileRow: {
         flexDirection: 'row',
@@ -70,13 +70,12 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
         borderWidth: theme.borders.sm,
         borderColor: theme.colors.layerGrayLighter,
         borderRadius: theme.borderRadius.md,
+        width: '100%',
+        minWidth: 0,
     },
     fileName: {
         flex: 1,
+        minWidth: 0,
         color: theme.colors.textMain,
-    },
-    footer: {
-        padding: theme.spacing.xl,
-        paddingBottom: theme.spacing.xxl,
     },
 }))

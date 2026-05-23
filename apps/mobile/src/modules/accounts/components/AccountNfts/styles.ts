@@ -18,25 +18,28 @@ export const useStyles = makeStyles(theme => ({
         backgroundColor: theme.colors.background,
     },
     contentContainer: {
-        flexGrow: 1,
-        paddingHorizontal: theme.spacing.md,
-        gap: theme.spacing.sm,
+        paddingHorizontal: theme.spacing.xl,
     },
     headerContainer: {
         marginTop: theme.spacing.sm,
         marginBottom: theme.spacing.md,
-        paddingHorizontal: theme.spacing.md,
+        paddingHorizontal: theme.spacing.xl,
     },
     titleBar: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        gap: theme.spacing.md,
         marginBottom: theme.spacing.sm,
+    },
+    titleBarTitleContainer: {
+        flex: 1,
+        minWidth: 0,
     },
     titleBarActions: {
         flexDirection: 'row',
         gap: theme.spacing.sm,
         alignItems: 'center',
+        flexShrink: 0,
     },
     manageButton: {
         flexDirection: 'row',
@@ -79,5 +82,8 @@ export const useStyles = makeStyles(theme => ({
     },
     layoutToggleButtonActive: {
         backgroundColor: theme.colors.layerGrayLighter,
+    },
+    gridRow: {
+        gap: theme.spacing.sm,
     },
 }))

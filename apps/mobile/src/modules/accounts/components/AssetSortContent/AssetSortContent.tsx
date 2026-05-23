@@ -10,15 +10,8 @@
  limitations under the License
  */
 
-import {
-    PWButton,
-    PWIcon,
-    PWRadioButton,
-    PWText,
-    PWToolbar,
-    PWView,
-} from '@components/core'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { PWButton, PWRadioButton, PWView } from '@components/core'
+import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useAssetSortContent } from './useAssetSortContent'
 import { useStyles } from './styles'
 
@@ -32,15 +25,9 @@ export const AssetSortContent = (_: AssetSortContentProps = {}) => {
 
     return (
         <>
-            <PWToolbar
-                left={
-                    <PWIcon
-                        name='cross'
-                        onPress={dismiss}
-                    />
-                }
-                center={<PWText variant='h4'>{t('asset_sort.title')}</PWText>}
-                right={
+            <SheetHeader
+                title={t('asset_sort.title')}
+                rightAction={
                     <PWButton
                         variant='linkPositive'
                         title={t('asset_sort.done')}
@@ -48,7 +35,6 @@ export const AssetSortContent = (_: AssetSortContentProps = {}) => {
                         paddingStyle='none'
                     />
                 }
-                paddingStyle='dense'
                 style={styles.toolbar}
             />
 

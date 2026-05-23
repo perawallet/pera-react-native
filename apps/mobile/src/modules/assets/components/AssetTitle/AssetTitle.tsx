@@ -58,7 +58,7 @@ export const AssetTitle = ({
                         style={
                             isSuspicious ? styles.suspiciousName : styles.name
                         }
-                        numberOfLines={1}
+                        truncate
                     >
                         {isAlgo ? 'Algo' : asset.name}
                     </PWText>

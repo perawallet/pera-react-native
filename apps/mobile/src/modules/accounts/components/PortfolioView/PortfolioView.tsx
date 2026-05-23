@@ -111,18 +111,23 @@ export const PortfolioView = (props: PortfolioViewProps) => {
             <PWView style={styles.columns}>
                 <PWView style={styles.leftColumn}>
                     <PWView style={styles.valueTitleBar}>
-                        <PWText
-                            style={styles.valueTitle}
-                            variant='h4'
-                        >
-                            {t('portfolio.title')}
-                        </PWText>
-                        <InfoButton
-                            variant='secondary'
-                            title={t('portfolio.info.title')}
-                        >
-                            <PWText>{t('portfolio.info.body')}</PWText>
-                        </InfoButton>
+                        <PWView style={styles.titleTextContainer}>
+                            <PWText
+                                style={styles.valueTitle}
+                                variant='h4'
+                                truncate
+                            >
+                                {t('portfolio.title')}
+                            </PWText>
+                        </PWView>
+                        <PWView style={styles.infoButtonContainer}>
+                            <InfoButton
+                                variant='secondary'
+                                title={t('portfolio.info.title')}
+                            >
+                                <PWText>{t('portfolio.info.body')}</PWText>
+                            </InfoButton>
+                        </PWView>
                     </PWView>
                     <CurrencyDisplay
                         variant='h2'
@@ -156,6 +161,7 @@ export const PortfolioView = (props: PortfolioViewProps) => {
                         <PWText
                             variant='h4'
                             style={styles.trendTitle}
+                            truncate
                         >
                             {t('portfolio.last_7_days')}
                         </PWText>
@@ -179,6 +185,7 @@ export const PortfolioView = (props: PortfolioViewProps) => {
                             <PWText
                                 variant='h2'
                                 style={styles.primaryCurrency}
+                                truncate
                             >
                                 {trendPercentage.toFixed(2)}%
                             </PWText>
@@ -187,6 +194,7 @@ export const PortfolioView = (props: PortfolioViewProps) => {
                         <PWText
                             variant='h4'
                             style={styles.valueTitle}
+                            truncate
                         >
                             {isPositiveTrend ? '+' : '-'}
                             {formatCurrency(
@@ -234,7 +242,10 @@ export const PortfolioView = (props: PortfolioViewProps) => {
                 style={styles.chartToggle}
                 onPress={toggleChartVisible}
             >
-                <PWText style={styles.chartToggleText}>
+                <PWText
+                    style={styles.chartToggleText}
+                    truncate
+                >
                     {chartVisible
                         ? t('portfolio.hide_chart')
                         : t('portfolio.show_chart')}

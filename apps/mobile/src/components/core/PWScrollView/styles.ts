@@ -12,6 +12,11 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(() => {
-    return {}
-})
+export const useStyles = makeStyles(theme => ({
+    // Default bottom padding so scroll content clears the bottom edge. Mirrors
+    // PWFlatList's vertical content padding; callers opt out by setting their
+    // own bottom padding on `contentContainerStyle`.
+    contentContainer: {
+        paddingBottom: theme.spacing.xl,
+    },
+}))

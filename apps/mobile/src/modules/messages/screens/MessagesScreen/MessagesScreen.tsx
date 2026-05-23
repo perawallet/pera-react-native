@@ -10,13 +10,13 @@
  limitations under the License
  */
 
+import { PWScreen, PWTouchableIcon, PWView } from '@components/core'
 import { createPWTabNavigator } from '@components/core/PWTabView/PWTabView'
-import { PWTouchableIcon, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { NotificationsScreen } from '../NotificationsScreen'
-import { InboxScreen } from '../InboxScreen'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { MessagesSpotBanners } from '@modules/banners'
+import { NotificationsScreen } from '../NotificationsScreen'
+import { InboxScreen } from '../InboxScreen'
 import { useStyles } from './styles'
 import { useMessagesScreen } from './useMessagesScreen'
 
@@ -51,7 +51,10 @@ export const MessagesScreen = () => {
     })
 
     return (
-        <PWView style={styles.root}>
+        <PWScreen
+            scroll={false}
+            horizontalPadding='none'
+        >
             <PWView style={styles.spotBannersWrapper}>
                 <MessagesSpotBanners />
             </PWView>
@@ -102,6 +105,6 @@ export const MessagesScreen = () => {
                     component={NotificationsScreen}
                 />
             </Tab.Navigator>
-        </PWView>
+        </PWScreen>
     )
 }

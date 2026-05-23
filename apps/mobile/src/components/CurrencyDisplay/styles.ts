@@ -38,6 +38,9 @@ export const useStyles = makeStyles((theme, props: CurrencyDisplayProps) => {
             justifyContent: 'flex-start',
             gap: theme.spacing.xs,
             backgroundColor: 'transparent',
+            flexShrink: 1,
+            minWidth: 0,
+            maxWidth: '100%',
         },
         skeleton: {
             maxWidth: SKELETON_MAX_WIDTH,
@@ -45,6 +48,8 @@ export const useStyles = makeStyles((theme, props: CurrencyDisplayProps) => {
         },
         textContainer: {
             alignItems: props.alignRight ? 'flex-end' : 'flex-start',
+            flexShrink: 1,
+            minWidth: 0,
         },
         algoIcon: {
             width: size,

@@ -59,14 +59,15 @@ export const TransactionListItem = ({
                         <PWText
                             variant='h4'
                             style={styles.title}
-                            numberOfLines={1}
+                            truncate
                         >
                             {title}
                         </PWText>
                         {subtitle && (
                             <PWText
                                 style={styles.subtitle}
-                                numberOfLines={1}
+                                truncate
+                                ellipsizeMode='middle'
                             >
                                 {subtitle}
                             </PWText>

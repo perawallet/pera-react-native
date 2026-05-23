@@ -18,10 +18,6 @@ export const useStyles = makeStyles(theme => {
             flex: 1,
             padding: theme.spacing.xl,
         },
-        contentContainer: {
-            gap: theme.spacing.md,
-            paddingBottom: theme.spacing.xl,
-        },
         icon: {
             width: theme.spacing['4xl'],
             height: theme.spacing['4xl'],

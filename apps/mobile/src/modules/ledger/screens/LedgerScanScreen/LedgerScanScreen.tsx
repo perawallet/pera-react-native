@@ -11,26 +11,25 @@
  */
 
 import { useCallback, useLayoutEffect } from 'react'
-import {
-    PWView,
-    PWText,
-    PWFlatList,
-    PWButton,
-    PWIcon,
-    PWTouchableOpacity,
-} from '@components/core'
 import { useNavigation } from '@react-navigation/native'
-import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wallet'
-
-import { useBottomSafeAreaPadding } from '@hooks/useBottomSafeAreaPadding'
+import {
+    PWButton,
+    PWFlatList,
+    PWIcon,
+    PWScreen,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
 import { LedgerDeviceItem } from '../../components/LedgerDeviceItem'
 import { LedgerCompositeIcon } from '../../components/LedgerCompositeIcon'
 import { useStyles } from './styles'
 import { useLedgerScanScreen } from './useLedgerScanScreen'
 
+import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wallet'
+
 export const LedgerScanScreen = () => {
-    const bottomPadding = useBottomSafeAreaPadding()
-    const styles = useStyles(bottomPadding)
+    const styles = useStyles()
     const navigation = useNavigation()
     const {
         devices,
@@ -91,7 +90,7 @@ export const LedgerScanScreen = () => {
     }
 
     return (
-        <PWView style={styles.container}>
+        <PWScreen scroll={false}>
             <PWView style={styles.header}>
                 <PWView style={styles.icon}>
                     <LedgerCompositeIcon />
@@ -142,6 +141,6 @@ export const LedgerScanScreen = () => {
                     showsVerticalScrollIndicator={false}
                 />
             )}
-        </PWView>
+        </PWScreen>
     )
 }

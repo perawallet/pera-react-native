@@ -11,12 +11,11 @@
  */
 
 import { ActivityIndicator } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
 import {
     IconName,
     PWButton,
     PWIcon,
-    PWScrollView,
+    PWScreen,
     PWText,
     PWView,
 } from '@components/core'
@@ -79,8 +78,8 @@ export const ImportSharedAccountScreen = () => {
 
     if (isLoading) {
         return (
-            <PWView
-                style={styles.container}
+            <PWScreen
+                scroll={false}
                 testID='import-shared-account-screen'
             >
                 <PWView style={styles.centerState}>
@@ -89,14 +88,14 @@ export const ImportSharedAccountScreen = () => {
                         {t('multisig.import.loading')}
                     </PWText>
                 </PWView>
-            </PWView>
+            </PWScreen>
         )
     }
 
     if (isError) {
         return (
-            <PWView
-                style={styles.container}
+            <PWScreen
+                scroll={false}
                 testID='import-shared-account-screen'
             >
                 <PWView style={styles.centerState}>
@@ -113,81 +112,78 @@ export const ImportSharedAccountScreen = () => {
                         testID='import-shared-account-retry'
                     />
                 </PWView>
-            </PWView>
+            </PWScreen>
         )
     }
 
     return (
-        <PWView
-            style={styles.container}
+        <PWScreen
+            horizontalPadding='md'
+            contentContainerStyle={styles.scrollContent}
             testID='import-shared-account-screen'
-        >
-            <PWScrollView contentContainerStyle={styles.scrollContent}>
-                <MultisigInfoCard
-                    totalParticipants={totalParticipants}
-                    threshold={threshold}
-                    isUserIncluded={isUserIncluded}
-                    participantCountTestID='import-shared-account-participant-count'
-                    thresholdTestID='import-shared-account-threshold'
-                />
-
-                <PWText
-                    variant='h4'
-                    style={styles.sectionHeading}
-                >
-                    {t('multisig.import.accounts_heading', {
-                        count: totalParticipants,
-                    })}
-                </PWText>
-
-                <PWView>
-                    {participantAddresses.map((participant, index, arr) => (
-                        <AddressDisplay
-                            key={participant}
-                            address={participant}
-                            addressFormat='long'
-                            iconName={participantIconName}
-                            showSecondaryAddress
-                            style={[
-                                styles.participantRow,
-                                index === arr.length - 1 &&
-                                    styles.participantRowLast,
-                            ]}
-                            testID={`import-participant-row-${participant}`}
+            footer={
+                <>
+                    {isAlreadyImported && (
+                        <PWText style={styles.alreadyImportedNote}>
+                            {t('multisig.import.already_imported')}
+                        </PWText>
+                    )}
+                    <PWView style={styles.bottomActions}>
+                        <PWButton
+                            variant='secondary'
+                            title={t('multisig.import.ignore')}
+                            onPress={handleIgnore}
+                            paddingStyle='dense'
+                            style={styles.ignoreButton}
+                            testID='import-shared-account-ignore-button'
                         />
-                    ))}
-                </PWView>
-            </PWScrollView>
+                        <PWButton
+                            variant='primary'
+                            title={t('multisig.import.add_to_accounts')}
+                            onPress={handleAddAccount}
+                            isDisabled={isAddDisabled}
+                            paddingStyle='dense'
+                            style={styles.addButton}
+                            testID='import-shared-account-add-button'
+                        />
+                    </PWView>
+                </>
+            }
+        >
+            <MultisigInfoCard
+                totalParticipants={totalParticipants}
+                threshold={threshold}
+                isUserIncluded={isUserIncluded}
+                participantCountTestID='import-shared-account-participant-count'
+                thresholdTestID='import-shared-account-threshold'
+            />
 
-            <SafeAreaView
-                edges={['bottom']}
-                style={styles.bottomBar}
+            <PWText
+                variant='h4'
+                style={styles.sectionHeading}
             >
-                {isAlreadyImported && (
-                    <PWText style={styles.alreadyImportedNote}>
-                        {t('multisig.import.already_imported')}
-                    </PWText>
-                )}
-                <PWView style={styles.bottomActions}>
-                    <PWButton
-                        variant='secondary'
-                        title={t('multisig.import.ignore')}
-                        onPress={handleIgnore}
-                        paddingStyle='dense'
-                        style={styles.ignoreButton}
-                        testID='import-shared-account-ignore-button'
+                {t('multisig.import.accounts_heading', {
+                    count: totalParticipants,
+                })}
+            </PWText>
+
+            <PWView>
+                {participantAddresses.map((participant, index, arr) => (
+                    <AddressDisplay
+                        key={participant}
+                        address={participant}
+                        addressFormat='long'
+                        iconName={participantIconName}
+                        showSecondaryAddress
+                        style={[
+                            styles.participantRow,
+                            index === arr.length - 1 &&
+                                styles.participantRowLast,
+                        ]}
+                        testID={`import-participant-row-${participant}`}
                     />
-                    <PWButton
-                        variant='primary'
-                        title={t('multisig.import.add_to_accounts')}
-                        onPress={handleAddAccount}
-                        isDisabled={isAddDisabled}
-                        paddingStyle='dense'
-                        style={styles.addButton}
-                        testID='import-shared-account-add-button'
-                    />
-                </PWView>
-            </SafeAreaView>
-        </PWView>
+                ))}
+            </PWView>
+        </PWScreen>
     )
 }

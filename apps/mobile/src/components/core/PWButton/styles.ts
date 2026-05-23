@@ -15,8 +15,6 @@ import { TextStyle } from 'react-native'
 import { PWButtonProps } from './PWButton'
 import { Optional } from '@perawallet/wallet-core-shared'
 
-const TITLE_LINE_HEIGHT = 15
-
 export const useStyles = makeStyles((theme, props: PWButtonProps) => {
     const variantStyles = {
         primary: {
@@ -90,9 +88,9 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
         paddingStyles[props.paddingStyle ?? 'normal']
 
     const titleStyle: TextStyle = {
-        lineHeight: TITLE_LINE_HEIGHT,
         flexWrap: 'nowrap',
         flexShrink: 1,
+        minWidth: 0,
         textAlign: 'center',
         verticalAlign: 'middle',
         justifyContent: 'center',
@@ -113,9 +111,18 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
             borderRadius: props.rounded ? theme.spacing.xl : theme.spacing.sm,
             paddingHorizontal,
             paddingVertical,
-            minWidth,
+            minWidth: minWidth ?? 0,
+            maxWidth: '100%',
+            flexShrink: 1,
+            overflow: 'hidden',
             opacity: props.isDisabled ? 0.7 : 1,
             backgroundColor,
+        },
+        titleContainer: {
+            flexGrow: 0,
+            flexShrink: 1,
+            minWidth: 0,
+            overflow: 'hidden',
         },
         titleStyle,
     }

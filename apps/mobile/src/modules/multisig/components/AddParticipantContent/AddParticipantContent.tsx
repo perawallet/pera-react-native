@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { PWText, PWToolbar, PWTouchableIcon, PWView } from '@components/core'
+import { PWText, PWView } from '@components/core'
 import { AddressSearchView } from '@components/AddressSearchView'
 import {
     AccountTypes,
@@ -21,7 +21,7 @@ import {
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useContacts } from '@perawallet/wallet-core-contacts'
 import { useIsMultisigAddressQuery } from '@perawallet/wallet-core-multisig'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useStyles } from './styles'
@@ -38,7 +38,7 @@ export const AddParticipantContent = () => {
     const accounts = useAllAccounts()
     const { contacts } = useContacts()
     const [selectedAddress, setSelectedAddress] = useState('')
-    const { resolve, dismiss } = useBottomSheetResult<string>()
+    const { resolve } = useBottomSheetResult<string>()
 
     const isLocalEntity = useMemo(
         () =>
@@ -95,16 +95,8 @@ export const AddParticipantContent = () => {
 
     return (
         <PWView style={styles.container}>
-            <PWToolbar
-                left={
-                    <PWTouchableIcon
-                        name='cross'
-                        variant='primary'
-                        size='md'
-                        onPress={dismiss}
-                    />
-                }
-                center={
+            <SheetHeader
+                title={
                     <PWText
                         variant='h4'
                         style={styles.title}
@@ -112,7 +104,6 @@ export const AddParticipantContent = () => {
                         {t('multisig.add_participant.title')}
                     </PWText>
                 }
-                paddingStyle='dense'
             />
             <AddressSearchView
                 onSelected={handleSelected}

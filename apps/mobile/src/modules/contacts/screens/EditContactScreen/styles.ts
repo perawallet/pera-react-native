@@ -14,9 +14,6 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => {
     return {
-        flex: {
-            flex: 1,
-        },
         deletePillWrapper: {
             alignItems: 'center',
             marginTop: theme.spacing.xl,

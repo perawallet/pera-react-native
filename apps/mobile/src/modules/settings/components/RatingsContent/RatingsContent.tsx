@@ -63,8 +63,18 @@ export const RatingsContent = () => {
                     onPress={handleRatingClick}
                 />
             </PWView>
-            <PWText variant='h3'>{t('settings.rating.title')}</PWText>
-            <PWText style={styles.bottomSheetMessage}>
+            <PWText
+                variant='h3'
+                style={styles.title}
+                truncate
+            >
+                {t('settings.rating.title')}
+            </PWText>
+            <PWText
+                style={styles.bottomSheetMessage}
+                numberOfLines={2}
+                ellipsizeMode='tail'
+            >
                 {t('settings.rating.body')}
             </PWText>
         </PWView>

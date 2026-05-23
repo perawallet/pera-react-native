@@ -42,7 +42,7 @@ export const RoundButton = (props: RoundButtonProps) => {
     } = props
 
     return (
-        <PWView style={propStyle}>
+        <PWView style={[styles.container, propStyle]}>
             <PWTouchableOpacity
                 style={styles.buttonWrapper}
                 {...getTestProps(testID)}
@@ -54,7 +54,15 @@ export const RoundButton = (props: RoundButtonProps) => {
                     variant={variant}
                 />
             </PWTouchableOpacity>
-            {!!title && <PWText style={styles.titleStyle}>{title}</PWText>}
+            {!!title && (
+                <PWText
+                    variant='footnoteMedium'
+                    truncate
+                    style={styles.titleStyle}
+                >
+                    {title}
+                </PWText>
+            )}
         </PWView>
     )
 }

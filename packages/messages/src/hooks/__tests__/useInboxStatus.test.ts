@@ -14,11 +14,16 @@ import { describe, it, expect, vi } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { createWrapper } from '@perawallet/wallet-extension-platform'
 import { useInboxStatus } from '../useInboxStatus'
-import { fetchMessageStatus } from '../../api/notifications'
+import { fetchNotificationStatus } from '../../api/notifications'
+import { useInboxQuery } from '../useInboxQuery'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 
 vi.mock('../../api/notifications', () => ({
-    fetchMessageStatus: vi.fn(),
+    fetchNotificationStatus: vi.fn(),
+}))
+
+vi.mock('../useInboxQuery', () => ({
+    useInboxQuery: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-device', async importOriginal => {
@@ -34,62 +39,73 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: vi.fn().mockReturnValue({ network: 'test-network' }),
 }))
 
+const mockInbox = (items: number) =>
+    vi.mocked(useInboxQuery).mockReturnValue({
+        data: Array.from({ length: items }, () => ({})),
+    } as unknown as ReturnType<typeof useInboxQuery>)
+
 describe('useInboxStatus', () => {
-    it('returns status from the unified message-status endpoint', async () => {
-        vi.mocked(fetchMessageStatus).mockResolvedValue({
-            hasUnreadItems: true,
-            hasUnreadNotifications: false,
-            hasUnreadInboxItems: true,
+    it('reports an unread notification with strict booleans and a zero inbox count', async () => {
+        vi.mocked(fetchNotificationStatus).mockResolvedValue({
+            has_new_notification: true,
         })
+        mockInbox(0)
 
         const { result } = renderHook(() => useInboxStatus(), {
             wrapper: createWrapper(),
         })
 
         await waitFor(() => {
-            expect(result.current.hasUnreadItems).toBe(true)
+            expect(result.current.hasUnreadNotifications).toBe(true)
         })
 
-        expect(fetchMessageStatus).toHaveBeenCalledWith(
+        expect(fetchNotificationStatus).toHaveBeenCalledWith(
             'test-network',
             'test-device-id',
         )
         expect(result.current.hasUnreadItems).toBe(true)
-        expect(result.current.hasUnreadInboxItems).toBe(true)
-        expect(result.current.hasUnreadNotifications).toBe(false)
+        expect(result.current.hasUnreadNotifications).toBe(true)
+        expect(result.current.hasUnreadInboxItems).toBe(false)
+        expect(result.current.unreadInboxCount).toBe(0)
     })
 
-    it('returns all false when there are no unread items', async () => {
-        vi.mocked(fetchMessageStatus).mockResolvedValue({
-            hasUnreadItems: false,
-            hasUnreadNotifications: false,
-            hasUnreadInboxItems: false,
+    it('derives the inbox count and booleans from inbox items', async () => {
+        vi.mocked(fetchNotificationStatus).mockResolvedValue({
+            has_new_notification: false,
         })
+        mockInbox(3)
 
         const { result } = renderHook(() => useInboxStatus(), {
             wrapper: createWrapper(),
         })
 
         await waitFor(() => {
-            expect(fetchMessageStatus).toHaveBeenCalled()
+            expect(result.current.unreadInboxCount).toBe(3)
         })
 
-        expect(result.current.hasUnreadItems).toBe(false)
-        expect(result.current.hasUnreadInboxItems).toBe(false)
+        expect(result.current.hasUnreadInboxItems).toBe(true)
+        expect(result.current.hasUnreadItems).toBe(true)
         expect(result.current.hasUnreadNotifications).toBe(false)
     })
 
-    it('skips the fetch and returns defaults when deviceID is missing', async () => {
+    it('returns strict false/0 defaults when deviceID is missing', () => {
         vi.mocked(useDeviceID).mockReturnValueOnce(null)
-        vi.mocked(fetchMessageStatus).mockClear()
+        vi.mocked(fetchNotificationStatus).mockClear()
+        mockInbox(0)
 
         const { result } = renderHook(() => useInboxStatus(), {
             wrapper: createWrapper(),
         })
 
-        expect(fetchMessageStatus).not.toHaveBeenCalled()
+        expect(fetchNotificationStatus).not.toHaveBeenCalled()
         expect(result.current.hasUnreadItems).toBe(false)
-        expect(result.current.hasUnreadNotifications).toBe(false)
         expect(result.current.hasUnreadInboxItems).toBe(false)
+        expect(result.current.hasUnreadNotifications).toBe(false)
+        expect(result.current.unreadInboxCount).toBe(0)
+        // Lock the contract: never leak truthy/falsy non-booleans or counts.
+        expect(typeof result.current.hasUnreadItems).toBe('boolean')
+        expect(typeof result.current.hasUnreadInboxItems).toBe('boolean')
+        expect(typeof result.current.hasUnreadNotifications).toBe('boolean')
+        expect(typeof result.current.unreadInboxCount).toBe('number')
     })
 })

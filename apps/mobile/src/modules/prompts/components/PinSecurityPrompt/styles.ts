@@ -16,7 +16,6 @@ export const useStyles = makeStyles(theme => ({
     container: {
         flex: 1,
         backgroundColor: theme.colors.background,
-        gap: theme.spacing.lg,
         paddingHorizontal: theme.spacing.xl,
     },
     header: {
@@ -29,6 +28,11 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'flex-end',
         justifyContent: 'flex-end',
         width: '100%',
+    },
+    scrollContent: {
+        flexGrow: 1,
+        paddingTop: theme.spacing.lg,
+        gap: theme.spacing.lg,
     },
     content: {
         flexGrow: 1,
@@ -43,5 +47,6 @@ export const useStyles = makeStyles(theme => ({
     },
     buttonContainer: {
         gap: theme.spacing.lg,
+        paddingTop: theme.spacing.lg,
     },
 }))

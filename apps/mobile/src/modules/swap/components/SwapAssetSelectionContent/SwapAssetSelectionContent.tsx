@@ -13,9 +13,8 @@
 import { useCallback } from 'react'
 import { type AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { isSwappableAsset } from '@perawallet/wallet-core-swaps'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
-import { PWIcon, PWText, PWToolbar } from '@components/core'
 import { AccountAssetSelectionList } from '@modules/assets/components/AccountAssetSelectionList'
 import { SwapToAssetSelectionList } from '../SwapToAssetSelectionList'
 
@@ -34,7 +33,7 @@ export const SwapAssetSelectionContent = (
 ) => {
     const { variant, excludeAssetId } = props
     const { t } = useLanguage()
-    const { resolve, dismiss } = useBottomSheetResult<string>()
+    const { resolve } = useBottomSheetResult<string>()
 
     const handleAssetSelected = useCallback(
         (asset: AssetWithAccountBalance) => {
@@ -50,15 +49,7 @@ export const SwapAssetSelectionContent = (
 
     return (
         <>
-            <PWToolbar
-                left={
-                    <PWIcon
-                        name='cross'
-                        onPress={dismiss}
-                    />
-                }
-                center={<PWText variant='h4'>{title}</PWText>}
-            />
+            <SheetHeader title={title} />
             {props.variant === 'to' ? (
                 <SwapToAssetSelectionList
                     fromAssetId={props.fromAssetId}

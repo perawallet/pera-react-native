@@ -28,12 +28,10 @@ export const useStyles = makeStyles(theme => {
         alignSelf: 'center' as const,
     }
     return {
-        container: {
-            flex: 1,
-            justifyContent: 'flex-start',
-            alignItems: 'center',
+        contentContainer: {
+            justifyContent: 'flex-start' as const,
+            alignItems: 'center' as const,
             gap: theme.spacing.lg,
-            paddingBottom: theme.spacing.lg,
         },
         h1,
         mainContentContainer: {

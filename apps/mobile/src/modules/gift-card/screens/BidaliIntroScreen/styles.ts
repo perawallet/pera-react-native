@@ -35,10 +35,4 @@ export const useStyles = makeStyles(theme => ({
     description: {
         color: theme.colors.textGray,
     },
-    footer: {
-        marginTop: theme.spacing.md,
-        paddingHorizontal: theme.spacing.xl,
-        paddingBottom: theme.spacing['3xl'],
-        backgroundColor: theme.colors.background,
-    },
 }))

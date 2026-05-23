@@ -10,24 +10,24 @@
  limitations under the License
  */
 
+import { useWindowDimensions } from 'react-native'
+import { useNavigation } from '@react-navigation/native'
 import {
     PWButton,
     PWIcon,
     PWImage,
-    PWScrollView,
+    PWScreen,
     PWText,
     PWToolbar,
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-
 import bidaliBackground from '@assets/images/bidali-background.png'
-import { useNavigation } from '@react-navigation/native'
-import type { StackNavigationProp } from '@react-navigation/stack'
 import { useBidali } from '../../hooks/useBidali'
-import type { BidaliStackParamList } from '../../routes/types'
 import { useStyles } from './styles'
-import { useWindowDimensions } from 'react-native'
+
+import type { StackNavigationProp } from '@react-navigation/stack'
+import type { BidaliStackParamList } from '../../routes/types'
 
 const BG_IMAGE_ASPECT_RATIO = 0.784
 
@@ -64,7 +64,18 @@ export const BidaliIntroScreen = () => {
                 paddingStyle='dense'
             />
 
-            <PWScrollView>
+            <PWScreen
+                horizontalPadding='none'
+                keyboard='none'
+                footer={
+                    <PWButton
+                        variant='primary'
+                        title={t('giftCard.intro.buy_gift_cards')}
+                        onPress={handleBuyGiftCards}
+                        testID='bidali_intro_buy_button'
+                    />
+                }
+            >
                 <PWView style={styles.heroSection}>
                     <PWView style={styles.heroImage}>
                         <PWImage
@@ -83,16 +94,7 @@ export const BidaliIntroScreen = () => {
                         {t('giftCard.intro.body')}
                     </PWText>
                 </PWView>
-
-                <PWView style={styles.footer}>
-                    <PWButton
-                        variant='primary'
-                        title={t('giftCard.intro.buy_gift_cards')}
-                        onPress={handleBuyGiftCards}
-                        testID='bidali_intro_buy_button'
-                    />
-                </PWView>
-            </PWScrollView>
+            </PWScreen>
         </PWView>
     )
 }

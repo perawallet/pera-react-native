@@ -19,19 +19,18 @@ import {
     PWTouchableOpacity,
     PWButton,
     PWLoadingOverlay,
+    PWScreen,
 } from '@components/core'
 import { type HDWalletGroup } from '@perawallet/wallet-core-accounts'
 import { ALGO_ASSET, ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 import { Decimal } from 'decimal.js'
-import { useBottomSafeAreaPadding } from '@hooks/useBottomSafeAreaPadding'
 import { useStyles } from './styles'
 import { useSelectHDWalletScreen } from './useSelectHDWalletScreen'
 
 export const SelectHDWalletScreen = () => {
-    const bottomPadding = useBottomSafeAreaPadding()
-    const styles = useStyles(bottomPadding)
+    const styles = useStyles()
     const {
         hdWalletGroups,
         accountBalances,
@@ -107,7 +106,21 @@ export const SelectHDWalletScreen = () => {
 
     return (
         <>
-            <PWView style={styles.container}>
+            <PWScreen
+                scroll={false}
+                footer={
+                    <PWButton
+                        title={t(
+                            'onboarding.select_hd_wallet.create_new_wallet',
+                        )}
+                        onPress={handleCreateNewWallet}
+                        variant='secondary'
+                        isDisabled={isCreatingWallet}
+                        icon='plus'
+                        testID='select_hd_wallet_create_new'
+                    />
+                }
+            >
                 <PWView style={styles.content}>
                     <PWText
                         variant='h1'
@@ -127,22 +140,9 @@ export const SelectHDWalletScreen = () => {
                         renderItem={renderItem}
                         keyExtractor={item => item.seedKeyId}
                         extraData={accountBalances}
-                        contentContainerStyle={styles.listContent}
                     />
                 </PWView>
-                <PWView style={styles.footer}>
-                    <PWButton
-                        title={t(
-                            'onboarding.select_hd_wallet.create_new_wallet',
-                        )}
-                        onPress={handleCreateNewWallet}
-                        variant='secondary'
-                        isDisabled={isCreatingWallet}
-                        icon='plus'
-                        testID='select_hd_wallet_create_new'
-                    />
-                </PWView>
-            </PWView>
+            </PWScreen>
 
             <PWLoadingOverlay
                 isVisible={isCreatingWallet}

@@ -10,15 +10,5 @@
  limitations under the License
  */
 
-export type UseKeyboardHeightResult = {
-    keyboardHeight: number
-    isKeyboardVisible: boolean
-}
-
-/**
- * Fallback implementation for TypeScript resolution.
- * At runtime, Metro resolves to useKeyboardHeight.ios.ts or useKeyboardHeight.android.ts.
- */
-export function useKeyboardHeight(): UseKeyboardHeightResult {
-    return { keyboardHeight: 0, isKeyboardVisible: false }
-}
+export { PWScreen } from './PWScreen'
+export type { PWScreenProps } from './PWScreen'

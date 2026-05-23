@@ -20,6 +20,17 @@ export const useStyles = makeStyles(theme => {
             justifyContent: 'space-between',
             alignItems: 'center',
             width: '100%',
+            minWidth: 0,
+            overflow: 'hidden',
+            gap: theme.spacing.md,
+        },
+        titleContainer: {
+            flex: 1,
+            minWidth: 0,
+            overflow: 'hidden',
+        },
+        chevronContainer: {
+            flexShrink: 0,
         },
         wrapper: {
             position: 'absolute',

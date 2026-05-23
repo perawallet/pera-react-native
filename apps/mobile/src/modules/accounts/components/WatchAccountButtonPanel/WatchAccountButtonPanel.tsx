@@ -30,6 +30,7 @@ export const WatchAccountButtonPanel = () => {
                 variant='primary'
                 onPress={handleCopyAddress}
                 testID='copy_address_button'
+                style={themeStyle.button}
             />
             <RoundButton
                 title={t('account_details.watch_button_panel.show_qr')}
@@ -37,6 +38,7 @@ export const WatchAccountButtonPanel = () => {
                 variant='secondary'
                 onPress={handleShowQR}
                 testID='show_qr_button'
+                style={themeStyle.button}
             />
             <RoundButton
                 title={t('account_details.watch_button_panel.more')}
@@ -44,6 +46,7 @@ export const WatchAccountButtonPanel = () => {
                 variant='secondary'
                 onPress={handleMore}
                 testID='more_button'
+                style={themeStyle.button}
             />
         </PWView>
     )

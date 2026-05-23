@@ -11,30 +11,27 @@
  */
 
 import { useCallback } from 'react'
-import { PWFlatList, PWView } from '@components/core'
+import { PWFlatList, PWScreen } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { ScreenHeader } from '@components/ScreenHeader'
-import { useBottomSafeAreaPadding } from '@hooks/useBottomSafeAreaPadding'
 import { useLanguage } from '@hooks/useLanguage'
-import { RekeyTargetRow } from '../../../components/RekeyTargetRow'
+import { SelectableAccountRow } from '@modules/accounts/components/SelectableAccountRow'
 import { useRekeyToLedgerSelectTargetScreen } from './useRekeyToLedgerSelectTargetScreen'
-import { useStyles } from './styles'
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const keyExtractor = (account: WalletAccount) => account.address
 
 export const RekeyToLedgerSelectTargetScreen = () => {
-    const bottomPadding = useBottomSafeAreaPadding()
-    const styles = useStyles(bottomPadding)
     const { t } = useLanguage()
     const { targets, handleSelect } = useRekeyToLedgerSelectTargetScreen()
 
     const renderItem = useCallback(
         ({ item }: { item: WalletAccount }) => (
-            <RekeyTargetRow
+            <SelectableAccountRow
                 account={item}
                 onSelect={handleSelect}
+                testID={`rekey-target-row-${item.address}`}
             />
         ),
         [handleSelect],
@@ -46,8 +43,8 @@ export const RekeyToLedgerSelectTargetScreen = () => {
     )
 
     return (
-        <PWView
-            style={styles.container}
+        <PWScreen
+            scroll={false}
             testID='rekey-to-ledger-select-target-screen'
         >
             <ScreenHeader
@@ -56,12 +53,11 @@ export const RekeyToLedgerSelectTargetScreen = () => {
             />
 
             <PWFlatList
-                contentContainerStyle={styles.list}
                 data={targets}
                 renderItem={renderItem}
                 keyExtractor={keyExtractor}
                 ListEmptyComponent={renderEmpty}
             />
-        </PWView>
+        </PWScreen>
     )
 }

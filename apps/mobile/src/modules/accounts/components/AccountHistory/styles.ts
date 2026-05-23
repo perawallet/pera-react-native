@@ -17,13 +17,19 @@ export const useStyles = makeStyles(theme => ({
         marginTop: theme.spacing.sm,
         marginBottom: theme.spacing.md,
     },
-    keyboardAvoidingViewContainer: {
+    container: {
         flexGrow: 1,
         backgroundColor: theme.colors.background,
     },
     rootContainer: {
         flexGrow: 1,
-        paddingHorizontal: theme.spacing.md,
+        paddingHorizontal: theme.spacing.xl,
+    },
+    separator: {
+        height: theme.borders.sm,
+        backgroundColor: theme.colors.layerGrayLighter,
+        // Inset to align with the title: icon width (sm = xxl) + row gap (md).
+        marginLeft: theme.spacing.xxl + theme.spacing.md,
     },
     loadingContainer: {
         flex: 1,
@@ -49,14 +55,18 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.md,
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
         marginTop: theme.spacing.lg,
         marginBottom: theme.spacing.sm,
+    },
+    titleBarTitleContainer: {
+        flex: 1,
+        minWidth: 0,
     },
     titleBarButtonContainer: {
         flexDirection: 'row',
         gap: theme.spacing.md,
         alignItems: 'center',
+        flexShrink: 0,
     },
     transparentButton: {
         backgroundColor: 'transparent',

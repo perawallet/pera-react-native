@@ -11,18 +11,11 @@
  */
 
 import { useCallback } from 'react'
-import {
-    PWView,
-    PWText,
-    PWTouchableOpacity,
-    PWCheckbox,
-    PWChip,
-    PWTouchableIcon,
-} from '@components/core'
+import { PWChip } from '@components/core'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
+import { SelectableAccountCheckboxRow } from '@modules/accounts/components/SelectableAccountCheckboxRow'
 import { useLanguage } from '@hooks/useLanguage'
 import LightLedgerAccountIcon from '@assets/icons/accounts/light/ledger-account.svg'
-import { useStyles } from './styles'
 
 export type LedgerAccountSelectionRowProps = {
     address: string
@@ -45,7 +38,6 @@ export const LedgerAccountSelectionRow = ({
     onInfoPress,
     testID,
 }: LedgerAccountSelectionRowProps) => {
-    const styles = useStyles({ isImported })
     const { t } = useLanguage()
 
     const handleInfoPress = useCallback(() => {
@@ -53,56 +45,31 @@ export const LedgerAccountSelectionRow = ({
     }, [onInfoPress, address, accountIndex])
 
     return (
-        <PWTouchableOpacity
-            style={styles.container}
-            onPress={onToggle}
-            disabled={isImported}
-            testID={testID}
-        >
-            <PWCheckbox
-                checked={isImported ? true : isSelected}
-                onPress={onToggle}
-                disabled={isImported}
-                containerStyle={styles.checkbox}
-                testID={testID ? `${testID}-checkbox` : undefined}
-            />
-
-            <LightLedgerAccountIcon
-                width={40}
-                height={40}
-            />
-
-            <PWView style={styles.textContainer}>
-                <PWText
-                    variant='body'
-                    style={styles.title}
-                    numberOfLines={1}
-                >
-                    {truncateAlgorandAddress(address)}
-                </PWText>
-                {variant === 'rekeyed' && (
+        <SelectableAccountCheckboxRow
+            title={truncateAlgorandAddress(address)}
+            leadingIcon={
+                <LightLedgerAccountIcon
+                    width={40}
+                    height={40}
+                />
+            }
+            badge={
+                variant === 'rekeyed' ? (
                     <PWChip
                         title={t('ledger.select_accounts.rekeyed_label')}
                         variant='secondary'
                         textVariant='captionSmall'
                     />
-                )}
-                {isImported && (
-                    <PWChip
-                        title={t('ledger.select_accounts.already_imported')}
-                        variant='secondary'
-                        textVariant='captionSmall'
-                    />
-                )}
-            </PWView>
-
-            <PWTouchableIcon
-                name='info'
-                size='sm'
-                variant='secondary'
-                onPress={handleInfoPress}
-                testID={testID ? `${testID}-info` : undefined}
-            />
-        </PWTouchableOpacity>
+                ) : undefined
+            }
+            isSelected={isSelected}
+            isImported={isImported}
+            importedLabel={t('ledger.select_accounts.already_imported')}
+            onToggle={onToggle}
+            onInfoPress={handleInfoPress}
+            testID={testID}
+            checkboxTestID={testID ? `${testID}-checkbox` : undefined}
+            infoTestID={testID ? `${testID}-info` : undefined}
+        />
     )
 }

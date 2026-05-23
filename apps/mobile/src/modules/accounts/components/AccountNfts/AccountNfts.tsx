@@ -101,11 +101,16 @@ export const AccountNfts = () => {
                 <>
                     <PWView style={styles.headerContainer}>
                         <PWView style={styles.titleBar}>
-                            <PWText variant='body'>
-                                {t('account_details.nfts.count', {
-                                    count: collectibleCount,
-                                })}
-                            </PWText>
+                            <PWView style={styles.titleBarTitleContainer}>
+                                <PWText
+                                    variant='body'
+                                    truncate
+                                >
+                                    {t('account_details.nfts.count', {
+                                        count: collectibleCount,
+                                    })}
+                                </PWText>
+                            </PWView>
                             <PWView style={styles.titleBarActions}>
                                 <PWTouchableOpacity
                                     style={styles.manageButton}
@@ -178,6 +183,7 @@ export const AccountNfts = () => {
                         data={collectibles}
                         renderItem={renderItem}
                         numColumns={isGrid ? GRID_COLUMNS : 1}
+                        columnWrapperStyle={isGrid ? styles.gridRow : undefined}
                         keyExtractor={item => item.assetId}
                         estimatedItemSize={
                             isGrid
