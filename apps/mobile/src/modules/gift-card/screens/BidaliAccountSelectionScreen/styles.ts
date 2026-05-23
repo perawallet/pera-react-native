@@ -15,12 +15,6 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     header: {
         paddingHorizontal: theme.spacing.xl,
-        paddingTop: theme.spacing.md,
-        paddingBottom: theme.spacing.xl,
-        gap: theme.spacing.sm,
-    },
-    subtitle: {
-        color: theme.colors.textGray,
     },
     list: {
         paddingHorizontal: theme.spacing.xl,

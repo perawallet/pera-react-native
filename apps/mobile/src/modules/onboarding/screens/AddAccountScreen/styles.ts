@@ -16,11 +16,6 @@ const HEADER_IMAGE_WIDTH = 137
 const HEADER_IMAGE_HEIGHT = 217
 
 export const useStyles = makeStyles(theme => {
-    const headerTitle = {
-        fontWeight: '600' as const,
-        paddingLeft: theme.spacing.xl,
-        alignSelf: 'flex-end' as const,
-    }
     return {
         imageContainer: {
             display: 'flex',
@@ -31,12 +26,9 @@ export const useStyles = makeStyles(theme => {
             top: 0,
             right: 0,
         },
-        headerContainer: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            paddingVertical: theme.spacing.xl,
+        header: {
+            paddingHorizontal: theme.spacing.xl,
         },
-        headerTitle,
         headerImage: {
             width: HEADER_IMAGE_WIDTH,
             height: HEADER_IMAGE_HEIGHT,

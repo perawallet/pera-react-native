@@ -28,11 +28,6 @@ export const useStyles = makeStyles(theme => ({
     contentSection: {
         flexGrow: 1,
         paddingHorizontal: theme.spacing.xl,
-        paddingTop: theme.spacing['3xl'],
-        gap: theme.spacing.lg,
         backgroundColor: theme.colors.background,
-    },
-    description: {
-        color: theme.colors.textGray,
     },
 }))

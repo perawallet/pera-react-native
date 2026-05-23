@@ -13,7 +13,8 @@
 import { useCallback } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import { useAllAccounts, WalletAccount } from '@perawallet/wallet-core-accounts'
-import { PWFlatList, PWScreen, PWText, PWView } from '@components/core'
+import { PWFlatList, PWScreen } from '@components/core'
+import { ScreenHeader } from '@components/ScreenHeader'
 import { useLanguage } from '@hooks/useLanguage'
 import { SelectableAccountRow } from '@modules/accounts/components/SelectableAccountRow'
 import { useBidali } from '../../hooks/useBidali'
@@ -56,14 +57,11 @@ export const BidaliAccountSelectionScreen = () => {
             horizontalPadding='none'
             keyboard='none'
         >
-            <PWView style={styles.header}>
-                <PWText variant='h1'>
-                    {t('giftCard.accountSelection.title')}
-                </PWText>
-                <PWText style={styles.subtitle}>
-                    {t('giftCard.accountSelection.subtitle')}
-                </PWText>
-            </PWView>
+            <ScreenHeader
+                style={styles.header}
+                title={t('giftCard.accountSelection.title')}
+                description={t('giftCard.accountSelection.subtitle')}
+            />
 
             <PWFlatList
                 contentContainerStyle={styles.list}

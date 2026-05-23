@@ -21,6 +21,7 @@ import {
     PWToolbar,
     PWView,
 } from '@components/core'
+import { ScreenHeader } from '@components/ScreenHeader'
 import { useLanguage } from '@hooks/useLanguage'
 import bidaliBackground from '@assets/images/bidali-background.png'
 import { useBidali } from '../../hooks/useBidali'
@@ -88,11 +89,10 @@ export const BidaliIntroScreen = () => {
                 </PWView>
 
                 <PWView style={styles.contentSection}>
-                    <PWText variant='h1'>{t('giftCard.intro.title')}</PWText>
-
-                    <PWText style={styles.description}>
-                        {t('giftCard.intro.body')}
-                    </PWText>
+                    <ScreenHeader
+                        title={t('giftCard.intro.title')}
+                        description={t('giftCard.intro.body')}
+                    />
                 </PWView>
             </PWScreen>
         </PWView>

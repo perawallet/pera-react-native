@@ -23,6 +23,7 @@ import {
     PWView,
 } from '@components/core'
 import { PanelButton } from '@components/PanelButton'
+import { ScreenHeader } from '@components/ScreenHeader'
 import { useAddAccountScreen } from './useAddAccountScreen'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
@@ -72,14 +73,10 @@ export const AddAccountScreen = () => {
                     }
                 />
 
-                <PWView style={styles.headerContainer}>
-                    <PWText
-                        variant='h1'
-                        style={styles.headerTitle}
-                    >
-                        {t('onboarding.add_account.title')}
-                    </PWText>
-                </PWView>
+                <ScreenHeader
+                    title={t('onboarding.add_account.title')}
+                    style={styles.header}
+                />
 
                 <PWView style={styles.mainContainer}>
                     {mainOptions.map(option => (
