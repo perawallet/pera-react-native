@@ -23,11 +23,7 @@ export {
     type WalletConnectHandoffsStore,
 } from './store/walletConnectHandoffsStore'
 
-export {
-    useHardwareSigningStore,
-    type HardwareSigningStatus,
-    type LedgerSigningErrorPayload,
-} from './store/hardwareSigningStore'
+export { useHardwareSigningStore } from './store/hardwareSigningStore'
 
 export {
     BLE_CLASS_ERROR_KINDS,

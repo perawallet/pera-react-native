@@ -99,5 +99,9 @@ export const buildResolvedSignRequest = (
         },
         transport: { kind: resolveTransportKind(context) },
         kind: resolveKind(context),
+        // Default — the live actor's child snapshot is layered on top by
+        // useSigningPipeline. Callers using buildResolvedSignRequest in
+        // isolation (e.g. unit tests against context only) see `null`.
+        activeChild: null,
     }
 }

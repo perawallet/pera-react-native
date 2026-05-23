@@ -15,8 +15,8 @@ import { logger } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import {
     isInteractiveSource,
-    useHardwareSigning,
     useSigningEvent,
+    useSigningPipeline,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
 import { usePreferences } from '@perawallet/wallet-core-settings'
@@ -51,15 +51,22 @@ import { useLedgerSigningDriver } from './useLedgerSigningDriver'
  */
 const useSignRequestDriver = () => {
     const { pendingSignRequests } = useSigningRequest()
-    const { status: hardwareStatus } = useHardwareSigning()
+    const { resolved } = useSigningPipeline()
     const { request: requestBottomSheet, dismiss } = useBottomSheet()
     const openIdRef = useRef<string | null>(null)
 
     // 'idle' and 'searching' both render no hardware overlay. During
     // 'searching' (silent BLE scan) the sign-request sheet stays visible
     // so there is no blank-screen gap before the Ledger sheet appears.
+    // Derived from the hardware child snapshot — `searching` is the only
+    // in-flight phase that should NOT hide the request sheet.
+    const hardwareChild =
+        resolved?.activeChild?.kind === 'hardware'
+            ? resolved.activeChild.snapshot
+            : null
     const isHardwareSigningInFlight =
-        hardwareStatus !== 'idle' && hardwareStatus !== 'searching'
+        hardwareChild !== null &&
+        !hardwareChild.matches({ active: 'searching' })
 
     const nextRequest = pendingSignRequests.find(r =>
         isInteractiveSource(r.sourceType),
@@ -214,7 +221,12 @@ const useTransactionRequestFAQDriver = () => {
 const useLedgerConnectionIssueDriver = () => {
     const { isTroubleshootingVisible, onCloseTroubleshooting } =
         useLedgerSigningContent()
-    const { requestId } = useHardwareSigning()
+    // BLE errors only fire while the active sign request is in flight, so the
+    // head of the pending queue identifies the request the troubleshooting
+    // sheet is bound to. Mirrors the previous `useHardwareSigning().requestId`
+    // behavior without a parallel store.
+    const { pendingSignRequests } = useSigningRequest()
+    const requestId = pendingSignRequests[0]?.id ?? null
     const { request: requestBottomSheet, dismiss } = useBottomSheet()
     const openIdRef = useRef<string | null>(null)
 

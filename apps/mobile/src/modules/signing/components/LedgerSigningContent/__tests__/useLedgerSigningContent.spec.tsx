@@ -13,11 +13,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import {
-    useHardwareSigning,
     useHardwareSigningStore,
+    useSigningPipeline,
     useSigningRequest,
+    type HardwareChildSnapshot,
+    type LedgerErrorPresetKind,
 } from '@perawallet/wallet-core-signing'
-import type { UseHardwareSigningResult } from '@perawallet/wallet-core-signing'
 import { useLedgerSigningContent } from '../useLedgerSigningContent'
 
 vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
@@ -26,141 +27,222 @@ vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
     return {
         ...actual,
         useSigningRequest: vi.fn(),
-        useHardwareSigning: vi.fn(),
+        useSigningPipeline: vi.fn(),
     }
 })
 
-const buildHardwareSigningResult = (
-    overrides: Partial<UseHardwareSigningResult>,
-): UseHardwareSigningResult => ({
-    isActive: true,
-    status: 'awaitingApproval',
-    deviceName: 'Nano X',
-    currentTx: null,
-    totalTxs: null,
-    requestId: 'req-1',
-    error: null,
-    resolveActiveRequest: vi.fn(() => undefined),
-    dismiss: vi.fn(),
-    ...overrides,
-})
+type ChildSnapshotOverrides = {
+    value?: 'error' | { active: 'searching' | 'awaiting_approval' | 'signing' }
+    deviceName?: string | null
+    currentTx?: number | null
+    totalTxs?: number | null
+    errorKind?: LedgerErrorPresetKind | null
+}
+
+// Lightweight stand-in for the real HardwareChildSnapshot — only the surface
+// our hook reads (matches + context) needs to be faithful.
+const buildChildSnapshot = (
+    overrides: ChildSnapshotOverrides = {},
+): HardwareChildSnapshot => {
+    const value = overrides.value ?? { active: 'awaiting_approval' }
+    const matches = (target: unknown): boolean => {
+        if (typeof target === 'string')
+            return typeof value === 'string' && value === target
+        if (typeof value === 'string') return false
+        const targetObj = target as { active?: string }
+        const valueObj = value as { active?: string }
+        return targetObj.active === valueObj.active
+    }
+    return {
+        value,
+        matches,
+        context: {
+            deviceName: overrides.deviceName ?? 'Nano X',
+            currentTx: overrides.currentTx ?? null,
+            totalTxs: overrides.totalTxs ?? null,
+            error: overrides.errorKind
+                ? { kind: overrides.errorKind, cause: undefined }
+                : null,
+        },
+    } as unknown as HardwareChildSnapshot
+}
+
+type PipelineMockOverrides = {
+    snapshot?: HardwareChildSnapshot | null
+    retryHardware?: () => void
+    acknowledgeHardwareError?: () => void
+}
+
+const mockPipeline = (overrides: PipelineMockOverrides = {}) => {
+    const snapshot =
+        overrides.snapshot === undefined
+            ? buildChildSnapshot()
+            : overrides.snapshot
+    vi.mocked(useSigningPipeline).mockReturnValue({
+        resolved: snapshot
+            ? {
+                  activeChild: { kind: 'hardware', snapshot },
+              }
+            : { activeChild: null },
+        retryHardware: overrides.retryHardware ?? vi.fn(),
+        acknowledgeHardwareError: overrides.acknowledgeHardwareError ?? vi.fn(),
+    } as never)
+}
 
 describe('useLedgerSigningContent', () => {
     beforeEach(() => {
         useHardwareSigningStore.getState().resetState()
         vi.mocked(useSigningRequest).mockReturnValue({
+            currentRequest: undefined,
             pendingSignRequests: [],
             rejectRequest: vi.fn(),
             retryRequest: vi.fn(),
         } as never)
     })
 
-    it('isVisible is false when status is "idle"', () => {
-        vi.mocked(useHardwareSigning).mockReturnValue(
-            buildHardwareSigningResult({ isActive: false, status: 'idle' }),
-        )
+    it('isVisible is false when no hardware child is active', () => {
+        mockPipeline({ snapshot: null })
         const { result } = renderHook(() => useLedgerSigningContent())
         expect(result.current.isVisible).toBe(false)
+        expect(result.current.status).toBe('idle')
     })
 
-    it('isVisible is false when status is "searching" (silent-scan phase)', () => {
-        vi.mocked(useHardwareSigning).mockReturnValue(
-            buildHardwareSigningResult({
-                isActive: false,
-                status: 'searching',
-            }),
-        )
+    it('isVisible is false during the silent searching phase', () => {
+        mockPipeline({
+            snapshot: buildChildSnapshot({ value: { active: 'searching' } }),
+        })
         const { result } = renderHook(() => useLedgerSigningContent())
         expect(result.current.isVisible).toBe(false)
+        expect(result.current.status).toBe('searching')
     })
 
-    it('isVisible is true when status is "awaitingApproval"', () => {
-        vi.mocked(useHardwareSigning).mockReturnValue(
-            buildHardwareSigningResult({
-                isActive: true,
-                status: 'awaitingApproval',
+    it('isVisible is true while awaiting approval', () => {
+        mockPipeline({
+            snapshot: buildChildSnapshot({
+                value: { active: 'awaiting_approval' },
             }),
-        )
+        })
         const { result } = renderHook(() => useLedgerSigningContent())
         expect(result.current.isVisible).toBe(true)
+        expect(result.current.status).toBe('awaitingApproval')
     })
 
-    it('isVisible is true when status is "error"', () => {
-        vi.mocked(useHardwareSigning).mockReturnValue(
-            buildHardwareSigningResult({ isActive: true, status: 'error' }),
-        )
+    it('isVisible is true while signing', () => {
+        mockPipeline({
+            snapshot: buildChildSnapshot({ value: { active: 'signing' } }),
+        })
         const { result } = renderHook(() => useLedgerSigningContent())
         expect(result.current.isVisible).toBe(true)
+        expect(result.current.status).toBe('signing')
     })
 
-    it('exposes a derived LedgerErrorPreset when error payload is set', () => {
-        vi.mocked(useHardwareSigning).mockReturnValue(
-            buildHardwareSigningResult({
-                status: 'error',
-                error: { kind: 'app_not_open' },
+    it('surfaces device name, progress, and error from the child snapshot context', () => {
+        mockPipeline({
+            snapshot: buildChildSnapshot({
+                value: 'error',
+                deviceName: 'Nano S',
+                currentTx: 2,
+                totalTxs: 4,
+                errorKind: 'app_not_open',
             }),
-        )
+        })
         const { result } = renderHook(() => useLedgerSigningContent())
+        expect(result.current.deviceName).toBe('Nano S')
+        expect(result.current.currentTx).toBe(2)
+        expect(result.current.totalTxs).toBe(4)
+        expect(result.current.status).toBe('error')
         expect(result.current.error?.kind).toBe('app_not_open')
         expect(result.current.error?.isRetryable).toBe(true)
         expect(result.current.error?.isTroubleshootable).toBe(false)
     })
 
-    it('onCancel rejects the active request and dismisses the store (which resets all flags)', () => {
+    it('onCancel sends ACKNOWLEDGE_HARDWARE_ERROR when the child is in error', () => {
+        const acknowledgeHardwareError = vi.fn()
         const rejectRequest = vi.fn()
-        const dismiss = vi.fn(() => {
-            // Simulate what dismiss() actually does: reset the store state
-            useHardwareSigningStore.getState().resetState()
-        })
-        const activeRequest = { id: 'req-1' } as never
         vi.mocked(useSigningRequest).mockReturnValue({
-            pendingSignRequests: [activeRequest],
+            currentRequest: { id: 'req-1' },
+            pendingSignRequests: [{ id: 'req-1' }],
             rejectRequest,
             retryRequest: vi.fn(),
         } as never)
-        vi.mocked(useHardwareSigning).mockReturnValue(
-            buildHardwareSigningResult({
-                resolveActiveRequest: () => activeRequest,
-                dismiss,
+        mockPipeline({
+            snapshot: buildChildSnapshot({
+                value: 'error',
+                errorKind: 'app_not_open',
             }),
-        )
-        const { result } = renderHook(() => useLedgerSigningContent())
-        act(() => {
-            result.current.onOpenTroubleshooting()
+            acknowledgeHardwareError,
         })
+        const { result } = renderHook(() => useLedgerSigningContent())
         act(() => {
             result.current.onCancel()
         })
-        expect(rejectRequest).toHaveBeenCalledWith(activeRequest)
-        expect(dismiss).toHaveBeenCalledOnce()
-        expect(result.current.isTroubleshootingVisible).toBe(false)
+        expect(acknowledgeHardwareError).toHaveBeenCalledOnce()
+        expect(rejectRequest).not.toHaveBeenCalled()
     })
 
-    it('onRetry is a no-op when error is not retryable', () => {
-        const retryRequest = vi.fn()
+    it('onCancel rejects the current request when the child is mid-flow', () => {
+        const acknowledgeHardwareError = vi.fn()
+        const rejectRequest = vi.fn()
+        const currentRequest = { id: 'req-1' }
         vi.mocked(useSigningRequest).mockReturnValue({
-            pendingSignRequests: [{ id: 'req-1' }],
-            rejectRequest: vi.fn(),
-            retryRequest,
+            currentRequest,
+            pendingSignRequests: [currentRequest],
+            rejectRequest,
+            retryRequest: vi.fn(),
         } as never)
-        vi.mocked(useHardwareSigning).mockReturnValue(
-            buildHardwareSigningResult({
-                status: 'error',
-                error: { kind: 'address_mismatch' },
-                resolveActiveRequest: () => ({ id: 'req-1' }) as never,
+        mockPipeline({
+            snapshot: buildChildSnapshot({
+                value: { active: 'awaiting_approval' },
             }),
-        )
+            acknowledgeHardwareError,
+        })
+        const { result } = renderHook(() => useLedgerSigningContent())
+        act(() => {
+            result.current.onCancel()
+        })
+        expect(rejectRequest).toHaveBeenCalledWith(currentRequest)
+        expect(acknowledgeHardwareError).not.toHaveBeenCalled()
+    })
+
+    it('onRetry calls retryHardware for a retryable error', () => {
+        const retryHardware = vi.fn()
+        mockPipeline({
+            snapshot: buildChildSnapshot({
+                value: 'error',
+                errorKind: 'app_not_open',
+            }),
+            retryHardware,
+        })
         const { result } = renderHook(() => useLedgerSigningContent())
         act(() => {
             result.current.onRetry()
         })
-        expect(retryRequest).not.toHaveBeenCalled()
+        expect(retryHardware).toHaveBeenCalledOnce()
     })
 
-    it('onOpenTroubleshooting / onCloseTroubleshooting flips local state', () => {
-        vi.mocked(useHardwareSigning).mockReturnValue(
-            buildHardwareSigningResult({ status: 'error' }),
-        )
+    it('onRetry is a no-op when the error is not retryable', () => {
+        const retryHardware = vi.fn()
+        mockPipeline({
+            snapshot: buildChildSnapshot({
+                value: 'error',
+                errorKind: 'address_mismatch',
+            }),
+            retryHardware,
+        })
+        const { result } = renderHook(() => useLedgerSigningContent())
+        act(() => {
+            result.current.onRetry()
+        })
+        expect(retryHardware).not.toHaveBeenCalled()
+    })
+
+    it('onOpenTroubleshooting / onCloseTroubleshooting flips the store flag', () => {
+        mockPipeline({
+            snapshot: buildChildSnapshot({
+                value: 'error',
+                errorKind: 'address_mismatch',
+            }),
+        })
         const { result } = renderHook(() => useLedgerSigningContent())
         expect(result.current.isTroubleshootingVisible).toBe(false)
         act(() => result.current.onOpenTroubleshooting())
@@ -170,121 +252,81 @@ describe('useLedgerSigningContent', () => {
     })
 
     describe('BLE-class error auto-troubleshooting', () => {
-        const BLE_CLASS_KINDS = [
+        const BLE_CLASS_KINDS: readonly LedgerErrorPresetKind[] = [
             'connection_failed',
             'connection_lost',
             'scan_timeout',
             'bluetooth_disabled',
             'bluetooth_permission',
-        ] as const
-
-        beforeEach(() => {
-            vi.mocked(useSigningRequest).mockReturnValue({
-                pendingSignRequests: [{ id: 'req-1' } as never],
-                rejectRequest: vi.fn(),
-                retryRequest: vi.fn(),
-            } as never)
-        })
+        ]
 
         it.each(BLE_CLASS_KINDS)(
-            'auto-opens the troubleshooting sheet for kind=%s',
+            'auto-opens troubleshooting for kind=%s and hides the inline sheet',
             kind => {
-                vi.mocked(useHardwareSigning).mockReturnValue(
-                    buildHardwareSigningResult({
-                        status: 'error',
-                        error: { kind },
+                mockPipeline({
+                    snapshot: buildChildSnapshot({
+                        value: 'error',
+                        errorKind: kind,
                     }),
-                )
+                })
                 const { result } = renderHook(() => useLedgerSigningContent())
                 expect(result.current.isTroubleshootingVisible).toBe(true)
-            },
-        )
-
-        it.each(BLE_CLASS_KINDS)(
-            'hides the main overlay (isVisible=false) when the BLE-class error %s opens troubleshooting',
-            kind => {
-                vi.mocked(useHardwareSigning).mockReturnValue(
-                    buildHardwareSigningResult({
-                        status: 'error',
-                        error: { kind },
-                    }),
-                )
-                const { result } = renderHook(() => useLedgerSigningContent())
                 expect(result.current.isVisible).toBe(false)
             },
         )
 
         it('does NOT auto-open troubleshooting for non-BLE errors', () => {
-            vi.mocked(useHardwareSigning).mockReturnValue(
-                buildHardwareSigningResult({
-                    status: 'error',
-                    error: { kind: 'user_rejected' },
+            mockPipeline({
+                snapshot: buildChildSnapshot({
+                    value: 'error',
+                    errorKind: 'user_rejected',
                 }),
-            )
+            })
             const { result } = renderHook(() => useLedgerSigningContent())
             expect(result.current.isTroubleshootingVisible).toBe(false)
             expect(result.current.isVisible).toBe(true)
         })
 
-        it('closing troubleshooting after a BLE-class auto-open rejects the request', () => {
+        it('closing troubleshooting after a BLE-class auto-open acknowledges the hardware error', () => {
+            const acknowledgeHardwareError = vi.fn()
             const rejectRequest = vi.fn()
-            const dismiss = vi.fn(() => {
-                // Simulate what dismiss() actually does: reset the store state AND
-                // clear the error from the hardware signing hook (in production both
-                // come from the same store; here they're mocked independently).
-                useHardwareSigningStore.getState().resetState()
-            })
-            const activeRequest = { id: 'req-1' } as never
             vi.mocked(useSigningRequest).mockReturnValue({
-                pendingSignRequests: [activeRequest],
+                currentRequest: { id: 'req-1' },
+                pendingSignRequests: [{ id: 'req-1' }],
                 rejectRequest,
                 retryRequest: vi.fn(),
             } as never)
-            vi.mocked(useHardwareSigning).mockReturnValue(
-                buildHardwareSigningResult({
-                    status: 'error',
-                    error: { kind: 'connection_failed' },
-                    resolveActiveRequest: () => activeRequest,
-                    dismiss,
+            mockPipeline({
+                snapshot: buildChildSnapshot({
+                    value: 'error',
+                    errorKind: 'connection_failed',
                 }),
-            )
-            const { result, rerender } = renderHook(() =>
-                useLedgerSigningContent(),
-            )
+                acknowledgeHardwareError,
+            })
+            const { result } = renderHook(() => useLedgerSigningContent())
             act(() => {
                 result.current.onCloseTroubleshooting()
             })
-            expect(rejectRequest).toHaveBeenCalledWith(activeRequest)
-            expect(dismiss).toHaveBeenCalledOnce()
-            // After dismiss resets the store, re-render with no error to confirm the
-            // sheet closes. In production dismiss() clears the signing store error
-            // too; here we simulate that by updating the mock and rerendering.
-            vi.mocked(useHardwareSigning).mockReturnValue(
-                buildHardwareSigningResult({
-                    isActive: false,
-                    status: 'idle',
-                    error: null,
-                }),
-            )
-            rerender()
-            expect(result.current.isTroubleshootingVisible).toBe(false)
+            expect(acknowledgeHardwareError).toHaveBeenCalledOnce()
+            expect(rejectRequest).not.toHaveBeenCalled()
         })
 
-        it('closing troubleshooting after a MANUAL open (non-BLE error) only closes the sheet', () => {
+        it('closing troubleshooting after a MANUAL open only closes the sheet', () => {
+            const acknowledgeHardwareError = vi.fn()
             const rejectRequest = vi.fn()
-            const dismiss = vi.fn()
             vi.mocked(useSigningRequest).mockReturnValue({
-                pendingSignRequests: [{ id: 'req-1' } as never],
+                currentRequest: { id: 'req-1' },
+                pendingSignRequests: [{ id: 'req-1' }],
                 rejectRequest,
                 retryRequest: vi.fn(),
             } as never)
-            vi.mocked(useHardwareSigning).mockReturnValue(
-                buildHardwareSigningResult({
-                    status: 'error',
-                    error: { kind: 'user_rejected' },
-                    dismiss,
+            mockPipeline({
+                snapshot: buildChildSnapshot({
+                    value: 'error',
+                    errorKind: 'user_rejected',
                 }),
-            )
+                acknowledgeHardwareError,
+            })
             const { result } = renderHook(() => useLedgerSigningContent())
             act(() => {
                 result.current.onOpenTroubleshooting()
@@ -293,62 +335,20 @@ describe('useLedgerSigningContent', () => {
             act(() => {
                 result.current.onCloseTroubleshooting()
             })
+            expect(acknowledgeHardwareError).not.toHaveBeenCalled()
             expect(rejectRequest).not.toHaveBeenCalled()
-            expect(dismiss).not.toHaveBeenCalled()
             expect(result.current.isTroubleshootingVisible).toBe(false)
-        })
-    })
-
-    describe('BLE auto-open synchronous derivation (perf)', () => {
-        it('isTroubleshootingVisible becomes true on the first render when a BLE-class error appears — no extra render cycle', () => {
-            // Arrange: start with no error
-            vi.mocked(useHardwareSigning).mockReturnValue(
-                buildHardwareSigningResult({
-                    isActive: true,
-                    status: 'awaitingApproval',
-                    error: null,
-                }),
-            )
-            const { result, rerender } = renderHook(() =>
-                useLedgerSigningContent(),
-            )
-            expect(result.current.isTroubleshootingVisible).toBe(false)
-
-            // Act: simulate a BLE-class error arriving
-            vi.mocked(useHardwareSigning).mockReturnValue(
-                buildHardwareSigningResult({
-                    isActive: true,
-                    status: 'error',
-                    error: { kind: 'connection_failed' },
-                }),
-            )
-
-            // Count renders from this point to verify synchronous update
-            let renderCount = 0
-            const { result: result2 } = renderHook(() => {
-                renderCount++
-                return useLedgerSigningContent()
-            })
-
-            // Assert: isTroubleshootingVisible is true on the very first render
-            // after the error — no second render needed (no useEffect flush)
-            expect(renderCount).toBe(1)
-            expect(result2.current.isTroubleshootingVisible).toBe(true)
-
-            // Silence unused variable warning
-            void rerender
         })
     })
 
     describe('cross-instance state sharing (regression)', () => {
-        it('calling onOpenTroubleshooting in one instance is visible to a second concurrent instance', () => {
-            vi.mocked(useHardwareSigning).mockReturnValue(
-                buildHardwareSigningResult({
-                    isActive: true,
-                    status: 'error',
-                    error: { kind: 'user_rejected' },
+        it('opening troubleshooting in one instance is visible to a second concurrent instance', () => {
+            mockPipeline({
+                snapshot: buildChildSnapshot({
+                    value: 'error',
+                    errorKind: 'user_rejected',
                 }),
-            )
+            })
 
             const { result: instanceA } = renderHook(() =>
                 useLedgerSigningContent(),
@@ -364,7 +364,6 @@ describe('useLedgerSigningContent', () => {
                 instanceA.current.onOpenTroubleshooting()
             })
 
-            // Both instances see the updated store state
             expect(instanceA.current.isTroubleshootingVisible).toBe(true)
             expect(instanceB.current.isTroubleshootingVisible).toBe(true)
         })

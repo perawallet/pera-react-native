@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react'
 import type { AnyActorRef, SnapshotFrom } from 'xstate'
 import { AppError, type Optional } from '@perawallet/wallet-core-shared'
 import {
@@ -24,9 +24,7 @@ import { useLocalKeyTransactionSigner } from './useLocalKeyTransactionSigner'
 import { useArbitraryDataSigner } from './useArbitraryDataSigner'
 import { useArc60Signer } from './useArc60Signer'
 import { useMultisigTransportAdapters } from './useMultisigTransportAdapters'
-import { buildHardwareSigningCallbacks } from './buildHardwareSigningCallbacks'
-import { useSigningStore, useHardwareSigningStore } from '../store'
-import { isBleClassErrorKind } from '../types/ledgerErrorPresetKind'
+import { useSigningStore } from '../store'
 import { createSigningMachine } from '../machine/createSigningMachine'
 import { signingMachine } from '../machine/signingMachine'
 import { createTransportSelector } from '../pipeline/transports/getTransport'
@@ -36,7 +34,6 @@ import { signingEventBus } from '../pipeline/signingEventBus'
 import { isInteractiveSource } from '../pipeline/types'
 import type { SigningMachineDeps } from '../machine/context'
 import { type SignRequest } from '../models'
-import { resolveSignerAddress } from '../utils/resolveSignerAddress'
 
 // Process-wide registry of running signing-machine actors, keyed by
 // request id. Hoisted to module scope (rather than per-hook `useRef`) so
@@ -46,6 +43,25 @@ import { resolveSignerAddress } from '../utils/resolveSignerAddress'
 // already exists and bail. Without this, every consumer would race and
 // produce one parallel signing machine per mount.
 const actorRefsMap = new Map<string, AnyActorRef>()
+
+// Tiny pub-sub layered over the registry so React components can subscribe
+// via useSyncExternalStore and re-render when actors are added/removed. A
+// bare module Map isn't reactive — without this, hooks that read
+// `getActorRef(id)` during render would not pick up an actor that was
+// created in the SAME render cycle (lifecycle's queue effect adds it after
+// render completes), so subscribers like useSigningPipeline would forever
+// see `currentActorRef === null` for the very first request.
+let actorRegistryVersion = 0
+const actorRegistryListeners = new Set<() => void>()
+const subscribeActorRegistry = (listener: () => void): (() => void) => {
+    actorRegistryListeners.add(listener)
+    return () => actorRegistryListeners.delete(listener)
+}
+const notifyActorRegistry = (): void => {
+    actorRegistryVersion += 1
+    for (const listener of actorRegistryListeners) listener()
+}
+const getActorRegistryVersion = (): number => actorRegistryVersion
 
 // Tracks which requests we've already started awaiting the approval gate
 // for, so we don't re-enter `waitFor` on every snapshot tick while the
@@ -66,6 +82,7 @@ export const __resetSigningActorRegistryForTests = (): void => {
         actor.stop()
     }
     actorRefsMap.clear()
+    notifyActorRegistry()
     awaitingApprovalSet.clear()
     startedSet.clear()
     signingStartedSet.clear()
@@ -133,15 +150,6 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
     const removeSignRequestFromStore = useSigningStore(
         state => state.removeSignRequest,
     )
-    const setLastCompletedRequest = useSigningStore(
-        state => state.setLastCompletedRequest,
-    )
-    const setLastFailedRequest = useSigningStore(
-        state => state.setLastFailedRequest,
-    )
-    const setLastTransportResult = useSigningStore(
-        state => state.setLastTransportResult,
-    )
 
     const { signTransactions } = useLocalKeyTransactionSigner()
     const { signArbitraryData } = useArbitraryDataSigner()
@@ -154,28 +162,12 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
     const { proposeSignRequest, addSignatures, getMsigMetadata, getDeviceId } =
         useMultisigTransportAdapters()
 
-    // Stable refs so the actor subscription callback never becomes stale
+    // Stable ref so the actor subscription callback never becomes stale
     const removeSignRequestFromStoreRef = useRef(removeSignRequestFromStore)
-    const setLastCompletedRequestRef = useRef(setLastCompletedRequest)
-    const setLastFailedRequestRef = useRef(setLastFailedRequest)
-    const setLastTransportResultRef = useRef(setLastTransportResult)
     removeSignRequestFromStoreRef.current = removeSignRequestFromStore
-    setLastCompletedRequestRef.current = setLastCompletedRequest
-    setLastFailedRequestRef.current = setLastFailedRequest
-    setLastTransportResultRef.current = setLastTransportResult
 
     const buildDeps = useCallback(
-        (request: SignRequest): SigningMachineDeps => {
-            // Resolve the signer account so the hardware-signing overlay
-            // can render the device name from the very first phase signal.
-            // For non-hardware signers, the callback builder degrades to a
-            // null deviceName — the overlay never opens in that case
-            // because only the hardware strategy emits phase callbacks.
-            const signerAddress = resolveSignerAddress(request)
-            const signerAccount = signerAddress
-                ? allAccounts.find(acc => acc.address === signerAddress)
-                : undefined
-
+        (_request: SignRequest): SigningMachineDeps => {
             return {
                 signTransactions,
                 signArbitraryData,
@@ -194,14 +186,6 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                 // domain-separation prefix on-device, so we pass raw msgpack.
                 encodeTransaction: encodeTransactionRaw,
                 hardwareWalletRegistry: getProvider().hardwareWalletRegistry,
-                // Drives the LedgerSigningContent sheet via useHardwareSigningStore.
-                // Only the hardware strategy emits these callbacks, so requests
-                // that resolve to local-key/multisig signers never touch the
-                // sheet state.
-                signingCallbacks: buildHardwareSigningCallbacks(
-                    request,
-                    signerAccount,
-                ),
             }
         },
         [
@@ -210,13 +194,12 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
             signArc60,
             encodeTransactionRaw,
             encodeSignedTransactions,
-            algokit,
             network,
             proposeSignRequest,
             addSignatures,
             getMsigMetadata,
             getDeviceId,
-            allAccounts,
+            algokit,
         ],
     )
 
@@ -337,37 +320,17 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                 const req = snapshot.context.request
                 const isInteractive = isInteractiveSource(req.sourceType)
                 // Interactive failures stay in the queue so the signing sheet
-                // keeps rendering; the inline error view (driven by
-                // lastFailedRequest in the store) takes over the sheet
-                // content until the user dismisses via removeSignRequest.
+                // keeps rendering; the inline error view (driven by the
+                // signing event bus via useSigningEvent / useLastSigningEvent)
+                // takes over the sheet content until the user dismisses via
+                // removeSignRequest.
                 const keepForInlineError =
                     snapshot.matches('failed') && isInteractive
-
-                // Tear down the hardware overlay on any terminal transition
-                // for the matching request — success, rejection, or
-                // non-retryable failure (the inline error sheet takes over).
-                //
-                // Exception: for BLE-class failures (Bluetooth off, scan
-                // timeout, connect failed/lost, permission) the user-facing
-                // remediation lives in the troubleshooting bottom sheet,
-                // which is gated on the hardware store still holding the
-                // error. Resetting synchronously here would dismiss that
-                // sheet ~50ms after `setError` opened it, leaving the user
-                // with no feedback. Keep the store in `error` state until
-                // the user closes the troubleshooting sheet — that path
-                // calls `dismiss()` (= `reset`) via `onCancel`.
-                const hardwareStore = useHardwareSigningStore.getState()
-                const isBleClassFailure =
-                    snapshot.matches('failed') &&
-                    isBleClassErrorKind(hardwareStore.error?.kind)
-                if (hardwareStore.requestId === req.id && !isBleClassFailure) {
-                    hardwareStore.reset()
-                }
 
                 if (snapshot.matches('completed')) {
                     // Publish the transport result regardless of source.
                     // Headless flows that don't surface completion UI still
-                    // need a reliable hook for store-driven listeners (e.g.
+                    // need a reliable hook for bus-driven listeners (e.g.
                     // PendingSignatures auto-open, send-funds exit on
                     // multisig propose). The `useSigningPipeline({ onEvent })`
                     // path is unreliable here because the lifecycle's actor
@@ -384,17 +347,10 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                             request: req,
                             result: transportResult,
                         })
-                        setLastTransportResultRef.current(transportResult)
                     }
                     // The transport is responsible for invoking the request's
                     // approve callback (with the actual signed data) — see
                     // createCallbackTransport / createWalletConnectTransport.
-                    // Headless callers own the completion UI; only the
-                    // standard review flow (the `SigningOverlays` drivers)
-                    // reads these store fields.
-                    if (isInteractive) {
-                        setLastCompletedRequestRef.current(req)
-                    }
                 } else if (snapshot.matches('failed')) {
                     const { error } = snapshot.context
                     const normalizedError =
@@ -409,17 +365,6 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                     ;(req as { error?: (err: Error) => void }).error?.(
                         normalizedError,
                     )
-                    // Publish failure to the store so signing UIs can render
-                    // an inline error view. Actor refs live in per-instance
-                    // maps (not shared state), so the store is the only
-                    // mechanism that reliably re-renders all subscribers.
-                    // Headless callers drive their own error UI.
-                    if (isInteractive) {
-                        setLastFailedRequestRef.current({
-                            request: req,
-                            error: normalizedError,
-                        })
-                    }
                 } else if (snapshot.matches('rejected')) {
                     signingEventBus.publish({
                         type: 'rejected',
@@ -440,6 +385,7 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                 if (keepForInlineError) return
 
                 actorRefsMap.delete(actor.id)
+                notifyActorRegistry()
                 signingEventBus.releaseRequest(actor.id)
                 // Removing from the store triggers pendingSignRequests to change,
                 // which fires the reactive effect below to start the next actor.
@@ -448,6 +394,7 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
 
             actor.start()
             actorRefsMap.set(request.id, actor)
+            notifyActorRegistry()
         },
         [allAccounts, buildDeps],
     )
@@ -461,11 +408,23 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
         if (actor) {
             actor.stop()
             actorRefsMap.delete(requestId)
+            notifyActorRegistry()
         }
         approvalGate.unregister(requestId)
         awaitingApprovalSet.delete(requestId)
         signingEventBus.releaseRequest(requestId)
     }, [])
+
+    // Subscribe to registry changes so consumers (via getActorRef) re-render
+    // when the actor for the current request is created or torn down. Without
+    // this, hooks calling getActorRef during render would see the actor as
+    // null forever after the queue-effect-driven create — there'd be no
+    // re-render to pick the new entry up.
+    useSyncExternalStore(
+        subscribeActorRegistry,
+        getActorRegistryVersion,
+        getActorRegistryVersion,
+    )
 
     const getActorRef = useCallback((requestId: string) => {
         return actorRefsMap.get(requestId)

@@ -29,8 +29,7 @@ import { usePendingSignaturesSheetStore } from '../stores/usePendingSignaturesSh
  * handoffs ("Sign request created. The dApp was notified."); deferred
  * because no generic toast/snackbar infrastructure exists yet.
  *
- * Subscribes to the signing event bus rather than the legacy
- * `useLastTransportResult` store — the bus publishes once per actor
+ * Subscribes to the signing event bus — the bus publishes once per actor
  * transition, so dedupe is intrinsic (no ref tracking needed) and no
  * stale-at-mount value can re-trigger the sheet.
  */

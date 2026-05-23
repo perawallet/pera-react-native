@@ -12,23 +12,30 @@
 
 import React, { useEffect, useRef } from 'react'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { useHardwareSigningStore } from '@perawallet/wallet-core-signing'
+import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import { LedgerSigningContent } from '../LedgerSigningContent'
 import { useLedgerSigningContent } from '../LedgerSigningContent/useLedgerSigningContent'
 
 /**
- * Watches the hardware-wallet signing store for an active session and shows
- * the LedgerSigningContent sheet via the centralized bottom sheet manager.
+ * Watches the hardware-wallet signing child machine for an active session
+ * and shows the LedgerSigningContent sheet via the centralized bottom sheet
+ * manager.
  *
- * The sheet visibility is gated by the content hook's `isVisible` derivation,
- * which excludes the silent BLE-scan phase and the BLE-class error path
- * (where the troubleshooting sheet is the primary surface).
+ * The sheet visibility is gated by the content hook's `isVisible` derivation
+ * (which reads the hardware child snapshot through useSigningPipeline), and
+ * excludes the silent BLE-scan phase and the BLE-class error path (where the
+ * troubleshooting sheet is the primary surface).
+ *
+ * The sheet id is bound to the head of the pending queue — the active sign
+ * request is always at index 0, and the hardware child only ever exists
+ * while that request is mid-flight.
  *
  * Presentation matches the legacy overlay: `size='auto'`, gestures and
  * backdrop press disabled — signing must complete via the UI controls.
  */
 export const useLedgerSigningDriver = (): void => {
-    const requestId = useHardwareSigningStore(state => state.requestId)
+    const { pendingSignRequests } = useSigningRequest()
+    const requestId = pendingSignRequests[0]?.id ?? null
     const { isVisible } = useLedgerSigningContent()
     const { request: requestBottomSheet, dismiss } = useBottomSheet()
     const openIdRef = useRef<string | null>(null)

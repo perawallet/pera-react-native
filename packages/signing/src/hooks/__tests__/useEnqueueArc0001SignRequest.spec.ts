@@ -25,7 +25,6 @@ vi.mock('../useSigningRequest', () => ({
     useSigningRequest: () => ({
         addSignRequest: mockAddSignRequest,
         removeSignRequest: mockRemoveSignRequest,
-        clearLastFailedRequest: vi.fn(),
     }),
 }))
 

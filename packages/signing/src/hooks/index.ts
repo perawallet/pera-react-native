@@ -10,17 +10,16 @@
  limitations under the License
  */
 
+export * from './types'
 export * from './useArc0001Resolver'
 export * from './useArc60Signer'
 export * from './useEnqueueArc0001SignRequest'
 export * from './useArbitraryDataSigner'
 export * from './useBalanceValidation'
-export * from './useHardwareSigning'
 export * from './useSignAndSubmitGroup'
 export * from './useSigningEvent'
 export * from './useSigningPipeline'
 export * from './useSigningRequest'
 export * from './useLastSigningEvent'
-export * from './useLastTransportResult'
 export * from './useLocalKeyTransactionSigner'
 export * from './useWalletConnectHandoffResolver'

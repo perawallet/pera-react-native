@@ -15,8 +15,7 @@ import type { AnyActorRef } from 'xstate'
 import { useSigningStore } from '../store'
 import { useSigningActorLifecycle } from './useSigningActorLifecycle'
 import { approvalGate } from '../pipeline/approvalGate'
-import type { FailedSignRequest, SignRequest } from '../models'
-import type { TransportResult } from '../pipeline/types'
+import type { SignRequest } from '../models'
 import {
     AppError,
     ErrorCategory,
@@ -36,22 +35,10 @@ import {
 
 type UseSigningRequestResult = {
     pendingSignRequests: SignRequest[]
-    lastCompletedRequest: Nullable<SignRequest>
-    lastFailedRequest: Nullable<FailedSignRequest>
-    /**
-     * Most recent transport result, set on every completed actor transition
-     * (algod-submit, multisig-propose, multisig-cosign, callback-sent…).
-     * Listeners that can't rely on `useSigningPipeline({ onEvent })`
-     * (because the actor subscription doesn't establish in time for headless
-     * propose) read this and dedupe via a ref-tracked previous reference.
-     */
-    lastTransportResult: Nullable<TransportResult>
     currentRequest: Optional<SignRequest>
     currentActorRef: Nullable<AnyActorRef>
     addSignRequest: (request: SignRequest) => void
     removeSignRequest: (request: SignRequest) => void
-    clearLastCompletedRequest: () => void
-    clearLastFailedRequest: () => void
     signAndSendRequest: (request: SignRequest) => void
     rejectRequest: (request: SignRequest) => void
     /** Retries a failed request if its error is retryable. */
@@ -69,19 +56,6 @@ export const useSigningRequest = (): UseSigningRequestResult => {
     const addSignRequestToStore = useSigningStore(state => state.addSignRequest)
     const removeSignRequestFromStore = useSigningStore(
         state => state.removeSignRequest,
-    )
-    const lastCompletedRequest = useSigningStore(
-        state => state.lastCompletedRequest,
-    )
-    const setLastCompletedRequest = useSigningStore(
-        state => state.setLastCompletedRequest,
-    )
-    const lastFailedRequest = useSigningStore(state => state.lastFailedRequest)
-    const setLastFailedRequest = useSigningStore(
-        state => state.setLastFailedRequest,
-    )
-    const lastTransportResult = useSigningStore(
-        state => state.lastTransportResult,
     )
 
     const { getActorRef, stopActor } = useSigningActorLifecycle()
@@ -142,14 +116,6 @@ export const useSigningRequest = (): UseSigningRequestResult => {
         [stopActor, removeSignRequestFromStore],
     )
 
-    const clearLastCompletedRequest = useCallback(() => {
-        setLastCompletedRequest(null)
-    }, [setLastCompletedRequest])
-
-    const clearLastFailedRequest = useCallback(() => {
-        setLastFailedRequest(null)
-    }, [setLastFailedRequest])
-
     /**
      * Approves the current signing request by resolving its approval gate.
      * The lifecycle hook picks up the resolution and sends USER_APPROVED
@@ -203,15 +169,10 @@ export const useSigningRequest = (): UseSigningRequestResult => {
 
     return {
         pendingSignRequests,
-        lastCompletedRequest,
-        lastFailedRequest,
-        lastTransportResult,
         currentRequest,
         currentActorRef,
         addSignRequest,
         removeSignRequest,
-        clearLastCompletedRequest,
-        clearLastFailedRequest,
         signAndSendRequest,
         rejectRequest,
         retryRequest,

@@ -74,7 +74,7 @@ export const useMultisigSignRequestDecline = (
     const { network } = useNetwork()
     const deviceId = useDeviceID(network) ?? ''
     const { errorToast } = useToast()
-    const { removeSignRequest } = useSigningRequest()
+    const { rejectRequest } = useSigningRequest()
     const accounts = useAllAccounts()
     const { invalidate: invalidateInbox } = useInboxInvalidator()
 
@@ -138,7 +138,11 @@ export const useMultisigSignRequestDecline = (
             invalidateInbox()
             setIsConfirmOpen(false)
             if (params.mode === 'decline') {
-                removeSignRequest(params.request)
+                // Route through the state machine so the actor reaches `rejected`,
+                // fires the request's reject callback, and the lifecycle does the
+                // cleanup. Bypassing with removeSignRequest stopped the actor
+                // without delivering USER_REJECTED.
+                rejectRequest(params.request)
             }
         } catch {
             errorToast(errorKeys.title, errorKeys.body)
@@ -150,7 +154,7 @@ export const useMultisigSignRequestDecline = (
         declineMutation,
         invalidateInbox,
         params,
-        removeSignRequest,
+        rejectRequest,
         errorToast,
         errorKeys,
     ])

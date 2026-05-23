@@ -16,6 +16,7 @@ import { useSigningRequest } from '../useSigningRequest'
 import { __resetSigningActorRegistryForTests } from '../useSigningActorLifecycle'
 import { useSigningStore } from '../../store'
 import { approvalGate } from '../../pipeline/approvalGate'
+import { signingEventBus } from '../../pipeline/signingEventBus'
 import {
     MAX_TRANSACTION_SIGN_REQUESTS,
     MAX_DATA_SIGN_REQUESTS,
@@ -26,6 +27,7 @@ import type {
     TransactionSignRequest,
     ArbitraryDataSignRequest,
 } from '../../models'
+import type { TransportResult } from '../../pipeline/types'
 import { createSigningMachine } from '../../machine/createSigningMachine'
 
 // =============================================================================
@@ -123,11 +125,15 @@ const makeMockActor = (requestId: string) => {
         stop: vi.fn(),
         send: vi.fn(),
         // Test helper: simulate actor reaching a terminal state
-        simulateDone: (matchedState: string, request: SignRequest) => {
+        simulateDone: (
+            matchedState: string,
+            request: SignRequest,
+            extra: { transportResult?: TransportResult } = {},
+        ) => {
             subscriberCb?.({
                 status: 'done',
                 matches: (s: string) => s === matchedState,
-                context: { request },
+                context: { request, ...extra },
             })
         },
     }
@@ -439,24 +445,38 @@ describe('useSigningRequest', () => {
             expect(mockReject).toHaveBeenCalledTimes(1)
         })
 
-        test('sets lastCompletedRequest for interactive sources (walletconnect)', () => {
+        test('publishes a completed event on the bus when the actor finishes', () => {
             const actor = makeMockActor('tx-1')
             vi.mocked(createSigningMachine).mockReturnValue(actor as any)
 
+            const onEvent = vi.fn()
+            const unsubscribe = signingEventBus.subscribe(onEvent)
+
             const { result } = renderHook(() => useSigningRequest())
             const request = makeTxRequest({ sourceType: 'walletconnect' })
+            const transportResult: TransportResult = {
+                type: 'algod-submit',
+                txIds: ['TX1'],
+            } as unknown as TransportResult
 
             act(() => {
                 result.current.addSignRequest(request)
             })
             act(() => {
-                actor.simulateDone('completed', request)
+                actor.simulateDone('completed', request, { transportResult })
             })
 
-            expect(result.current.lastCompletedRequest?.id).toBe('tx-1')
+            unsubscribe()
+            expect(onEvent).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    type: 'completed',
+                    request: expect.objectContaining({ id: 'tx-1' }),
+                    result: transportResult,
+                }),
+            )
         })
 
-        test('does not set lastCompletedRequest for non-interactive requests', () => {
+        test('drops non-interactive requests from the queue on completion', () => {
             const actor = makeMockActor('tx-1')
             vi.mocked(createSigningMachine).mockReturnValue(actor as any)
 
@@ -471,7 +491,6 @@ describe('useSigningRequest', () => {
                 actor.simulateDone('completed', request)
             })
 
-            expect(result.current.lastCompletedRequest).toBeNull()
             expect(result.current.pendingSignRequests).toHaveLength(0)
         })
     })

@@ -138,8 +138,9 @@ export const usePendingSignaturesContent =
          * Source of truth for `isSigning` is the signing store: once the
          * actor finishes (success → backend addSignatures → next
          * sign-request-detail poll observes the signed response; failure →
-         * request moves to `lastFailedRequest`), the entry drops from
-         * `pendingSignRequests` and `isSigning` flips back to false.
+         * the signing event bus publishes a 'failed' event for the inline
+         * error view), the entry drops from `pendingSignRequests` and
+         * `isSigning` flips back to false.
          */
         const inFlightCosignAddresses = useMemo(
             () =>

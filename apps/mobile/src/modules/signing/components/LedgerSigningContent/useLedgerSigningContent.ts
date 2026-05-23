@@ -12,16 +12,41 @@
 
 import { useCallback, useMemo } from 'react'
 import {
-    useHardwareSigning,
     useHardwareSigningStore,
+    useSigningPipeline,
     useSigningRequest,
-    type HardwareSigningStatus,
+    type HardwareChildSnapshot,
 } from '@perawallet/wallet-core-signing'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     getLedgerErrorPresetByKind,
     type LedgerErrorPreset,
 } from '@modules/ledger/utils/ledgerErrorPresets'
+
+type HardwareSigningStatus =
+    | 'idle'
+    | 'searching'
+    | 'awaitingApproval'
+    | 'signing'
+    | 'error'
+
+/**
+ * Map the hardware child machine's snapshot to the legacy
+ * HardwareSigningStatus enum the UI router still uses. The child machine's
+ * state value carries the same information as the old store flag, so this
+ * is a straight projection — no extra timing logic.
+ */
+const deriveStatus = (
+    snapshot: HardwareChildSnapshot | null,
+): HardwareSigningStatus => {
+    if (!snapshot) return 'idle'
+    if (snapshot.matches('error')) return 'error'
+    if (snapshot.matches({ active: 'searching' })) return 'searching'
+    if (snapshot.matches({ active: 'awaiting_approval' }))
+        return 'awaitingApproval'
+    if (snapshot.matches({ active: 'signing' })) return 'signing'
+    return 'idle'
+}
 
 export type UseLedgerSigningContentResult = {
     isVisible: boolean
@@ -38,9 +63,10 @@ export type UseLedgerSigningContentResult = {
 }
 
 /**
- * UI adapter combining the store-only `useHardwareSigning` hook with
- * `useSigningRequest` to wire cancel/retry through to the signing machine,
- * and managing the local visibility of the troubleshooting bottom sheet.
+ * UI adapter for the Ledger signing sheet. Reads the hardware child
+ * machine's live snapshot from `useSigningPipeline().resolved.activeChild`,
+ * derives the display status, and wires cancel/retry through the parent
+ * machine via the pipeline's hardware control methods.
  *
  * `isVisible` is derived from status: the silent-scan phase ('searching')
  * keeps the sheet closed so the user only sees UI once the device responds,
@@ -48,21 +74,28 @@ export type UseLedgerSigningContentResult = {
  * troubleshooting sheet is the primary surface; the LedgerSigningContent
  * sheet stays closed (isVisible is false) because there is no useful state
  * behind the troubleshooting copy.
+ *
+ * Troubleshooting-sheet visibility still lives in `useHardwareSigningStore`
+ * (the `isTroubleshootingVisible` flag and its open/close actions); the
+ * store no longer owns phase, progress, or error state — those come from
+ * the child snapshot. The store will collapse to a single visibility flag
+ * in the follow-up task.
  */
 export const useLedgerSigningContent = (): UseLedgerSigningContentResult => {
-    const {
-        isActive,
-        status,
-        deviceName,
-        currentTx,
-        totalTxs,
-        error: errorPayload,
-        resolveActiveRequest,
-        dismiss,
-    } = useHardwareSigning()
     const { t } = useLanguage()
-    const { pendingSignRequests, rejectRequest, retryRequest } =
-        useSigningRequest()
+    const { resolved, retryHardware, acknowledgeHardwareError } =
+        useSigningPipeline()
+    const { currentRequest, rejectRequest } = useSigningRequest()
+
+    const hardware =
+        resolved?.activeChild?.kind === 'hardware'
+            ? resolved.activeChild.snapshot
+            : null
+    const status = deriveStatus(hardware)
+    const deviceName = hardware?.context.deviceName ?? null
+    const currentTx = hardware?.context.currentTx ?? null
+    const totalTxs = hardware?.context.totalTxs ?? null
+    const errorPayload = hardware?.context.error ?? null
 
     const manualTroubleshootingOpen = useHardwareSigningStore(
         s => s.isTroubleshootingVisible,
@@ -82,12 +115,27 @@ export const useLedgerSigningContent = (): UseLedgerSigningContentResult => {
     const isBleClassError = error?.isTroubleshootable ?? false
 
     const onCancel = useCallback(() => {
-        const activeRequest = resolveActiveRequest(pendingSignRequests)
-        if (activeRequest) {
-            rejectRequest(activeRequest)
+        // Two distinct paths depending on where the child machine is:
+        //   - in `error`: send ACKNOWLEDGE_HARDWARE_ERROR so the child can
+        //     transition to its `done` final state with output kind:'error'.
+        //     The parent then marks the request failed via the standard
+        //     onDone handler.
+        //   - mid-flow (searching/awaiting/signing): reject the request so
+        //     the parent forwards USER_REJECTED → child as
+        //     USER_REJECTED_ON_DEVICE.
+        if (status === 'error') {
+            acknowledgeHardwareError()
+            return
         }
-        dismiss()
-    }, [resolveActiveRequest, pendingSignRequests, rejectRequest, dismiss])
+        if (currentRequest) {
+            rejectRequest(currentRequest)
+        }
+    }, [status, acknowledgeHardwareError, currentRequest, rejectRequest])
+
+    const onRetry = useCallback(() => {
+        if (!error?.isRetryable) return
+        retryHardware()
+    }, [error, retryHardware])
 
     const onOpenTroubleshooting = useCallback(() => {
         openTroubleshooting()
@@ -101,13 +149,7 @@ export const useLedgerSigningContent = (): UseLedgerSigningContentResult => {
         closeTroubleshooting()
     }, [isBleClassError, onCancel, closeTroubleshooting])
 
-    const onRetry = useCallback(() => {
-        if (!error?.isRetryable) return
-        const activeRequest = resolveActiveRequest(pendingSignRequests)
-        if (activeRequest) {
-            retryRequest(activeRequest)
-        }
-    }, [error, resolveActiveRequest, pendingSignRequests, retryRequest])
+    const isActive = status !== 'idle'
 
     return {
         isVisible: isActive && status !== 'searching' && !isBleClassError,

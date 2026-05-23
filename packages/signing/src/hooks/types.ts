@@ -12,6 +12,7 @@
 
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { Decimal } from 'decimal.js'
+import type { SnapshotFrom } from 'xstate'
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
@@ -20,6 +21,7 @@ import type {
     SigningMachineContext,
     ResolvedSignerType,
 } from '../machine/context'
+import type { hardwareSigningMachine } from '../machine/children/hardwareSigningMachine'
 import type {
     PipelineStage,
     SigningPipelineEvent,
@@ -93,6 +95,12 @@ export type SigningPipeline = {
 
     /** Resolved state derived from machine context. Null when the queue is empty. */
     resolved: Nullable<ResolvedSignRequest>
+
+    /** Sends RETRY_HARDWARE to retry hardware connection after a BLE-class error. */
+    retryHardware: () => void
+
+    /** Sends ACKNOWLEDGE_HARDWARE_ERROR to release the hardware error state, marking failure. */
+    acknowledgeHardwareError: () => void
 }
 
 export type MachineSnapshot = {
@@ -132,6 +140,20 @@ export type ResolvedRequestKind =
     | { type: 'arbitrary-data'; isSingle: boolean }
     | { type: 'arc60'; parsed: Arc60ParsedForDisplay }
 
+export type HardwareChildSnapshot = SnapshotFrom<typeof hardwareSigningMachine>
+
+/**
+ * Snapshot of the currently-invoked signer child machine, exposed via
+ * `ResolvedSignRequest.activeChild`. Null when no child is in flight.
+ *
+ * Today only the hardware variant is wired up; multisig will be added in a
+ * follow-up task once `multisigSigningMachine` is invoked as a child.
+ */
+export type ActiveSigningChild = {
+    kind: 'hardware'
+    snapshot: HardwareChildSnapshot
+} | null
+
 export type ResolvedSignRequest = {
     signerType: ResolvedSignerType
     signerAccount: WalletAccount
@@ -139,4 +161,6 @@ export type ResolvedSignRequest = {
     source: { kind: SourceKind; isInteractive: boolean }
     transport: { kind: TransportKind }
     kind: ResolvedRequestKind
+    /** Snapshot of the active signer child machine, or null if no child is running. */
+    activeChild: ActiveSigningChild
 }
