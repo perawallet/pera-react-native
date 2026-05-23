@@ -10,10 +10,9 @@
  limitations under the License
  */
 
-import { PWRoundIcon, PWText, PWView } from '@components/core'
+import { PWRoundIcon, PWText, PWView, type IconName } from '@components/core'
 import { useStyles } from './styles'
 
-import type { IconName } from '@components/core'
 import type { ReactNode } from 'react'
 import type { StyleProp, ViewStyle } from 'react-native'
 
