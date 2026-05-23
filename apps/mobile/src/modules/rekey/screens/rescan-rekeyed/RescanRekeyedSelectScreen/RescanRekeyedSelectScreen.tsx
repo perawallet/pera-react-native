@@ -22,6 +22,7 @@ import {
     PWView,
 } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
+import { ScreenHeader } from '@components/ScreenHeader'
 import { useLanguage } from '@hooks/useLanguage'
 import { RescanCandidateRow } from '../../../components/rescan-rekeyed/RescanCandidateRow'
 import { useRescanRekeyedSelectScreen } from './useRescanRekeyedSelectScreen'
@@ -130,15 +131,10 @@ export const RescanRekeyedSelectScreen = () => {
                 </PWView>
             }
         >
-            <PWView style={styles.header}>
-                <PWText variant='h1'>{t('rekey.rescan.title')}</PWText>
-                <PWText
-                    variant='bodyLarge'
-                    style={styles.subtitle}
-                >
-                    {t('rekey.rescan.subtitle')}
-                </PWText>
-            </PWView>
+            <ScreenHeader
+                title={t('rekey.rescan.title')}
+                description={t('rekey.rescan.subtitle')}
+            />
 
             {hasCandidates && (
                 <PWView style={styles.section}>

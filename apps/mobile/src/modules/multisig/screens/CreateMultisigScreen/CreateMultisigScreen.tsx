@@ -11,6 +11,7 @@
  */
 
 import { PWButton, PWScreen, PWText, PWView } from '@components/core'
+import { ScreenHeader } from '@components/ScreenHeader'
 import { useLanguage } from '@hooks/useLanguage'
 import { ParticipantListItem } from '../../components/ParticipantListItem'
 import { useCreateMultisigScreen } from './useCreateMultisigScreen'
@@ -41,12 +42,10 @@ export const CreateMultisigScreen = () => {
                 />
             }
         >
-            <PWView style={styles.headerContainer}>
-                <PWText variant='h1'>{t('multisig.create.title')}</PWText>
-                <PWText style={styles.description}>
-                    {t('multisig.create.description')}
-                </PWText>
-            </PWView>
+            <ScreenHeader
+                title={t('multisig.create.title')}
+                description={t('multisig.create.description')}
+            />
 
             <PWText variant='h4'>
                 {t('multisig.create.accounts_section')}

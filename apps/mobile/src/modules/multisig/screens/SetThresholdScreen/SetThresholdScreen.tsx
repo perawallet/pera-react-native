@@ -11,8 +11,9 @@
  */
 
 import { useMemo } from 'react'
-import { PWButton, PWScreen, PWText, PWView } from '@components/core'
+import { PWButton, PWScreen, PWView } from '@components/core'
 import { ParticipantCount } from '@components/ParticipantCount'
+import { ScreenHeader } from '@components/ScreenHeader'
 import { useLanguage } from '@hooks/useLanguage'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { TypographyVariant } from '@theme/typography'
@@ -50,15 +51,10 @@ export const SetThresholdScreen = () => {
                 />
             }
         >
-            <PWView style={styles.headerContainer}>
-                <PWText variant='h1'>{t('multisig.threshold.title')}</PWText>
-                <PWText
-                    variant='h4'
-                    style={styles.description}
-                >
-                    {t('multisig.threshold.description')}
-                </PWText>
-            </PWView>
+            <ScreenHeader
+                title={t('multisig.threshold.title')}
+                description={t('multisig.threshold.description')}
+            />
 
             <PWView style={styles.summaryContainer}>
                 <KeyValueRow

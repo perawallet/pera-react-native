@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { PWButton, PWScreen, PWText, PWView } from '@components/core'
+import { PWButton, PWScreen, PWView } from '@components/core'
+import { ScreenHeader } from '@components/ScreenHeader'
 import { useLanguage } from '@hooks/useLanguage'
 import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
 import { BackupQuizItem } from '../../components/BackupQuizItem'
@@ -39,12 +40,7 @@ export const BackupVerificationScreen = () => {
                 />
             }
         >
-            <PWText
-                variant='h1'
-                style={styles.title}
-            >
-                {t('backup.verification.title')}
-            </PWText>
+            <ScreenHeader title={t('backup.verification.title')} />
             <PWView style={styles.quizList}>
                 {items.map((item, i) => (
                     <BackupQuizItem

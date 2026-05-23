@@ -12,6 +12,7 @@
 
 import { ActivityIndicator } from 'react-native'
 import { PWButton, PWScreen, PWText, PWView } from '@components/core'
+import { ScreenHeader } from '@components/ScreenHeader'
 import { useLanguage } from '@hooks/useLanguage'
 import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
 import { PinEditView } from '@modules/security'
@@ -83,18 +84,10 @@ export const BackupReminderMnemonicScreen = () => {
                 />
             }
         >
-            <PWText
-                variant='h1'
-                style={styles.title}
-            >
-                {t('backup.mnemonic.title')}
-            </PWText>
-            <PWText
-                variant='h4'
-                style={styles.description}
-            >
-                {t('backup.mnemonic.body')}
-            </PWText>
+            <ScreenHeader
+                title={t('backup.mnemonic.title')}
+                description={t('backup.mnemonic.body')}
+            />
             <PWView style={styles.grid}>
                 {words.map((word, i) => (
                     <PWView

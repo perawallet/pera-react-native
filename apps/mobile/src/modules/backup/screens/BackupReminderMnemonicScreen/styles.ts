@@ -19,15 +19,7 @@ export const useStyles = makeStyles(theme => ({
         backgroundColor: theme.colors.background,
     },
     scrollContent: {
-        paddingTop: theme.spacing.xl,
         gap: theme.spacing.lg,
-    },
-    title: {
-        textAlign: 'left',
-    },
-    description: {
-        textAlign: 'left',
-        color: theme.colors.textGray,
     },
     grid: {
         flexDirection: 'row',

@@ -29,14 +29,7 @@ export const useStyles = makeStyles(theme => ({
         textAlign: 'center',
     },
     scrollContent: {
-        paddingTop: theme.spacing.lg,
         gap: theme.spacing.xl,
-    },
-    header: {
-        gap: theme.spacing.lg,
-    },
-    subtitle: {
-        color: theme.colors.textGray,
     },
     section: {
         gap: theme.spacing.md,
