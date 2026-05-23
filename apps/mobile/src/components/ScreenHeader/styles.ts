@@ -15,7 +15,7 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     container: {
         gap: theme.spacing.md,
-        paddingHorizontal: theme.spacing.xl,
+        paddingTop: theme.spacing.xl,
         paddingBottom: theme.spacing.xl,
     },
     description: {
