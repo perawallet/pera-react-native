@@ -11,16 +11,15 @@
  */
 
 import React from 'react'
-import { PWButton, PWIcon, PWText, PWView } from '@components/core'
+import { PWButton, PWIcon, PWScreen, PWView } from '@components/core'
+import { ScreenHeader } from '@components/ScreenHeader'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { useImportInfoScreen } from './useImportInfoScreen'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export const ImportInfoScreen = () => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles(insets)
+    const styles = useStyles()
     const { t } = useLanguage()
     const { handleRecoverPress, handleInfoPress, KeyImageComponent } =
         useImportInfoScreen()
@@ -36,35 +35,28 @@ export const ImportInfoScreen = () => {
     })
 
     return (
-        <PWView style={styles.root}>
-            <PWView style={styles.content}>
-                <KeyImageComponent
-                    style={styles.image}
-                    width={160}
-                    height={160}
-                />
-                <PWText
-                    variant='h1'
-                    style={styles.title}
-                >
-                    {t('onboarding.import_info.title')}
-                </PWText>
-                <PWText
-                    variant='h4'
-                    style={styles.description}
-                >
-                    {t('onboarding.import_info.body')}
-                </PWText>
-            </PWView>
-
-            <PWView style={styles.footer}>
+        <PWScreen
+            scroll={false}
+            footer={
                 <PWButton
                     variant='primary'
                     title={t('onboarding.import_info.button')}
                     onPress={handleRecoverPress}
                     testID='import_info_recover_button'
                 />
+            }
+        >
+            <PWView style={styles.content}>
+                <KeyImageComponent
+                    style={styles.image}
+                    width={160}
+                    height={160}
+                />
+                <ScreenHeader
+                    title={t('onboarding.import_info.title')}
+                    description={t('onboarding.import_info.body')}
+                />
             </PWView>
-        </PWView>
+        </PWScreen>
     )
 }

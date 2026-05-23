@@ -13,21 +13,8 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        flex: 1,
-        backgroundColor: theme.colors.background,
-    },
     content: {
         flex: 1,
-        paddingHorizontal: theme.spacing.xl,
-    },
-    title: {
-        marginBottom: theme.spacing.sm,
-        marginTop: theme.spacing.sm,
-    },
-    description: {
-        marginBottom: theme.spacing.xl,
-        color: theme.colors.textGray,
     },
     headerRow: {
         flexDirection: 'row',
@@ -55,33 +42,8 @@ export const useStyles = makeStyles(theme => ({
         marginRight: 0,
         backgroundColor: 'transparent',
     },
-    listContent: {
-        paddingBottom: theme.spacing.xl,
-    },
     emptyState: {
         flex: 1,
         justifyContent: 'center',
-    },
-    itemContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingVertical: theme.spacing.md,
-        borderBottomWidth: theme.borders.sm,
-        borderBottomColor: theme.colors.layerGrayLighter,
-    },
-    itemTextContainer: {
-        flex: 1,
-        paddingRight: theme.spacing.md,
-    },
-    itemTitle: {
-        color: theme.colors.textMain,
-        marginBottom: theme.spacing.xxs,
-    },
-    footer: {
-        padding: theme.spacing.xl,
-        borderTopWidth: theme.borders.sm,
-        borderTopColor: theme.colors.layerGrayLighter,
-        backgroundColor: theme.colors.background,
     },
 }))

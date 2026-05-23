@@ -11,14 +11,8 @@
  */
 
 import React from 'react'
-import {
-    PWIcon,
-    PWListItem,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { PWListItem, PWView } from '@components/core'
+import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useTranslation } from 'react-i18next'
 import { useStyles } from './styles'
 
@@ -32,26 +26,14 @@ export type ImportAccountSupportOptionsContentProps = Record<string, never>
 export const ImportAccountSupportOptionsContent = () => {
     const styles = useStyles()
     const { t } = useTranslation()
-    const { resolve, dismiss } =
+    const { resolve } =
         useBottomSheetResult<ImportAccountSupportOptionsContentResult>()
 
     return (
         <>
-            <PWView style={styles.header}>
-                <PWTouchableOpacity
-                    onPress={dismiss}
-                    style={styles.closeButton}
-                >
-                    <PWIcon
-                        name='cross'
-                        variant='secondary'
-                    />
-                </PWTouchableOpacity>
-
-                <PWText variant='h4'>
-                    {t('onboarding.import_account.support_options.title')}
-                </PWText>
-            </PWView>
+            <SheetHeader
+                title={t('onboarding.import_account.support_options.title')}
+            />
 
             <PWView style={styles.optionsContainer}>
                 <PWListItem

@@ -13,17 +13,6 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: theme.spacing.lg,
-        paddingHorizontal: theme.spacing.xl,
-    },
-    closeButton: {
-        position: 'absolute',
-        left: theme.spacing.xl,
-    },
     optionsContainer: {
         marginTop: theme.spacing.lg,
         paddingHorizontal: theme.spacing.xl,

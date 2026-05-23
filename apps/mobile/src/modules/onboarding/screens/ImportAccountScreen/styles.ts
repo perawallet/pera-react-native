@@ -11,73 +11,54 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { EdgeInsets } from 'react-native-safe-area-context'
 
-export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
-    return {
-        mainContainer: {
-            flex: 1,
-            backgroundColor: theme.colors.background,
-        },
-        wordContainer: {
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            marginBottom: theme.spacing.lg,
-        },
-        column: {
-            width: '47%',
-        },
-        scrollContainer: {
-            flex: 1,
-        },
-        scrollView: {
-            paddingHorizontal: theme.spacing.xl,
-        },
-        footer: {
-            backgroundColor: theme.colors.background,
-            paddingHorizontal: theme.spacing.xl,
-            paddingTop: theme.spacing.md,
-            paddingBottom: theme.spacing.md + insets.bottom,
-        },
-        inputContainerRow: {
-            marginTop: theme.spacing.sm,
-            flexDirection: 'row',
-            gap: theme.spacing.sm,
-            alignItems: 'center',
-        },
-        focusedInputContainerRow: {
-            marginTop: theme.spacing.sm,
-            flexDirection: 'row',
-            gap: theme.spacing.sm,
-            alignItems: 'center',
-        },
-        label: {
-            color: theme.colors.textGray,
-        },
-        focusedLabel: {
-            color: theme.colors.textMain,
-        },
-        inputWrapper: {
-            flex: 1,
-        },
-        inputOuterContainer: {
-            flexShrink: 1,
-        },
-        inputContainer: {
-            backgroundColor: theme.colors.background,
-            borderBottomWidth: theme.borders.sm,
-            borderBottomColor: theme.colors.layerGray,
-            flexShrink: 1,
-        },
-        focusedInputContainer: {
-            backgroundColor: theme.colors.background,
-            borderBottomWidth: theme.borders.sm,
-            borderBottomColor: theme.colors.textMain,
-            flexShrink: 1,
-        },
-        input: {
-            flexShrink: 1,
-            backgroundColor: 'transparent',
-        },
-    }
-})
+export const useStyles = makeStyles(theme => ({
+    wordContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: theme.spacing.lg,
+    },
+    column: {
+        width: '47%',
+    },
+    inputContainerRow: {
+        marginTop: theme.spacing.sm,
+        flexDirection: 'row',
+        gap: theme.spacing.sm,
+        alignItems: 'center',
+    },
+    focusedInputContainerRow: {
+        marginTop: theme.spacing.sm,
+        flexDirection: 'row',
+        gap: theme.spacing.sm,
+        alignItems: 'center',
+    },
+    label: {
+        color: theme.colors.textGray,
+    },
+    focusedLabel: {
+        color: theme.colors.textMain,
+    },
+    inputWrapper: {
+        flex: 1,
+    },
+    inputOuterContainer: {
+        flexShrink: 1,
+    },
+    inputContainer: {
+        backgroundColor: theme.colors.background,
+        borderBottomWidth: theme.borders.sm,
+        borderBottomColor: theme.colors.layerGray,
+        flexShrink: 1,
+    },
+    focusedInputContainer: {
+        backgroundColor: theme.colors.background,
+        borderBottomWidth: theme.borders.sm,
+        borderBottomColor: theme.colors.textMain,
+        flexShrink: 1,
+    },
+    input: {
+        flexShrink: 1,
+        backgroundColor: 'transparent',
+    },
+}))
