@@ -32,6 +32,7 @@ import { signingMachine } from '../machine/signingMachine'
 import { createTransportSelector } from '../pipeline/transports/getTransport'
 import { getNextQueuedRequest } from '../pipeline/queue'
 import { approvalGate } from '../pipeline/approvalGate'
+import { signingEventBus } from '../pipeline/signingEventBus'
 import { isInteractiveSource } from '../pipeline/types'
 import type { SigningMachineDeps } from '../machine/context'
 import { type SignRequest } from '../models'
@@ -51,6 +52,10 @@ const actorRefsMap = new Map<string, AnyActorRef>()
 // machine sits in `awaiting_user`.
 const awaitingApprovalSet = new Set<string>()
 
+// Dedupe sets for bus publishes that should fire at most once per actor.
+const startedSet = new Set<string>()
+const signingStartedSet = new Set<string>()
+
 /**
  * Test-only: stops every running actor and clears the module-level
  * registry. Call from `beforeEach` so leftover actors from one test never
@@ -62,7 +67,10 @@ export const __resetSigningActorRegistryForTests = (): void => {
     }
     actorRefsMap.clear()
     awaitingApprovalSet.clear()
+    startedSet.clear()
+    signingStartedSet.clear()
     approvalGate.__resetForTests()
+    signingEventBus.__resetForTests()
 }
 
 // =============================================================================
@@ -238,6 +246,59 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
             )
 
             actor.subscribe(snapshot => {
+                // Publish lifecycle events (dedupe per actor where the
+                // state may be revisited). These run BEFORE the approval
+                // gate / terminal handlers so the bus reflects the same
+                // ordering store consumers observe today.
+                if (
+                    snapshot.matches('validating') &&
+                    !startedSet.has(actor.id)
+                ) {
+                    startedSet.add(actor.id)
+                    signingEventBus.publish({
+                        type: 'started',
+                        request: snapshot.context.request,
+                    })
+                }
+
+                // awaiting_user — published on each entry (also drives the
+                // approval gate below, which has its own dedupe).
+                if (snapshot.matches('awaiting_user')) {
+                    signingEventBus.publish({
+                        type: 'awaiting-user',
+                        request: snapshot.context.request,
+                    })
+                }
+
+                // signing-started — published once per signer type the
+                // dispatch picks. Nested-state matcher is the XState v5
+                // object form: { signing: 'localKey' } etc.
+                const signingValue = snapshot.value as
+                    | { signing?: string }
+                    | string
+                    | undefined
+                const signingChild =
+                    typeof signingValue === 'object' &&
+                    signingValue &&
+                    'signing' in signingValue
+                        ? signingValue.signing
+                        : undefined
+                if (
+                    signingChild === 'localKey' ||
+                    signingChild === 'hardware' ||
+                    signingChild === 'multisig'
+                ) {
+                    const key = `${actor.id}:${signingChild}`
+                    if (!signingStartedSet.has(key)) {
+                        signingStartedSet.add(key)
+                        signingEventBus.publish({
+                            type: 'signing-started',
+                            request: snapshot.context.request,
+                            signerType: signingChild,
+                        })
+                    }
+                }
+
                 // Bridge the machine's external sync point to the approval
                 // gate. Headless flows resolve immediately (no gate was
                 // registered when the actor was created), interactive
@@ -313,6 +374,16 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                     // lives in a non-reactive Map.
                     const { transportResult } = snapshot.context
                     if (transportResult) {
+                        signingEventBus.publish({
+                            type: 'transport-result',
+                            request: req,
+                            result: transportResult,
+                        })
+                        signingEventBus.publish({
+                            type: 'completed',
+                            request: req,
+                            result: transportResult,
+                        })
                         setLastTransportResultRef.current(transportResult)
                     }
                     // The transport is responsible for invoking the request's
@@ -330,6 +401,11 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                         error instanceof Error
                             ? error
                             : new Error('Signing failed')
+                    signingEventBus.publish({
+                        type: 'failed',
+                        request: req,
+                        error: normalizedError,
+                    })
                     ;(req as { error?: (err: Error) => void }).error?.(
                         normalizedError,
                     )
@@ -345,6 +421,10 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                         })
                     }
                 } else if (snapshot.matches('rejected')) {
+                    signingEventBus.publish({
+                        type: 'rejected',
+                        request: req,
+                    })
                     ;(req as { reject?: () => Promise<void> }).reject?.()
                 }
 
@@ -360,6 +440,7 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                 if (keepForInlineError) return
 
                 actorRefsMap.delete(actor.id)
+                signingEventBus.releaseRequest(actor.id)
                 // Removing from the store triggers pendingSignRequests to change,
                 // which fires the reactive effect below to start the next actor.
                 removeSignRequestFromStoreRef.current(req)
@@ -383,6 +464,7 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
         }
         approvalGate.unregister(requestId)
         awaitingApprovalSet.delete(requestId)
+        signingEventBus.releaseRequest(requestId)
     }, [])
 
     const getActorRef = useCallback((requestId: string) => {

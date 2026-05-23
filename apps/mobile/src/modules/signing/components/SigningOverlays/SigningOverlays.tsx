@@ -16,7 +16,7 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import {
     isInteractiveSource,
     useHardwareSigning,
-    useLastTransportResult,
+    useSigningEvent,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
 import { usePreferences } from '@perawallet/wallet-core-settings'
@@ -117,66 +117,47 @@ const useSignRequestDriver = () => {
 }
 
 /**
- * Watches the signing store for a completed request and shows the
- * "signing completed" sheet via the centralized bottom sheet manager.
+ * Subscribes to the signing event bus and shows the "signing completed"
+ * sheet via the centralized bottom sheet manager when a request completes
+ * with a non-proposed transport result.
  *
- * Clearing `lastCompletedRequest` after dismissal advances the store
- * state so the sheet doesn't keep reopening.
+ * Multisig cosign and multisig propose completions are surfaced by
+ * PendingSignaturesContent — skip the generic sheet for those.
  */
 const useSigningCompletedDriver = () => {
-    const { lastCompletedRequest, clearLastCompletedRequest } =
-        useSigningRequest()
-    const lastTransportResult = useLastTransportResult()
     const { request: requestBottomSheet } = useBottomSheet()
     const openIdRef = useRef<string | null>(null)
 
-    useEffect(() => {
-        if (!lastCompletedRequest) return
-        // Multisig cosign completions are surfaced by PendingSignaturesContent
-        // (live signer status + threshold progress). The generic "Transaction
-        // Processing" copy here is misleading for a cosign (the user added a
-        // signature; they didn't send a transaction), so suppress it and
-        // clear the success state so the next request can render.
-        if (lastCompletedRequest.sourceType === 'multisig-cosign') {
-            clearLastCompletedRequest()
-            return
-        }
-        // Multisig propose (including sync-flow handoffs from WC / webview /
-        // deeplink) is also surfaced by PendingSignaturesContent. Showing
-        // the "Transaction Processing" sheet on top would race the
-        // pending-signatures sheet that useMultisigProposeListener opens.
-        // The lifecycle sets lastTransportResult BEFORE lastCompletedRequest
-        // (useSigningActorLifecycle.ts: setLastTransportResultRef then
-        // setLastCompletedRequestRef), so by the time this effect runs the
-        // transport result reflects the same completion.
-        if (lastTransportResult?.type === 'proposed') {
-            clearLastCompletedRequest()
-            return
-        }
-        if (openIdRef.current === lastCompletedRequest.id) return
-        openIdRef.current = lastCompletedRequest.id
-        const isTransaction = lastCompletedRequest.type === 'transactions'
-        let cancelled = false
-        void (async () => {
-            await requestBottomSheet<void>({
-                contents: (
-                    <SigningCompletedContent isTransaction={isTransaction} />
-                ),
-                options: { size: 'auto', enablePanDownToClose: true },
-            })
-            if (cancelled) return
-            openIdRef.current = null
-            clearLastCompletedRequest()
-        })()
-        return () => {
-            cancelled = true
-        }
-    }, [
-        lastCompletedRequest,
-        lastTransportResult,
-        requestBottomSheet,
-        clearLastCompletedRequest,
-    ])
+    useSigningEvent(
+        event => event.type === 'completed',
+        event => {
+            if (event.type !== 'completed') return
+            const req = event.request
+
+            // Multisig cosign + multisig propose are surfaced by
+            // PendingSignaturesContent — skip the generic completion sheet.
+            if (req.sourceType === 'multisig-cosign') return
+            if (event.result.type === 'proposed') return
+
+            if (openIdRef.current === req.id) return
+            openIdRef.current = req.id
+
+            const isTransaction = req.type === 'transactions'
+            void (async () => {
+                await requestBottomSheet<void>({
+                    contents: (
+                        <SigningCompletedContent
+                            isTransaction={isTransaction}
+                        />
+                    ),
+                    options: { size: 'auto', enablePanDownToClose: true },
+                })
+                if (openIdRef.current === req.id) {
+                    openIdRef.current = null
+                }
+            })()
+        },
+    )
 }
 
 const FAQ_SEEN_KEY = 'hasSeenTransactionRequestFAQ'

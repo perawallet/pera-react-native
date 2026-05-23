@@ -10,12 +10,14 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import {
     type Arc60ParsedPayload,
     type Arc60SignRequest,
+    type SigningLifecycleEvent,
+    useLastSigningEvent,
     useSigningPipeline,
 } from '@perawallet/wallet-core-signing'
 import {
@@ -51,17 +53,17 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
             ? pipeline.resolved.kind.parsed
             : null
 
-    // Local optimistic flag: flips true the instant the user taps Confirm so
-    // the spinner is visible immediately, before the actor's stage transition
-    // propagates through the React subscription.
-    const [isApproving, setIsApproving] = useState(false)
-
-    useEffect(() => {
-        if (!pipeline.isLoading) setIsApproving(false)
-    }, [pipeline.isLoading])
+    // Reflects the bus's `signing-started` event for the current request so
+    // the spinner appears the instant the actor enters the signing stage,
+    // without waiting for the next React render of pipeline.isLoading.
+    const signingStarted = useLastSigningEvent(
+        (e): e is Extract<SigningLifecycleEvent, { type: 'signing-started' }> =>
+            e.type === 'signing-started',
+        request?.id,
+    )
+    const isApproving = !!signingStarted
 
     const handleApprove = useCallback(() => {
-        setIsApproving(true)
         pipeline.next()
     }, [pipeline.next])
 
