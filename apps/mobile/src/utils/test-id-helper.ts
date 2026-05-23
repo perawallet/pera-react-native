@@ -50,6 +50,17 @@ export function getContainerTestProps(id?: string) {
     }
 }
 
+/** Shared checkbox semantics for VoiceOver / TalkBack / Appium. */
+export function getCheckboxAccessibilityProps(
+    checked: boolean,
+    disabled?: boolean,
+) {
+    return {
+        accessibilityRole: 'checkbox' as const,
+        accessibilityState: { checked, disabled: !!disabled },
+    }
+}
+
 /**
  * Checkbox automation props for Appium on iOS and Android.
  */
@@ -60,7 +71,6 @@ export function getCheckboxTestProps(
 ) {
     return {
         ...getTestProps(id),
-        accessibilityRole: 'checkbox' as const,
-        accessibilityState: { checked, disabled: !!disabled },
+        ...getCheckboxAccessibilityProps(checked, disabled),
     }
 }

@@ -16,12 +16,17 @@ import { PWIcon } from '../PWIcon'
 import { PWView } from '../PWView'
 
 import { CheckBox, CheckBoxProps } from '@rneui/themed'
-import { getCheckboxTestProps } from '@utils/test-id-helper'
+import {
+    getCheckboxAccessibilityProps,
+    getCheckboxTestProps,
+} from '@utils/test-id-helper'
 import { useStyles } from './styles'
 
 export type PWCheckboxProps = {
     children?: React.ReactNode
 } & CheckBoxProps
+
+const DEFAULT_ACTIVE_OPACITY = 0.8
 
 export const PWCheckbox = ({
     children,
@@ -33,35 +38,33 @@ export const PWCheckbox = ({
 }: PWCheckboxProps) => {
     const styles = useStyles()
 
-    const checkbox = (
-        <CheckBox
-            {...props}
-            checked={checked}
-            disabled={disabled}
-            onPress={testID ? undefined : onPress}
-            checkedIcon={
-                <PWIcon
-                    name='check'
-                    variant='positive'
-                />
-            }
-            uncheckedIcon={<PWView style={styles.uncheckedIcon} />}
-        >
-            {children}
-        </CheckBox>
-    )
-
-    if (!testID) {
-        return checkbox
-    }
+    const accessibilityProps = testID
+        ? getCheckboxTestProps(testID, !!checked, disabled)
+        : getCheckboxAccessibilityProps(!!checked, disabled)
 
     return (
         <TouchableOpacity
-            {...getCheckboxTestProps(testID, !!checked, disabled)}
+            {...accessibilityProps}
             onPress={onPress ?? undefined}
             disabled={disabled}
+            activeOpacity={DEFAULT_ACTIVE_OPACITY}
         >
-            <PWView pointerEvents='none'>{checkbox}</PWView>
+            <PWView pointerEvents='none'>
+                <CheckBox
+                    {...props}
+                    checked={checked}
+                    disabled={disabled}
+                    checkedIcon={
+                        <PWIcon
+                            name='check'
+                            variant='positive'
+                        />
+                    }
+                    uncheckedIcon={<PWView style={styles.uncheckedIcon} />}
+                >
+                    {children}
+                </CheckBox>
+            </PWView>
         </TouchableOpacity>
     )
 }
