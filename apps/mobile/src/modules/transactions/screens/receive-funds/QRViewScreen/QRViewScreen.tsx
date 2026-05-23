@@ -78,8 +78,9 @@ export const QRViewScreen = () => {
     return (
         <PWScreen
             scroll={false}
+            footerStyle={styles.buttonContainer}
             footer={
-                <PWView style={styles.buttonContainer}>
+                <>
                     <PWButton
                         title={t('receive_funds.qrview.copy_address')}
                         variant='primary'
@@ -94,7 +95,7 @@ export const QRViewScreen = () => {
                         testID='receive_share_address_button'
                         onPress={handleShareAddress}
                     />
-                </PWView>
+                </>
             }
         >
             <PWView style={styles.contentContainer}>

@@ -44,14 +44,13 @@ export const Arc60SigningScreen = () => {
         return (
             <PWScreen
                 scroll={false}
+                footerStyle={styles.buttonContainer}
                 footer={
-                    <PWView style={styles.buttonContainer}>
-                        <PWButton
-                            title={t('common.close.label')}
-                            variant='primary'
-                            onPress={handleReject}
-                        />
-                    </PWView>
+                    <PWButton
+                        title={t('common.close.label')}
+                        variant='primary'
+                        onPress={handleReject}
+                    />
                 }
             >
                 <PWView style={styles.bodyContainer}>
@@ -67,8 +66,9 @@ export const Arc60SigningScreen = () => {
     return (
         <PWScreen
             scroll={false}
+            footerStyle={styles.buttonContainer}
             footer={
-                <PWView style={styles.buttonContainer}>
+                <>
                     <PWSlideToConfirm
                         title={t('common.slide_to_confirm.label')}
                         onConfirm={handleApprove}
@@ -82,7 +82,7 @@ export const Arc60SigningScreen = () => {
                         onPress={handleReject}
                         isDisabled={isPending}
                     />
-                </PWView>
+                </>
             }
         >
             <PWView style={styles.bodyContainer}>

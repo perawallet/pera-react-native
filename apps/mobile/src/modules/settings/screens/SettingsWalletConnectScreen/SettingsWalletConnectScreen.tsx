@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { useState } from 'react'
-import { Dialog, Text, useTheme } from '@rneui/themed'
+import { useCallback, useState } from 'react'
+import { Dialog, Text } from '@rneui/themed'
 import {
     useWalletConnect,
     type WalletConnectConnection,
@@ -44,23 +44,22 @@ export const SettingsWalletConnectScreen = () => {
     const scannerState = useModalState()
     const deleteState = useModalState()
     const styles = useStyles()
-    const { theme } = useTheme()
     const [isLoading, setIsLoading] = useState(false)
 
     useNavigationHeader({
         title: t('settings.main.wallet_connect_title'),
-        right: (
-            <PWView testID='wallet_connect_qr_scanner_button'>
-                <PWIcon
-                    name='camera'
-                    onPress={scannerState.open}
-                />
-            </PWView>
-        ),
-        enabled: connections.length > 0,
+        right:
+            connections.length > 0 ? (
+                <PWView testID='wallet_connect_qr_scanner_button'>
+                    <PWIcon
+                        name='camera'
+                        onPress={scannerState.open}
+                    />
+                </PWView>
+            ) : null,
     })
 
-    const handleDeleteAll = () => {
+    const handleDeleteAll = useCallback(() => {
         setIsLoading(true)
         deleteAllSessions()
             .then(() => {
@@ -69,12 +68,11 @@ export const SettingsWalletConnectScreen = () => {
             .finally(() => {
                 setIsLoading(false)
             })
-    }
+    }, [deleteAllSessions, deleteState])
 
     return (
         <PWScreen
             scroll={false}
-            horizontalPadding='none'
             testID='wallet_connect_screen'
         >
             <PWFlatList
@@ -126,7 +124,7 @@ export const SettingsWalletConnectScreen = () => {
                 <Dialog.Actions>
                     <Dialog.Button
                         title={t('common.delete.label')}
-                        titleStyle={{ color: theme.colors.alertNegative }}
+                        titleStyle={styles.deleteButtonTitle}
                         onPress={handleDeleteAll}
                         disabled={isLoading}
                     />

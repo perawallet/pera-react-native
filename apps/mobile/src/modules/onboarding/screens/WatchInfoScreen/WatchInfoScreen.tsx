@@ -37,8 +37,9 @@ export const WatchInfoScreen = () => {
     return (
         <PWScreen
             scroll={false}
+            footerStyle={styles.footerInner}
             footer={
-                <PWView style={styles.footerInner}>
+                <>
                     <PWView style={styles.warningRow}>
                         <PWIcon
                             name='warning'
@@ -56,7 +57,7 @@ export const WatchInfoScreen = () => {
                         title={t('onboarding.watch_account.info_button')}
                         onPress={handleCreateWatchAccount}
                     />
-                </PWView>
+                </>
             }
         >
             <PWView style={styles.content}>

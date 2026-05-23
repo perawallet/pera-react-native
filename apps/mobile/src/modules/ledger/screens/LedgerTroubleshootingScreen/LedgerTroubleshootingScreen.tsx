@@ -24,15 +24,14 @@ export const LedgerTroubleshootingScreen = () => {
         <PWScreen
             testID='ledger-troubleshooting-screen'
             contentContainerStyle={styles.content}
+            footerStyle={styles.footer}
             footer={
-                <PWView style={styles.footer}>
-                    <PWButton
-                        testID='ledger_troubleshooting_done_button'
-                        title={t('ledger.troubleshooting.done')}
-                        onPress={handleDone}
-                        variant='primary'
-                    />
-                </PWView>
+                <PWButton
+                    testID='ledger_troubleshooting_done_button'
+                    title={t('ledger.troubleshooting.done')}
+                    onPress={handleDone}
+                    variant='primary'
+                />
             }
         >
             <ScreenHeader

@@ -164,10 +164,14 @@ export const useDeepLink = (): UseDeepLinkResult => {
                     break
 
                 case DeeplinkType.ADDRESS_ACTIONS:
-                    requestByType('account-actions', {
-                        address: parsedData.address,
-                        label: parsedData.label,
-                    })
+                    requestByType(
+                        'account-actions',
+                        {
+                            address: parsedData.address,
+                            label: parsedData.label,
+                        },
+                        { enablePanDownToClose: true },
+                    )
                     break
 
                 case DeeplinkType.ALGO_TRANSFER:
@@ -280,10 +284,14 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         )
                         break
                     }
-                    requestByType('asset-opt-in', {
-                        assetId: parsedData.assetId,
-                        accountAddress,
-                    })
+                    requestByType(
+                        'asset-opt-in',
+                        {
+                            assetId: parsedData.assetId,
+                            accountAddress,
+                        },
+                        { enablePanDownToClose: true },
+                    )
                     break
                 }
 

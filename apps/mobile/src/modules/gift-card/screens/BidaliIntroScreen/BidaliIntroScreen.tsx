@@ -69,12 +69,14 @@ export const BidaliIntroScreen = () => {
                 horizontalPadding='none'
                 keyboard='none'
                 footer={
-                    <PWButton
-                        variant='primary'
-                        title={t('giftCard.intro.buy_gift_cards')}
-                        onPress={handleBuyGiftCards}
-                        testID='bidali_intro_buy_button'
-                    />
+                    <PWView style={styles.footer}>
+                        <PWButton
+                            variant='primary'
+                            title={t('giftCard.intro.buy_gift_cards')}
+                            onPress={handleBuyGiftCards}
+                            testID='bidali_intro_buy_button'
+                        />
+                    </PWView>
                 }
             >
                 <PWView style={styles.heroSection}>

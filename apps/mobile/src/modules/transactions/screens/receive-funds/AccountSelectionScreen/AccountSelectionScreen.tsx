@@ -15,12 +15,16 @@ import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 
 import { PWFlatList, PWScreen } from '@components/core'
-import { useAllAccounts, WalletAccount } from '@perawallet/wallet-core-accounts'
+import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { SelectableAccountRow } from '@modules/accounts/components/SelectableAccountRow'
 import { useReceiveFunds } from '@modules/transactions/hooks'
+import { useStyles } from './styles'
+
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ReceiveFundsStackParamList } from '../../../routes/receive-funds/types'
 
 export const AccountSelectionScreen = () => {
+    const styles = useStyles()
     const accounts = useAllAccounts()
     const { setSelectedAccount } = useReceiveFunds()
     const navigation =
@@ -53,6 +57,7 @@ export const AccountSelectionScreen = () => {
                 data={accounts}
                 renderItem={renderItem}
                 keyExtractor={keyExtractor}
+                contentContainerStyle={styles.listContent}
             />
         </PWScreen>
     )

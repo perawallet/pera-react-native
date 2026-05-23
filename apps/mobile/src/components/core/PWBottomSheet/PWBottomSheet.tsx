@@ -91,6 +91,11 @@ export const PWBottomSheet = ({
     const defaults = DEFAULT_PROPS[size]
     const styles = useStyles({ insets, isFull: size === 'full' })
 
+    // Full-screen sheets (96–100% snap points) surface a header close (X)
+    // instead, so the drag-handle notch is dropped to avoid a redundant
+    // dismissal affordance.
+    const isFullScreen = size === 'full' || size === 'lg'
+
     // Sync isVisible prop with modal state. Dismiss the keyboard on the
     // outgoing transition so a sheet that owns a focused input doesn't leave
     // the keyboard stuck open over the rest of the app.
@@ -169,7 +174,9 @@ export const PWBottomSheet = ({
             onDismiss={handleDismiss}
             onAnimate={handleAnimate}
             handleIndicatorStyle={
-                enablePanDownToClose ? styles.handleIndicator : styles.hidden
+                enablePanDownToClose && !isFullScreen
+                    ? styles.handleIndicator
+                    : styles.hidden
             }
             backgroundStyle={mergedBackgroundStyle}
             detached={false}

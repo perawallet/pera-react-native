@@ -10,7 +10,21 @@
  limitations under the License
  */
 
-export type PWIconSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl'
+import type { Theme } from '@rneui/themed'
+
+export type PWIconSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl' | '3xl'
+
+/** Canonical PWIconSize → pixel mapping, shared by PWIcon and AssetIcon. */
+export const getIconPixelSize = (theme: Theme, size: PWIconSize): number =>
+    ({
+        xs: theme.spacing.md,
+        sm: theme.spacing.lg,
+        md: theme.spacing.xl,
+        lg: theme.spacing.xxl,
+        xl: theme.spacing['3xl'],
+        xxl: theme.spacing['4xl'],
+        '3xl': theme.spacing['5xl'],
+    })[size]
 
 export type PWIconVariant =
     | 'primary'

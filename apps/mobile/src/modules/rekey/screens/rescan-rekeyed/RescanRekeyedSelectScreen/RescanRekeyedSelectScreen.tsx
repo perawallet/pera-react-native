@@ -108,8 +108,9 @@ export const RescanRekeyedSelectScreen = () => {
         <PWScreen
             testID='rescan-rekeyed-select-screen'
             contentContainerStyle={styles.scrollContent}
+            footerStyle={styles.footer}
             footer={
-                <PWView style={styles.footer}>
+                <>
                     {hasCandidates && (
                         <PWButton
                             variant='primary'
@@ -128,7 +129,7 @@ export const RescanRekeyedSelectScreen = () => {
                         style={styles.cta}
                         testID='rescan-rekeyed-skip'
                     />
-                </PWView>
+                </>
             }
         >
             <ScreenHeader

@@ -45,8 +45,9 @@ export const RekeyToLedgerConfirmScreen = () => {
         <PWScreen
             testID='rekey-to-ledger-confirm-screen'
             contentContainerStyle={styles.scrollContent}
+            footerStyle={styles.footer}
             footer={
-                <PWView style={styles.footer}>
+                <>
                     {hasPreviousRekey && currentAuth && (
                         <PWView style={styles.currentAuthRow}>
                             <PWText
@@ -85,7 +86,7 @@ export const RekeyToLedgerConfirmScreen = () => {
                         style={styles.cta}
                         testID='rekey-to-ledger-confirm-cta'
                     />
-                </PWView>
+                </>
             }
         >
             <ScreenHeader

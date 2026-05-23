@@ -14,6 +14,7 @@ import type { ReactNode } from 'react'
 import { PWIcon, PWText, PWToolbar } from '@components/core'
 import { useBottomSheetResult } from '../../hooks/useBottomSheetResult'
 import { useBottomSheetPanDownEnabled } from '../../hooks/useBottomSheetPanDownEnabled'
+import { useBottomSheetSize } from '../../hooks/useBottomSheetSize'
 
 import type { StyleProp, ViewStyle } from 'react-native'
 
@@ -38,9 +39,11 @@ export type SheetHeaderProps = {
  * a sheet rendered by `BottomSheetManager` — must be mounted under a
  * `BottomSheetIdContext`.
  *
- * The close (X) is dropped when the host sheet enables pan-down-to-close,
- * since the drag handle then provides dismissal; sheets without pan-down
- * keep the X so they stay dismissable.
+ * The close (X) is dropped only when the host sheet is *not* full-screen and
+ * enables pan-down-to-close, since the drag handle then provides dismissal.
+ * Full-screen sheets (`full` / `lg` — the 96–100% snap points) keep the X
+ * because the drag handle is far away, and sheets without pan-down keep it so
+ * they stay dismissable.
  */
 export const SheetHeader = ({
     title,
@@ -53,19 +56,25 @@ export const SheetHeader = ({
     const styles = useStyles()
     const { dismiss } = useBottomSheetResult()
     const isPanDownEnabled = useBottomSheetPanDownEnabled()
+    const size = useBottomSheetSize()
     const handleClose = onClose ?? dismiss
+
+    // Full-screen sheets keep the X (the drag handle is too far to reach);
+    // smaller pan-down sheets drop it since swiping down dismisses them.
+    const isFullScreen = size === 'full' || size === 'lg'
+    const showClose = isFullScreen || !isPanDownEnabled
 
     return (
         <PWToolbar
             left={
-                isPanDownEnabled ? undefined : (
+                showClose ? (
                     <PWIcon
                         name='cross'
                         variant='secondary'
                         onPress={handleClose}
                         testID={testID ? `${testID}-close` : undefined}
                     />
-                )
+                ) : undefined
             }
             center={
                 typeof title === 'string' ? (

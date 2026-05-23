@@ -18,7 +18,13 @@ import {
 import AlgoAssetIcon from '@assets/icons/assets/algo.svg'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { SvgProps } from 'react-native-svg'
-import { PWIconSize, PWImage, PWText, PWView } from '@components/core'
+import {
+    getIconPixelSize,
+    PWIconSize,
+    PWImage,
+    PWText,
+    PWView,
+} from '@components/core'
 import { useStyles } from './styles'
 import { useTheme } from '@rneui/themed'
 
@@ -36,21 +42,7 @@ export const AssetIcon = (props: AssetIconProps) => {
     const { theme } = useTheme()
     const [loadFailed, setLoadFailed] = useState(false)
 
-    const sizeMap: Record<PWIconSize, number> = useMemo(
-        () => ({
-            xs: theme.spacing.md,
-            sm: theme.spacing.lg,
-            md: theme.spacing.xl,
-            lg: theme.spacing.xxl,
-            xl: theme.spacing['3xl'],
-            xxl: theme.spacing['4xl'],
-        }),
-        [theme],
-    )
-
-    const iconSize = useMemo(() => {
-        return sizeMap[size ?? 'md']
-    }, [size, sizeMap])
+    const iconSize = getIconPixelSize(theme, size ?? 'md')
 
     const styles = useStyles(iconSize)
 
@@ -68,7 +60,12 @@ export const AssetIcon = (props: AssetIconProps) => {
             asset.peraMetadata?.logo ??
             asset.peraMetadata?.collectible?.primaryImage
         return peraLogo ? buildPrismUrl(peraLogo, iconSize) : null
-    }, [logoUrl, asset.peraMetadata?.logo, iconSize])
+    }, [
+        logoUrl,
+        asset.peraMetadata?.logo,
+        asset.peraMetadata?.collectible?.primaryImage,
+        iconSize,
+    ])
 
     const hasLogo = Boolean(resolvedLogoUrl) && !loadFailed
 

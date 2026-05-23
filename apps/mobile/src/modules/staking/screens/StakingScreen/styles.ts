@@ -18,15 +18,11 @@ export const useStyles = makeStyles(theme => {
             backgroundColor: theme.colors.background,
             flex: 1,
         },
-        emptyContainer: {
-            marginHorizontal: theme.spacing.xl,
-        },
         errorContainer: {
             alignItems: 'center',
             flex: 1,
             gap: theme.spacing.md,
             justifyContent: 'center',
-            marginHorizontal: theme.spacing.lg,
         },
         errorDescription: {
             color: theme.colors.textGray,
@@ -38,19 +34,14 @@ export const useStyles = makeStyles(theme => {
         list: {
             flex: 1,
         },
-        listContentContainer: {
-            paddingHorizontal: theme.spacing.md,
-        },
         skeletonContainer: {
             gap: theme.spacing.lg,
-            paddingHorizontal: theme.spacing.sm,
             paddingVertical: 0,
             justifyContent: 'flex-start',
         },
         skeletonCard: {
             flexDirection: 'row',
             gap: theme.spacing.md,
-            paddingHorizontal: theme.spacing.md,
             paddingTop: theme.spacing.lg,
         },
         skeletonLogo: {
@@ -82,7 +73,6 @@ export const useStyles = makeStyles(theme => {
         subtitle: {
             color: theme.colors.textGray,
             marginBottom: theme.spacing.lg,
-            marginHorizontal: theme.spacing.lg,
         },
     }
 })

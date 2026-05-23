@@ -227,6 +227,41 @@ describe('PWBottomSheet', () => {
         expect(capturedProps.enablePanDownToClose).toBe(false)
     })
 
+    it.each(['lg', 'full'] as PWBottomSheetSize[])(
+        'hides the drag-handle notch on full-screen size=%s even with pan-down',
+        size => {
+            render(
+                <PWBottomSheet
+                    isVisible={true}
+                    size={size}
+                    enablePanDownToClose={true}
+                >
+                    <Text>Content</Text>
+                </PWBottomSheet>,
+            )
+
+            expect(capturedProps.handleIndicatorStyle).toEqual({
+                display: 'none',
+            })
+        },
+    )
+
+    it('shows the drag-handle notch on non-full pan-down sheets', () => {
+        render(
+            <PWBottomSheet
+                isVisible={true}
+                size='md'
+                enablePanDownToClose={true}
+            >
+                <Text>Content</Text>
+            </PWBottomSheet>,
+        )
+
+        expect(capturedProps.handleIndicatorStyle).not.toEqual({
+            display: 'none',
+        })
+    })
+
     it('renders children when autoCreateContainer is false', () => {
         render(
             <PWBottomSheet

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useLayoutEffect } from 'react'
+import { useCallback } from 'react'
 import {
     PWButton,
     PWFlatList,
@@ -23,8 +23,8 @@ import {
 } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { LoadingView } from '@components/LoadingView'
-import { useNavigation } from '@react-navigation/native'
 import { useLanguage } from '@hooks/useLanguage'
+import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import {
     StakingErrorBoundary,
     StakingProjectCard,
@@ -38,7 +38,6 @@ const SKELETON_COUNT = 5
 export const StakingScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const navigation = useNavigation()
     const {
         projects,
         isLoading,
@@ -48,18 +47,16 @@ export const StakingScreen = () => {
         handleHelpOpen,
     } = useStakingScreen()
 
-    useLayoutEffect(() => {
-        navigation.setOptions({
-            headerRight: () => (
-                <PWTouchableOpacity
-                    onPress={handleHelpOpen}
-                    testID='staking-help-button'
-                >
-                    <PWIcon name='question-mark' />
-                </PWTouchableOpacity>
-            ),
-        })
-    }, [navigation, handleHelpOpen])
+    useNavigationHeader({
+        right: (
+            <PWTouchableOpacity
+                onPress={handleHelpOpen}
+                testID='staking-help-button'
+            >
+                <PWIcon name='question-mark' />
+            </PWTouchableOpacity>
+        ),
+    })
 
     const renderProject = useCallback(
         ({ item, index }: { item: StakingProject; index: number }) => {
@@ -74,10 +71,12 @@ export const StakingScreen = () => {
         [handleProjectPress, projects.length],
     )
 
+    const keyExtractor = useCallback((item: StakingProject) => item.id, [])
+
     return (
         <PWScreen
             scroll={false}
-            horizontalPadding='none'
+            horizontalPadding='md'
             keyboard='none'
             style={styles.container}
             testID='staking-screen'
@@ -148,7 +147,6 @@ export const StakingScreen = () => {
                     <EmptyView
                         title={t('staking.empty_title')}
                         body={t('staking.empty_body')}
-                        style={styles.emptyContainer}
                         testID='staking-empty-view'
                     />
                 )}
@@ -157,9 +155,8 @@ export const StakingScreen = () => {
                     <PWFlatList
                         data={projects}
                         renderItem={renderProject}
-                        keyExtractor={item => item.id}
+                        keyExtractor={keyExtractor}
                         style={styles.list}
-                        contentContainerStyle={styles.listContentContainer}
                         testID='staking-projects-list'
                     />
                 )}

@@ -316,7 +316,7 @@ export const useLedgerSelectAccountsScreen =
                             title={title}
                         />
                     ),
-                    options: { size: 'lg' },
+                    options: { size: 'lg', enablePanDownToClose: true },
                 })
             },
             [request, selectableByAddress, t],

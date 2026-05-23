@@ -186,11 +186,8 @@ export const TransactionConfirmationScreen = () => {
                     </PWTouchableOpacity>
                 )}
                 {!note && (
-                    <PWTouchableOpacity>
-                        <PWText
-                            style={styles.link}
-                            onPress={openNote}
-                        >
+                    <PWTouchableOpacity onPress={openNote}>
+                        <PWText style={styles.link}>
                             {t('send_funds.add_note.button')}
                         </PWText>
                     </PWTouchableOpacity>

@@ -58,8 +58,9 @@ export const UndoRekeyConfirmScreen = () => {
         <PWScreen
             testID='undo-rekey-confirm-screen'
             contentContainerStyle={styles.scrollContent}
+            footerStyle={styles.footer}
             footer={
-                <PWView style={styles.footer}>
+                <>
                     {currentAuth && (
                         <PWView style={styles.currentAuthRow}>
                             <PWText
@@ -96,7 +97,7 @@ export const UndoRekeyConfirmScreen = () => {
                         style={styles.cta}
                         testID='undo-rekey-confirm-cta'
                     />
-                </PWView>
+                </>
             }
         >
             <ScreenHeader

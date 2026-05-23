@@ -52,8 +52,9 @@ export const ARC59SendSummaryScreen = () => {
             scroll={false}
             horizontalPadding='none'
             style={styles.root}
+            footerStyle={styles.footer}
             footer={
-                <PWView style={styles.footer}>
+                <>
                     <PWSlideToConfirm
                         title={t('common.slide_to_confirm.label')}
                         onConfirm={handleSend}
@@ -65,7 +66,7 @@ export const ARC59SendSummaryScreen = () => {
                         variant='linkNeutral'
                         onPress={handleClose}
                     />
-                </PWView>
+                </>
             }
         >
             <PWView style={styles.content}>

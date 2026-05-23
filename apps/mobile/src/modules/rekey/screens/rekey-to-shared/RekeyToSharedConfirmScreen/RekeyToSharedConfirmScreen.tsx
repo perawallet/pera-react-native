@@ -58,8 +58,9 @@ export const RekeyToSharedConfirmScreen = () => {
         <PWScreen
             testID='rekey-to-shared-confirm-screen'
             contentContainerStyle={styles.scrollContent}
+            footerStyle={styles.footer}
             footer={
-                <PWView style={styles.footer}>
+                <>
                     {hasPreviousRekey && currentAuth && (
                         <PWView style={styles.currentAuthRow}>
                             <PWText
@@ -98,7 +99,7 @@ export const RekeyToSharedConfirmScreen = () => {
                         style={styles.cta}
                         testID='rekey-to-shared-confirm-cta'
                     />
-                </PWView>
+                </>
             }
         >
             <ScreenHeader

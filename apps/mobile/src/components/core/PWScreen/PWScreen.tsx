@@ -45,9 +45,17 @@ export type PWScreenProps = {
     horizontalPadding?: HorizontalPaddingMode
     /**
      * Sticky footer rendered outside the scroll body. Rises with the keyboard
-     * via `KeyboardStickyView` so it stays pinned just above it.
+     * via `KeyboardStickyView` so it stays pinned just above it. The footer is
+     * already wrapped in a padded container — pass multiple buttons directly
+     * (e.g. a fragment) and use `footerStyle` for gap/border, rather than
+     * adding another wrapper view.
      */
     footer?: ReactNode
+    /**
+     * Extra style merged into the footer's padded wrapper (e.g. `gap`, a top
+     * border). Avoids the need for a redundant inner wrapper view.
+     */
+    footerStyle?: StyleProp<ViewStyle>
     /**
      * Keyboard handling strategy.
      * - `'avoid'` (default): the scroll body auto-scrolls the focused input
@@ -56,7 +64,10 @@ export type PWScreenProps = {
      * - `'none'`: no keyboard handling (use for screens without inputs).
      */
     keyboard?: 'avoid' | 'none'
-    /** Extra style applied to the scroll content container. */
+    /**
+     * Extra style applied to the content container — the scroll content
+     * container when `scroll` is `true`, or the fixed body when `false`.
+     */
     contentContainerStyle?: StyleProp<ViewStyle>
     /** Extra style applied to the root flex:1 container. */
     style?: StyleProp<ViewStyle>
@@ -68,6 +79,7 @@ export const PWScreen = ({
     scroll = true,
     horizontalPadding = 'xl',
     footer,
+    footerStyle,
     keyboard = 'avoid',
     contentContainerStyle,
     style,
@@ -120,7 +132,9 @@ export const PWScreen = ({
             {children}
         </KeyboardAwareScrollView>
     ) : (
-        <PWView style={styles.fixedBody}>{children}</PWView>
+        <PWView style={[styles.fixedBody, contentContainerStyle]}>
+            {children}
+        </PWView>
     )
 
     const renderedFooter =
@@ -128,7 +142,7 @@ export const PWScreen = ({
             <KeyboardStickyView enabled={keyboardEnabled}>
                 <SafeAreaView edges={footerEdges}>
                     <PWView
-                        style={styles.footer}
+                        style={[styles.footer, footerStyle]}
                         onLayout={handleFooterLayout}
                     >
                         {footer}

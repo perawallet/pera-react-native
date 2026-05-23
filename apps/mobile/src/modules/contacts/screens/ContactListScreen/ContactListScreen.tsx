@@ -13,60 +13,15 @@
 import { useCallback } from 'react'
 import { Contact } from '@perawallet/wallet-core-contacts'
 
-import {
-    PWButton,
-    PWFlatList,
-    PWIcon,
-    PWScreen,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
-import { AddressDisplay } from '@components/AddressDisplay'
+import { PWButton, PWFlatList, PWIcon, PWScreen, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { SearchInput } from '@components/SearchInput'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
+import { ContactRow } from './ContactRow'
 import { useContactListScreen } from './useContactListScreen'
 import { useStyles } from './styles'
-
-type ContactRowProps = {
-    contact: Contact
-    onShowQR: (contact: Contact) => void
-    onSelect: (contact: Contact) => void
-}
-
-const ContactRow = ({ contact, onShowQR, onSelect }: ContactRowProps) => {
-    const styles = useStyles()
-
-    const handlePress = useCallback(
-        () => onSelect(contact),
-        [contact, onSelect],
-    )
-    const handleShowQR = useCallback(
-        () => onShowQR(contact),
-        [contact, onShowQR],
-    )
-
-    return (
-        <PWTouchableOpacity
-            onPress={handlePress}
-            style={styles.contactContainer}
-        >
-            <AddressDisplay
-                address={contact.address}
-                showCopy={false}
-                trailing={
-                    <PWIcon
-                        name='qr'
-                        variant='primary'
-                        onPress={handleShowQR}
-                    />
-                }
-            />
-        </PWTouchableOpacity>
-    )
-}
 
 export const ContactListScreen = () => {
     const navigation = useAppNavigation()
@@ -135,10 +90,7 @@ export const ContactListScreen = () => {
     }
 
     return (
-        <PWScreen
-            scroll={false}
-            horizontalPadding='none'
-        >
+        <PWScreen scroll={false}>
             <PWView style={styles.searchWrapper}>
                 <SearchInput
                     placeholder={t('contacts.list.search_placeholder')}

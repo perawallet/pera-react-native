@@ -18,13 +18,11 @@ import { ScreenHeader } from '@components/ScreenHeader'
 import { useLanguage } from '@hooks/useLanguage'
 import { SelectableAccountRow } from '@modules/accounts/components/SelectableAccountRow'
 import { useBidali } from '../../hooks/useBidali'
-import { useStyles } from './styles'
 
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { BidaliStackParamList } from '../../routes/types'
 
 export const BidaliAccountSelectionScreen = () => {
-    const styles = useStyles()
     const { t } = useLanguage()
     const accounts = useAllAccounts()
     const { setSelectedAccount } = useBidali()
@@ -54,17 +52,14 @@ export const BidaliAccountSelectionScreen = () => {
     return (
         <PWScreen
             scroll={false}
-            horizontalPadding='none'
             keyboard='none'
         >
             <ScreenHeader
-                style={styles.header}
                 title={t('giftCard.accountSelection.title')}
                 description={t('giftCard.accountSelection.subtitle')}
             />
 
             <PWFlatList
-                contentContainerStyle={styles.list}
                 data={accounts}
                 renderItem={renderItem}
                 keyExtractor={keyExtractor}

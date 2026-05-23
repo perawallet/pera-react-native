@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
+
 import {
     useNavigation,
     useRoute,
@@ -62,23 +64,19 @@ export const TransactionDetailsScreen = () => {
 
     const transaction = paramTransaction || fetchedTransaction || null
 
-    const handleInnerTransactionPress = (tx: PeraDisplayableTransaction) => {
-        navigation.push('TransactionDetails', { transaction: tx, groupId })
-    }
-
-    const handleGroupTransactionPress = (tx: PeraDisplayableTransaction) => {
-        navigation.push('TransactionDetails', { transaction: tx, groupId })
-    }
+    const handleTransactionPress = useCallback(
+        (tx: PeraDisplayableTransaction) => {
+            navigation.push('TransactionDetails', { transaction: tx, groupId })
+        },
+        [navigation, groupId],
+    )
 
     if (transaction) {
         return (
-            <PWScreen
-                keyboard='none'
-                horizontalPadding='xl'
-            >
+            <PWScreen keyboard='none'>
                 <TransactionDisplay
                     transaction={transaction}
-                    onInnerTransactionsPress={handleInnerTransactionPress}
+                    onInnerTransactionsPress={handleTransactionPress}
                 />
                 {groupTransactions.length > 1 && (
                     <GroupTransactionsPanel
@@ -86,7 +84,7 @@ export const TransactionDetailsScreen = () => {
                         currentTransactionId={
                             transaction.id ?? transactionId ?? ''
                         }
-                        onGroupTransactionPress={handleGroupTransactionPress}
+                        onGroupTransactionPress={handleTransactionPress}
                     />
                 )}
             </PWScreen>

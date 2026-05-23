@@ -13,17 +13,20 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
+    container: {
+        flex: 1,
+    },
+    scroll: {
+        flex: 1,
+    },
     body: {
-        paddingTop: theme.spacing.xxl,
+        paddingTop: theme.spacing.xl,
         paddingBottom: theme.spacing.xl,
         paddingHorizontal: theme.spacing.lg,
         alignItems: 'center',
     },
     icon: {
         marginBottom: theme.spacing.lg,
-    },
-    title: {
-        textAlign: 'center',
     },
     description: {
         textAlign: 'center',

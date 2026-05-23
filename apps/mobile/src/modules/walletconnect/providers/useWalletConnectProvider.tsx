@@ -85,6 +85,7 @@ export const useWalletConnectProvider = () => {
                 ),
                 options: {
                     size: 'lg',
+                    enablePanDownToClose: true,
                     autoCreateContainer: false,
                 },
             }).finally(() => {

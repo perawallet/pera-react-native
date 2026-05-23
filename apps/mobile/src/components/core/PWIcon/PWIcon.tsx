@@ -15,7 +15,7 @@ import { useTheme } from '@rneui/themed'
 import { useCallback, useMemo } from 'react'
 import { Keyboard, type GestureResponderEvent } from 'react-native'
 import { ICON_LIBRARY, IconName } from './constants'
-import { PWIconSize, PWIconVariant } from './types'
+import { getIconPixelSize, PWIconSize, PWIconVariant } from './types'
 
 export type PWIconProps = {
     name: IconName
@@ -41,18 +41,6 @@ export const PWIcon = ({
             Keyboard.dismiss()
         },
         [onPress],
-    )
-
-    const sizeMap: Record<PWIconSize, number> = useMemo(
-        () => ({
-            xs: theme.spacing.md,
-            sm: theme.spacing.lg,
-            md: theme.spacing.xl,
-            lg: theme.spacing.xxl,
-            xl: theme.spacing['3xl'],
-            xxl: theme.spacing['4xl'],
-        }),
-        [theme],
     )
 
     const variantColors: Record<PWIconVariant, string> = useMemo(
@@ -91,7 +79,7 @@ export const PWIcon = ({
 
     if (!IconComponent) return null
 
-    const resolvedSize = sizeMap[size]
+    const resolvedSize = getIconPixelSize(theme, size)
     const resolvedColor = rest.disabled
         ? disabledColors[variant]
         : variantColors[variant]

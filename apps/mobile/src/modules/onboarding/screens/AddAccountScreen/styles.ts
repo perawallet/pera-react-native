@@ -18,7 +18,6 @@ const HEADER_IMAGE_HEIGHT = 217
 export const useStyles = makeStyles(theme => {
     return {
         imageContainer: {
-            display: 'flex',
             flexDirection: 'row',
             alignItems: 'flex-end',
             justifyContent: 'flex-end',
@@ -38,7 +37,7 @@ export const useStyles = makeStyles(theme => {
             paddingBottom: theme.spacing['3xl'],
         },
         mainContainer: {
-            paddingHorizontal: theme.spacing.lg,
+            paddingHorizontal: theme.spacing.xl,
             flexDirection: 'column',
             gap: theme.spacing.md,
         },
@@ -60,7 +59,8 @@ export const useStyles = makeStyles(theme => {
             flex: 1,
             justifyContent: 'flex-end',
             alignItems: 'center',
-            padding: theme.spacing['3xl'],
+            paddingTop: theme.spacing['3xl'],
+            paddingHorizontal: theme.spacing['3xl'],
         },
         termsAndPrivacyText: {
             textAlign: 'center',

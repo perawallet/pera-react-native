@@ -41,7 +41,6 @@ export const useStyles = makeStyles((theme, props: PWRoundIconProps) => {
             backgroundColor,
             width: buttonSize,
             height: buttonSize,
-            alignContent: 'center',
             justifyContent: 'center',
             alignItems: 'center',
             borderRadius: buttonSize / 2,

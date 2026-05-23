@@ -15,7 +15,7 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => {
     return {
         listContainer: {
-            padding: theme.spacing.xl,
+            paddingVertical: theme.spacing.xl,
         },
         emptyView: {
             flex: 1,
@@ -26,6 +26,9 @@ export const useStyles = makeStyles(theme => {
         listFooter: {
             flex: 1,
             justifyContent: 'flex-end',
+        },
+        deleteButtonTitle: {
+            color: theme.colors.alertNegative,
         },
     }
 })

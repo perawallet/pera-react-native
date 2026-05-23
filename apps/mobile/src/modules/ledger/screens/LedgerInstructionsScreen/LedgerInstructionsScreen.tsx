@@ -46,16 +46,15 @@ export const LedgerInstructionsScreen = () => {
     return (
         <PWScreen
             scroll={false}
+            footerStyle={styles.footer}
             footer={
-                <PWView style={styles.footer}>
-                    <PWButton
-                        testID='ledger_instructions_continue_button'
-                        title={t('ledger.instructions.continue')}
-                        onPress={handleContinue}
-                        variant='primary'
-                        isDisabled={isChecking}
-                    />
-                </PWView>
+                <PWButton
+                    testID='ledger_instructions_continue_button'
+                    title={t('ledger.instructions.continue')}
+                    onPress={handleContinue}
+                    variant='primary'
+                    isDisabled={isChecking}
+                />
             }
         >
             <ScreenHeader

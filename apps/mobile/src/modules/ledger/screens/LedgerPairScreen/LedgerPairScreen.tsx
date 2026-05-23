@@ -10,44 +10,40 @@
  limitations under the License
  */
 
-import { useLayoutEffect } from 'react'
-import { useNavigation } from '@react-navigation/native'
 import {
     PWButton,
     PWIcon,
     PWScreen,
     PWTouchableOpacity,
-    PWView,
 } from '@components/core'
 import { ScreenHeader } from '@components/ScreenHeader'
+import { useNavigationHeader } from '@hooks/useNavigationHeader'
 
 import { useStyles } from './styles'
 import { useLedgerPairScreen } from './useLedgerPairScreen'
 
 export const LedgerPairScreen = () => {
     const styles = useStyles()
-    const navigation = useNavigation()
     const { handlePair, handleOpenHowDoesItWork, handleOpenSupport, t } =
         useLedgerPairScreen()
 
-    useLayoutEffect(() => {
-        navigation.setOptions({
-            headerRight: () => (
-                <PWTouchableOpacity
-                    onPress={handleOpenSupport}
-                    testID='ledger_pair_info_button'
-                >
-                    <PWIcon name='info' />
-                </PWTouchableOpacity>
-            ),
-        })
-    }, [navigation, handleOpenSupport])
+    useNavigationHeader({
+        right: (
+            <PWTouchableOpacity
+                onPress={handleOpenSupport}
+                testID='ledger_pair_info_button'
+            >
+                <PWIcon name='info' />
+            </PWTouchableOpacity>
+        ),
+    })
 
     return (
         <PWScreen
             scroll={false}
+            footerStyle={styles.footer}
             footer={
-                <PWView style={styles.footer}>
+                <>
                     <PWButton
                         testID='ledger_pair_primary_button'
                         title={t('ledger.pair.cta')}
@@ -60,18 +56,12 @@ export const LedgerPairScreen = () => {
                         onPress={handleOpenHowDoesItWork}
                         variant='secondary'
                     />
-                </PWView>
+                </>
             }
         >
-            <PWView style={styles.iconContainer}>
-                <PWIcon
-                    name='ledger'
-                    size='xxl'
-                    variant='positive'
-                />
-            </PWView>
-
             <ScreenHeader
+                icon='ledger'
+                iconVariant='positive'
                 title={t('ledger.pair.title')}
                 description={t('ledger.pair.description')}
             />

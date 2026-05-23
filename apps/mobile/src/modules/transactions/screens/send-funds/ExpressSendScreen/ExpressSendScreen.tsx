@@ -30,8 +30,9 @@ export const ExpressSendScreen = () => {
         <PWScreen
             horizontalPadding='md'
             contentContainerStyle={styles.content}
+            footerStyle={styles.footer}
             footer={
-                <PWView style={styles.footer}>
+                <>
                     <PWButton
                         title={t('send_funds.express_send.continue')}
                         variant='primary'
@@ -42,7 +43,7 @@ export const ExpressSendScreen = () => {
                         variant='secondary'
                         onPress={handleDontShowAgain}
                     />
-                </PWView>
+                </>
             }
         >
             <PWView style={styles.iconRow}>

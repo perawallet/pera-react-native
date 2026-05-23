@@ -10,15 +10,15 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { config } from '@perawallet/wallet-core-config'
 import {
     fetchNotificationStatus,
     type NotificationStatusResponse,
 } from '../api/notifications'
-import { config } from '@perawallet/wallet-core-config'
-import { useCallback } from 'react'
 import { getNotificationStatusQueryKey } from './querykeys'
 import { useInboxQuery } from './useInboxQuery'
 
@@ -39,18 +39,18 @@ export const useInboxStatus = (): UseInboxStatusResult => {
         queryKey: getNotificationStatusQueryKey(network, deviceID ?? ''),
         queryFn: () => fetchNotificationStatus(network, deviceID ?? ''),
         enabled: !!deviceID,
-        refetchInterval: config.notificationRefreshTime,
-        select: useCallback((data: NotificationStatusResponse) => {
-            return {
-                hasNewNotification: data.has_new_notification,
-            }
-        }, []),
+        refetchInterval: config.pollingEnabled
+            ? config.notificationRefreshTime
+            : false,
+        select: useCallback(
+            (data: NotificationStatusResponse) => data.has_new_notification,
+            [],
+        ),
     })
 
     const unreadInboxCount = inboxData?.length ?? 0
     const hasUnreadInboxItems = unreadInboxCount > 0
-    const hasUnreadNotifications =
-        notificationStatusData?.hasNewNotification ?? false
+    const hasUnreadNotifications = notificationStatusData ?? false
 
     return {
         hasUnreadItems: hasUnreadInboxItems || hasUnreadNotifications,

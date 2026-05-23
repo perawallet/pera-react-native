@@ -10,7 +10,13 @@
  limitations under the License
  */
 
-import { PWRoundIcon, PWText, PWView, type IconName } from '@components/core'
+import {
+    PWIcon,
+    PWText,
+    PWView,
+    type IconName,
+    type PWIconVariant,
+} from '@components/core'
 import { useStyles } from './styles'
 
 import type { ReactNode } from 'react'
@@ -21,10 +27,11 @@ import type { StyleProp, ViewStyle } from 'react-native'
  * Use on top-level screens where the title doesn't fit a single-line toolbar
  * (e.g. "Select Ledger account"). The h1 wraps freely — no `numberOfLines`
  * — and the optional description appears as a muted h4 below. An optional hero
- * `icon` renders above the title via `PWRoundIcon`.
+ * `icon` renders above the title via `PWIcon`.
  */
 export type ScreenHeaderProps = {
     icon?: IconName
+    iconVariant?: PWIconVariant
     title: string
     description?: ReactNode
     style?: StyleProp<ViewStyle>
@@ -33,6 +40,7 @@ export type ScreenHeaderProps = {
 
 export const ScreenHeader = ({
     icon,
+    iconVariant,
     title,
     description,
     style,
@@ -46,14 +54,21 @@ export const ScreenHeader = ({
             testID={testID}
         >
             {!!icon && (
-                <PWRoundIcon
-                    icon={icon}
-                    size='xxl'
+                <PWIcon
+                    name={icon}
+                    size='3xl'
+                    variant={iconVariant}
+                    style={styles.icon}
                     testID='screen-header-icon'
                 />
             )}
-            <PWText variant='h1'>{title}</PWText>
-            {!!description && (
+            <PWText
+                variant='h1'
+                style={styles.title}
+            >
+                {title}
+            </PWText>
+            {description != null && (
                 <PWText
                     variant='h4'
                     style={styles.description}

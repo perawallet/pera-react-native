@@ -21,5 +21,7 @@ export const useStyles = makeStyles(theme => ({
     },
     toolbar: {
         width: '100%',
+        paddingHorizontal: 0,
+        paddingBottom: theme.spacing.xl,
     },
 }))

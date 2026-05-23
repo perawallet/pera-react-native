@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import React from 'react'
 import {
     PWButton,
     PWIcon,
@@ -40,7 +39,6 @@ export const AsbImportBackupScreen = () => {
     return (
         <PWScreen
             scroll={false}
-            horizontalPadding='xl'
             footer={
                 <PWButton
                     variant='primary'

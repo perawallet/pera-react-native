@@ -13,10 +13,7 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    header: {
-        paddingHorizontal: theme.spacing.xl,
-    },
-    list: {
-        paddingHorizontal: theme.spacing.xl,
+    listContent: {
+        paddingTop: theme.spacing.lg,
     },
 }))

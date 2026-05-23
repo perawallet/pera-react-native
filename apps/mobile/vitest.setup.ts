@@ -288,6 +288,8 @@ vi.mock('@components/core', () => {
         // PWBottomSheet host mounts it; consumers fall back to the global
         // Notifier when `.current` is null.
         bottomSheetNotifier: { current: null },
+        // Pure PWIconSize → pixel helper; size value is irrelevant to tests.
+        getIconPixelSize: () => 24,
         // Result screen wrapper used by success/error views; renders
         // title + body + action buttons we care about asserting on.
         PWResultView: ({
