@@ -102,14 +102,6 @@ vi.mock('@rneui/themed', () => {
     }
 })
 
-vi.mock('@assets/images/asset-inbox-send-light.svg', () => ({
-    default: 'LightHeaderImage',
-}))
-
-vi.mock('@assets/images/asset-inbox-send-dark.svg', () => ({
-    default: 'DarkHeaderImage',
-}))
-
 vi.mock('@modules/transactions/hooks', () => ({
     useSendFunds: vi.fn(),
 }))

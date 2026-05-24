@@ -12,6 +12,7 @@
 
 import {
     PWButton,
+    PWIcon,
     PWScreen,
     PWSlideToConfirm,
     PWText,
@@ -37,7 +38,6 @@ export const ARC59SendSummaryScreen = () => {
         assetId,
         fee,
         asset,
-        HeaderImageComponent,
         handleSend,
         handleClose,
         handleReadMore,
@@ -78,7 +78,11 @@ export const ARC59SendSummaryScreen = () => {
                 </PWText>
 
                 <PWView style={styles.header}>
-                    <HeaderImageComponent style={styles.inboxIcon} />
+                    <PWIcon
+                        name='inbox'
+                        size='3xl'
+                        style={styles.inboxIcon}
+                    />
 
                     <PWText style={styles.description}>
                         {t('send_funds.arc59_summary.description')}{' '}

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { FC, useCallback, useEffect } from 'react'
+import { useCallback, useEffect } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import {
@@ -32,10 +32,6 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { useSendFunds } from '@modules/transactions/hooks'
 import { ARC59WarningContent } from '@modules/transactions/components/send-funds/ARC59WarningContent'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
-import LightHeaderImage from '@assets/images/asset-inbox-send-light.svg'
-import DarkHeaderImage from '@assets/images/asset-inbox-send-dark.svg'
-import { useThemeMode } from '@rneui/themed'
-import { SvgProps } from 'react-native-svg'
 import { Decimal } from 'decimal.js'
 
 type UseARC59SendSummaryScreenResult = {
@@ -45,7 +41,6 @@ type UseARC59SendSummaryScreenResult = {
     amount: Nullable<Decimal>
     fee: Nullable<Decimal>
     asset: Nullable<PeraAsset>
-    HeaderImageComponent: FC<SvgProps>
     handleSend: () => void
     handleClose: () => void
     handleReadMore: () => void
@@ -59,7 +54,6 @@ export const useARC59SendSummaryScreen =
             useSendFunds()
         const selectedAccount = useSelectedAccount()
         const { request: requestBottomSheet } = useBottomSheet()
-        const { mode } = useThemeMode()
 
         const assetId = selectedAssetId ?? ''
         const receiverAddress = destination ?? ''
@@ -75,7 +69,6 @@ export const useARC59SendSummaryScreen =
         )
 
         const isLoading = summaryLoading || assetLoading
-        const headerImage = mode === 'dark' ? DarkHeaderImage : LightHeaderImage
 
         useEffect(() => {
             if (!summary || !accountInfo) return
@@ -136,7 +129,6 @@ export const useARC59SendSummaryScreen =
             assetId,
             fee,
             amount: amount ?? null,
-            HeaderImageComponent: headerImage,
             asset: asset ?? null,
             handleSend,
             handleClose,
