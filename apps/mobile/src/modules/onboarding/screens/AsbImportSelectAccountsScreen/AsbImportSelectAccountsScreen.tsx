@@ -11,6 +11,7 @@
  */
 
 import React from 'react'
+import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import {
     PWButton,
     PWCheckbox,
@@ -29,11 +30,6 @@ import {
     useAsbImportSelectAccountsScreen,
     type AsbAccountListItem,
 } from './useAsbImportSelectAccountsScreen'
-
-const shortAddress = (address: string): string =>
-    address.length > 12
-        ? `${address.slice(0, 6)}…${address.slice(-4)}`
-        : address
 
 export const AsbImportSelectAccountsScreen = () => {
     const styles = useStyles()
@@ -54,12 +50,13 @@ export const AsbImportSelectAccountsScreen = () => {
     const renderItem = ({ item }: { item: AsbAccountListItem }) => {
         const isSelected = selectedAddresses.has(item.address)
         const isImported = item.isAlreadyImported
-        const displayName = item.name?.trim() || shortAddress(item.address)
+        const displayName =
+            item.name?.trim() || truncateAlgorandAddress(item.address)
 
         return (
             <SelectableAccountCheckboxRow
                 title={displayName}
-                subtitle={shortAddress(item.address)}
+                subtitle={truncateAlgorandAddress(item.address)}
                 isSelected={isSelected}
                 isImported={isImported}
                 importedLabel={t(
