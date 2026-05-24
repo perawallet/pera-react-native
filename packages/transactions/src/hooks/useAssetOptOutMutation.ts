@@ -21,7 +21,9 @@ import {
     deleteAssetHoldings,
     useAccountBalancesInvalidator,
 } from '@perawallet/wallet-core-accounts'
+import { toError } from '@perawallet/wallet-core-shared'
 import { CreatorCannotOptOutError, NonZeroBalanceError } from '../errors'
+
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 type AssetOptOutParams = {
@@ -158,8 +160,7 @@ export const useAssetOptOutMutation = (): UseAssetOptOutMutationResult => {
 
                 return { txIds }
             } catch (err) {
-                const error =
-                    err instanceof Error ? err : new Error(String(err))
+                const error = toError(err)
                 setError(error)
                 throw error
             } finally {

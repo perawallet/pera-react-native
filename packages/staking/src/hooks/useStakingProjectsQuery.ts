@@ -19,7 +19,7 @@ import {
     useRemoteConfig,
 } from '@perawallet/wallet-core-remote-config'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, toError } from '@perawallet/wallet-core-shared'
 import type {
     StakingProject,
     StakingProjectInfo,
@@ -85,7 +85,7 @@ export const useStakingProjectsQuery = (): UseStakingProjectsQueryResult => {
                 error: null,
             }
         } catch (err) {
-            const error = err instanceof Error ? err : new Error(String(err))
+            const error = toError(err)
             logger.warn('Failed to parse staking projects remote config', {
                 source: 'useStakingProjectsQuery',
                 error,
