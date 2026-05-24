@@ -61,7 +61,6 @@ export const LedgerPairScreen = () => {
         >
             <ScreenHeader
                 icon='ledger'
-                iconVariant='positive'
                 title={t('ledger.pair.title')}
                 description={t('ledger.pair.description')}
             />

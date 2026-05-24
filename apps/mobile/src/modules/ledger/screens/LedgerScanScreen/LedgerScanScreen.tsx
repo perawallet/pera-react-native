@@ -24,7 +24,6 @@ import {
 import { EmptyView } from '@components/EmptyView'
 import { ScreenHeader } from '@components/ScreenHeader'
 import { LedgerDeviceItem } from '../../components/LedgerDeviceItem'
-import { LedgerCompositeIcon } from '../../components/LedgerCompositeIcon'
 import { useStyles } from './styles'
 import { useLedgerScanScreen } from './useLedgerScanScreen'
 
@@ -91,10 +90,8 @@ export const LedgerScanScreen = () => {
 
     return (
         <PWScreen scroll={false}>
-            <PWView style={styles.icon}>
-                <LedgerCompositeIcon />
-            </PWView>
             <ScreenHeader
+                icon='ledger'
                 title={t('ledger.scan.title')}
                 description={t('ledger.scan.description')}
             />

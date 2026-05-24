@@ -58,7 +58,7 @@ export const LedgerInstructionsScreen = () => {
             }
         >
             <ScreenHeader
-                icon='wallet'
+                icon='ledger'
                 title={t(titleKey)}
                 description={t(descriptionKey)}
             />

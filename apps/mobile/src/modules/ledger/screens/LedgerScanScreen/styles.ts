@@ -13,9 +13,6 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    icon: {
-        paddingTop: theme.spacing.lg,
-    },
     listContent: {
         paddingTop: theme.spacing.md,
     },
