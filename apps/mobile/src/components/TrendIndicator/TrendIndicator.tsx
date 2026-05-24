@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import { formatCurrency, formatPercentage } from '@perawallet/wallet-core-shared'
+import {
+    formatCurrency,
+    formatPercentage,
+} from '@perawallet/wallet-core-shared'
 import { PWIcon, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
 
