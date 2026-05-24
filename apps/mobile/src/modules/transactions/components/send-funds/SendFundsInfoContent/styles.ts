@@ -20,7 +20,6 @@ export const useStyles = makeStyles(theme => {
     return {
         container: {
             padding: theme.spacing.xl,
-            paddingTop: theme.spacing.xxl,
             borderTopStartRadius: theme.spacing.sm,
             borderTopEndRadius: theme.spacing.sm,
             alignItems: 'center',
