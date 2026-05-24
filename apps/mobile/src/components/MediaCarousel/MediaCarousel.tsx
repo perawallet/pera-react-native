@@ -99,7 +99,8 @@ export const MediaCarousel = ({
                     ) : (
                         <PWView style={styles.placeholder}>
                             <PWIcon
-                                name='card-stack'
+                                name='image-off'
+                                variant='secondary'
                                 size={placeholderIconSize ?? 'md'}
                             />
                         </PWView>

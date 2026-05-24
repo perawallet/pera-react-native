@@ -44,7 +44,12 @@ export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
             height: '100%',
         },
         placeholder: {
-            flex: 1,
+            // Reserve a compact, fixed media area for the no-image case.
+            // `flex: 1` collapses to the icon's size (floating it up over the
+            // content above), while a full square is too large for an empty
+            // placeholder — half the media square reads as a tidy empty state.
+            width: '100%',
+            height: maxHeight / 2,
             alignItems: 'center',
             justifyContent: 'center',
         },
@@ -77,6 +82,9 @@ export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
             width: '100%',
             maxWidth,
             maxHeight,
+            // The maxWidth cap would otherwise left-align the item (and its
+            // centered placeholder), shifting it off-centre on wider screens.
+            alignSelf: 'center',
         },
         indicator: {
             flexDirection: 'row',

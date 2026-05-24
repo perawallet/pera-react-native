@@ -55,6 +55,8 @@ type UseCollectibleDetailResult = {
     isReadOnly: boolean
     traits: CollectibleTrait[]
     media: CollectibleMedia[]
+    /** Whether there's an image to copy/save (image media or a primary image). */
+    hasImage: boolean
     accountAddress: string
     accountName: string
     assetAmount: Decimal
@@ -99,6 +101,12 @@ export const useCollectibleDetail = (
     const collectible = asset?.peraMetadata?.collectible
     const traits = collectible?.traits ?? []
     const media = collectible?.media ?? []
+    const hasImage = useMemo(
+        () =>
+            media.some(m => m.type === 'image') ||
+            collectible?.primaryImage != null,
+        [media, collectible?.primaryImage],
+    )
 
     const accountAddress = account?.address ?? ''
     const accountName = account?.name ?? accountAddress
@@ -334,6 +342,7 @@ export const useCollectibleDetail = (
         isReadOnly,
         traits,
         media,
+        hasImage,
         accountAddress,
         accountName,
         assetAmount,

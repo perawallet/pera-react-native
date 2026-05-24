@@ -54,6 +54,7 @@ export const CollectibleDetailScreen = ({
         isReadOnly,
         traits,
         media,
+        hasImage,
         accountAddress,
         assetAmount,
         isOptedInNotOwned,
@@ -163,20 +164,24 @@ export const CollectibleDetailScreen = ({
                                 size='md'
                                 onPress={handleSendPressed}
                             />
-                            <RoundButton
-                                title={t('common.copy')}
-                                icon='copy'
-                                variant='secondary'
-                                size='md'
-                                onPress={handleCopyImage}
-                            />
-                            <RoundButton
-                                title={t('common.save')}
-                                icon='save'
-                                variant='secondary'
-                                size='md'
-                                onPress={handleSaveImage}
-                            />
+                            {hasImage && (
+                                <>
+                                    <RoundButton
+                                        title={t('common.copy')}
+                                        icon='copy'
+                                        variant='secondary'
+                                        size='md'
+                                        onPress={handleCopyImage}
+                                    />
+                                    <RoundButton
+                                        title={t('common.save')}
+                                        icon='save'
+                                        variant='secondary'
+                                        size='md'
+                                        onPress={handleSaveImage}
+                                    />
+                                </>
+                            )}
                         </PWView>
                     )}
 
