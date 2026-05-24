@@ -10,12 +10,12 @@
  limitations under the License
  */
 
-import { ActivityIndicator } from 'react-native'
 import { useTheme } from '@rneui/themed'
 import { PeraNotification } from '@perawallet/wallet-core-messages'
 import { RefreshControl } from 'react-native-gesture-handler'
 
 import { EmptyView } from '@components/EmptyView'
+import { LoadingView } from '@components/LoadingView'
 import { PWFlatList, PWScreen, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { NotificationItem } from '@modules/messages/components/NotificationItem/NotificationItem'
@@ -65,7 +65,10 @@ export const NotificationsScreen = () => {
                 }
                 ListFooterComponent={
                     isFetchingNextPage ? (
-                        <ActivityIndicator color={theme.colors.linkPrimary} />
+                        <LoadingView
+                            variant='circle'
+                            size='sm'
+                        />
                     ) : null
                 }
                 refreshControl={

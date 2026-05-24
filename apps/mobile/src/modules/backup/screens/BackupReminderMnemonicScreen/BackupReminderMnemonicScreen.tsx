@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { ActivityIndicator } from 'react-native'
 import { PWButton, PWScreen, PWText, PWView } from '@components/core'
+import { LoadingView } from '@components/LoadingView'
 import { ScreenHeader } from '@components/ScreenHeader'
 import { useLanguage } from '@hooks/useLanguage'
 import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
@@ -52,9 +52,10 @@ export const BackupReminderMnemonicScreen = () => {
     if (isLoading) {
         return (
             <PWView style={styles.root}>
-                <PWView style={styles.loading}>
-                    <ActivityIndicator />
-                </PWView>
+                <LoadingView
+                    variant='circle'
+                    size='sm'
+                />
             </PWView>
         )
     }

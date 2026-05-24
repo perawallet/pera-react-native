@@ -11,7 +11,6 @@
  */
 
 import { useMemo } from 'react'
-import { ActivityIndicator } from 'react-native'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import {
     PWButton,
@@ -22,6 +21,7 @@ import {
     PWView,
 } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
+import { LoadingView } from '@components/LoadingView'
 import { ScreenHeader } from '@components/ScreenHeader'
 import { useLanguage } from '@hooks/useLanguage'
 import { RescanCandidateRow } from '../../../components/rescan-rekeyed/RescanCandidateRow'
@@ -54,7 +54,10 @@ export const RescanRekeyedSelectScreen = () => {
     if (isLoading) {
         return (
             <PWView style={styles.statusContainer}>
-                <ActivityIndicator size='large' />
+                <LoadingView
+                    variant='circle'
+                    size='lg'
+                />
                 <PWText
                     variant='body'
                     style={styles.statusText}

@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { ActivityIndicator } from 'react-native'
 import { PWResultView, PWScreen, PWText, PWView } from '@components/core'
+import { LoadingView } from '@components/LoadingView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useLedgerFetchAccountsScreen } from './useLedgerFetchAccountsScreen'
@@ -52,7 +52,10 @@ export const LedgerFetchAccountsScreen = () => {
             <PWView style={styles.content}>
                 {isLoading && (
                     <>
-                        <ActivityIndicator size='large' />
+                        <LoadingView
+                            variant='circle'
+                            size='lg'
+                        />
                         <PWText
                             variant='h2'
                             style={styles.title}

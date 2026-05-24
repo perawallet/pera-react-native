@@ -45,11 +45,6 @@ export const useStyles = makeStyles(theme => ({
     wordText: {
         ...getTypography(theme, 'mono'),
     },
-    loading: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
     errorBox: {
         paddingHorizontal: theme.spacing.xl,
         paddingTop: theme.spacing.xl,
