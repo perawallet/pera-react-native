@@ -24,6 +24,7 @@ export const useStyles = makeStyles(theme => ({
     rootContainer: {
         flexGrow: 1,
         paddingHorizontal: theme.spacing.xl,
+        paddingBottom: theme.spacing.xl,
     },
     separator: {
         height: theme.borders.sm,
@@ -36,6 +37,11 @@ export const useStyles = makeStyles(theme => ({
         justifyContent: 'center',
         alignItems: 'center',
         paddingVertical: theme.spacing['3xl'],
+    },
+    // The list content container already applies the xl horizontal gutter;
+    // zero EmptyView's own so the empty state isn't double-padded.
+    emptyView: {
+        paddingHorizontal: 0,
     },
     loadingOverlay: {
         position: 'absolute',
@@ -55,7 +61,6 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.md,
         flexDirection: 'row',
         alignItems: 'center',
-        marginTop: theme.spacing.lg,
         marginBottom: theme.spacing.sm,
     },
     titleBarTitleContainer: {

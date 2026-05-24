@@ -86,9 +86,12 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
             )
         }
         return (
-            <EmptyView body={t('asset_details.transaction_list.empty_body')} />
+            <EmptyView
+                body={t('asset_details.transaction_list.empty_body')}
+                style={styles.emptyView}
+            />
         )
-    }, [isLoading, styles.loadingContainer, t])
+    }, [isLoading, styles.loadingContainer, styles.emptyView, t])
 
     return (
         <PWView style={styles.container}>
