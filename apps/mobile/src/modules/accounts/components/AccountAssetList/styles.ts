@@ -59,10 +59,6 @@ export const useStyles = makeStyles(theme => ({
         flex: 1,
         minWidth: 0,
         maxWidth: '100%',
-        // Match the icon-only manage button's height: its sm icon (16) is 8px
-        // shorter than this button's h4 label (lineHeight 24), so trim the
-        // dense vertical padding from md (12) to sm (8) — both land at 40.
-        paddingVertical: theme.spacing.sm,
     },
     loading: {
         justifyContent: 'flex-start',
