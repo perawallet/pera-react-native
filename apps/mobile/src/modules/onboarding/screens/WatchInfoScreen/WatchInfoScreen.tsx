@@ -21,8 +21,7 @@ import { useNavigationHeader } from '@hooks/useNavigationHeader'
 export const WatchInfoScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { handleCreateWatchAccount, handleInfoPress, EyeImageComponent } =
-        useWatchInfoScreen()
+    const { handleCreateWatchAccount, handleInfoPress } = useWatchInfoScreen()
 
     useNavigationHeader({
         right: (
@@ -61,12 +60,8 @@ export const WatchInfoScreen = () => {
             }
         >
             <PWView style={styles.content}>
-                <EyeImageComponent
-                    style={styles.image}
-                    width={160}
-                    height={160}
-                />
                 <ScreenHeader
+                    icon='eye'
                     title={t('onboarding.watch_account.info_title')}
                     description={t('onboarding.watch_account.info_description')}
                 />

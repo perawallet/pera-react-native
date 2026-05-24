@@ -12,18 +12,11 @@
 
 import { makeStyles } from '@rneui/themed'
 
-const IMAGE_SIZE = 160
-
 export const useStyles = makeStyles(theme => ({
     content: {
         flex: 1,
         justifyContent: 'flex-start',
         alignItems: 'flex-start',
-        paddingTop: theme.spacing.xl,
-    },
-    image: {
-        width: IMAGE_SIZE,
-        height: IMAGE_SIZE,
     },
     warningRow: {
         flexDirection: 'row',
