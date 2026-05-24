@@ -23,6 +23,5 @@ export const useStyles = makeStyles(theme => ({
     },
     message: {
         textAlign: 'center',
-        marginBottom: theme.spacing.md,
     },
 }))
