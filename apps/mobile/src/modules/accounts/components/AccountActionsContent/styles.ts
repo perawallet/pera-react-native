@@ -14,7 +14,7 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
-        paddingVertical: theme.spacing.xxl,
+        paddingVertical: theme.spacing.lg,
     },
     addressCard: {
         marginHorizontal: theme.spacing.xl,
