@@ -43,6 +43,8 @@ export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
             keyboardShouldPersistTaps = 'handled',
             // Drag the list to dismiss the keyboard, following the finger.
             keyboardDismissMode = 'interactive',
+            showsVerticalScrollIndicator = false,
+            showsHorizontalScrollIndicator = false,
             ...props
         },
         ref,
@@ -62,6 +64,11 @@ export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
             keyboardDismissMode,
         }
 
+        const scrollIndicatorProps = {
+            showsVerticalScrollIndicator,
+            showsHorizontalScrollIndicator,
+        }
+
         const mergedContentContainerStyle = props.horizontal
             ? [styles.gap, contentContainerStyle]
             : [
@@ -79,6 +86,7 @@ export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
                 <LegendList
                     {...props}
                     {...keyboardProps}
+                    {...scrollIndicatorProps}
                     ref={innerRef}
                     style={style}
                     contentContainerStyle={mergedContentContainerStyle}
@@ -91,6 +99,7 @@ export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
             <LegendList
                 {...props}
                 {...keyboardProps}
+                {...scrollIndicatorProps}
                 ref={innerRef}
                 style={outerStyle}
                 contentContainerStyle={mergedContentContainerStyle}

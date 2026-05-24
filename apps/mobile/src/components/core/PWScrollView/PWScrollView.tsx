@@ -23,6 +23,8 @@ export const PWScrollView = ({
     testID,
     keyboardShouldPersistTaps,
     contentContainerStyle,
+    showsVerticalScrollIndicator = false,
+    showsHorizontalScrollIndicator = false,
     ...props
 }: PWScrollViewProps) => {
     const styles = useStyles()
@@ -49,6 +51,8 @@ export const PWScrollView = ({
             // when an input above them is focused.
             keyboardShouldPersistTaps={keyboardShouldPersistTaps ?? 'handled'}
             contentContainerStyle={resolvedContentContainerStyle}
+            showsVerticalScrollIndicator={showsVerticalScrollIndicator}
+            showsHorizontalScrollIndicator={showsHorizontalScrollIndicator}
             {...getTestProps(testID)}
             {...props}
         />

@@ -55,6 +55,7 @@ export const RawTransactionContent = ({
             />
             <BottomSheetScrollView
                 contentContainerStyle={styles.scrollview}
+                showsVerticalScrollIndicator={false}
                 scrollEnabled
             >
                 <PWText variant='mono'>{rawText}</PWText>

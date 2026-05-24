@@ -67,6 +67,7 @@ export const AssetTransactionList = ({
         <>
             <SectionList
                 sections={sections}
+                showsVerticalScrollIndicator={false}
                 renderItem={renderItem}
                 renderSectionHeader={renderSectionHeader}
                 keyExtractor={keyExtractor}

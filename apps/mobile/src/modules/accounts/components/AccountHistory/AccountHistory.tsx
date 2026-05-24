@@ -97,6 +97,7 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
         <PWView style={styles.container}>
             <SectionList
                 sections={sections}
+                showsVerticalScrollIndicator={false}
                 renderItem={renderItem}
                 renderSectionHeader={renderSectionHeader}
                 keyExtractor={keyExtractor}
