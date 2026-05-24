@@ -52,7 +52,6 @@ export const SettingsDeveloperGalleryScreen = () => {
 
     return (
         <PWScreen
-            horizontalPadding='lg'
             testID='developer_gallery_screen'
         >
             <PWButton

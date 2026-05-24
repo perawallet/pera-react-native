@@ -84,7 +84,6 @@ export const MenuScreen = () => {
     return (
         <PWScreen
             scroll={false}
-            horizontalPadding='lg'
             keyboard='none'
             style={styles.container}
         >

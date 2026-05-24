@@ -36,7 +36,6 @@ export const SettingsScreen = () => {
 
     return (
         <PWScreen
-            horizontalPadding='lg'
             testID='settings_screen'
         >
             <PWView style={styles.sectionContainer}>

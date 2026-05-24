@@ -77,7 +77,6 @@ export const SettingsDeveloperManageCacheScreen = () => {
 
     return (
         <PWScreen
-            horizontalPadding='lg'
             contentContainerStyle={styles.content}
         >
             <PWButton

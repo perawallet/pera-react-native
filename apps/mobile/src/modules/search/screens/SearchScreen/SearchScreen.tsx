@@ -158,7 +158,6 @@ export const SearchScreen = () => {
     return (
         <PWScreen
             scroll={false}
-            horizontalPadding='lg'
             keyboard='avoid'
         >
             <SearchInput

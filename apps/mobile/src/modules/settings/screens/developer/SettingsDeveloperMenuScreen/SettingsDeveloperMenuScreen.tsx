@@ -44,7 +44,7 @@ export const SettingsDeveloperMenuScreen = () => {
     }
 
     return (
-        <PWScreen horizontalPadding='lg'>
+        <PWScreen>
             <PWListItem
                 onPress={() => handleTapEvent('FeatureFlags')}
                 icon='sliders'

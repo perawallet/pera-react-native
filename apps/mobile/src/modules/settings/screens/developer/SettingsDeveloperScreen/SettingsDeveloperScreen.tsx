@@ -43,7 +43,6 @@ export const SettingsDeveloperScreen = () => {
 
     return (
         <PWScreen
-            horizontalPadding='lg'
             testID='developer_settings_screen'
         >
             <PWListItem
