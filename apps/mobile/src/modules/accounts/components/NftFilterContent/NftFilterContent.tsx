@@ -12,26 +12,31 @@
 
 import React from 'react'
 import { PWButton, PWSwitch, PWText, PWView } from '@components/core'
+import { useCollectiblePreferencesStore } from '@perawallet/wallet-core-assets'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
-export type NftFilterContentProps = {
-    showOptedIn: boolean
-    showWatchAccounts: boolean
-    onToggleOptedIn: (value: boolean) => void
-    onToggleWatchAccounts: (value: boolean) => void
-}
-
-export const NftFilterContent = ({
-    showOptedIn,
-    showWatchAccounts,
-    onToggleOptedIn,
-    onToggleWatchAccounts,
-}: NftFilterContentProps) => {
+export const NftFilterContent = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const { dismiss } = useBottomSheetResult<void>()
+
+    // Read the preference store directly so the sheet stays reactive — passing
+    // these in as props would snapshot them at open time and the switches would
+    // never update (the sheet content isn't re-rendered by its opener).
+    const showOptedIn = useCollectiblePreferencesStore(
+        state => state.showOptedIn,
+    )
+    const showWatchAccounts = useCollectiblePreferencesStore(
+        state => state.showWatchAccounts,
+    )
+    const onToggleOptedIn = useCollectiblePreferencesStore(
+        state => state.setShowOptedIn,
+    )
+    const onToggleWatchAccounts = useCollectiblePreferencesStore(
+        state => state.setShowWatchAccounts,
+    )
 
     return (
         <>

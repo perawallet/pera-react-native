@@ -147,23 +147,10 @@ export const useAccountNfts = (): UseAccountNftsResult => {
 
     const openFilterSheet = useCallback(() => {
         void requestBottomSheet<void>({
-            contents: (
-                <NftFilterContent
-                    showOptedIn={showOptedIn}
-                    showWatchAccounts={showWatchAccounts}
-                    onToggleOptedIn={setShowOptedIn}
-                    onToggleWatchAccounts={setShowWatchAccounts}
-                />
-            ),
+            contents: <NftFilterContent />,
             options: { size: 'auto', enablePanDownToClose: true },
         })
-    }, [
-        requestBottomSheet,
-        showOptedIn,
-        showWatchAccounts,
-        setShowOptedIn,
-        setShowWatchAccounts,
-    ])
+    }, [requestBottomSheet])
 
     const openSortSheet = useCallback(() => {
         void requestBottomSheet<void>({
