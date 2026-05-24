@@ -34,6 +34,7 @@ import { SettingsWalletConnectDetailsScreen } from '@modules/settings/screens/Se
 import { SettingsDeveloperMenuScreen } from '../screens/developer/SettingsDeveloperMenuScreen/SettingsDeveloperMenuScreen'
 import { SettingsDeveloperFeatureFlagsScreen } from '../screens/developer/SettingsDeveloperFeatureFlagsScreen/SettingsDeveloperFeatureFlagsScreen'
 import { SettingsDeveloperManageCacheScreen } from '../screens/developer/SettingsDeveloperManageCacheScreen'
+import { SettingsDeveloperGalleryScreen } from '../screens/developer/SettingsDeveloperGalleryScreen'
 
 export type DeveloperSettingsStackParamsList = {
     DeveloperSettingsHome: undefined
@@ -42,6 +43,7 @@ export type DeveloperSettingsStackParamsList = {
     DevMenu: undefined
     FeatureFlags: undefined
     ManageCache: undefined
+    Gallery: undefined
 }
 
 const DeveloperSettingsStack =
@@ -102,6 +104,13 @@ const DeveloperSettingsStackNavigator = () => {
                     title: 'screens.manage_cache',
                 }}
                 component={SettingsDeveloperManageCacheScreen}
+            />
+            <DeveloperSettingsStack.Screen
+                name='Gallery'
+                options={{
+                    title: 'Screen Gallery',
+                }}
+                component={SettingsDeveloperGalleryScreen}
             />
         </DeveloperSettingsStack.Navigator>
     )

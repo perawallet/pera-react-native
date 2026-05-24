@@ -53,6 +53,13 @@ export const SettingsDeveloperScreen = () => {
                 testID='developer_settings_node_item'
             />
 
+            <PWListItem
+                onPress={() => handleTapEvent('Gallery')}
+                icon='sliders'
+                title='Screen Gallery'
+                testID='developer_settings_gallery_item'
+            />
+
             {isTestnet && (
                 <PWListItem
                     onPress={openDispenser}
