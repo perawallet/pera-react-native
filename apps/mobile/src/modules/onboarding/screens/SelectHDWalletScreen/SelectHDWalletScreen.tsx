@@ -72,34 +72,36 @@ export const SelectHDWalletScreen = () => {
                     size='lg'
                     style={styles.walletIconContainer}
                 />
-                <PWView style={styles.walletTextContainer}>
-                    <PWText variant='h3'>{walletLabel}</PWText>
-                    <PWText
-                        variant='body'
-                        style={styles.walletSubtitle}
-                    >
-                        {t('onboarding.select_hd_wallet.account_count', {
-                            count: item.accountCount,
-                        })}
-                    </PWText>
-                </PWView>
-                <PWView style={styles.balanceContainer}>
-                    <CurrencyDisplay
-                        currency='ALGO'
-                        value={groupAlgoValue}
-                        precision={ALGO_ASSET.decimals}
-                        minPrecision={2}
-                        style={styles.algoBalance}
-                        variant='h4'
-                    />
-                    <PreferredCurrencyDisplay
-                        sourceAssetId={ALGO_ASSET_ID}
-                        sourceAmount={groupAlgoValue}
-                        precision={2}
-                        minPrecision={2}
-                        style={styles.fiatBalance}
-                        variant='body'
-                    />
+                <PWView style={styles.rowContent}>
+                    <PWView style={styles.walletTextContainer}>
+                        <PWText variant='h3'>{walletLabel}</PWText>
+                        <PWText
+                            variant='body'
+                            style={styles.walletSubtitle}
+                        >
+                            {t('onboarding.select_hd_wallet.account_count', {
+                                count: item.accountCount,
+                            })}
+                        </PWText>
+                    </PWView>
+                    <PWView style={styles.balanceContainer}>
+                        <CurrencyDisplay
+                            currency='ALGO'
+                            value={groupAlgoValue}
+                            precision={ALGO_ASSET.decimals}
+                            minPrecision={2}
+                            style={styles.algoBalance}
+                            variant='h4'
+                        />
+                        <PreferredCurrencyDisplay
+                            sourceAssetId={ALGO_ASSET_ID}
+                            sourceAmount={groupAlgoValue}
+                            precision={2}
+                            minPrecision={2}
+                            style={styles.fiatBalance}
+                            variant='body'
+                        />
+                    </PWView>
                 </PWView>
             </PWTouchableOpacity>
         )

@@ -29,15 +29,22 @@ export const useStyles = makeStyles(theme => {
         walletItem: {
             flexDirection: 'row',
             alignItems: 'center',
-            paddingVertical: theme.spacing.md,
-            borderBottomWidth: theme.borders.sm,
-            borderBottomColor: theme.colors.layerGrayLighter,
         },
         walletIconContainer: {
             width: theme.spacing.xl + 2 * theme.spacing.sm,
             height: theme.spacing.xl + 2 * theme.spacing.sm,
             borderRadius: (theme.spacing.xl + 2 * theme.spacing.sm) / 2,
             marginRight: theme.spacing.md,
+        },
+        // Border lives on the content (not the row) so the divider starts at
+        // the title, inset past the leading icon.
+        rowContent: {
+            flex: 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingVertical: theme.spacing.md,
+            borderBottomWidth: theme.borders.sm,
+            borderBottomColor: theme.colors.layerGrayLighter,
         },
         walletTextContainer: {
             flex: 1,
