@@ -12,11 +12,46 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(() => ({
-    content: {
-        flex: 1,
-    },
-    list: {
-        flex: 1,
-    },
-}))
+export const useStyles = makeStyles(theme => {
+    const algoBalance = {
+        lineHeight: theme.spacing.lg,
+    }
+    const fiatBalance = {
+        color: theme.colors.textGray,
+    }
+    return {
+        content: {
+            flex: 1,
+        },
+        list: {
+            flex: 1,
+        },
+        walletItem: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingVertical: theme.spacing.md,
+            borderBottomWidth: theme.borders.sm,
+            borderBottomColor: theme.colors.layerGrayLighter,
+        },
+        walletIconContainer: {
+            width: theme.spacing.xl + 2 * theme.spacing.sm,
+            height: theme.spacing.xl + 2 * theme.spacing.sm,
+            borderRadius: (theme.spacing.xl + 2 * theme.spacing.sm) / 2,
+            marginRight: theme.spacing.md,
+        },
+        walletTextContainer: {
+            flex: 1,
+            paddingRight: theme.spacing.md,
+        },
+        walletSubtitle: {
+            color: theme.colors.textGray,
+            marginTop: theme.spacing.xxs,
+        },
+        balanceContainer: {
+            gap: theme.spacing.xs,
+            alignItems: 'flex-end',
+        },
+        algoBalance,
+        fiatBalance,
+    }
+})

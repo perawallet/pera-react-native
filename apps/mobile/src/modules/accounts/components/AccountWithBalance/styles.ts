@@ -31,4 +31,12 @@ export const useStyles = makeStyles((theme, { isHighlighted }: StyleProps) => ({
         borderRadius: theme.spacing.lg,
         padding: theme.spacing.md,
     },
+    balanceContainer: {
+        gap: theme.spacing.xs,
+        alignItems: 'flex-end',
+        flexShrink: 0,
+    },
+    fiatBalance: {
+        color: theme.colors.textGray,
+    },
 }))

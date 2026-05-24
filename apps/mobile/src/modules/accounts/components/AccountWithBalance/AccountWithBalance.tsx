@@ -15,10 +15,12 @@ import {
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { PWView, PWViewProps } from '@components/core'
-import { AlgoBalanceColumn } from '@components/AlgoBalanceColumn'
 import { useStyles } from './styles'
 
 import { AccountDisplay } from '../AccountDisplay'
+import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { ALGO_ASSET, ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
+import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 
 export type AccountWithBalanceProps = {
     account: WalletAccount
@@ -43,9 +45,26 @@ export const AccountWithBalance = ({
                 showChevron={false}
                 showAccountType
             />
-            <AlgoBalanceColumn
-                algoValue={accountBalances.get(account.address)?.algoValue}
-            />
+            <PWView style={styles.balanceContainer}>
+                <CurrencyDisplay
+                    currency='ALGO'
+                    value={accountBalances.get(account.address)?.algoValue}
+                    precision={ALGO_ASSET.decimals}
+                    minPrecision={2}
+                    variant='bodyCompact'
+                />
+
+                <PreferredCurrencyDisplay
+                    sourceAssetId={ALGO_ASSET_ID}
+                    sourceAmount={
+                        accountBalances.get(account.address)?.algoValue
+                    }
+                    precision={2}
+                    minPrecision={2}
+                    variant='bodyCompact'
+                    style={styles.fiatBalance}
+                />
+            </PWView>
         </PWView>
     )
 }
