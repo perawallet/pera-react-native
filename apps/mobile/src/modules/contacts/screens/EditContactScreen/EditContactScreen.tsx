@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 
-import { PWButton, PWScreen, PWView } from '@components/core'
+import { PWButton, PWScreen } from '@components/core'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { ContactForm } from '@components/ContactForm'
 import { PhotoPermissionDeniedSheet } from '@components/PhotoPermissionDeniedSheet'
@@ -20,10 +20,8 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useEditContactForm } from '@modules/contacts/hooks'
-import { useStyles } from './styles'
 
 export const EditContactScreen = () => {
-    const styles = useStyles()
     const { t } = useLanguage()
     const {
         selectedContact,
@@ -73,7 +71,15 @@ export const EditContactScreen = () => {
     }, [requestBottomSheet, t, removeContact])
 
     return (
-        <PWScreen>
+        <PWScreen
+            footer={
+                <PWButton
+                    onPress={openDeleteConfirm}
+                    title={t('contacts.edit_contact.delete_this')}
+                    variant='destructive'
+                />
+            }
+        >
             <ContactForm
                 control={control}
                 address={
@@ -91,17 +97,7 @@ export const EditContactScreen = () => {
                 rawAddressInput={rawAddressInput}
                 imageUri={imageUri}
                 onPickImage={onPickImage}
-            >
-                <PWView style={styles.deletePillWrapper}>
-                    <PWButton
-                        onPress={openDeleteConfirm}
-                        title={t('contacts.edit_contact.delete_this')}
-                        variant='destructive'
-                        style={styles.deletePill}
-                        rounded
-                    />
-                </PWView>
-            </ContactForm>
+            />
             <PhotoPermissionDeniedSheet
                 isVisible={permissionDenied.isVisible}
                 onClose={permissionDenied.close}
