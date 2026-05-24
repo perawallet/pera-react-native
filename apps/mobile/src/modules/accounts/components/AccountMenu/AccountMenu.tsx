@@ -37,14 +37,23 @@ export type AccountMenuProps = {
 export const AccountMenu = (props: AccountMenuProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { sortedAccounts, selectedAccountAddress, sortMode, handleTap } =
-        useAccountMenu(props)
+    const {
+        sortedAccounts,
+        selectedAccountAddress,
+        sortMode,
+        handleTap,
+        isChartCollapsed,
+        handleListScroll,
+    } = useAccountMenu(props)
     const { onAddAccount, onOpenSort, headerContent, hideDefaultHeader } = props
 
     return (
         <PWView style={styles.container}>
             {headerContent ?? (
-                <PortfolioView style={styles.portfolioContainer} />
+                <PortfolioView
+                    style={styles.portfolioContainer}
+                    isCollapsed={isChartCollapsed}
+                />
             )}
 
             <PWView style={styles.mainContent}>
@@ -101,6 +110,8 @@ export const AccountMenu = (props: AccountMenuProps) => {
                     )}
                     estimatedItemSize={64}
                     showsVerticalScrollIndicator={false}
+                    onScroll={handleListScroll}
+                    scrollEventThrottle={16}
                     inBottomSheet
                 />
             </PWView>

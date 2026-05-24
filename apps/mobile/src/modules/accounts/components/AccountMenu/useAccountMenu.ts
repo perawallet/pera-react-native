@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
     useAllAccounts,
     useSelectedAccountAddress,
@@ -20,13 +20,37 @@ import {
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { AccountMenuProps } from './AccountMenu'
+
+import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+
+// Collapse the chart once the list scrolls past this offset, and restore it
+// only once scrolled back near the top. The gap between the two (hysteresis)
+// stops small scrolls from flipping the chart on and off.
+const CHART_COLLAPSE_OFFSET = 48
+const CHART_EXPAND_OFFSET = 8
+
+/**
+ * Hysteresis for the scroll-driven chart collapse: collapse once scrolled
+ * past {@link CHART_COLLAPSE_OFFSET}, and only re-expand once back within
+ * {@link CHART_EXPAND_OFFSET} of the top — between the two it holds its state.
+ */
+export const resolveChartCollapsed = (
+    wasCollapsed: boolean,
+    offsetY: number,
+): boolean => {
+    if (!wasCollapsed && offsetY > CHART_COLLAPSE_OFFSET) return true
+    if (wasCollapsed && offsetY < CHART_EXPAND_OFFSET) return false
+    return wasCollapsed
+}
 
 type UseAccountMenuResult = {
     sortedAccounts: WalletAccount[]
     selectedAccountAddress: Nullable<string>
     sortMode: string
     handleTap: (acct: WalletAccount) => void
+    isChartCollapsed: boolean
+    handleListScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => void
 }
 
 export const useAccountMenu = (
@@ -63,10 +87,21 @@ export const useAccountMenu = (
         [props, setSelectedAccountAddress],
     )
 
+    const [isChartCollapsed, setIsChartCollapsed] = useState(false)
+    const handleListScroll = useCallback(
+        (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+            const offsetY = event.nativeEvent.contentOffset.y
+            setIsChartCollapsed(prev => resolveChartCollapsed(prev, offsetY))
+        },
+        [],
+    )
+
     return {
         sortedAccounts,
         selectedAccountAddress,
         sortMode,
         handleTap,
+        isChartCollapsed,
+        handleListScroll,
     }
 }

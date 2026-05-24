@@ -45,9 +45,18 @@ import { TrendIndicator } from '@components/TrendIndicator'
 
 export type PortfolioViewProps = {
     onDataSelected?: (selected: Nullable<AccountBalanceHistoryItem>) => void
+    /**
+     * Transiently collapses the chart without touching the user's saved
+     * `chartVisible` preference — used to free up space while the account
+     * list is scrolled.
+     */
+    isCollapsed?: boolean
 } & PWViewProps
 
-export const PortfolioView = (props: PortfolioViewProps) => {
+export const PortfolioView = ({
+    isCollapsed = false,
+    ...props
+}: PortfolioViewProps) => {
     const styles = useStyles()
     const { preferredCurrency, usdToPreferred } = useCurrency()
     const { t } = useLanguage()
@@ -221,7 +230,7 @@ export const PortfolioView = (props: PortfolioViewProps) => {
                 />
             </PWTouchableOpacity>
 
-            <ExpandablePanel isExpanded={chartVisible}>
+            <ExpandablePanel isExpanded={chartVisible && !isCollapsed}>
                 <PWView style={styles.chartContainer}>
                     <WealthChart
                         period={period}
