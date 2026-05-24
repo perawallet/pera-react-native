@@ -21,9 +21,4 @@ export const useStyles = makeStyles(theme => ({
         paddingVertical: theme.spacing.md,
         color: theme.colors.textGray,
     },
-    actions: {
-        width: '100%',
-        paddingHorizontal: theme.spacing.lg,
-        paddingTop: theme.spacing.md,
-    },
 }))

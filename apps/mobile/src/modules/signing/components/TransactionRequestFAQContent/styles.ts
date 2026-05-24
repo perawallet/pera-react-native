@@ -30,8 +30,5 @@ export const useStyles = makeStyles(theme => {
             textAlign: 'center',
         },
         warning,
-        button: {
-            marginVertical: theme.spacing.md,
-        },
     }
 })

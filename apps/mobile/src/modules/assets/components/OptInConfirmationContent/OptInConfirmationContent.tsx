@@ -40,7 +40,7 @@ export const OptInConfirmationContent = ({
     const styles = useStyles()
     const { t } = useLanguage()
     const { copyToClipboard } = useClipboard()
-    const { resolve, dismiss } = useBottomSheetResult<'confirm'>()
+    const { resolve } = useBottomSheetResult<'confirm'>()
 
     const { data: assets } = useAssetsQuery([assetId])
     const asset = assets?.get(assetId)
@@ -148,12 +148,6 @@ export const OptInConfirmationContent = ({
                         title={t('common.slide_to_confirm.label')}
                         onConfirm={() => resolve('confirm')}
                         testID='opt_in_confirm'
-                    />
-                    <PWButton
-                        title={t('add_asset.confirmation.close')}
-                        variant='linkNeutral'
-                        onPress={dismiss}
-                        testID='opt_in_cancel'
                     />
                 </PWView>
             </PWView>

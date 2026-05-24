@@ -15,7 +15,6 @@ import { Platform } from 'react-native'
 import {
     PWIcon,
     PWText,
-    PWButton,
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
@@ -46,8 +45,7 @@ export const TransactionsFilterContent = ({
     const styles = useStyles()
     const { t } = useLanguage()
     const isDarkMode = useIsDarkMode()
-    const { resolve, dismiss } =
-        useBottomSheetResult<TransactionsFilterResult>()
+    const { resolve } = useBottomSheetResult<TransactionsFilterResult>()
 
     // Internal state
     const [view, setView] = useState<'main' | 'custom_range'>('main')
@@ -234,12 +232,6 @@ export const TransactionsFilterContent = ({
                     </PWTouchableOpacity>
                 )
             })}
-            <PWButton
-                title={t('common.close.label')}
-                variant='secondary'
-                onPress={dismiss}
-                style={styles.closeButton}
-            />
         </>
     )
 

@@ -10,8 +10,7 @@
  limitations under the License
  */
 
-import { PWButton, PWText, PWView } from '@components/core'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { PWText } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
@@ -20,7 +19,6 @@ export type MinBalanceInfoContentProps = Record<string, never>
 export const MinBalanceInfoContent = (_: MinBalanceInfoContentProps = {}) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { dismiss } = useBottomSheetResult<void>()
 
     return (
         <>
@@ -33,15 +31,6 @@ export const MinBalanceInfoContent = (_: MinBalanceInfoContentProps = {}) => {
             <PWText style={styles.description}>
                 {t('min_balance_info.description')}
             </PWText>
-            <PWView style={styles.actions}>
-                <PWButton
-                    variant='secondary'
-                    title={t('min_balance_info.close')}
-                    onPress={dismiss}
-                    paddingStyle='dense'
-                    testID='min-balance-info-close-button'
-                />
-            </PWView>
         </>
     )
 }

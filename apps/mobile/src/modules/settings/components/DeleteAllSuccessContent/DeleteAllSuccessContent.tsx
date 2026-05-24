@@ -10,8 +10,7 @@
  limitations under the License
  */
 
-import { PWButton, PWIcon, PWText, PWView } from '@components/core'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { PWIcon, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
@@ -20,7 +19,6 @@ export type DeleteAllSuccessContentProps = Record<string, never>
 export const DeleteAllSuccessContent = () => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const { dismiss } = useBottomSheetResult<void>()
 
     return (
         <PWView style={styles.container}>
@@ -35,12 +33,6 @@ export const DeleteAllSuccessContent = () => {
             >
                 {t('settings.main.remove_success_title')}
             </PWText>
-            <PWButton
-                style={styles.button}
-                variant='secondary'
-                title={t('common.close.label')}
-                onPress={dismiss}
-            />
         </PWView>
     )
 }

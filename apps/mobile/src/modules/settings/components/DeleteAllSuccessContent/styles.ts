@@ -22,7 +22,4 @@ export const useStyles = makeStyles(theme => ({
         textAlign: 'center',
         marginHorizontal: theme.spacing.xxl,
     },
-    button: {
-        width: '100%',
-    },
 }))

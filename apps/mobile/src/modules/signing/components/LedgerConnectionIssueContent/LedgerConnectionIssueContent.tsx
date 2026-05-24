@@ -12,7 +12,6 @@
 
 import React from 'react'
 import { PWButton, PWText, PWView } from '@components/core'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useLedgerSigningContent } from '../LedgerSigningContent/useLedgerSigningContent'
 import { useStyles } from './styles'
@@ -33,7 +32,6 @@ const TIP_KEYS = [
 export const LedgerConnectionIssueContent = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { dismiss } = useBottomSheetResult<void>()
     // Re-run the signing actor after the user fixes the connection (unlock the
     // device, open the app, re-enable Bluetooth). The retry re-runs the
     // hardware strategy, which clears the error and reopens the signing
@@ -63,14 +61,6 @@ export const LedgerConnectionIssueContent = () => {
                 onPress={onRetry}
                 style={styles.closeButton}
                 testID='ledger-troubleshooting-retry'
-            />
-
-            <PWButton
-                variant='secondary'
-                title={t('ledger.troubleshooting.close')}
-                onPress={dismiss}
-                style={styles.closeButton}
-                testID='ledger-troubleshooting-close'
             />
         </PWView>
     )

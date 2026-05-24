@@ -10,8 +10,7 @@
  limitations under the License
  */
 
-import { PWButton, PWIcon, PWText, PWView } from '@components/core'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { PWIcon, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { WalletConnectSessionRequest } from '@perawallet/wallet-core-walletconnect'
 import { useStyles } from './styles'
@@ -25,7 +24,6 @@ export const ConnectionSuccessContent = ({
 }: ConnectionSuccessContentProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const { dismiss } = useBottomSheetResult<void>()
     const dAppName = request.peerMeta.name ?? ''
 
     return (
@@ -49,11 +47,6 @@ export const ConnectionSuccessContent = ({
                     name: dAppName,
                 })}
             </PWText>
-            <PWButton
-                variant='secondary'
-                title={t('common.close.label')}
-                onPress={dismiss}
-            />
         </PWView>
     )
 }

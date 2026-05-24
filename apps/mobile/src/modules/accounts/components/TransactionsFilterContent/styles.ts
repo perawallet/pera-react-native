@@ -110,9 +110,5 @@ export const useStyles = makeStyles(theme => {
             color: theme.colors.positive,
             flexShrink: 0,
         },
-        closeButton: {
-            marginTop: theme.spacing.lg,
-            marginHorizontal: theme.spacing.xl,
-        },
     }
 })

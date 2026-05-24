@@ -11,9 +11,7 @@
  */
 
 import { ReactNode } from 'react'
-import { PWButton, PWText, PWView } from '@components/core'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
-import { useLanguage } from '@hooks/useLanguage'
+import { PWText, PWView } from '@components/core'
 import { useContentStyles } from './styles'
 
 export type InfoButtonContentProps = {
@@ -26,8 +24,6 @@ export const InfoButtonContent = ({
     children,
 }: InfoButtonContentProps) => {
     const styles = useContentStyles()
-    const { t } = useLanguage()
-    const { dismiss } = useBottomSheetResult<void>()
 
     return (
         <PWView style={styles.container}>
@@ -41,12 +37,6 @@ export const InfoButtonContent = ({
                 </PWText>
             )}
             <PWView style={styles.contentContainer}>{children}</PWView>
-            <PWButton
-                variant='secondary'
-                title={t('common.close.label')}
-                onPress={dismiss}
-                testID='info-button-confirm'
-            />
         </PWView>
     )
 }

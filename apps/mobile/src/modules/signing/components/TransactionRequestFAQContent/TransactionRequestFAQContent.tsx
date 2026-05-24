@@ -10,8 +10,7 @@
  limitations under the License
  */
 
-import { PWButton, PWIcon, PWText, PWView } from '@components/core'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { PWIcon, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
@@ -22,7 +21,6 @@ export const TransactionRequestFAQContent = (
 ) => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const { dismiss } = useBottomSheetResult<void>()
 
     return (
         <PWView style={styles.container}>
@@ -44,12 +42,6 @@ export const TransactionRequestFAQContent = (
             >
                 {t('signing.transaction_request_faq.warning')}
             </PWText>
-            <PWButton
-                variant='primary'
-                title={t('common.close.label')}
-                onPress={dismiss}
-                style={styles.button}
-            />
         </PWView>
     )
 }
