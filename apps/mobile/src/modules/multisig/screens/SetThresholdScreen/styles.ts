@@ -15,13 +15,31 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     summaryContainer: {
         flexGrow: 1,
-        gap: theme.spacing.md,
+        gap: theme.spacing.xl,
     },
-    keyValueLabel: {
+    row: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    label: {
         color: theme.colors.textMain,
-        width: '50%',
+        flexShrink: 1,
     },
-    participantCount: {
-        marginLeft: theme.spacing.md,
+    // Mirrors ThresholdStepper's layout so the count and threshold numbers
+    // line up on the same column: [icon] [value] [spacer == + button].
+    countGroup: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    valueCell: {
+        minWidth: theme.spacing['3xl'],
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginLeft: theme.spacing.lg,
+    },
+    buttonSpacer: {
+        width: theme.spacing['3xl'],
+        marginLeft: theme.spacing.xs,
     },
 }))
