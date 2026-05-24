@@ -34,6 +34,7 @@ import { bottomSheetNotifier, PWText, PWView } from '@components/core'
 import { useNavigation } from '@react-navigation/native'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
+import { useStyles } from './styles'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 import type { Maybe } from '@perawallet/wallet-core-shared'
@@ -51,6 +52,7 @@ export const useInputScreen = () => {
         setIsCloseAccount,
     } = useSendFunds()
     const { request: requestBottomSheet } = useBottomSheet()
+    const styles = useStyles()
 
     // Seed the input from the store's prefilled amount (set by deeplink
     // handlers / external callers that open SendFunds with values ready).
@@ -203,7 +205,7 @@ export const useInputScreen = () => {
                     iconVariant='error'
                     title={t('send_funds.input.min_balance_title')}
                     message={
-                        <PWView style={{ alignItems: 'center', gap: 8 }}>
+                        <PWView style={styles.confirmMessage}>
                             <PWText variant='body'>
                                 {t('send_funds.input.min_balance_amount', {
                                     minBalance: minBalanceDisplay,
@@ -220,7 +222,7 @@ export const useInputScreen = () => {
             ),
             options: { size: 'auto', enablePanDownToClose: true },
         })
-    }, [requestBottomSheet, t, minBalanceDisplay])
+    }, [requestBottomSheet, t, minBalanceDisplay, styles.confirmMessage])
 
     const requestRekeyedMinBalanceConfirm = useCallback(async () => {
         return requestBottomSheet<boolean>({
@@ -230,7 +232,7 @@ export const useInputScreen = () => {
                     iconVariant='error'
                     title={t('send_funds.input.rekeyed_min_balance_title')}
                     message={
-                        <PWView style={{ alignItems: 'center', gap: 8 }}>
+                        <PWView style={styles.confirmMessage}>
                             <PWText variant='body'>
                                 {t(
                                     'send_funds.input.rekeyed_min_balance_amount',
@@ -248,7 +250,7 @@ export const useInputScreen = () => {
             ),
             options: { size: 'auto', enablePanDownToClose: true },
         })
-    }, [requestBottomSheet, t, minBalanceDisplay])
+    }, [requestBottomSheet, t, minBalanceDisplay, styles.confirmMessage])
 
     const confirmCloseAccount = useCallback(() => {
         const fee = toWholeUnits(params?.minFee ?? 0, ALGO_ASSET)

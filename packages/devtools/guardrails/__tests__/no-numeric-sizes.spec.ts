@@ -71,6 +71,31 @@ describe('no-numeric-sizes check', () => {
         ])
     })
 
+    it('flags numeric spacing in inline JSX style props, skipping 0 and non-literals', () => {
+        const filePath = '/virtual/inline.tsx'
+        const src = [
+            'export const C = ({ insets }: { insets: { top: number } }) => (',
+            '    <View',
+            '        style={{ gap: 8, paddingTop: insets.top, padding: 0 }}',
+            '        contentContainerStyle={[styles.row, { marginLeft: 16 }]}',
+            '    />',
+            ')',
+            '',
+        ].join('\n')
+        const sf = ts.createSourceFile(
+            filePath,
+            src,
+            ts.ScriptTarget.Latest,
+            true,
+            ts.ScriptKind.TSX,
+        )
+        const violations = run(new Map([[filePath, sf]]))
+        expect(violations.map(v => v.message)).toEqual([
+            'numeric value 8 for "gap" — use a theme token',
+            'numeric value 16 for "marginLeft" — use a theme token',
+        ])
+    })
+
     it('does not crash on files without makeStyles', () => {
         const filePath = '/virtual/plain.ts'
         const sf = ts.createSourceFile(

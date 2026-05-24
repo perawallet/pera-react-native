@@ -80,5 +80,9 @@ export const useStyles = makeStyles(theme => {
         headerTitleContainer: {
             alignItems: 'center',
         },
+        confirmMessage: {
+            alignItems: 'center',
+            gap: theme.spacing.sm,
+        },
     }
 })
