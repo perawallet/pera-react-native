@@ -21,6 +21,7 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
+import { EmptyView } from '@components/EmptyView'
 import { ScreenHeader } from '@components/ScreenHeader'
 import { LedgerDeviceItem } from '../../components/LedgerDeviceItem'
 import { LedgerCompositeIcon } from '../../components/LedgerCompositeIcon'
@@ -73,20 +74,18 @@ export const LedgerScanScreen = () => {
             return null
         }
         return (
-            <PWView style={styles.errorContainer}>
-                <PWText
-                    variant='body'
-                    style={styles.errorText}
-                >
-                    {t('ledger.scan.error')}
-                </PWText>
-                <PWButton
-                    testID='ledger_scan_retry_button'
-                    title={t('ledger.scan.retry')}
-                    onPress={handleRetry}
-                    variant='link'
-                />
-            </PWView>
+            <EmptyView
+                icon='warning'
+                body={t('ledger.scan.error')}
+                button={
+                    <PWButton
+                        testID='ledger_scan_retry_button'
+                        title={t('ledger.scan.retry')}
+                        onPress={handleRetry}
+                        variant='link'
+                    />
+                }
+            />
         )
     }
 
