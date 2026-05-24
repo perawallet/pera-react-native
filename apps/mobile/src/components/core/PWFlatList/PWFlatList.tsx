@@ -71,8 +71,7 @@ export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
               ]
 
         // LegendList needs a bounded height to scroll vertically.
-        const selfBounded =
-            props.horizontal || props.scrollEnabled === false
+        const selfBounded = props.horizontal || props.scrollEnabled === false
         const outerStyle = selfBounded ? style : [styles.fill, style]
 
         if (inBottomSheet) {

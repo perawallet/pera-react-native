@@ -22,7 +22,7 @@ export const useStyles = makeStyles(theme => {
             gap: theme.spacing.sm,
             marginTop: theme.spacing.xs,
         },
-        buttonBase: { 
+        buttonBase: {
             alignItems: 'center',
             justifyContent: 'center',
             borderRadius: theme.spacing.sm,

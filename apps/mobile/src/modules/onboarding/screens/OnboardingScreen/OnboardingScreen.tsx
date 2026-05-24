@@ -25,12 +25,12 @@ import { useOnboardingScreen } from './useOnboardingScreen'
 import welcomeBackground from '@assets/images/welcome-background.webp'
 import { useLanguage } from '@hooks/useLanguage'
 import { Trans } from 'react-i18next'
-import { Image, useWindowDimensions } from 'react-native'
+import { useWindowDimensions } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-const { width: imageWidth, height: imageHeight } =
-    Image.resolveAssetSource(welcomeBackground)
-const imageAspectRatio = imageWidth / imageHeight
+// Intrinsic dimensions of welcome-background.webp (344×544); hardcoded so we
+// don't import react-native's Image just for resolveAssetSource.
+const imageAspectRatio = 344 / 544
 
 export const OnboardingScreen = () => {
     const insets = useSafeAreaInsets()

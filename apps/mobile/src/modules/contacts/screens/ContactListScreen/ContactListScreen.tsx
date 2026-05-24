@@ -13,7 +13,13 @@
 import { useCallback } from 'react'
 import { Contact } from '@perawallet/wallet-core-contacts'
 
-import { PWButton, PWFlatList, PWIcon, PWScreen, PWView } from '@components/core'
+import {
+    PWButton,
+    PWFlatList,
+    PWIcon,
+    PWScreen,
+    PWView,
+} from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { SearchInput } from '@components/SearchInput'
 import { useAppNavigation } from '@hooks/useAppNavigation'

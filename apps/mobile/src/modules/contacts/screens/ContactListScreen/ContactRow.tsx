@@ -24,10 +24,17 @@ type ContactRowProps = {
     onSelect: (contact: Contact) => void
 }
 
-export const ContactRow = ({ contact, onShowQR, onSelect }: ContactRowProps) => {
+export const ContactRow = ({
+    contact,
+    onShowQR,
+    onSelect,
+}: ContactRowProps) => {
     const styles = useStyles()
 
-    const handlePress = useCallback(() => onSelect(contact), [contact, onSelect])
+    const handlePress = useCallback(
+        () => onSelect(contact),
+        [contact, onSelect],
+    )
     const handleShowQR = useCallback(
         () => onShowQR(contact),
         [contact, onShowQR],

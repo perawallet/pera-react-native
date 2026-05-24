@@ -11,6 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { getFontWeightVariant } from '@theme/typography'
 import { EdgeInsets } from 'react-native-safe-area-context'
 
 const HEADER_IMAGE_SCREEN_RATIO = 1 / 4
@@ -43,7 +44,7 @@ export const useStyles = makeStyles((theme, props: StyleProps) => {
             right: theme.spacing.xl,
             bottom: 0,
             zIndex: 1,
-            fontWeight: '600' as const,
+            ...getFontWeightVariant(theme, 'h1', 600),
         },
         headerImage: {
             position: 'absolute',
