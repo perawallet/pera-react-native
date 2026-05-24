@@ -19,11 +19,6 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.sm,
         alignItems: 'center',
     },
-    percentageContainer: {
-        flexDirection: 'row',
-        gap: theme.spacing.xs,
-        alignItems: 'center',
-    },
     itemUp: {
         ...getTypography(theme, 'h4'),
         color: theme.colors.buttonSquareIcon,
@@ -31,9 +26,5 @@ export const useStyles = makeStyles(theme => ({
     itemDown: {
         ...getTypography(theme, 'h4'),
         color: theme.colors.alertNegative,
-    },
-    trendIconUp: {
-        backgroundColor: theme.colors.buttonSquareBg,
-        borderRadius: theme.spacing.xl,
     },
 }))

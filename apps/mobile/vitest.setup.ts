@@ -2065,6 +2065,10 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     ),
     formatWithUnits: vi.fn(value => String(value)),
     formatNumber: vi.fn(value => String(value)),
+    formatPercentage: vi.fn(
+        (value: { toFixed: (p: number) => string }, precision = 2) =>
+            `${value.toFixed(precision)}%`,
+    ),
     generateUniqueId: vi.fn(() => 'mock-uuid'),
     generateOrderedUniqueId: vi.fn(() => 'mock-time-uuid'),
     toError: vi.fn((e: unknown) =>

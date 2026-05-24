@@ -10,18 +10,8 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => ({
-    container: {
-        flexDirection: 'row',
-        gap: theme.spacing.sm,
-        alignItems: 'center',
-    },
-    itemUp: {
-        color: theme.colors.buttonSquareIcon,
-    },
-    itemDown: {
-        color: theme.colors.alertNegative,
-    },
-}))
+export { TrendIndicator } from './TrendIndicator'
+export type {
+    TrendIndicatorProps,
+    TrendIndicatorAbsolute,
+} from './TrendIndicator'

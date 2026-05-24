@@ -23,11 +23,8 @@ import { useLanguage } from '@hooks/useLanguage'
 
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { WealthChart } from '@components/WealthChart'
-import {
-    formatDatetime,
-    formatCurrency,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import { formatDatetime, type Nullable } from '@perawallet/wallet-core-shared'
+import { percentChange } from '@perawallet/wallet-core-blockchain'
 import { useCallback, useMemo } from 'react'
 import { useChartInteraction } from '@hooks/useChartInteraction'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
@@ -44,6 +41,7 @@ import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 import { InfoButton } from '@components/InfoButton'
 import { ExpandablePanel } from '@components/ExpandablePanel'
+import { TrendIndicator } from '@components/TrendIndicator'
 
 export type PortfolioViewProps = {
     onDataSelected?: (selected: Nullable<AccountBalanceHistoryItem>) => void
@@ -82,17 +80,11 @@ export const PortfolioView = (props: PortfolioViewProps) => {
         [historyData],
     )
 
-    const [trendAbsolute, trendPercentage, isPositiveTrend] = useMemo(() => {
+    const [trendAbsolute, trendPercentage] = useMemo(() => {
         const firstDp = historyDataPoints.at(0) ?? new Decimal(0)
         const lastDp = historyDataPoints.at(-1) ?? new Decimal(0)
 
-        return [
-            lastDp.minus(firstDp),
-            lastDp.isZero()
-                ? new Decimal(0)
-                : lastDp.minus(firstDp).abs().div(lastDp).mul(100),
-            lastDp.greaterThanOrEqualTo(firstDp),
-        ]
+        return [lastDp.minus(firstDp), percentChange(firstDp, lastDp)]
     }, [historyDataPoints])
 
     const chartSelectionChanged = useCallback(
@@ -166,45 +158,16 @@ export const PortfolioView = (props: PortfolioViewProps) => {
                             {t('portfolio.last_7_days')}
                         </PWText>
 
-                        <PWView style={styles.trendContent}>
-                            {!trendPercentage.isZero() && (
-                                <PWView style={styles.trendIconContainer}>
-                                    <PWIcon
-                                        name={
-                                            isPositiveTrend
-                                                ? 'arrow-up'
-                                                : 'arrow-down'
-                                        }
-                                        variant={
-                                            isPositiveTrend ? 'helper' : 'error'
-                                        }
-                                        size='sm'
-                                    />
-                                </PWView>
-                            )}
-                            <PWText
-                                variant='h2'
-                                style={styles.primaryCurrency}
-                                truncate
-                            >
-                                {trendPercentage.toFixed(2)}%
-                            </PWText>
-                        </PWView>
-
-                        <PWText
-                            variant='h4'
-                            style={styles.valueTitle}
-                            truncate
-                        >
-                            {isPositiveTrend ? '+' : '-'}
-                            {formatCurrency(
-                                trendAbsolute.abs(),
-                                2,
-                                preferredCurrency,
-                                undefined,
-                                true,
-                            )}
-                        </PWText>
+                        <TrendIndicator
+                            percentage={trendPercentage}
+                            variant='h2'
+                            hasNeutralText
+                            shouldHideIconWhenZero
+                            absolute={{
+                                amount: trendAbsolute,
+                                currency: preferredCurrency,
+                            }}
+                        />
                     </PWView>
                 )}
 

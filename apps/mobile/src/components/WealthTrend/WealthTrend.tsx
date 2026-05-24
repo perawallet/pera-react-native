@@ -10,12 +10,13 @@
  limitations under the License
  */
 
-import { PWIcon, PWText, PWView } from '@components/core'
+import { PWView } from '@components/core'
 import { useStyles } from './styles'
 import {
     DEFAULT_PRECISION,
     HistoryPeriod,
 } from '@perawallet/wallet-core-shared'
+import { percentChange } from '@perawallet/wallet-core-blockchain'
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import { useSettings } from '@perawallet/wallet-core-settings'
@@ -25,6 +26,7 @@ import {
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
+import { TrendIndicator } from '@components/TrendIndicator'
 import { ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
 
 export type WealthTrendProps = {
@@ -66,9 +68,7 @@ export const WealthTrend = ({ account, period }: WealthTrendProps) => {
 
         return [
             lastDp.minus(firstDp),
-            firstDp.isZero()
-                ? new Decimal(0)
-                : lastDp.minus(firstDp).div(firstDp).mul(100),
+            percentChange(firstDp, lastDp),
             lastDp.greaterThanOrEqualTo(firstDp),
         ]
     }, [dataPoints])
@@ -85,17 +85,10 @@ export const WealthTrend = ({ account, period }: WealthTrendProps) => {
                 showSymbol
                 style={isPositive ? styles.itemUp : styles.itemDown}
             />
-            <PWView style={styles.percentageContainer}>
-                <PWIcon
-                    name={isPositive ? 'arrow-up' : 'arrow-down'}
-                    variant={isPositive ? 'helper' : 'error'}
-                    size='sm'
-                    style={isPositive ? styles.trendIconUp : undefined}
-                />
-                <PWText style={isPositive ? styles.itemUp : styles.itemDown}>
-                    {percentage.toFixed(2)}%
-                </PWText>
-            </PWView>
+            <TrendIndicator
+                percentage={percentage}
+                hasIconBackground
+            />
         </PWView>
     )
 }

@@ -52,19 +52,6 @@ export const useStyles = makeStyles(theme => {
         trendTitle: {
             color: theme.colors.textGray,
         },
-        trendContent: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: theme.spacing.xs,
-        },
-        trendIconContainer: {
-            backgroundColor: 'transparent',
-            borderRadius: theme.borderRadius.full,
-            width: theme.spacing.xl,
-            height: theme.spacing.xl,
-            justifyContent: 'center',
-            alignItems: 'center',
-        },
         valueTitleBar: {
             flexDirection: 'row',
             alignItems: 'center',

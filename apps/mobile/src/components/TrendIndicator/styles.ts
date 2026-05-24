@@ -14,14 +14,27 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
+        gap: theme.spacing.md,
+    },
+    percentageContainer: {
         flexDirection: 'row',
-        gap: theme.spacing.sm,
         alignItems: 'center',
+        gap: theme.spacing.xs,
     },
     itemUp: {
         color: theme.colors.buttonSquareIcon,
     },
     itemDown: {
         color: theme.colors.alertNegative,
+    },
+    itemNeutral: {
+        color: theme.colors.textMain,
+    },
+    absoluteText: {
+        color: theme.colors.textGray,
+    },
+    iconBackground: {
+        backgroundColor: theme.colors.buttonSquareBg,
+        borderRadius: theme.spacing.xl,
     },
 }))
