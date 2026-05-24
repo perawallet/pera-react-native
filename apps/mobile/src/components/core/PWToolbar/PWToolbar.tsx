@@ -32,7 +32,7 @@ export const PWToolbar = ({
     paddingStyle,
     testID,
 }: PWToolbarProps) => {
-    const styles = useStyles(paddingStyle)
+    const styles = useStyles({ paddingStyle, hasCenter: center != null })
 
     return (
         <PWView
