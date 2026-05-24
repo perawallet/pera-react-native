@@ -24,7 +24,7 @@ export const useStyles = makeStyles(theme => {
 
     return {
         externalContainer: {
-            paddingHorizontal: theme.spacing.xl,
+            paddingHorizontal: theme.spacing.lg,
             paddingVertical: theme.spacing.sm,
             backgroundColor: theme.colors.background,
         },

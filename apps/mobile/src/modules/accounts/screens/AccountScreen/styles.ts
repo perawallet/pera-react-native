@@ -44,7 +44,7 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
             flexGrow: 0,
             flexShrink: 0,
             paddingVertical: 0,
-            paddingHorizontal: theme.spacing.xl,
+            paddingHorizontal: theme.spacing.lg,
         },
         accountSelectionTrigger: {
             flex: 0,
