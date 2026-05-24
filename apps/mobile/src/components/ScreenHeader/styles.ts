@@ -18,12 +18,9 @@ export const useStyles = makeStyles(
             paddingBottom: theme.spacing.xl,
         },
         icon: {
-            marginTop: theme.spacing.xl,
+            marginTop: 0,
         },
         title: {
-            // The top margin only separates the title from the hero icon; with
-            // no icon the toolbar already provides the spacing, so drop it to
-            // avoid an oversized gap under the toolbar.
             marginTop: hasIcon ? theme.spacing.xl : 0,
         },
         description: {
