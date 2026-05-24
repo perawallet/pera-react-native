@@ -11,9 +11,10 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import * as Clipboard from 'expo-clipboard'
 
 import { MNEMONIC_WORDLIST } from '@perawallet/wallet-core-kms'
+
+import { useClipboard } from '@hooks/useClipboard'
 
 import { splitMnemonic } from '../utils'
 
@@ -54,6 +55,8 @@ export const useMnemonicWordEntry = ({
     onTooManyWords,
     onInsufficientSlots,
 }: UseMnemonicWordEntryParams): UseMnemonicWordEntryResult => {
+    const { readText } = useClipboard()
+
     const [words, setWords] = useState<string[]>(() =>
         new Array(wordCount).fill(''),
     )
@@ -130,7 +133,7 @@ export const useMnemonicWordEntry = ({
 
             if (delta > 1 && !looksLikeAutocomplete) {
                 try {
-                    const clipboardContent = await Clipboard.getStringAsync()
+                    const clipboardContent = await readText()
                     if (
                         clipboardContent &&
                         splitMnemonic(clipboardContent).length >
@@ -146,7 +149,7 @@ export const useMnemonicWordEntry = ({
 
             updateWord(value, index)
         },
-        [updateWord],
+        [updateWord, readText],
     )
 
     const handleSelectSuggestion = useCallback(

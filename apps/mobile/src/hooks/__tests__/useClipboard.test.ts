@@ -19,6 +19,7 @@ import { useToast } from '../useToast'
 
 vi.mock('expo-clipboard', () => ({
     setStringAsync: vi.fn(),
+    getStringAsync: vi.fn(),
 }))
 
 vi.mock('expo-haptics', () => ({
@@ -67,5 +68,19 @@ describe('useClipboard', () => {
                 notifier: undefined,
             },
         )
+    })
+
+    it('should read text from the clipboard', async () => {
+        ;(Clipboard.getStringAsync as Mock).mockResolvedValue('pasted text')
+
+        const { result } = renderHook(() => useClipboard())
+
+        let readValue: string | undefined
+        await act(async () => {
+            readValue = await result.current.readText()
+        })
+
+        expect(Clipboard.getStringAsync).toHaveBeenCalled()
+        expect(readValue).toBe('pasted text')
     })
 })

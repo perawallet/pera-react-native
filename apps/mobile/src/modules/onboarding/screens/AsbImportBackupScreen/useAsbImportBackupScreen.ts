@@ -11,7 +11,6 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import * as Clipboard from 'expo-clipboard'
 import { File } from 'expo-file-system'
 import {
     AsbErrorReason,
@@ -22,6 +21,7 @@ import { logger } from '@perawallet/wallet-core-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
+import { useClipboard } from '@hooks/useClipboard'
 import { useAsbImportFlowStore } from '@modules/onboarding/hooks'
 
 type LoadedFile = {
@@ -44,6 +44,7 @@ export const useAsbImportBackupScreen = (): UseAsbImportBackupScreenResult => {
     const navigation = useAppNavigation()
     const { t } = useLanguage()
     const { errorToast } = useToast()
+    const { readText } = useClipboard()
     const envelope = useAsbImportFlowStore(state => state.envelope)
     const setEnvelope = useAsbImportFlowStore(state => state.setEnvelope)
 
@@ -116,7 +117,7 @@ export const useAsbImportBackupScreen = (): UseAsbImportBackupScreenResult => {
     }, [tryLoad, errorToast, t])
 
     const handlePasteFromClipboard = useCallback(async () => {
-        const text = await Clipboard.getStringAsync()
+        const text = await readText()
         if (!text || !text.trim()) {
             errorToast(
                 t('onboarding.asb_import.backup.errors.title'),
@@ -125,7 +126,7 @@ export const useAsbImportBackupScreen = (): UseAsbImportBackupScreenResult => {
             return
         }
         tryLoad(text, t(PASTED_FILE_NAME_KEY))
-    }, [tryLoad, errorToast, t])
+    }, [tryLoad, errorToast, t, readText])
 
     const handleClearFile = useCallback(() => {
         setLoadedFile(null)

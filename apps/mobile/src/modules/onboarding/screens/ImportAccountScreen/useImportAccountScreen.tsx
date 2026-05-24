@@ -12,7 +12,6 @@
 
 import React, { useState, useCallback, useMemo } from 'react'
 import { Linking } from 'react-native'
-import * as Clipboard from 'expo-clipboard'
 
 import { RouteProp, useRoute } from '@react-navigation/native'
 import { OnboardingStackParamList } from '../../routes/types'
@@ -30,6 +29,7 @@ import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { deferToNextCycle, logger } from '@perawallet/wallet-core-shared'
+import { useClipboard } from '@hooks/useClipboard'
 import { useModalState } from '@hooks/useModalState'
 import { useDeepLink } from '@hooks/useDeepLink'
 import { DeeplinkType } from '@hooks/deeplink/types'
@@ -51,6 +51,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     const { t } = useLanguage()
     const { parseDeeplink } = useDeepLink()
     const { request: requestBottomSheet } = useBottomSheet()
+    const { readText } = useClipboard()
 
     const mnemonicLength = MNEMONIC_WORD_COUNT[accountType]
 
@@ -168,12 +169,12 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     ])
 
     const handlePastePassphrase = useCallback(async () => {
-        const content = await Clipboard.getStringAsync()
+        const content = await readText()
 
         if (content) {
             updateWord(content, 0)
         }
-    }, [updateWord])
+    }, [updateWord, readText])
 
     const handleScanQRCode = useCallback(() => {
         openQRScanner()
