@@ -18,7 +18,7 @@ import {
     PWView,
 } from '@components/core'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useStyles } from './styles'
 import { AccountOption, useAccountOptions } from './useAccountOptions'
 import { AccountInfoCard } from '../AccountInfoCard'
@@ -111,6 +111,7 @@ export const AccountOptionsContent = ({
 
     return (
         <>
+            <SheetHeader title={account.name} />
             <BottomSheetScrollView
                 contentContainerStyle={styles.container}
                 showsVerticalScrollIndicator={false}
