@@ -16,13 +16,13 @@ export const useStyles = makeStyles(theme => ({
     content: {
         flex: 1,
         alignItems: 'stretch',
-        gap: theme.spacing.lg,
+        gap: theme.spacing.md,
         width: '100%',
         minWidth: 0,
     },
     dropZoneWrap: {
         flex: 1,
-        justifyContent: 'center',
+        justifyContent: 'flex-start',
         gap: theme.spacing.lg,
         width: '100%',
         minWidth: 0,
