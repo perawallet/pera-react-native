@@ -25,7 +25,6 @@ export type AccountMenuContentResult =
 
 export type AccountMenuContentProps = {
     headerContent?: ReactNode
-    closeIconPosition?: 'left' | 'right'
     hideDefaultHeader?: boolean
     showSearch?: boolean
     accountFilter?: (account: WalletAccount) => boolean
@@ -33,7 +32,6 @@ export type AccountMenuContentProps = {
 
 export const AccountMenuContent = ({
     headerContent,
-    closeIconPosition = 'right',
     hideDefaultHeader = false,
     showSearch = false,
     accountFilter,
@@ -60,8 +58,8 @@ export const AccountMenuContent = ({
     return (
         <PWView style={styles.container}>
             <PWToolbar
-                left={closeIconPosition === 'left' ? closeIcon : searchIcon}
-                right={closeIconPosition === 'right' ? closeIcon : searchIcon}
+                left={closeIcon}
+                right={searchIcon}
                 paddingStyle='none'
                 style={styles.toolbar}
             />

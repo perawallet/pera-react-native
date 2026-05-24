@@ -34,7 +34,6 @@ export type AccountSelectionProps = {
     triggerStyle?: StyleProp<ViewStyle>
     triggerIconProps?: Omit<AccountIconProps, 'account'>
     triggerTextProps?: PWTextProps
-    closeIconPosition?: 'left' | 'right'
     hideDefaultHeader?: boolean
     showSearch?: boolean
     accountFilter?: (account: WalletAccount) => boolean
@@ -46,7 +45,6 @@ export const AccountSelection = ({
     triggerStyle,
     triggerIconProps,
     triggerTextProps,
-    closeIconPosition,
     hideDefaultHeader,
     accountFilter,
     ...props
@@ -61,7 +59,6 @@ export const AccountSelection = ({
             contents: (
                 <AccountMenuContent
                     headerContent={headerContent}
-                    closeIconPosition={closeIconPosition}
                     hideDefaultHeader={hideDefaultHeader}
                     showSearch
                     accountFilter={accountFilter}
@@ -98,7 +95,6 @@ export const AccountSelection = ({
     }, [
         requestBottomSheet,
         headerContent,
-        closeIconPosition,
         hideDefaultHeader,
         accountFilter,
         onSelected,

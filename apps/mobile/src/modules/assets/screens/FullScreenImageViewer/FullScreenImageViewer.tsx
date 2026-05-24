@@ -51,7 +51,7 @@ export const FullScreenImageViewer = ({
     return (
         <PWView style={styles.innerContainer}>
             <PWToolbar
-                right={
+                left={
                     <PWTouchableIcon
                         name='cross'
                         size='md'

@@ -86,7 +86,6 @@ export const SwapScreen = () => {
                         triggerStyle={styles.accountTrigger}
                         triggerIconProps={{ size: 'md' }}
                         triggerTextProps={{ variant: 'body' }}
-                        closeIconPosition='left'
                         hideDefaultHeader
                         headerContent={
                             <PWView style={styles.selectHeader}>
