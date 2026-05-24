@@ -12,18 +12,23 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
-    container: {
-        paddingBottom: theme.spacing.xl,
-    },
-    icon: {
-        marginTop: theme.spacing.xl,
-    },
-    title: {
-        marginTop: theme.spacing.xl,
-    },
-    description: {
-        marginTop: theme.spacing.md,
-        color: theme.colors.textGray,
-    },
-}))
+export const useStyles = makeStyles(
+    (theme, { hasIcon }: { hasIcon: boolean }) => ({
+        container: {
+            paddingBottom: theme.spacing.xl,
+        },
+        icon: {
+            marginTop: theme.spacing.xl,
+        },
+        title: {
+            // The top margin only separates the title from the hero icon; with
+            // no icon the toolbar already provides the spacing, so drop it to
+            // avoid an oversized gap under the toolbar.
+            marginTop: hasIcon ? theme.spacing.xl : 0,
+        },
+        description: {
+            marginTop: theme.spacing.md,
+            color: theme.colors.textGray,
+        },
+    }),
+)

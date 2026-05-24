@@ -46,7 +46,7 @@ export const ScreenHeader = ({
     style,
     testID,
 }: ScreenHeaderProps) => {
-    const styles = useStyles()
+    const styles = useStyles({ hasIcon: !!icon })
 
     return (
         <PWView
