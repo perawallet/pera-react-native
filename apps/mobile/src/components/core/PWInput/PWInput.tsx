@@ -106,7 +106,7 @@ export const PWInput = forwardRef<PWInputRef, PWInputProps>(
                     adjustsFontSizeToFit,
                     minimumFontScale: resolvedMinimumFontScale,
                 }}
-                containerStyle={containerStyle}
+                containerStyle={[styles.container, containerStyle]}
                 inputContainerStyle={[
                     styles.inputContainer,
                     inputContainerStyle,

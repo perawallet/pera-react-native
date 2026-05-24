@@ -23,6 +23,12 @@ export const useStyles = makeStyles((theme, { variant }: PWInputStyleProps) => {
         lineHeight: undefined,
     }
     return {
+        // RNEInput defaults its outer container to paddingHorizontal: 10, which
+        // insets every field past the screen gutter. Zero it so inputs align
+        // flush with surrounding content; callers can still override.
+        container: {
+            paddingHorizontal: 0,
+        },
         inputContainer: {
             paddingHorizontal: theme.spacing.md,
             borderRadius: theme.borderRadius.xs,
