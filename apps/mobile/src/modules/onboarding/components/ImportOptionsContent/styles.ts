@@ -20,7 +20,7 @@ export const useStyles = makeStyles(theme => ({
     optionsContainer: {
         gap: theme.spacing.md,
         marginTop: theme.spacing.lg,
-        paddingBottom: theme.spacing['4xl'],
+        paddingBottom: theme.spacing.lg,
         width: '100%',
     },
     optionBox: {
@@ -55,13 +55,11 @@ export const useStyles = makeStyles(theme => ({
         minWidth: 0,
     },
     optionTitleContainer: {
-        flex: 1,
+        flexShrink: 1,
         minWidth: 0,
     },
     optionChipContainer: {
-        flexShrink: 1,
-        minWidth: 0,
-        maxWidth: '45%',
+        flexShrink: 0,
     },
     optionBody: {
         color: theme.colors.textGray,
