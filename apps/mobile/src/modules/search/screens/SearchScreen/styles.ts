@@ -13,6 +13,9 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
+    searchContainer: {
+        marginTop: theme.spacing.md,
+    },
     searchField: {
         borderRadius: theme.spacing.sm,
         paddingHorizontal: theme.spacing.sm,

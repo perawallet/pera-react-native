@@ -164,6 +164,7 @@ export const SearchScreen = () => {
                 value={value}
                 onChangeText={setValue}
                 placeholder={t('search.placeholder')}
+                containerStyle={styles.searchContainer}
                 inputContainerStyle={styles.searchField}
                 testID='search_input'
             />
