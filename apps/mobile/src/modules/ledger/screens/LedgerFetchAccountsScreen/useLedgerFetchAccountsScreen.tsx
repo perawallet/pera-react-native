@@ -13,6 +13,7 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { RouteProp, useRoute } from '@react-navigation/native'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useIsMounted } from '@hooks/useIsMounted'
 import { useLanguage } from '@hooks/useLanguage'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { LedgerConnectionStatus } from '@perawallet/wallet-core-ledger'
@@ -55,6 +56,7 @@ export const useLedgerFetchAccountsScreen =
         } = useRoute<LedgerFetchAccountsRouteProp>()
         const { t } = useLanguage()
         const navigation = useAppNavigation()
+        const isMounted = useIsMounted()
         const { request: requestBottomSheet, dismiss } = useBottomSheet()
 
         const [connectionStatus, setConnectionStatus] =
@@ -67,7 +69,6 @@ export const useLedgerFetchAccountsScreen =
         const [error, setError] = useState<Nullable<AppError>>(null)
 
         const hasStartedRef = useRef(false)
-        const mountedRef = useRef(true)
         const transportRef = useRef<Nullable<HardwareWalletTransport>>(null)
         const openIdRef = useRef<string | null>(null)
 
@@ -100,7 +101,7 @@ export const useLedgerFetchAccountsScreen =
 
                 transportRef.current = result.transport
 
-                if (!mountedRef.current) {
+                if (!isMounted()) {
                     await result.transport.disconnect()
                     return
                 }
@@ -119,23 +120,21 @@ export const useLedgerFetchAccountsScreen =
                     accounts: result.accounts,
                 })
             } catch (err) {
-                if (!mountedRef.current) return
+                if (!isMounted()) return
                 const resolvedError = classifyLedgerError(err)
                 setError(resolvedError)
                 setConnectionStatus('disconnected')
                 setIsDiscovering(false)
             }
-        }, [deviceId, deviceName, transportType, navigation])
+        }, [deviceId, deviceName, transportType, navigation, isMounted])
 
         useEffect(() => {
-            mountedRef.current = true
             if (hasStartedRef.current) return
             hasStartedRef.current = true
 
             run()
 
             return () => {
-                mountedRef.current = false
                 transportRef.current?.disconnect().catch(() => {})
             }
         }, [run])

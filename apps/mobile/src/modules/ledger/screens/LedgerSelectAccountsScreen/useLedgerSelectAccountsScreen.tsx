@@ -32,6 +32,7 @@ import {
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useIsMounted } from '@hooks/useIsMounted'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -73,6 +74,7 @@ export const useLedgerSelectAccountsScreen =
         } = useRoute<LedgerSelectAccountsRouteProp>()
         const { t } = useLanguage()
         const navigation = useAppNavigation()
+        const isMounted = useIsMounted()
         const allAccounts = useAllAccounts()
         const { errorToast } = useToast()
 
@@ -89,18 +91,10 @@ export const useLedgerSelectAccountsScreen =
 
         const transportRef = useRef<Nullable<HardwareWalletTransport>>(null)
         const inFlightRef = useRef(false)
-        const isMountedRef = useRef(true)
         const accountsRef = useRef<LedgerAccount[]>(routeAccounts)
         // Network-scoped set of addresses already warmed, so growing the
         // list (Find another / rekeyed scan) only prefetches new addresses.
         const prefetchedRef = useRef<Set<string>>(new Set())
-
-        useEffect(() => {
-            isMountedRef.current = true
-            return () => {
-                isMountedRef.current = false
-            }
-        }, [])
 
         useEffect(() => {
             accountsRef.current = accounts
@@ -285,21 +279,21 @@ export const useLedgerSelectAccountsScreen =
                     false,
                 )
 
-                if (!isMountedRef.current) return
+                if (!isMounted()) return
 
                 setAccounts(prev => [...prev, next])
             } catch (err) {
-                if (!isMountedRef.current) return
+                if (!isMounted()) return
                 const error = classifyLedgerError(err)
                 const preset = getLedgerErrorPreset(error, t)
                 errorToast(preset.title, preset.body)
             } finally {
                 inFlightRef.current = false
-                if (isMountedRef.current) {
+                if (isMounted()) {
                     setIsFetchingMore(false)
                 }
             }
-        }, [deviceId, transportType, errorToast, t])
+        }, [deviceId, transportType, errorToast, t, isMounted])
 
         const handleInfoPress = useCallback(
             (address: string, accountIndex: number) => {
