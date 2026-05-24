@@ -38,7 +38,7 @@ const useStyles = makeStyles((theme, { topInset }: StyleProps) => {
             // Push the toast below the status bar / notch — `topInset` covers
             // the system status-bar height (or safe-area inset on iOS) so the
             // toast doesn't overlap battery / clock / camera cutout.
-            marginTop: theme.spacing.sm,
+            marginTop: topInset + theme.spacing.sm,
             borderWidth: theme.borders.none,
         },
         successStyle: {
