@@ -33,7 +33,6 @@ export const useContentStyles = makeStyles(theme => ({
         minWidth: 0,
     },
     contentContainer: {
-        marginBottom: theme.spacing.xl,
         width: '100%',
         minWidth: 0,
     },
