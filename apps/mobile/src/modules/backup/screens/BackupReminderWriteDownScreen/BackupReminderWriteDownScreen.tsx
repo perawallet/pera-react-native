@@ -30,7 +30,7 @@ export const BackupReminderWriteDownScreen = () => {
                 <EditPenImage
                     width={ILLUSTRATION_SIZE}
                     height={ILLUSTRATION_SIZE}
-                    color={theme.colors.linkPrimary}
+                    color={theme.colors.textMain}
                 />
             }
             title={t('backup.write_down.title')}

@@ -28,7 +28,7 @@ export const BackupInfoScreen = () => {
                 <ShieldCheckImage
                     width={ILLUSTRATION_SIZE}
                     height={ILLUSTRATION_SIZE}
-                    color={theme.colors.linkPrimary}
+                    color={theme.colors.textMain}
                 />
             }
             title={t('backup.info.title')}
