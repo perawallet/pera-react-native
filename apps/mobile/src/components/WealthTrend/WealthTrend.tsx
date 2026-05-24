@@ -88,6 +88,7 @@ export const WealthTrend = ({ account, period }: WealthTrendProps) => {
             <TrendIndicator
                 percentage={percentage}
                 hasIconBackground
+                shouldHideIconWhenZero
             />
         </PWView>
     )

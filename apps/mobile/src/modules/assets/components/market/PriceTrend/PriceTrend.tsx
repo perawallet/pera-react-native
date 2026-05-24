@@ -80,6 +80,7 @@ export const PriceTrend = ({
             <TrendIndicator
                 percentage={changePercentage}
                 hasIconBackground
+                shouldHideIconWhenZero
             />
         </PWView>
     )
