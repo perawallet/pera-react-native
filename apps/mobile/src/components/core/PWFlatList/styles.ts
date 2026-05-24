@@ -12,7 +12,14 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
+type StyleProps = {
+    // Safe-area bottom inset to add below the last row. Non-zero only for
+    // bottom-sheet lists, which extend past the home indicator; screen lists
+    // get their bottom inset from PWScreen instead.
+    bottomInset: number
+}
+
+export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
     fill: {
         flex: 1,
     },
@@ -21,6 +28,6 @@ export const useStyles = makeStyles(theme => ({
     },
     verticalContentContainer: {
         flexGrow: 1,
-        paddingBottom: theme.spacing.xl,
+        paddingBottom: theme.spacing.xl + bottomInset,
     },
 }))
