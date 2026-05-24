@@ -17,11 +17,11 @@ type StyleProps = {
 }
 
 export const useStyles = makeStyles((theme, { isHighlighted }: StyleProps) => ({
+    // Mirrors AccountWithBalance's card so wallet rows match account rows.
     container: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: theme.spacing.sm,
+        gap: theme.spacing.md,
         width: '100%',
         backgroundColor: theme.colors.layerGrayLightest,
         borderWidth: theme.borders.sm,
@@ -30,5 +30,12 @@ export const useStyles = makeStyles((theme, { isHighlighted }: StyleProps) => ({
             : theme.colors.layerGray,
         borderRadius: theme.spacing.lg,
         padding: theme.spacing.md,
+    },
+    textContainer: {
+        flex: 1,
+    },
+    subtitle: {
+        color: theme.colors.textGray,
+        marginTop: theme.spacing.xxs,
     },
 }))

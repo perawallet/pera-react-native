@@ -12,11 +12,12 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(() => ({
-    content: {
-        flex: 1,
+export const useStyles = makeStyles(theme => ({
+    container: {
+        alignItems: 'flex-end',
+        gap: theme.spacing.xs,
     },
-    list: {
-        flex: 1,
+    fiatText: {
+        color: theme.colors.textGray,
     },
 }))

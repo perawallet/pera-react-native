@@ -10,13 +10,5 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(() => ({
-    content: {
-        flex: 1,
-    },
-    list: {
-        flex: 1,
-    },
-}))
+export { BalanceListItem } from './BalanceListItem'
+export type { BalanceListItemProps } from './BalanceListItem'

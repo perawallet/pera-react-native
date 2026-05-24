@@ -13,18 +13,13 @@
 import React from 'react'
 import {
     PWView,
-    PWText,
     PWFlatList,
-    PWRoundIcon,
-    PWTouchableOpacity,
     PWButton,
     PWLoadingOverlay,
     PWScreen,
 } from '@components/core'
 import { type HDWalletGroup } from '@perawallet/wallet-core-accounts'
-import { ALGO_ASSET, ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
+import { BalanceListItem } from '@components/BalanceListItem'
 import { ScreenHeader } from '@components/ScreenHeader'
 import { Decimal } from 'decimal.js'
 import { useStyles } from './styles'
@@ -62,46 +57,16 @@ export const SelectHDWalletScreen = () => {
         )
 
         return (
-            <PWTouchableOpacity
-                style={styles.walletItem}
+            <BalanceListItem
+                icon='wallet-with-algo'
+                title={walletLabel}
+                subtitle={t('onboarding.select_hd_wallet.account_count', {
+                    count: item.accountCount,
+                })}
+                algoValue={groupAlgoValue}
                 onPress={() => handleSelectWallet(item)}
                 testID={`select_hd_wallet_item_${index}`}
-            >
-                <PWRoundIcon
-                    icon='wallet-with-algo'
-                    size='lg'
-                    style={styles.walletIconContainer}
-                />
-                <PWView style={styles.walletTextContainer}>
-                    <PWText variant='h3'>{walletLabel}</PWText>
-                    <PWText
-                        variant='body'
-                        style={styles.walletSubtitle}
-                    >
-                        {t('onboarding.select_hd_wallet.account_count', {
-                            count: item.accountCount,
-                        })}
-                    </PWText>
-                </PWView>
-                <PWView style={styles.balanceContainer}>
-                    <CurrencyDisplay
-                        currency='ALGO'
-                        value={groupAlgoValue}
-                        precision={ALGO_ASSET.decimals}
-                        minPrecision={2}
-                        style={styles.algoBalance}
-                        variant='h4'
-                    />
-                    <PreferredCurrencyDisplay
-                        sourceAssetId={ALGO_ASSET_ID}
-                        sourceAmount={groupAlgoValue}
-                        precision={2}
-                        minPrecision={2}
-                        style={styles.fiatBalance}
-                        variant='body'
-                    />
-                </PWView>
-            </PWTouchableOpacity>
+            />
         )
     }
 
