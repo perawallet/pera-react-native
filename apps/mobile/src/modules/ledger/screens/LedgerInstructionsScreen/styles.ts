@@ -33,8 +33,4 @@ export const useStyles = makeStyles(theme => ({
         flex: 1,
         color: theme.colors.textMain,
     },
-    footer: {
-        borderTopWidth: theme.borders.sm,
-        borderTopColor: theme.colors.layerGrayLighter,
-    },
 }))

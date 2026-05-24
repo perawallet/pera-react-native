@@ -31,8 +31,6 @@ export const useStyles = makeStyles(theme => ({
         paddingHorizontal: theme.spacing.xl,
     },
     footerInner: {
-        borderTopWidth: theme.borders.sm,
-        borderTopColor: theme.colors.layerGrayLighter,
         backgroundColor: theme.colors.background,
     },
     continueButton: {

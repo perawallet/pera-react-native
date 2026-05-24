@@ -18,7 +18,5 @@ export const useStyles = makeStyles(theme => ({
     },
     buttonContainer: {
         gap: theme.spacing.md,
-        borderTopWidth: theme.borders.sm,
-        borderTopColor: theme.colors.layerGrayLightest,
     },
 }))

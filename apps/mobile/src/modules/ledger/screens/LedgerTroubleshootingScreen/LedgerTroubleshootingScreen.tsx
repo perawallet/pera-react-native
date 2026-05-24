@@ -24,7 +24,6 @@ export const LedgerTroubleshootingScreen = () => {
         <PWScreen
             testID='ledger-troubleshooting-screen'
             contentContainerStyle={styles.content}
-            footerStyle={styles.footer}
             footer={
                 <PWButton
                     testID='ledger_troubleshooting_done_button'

@@ -50,8 +50,4 @@ export const useStyles = makeStyles(theme => ({
         marginTop: theme.spacing.sm,
         marginRight: theme.spacing.md,
     },
-    footer: {
-        borderTopWidth: theme.borders.sm,
-        borderTopColor: theme.colors.layerGrayLighter,
-    },
 }))

@@ -46,7 +46,6 @@ export const LedgerInstructionsScreen = () => {
     return (
         <PWScreen
             scroll={false}
-            footerStyle={styles.footer}
             footer={
                 <PWButton
                     testID='ledger_instructions_continue_button'
