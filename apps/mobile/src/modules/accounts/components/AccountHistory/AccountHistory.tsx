@@ -13,6 +13,7 @@
 import { useCallback } from 'react'
 import { PWButton, PWText, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
+import { LoadingView } from '@components/LoadingView'
 import { useLanguage } from '@hooks/useLanguage'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 import { ActivityIndicator, SectionList } from 'react-native'
@@ -77,9 +78,11 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
     const renderEmptyComponent = useCallback(() => {
         if (isLoading) {
             return (
-                <PWView style={styles.loadingContainer}>
-                    <ActivityIndicator size='large' />
-                </PWView>
+                <LoadingView
+                    variant='circle'
+                    size='lg'
+                    style={styles.loadingContainer}
+                />
             )
         }
         return (
@@ -145,9 +148,11 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
                 ListFooterComponent={renderFooter}
             />
             {isLoading && !sections.length && (
-                <PWView style={styles.loadingOverlay}>
-                    <ActivityIndicator size='large' />
-                </PWView>
+                <LoadingView
+                    variant='circle'
+                    size='lg'
+                    style={styles.loadingOverlay}
+                />
             )}
         </PWView>
     )
