@@ -389,10 +389,14 @@ const cases: Case[] = [
         `address-actions/?address=${ADDRESS}`,
         { kind: 'requestByType', type: 'account-actions' },
         () => {
-            expect(mockRequestByType).toHaveBeenCalledWith('account-actions', {
-                address: ADDRESS,
-                label: undefined,
-            })
+            expect(mockRequestByType).toHaveBeenCalledWith(
+                'account-actions',
+                {
+                    address: ADDRESS,
+                    label: undefined,
+                },
+                { enablePanDownToClose: true },
+            )
         },
     ),
 
@@ -478,10 +482,14 @@ const cases: Case[] = [
         `asset-opt-in/?assetId=${ASSET_ID}`,
         { kind: 'requestByType', type: 'asset-opt-in' },
         () => {
-            expect(mockRequestByType).toHaveBeenCalledWith('asset-opt-in', {
-                assetId: ASSET_ID,
-                accountAddress: 'fallback-addr',
-            })
+            expect(mockRequestByType).toHaveBeenCalledWith(
+                'asset-opt-in',
+                {
+                    assetId: ASSET_ID,
+                    accountAddress: 'fallback-addr',
+                },
+                { enablePanDownToClose: true },
+            )
         },
     ),
 
@@ -648,10 +656,14 @@ const cases: Case[] = [
         url: `algorand://${ADDRESS}`,
         expect: { kind: 'requestByType', type: 'account-actions' },
         extra: () => {
-            expect(mockRequestByType).toHaveBeenCalledWith('account-actions', {
-                address: ADDRESS,
-                label: undefined,
-            })
+            expect(mockRequestByType).toHaveBeenCalledWith(
+                'account-actions',
+                {
+                    address: ADDRESS,
+                    label: undefined,
+                },
+                { enablePanDownToClose: true },
+            )
         },
     },
     {

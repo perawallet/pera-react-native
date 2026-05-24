@@ -2526,6 +2526,14 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
             )
         },
     ),
+    percentChange: vi.fn((first: unknown, last: unknown) => {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const { Decimal } = require('decimal.js')
+        const firstDp = new Decimal(String(first))
+        const lastDp = new Decimal(String(last))
+        if (firstDp.isZero()) return new Decimal(0)
+        return lastDp.minus(firstDp).div(firstDp).mul(100)
+    }),
 }))
 
 // Stub lottie-react-native globally. It ships untransformed TSX inside its

@@ -95,8 +95,12 @@ describe('WealthTrend', () => {
             isPending: false,
         } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
 
-        const { container } = render(<WealthTrend period='one-week' />)
-        expect(container.textContent).toContain('-')
+        const { container, getByTestId } = render(
+            <WealthTrend period='one-week' />,
+        )
+        // Direction is shown by the down arrow; the percentage itself is the
+        // absolute magnitude.
+        expect(getByTestId('trend-indicator-down')).toBeTruthy()
         expect(container.textContent).toContain('%')
     })
 

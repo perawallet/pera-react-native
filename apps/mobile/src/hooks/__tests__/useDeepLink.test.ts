@@ -999,10 +999,14 @@ describe('useDeepLink', () => {
         // Routes to the account-actions bottom sheet (Send / Watch / Add
         // Contact menu); the in-sheet handlers themselves prefill send-funds
         // when the user picks "Send".
-        expect(mockRequestByType).toHaveBeenCalledWith('account-actions', {
-            address: 'recipient1',
-            label: 'Friend',
-        })
+        expect(mockRequestByType).toHaveBeenCalledWith(
+            'account-actions',
+            {
+                address: 'recipient1',
+                label: 'Friend',
+            },
+            { enablePanDownToClose: true },
+        )
     })
 
     it('should open send-funds bottom sheet for RECEIVER_ACCOUNT_SELECTION deeplink', async () => {
