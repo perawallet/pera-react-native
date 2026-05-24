@@ -26,6 +26,10 @@ export const useStyles = makeStyles(theme => {
             alignItems: 'center',
         },
         bodyContainer: {
+            // Stretch to the full width — the container centers its children,
+            // which would otherwise shrink this block to its content width and
+            // leave the button/tips not spanning the available space.
+            width: '100%',
             paddingHorizontal: theme.spacing.xl,
         },
         title: {
