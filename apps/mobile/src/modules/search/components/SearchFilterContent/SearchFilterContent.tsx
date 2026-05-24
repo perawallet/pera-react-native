@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useState } from 'react'
 import { PWSwitch, PWText, PWView } from '@components/core'
 import { SEARCH_SCOPES, type SearchScope } from '@perawallet/wallet-core-search'
 import { SheetHeader } from '@modules/bottom-sheet'
@@ -34,28 +35,37 @@ export const SearchFilterContent = ({
     const styles = useStyles()
     const { t } = useLanguage()
 
+    // The sheet is rendered once as static bottom-sheet content, so it never
+    // sees updates to the `scopes` prop. Track the toggles locally (seeded from
+    // the initial scopes) to drive the switches, and mirror each change up to
+    // the parent so the live search refreshes.
+    const [activeScopes, setActiveScopes] = useState<SearchScope[]>(scopes)
+
+    const handleToggle = (scope: SearchScope) => {
+        setActiveScopes(prev =>
+            prev.includes(scope)
+                ? prev.filter(s => s !== scope)
+                : [...prev, scope],
+        )
+        onToggleScope(scope)
+    }
+
     return (
         <PWView style={styles.container}>
             <SheetHeader title={t('search.filter.title')} />
-            {SEARCH_SCOPES.map(scope => {
-                const enabled = scopes.includes(scope)
-                return (
-                    <PWView
-                        key={scope}
-                        style={styles.row}
-                    >
-                        <PWText variant='body'>
-                            {t(SCOPE_LABEL_KEYS[scope])}
-                        </PWText>
-                        <PWSwitch
-                            key={`${scope}-${enabled}`}
-                            value={enabled}
-                            onValueChange={() => onToggleScope(scope)}
-                            testID={`search_filter_toggle_${scope}`}
-                        />
-                    </PWView>
-                )
-            })}
+            {SEARCH_SCOPES.map(scope => (
+                <PWView
+                    key={scope}
+                    style={styles.row}
+                >
+                    <PWText variant='body'>{t(SCOPE_LABEL_KEYS[scope])}</PWText>
+                    <PWSwitch
+                        value={activeScopes.includes(scope)}
+                        onValueChange={() => handleToggle(scope)}
+                        testID={`search_filter_toggle_${scope}`}
+                    />
+                </PWView>
+            ))}
         </PWView>
     )
 }
