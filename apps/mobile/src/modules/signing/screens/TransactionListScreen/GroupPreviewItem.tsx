@@ -13,9 +13,11 @@
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { TransactionIcon } from '@modules/transactions/components/TransactionIcon'
 import { useLanguage } from '@hooks/useLanguage'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import { bytesToHex } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import { useMemo } from 'react'
+
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 
 type GroupPreviewItemProps = {
     transactions: PeraDisplayableTransaction[]
@@ -30,9 +32,10 @@ export const GroupPreviewItem = ({
     const { t } = useLanguage()
     const groupId = useMemo(
         () =>
-            Buffer.from(transactions.at(0)?.group ?? '')
-                .toString('hex')
-                .slice(0, 10),
+            bytesToHex(transactions.at(0)?.group ?? new Uint8Array()).slice(
+                0,
+                10,
+            ),
         [transactions],
     )
 
