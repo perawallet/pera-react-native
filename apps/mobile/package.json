@@ -156,7 +156,7 @@
     "@babel/plugin-transform-export-namespace-from": "^7.27.1",
     "@babel/preset-env": "^7.28.5",
     "@babel/runtime": "catalog:",
-    "@expo/dom-webview": "^55.0.5",
+    "@expo/dom-webview": "^56.0.5",
     "@expo/metro-config": "^55.0.15",
     "@react-native/babel-preset": "0.83.0",
     "@react-native/codegen": "^0.83.0",
