@@ -61,6 +61,12 @@ export type SigningPipeline = {
     allTransactions: PeraDisplayableTransaction[]
     listItems: TransactionListItem[]
     signableAddresses: Set<string>
+    /**
+     * Indices into `allTransactions` the wallet will actually sign. The UI
+     * uses this to label slots the wallet skips (other-party-signed atomic
+     * group members, `signers: []` entries). Empty set when no request.
+     */
+    signableIndices: Set<number>
     totalFee: Decimal
     warnings: TransactionWarning[]
     distinctWarnings: TransactionWarning[]

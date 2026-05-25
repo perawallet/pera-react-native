@@ -132,6 +132,69 @@ describe('useSigningPipeline', () => {
         expect(result.current.signableAddresses.size).toBeGreaterThan(0)
     })
 
+    test('prefers groupContext over txs for display so partial atomic groups show fully', () => {
+        const wallet = { sender: { toString: () => 'ADDR_A' }, fee: 1000n }
+        const other = { sender: { toString: () => 'ADDR_B' }, fee: 1000n }
+        const request: TransactionSignRequest = {
+            id: 'req-2',
+            type: 'transactions',
+            transport: 'algod',
+            // Wallet only signs slot 0; slot 1 is the other party's tx.
+            txs: [wallet as never],
+            groupContext: [wallet as never, other as never],
+            signableIndices: [0],
+        }
+        mockSigningRequest.currentRequest = request
+
+        const { result } = renderHook(() => useSigningPipeline())
+        expect(result.current.allTransactions).toHaveLength(2)
+        expect(result.current.signableIndices).toEqual(new Set([0]))
+    })
+
+    test('stamps isExternal on list items based on signableIndices', () => {
+        // Three transactions without a group so they each become a
+        // SingleTransactionItem directly (no group-expansion path).
+        const tx0 = { sender: { toString: () => 'ADDR_A' }, fee: 1000n }
+        const tx1 = { sender: { toString: () => 'ADDR_B' }, fee: 1000n }
+        const tx2 = { sender: { toString: () => 'ADDR_A' }, fee: 1000n }
+        const request: TransactionSignRequest = {
+            id: 'req-external',
+            type: 'transactions',
+            transport: 'algod',
+            // Wallet signs slots 0 and 2; slot 1 belongs to the other party.
+            txs: [tx0 as never, tx2 as never],
+            groupContext: [tx0 as never, tx1 as never, tx2 as never],
+            signableIndices: [0, 2],
+        }
+        mockSigningRequest.currentRequest = request
+
+        const { result } = renderHook(() => useSigningPipeline())
+
+        // Three items, one per transaction (no grouping without a `group` field).
+        expect(result.current.listItems).toHaveLength(3)
+        expect(
+            result.current.listItems.map(
+                item => (item as { isExternal: boolean }).isExternal,
+            ),
+        ).toEqual([false, true, false])
+    })
+
+    test('defaults signableIndices to all indices when groupContext is absent', () => {
+        const request: TransactionSignRequest = {
+            id: 'req-3',
+            type: 'transactions',
+            transport: 'algod',
+            txs: [
+                { sender: { toString: () => 'ADDR_A' }, fee: 1000n } as never,
+                { sender: { toString: () => 'ADDR_A' }, fee: 1000n } as never,
+            ],
+        }
+        mockSigningRequest.currentRequest = request
+
+        const { result } = renderHook(() => useSigningPipeline())
+        expect(result.current.signableIndices).toEqual(new Set([0, 1]))
+    })
+
     test('subscribes to actor ref and derives stage from snapshot', () => {
         const subscriberCalls: Array<(s: unknown) => void> = []
         const actorRef = {

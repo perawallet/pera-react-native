@@ -10,12 +10,5 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => ({
-    container: {
-        alignItems: 'flex-start',
-        gap: theme.spacing.md,
-        width: '100%',
-    },
-}))
+export { ExternalTransactionInfoContent } from './ExternalTransactionInfoContent'
+export type { ExternalTransactionInfoContentProps } from './ExternalTransactionInfoContent'

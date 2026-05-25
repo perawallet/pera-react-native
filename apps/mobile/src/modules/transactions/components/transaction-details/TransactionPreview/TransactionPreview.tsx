@@ -10,42 +10,85 @@
  limitations under the License
  */
 
-import { PWIcon, PWTouchableOpacity, PWView } from '@components/core'
+import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
+import { useLanguage } from '@hooks/useLanguage'
+import { useBottomSheet } from '@modules/bottom-sheet'
+import { ExternalTransactionInfoContent } from '@modules/signing/components/ExternalTransactionInfoContent'
 import { TransactionIcon } from '@modules/transactions/components/TransactionIcon'
 import {
     classifyDisplayableTransaction,
     PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
+import { GestureResponderEvent } from 'react-native'
 import { useStyles } from './styles'
 import { TxTypeDetails } from './TxTypeDetails'
 
 export type TransactionPreviewProps = {
     transaction: PeraDisplayableTransaction
     onPress?: (tx: PeraDisplayableTransaction) => void
+    /**
+     * When true, render the "Other signer" pill in the right slot. The pill
+     * is tappable independently of the row and opens the
+     * {@link ExternalTransactionInfoContent} bottom sheet.
+     */
+    isExternal?: boolean
 }
 
 export const TransactionPreview = ({
     transaction,
     onPress,
+    isExternal = false,
 }: TransactionPreviewProps) => {
     const styles = useStyles()
+    const { t } = useLanguage()
+    const { request: requestBottomSheet } = useBottomSheet()
     const type = classifyDisplayableTransaction(transaction)
 
-    const handlePress = () => {
+    const handleRowPress = () => {
         onPress?.(transaction)
+    }
+
+    const handlePillPress = (e: GestureResponderEvent) => {
+        e.stopPropagation()
+        void requestBottomSheet<void>({
+            contents: <ExternalTransactionInfoContent />,
+            options: { size: 'auto', enablePanDownToClose: true },
+        })
     }
 
     return (
         <PWTouchableOpacity
             style={styles.container}
-            onPress={handlePress}
+            onPress={handleRowPress}
         >
             <TransactionIcon
                 type={type}
                 size='sm'
             />
-            <TxTypeDetails tx={transaction} />
+            <TxTypeDetails
+                tx={transaction}
+                isExternal={isExternal}
+            />
             <PWView style={styles.rightContent}>
+                {isExternal && (
+                    <PWTouchableOpacity
+                        testID='transaction-preview-external-pill'
+                        onPress={handlePillPress}
+                        hitSlop={8}
+                        style={styles.externalPill}
+                    >
+                        <PWText
+                            variant='caption'
+                            style={styles.externalPillText}
+                        >
+                            {t('signing.external_transaction.pill_label')}
+                        </PWText>
+                        <PWIcon
+                            name='info'
+                            size='xs'
+                        />
+                    </PWTouchableOpacity>
+                )}
                 <PWIcon
                     name='chevron-right'
                     size='sm'

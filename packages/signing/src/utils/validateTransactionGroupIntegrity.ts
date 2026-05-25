@@ -67,13 +67,33 @@ export const validateTransactionGroupIntegrity = (
 ): void => {
     // Partition by claimed group ID. Ungrouped transactions are independent
     // — ARC-0001 allows them alongside grouped txs in the same request.
+    // Per spec, txns sharing a group ID must also be CONTIGUOUS in the
+    // request; we track which group keys have been "closed" (left and not
+    // returned to) and reject any later txn that re-opens one.
     const partitions = new Map<
         string,
         { group: Uint8Array; txs: PeraTransaction[] }
     >()
+    const closedGroupKeys = new Set<string>()
+    let activeGroupKey: string | null = null
     for (const tx of transactions) {
-        if (!tx.group) continue
+        if (!tx.group) {
+            if (activeGroupKey !== null) {
+                closedGroupKeys.add(activeGroupKey)
+                activeGroupKey = null
+            }
+            continue
+        }
         const key = bytesToHex(tx.group)
+        if (key !== activeGroupKey) {
+            if (closedGroupKeys.has(key)) {
+                throw new InvalidSignableDataError(
+                    'group transactions with the same group ID must be contiguous',
+                )
+            }
+            if (activeGroupKey !== null) closedGroupKeys.add(activeGroupKey)
+            activeGroupKey = key
+        }
         const existing = partitions.get(key)
         if (existing) {
             existing.txs.push(tx)

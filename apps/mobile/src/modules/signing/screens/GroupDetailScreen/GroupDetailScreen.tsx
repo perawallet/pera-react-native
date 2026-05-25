@@ -13,7 +13,7 @@
 import { useCallback } from 'react'
 import { PWFlatList, PWView } from '@components/core'
 import { TransactionPreview } from '@modules/transactions/components/transaction-details/TransactionPreview'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import type { SingleTransactionItem } from '@perawallet/wallet-core-signing'
 import { GroupDetailHeader } from './GroupDetailHeader'
 import { useStyles } from './styles'
 import { useGroupDetailScreen } from './useGroupDetailScreen'
@@ -24,9 +24,10 @@ export const GroupDetailScreen = () => {
         useGroupDetailScreen()
 
     const renderItem = useCallback(
-        ({ item }: { item: PeraDisplayableTransaction }) => (
+        ({ item }: { item: SingleTransactionItem }) => (
             <TransactionPreview
-                transaction={item}
+                transaction={item.transaction}
+                isExternal={item.isExternal}
                 onPress={() => handleTransactionPress(item)}
             />
         ),

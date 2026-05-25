@@ -13,11 +13,11 @@
 import { useCallback } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import {
     useSigningPipeline,
     type TransactionSignRequest,
     type TransactionListItem,
+    type SingleTransactionItem,
 } from '@perawallet/wallet-core-signing'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import type { SigningStackParamList } from '@modules/signing/routes'
@@ -34,8 +34,11 @@ export const useTransactionListScreen = () => {
     const request = currentRequest as Optional<TransactionSignRequest>
 
     const handleTransactionPress = useCallback(
-        (tx: PeraDisplayableTransaction) => {
-            navigation.navigate('TransactionDetails', { transaction: tx })
+        (item: SingleTransactionItem) => {
+            navigation.navigate('TransactionDetails', {
+                transaction: item.transaction,
+                isExternal: item.isExternal,
+            })
         },
         [navigation],
     )

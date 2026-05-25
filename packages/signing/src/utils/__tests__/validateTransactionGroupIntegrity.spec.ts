@@ -152,4 +152,55 @@ describe('validateTransactionGroupIntegrity', () => {
             'group ID does not match the transactions provided',
         )
     })
+
+    test('rejects when txns with the same group ID are not contiguous (spec violation)', () => {
+        // ARC-0001 §group rules: txns sharing a group ID must be consecutive.
+        // [A_grpX, B_grpY, A_grpX] would pass per-partition hash recompute
+        // (the dApp computed grpX over [A, A] originally) but breaks the
+        // ordering rule — wallet MUST reject.
+        const groupX = groupTransactions([
+            makePayment(senderA, 1n),
+            makePayment(senderA, 2n),
+        ])
+        const groupY = groupTransactions([
+            makePayment(senderA, 3n),
+            makePayment(senderA, 4n),
+        ])
+        const interleaved = [groupX[0], groupY[0], groupY[1], groupX[1]]
+        expect(() => validateTransactionGroupIntegrity(interleaved)).toThrow(
+            InvalidSignableDataError,
+        )
+        expect(() => validateTransactionGroupIntegrity(interleaved)).toThrow(
+            'group transactions with the same group ID must be contiguous',
+        )
+    })
+
+    test('rejects when an ungrouped txn splits members of the same group', () => {
+        // [A_grpX, ungrouped, B_grpX] — group X members aren't contiguous.
+        const groupX = groupTransactions([
+            makePayment(senderA, 1n),
+            makePayment(senderA, 2n),
+        ])
+        const split = [groupX[0], makePayment(senderA, 9n), groupX[1]]
+        expect(() => validateTransactionGroupIntegrity(split)).toThrow(
+            'group transactions with the same group ID must be contiguous',
+        )
+    })
+
+    test('passes when distinct groups are concatenated contiguously (Format 2)', () => {
+        // Sanity: the spec's allowed shape — multiple complete groups
+        // concatenated in order — must still pass.
+        const groupX = groupTransactions([
+            makePayment(senderA, 1n),
+            makePayment(senderA, 2n),
+        ])
+        const groupY = groupTransactions([
+            makePayment(senderA, 3n),
+            makePayment(senderA, 4n),
+        ])
+        const concatenated = [...groupX, ...groupY]
+        expect(() =>
+            validateTransactionGroupIntegrity(concatenated),
+        ).not.toThrow()
+    })
 })

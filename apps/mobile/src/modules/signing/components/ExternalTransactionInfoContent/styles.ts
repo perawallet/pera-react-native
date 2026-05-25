@@ -10,14 +10,18 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-blockchain'
+import { makeStyles } from '@rneui/themed'
 
-export * from './models'
-export * from './hooks'
-export * from './errors'
-export * from './utils'
-export * from './schema'
-export * from './constants'
-export * from './arc0001'
-
-export { useNetworkStore } from './store/network-store'
+export const useStyles = makeStyles(theme => ({
+    container: {
+        padding: theme.spacing.xl,
+        gap: theme.spacing.xl,
+        alignItems: 'center',
+    },
+    message: {
+        textAlign: 'center',
+    },
+    button: {
+        marginVertical: theme.spacing.md,
+    },
+}))

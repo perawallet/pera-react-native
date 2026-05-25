@@ -32,6 +32,7 @@ import {
     EMPTY_LIST_ITEMS,
     EMPTY_WARNINGS,
     EMPTY_SIGNABLE_ADDRESSES,
+    EMPTY_SIGNABLE_INDICES,
     ZERO_FEE,
     deriveStage,
     isRetryableError,
@@ -72,11 +73,26 @@ export const useSigningPipeline = (
             : undefined
 
     const displayData = useMemo(() => {
-        const allTransactions = (txRequest?.txs ?? [])
+        // Show the FULL atomic group when the source filtered down to a
+        // signable subset — gives the user context for partial-group
+        // requests (e.g. cross-account atomic flows). `signableIndices`
+        // tells the UI which slots are actually being signed.
+        const source = txRequest?.groupContext ?? txRequest?.txs ?? []
+        const allTransactions = source
             .map(tx => mapToDisplayableTransaction(tx))
             .filter((tx): tx is PeraDisplayableTransaction => !!tx)
 
-        const listItems = createTransactionListItems(allTransactions)
+        // Default to "every index is signable" when groupContext is absent
+        // (internal flows) — keeps the UI's "is this slot signable" check
+        // working without per-caller bookkeeping.
+        const signableIndices = new Set<number>(
+            txRequest?.signableIndices ?? allTransactions.map((_, i) => i),
+        )
+
+        const listItems = createTransactionListItems(
+            allTransactions,
+            signableIndices,
+        )
 
         const signableAddresses = new Set(
             accounts.filter(a => canSignWith(a, accounts)).map(a => a.address),
@@ -102,12 +118,18 @@ export const useSigningPipeline = (
             allTransactions,
             listItems,
             signableAddresses,
+            signableIndices,
             totalFee,
             warnings,
             distinctWarnings,
             requestStructure,
         }
-    }, [txRequest?.txs, accounts])
+    }, [
+        txRequest?.txs,
+        txRequest?.groupContext,
+        txRequest?.signableIndices,
+        accounts,
+    ])
 
     // -------------------------------------------------------------------------
     // Machine state — derived from actor subscription
@@ -204,6 +226,9 @@ export const useSigningPipeline = (
         signableAddresses: txRequest
             ? displayData.signableAddresses
             : EMPTY_SIGNABLE_ADDRESSES,
+        signableIndices: txRequest
+            ? displayData.signableIndices
+            : EMPTY_SIGNABLE_INDICES,
         totalFee: txRequest ? displayData.totalFee : ZERO_FEE,
         warnings: txRequest ? displayData.warnings : EMPTY_WARNINGS,
         distinctWarnings: txRequest

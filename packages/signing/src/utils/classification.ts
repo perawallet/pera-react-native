@@ -18,11 +18,19 @@ export type RequestStructure = 'single' | 'list'
 export type SingleTransactionItem = {
     type: 'transaction'
     transaction: PeraDisplayableTransaction
+    /** Index into the originating groupContext array. */
+    groupIndex: number
+    /**
+     * True when this txn isn't in the wallet's signable subset — shown in the
+     * UI for atomic-group completeness only. Defaults to false when no
+     * `signableIndices` set is supplied (e.g. internal flows).
+     */
+    isExternal: boolean
 }
 
 export type GroupTransactionItem = {
     type: 'group'
-    transactions: PeraDisplayableTransaction[]
+    transactions: SingleTransactionItem[]
     groupIndex: number
 }
 
@@ -30,46 +38,49 @@ export type TransactionListItem = SingleTransactionItem | GroupTransactionItem
 
 export const createTransactionListItems = (
     transactions: PeraDisplayableTransaction[],
+    signableIndices?: ReadonlySet<number>,
 ): TransactionListItem[] => {
     const items: TransactionListItem[] = []
     const groupMap = new Map<string, GroupTransactionItem>()
     let groupIndex = 0
 
-    for (const tx of transactions) {
+    const toSingle = (
+        tx: PeraDisplayableTransaction,
+        i: number,
+    ): SingleTransactionItem => ({
+        type: 'transaction',
+        transaction: tx,
+        groupIndex: i,
+        isExternal: signableIndices ? !signableIndices.has(i) : false,
+    })
+
+    for (let i = 0; i < transactions.length; i++) {
+        const tx = transactions[i]
         if (tx.group) {
             const groupKey = encodeToBase64(tx.group)
             const existingGroup = groupMap.get(groupKey)
 
             if (existingGroup) {
-                // Add to existing group (already in items array)
-                existingGroup.transactions.push(tx)
+                existingGroup.transactions.push(toSingle(tx, i))
             } else {
-                // Create new group at this position
                 const newGroup: GroupTransactionItem = {
                     type: 'group',
-                    transactions: [tx],
+                    transactions: [toSingle(tx, i)],
                     groupIndex: groupIndex++,
                 }
                 groupMap.set(groupKey, newGroup)
                 items.push(newGroup)
             }
         } else {
-            // Ungrouped transaction
-            items.push({
-                type: 'transaction',
-                transaction: tx,
-            })
+            items.push(toSingle(tx, i))
         }
     }
 
-    // If there's only one group and no other items, expand it
+    // If there's only one group and no other items, expand it.
     const groupItems = items.filter(item => item.type === 'group')
     if (groupItems.length === 1 && items.length === 1) {
         const group = groupItems[0] as GroupTransactionItem
-        return group.transactions.map(tx => ({
-            type: 'transaction' as const,
-            transaction: tx,
-        }))
+        return group.transactions
     }
 
     return items

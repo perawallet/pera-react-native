@@ -10,14 +10,22 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-blockchain'
+import { Arc0001ErrorCode } from './types'
 
-export * from './models'
-export * from './hooks'
-export * from './errors'
-export * from './utils'
-export * from './schema'
-export * from './constants'
-export * from './arc0001'
+// Carries ARC-0001's numeric code + { index, field } so transports can
+// relay { code, message, data } to dApps verbatim.
+export class Arc0001Error extends Error {
+    public readonly code: Arc0001ErrorCode
+    public readonly data?: { index?: number; field?: string }
 
-export { useNetworkStore } from './store/network-store'
+    constructor(
+        code: Arc0001ErrorCode,
+        message: string,
+        data?: { index?: number; field?: string },
+    ) {
+        super(message)
+        this.name = 'Arc0001Error'
+        this.code = code
+        this.data = data
+    }
+}

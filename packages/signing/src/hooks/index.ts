@@ -10,7 +10,9 @@
  limitations under the License
  */
 
+export * from './useArc0001Resolver'
 export * from './useArc60Signer'
+export * from './useEnqueueArc0001SignRequest'
 export * from './useArbitraryDataSigner'
 export * from './useBalanceValidation'
 export * from './useHardwareSigning'

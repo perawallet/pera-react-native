@@ -45,7 +45,8 @@ export const TransactionListScreen = () => {
             return (
                 <TransactionPreview
                     transaction={item.transaction}
-                    onPress={() => handleTransactionPress(item.transaction)}
+                    isExternal={item.isExternal}
+                    onPress={() => handleTransactionPress(item)}
                 />
             )
         },

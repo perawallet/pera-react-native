@@ -67,6 +67,13 @@ export type TransactionSignRequest = {
      * Populated from ARC-0001 `signers` field in WalletConnect requests.
      */
     signerOverrides?: Map<number, string>
+    /**
+     * Indices into `groupContext` (the full pre-filter payload) that
+     * correspond to entries in `txs`. Populated when `groupContext`
+     * differs from `txs` so the signing UI can render the full atomic
+     * group while marking which slots the wallet will actually sign.
+     */
+    signableIndices?: number[]
     rawTransactionsBase64?: string[]
     approve?: (signedTxs: PeraSignedTransaction[]) => Promise<void>
     reject?: (reason?: RejectReason) => Promise<void>

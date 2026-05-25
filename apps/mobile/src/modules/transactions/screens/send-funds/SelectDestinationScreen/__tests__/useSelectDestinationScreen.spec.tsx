@@ -14,7 +14,9 @@ import { act, renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 import { useSendFunds } from '@modules/transactions/hooks'
 import {
+    canSignWith,
     useAccountBalancesQuery,
+    useAllAccounts,
     useOnChainAccountInformationQuery,
 } from '@perawallet/wallet-core-accounts'
 import { useSelectDestinationScreen } from '../useSelectDestinationScreen'
@@ -74,6 +76,8 @@ describe('useSelectDestinationScreen', () => {
             accountBalances: new Map(),
         })
 
+        ;(useAllAccounts as Mock).mockReturnValue([])
+        ;(canSignWith as Mock).mockReturnValue(false)
         ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({
             data: undefined,
             isFetching: false,
