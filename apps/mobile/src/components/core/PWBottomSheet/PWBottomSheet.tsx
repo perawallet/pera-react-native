@@ -15,6 +15,7 @@ import {
     BottomSheetBackdrop,
     BottomSheetBackdropProps,
     BottomSheetView,
+    BottomSheetScrollView,
 } from '@gorhom/bottom-sheet'
 import { PWView } from '@components/core/PWView'
 import {
@@ -25,7 +26,12 @@ import {
     useRef,
 } from 'react'
 import { useStyles } from './styles'
-import { Keyboard, StyleProp, ViewStyle } from 'react-native'
+import {
+    Keyboard,
+    StyleProp,
+    useWindowDimensions,
+    ViewStyle,
+} from 'react-native'
 import { NotifierRoot, NotifierWrapper } from 'react-native-notifier'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -88,8 +94,16 @@ export const PWBottomSheet = ({
 }: PWBottomSheetProps) => {
     const bottomSheetModalRef = useRef<BottomSheetModal>(null)
     const insets = useSafeAreaInsets()
+    const { height: windowHeight } = useWindowDimensions()
     const defaults = DEFAULT_PROPS[size]
     const styles = useStyles({ insets, isFull: size === 'full' })
+
+    // `auto` sheets size to their content; cap that at 80% of the screen and
+    // let the content scroll past the cap instead of overflowing the screen.
+    const isAuto = size === 'auto'
+    const maxDynamicContentSize = isAuto
+        ? Math.round(windowHeight * 0.8)
+        : undefined
 
     // Full-screen sheets (96–100% snap points) surface a header close (X)
     // instead, so the drag-handle notch is dropped to avoid a redundant
@@ -165,6 +179,7 @@ export const PWBottomSheet = ({
             ref={bottomSheetModalRef}
             snapPoints={defaults.snapPoints}
             enableDynamicSizing={defaults.enableDynamicSizing}
+            maxDynamicContentSize={maxDynamicContentSize}
             // Never let the sheet rise above the status bar, even when its
             // dynamically-sized content (e.g. an expanded HD wallet tree)
             // would otherwise push it past the configured snap point. Skip
@@ -207,23 +222,44 @@ export const PWBottomSheet = ({
                 omitGlobalMethodsHookup
                 ref={bottomSheetNotifier}
             >
-                <PWView style={styles.contentWrapper}>
-                    {autoCreateContainer ? (
-                        <BottomSheetView
-                            style={[styles.innerContainer, innerContainerStyle]}
-                            testID={testID}
-                        >
-                            {children}
-                        </BottomSheetView>
-                    ) : (
-                        <PWView
-                            style={[styles.innerContainer, innerContainerStyle]}
-                            testID={testID}
-                        >
-                            {children}
-                        </PWView>
-                    )}
-                </PWView>
+                {autoCreateContainer && isAuto ? (
+                    // Scrollable + capped: content fits the sheet until it hits
+                    // 80%, then scrolls. No flex:1 wrapper, which would feed the
+                    // scroll view an unbounded height and break dynamic sizing.
+                    <BottomSheetScrollView
+                        contentContainerStyle={[
+                            styles.scrollContent,
+                            innerContainerStyle,
+                        ]}
+                        testID={testID}
+                    >
+                        {children}
+                    </BottomSheetScrollView>
+                ) : (
+                    <PWView style={styles.contentWrapper}>
+                        {autoCreateContainer ? (
+                            <BottomSheetView
+                                style={[
+                                    styles.innerContainer,
+                                    innerContainerStyle,
+                                ]}
+                                testID={testID}
+                            >
+                                {children}
+                            </BottomSheetView>
+                        ) : (
+                            <PWView
+                                style={[
+                                    styles.innerContainer,
+                                    innerContainerStyle,
+                                ]}
+                                testID={testID}
+                            >
+                                {children}
+                            </PWView>
+                        )}
+                    </PWView>
+                )}
             </NotifierWrapper>
         </BottomSheetModal>
     )
