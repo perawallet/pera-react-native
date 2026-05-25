@@ -13,6 +13,8 @@
 import React from 'react'
 import { PWView, PWFlatList, PWLoadingOverlay } from '@components/core'
 
+import { getContainerTestProps } from '@utils/test-id-helper'
+
 import { useStyles } from './styles'
 import { useImportRekeyedAddressesScreen } from './useImportRekeyedAddressesScreen'
 import { ImportRekeyedAddressesItem } from './ImportRekeyedAddressesItem'
@@ -36,7 +38,7 @@ export const ImportRekeyedAddressesScreen = () => {
     return (
         <PWView
             style={styles.container}
-            testID='import_rekeyed_addresses_screen'
+            {...getContainerTestProps('import_rekeyed_addresses_screen')}
         >
             <PWFlatList
                 style={styles.list}
@@ -50,9 +52,10 @@ export const ImportRekeyedAddressesScreen = () => {
                 data={accounts}
                 extraData={selectedAddresses}
                 keyExtractor={item => item.address}
-                renderItem={({ item }) => (
+                renderItem={({ item, index }) => (
                     <ImportRekeyedAddressesItem
                         account={item}
+                        itemIndex={index}
                         isImported={alreadyImportedAddresses.has(item.address)}
                         isSelected={selectedAddresses.has(item.address)}
                         onToggle={toggleSelection}

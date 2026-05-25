@@ -10,31 +10,61 @@
  limitations under the License
  */
 
+import { TouchableOpacity } from 'react-native'
+
 import { PWIcon } from '../PWIcon'
 import { PWView } from '../PWView'
 
 import { CheckBox, CheckBoxProps } from '@rneui/themed'
+import {
+    getCheckboxAccessibilityProps,
+    getCheckboxTestProps,
+} from '@utils/test-id-helper'
 import { useStyles } from './styles'
 
 export type PWCheckboxProps = {
     children?: React.ReactNode
 } & CheckBoxProps
 
-export const PWCheckbox = ({ children, ...props }: PWCheckboxProps) => {
+const DEFAULT_ACTIVE_OPACITY = 0.8
+
+export const PWCheckbox = ({
+    children,
+    testID,
+    checked,
+    disabled,
+    onPress,
+    ...props
+}: PWCheckboxProps) => {
     const styles = useStyles()
 
+    const accessibilityProps = testID
+        ? getCheckboxTestProps(testID, !!checked, disabled)
+        : getCheckboxAccessibilityProps(!!checked, disabled)
+
     return (
-        <CheckBox
-            {...props}
-            checkedIcon={
-                <PWIcon
-                    name='check'
-                    variant='positive'
-                />
-            }
-            uncheckedIcon={<PWView style={styles.uncheckedIcon} />}
+        <TouchableOpacity
+            {...accessibilityProps}
+            onPress={onPress ?? undefined}
+            disabled={disabled}
+            activeOpacity={DEFAULT_ACTIVE_OPACITY}
         >
-            {children}
-        </CheckBox>
+            <PWView pointerEvents='none'>
+                <CheckBox
+                    {...props}
+                    checked={checked}
+                    disabled={disabled}
+                    checkedIcon={
+                        <PWIcon
+                            name='check'
+                            variant='positive'
+                        />
+                    }
+                    uncheckedIcon={<PWView style={styles.uncheckedIcon} />}
+                >
+                    {children}
+                </CheckBox>
+            </PWView>
+        </TouchableOpacity>
     )
 }

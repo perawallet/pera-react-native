@@ -25,11 +25,13 @@ import { CopyableText } from '@components/CopyableText'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { getContainerTestProps } from '@utils/test-id-helper'
 import { useStyles } from './styles'
 import { RekeyedAccountInfoContent } from './RekeyedAccountInfoContent'
 
 type ImportRekeyedAddressesItemProps = {
     account: WalletAccount
+    itemIndex: number
     isImported: boolean
     isSelected: boolean
     onToggle: (address: string) => void
@@ -37,6 +39,7 @@ type ImportRekeyedAddressesItemProps = {
 
 export const ImportRekeyedAddressesItem = ({
     account,
+    itemIndex,
     isImported,
     isSelected,
     onToggle,
@@ -59,7 +62,9 @@ export const ImportRekeyedAddressesItem = ({
     return (
         <PWView
             style={styles.itemContainer}
-            testID={`import_rekeyed_addresses_item_${account.address}`}
+            {...getContainerTestProps(
+                `import_rekeyed_addresses_item_${itemIndex}`,
+            )}
         >
             {!isImported && (
                 <PWView style={styles.checkboxWrapper}>
@@ -67,7 +72,7 @@ export const ImportRekeyedAddressesItem = ({
                         checked={isSelected}
                         onPress={() => onToggle(account.address)}
                         containerStyle={styles.checkboxContainer}
-                        testID={`import_rekeyed_addresses_item_checkbox_${account.address}`}
+                        testID={`import_rekeyed_addresses_item_checkbox_${itemIndex}`}
                     />
                 </PWView>
             )}
@@ -108,7 +113,7 @@ export const ImportRekeyedAddressesItem = ({
             <PWTouchableOpacity
                 style={styles.infoIconContainer}
                 onPress={handleOpenInfo}
-                testID={`import_rekeyed_addresses_item_info_${account.address}`}
+                testID={`import_rekeyed_addresses_item_info_${itemIndex}`}
             >
                 <PWIcon
                     name='info'
