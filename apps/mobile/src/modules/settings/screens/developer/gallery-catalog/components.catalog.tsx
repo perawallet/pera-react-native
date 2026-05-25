@@ -12,11 +12,48 @@
 
 import React from 'react'
 
-import { PWButton } from '@components/core'
+import {
+    PWBadge,
+    PWBottomSheet,
+    PWButton,
+    PWCheckbox,
+    PWChip,
+    PWDivider,
+    PWDropdown,
+    PWFlatList,
+    PWHeader,
+    PWIcon,
+    PWImage,
+    PWInfoView,
+    PWInput,
+    PWListItem,
+    PWLoadingOverlay,
+    PWLottie,
+    PWNumpad,
+    PWOverlay,
+    PWPinCircles,
+    PWRadioButton,
+    PWResultView,
+    PWRoundIcon,
+    PWScreen,
+    PWScrollView,
+    PWSkeleton,
+    PWSlideToConfirm,
+    PWSwipeable,
+    PWSwitch,
+    PWTabView,
+    PWText,
+    PWToolbar,
+    PWTouchableIcon,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
 
 import { registerPreview } from './registry'
 
 import type { GallerySection } from './types'
+
+// ─── Core — buttons & actions ────────────────────────────────────────────────
 
 registerPreview({
     id: 'comp-pw-button',
@@ -29,15 +66,480 @@ registerPreview({
     ),
 })
 
+registerPreview({
+    id: 'comp-pw-slide-to-confirm',
+    render: () => (
+        <PWSlideToConfirm
+            title='Slide to confirm'
+            onConfirm={() => undefined}
+        />
+    ),
+})
+
+registerPreview({
+    id: 'comp-pw-touchable-opacity',
+    render: () => (
+        <PWTouchableOpacity onPress={() => undefined}>
+            <PWText variant='body'>Touchable area</PWText>
+        </PWTouchableOpacity>
+    ),
+})
+
+registerPreview({
+    id: 'comp-pw-touchable-icon',
+    render: () => (
+        <PWTouchableIcon
+            name='bell'
+            onPress={() => undefined}
+        />
+    ),
+})
+
+// ─── Core — inputs ────────────────────────────────────────────────────────────
+
+registerPreview({
+    id: 'comp-pw-input',
+    render: () => (
+        <PWInput
+            value=''
+            onChangeText={() => undefined}
+            placeholder='Enter text…'
+            label='Label'
+        />
+    ),
+})
+
+registerPreview({
+    id: 'comp-pw-checkbox',
+    render: () => (
+        <PWCheckbox
+            checked={true}
+            onPress={() => undefined}
+            title='Accept terms'
+        />
+    ),
+})
+
+registerPreview({
+    id: 'comp-pw-radio-button',
+    render: () => (
+        <PWRadioButton
+            isSelected={true}
+            onPress={() => undefined}
+            title='Option A'
+        />
+    ),
+})
+
+registerPreview({
+    id: 'comp-pw-switch',
+    render: () => (
+        <PWSwitch
+            value={true}
+            onValueChange={() => undefined}
+        />
+    ),
+})
+
+registerPreview({
+    id: 'comp-pw-numpad',
+    render: () => (
+        <PWNumpad
+            mode='pin'
+            onKeyPress={() => undefined}
+        />
+    ),
+})
+
+registerPreview({
+    id: 'comp-pw-pin-circles',
+    render: () => (
+        <PWPinCircles
+            length={6}
+            filledCount={3}
+        />
+    ),
+})
+
+// ─── Core — display ───────────────────────────────────────────────────────────
+
+registerPreview({
+    id: 'comp-pw-text',
+    render: () => (
+        <PWView>
+            <PWText variant='h1'>Heading 1</PWText>
+            <PWText variant='h2'>Heading 2</PWText>
+            <PWText variant='h3'>Heading 3</PWText>
+            <PWText variant='body'>Body text</PWText>
+            <PWText variant='caption'>Caption text</PWText>
+        </PWView>
+    ),
+})
+
+registerPreview({
+    id: 'comp-pw-badge',
+    render: () => (
+        <PWView>
+            <PWBadge
+                value='3'
+                variant='primary'
+            />
+            <PWBadge
+                value='!'
+                variant='alert'
+            />
+        </PWView>
+    ),
+})
+
+registerPreview({
+    id: 'comp-pw-chip',
+    render: () => (
+        <PWChip
+            title='Verified'
+            variant='secondary'
+        />
+    ),
+})
+
+registerPreview({
+    id: 'comp-pw-icon',
+    render: () => (
+        <PWView>
+            <PWIcon
+                name='bell'
+                size='md'
+                variant='primary'
+            />
+            <PWIcon
+                name='check'
+                size='lg'
+                variant='positive'
+            />
+            <PWIcon
+                name='copy'
+                size='sm'
+                variant='secondary'
+            />
+        </PWView>
+    ),
+})
+
+registerPreview({
+    id: 'comp-pw-round-icon',
+    render: () => (
+        <PWRoundIcon
+            icon='bell'
+            size='lg'
+            variant='primary'
+        />
+    ),
+})
+
+registerPreview({
+    id: 'comp-pw-image',
+    render: () => (
+        <PWImage
+            source={{ uri: 'https://via.placeholder.com/80' }}
+            width={80}
+            height={80}
+        />
+    ),
+})
+
+registerPreview({
+    id: 'comp-pw-skeleton',
+    render: () => (
+        <PWSkeleton
+            animation='pulse'
+            height={40}
+            count={3}
+        />
+    ),
+})
+
+registerPreview({
+    id: 'comp-pw-lottie',
+    render: () => (
+        <PWLottie
+            source={require('@assets/animations/pera-transaction-loading.json')}
+            autoPlay
+            loop
+            style={{ width: 120, height: 120 }}
+        />
+    ),
+})
+
+// ─── Core — layout & structure ───────────────────────────────────────────────
+
+registerPreview({
+    id: 'comp-pw-view',
+    render: () => (
+        <PWView>
+            <PWText variant='body'>Content inside PWView</PWText>
+        </PWView>
+    ),
+})
+
+registerPreview({
+    id: 'comp-pw-divider',
+    render: () => (
+        <PWView>
+            <PWText variant='body'>Above</PWText>
+            <PWDivider />
+            <PWText variant='body'>Below</PWText>
+        </PWView>
+    ),
+})
+
+registerPreview({
+    id: 'comp-pw-scroll-view',
+    render: () => (
+        <PWScrollView>
+            <PWText variant='body'>Scrollable content</PWText>
+        </PWScrollView>
+    ),
+})
+
+registerPreview({
+    id: 'comp-pw-flat-list',
+    render: () => (
+        <PWFlatList
+            data={['Item 1', 'Item 2', 'Item 3']}
+            keyExtractor={item => item as string}
+            renderItem={({ item }) => (
+                <PWText variant='body'>{item as string}</PWText>
+            )}
+        />
+    ),
+})
+
+registerPreview({
+    id: 'comp-pw-swipeable',
+    render: () => (
+        <PWSwipeable renderRightActions={() => <PWView />}>
+            <PWText variant='body'>Swipe me left</PWText>
+        </PWSwipeable>
+    ),
+})
+
+registerPreview({
+    id: 'comp-pw-screen',
+    render: () => (
+        <PWScreen scroll={false}>
+            <PWText variant='body'>Screen body content</PWText>
+        </PWScreen>
+    ),
+})
+
+// ─── Core — navigation chrome ─────────────────────────────────────────────────
+
+// PWTabView is a navigator factory (`{ createNavigator }`), not a self-contained
+// renderable component. The preview just documents its existence.
+void PWTabView // keep the import live
+
+registerPreview({
+    id: 'comp-pw-tab-view',
+    render: () => (
+        <PWView>
+            <PWText variant='caption'>
+                PWTabView.createNavigator() — navigator factory, not inline-renderable
+            </PWText>
+        </PWView>
+    ),
+})
+
+registerPreview({
+    id: 'comp-pw-header',
+    render: () => (
+        <PWHeader
+            title='Header title'
+            leftIcon='chevron-left'
+            rightIcon='bell'
+            onLeftPress={() => undefined}
+            onRightPress={() => undefined}
+        />
+    ),
+})
+
+registerPreview({
+    id: 'comp-pw-toolbar',
+    render: () => (
+        <PWToolbar
+            left={<PWText variant='body'>Left</PWText>}
+            center={<PWText variant='body'>Title</PWText>}
+            right={<PWText variant='body'>Right</PWText>}
+        />
+    ),
+})
+
+// ─── Core — list items ────────────────────────────────────────────────────────
+
+registerPreview({
+    id: 'comp-pw-list-item',
+    render: () => (
+        <PWListItem
+            icon='bell'
+            title='Notifications'
+            onPress={() => undefined}
+        />
+    ),
+})
+
+// ─── Core — info / result ─────────────────────────────────────────────────────
+
+registerPreview({
+    id: 'comp-pw-info-view',
+    render: () => (
+        <PWInfoView
+            title='No items found'
+            body='Try adjusting your filters to find what you are looking for.'
+            primaryAction={{ label: 'Refresh', onPress: () => undefined }}
+        />
+    ),
+})
+
+registerPreview({
+    id: 'comp-pw-result-view',
+    render: () => (
+        <PWResultView
+            variant='success'
+            title='Transaction sent'
+            body='Your transaction has been submitted successfully.'
+            primaryAction={{ label: 'Done', onPress: () => undefined }}
+        />
+    ),
+})
+
+// ─── Core — dropdown ─────────────────────────────────────────────────────────
+
+registerPreview({
+    id: 'comp-pw-dropdown',
+    render: () => (
+        <PWDropdown
+            items={[
+                { label: 'Copy', icon: 'copy', onPress: () => undefined },
+                { label: 'Share', onPress: () => undefined },
+            ]}
+        >
+            <PWText variant='body'>Open menu ▾</PWText>
+        </PWDropdown>
+    ),
+})
+
+// ─── Core — overlays / portals (may not display inline) ──────────────────────
+
+registerPreview({
+    id: 'comp-pw-overlay',
+    render: () => (
+        <PWOverlay
+            isVisible={true}
+            onBackdropPress={() => undefined}
+        >
+            <PWText variant='body'>Overlay content</PWText>
+        </PWOverlay>
+    ),
+})
+
+registerPreview({
+    id: 'comp-pw-loading-overlay',
+    render: () => (
+        <PWLoadingOverlay
+            isVisible={true}
+            title='Loading…'
+        />
+    ),
+})
+
+registerPreview({
+    id: 'comp-pw-bottom-sheet',
+    render: () => (
+        <PWBottomSheet isVisible={true}>
+            <PWText variant='body'>Bottom sheet content</PWText>
+        </PWBottomSheet>
+    ),
+})
+
+// ─── Sections ─────────────────────────────────────────────────────────────────
+
 export const getComponentSections = (): GallerySection[] => [
     {
-        title: 'Core (PW)',
+        title: 'Core — buttons & actions',
         items: [
-            {
-                id: 'comp-pw-button',
-                label: 'PWButton',
-                launch: { kind: 'preview' },
-            },
+            { id: 'comp-pw-button', label: 'PWButton', launch: { kind: 'preview' } },
+            { id: 'comp-pw-slide-to-confirm', label: 'PWSlideToConfirm', launch: { kind: 'preview' } },
+            { id: 'comp-pw-touchable-opacity', label: 'PWTouchableOpacity', launch: { kind: 'preview' } },
+            { id: 'comp-pw-touchable-icon', label: 'PWTouchableIcon', launch: { kind: 'preview' } },
+        ],
+    },
+    {
+        title: 'Core — inputs',
+        items: [
+            { id: 'comp-pw-input', label: 'PWInput', launch: { kind: 'preview' } },
+            { id: 'comp-pw-checkbox', label: 'PWCheckbox', launch: { kind: 'preview' } },
+            { id: 'comp-pw-radio-button', label: 'PWRadioButton', launch: { kind: 'preview' } },
+            { id: 'comp-pw-switch', label: 'PWSwitch', launch: { kind: 'preview' } },
+            { id: 'comp-pw-numpad', label: 'PWNumpad', launch: { kind: 'preview' } },
+            { id: 'comp-pw-pin-circles', label: 'PWPinCircles', launch: { kind: 'preview' } },
+        ],
+    },
+    {
+        title: 'Core — display',
+        items: [
+            { id: 'comp-pw-text', label: 'PWText', launch: { kind: 'preview' } },
+            { id: 'comp-pw-badge', label: 'PWBadge', launch: { kind: 'preview' } },
+            { id: 'comp-pw-chip', label: 'PWChip', launch: { kind: 'preview' } },
+            { id: 'comp-pw-icon', label: 'PWIcon', launch: { kind: 'preview' } },
+            { id: 'comp-pw-round-icon', label: 'PWRoundIcon', launch: { kind: 'preview' } },
+            { id: 'comp-pw-image', label: 'PWImage', launch: { kind: 'preview' } },
+            { id: 'comp-pw-skeleton', label: 'PWSkeleton', launch: { kind: 'preview' } },
+            { id: 'comp-pw-lottie', label: 'PWLottie', launch: { kind: 'preview' } },
+        ],
+    },
+    {
+        title: 'Core — layout & structure',
+        items: [
+            { id: 'comp-pw-view', label: 'PWView', launch: { kind: 'preview' } },
+            { id: 'comp-pw-divider', label: 'PWDivider', launch: { kind: 'preview' } },
+            { id: 'comp-pw-scroll-view', label: 'PWScrollView', launch: { kind: 'preview' } },
+            { id: 'comp-pw-flat-list', label: 'PWFlatList', launch: { kind: 'preview' } },
+            { id: 'comp-pw-swipeable', label: 'PWSwipeable', launch: { kind: 'preview' } },
+            { id: 'comp-pw-screen', label: 'PWScreen', launch: { kind: 'preview' } },
+        ],
+    },
+    {
+        title: 'Core — navigation chrome',
+        items: [
+            { id: 'comp-pw-header', label: 'PWHeader', launch: { kind: 'preview' } },
+            { id: 'comp-pw-toolbar', label: 'PWToolbar', launch: { kind: 'preview' } },
+            { id: 'comp-pw-tab-view', label: 'PWTabView (factory — not inline-renderable)', launch: { kind: 'preview' } },
+        ],
+    },
+    {
+        title: 'Core — list items',
+        items: [
+            { id: 'comp-pw-list-item', label: 'PWListItem', launch: { kind: 'preview' } },
+        ],
+    },
+    {
+        title: 'Core — info & result',
+        items: [
+            { id: 'comp-pw-info-view', label: 'PWInfoView', launch: { kind: 'preview' } },
+            { id: 'comp-pw-result-view', label: 'PWResultView', launch: { kind: 'preview' } },
+        ],
+    },
+    {
+        title: 'Core — dropdown',
+        items: [
+            { id: 'comp-pw-dropdown', label: 'PWDropdown', launch: { kind: 'preview' } },
+        ],
+    },
+    {
+        title: 'Core — overlays & portals',
+        items: [
+            { id: 'comp-pw-overlay', label: 'PWOverlay (portal — may not display inline)', launch: { kind: 'preview' } },
+            { id: 'comp-pw-loading-overlay', label: 'PWLoadingOverlay (portal — may not display inline)', launch: { kind: 'preview' } },
+            { id: 'comp-pw-bottom-sheet', label: 'PWBottomSheet (portal — may not display inline)', launch: { kind: 'preview' } },
         ],
     },
 ]
