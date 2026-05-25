@@ -2149,6 +2149,7 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
         isSwappableAsset: vi.fn(() => true),
         apiSlippageToPercent: (slippage: InstanceType<typeof Decimal>) =>
             slippage.mul(100).toString(),
+        useProvidersQuery: vi.fn(() => ({ data: [] })),
     }
 })
 
@@ -2521,12 +2522,16 @@ vi.mock('react-native-rate-app', () => ({
 }))
 
 // Mock @perawallet/wallet-core-currencies
-vi.mock('@perawallet/wallet-core-currencies', () => ({
-    useCurrency: vi.fn(() => ({
-        preferredCurrency: 'USD',
-        portfolioPreferredValue: '0',
-    })),
-}))
+vi.mock('@perawallet/wallet-core-currencies', async () => {
+    const { Decimal } = await import('decimal.js')
+    return {
+        useCurrency: vi.fn(() => ({
+            preferredCurrency: 'USD',
+            portfolioPreferredValue: '0',
+            usdToPreferred: (usd: InstanceType<typeof Decimal>) => usd,
+        })),
+    }
+})
 
 // Mock @perawallet/wallet-core-blockchain
 class MockAlgodError extends Error {

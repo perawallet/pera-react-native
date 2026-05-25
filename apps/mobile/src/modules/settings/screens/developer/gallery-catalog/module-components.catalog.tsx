@@ -45,17 +45,40 @@ import { TransactionIcon } from '@modules/transactions/components/TransactionIco
 import { TransactionListItem } from '@modules/transactions/components/TransactionListItem'
 import { TransactionStatusBadge } from '@modules/transactions/components/TransactionStatusBadge'
 
+// ─── swap module ──────────────────────────────────────────────────────────────
+import { SwapAssetPairIcon } from '@modules/swap/components/SwapAssetPairIcon'
+import { SwapProviderDisplay } from '@modules/swap/components/SwapProviderDisplay'
+import { SwapProviderRow } from '@modules/swap/components/SwapProviderRow'
+import { SwapQuoteDetails } from '@modules/swap/components/SwapQuoteDetails'
+
+// ─── signing module ───────────────────────────────────────────────────────────
+import { SourceMetadataBadge } from '@modules/signing/components/SourceMetadataBadge'
+import { SourceMetadataView } from '@modules/signing/components/SourceMetadataView'
+
+// ─── multisig module ──────────────────────────────────────────────────────────
+import { ParticipantListItem } from '@modules/multisig/components/ParticipantListItem'
+import { SignerStatusListItem } from '@modules/multisig/components/SignerStatusListItem'
+import { ThresholdStepper } from '@modules/multisig/components/ThresholdStepper'
+
+// ─── staking module ───────────────────────────────────────────────────────────
+import { StakingProjectCard } from '@modules/staking/components/StakingProjectCard'
+import { StakingTypeBadge } from '@modules/staking/components/StakingTypeBadge'
+
 import {
     mockAlgo25Account,
     mockAsset,
     mockCollectible,
     mockTransaction,
     MOCK_ASSET_ID,
+    MOCK_ADDRESS,
 } from '@perawallet/wallet-core-dev-fixtures'
 
 import { registerPreview } from './registry'
 
 import type { GallerySection } from './types'
+import type { DexSwapAsset, SwapQuote } from '@perawallet/wallet-core-swaps'
+import type { SignRequestSource } from '@perawallet/wallet-core-signing'
+import type { StakingProject } from '@perawallet/wallet-core-staking'
 
 // ─── Accounts (module) ────────────────────────────────────────────────────────
 
@@ -420,6 +443,171 @@ registerPreview({
     ),
 })
 
+// ─── Swap (module) ────────────────────────────────────────────────────────────
+
+const mockDexAssetAlgo: DexSwapAsset = {
+    assetId: '0',
+    name: 'Algorand',
+    unitName: 'ALGO',
+    decimals: 6,
+    verificationTier: 'verified',
+}
+
+const mockDexAssetUsdc: DexSwapAsset = {
+    assetId: '31566704',
+    name: 'USD Coin',
+    unitName: 'USDC',
+    decimals: 6,
+    verificationTier: 'verified',
+}
+
+const mockSwapQuote: SwapQuote = {
+    provider: 'Tinyman',
+    providerDisplayName: 'Tinyman',
+    assetIn: mockDexAssetAlgo,
+    assetOut: mockDexAssetUsdc,
+    amountIn: new Decimal('5000000'),
+    amountOut: new Decimal('4850000'),
+    price: new Decimal('0.97'),
+    priceImpact: new Decimal('0.01'),
+    peraFeeAmount: new Decimal('50000'),
+    slippage: new Decimal('0.005'),
+}
+
+registerPreview({
+    id: 'comp-swap-asset-pair-icon',
+    render: () => (
+        <SwapAssetPairIcon
+            assetIn={mockDexAssetAlgo}
+            assetOut={mockDexAssetUsdc}
+            surfaceColor='#ffffff'
+        />
+    ),
+})
+
+registerPreview({
+    id: 'comp-swap-provider-display',
+    render: () => (
+        <SwapProviderDisplay
+            providerName='Tinyman'
+            providerDisplayName='Tinyman'
+        />
+    ),
+})
+
+registerPreview({
+    id: 'comp-swap-provider-row',
+    render: () => (
+        <SwapProviderRow
+            quote={mockSwapQuote}
+            selectionMode='auto'
+            onPress={() => undefined}
+        />
+    ),
+})
+
+registerPreview({
+    id: 'comp-swap-quote-details',
+    render: () => (
+        <SwapQuoteDetails
+            quote={mockSwapQuote}
+            isLoading={false}
+        />
+    ),
+})
+
+// ─── Signing (module) ─────────────────────────────────────────────────────────
+
+const mockSignRequestSource: SignRequestSource = {
+    name: 'Pera Demo DApp',
+    description: 'A sample decentralized application',
+    url: 'https://demo.perawallet.app',
+    icons: ['https://demo.perawallet.app/icon.png'],
+}
+
+registerPreview({
+    id: 'comp-source-metadata-badge',
+    render: () => (
+        <SourceMetadataBadge metadata={mockSignRequestSource} />
+    ),
+})
+
+registerPreview({
+    id: 'comp-source-metadata-view',
+    render: () => (
+        <SourceMetadataView metadata={mockSignRequestSource} />
+    ),
+})
+
+// ─── Multisig (module) ────────────────────────────────────────────────────────
+
+registerPreview({
+    id: 'comp-threshold-stepper',
+    render: () => (
+        <ThresholdStepper
+            value={2}
+            min={1}
+            max={4}
+            onIncrement={() => undefined}
+            onDecrement={() => undefined}
+        />
+    ),
+})
+
+registerPreview({
+    id: 'comp-participant-list-item',
+    render: () => (
+        <ParticipantListItem
+            participant={{ address: MOCK_ADDRESS, name: 'Alice' }}
+            index={0}
+            isInWallet={false}
+            onEdit={() => undefined}
+            onRemove={() => undefined}
+        />
+    ),
+})
+
+registerPreview({
+    id: 'comp-signer-status-list-item',
+    render: () => (
+        <SignerStatusListItem
+            address={MOCK_ADDRESS}
+            status='signed'
+        />
+    ),
+})
+
+// ─── Staking (module) ─────────────────────────────────────────────────────────
+
+const mockStakingProject: StakingProject = {
+    id: 'mock-staking-project',
+    title: 'Folks Finance',
+    description: 'Liquid staking on Algorand',
+    logoUrl: 'https://perawallet.app/static/folks-finance.png',
+    link: 'https://folks.finance',
+    type: 'liquid',
+    tvlInAlgo: new Decimal('12500000'),
+    tvlInUsd: new Decimal('3750000'),
+}
+
+registerPreview({
+    id: 'comp-staking-type-badge',
+    render: () => (
+        <StakingTypeBadge type='liquid' />
+    ),
+})
+
+registerPreview({
+    id: 'comp-staking-project-card',
+    render: () => (
+        <StakingProjectCard
+            project={mockStakingProject}
+            isLast={false}
+            onPress={() => undefined}
+        />
+    ),
+})
+
 // ─── Sections ─────────────────────────────────────────────────────────────────
 
 export const getModuleComponentSections = (): GallerySection[] => [
@@ -639,6 +827,176 @@ export const getModuleComponentSections = (): GallerySection[] => [
             {
                 id: 'comp-transaction-status-badge',
                 label: 'TransactionStatusBadge',
+                launch: { kind: 'preview' },
+            },
+        ],
+    },
+    {
+        title: 'Swap (module)',
+        items: [
+            {
+                id: 'comp-swap-amount-section',
+                label: 'SwapAmountSection (needs live swap store)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'comp-swap-asset-pair-icon',
+                label: 'SwapAssetPairIcon',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-swap-asset-selector',
+                label: 'SwapAssetSelector (needs live assets query)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'comp-swap-form',
+                label: 'SwapForm (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'comp-swap-history-list',
+                label: 'SwapHistoryList (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'comp-swap-pair-history-widget',
+                label: 'SwapPairHistoryWidget (needs live store)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'comp-swap-provider-display',
+                label: 'SwapProviderDisplay',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-swap-provider-row',
+                label: 'SwapProviderRow',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-swap-quote-details',
+                label: 'SwapQuoteDetails',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-swap-to-asset-selection-list',
+                label: 'SwapToAssetSelectionList (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'comp-swap-top-pairs',
+                label: 'SwapTopPairs (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+        ],
+    },
+    {
+        title: 'Signing (module)',
+        items: [
+            {
+                id: 'comp-arbitrary-data-signing-view',
+                label: 'ArbitraryDataSigningView (needs live signing state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'comp-arc60-data-signing-view',
+                label: 'Arc60DataSigningView (needs live signing state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'comp-fee-display',
+                label: 'FeeDisplay (needs signing + navigation context)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'comp-multiple-arbitrary-sign-request-view',
+                label: 'MultipleArbitrarySignRequestView (needs live signing state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'comp-sign-request-view',
+                label: 'SignRequestView (needs live signing state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'comp-signing-account-display',
+                label: 'SigningAccountDisplay (needs live accounts store)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'comp-signing-action-buttons',
+                label: 'SigningActionButtons (needs signing pipeline)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'comp-signing-warnings',
+                label: 'SigningWarnings (needs signing pipeline)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'comp-single-arbitrary-sign-request-view',
+                label: 'SingleArbitrarySignRequestView (needs live signing state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'comp-source-metadata-badge',
+                label: 'SourceMetadataBadge',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-source-metadata-view',
+                label: 'SourceMetadataView',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-transaction-signing-view',
+                label: 'TransactionSigningView (needs live signing state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'comp-transaction-summary-header',
+                label: 'TransactionSummaryHeader (needs PeraDisplayableTransaction)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+        ],
+    },
+    {
+        title: 'Multisig (module)',
+        items: [
+            {
+                id: 'comp-multisig-decline-button',
+                label: 'MultisigDeclineButton (needs signing store)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'comp-participant-list-item',
+                label: 'ParticipantListItem',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-signer-status-list-item',
+                label: 'SignerStatusListItem',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-threshold-stepper',
+                label: 'ThresholdStepper',
+                launch: { kind: 'preview' },
+            },
+        ],
+    },
+    {
+        title: 'Staking (module)',
+        items: [
+            {
+                id: 'comp-staking-project-card',
+                label: 'StakingProjectCard',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-staking-type-badge',
+                label: 'StakingTypeBadge',
                 launch: { kind: 'preview' },
             },
         ],
