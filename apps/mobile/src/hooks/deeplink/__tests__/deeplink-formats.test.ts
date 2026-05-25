@@ -488,7 +488,7 @@ const cases: Case[] = [
                     assetId: ASSET_ID,
                     accountAddress: 'fallback-addr',
                 },
-                { enablePanDownToClose: true },
+                { size: 'lg', enablePanDownToClose: true },
             )
         },
     ),
