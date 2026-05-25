@@ -98,7 +98,7 @@
     "expo-build-properties": "~55.0.13",
     "expo-clipboard": "^55.0.13",
     "expo-dev-client": "~55.0.27",
-    "expo-device": "^55.0.14",
+    "expo-device": "^56.0.4",
     "expo-file-system": "^55.0.16",
     "expo-font": "~55.0.6",
     "expo-haptics": "^55.0.14",
