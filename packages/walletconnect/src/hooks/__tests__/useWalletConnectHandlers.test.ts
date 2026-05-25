@@ -20,10 +20,7 @@ import {
     useNetwork,
     useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
-import {
-    generateOrderedUniqueId,
-    Networks,
-} from '@perawallet/wallet-core-shared'
+import { Networks } from '@perawallet/wallet-core-shared'
 import {
     canSignArbitraryData,
     isHardwareWalletAccount,
@@ -36,7 +33,6 @@ import {
     WalletConnectInvalidSessionError,
     WalletConnectSignRequestError,
 } from '../../errors'
-import { WalletConnectTransactionPayload } from 'walletconnect/src/models'
 
 // Resolver spec is covered by packages/blockchain/.../resolve.spec.ts —
 // these tests cover WC plumbing with a stub that avoids real msgpack.
@@ -351,7 +347,6 @@ describe('useWalletConnectHandlers', () => {
         ;(useSigningRequest as any).mockReturnValue({
             addSignRequest: mockAddSignRequest,
             removeSignRequest: vi.fn(),
-            clearLastFailedRequest: vi.fn(),
         })
         ;(useNetwork as any).mockReturnValue({
             network: Networks.mainnet,

@@ -26,6 +26,7 @@
     "@ledgerhq/react-native-hid": "^6.39.1"
   },
   "devDependencies": {
+    "@types/node": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plugin-dts": "catalog:",
