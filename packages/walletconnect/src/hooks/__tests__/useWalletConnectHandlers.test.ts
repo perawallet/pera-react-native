@@ -21,18 +21,17 @@ import {
     useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
 import { Networks } from '@perawallet/wallet-core-shared'
-import { isHardwareWalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     canSignArbitraryData,
     useAllAccounts,
     isHardwareWalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
+    WalletConnectConnectionTimeoutError,
     WalletConnectInvalidNetworkError,
     WalletConnectInvalidSessionError,
     WalletConnectSignRequestError,
 } from '../../errors'
-import { WalletConnectTransactionPayload } from 'walletconnect/src/models'
 
 // Resolver spec is covered by packages/blockchain/.../resolve.spec.ts —
 // these tests cover WC plumbing with a stub that avoids real msgpack.
