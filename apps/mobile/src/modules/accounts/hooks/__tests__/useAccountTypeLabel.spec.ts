@@ -63,7 +63,7 @@ const rekeyedAccount: WalletAccount = {
 const multisigAccount: MultiSigAccount = {
     type: 'multisig',
     address: 'MULTISIG_ADDR',
-    multisigDetails: { threshold: 2, addresses: ['A', 'B', 'C'] },
+    multisigDetails: { threshold: 2, addresses: ['A', 'B', 'C'], version: 1 },
 }
 
 describe('useAccountTypeLabel', () => {

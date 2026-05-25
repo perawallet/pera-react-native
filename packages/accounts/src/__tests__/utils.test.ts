@@ -371,7 +371,11 @@ describe('services/accounts/utils - canSignWith (hardware + multisig)', () => {
         const multisig = {
             type: 'multisig',
             address: 'MS',
-            multisigDetails: { threshold: 2, addresses: ['P1', 'P2'] },
+            multisigDetails: {
+                threshold: 2,
+                addresses: ['P1', 'P2'],
+                version: 1,
+            },
         } as any
         expect(canSignWith(multisig, [multisig, participant])).toBe(true)
     })
@@ -380,7 +384,11 @@ describe('services/accounts/utils - canSignWith (hardware + multisig)', () => {
         const multisig = {
             type: 'multisig',
             address: 'MS',
-            multisigDetails: { threshold: 2, addresses: ['P1', 'P2'] },
+            multisigDetails: {
+                threshold: 2,
+                addresses: ['P1', 'P2'],
+                version: 1,
+            },
         } as any
         expect(canSignWith(multisig, [multisig])).toBe(false)
     })
@@ -512,7 +520,11 @@ describe('services/accounts/utils - getSignerFor', () => {
         const multisig = {
             type: 'multisig',
             address: 'MS',
-            multisigDetails: { threshold: 2, addresses: ['P1', 'P2'] },
+            multisigDetails: {
+                threshold: 2,
+                addresses: ['P1', 'P2'],
+                version: 1,
+            },
         } as any
         expect(getSignerFor('MS', [multisig, participant])).toBe(multisig)
     })

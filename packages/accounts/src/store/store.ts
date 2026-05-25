@@ -135,13 +135,47 @@ export const useAccountsStore: UseBoundStore<
         {
             name: STORE_NAME,
             storage: createJSONStorage(() => getProvider().keyValueStorage),
-            version: 2,
+            version: 3,
             partialize: state => ({
                 accounts: state.accounts,
                 selectedAccountAddress: state.selectedAccountAddress,
                 sortMode: state.sortMode,
                 manualAccountOrder: state.manualAccountOrder,
             }),
+            migrate: (persistedState: unknown, version: number) => {
+                const state = persistedState as Record<string, unknown>
+                // v3: persist the Algorand multisig version on multisig
+                // accounts so they can be re-registered on each network's
+                // backend. Accounts created before v3 predate any non-1
+                // version, so backfill 1.
+                if (version < 3) {
+                    const accounts = state.accounts
+                    if (Array.isArray(accounts)) {
+                        accounts.forEach(account => {
+                            if (
+                                account == null ||
+                                typeof account !== 'object'
+                            ) {
+                                return
+                            }
+                            const typed = account as {
+                                type?: unknown
+                                multisigDetails?: Record<string, unknown>
+                            }
+                            if (typed.type !== AccountTypes.multisig) return
+                            const details = typed.multisigDetails
+                            if (
+                                details != null &&
+                                typeof details === 'object' &&
+                                typeof details.version !== 'number'
+                            ) {
+                                details.version = 1
+                            }
+                        })
+                    }
+                }
+                return state as AccountsState
+            },
         },
     ),
 )

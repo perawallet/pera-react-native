@@ -46,7 +46,7 @@ describe('getMnemonicBackupKeyId', () => {
         const multisig: WalletAccount = {
             type: AccountTypes.multisig,
             address: 'ADDR_MS',
-            multisigDetails: { threshold: 2, addresses: [] },
+            multisigDetails: { threshold: 2, addresses: [], version: 1 },
         }
         const hardware: WalletAccount = {
             type: AccountTypes.hardware,

@@ -173,6 +173,7 @@ describe('Flow: Import shared account by scanning its QR code', () => {
             expect((saved as MultiSigAccount).multisigDetails).toEqual({
                 threshold: THRESHOLD,
                 addresses: PARTICIPANTS,
+                version: 1,
             })
             expect(useAccountsStore.getState().selectedAccountAddress).toBe(
                 SHARED_ADDRESS,

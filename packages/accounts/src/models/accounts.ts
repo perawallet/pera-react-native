@@ -45,6 +45,8 @@ export type HDWalletDetails = {
 export type MultiSigDetails = {
     threshold: number
     addresses: string[]
+    /** Algorand multisig version byte. Always 1 today. */
+    version: number
 }
 
 export type HardwareWalletDetails = {

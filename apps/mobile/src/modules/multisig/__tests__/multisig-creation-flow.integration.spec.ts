@@ -222,6 +222,7 @@ describe('multisig creation flow', () => {
                 multisigDetails: {
                     threshold: 2,
                     addresses: ['ADDR_A', 'ADDR_B'],
+                    version: 1,
                 },
             }),
         ])

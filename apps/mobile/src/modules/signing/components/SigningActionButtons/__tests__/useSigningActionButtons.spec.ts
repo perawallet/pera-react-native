@@ -319,7 +319,11 @@ describe('useSigningActionButtons', () => {
         const multisigAccount = {
             type: 'multisig',
             address: 'MS_ADDR',
-            multisigDetails: { threshold: 2, addresses: ['P1', 'P2'] },
+            multisigDetails: {
+                threshold: 2,
+                addresses: ['P1', 'P2'],
+                version: 1,
+            },
         } as never
 
         const txRequest = (overrides: object = {}) => ({

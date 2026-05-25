@@ -81,7 +81,7 @@ const multisig = (
 ): MultiSigAccount => ({
     type: AccountTypes.multisig,
     address,
-    multisigDetails: { threshold: 2, addresses: participants },
+    multisigDetails: { threshold: 2, addresses: participants, version: 1 },
     ...extra,
 })
 
