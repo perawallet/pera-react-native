@@ -15,6 +15,7 @@ import { getSheetSections } from './sheets.catalog'
 import { getDialogSections } from './dialogs.catalog'
 import { getComponentSections } from './components.catalog'
 import { getSharedComponentSections } from './shared-components.catalog'
+import { getModuleComponentSections } from './module-components.catalog'
 import { getToolSections } from './tools.catalog'
 
 import type { GalleryCategory, GalleryCategoryId } from './types'
@@ -44,7 +45,7 @@ export const getCategories = (tools: ToolHandlers): GalleryCategory[] => [
         id: 'components',
         title: 'Components',
         icon: 'grid-view',
-        sections: [...getComponentSections(), ...getSharedComponentSections()],
+        sections: [...getComponentSections(), ...getSharedComponentSections(), ...getModuleComponentSections()],
     },
     {
         id: 'tools',
