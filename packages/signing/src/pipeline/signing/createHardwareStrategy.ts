@@ -144,14 +144,7 @@ const connectAndVerify = async (
 
     // Re-fetch the address at the stored index and compare to the account's
     // expected address. Catches silent drift when the on-device account order
-    // has changed since import. Algorand addresses are canonical base32 with
-    // checksum, so a strict string compare is the right equality check (no
-    // case folding, no whitespace ambiguity).
-    //
-    // The verification is done once at connect time (matching native iOS).
-    // For multi-tx signing sessions the device is trusted to remain on the
-    // same account between signs; per-tx re-verification is a future
-    // hardening.
+    // has changed since import.
     try {
         const fetchedAccount = await withTimeout(
             transport.getAddress(accountIndex, false),
@@ -179,9 +172,6 @@ const connectAndVerify = async (
 
 /**
  * Sign each transaction sequentially on the hardware device.
- *
- * Hardware wallet transports are typically single-channel —
- * concurrent commands can corrupt state or reorder responses.
  */
 const signTransactions = async (
     transport: HardwareWalletTransport,

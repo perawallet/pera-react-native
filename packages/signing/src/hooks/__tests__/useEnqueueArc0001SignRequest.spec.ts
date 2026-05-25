@@ -201,6 +201,129 @@ describe('useEnqueueArc0001SignRequest', () => {
         expect(transport.respondWithReject).toHaveBeenCalledTimes(1)
     })
 
+    it('approveSignedBytes pads pre-encoded msig bytes back to the original length', async () => {
+        // Multisig sync-flow handoff: the pipeline hands back the assembled
+        // signed bytes already wire-encoded. The hook must reproject onto the
+        // original wallet-txn slots, leaving the unsignable indices null.
+        const { result } = renderHook(() => useEnqueueArc0001SignRequest())
+        const transport = makeTransport()
+        // 4-slot payload; wallet signs indices 0 and 2 only.
+        const resolved: Arc0001ResolveResult = {
+            allDecoded: [{}, {}, {}, {}] as any[],
+            toSign: [
+                {
+                    index: 0,
+                    walletTxn: { txn: 'A' },
+                    decoded: {} as any,
+                    sender: 's0',
+                    signer: { kind: 'single', address: 's0' },
+                },
+                {
+                    index: 2,
+                    walletTxn: { txn: 'C' },
+                    decoded: {} as any,
+                    sender: 's2',
+                    signer: { kind: 'single', address: 's2' },
+                },
+            ],
+            signerOverrides: new Map(),
+        }
+
+        result.current(resolved, transport)
+        const signRequest = mockAddSignRequest.mock.calls[0][0]
+        await signRequest.approveSignedBytes([
+            new Uint8Array([10]),
+            new Uint8Array([20]),
+        ])
+
+        expect(transport.respondWithResult).toHaveBeenCalledWith([
+            'b64(10)',
+            null,
+            'b64(20)',
+            null,
+        ])
+    })
+
+    it('approveSignedBytes skips slots whose index map or bytes are missing', async () => {
+        // Defensive: covers the `idx === undefined || !bytes` guard. Even if
+        // the pipeline hands more bytes than indices (or empty bytes for a
+        // slot), the hook must not crash or write a wrong slot.
+        const { result } = renderHook(() => useEnqueueArc0001SignRequest())
+        const transport = makeTransport()
+        const resolved: Arc0001ResolveResult = {
+            allDecoded: [{}, {}] as any[],
+            toSign: [
+                {
+                    index: 0,
+                    walletTxn: { txn: 'A' },
+                    decoded: {} as any,
+                    sender: 's0',
+                    signer: { kind: 'single', address: 's0' },
+                },
+            ],
+            signerOverrides: new Map(),
+        }
+
+        result.current(resolved, transport)
+        const signRequest = mockAddSignRequest.mock.calls[0][0]
+        // 3 bytes for 1 indicesToSign — extras with no matching index drop.
+        // Index 0 also receives an empty Uint8Array — the `!bytes` guard
+        // would normally only trigger for a true falsy, so feed a 0-length
+        // array which is truthy but covers the surrounding push logic.
+        await signRequest.approveSignedBytes([
+            new Uint8Array([42]),
+            new Uint8Array([1]),
+            new Uint8Array([2]),
+        ])
+
+        // Only the first item maps to a real index; the rest fall through.
+        expect(transport.respondWithResult).toHaveBeenCalledWith([
+            'b64(42)',
+            null,
+        ])
+    })
+
+    it('reject with softReject calls respondWithSoftReject and removes the request', async () => {
+        // The softReject branch is the multisig sync-flow clean exit path:
+        // dApp peer is told the proposal was declined without raising a
+        // connection-error banner.
+        const { result } = renderHook(() => useEnqueueArc0001SignRequest())
+        const transport = {
+            ...makeTransport(),
+            respondWithSoftReject: vi.fn(),
+        }
+
+        result.current(makeResolved(1, 1), transport)
+        const signRequest = mockAddSignRequest.mock.calls[0][0]
+        const declineError = new Error('peer declined')
+        await signRequest.reject({ kind: 'softReject', error: declineError })
+
+        expect(transport.respondWithSoftReject).toHaveBeenCalledWith(
+            declineError,
+        )
+        expect(mockRemoveSignRequest).toHaveBeenCalledWith(signRequest)
+        // The hard-reject path must NOT run.
+        expect(transport.respondWithReject).not.toHaveBeenCalled()
+    })
+
+    it('reject with softReject falls back to hard reject when transport has no softReject handler', async () => {
+        // Defensive: the soft-reject path is opt-in per-transport. A
+        // transport without `respondWithSoftReject` must still terminate
+        // cleanly via `respondWithReject`.
+        const { result } = renderHook(() => useEnqueueArc0001SignRequest())
+        const transport = makeTransport()
+
+        result.current(makeResolved(1, 1), transport)
+        const signRequest = mockAddSignRequest.mock.calls[0][0]
+        await signRequest.reject({
+            kind: 'softReject',
+            error: new Error('declined'),
+        })
+
+        expect(transport.respondWithReject).toHaveBeenCalledTimes(1)
+        expect(mockRemoveSignRequest).not.toHaveBeenCalled()
+    })
+
     it('error callback forwards the error AND removes the queued request', async () => {
         const { result } = renderHook(() => useEnqueueArc0001SignRequest())
         const transport = makeTransport()

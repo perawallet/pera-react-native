@@ -30,6 +30,8 @@ import type {
     TransportResult,
 } from '../pipeline/types'
 import { analyzerActor } from './actors/analyzerActor'
+// Local-key and multisig are simple fromPromise actors. Hardware needs a
+// child machine instead (own retry/error lifecycle, parent-forwarded events).
 import { localKeySignerActor } from './actors/signers/localKeySignerActor'
 import { multisigSignerActor } from './actors/signers/multisigSignerActor'
 import { transportActor } from './actors/transports/transportActor'

@@ -24,6 +24,7 @@ const makeInput = (
     encodeTransaction: vi.fn() as never,
     totalTxs: 1,
     deviceName: 'Nano X',
+    operation: 'transaction',
     ...overrides,
 })
 
@@ -152,5 +153,34 @@ describe('hardwareSigningMachine', () => {
         await new Promise(resolve => setTimeout(resolve, 0))
         expect(actor.getSnapshot().context.currentTx).toBe(2)
         expect(actor.getSnapshot().matches({ active: 'signing' })).toBe(true)
+    })
+
+    it('NON_LEDGER_ERROR transitions directly to done with kind:error (bypasses BLE-class gate)', async () => {
+        const stubActor = fromCallback(({ sendBack }) => {
+            sendBack({
+                type: 'NON_LEDGER_ERROR',
+                error: {
+                    kind: 'connection_failed',
+                    cause: new Error('arc60 validation'),
+                },
+            })
+            return () => {}
+        })
+        const machine = hardwareSigningMachine.provide({
+            actors: { hardwareSignActor: stubActor as never },
+        })
+        const actor = createActor(machine, { input: makeInput() })
+        actor.start()
+        await new Promise(resolve => setTimeout(resolve, 0))
+        const snap = actor.getSnapshot()
+        // Goes directly to done — does NOT sit in error waiting for ACK.
+        expect(snap.matches('done')).toBe(true)
+        expect(snap.output).toEqual({
+            kind: 'error',
+            error: {
+                kind: 'connection_failed',
+                cause: expect.any(Error),
+            },
+        })
     })
 })

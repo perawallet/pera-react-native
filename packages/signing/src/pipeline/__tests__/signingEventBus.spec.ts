@@ -78,4 +78,60 @@ describe('createSigningEventBus', () => {
         expect(handler.mock.calls[0][0].type).toBe('started')
         expect(handler.mock.calls[1][0].type).toBe('awaiting-user')
     })
+
+    it('subscribeWithReplay subscribers ignore live events for a different request id', () => {
+        const bus = createSigningEventBus()
+        const handler = vi.fn()
+        bus.subscribeWithReplay('r1', handler)
+
+        bus.publish({ type: 'started', request: req('r2') })
+
+        // The wrapped handler must filter by id — it should NOT fire for r2.
+        expect(handler).not.toHaveBeenCalled()
+
+        bus.publish({ type: 'started', request: req('r1') })
+        expect(handler).toHaveBeenCalledTimes(1)
+    })
+
+    it('subscribeWithReplay returns an unsubscribe that stops further deliveries', () => {
+        const bus = createSigningEventBus()
+        const handler = vi.fn()
+        const unsubscribe = bus.subscribeWithReplay('r1', handler)
+
+        bus.publish({ type: 'started', request: req('r1') })
+        expect(handler).toHaveBeenCalledTimes(1)
+
+        unsubscribe()
+        bus.publish({ type: 'awaiting-user', request: req('r1') })
+        expect(handler).toHaveBeenCalledTimes(1)
+    })
+
+    it('subscribeWithReplay handles a request id that has no retained history', () => {
+        // The `if (history)` branch in subscribeWithReplay covers the
+        // no-history path — no replay should happen but live events for
+        // the same request still flow.
+        const bus = createSigningEventBus()
+        const handler = vi.fn()
+        bus.subscribeWithReplay('never-seen', handler)
+
+        expect(handler).not.toHaveBeenCalled()
+
+        bus.publish({ type: 'started', request: req('never-seen') })
+        expect(handler).toHaveBeenCalledTimes(1)
+    })
+
+    it('__resetForTests clears subscribers and retained events', () => {
+        const bus = createSigningEventBus()
+        const handler = vi.fn()
+        bus.subscribe(handler)
+        bus.publish({ type: 'started', request: req('r1') })
+
+        bus.__resetForTests()
+
+        // Retained events are cleared.
+        expect(bus.replay('r1')).toHaveLength(0)
+        // Subscriber is cleared — a subsequent publish must not fire it.
+        bus.publish({ type: 'started', request: req('r1') })
+        expect(handler).toHaveBeenCalledTimes(1)
+    })
 })

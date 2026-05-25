@@ -10,11 +10,7 @@
  limitations under the License
  */
 
-import {
-    canSignArbitraryData,
-    isAlgo25Account,
-    isHDWalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { canSignArbitraryData } from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useCallback } from 'react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
@@ -33,20 +29,10 @@ export const useArbitraryDataSigner = () => {
         ): Promise<Uint8Array[]> => {
             // Sign with the requested account's own key. Rekey is NOT
             // followed: the dApp verifies against this account's pubkey.
-            if (!canSignArbitraryData(account)) {
+            if (!canSignArbitraryData(account) || !account.keyPairId) {
                 return Promise.reject(
                     new Error(
                         `Cannot sign arbitrary data for ${account.address}`,
-                    ),
-                )
-            }
-            // canSignArbitraryData ⇒ hasSigningKeys ⇒ Algo25 or HDWallet
-            // (the only types that carry keyPairId). The narrowing here is
-            // for the type system; the runtime invariant comes from above.
-            if (!isAlgo25Account(account) && !isHDWalletAccount(account)) {
-                return Promise.reject(
-                    new Error(
-                        `Unsupported account type ${account.type} for ${account.address}`,
                     ),
                 )
             }

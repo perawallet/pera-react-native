@@ -73,7 +73,7 @@ export type SigningMachineDeps = {
     signTransactions: LocalSigningFunction
     /** KMS arbitrary-data signing function from useArbitraryDataSigner */
     signArbitraryData: LocalArbitrarySigningFunction
-    /** KMS ARC-60 signing function from useArc60Signer */
+    /** KMS ARC-60 signing function from useLocalKeyArc60Signer */
     signArc60: LocalArc60SigningFunction
     /** Selects the correct transport (algod, callback, multisig, etc.) */
     createTransport: TransportFactory
