@@ -93,7 +93,7 @@
     "@tanstack/react-query-persist-client": "catalog:",
     "decimal.js": "^10.6.0",
     "expo": "^55.0.14",
-    "expo-application": "^55.0.14",
+    "expo-application": "^56.0.3",
     "expo-audio": "55.0.14",
     "expo-build-properties": "~55.0.13",
     "expo-clipboard": "^55.0.13",
