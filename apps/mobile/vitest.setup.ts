@@ -2299,6 +2299,36 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         hasNextPage: false,
         fetchNextPage: vi.fn(),
     })),
+    AssetSortModes: {
+        balanceDesc: 'balanceDesc',
+        balanceAsc: 'balanceAsc',
+        alphabeticalAsc: 'alphabeticalAsc',
+        alphabeticalDesc: 'alphabeticalDesc',
+    },
+    useAssetPreferencesStore: vi.fn((selector: (s: any) => any) =>
+        selector({
+            assetSortMode: 'balanceDesc',
+            hideZeroBalance: false,
+            displayNfts: true,
+            displayOptedInNfts: true,
+            setAssetSortMode: vi.fn(),
+            setHideZeroBalance: vi.fn(),
+            setDisplayNfts: vi.fn(),
+            setDisplayOptedInNfts: vi.fn(),
+            resetState: vi.fn(),
+        }),
+    ),
+    useCollectiblePreferencesStore: vi.fn((selector: (s: any) => any) =>
+        selector({
+            collectibleSortMode: 'newestFirst',
+            showOptedIn: false,
+            showWatchAccounts: false,
+            setCollectibleSortMode: vi.fn(),
+            setShowOptedIn: vi.fn(),
+            setShowWatchAccounts: vi.fn(),
+            resetState: vi.fn(),
+        }),
+    ),
 }))
 
 // Mock @perawallet/wallet-core-settings
@@ -2419,6 +2449,21 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             multisig: 'multisig',
             watch: 'watch',
         },
+        AccountSortModes: {
+            alphabeticalAsc: 'alphabeticalAsc',
+            alphabeticalDesc: 'alphabeticalDesc',
+            balanceAsc: 'balanceAsc',
+            balanceDesc: 'balanceDesc',
+            manual: 'manual',
+        },
+        useAccountsStore: vi.fn((selector: (s: any) => any) =>
+            selector({
+                accounts: [],
+                addAccount: vi.fn(),
+                removeAccount: vi.fn(),
+                resetState: vi.fn(),
+            }),
+        ),
         useOwnedAssets: vi.fn(() => ({
             assets: [],
             isLoading: false,
