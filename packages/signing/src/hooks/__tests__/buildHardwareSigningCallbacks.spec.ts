@@ -33,7 +33,12 @@ const hwAccount: WalletAccount = {
     },
 } as never
 
-const request = { id: 'req-1' } as SignRequest
+const request = { id: 'req-1', type: 'transactions' } as SignRequest
+const arc60Request = { id: 'req-arc60', type: 'arc60' } as SignRequest
+const arbitraryDataRequest = {
+    id: 'req-arb',
+    type: 'arbitrary-data',
+} as SignRequest
 
 describe('buildHardwareSigningCallbacks', () => {
     beforeEach(() => {
@@ -150,12 +155,40 @@ describe('buildHardwareSigningCallbacks', () => {
         )
     })
 
-    it('onError(generic Error) falls back to kind="connection_failed"', () => {
+    it('onError(non-Ledger Error) does NOT set a store error so the failure surfaces inline', () => {
+        // A non-device failure (e.g. an ARC-60 validation error the strategy
+        // wraps in a SigningError, or any generic Error) must not drive the
+        // hardware overlay/troubleshooting sheet. Leaving the store error
+        // unset lets the lifecycle reset the overlay and surface the inline
+        // red error in the sign-request sheet instead.
         const cbs = buildHardwareSigningCallbacks(request, hwAccount)
         cbs.onPhaseChange?.('connecting')
         cbs.onError?.(new Error('boom'))
-        expect(useHardwareSigningStore.getState().error?.kind).toBe(
-            'connection_failed',
-        )
+        expect(useHardwareSigningStore.getState().error).toBeNull()
+    })
+
+    describe('operation derivation', () => {
+        it('records operation="transaction" for a transactions request', () => {
+            const cbs = buildHardwareSigningCallbacks(request, hwAccount)
+            cbs.onPhaseChange?.('connecting')
+            expect(useHardwareSigningStore.getState().operation).toBe(
+                'transaction',
+            )
+        })
+
+        it('records operation="data" for an arc60 request', () => {
+            const cbs = buildHardwareSigningCallbacks(arc60Request, hwAccount)
+            cbs.onPhaseChange?.('connecting')
+            expect(useHardwareSigningStore.getState().operation).toBe('data')
+        })
+
+        it('records operation="data" for an arbitrary-data request', () => {
+            const cbs = buildHardwareSigningCallbacks(
+                arbitraryDataRequest,
+                hwAccount,
+            )
+            cbs.onPhaseChange?.('connecting')
+            expect(useHardwareSigningStore.getState().operation).toBe('data')
+        })
     })
 })

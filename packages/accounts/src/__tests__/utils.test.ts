@@ -12,6 +12,8 @@
 
 import { describe, test, expect } from 'vitest'
 import {
+    canSignArbitraryData,
+    canSignArc60,
     canSignWith,
     findAccountByKey,
     getAccountDisplayName,
@@ -381,6 +383,45 @@ describe('services/accounts/utils - canSignWith (hardware + multisig)', () => {
             multisigDetails: { threshold: 2, addresses: ['P1', 'P2'] },
         } as any
         expect(canSignWith(multisig, [multisig])).toBe(false)
+    })
+})
+
+describe('services/accounts/utils - canSignArbitraryData vs canSignArc60', () => {
+    const localKey = {
+        type: 'hdWallet',
+        address: 'HD',
+        keyPairId: 'pk1',
+    } as any
+    const hardware = {
+        type: 'hardware',
+        address: 'HW',
+        hardwareDetails: {
+            manufacturer: 'ledger',
+            deviceId: 'dev',
+            deviceName: 'Ledger Nano X',
+            accountIndex: 0,
+            transportType: 'ble',
+        },
+    } as any
+    const watch = { type: 'watch', address: 'WATCH' } as any
+    const multisig = {
+        type: 'multisig',
+        address: 'MS',
+        multisigDetails: { threshold: 2, addresses: ['P1', 'P2'] },
+    } as any
+
+    test('canSignArbitraryData is local-key only (excludes hardware)', () => {
+        expect(canSignArbitraryData(localKey)).toBe(true)
+        expect(canSignArbitraryData(hardware)).toBe(false)
+        expect(canSignArbitraryData(watch)).toBe(false)
+        expect(canSignArbitraryData(multisig)).toBe(false)
+    })
+
+    test('canSignArc60 also accepts hardware (on-device path)', () => {
+        expect(canSignArc60(localKey)).toBe(true)
+        expect(canSignArc60(hardware)).toBe(true)
+        expect(canSignArc60(watch)).toBe(false)
+        expect(canSignArc60(multisig)).toBe(false)
     })
 })
 

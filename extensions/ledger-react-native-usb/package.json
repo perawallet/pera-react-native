@@ -22,7 +22,7 @@
     "@perawallet/wallet-core-shared": "workspace:*",
     "@perawallet/wallet-extension-ledger-react-native": "workspace:*",
     "@ledgerhq/errors": "^6.32.0",
-    "@ledgerhq/hw-app-algorand": "^6.34.1",
+    "@algorandfoundation/ledger-algorand-js": "^1.4.3",
     "@ledgerhq/react-native-hid": "^6.39.1"
   },
   "devDependencies": {

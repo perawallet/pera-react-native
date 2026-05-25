@@ -18,6 +18,8 @@ import {
     concatBytes,
     decodeFromBase64,
 } from '@perawallet/wallet-core-shared'
+import { parseSiwa } from './siwa'
+import type { Arc60Metadata, Arc60StdSigData } from '../pipeline/types'
 
 /**
  * ARC-60 scope value for `AUTH` (the only scope defined by the spec today).
@@ -220,3 +222,54 @@ export const buildArc60AuthSigningPayload = (
     decodedData: Uint8Array,
     authenticatorData: Uint8Array,
 ): Uint8Array => concatBytes(sha256(decodedData), sha256(authenticatorData))
+
+/**
+ * Runs the full host-side ARC-60 AUTH validation shared by the local-key and
+ * hardware-wallet signing paths: scope check, domain binding, base64 decode,
+ * UTF-8 + canonical SIWA parse, and signer/domain cross-checks against the
+ * SIWA payload. Returns the decoded data so callers can build the signing
+ * payload (local key) or forward it to the device (hardware).
+ *
+ * Throws spec-aligned `Arc60*Error`s for every rejection path. Does NOT check
+ * the `hdPath` — that is account-type specific and stays with the caller.
+ */
+export const validateArc60AuthRequest = (
+    stdSigData: Arc60StdSigData,
+    metadata: Arc60Metadata,
+): { decodedData: Uint8Array } => {
+    if (metadata.scope !== ARC60_SCOPE_AUTH) {
+        throw new Arc60InvalidScopeError(metadata.scope)
+    }
+
+    verifyAuthenticatorDomain(stdSigData.domain, stdSigData.authenticatorData)
+
+    const decodedData = decodeArc60Data(stdSigData.data, metadata.encoding)
+
+    let jsonString: string
+    try {
+        jsonString = new TextDecoder('utf-8', { fatal: true }).decode(
+            decodedData,
+        )
+    } catch (caught) {
+        throw new Arc60BadJsonError(
+            'decoded payload is not valid UTF-8',
+            caught instanceof Error ? caught : undefined,
+        )
+    }
+
+    const siwa = parseSiwa(jsonString)
+
+    if (siwa.domain !== stdSigData.domain) {
+        throw new Arc60BadJsonError(
+            `SIWA domain "${siwa.domain}" does not match request domain "${stdSigData.domain}"`,
+        )
+    }
+    if (siwa.account_address !== stdSigData.signer) {
+        throw new Arc60InvalidSignerError(
+            stdSigData.signer,
+            `SIWA account_address "${siwa.account_address}" does not match request signer`,
+        )
+    }
+
+    return { decodedData }
+}

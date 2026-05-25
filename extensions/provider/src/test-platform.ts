@@ -144,6 +144,8 @@ export const buildTestPlatform = (
                 accountIndex,
             }),
             signTransaction: async () => new Uint8Array(64),
+            signData: async () => new Uint8Array(64),
+            getAppVersion: async () => ({ major: 0, minor: 0, patch: 0 }),
             disconnect: async () => {},
         }),
         isSupported: async () => false,

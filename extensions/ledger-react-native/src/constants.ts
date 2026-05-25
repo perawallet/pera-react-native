@@ -16,6 +16,7 @@ import {
     getInfosForServiceUuid,
 } from '@ledgerhq/devices'
 import { StatusCodes } from '@ledgerhq/errors'
+import type { HardwareWalletAppVersion } from '@perawallet/wallet-core-hardware-wallet'
 import type { LedgerDeviceModel } from './types'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
@@ -64,10 +65,15 @@ export const resolveDeviceModel = (
 export const ALGORAND_BIP44_PREFIX = "44'/283'"
 
 /**
- * Construct the full BIP-44 path for a Ledger Algorand account.
+ * Construct the full BIP-32 derivation path for a Ledger Algorand account,
+ * in the canonical `m/`-prefixed form (e.g. `m/44'/283'/0'/0/0`).
+ *
+ * The `m/` prefix is required by `@algorandfoundation/ledger-algorand-js`'s
+ * `serializePath` (used by `signData`); it rejects bare `44'/283'/…` paths
+ * with "Path should start with \"m/\"".
  */
 export const buildLedgerAccountPath = (accountIndex: number): string =>
-    `${ALGORAND_BIP44_PREFIX}/${accountIndex}'/0/0`
+    `m/${ALGORAND_BIP44_PREFIX}/${accountIndex}'/0/0`
 
 /**
  * APDU status codes used to classify Ledger responses.
@@ -99,8 +105,17 @@ export const LEDGER_STATUS_CODES = {
 /** Maximum time to scan for Ledger devices (BLE or USB) before showing a timeout message. */
 export const LEDGER_SCAN_TIMEOUT_MS = 30_000
 
-/** Maximum time to wait for user confirmation on the Ledger device. */
-export const LEDGER_CONFIRMATION_TIMEOUT_MS = 30_000
+/**
+ * Maximum time to wait for the user to review and confirm on the Ledger
+ * device. This is a backstop against a silently-dropped BLE link mid-sign —
+ * NOT a bound on the user's reading time. It must comfortably exceed how long
+ * a person spends reviewing a transaction or ARC-60 data payload on-device
+ * (scrolling a multi-screen message can easily exceed 30s), otherwise the
+ * sign call is aborted and the signing sheet tears down while the device is
+ * still prompting. 5 minutes is generous enough to never cut off a genuine
+ * review while still bounding a dead link.
+ */
+export const LEDGER_CONFIRMATION_TIMEOUT_MS = 300_000
 
 /**
  * Maximum time to wait for a BLE connection to the Ledger device.
@@ -118,3 +133,32 @@ export const LEDGER_CONNECTION_TIMEOUT_MS = 20_000
  * return addresses with no on-chain presence.
  */
 export const MAX_ACCOUNT_SCAN_GAP = 2
+
+/**
+ * Minimum Ledger Algorand app version that ships the SIGN_ARBITRARY (0x10)
+ * instruction required for ARC-60 arbitrary-data signing.
+ *
+ * NOTE: Confirm the exact version against the Ledger Algorand app changelog
+ * and a physical-device check before release; adjust if the device reports a
+ * different first-supporting version. The early gate is a UX nicety — the
+ * on-device error fallback (mapped to `app_outdated`) is the backstop if this
+ * value is too low.
+ */
+export const MIN_ARBITRARY_SIGN_APP_VERSION: HardwareWalletAppVersion = {
+    major: 2,
+    minor: 0,
+    patch: 0,
+}
+
+/**
+ * Returns true when `actual` is greater than or equal to `required`
+ * (semantic major.minor.patch comparison).
+ */
+export const isAppVersionAtLeast = (
+    actual: HardwareWalletAppVersion,
+    required: HardwareWalletAppVersion,
+): boolean => {
+    if (actual.major !== required.major) return actual.major > required.major
+    if (actual.minor !== required.minor) return actual.minor > required.minor
+    return actual.patch >= required.patch
+}

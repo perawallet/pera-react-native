@@ -23,7 +23,11 @@ import {
 import { Networks } from '@perawallet/wallet-core-shared'
 import { isHardwareWalletAccount } from '@perawallet/wallet-core-accounts'
 import {
-    WalletConnectConnectionTimeoutError,
+    canSignArbitraryData,
+    useAllAccounts,
+    isHardwareWalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import {
     WalletConnectInvalidNetworkError,
     WalletConnectInvalidSessionError,
     WalletConnectSignRequestError,
@@ -262,17 +266,28 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     },
 }))
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useAllAccounts: vi.fn(() => signingAccountsState.current),
-    useSigningAccounts: vi.fn(() => signingAccountsState.current),
-    canSignWithAccount: vi.fn(() => true),
-    // Hardware accounts can't sign arbitrary data (no raw-byte opcode).
-    // Tests flip this on by setting account.type = 'hardware'.
-    canSignArbitraryData: vi.fn((account: any) => account?.type !== 'hardware'),
-    getAccountDisplayName: vi.fn((a: any) => a.name || a.address),
-    isHardwareWalletAccount: vi.fn(() => false),
-    isMultisigAccount: vi.fn(() => false),
-}))
+vi.mock('@perawallet/wallet-core-accounts', () => {
+    const canSignArbitraryData = vi.fn(() => true)
+    const isHardwareWalletAccount = vi.fn(() => false)
+    return {
+        useAllAccounts: vi.fn(() => [
+            { address: 'addr1', name: 'Account 1', type: 'standard' },
+        ]),
+        useSigningAccounts: vi.fn(() => [
+            { address: 'addr1', name: 'Account 1', type: 'standard' },
+        ]),
+        canSignWith: vi.fn(() => true),
+        canSignArbitraryData,
+        // Mirror the real composition so tests that toggle the two predicates
+        // exercise canSignArc60 without setting it directly.
+        canSignArc60: vi.fn(
+            (a: any) => canSignArbitraryData(a) || isHardwareWalletAccount(a),
+        ),
+        getAccountDisplayName: vi.fn((a: any) => a.name || a.address),
+        isHardwareWalletAccount,
+        isMultisigAccount: vi.fn((a: any) => a?.type === 'multisig'),
+    }
+})
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
     const actual = await vi.importActual('@perawallet/wallet-core-shared')
@@ -698,6 +713,44 @@ describe('useWalletConnectHandlers', () => {
                     transport: 'callback',
                     sourceType: 'walletconnect',
                 }),
+            )
+        })
+
+        it('queues an arc60 sign request for a Ledger (hardware) signer', () => {
+            // Hardware accounts can't sign locally (`canSignArbitraryData`
+            // false) but DO sign ARC-60 on-device via the hardware strategy,
+            // so the ARC-60 gate must let them through.
+            ;(canSignArbitraryData as any).mockReturnValue(false)
+            ;(isHardwareWalletAccount as any).mockReturnValue(true)
+            ;(useAllAccounts as any).mockReturnValue([
+                {
+                    address: 'addr1',
+                    name: 'Ledger',
+                    type: 'hardware',
+                    hardwareDetails: {
+                        manufacturer: 'ledger',
+                        deviceId: 'test-device',
+                        deviceName: 'Ledger Nano X',
+                        accountIndex: 0,
+                        transportType: 'ble',
+                    },
+                },
+            ])
+
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            const connector = { clientId: 'test-client-id' } as any
+
+            expect(() =>
+                result.current.handleSignData(
+                    connector,
+                    Networks.mainnet,
+                    null,
+                    arc60Payload(),
+                ),
+            ).not.toThrow()
+
+            expect(mockAddSignRequest).toHaveBeenCalledWith(
+                expect.objectContaining({ type: 'arc60' }),
             )
         })
 

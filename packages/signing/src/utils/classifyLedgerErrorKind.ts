@@ -13,6 +13,7 @@
 import {
     LedgerAddressMismatchError,
     LedgerAppNotOpenError,
+    LedgerAppOutdatedError,
     LedgerBluetoothDisabledError,
     LedgerConnectionError,
     LedgerDisconnectedError,
@@ -28,6 +29,43 @@ import {
     LedgerUserRejectedError,
 } from '@perawallet/wallet-core-ledger'
 import type { LedgerErrorPresetKind } from '../types/ledgerErrorPresetKind'
+
+/**
+ * Every typed Ledger error class. Kept in one place so both the
+ * UI-preset classifier ({@link classifyLedgerErrorKind}) and the
+ * device-error predicate ({@link isLedgerError}) stay in sync.
+ */
+const LEDGER_ERROR_CLASSES = [
+    LedgerBluetoothDisabledError,
+    LedgerPermissionDeniedError,
+    LedgerScanTimeoutError,
+    LedgerUserRejectedError,
+    LedgerAppNotOpenError,
+    LedgerAddressMismatchError,
+    LedgerSigningError,
+    LedgerSigningFailedError,
+    LedgerTransmissionError,
+    LedgerPublicKeyReadError,
+    LedgerNetworkError,
+    LedgerAppOutdatedError,
+    LedgerUnsupportedDeviceError,
+    LedgerDisconnectedError,
+    LedgerTimeoutError,
+    LedgerConnectionError,
+] as const
+
+/**
+ * True only for genuine Ledger device/transport errors (the typed classes
+ * thrown by the Ledger extension). Used to decide whether a thrown error
+ * should drive the hardware-signing overlay/troubleshooting surface
+ * (`true`) or fall through to the generic inline error view (`false`).
+ *
+ * Non-device failures — ARC-60 validation errors, generic JS errors, or a
+ * `SigningError` wrapping one — return `false` so they surface inline in the
+ * sign-request sheet rather than masquerading as a connection problem.
+ */
+export const isLedgerError = (error: unknown): boolean =>
+    LEDGER_ERROR_CLASSES.some(LedgerError => error instanceof LedgerError)
 
 /**
  * Strategy-agnostic classifier that turns a thrown error into the
@@ -52,6 +90,7 @@ export const classifyLedgerErrorKind = (
     if (error instanceof LedgerPublicKeyReadError)
         return 'public_key_read_failed'
     if (error instanceof LedgerNetworkError) return 'network_error'
+    if (error instanceof LedgerAppOutdatedError) return 'app_outdated'
     if (error instanceof LedgerUnsupportedDeviceError)
         return 'unsupported_device'
     if (error instanceof LedgerDisconnectedError) return 'connection_lost'

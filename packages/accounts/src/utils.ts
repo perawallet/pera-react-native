@@ -234,6 +234,20 @@ export const canSignArbitraryData = (account: WalletAccount): boolean =>
     hasSigningKeys(account)
 
 /**
+ * True iff the wallet can produce an ARC-60 signature for `account`, by
+ * either of the two supported mechanisms:
+ *
+ * - a local key (Algo25 / HDWallet) signed via the KMS, or
+ * - a Ledger device signed on-device via the hardware signing strategy.
+ *
+ * This is broader than {@link canSignArbitraryData} (which is local-key only)
+ * because ARC-60 — unlike the legacy `algo_signData` path — also has an
+ * on-device signing path. Watch and multisig accounts can do neither.
+ */
+export const canSignArc60 = (account: WalletAccount): boolean =>
+    canSignArbitraryData(account) || isHardwareWalletAccount(account)
+
+/**
  * True iff `account` is rekeyed and the wallet can't sign for the auth
  * chain. Distinguishes the "rekeyed but stranded" display state from a pure
  * `isWatchAccount`.

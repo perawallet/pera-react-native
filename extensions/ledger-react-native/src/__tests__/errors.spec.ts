@@ -95,6 +95,26 @@ describe('classifyLedgerError', () => {
     })
 })
 
+describe('classifyLedgerError with @zondax/ledger-js returnCode', () => {
+    it('classifies returnCode 0x6986 as LedgerUserRejectedError', () => {
+        expect(classifyLedgerError({ returnCode: 0x6986 })).toBeInstanceOf(
+            LedgerUserRejectedError,
+        )
+    })
+
+    it('classifies returnCode 0x6e00 as LedgerAppNotOpenError', () => {
+        expect(classifyLedgerError({ returnCode: 0x6e00 })).toBeInstanceOf(
+            LedgerAppNotOpenError,
+        )
+    })
+
+    it('prefers statusCode when both are present', () => {
+        expect(
+            classifyLedgerError({ statusCode: 0x6986, returnCode: 0x9000 }),
+        ).toBeInstanceOf(LedgerUserRejectedError)
+    })
+})
+
 describe('new typed Ledger errors', () => {
     it('LedgerBluetoothDisabledError is a retryable AppError with BLOCKCHAIN category', () => {
         const error = new LedgerBluetoothDisabledError()
