@@ -11,7 +11,14 @@
  */
 
 import { useWindowDimensions } from 'react-native'
-import { PWButton, PWImage, PWOverlay, PWText, PWView } from '@components/core'
+import {
+    PWButton,
+    PWImage,
+    PWOverlay,
+    PWScrollView,
+    PWText,
+    PWView,
+} from '@components/core'
 import { useTheme } from '@rneui/themed'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
@@ -36,8 +43,8 @@ export const MultisigIntroductionDialog = ({
     onContinue,
     onDismiss,
 }: MultisigIntroductionDialogProps) => {
-    const { width: screenWidth } = useWindowDimensions()
-    const styles = useStyles({ screenWidth })
+    const { width: screenWidth, height: screenHeight } = useWindowDimensions()
+    const styles = useStyles({ screenWidth, screenHeight })
     const { theme } = useTheme()
     const { t } = useLanguage()
     const heroImage =
@@ -50,8 +57,11 @@ export const MultisigIntroductionDialog = ({
             overlayStyle={styles.overlay}
             backdropStyle={styles.backdrop}
         >
-            <PWView
-                style={styles.container}
+            <PWScrollView
+                style={styles.scrollArea}
+                contentContainerStyle={styles.container}
+                showsVerticalScrollIndicator={false}
+                bounces={false}
                 testID='multisig_introduction_dialog'
             >
                 <PWImage
@@ -96,7 +106,9 @@ export const MultisigIntroductionDialog = ({
                         </PWView>
                     ))}
                 </PWView>
+            </PWScrollView>
 
+            <PWView style={styles.footer}>
                 <PWButton
                     variant='primary'
                     title={t('multisig.introduction.continue')}
