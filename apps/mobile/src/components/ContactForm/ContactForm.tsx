@@ -212,6 +212,7 @@ export const ContactForm = <T extends FieldValues>({
                     onClose={handleCloseScanner}
                     animationType='slide'
                     title={t('address_entry.scan_qr')}
+                    skipDeepLinkHandler
                 />
             )}
         </PWScrollView>

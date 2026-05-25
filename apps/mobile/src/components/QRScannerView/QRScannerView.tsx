@@ -26,6 +26,7 @@ export type QRScannerViewProps = {
     animationType: 'slide' | 'fade' | 'none'
     onClose: () => void
     onSuccess: (url: string, restartScanning: () => void) => void
+    skipDeepLinkHandler?: boolean
 }
 
 export const QRScannerView = (props: QRScannerViewProps) => {
@@ -43,6 +44,7 @@ export const QRScannerView = (props: QRScannerViewProps) => {
         isVisible: props.isVisible,
         onSuccess: props.onSuccess,
         onClose: props.onClose,
+        skipDeepLinkHandler: props.skipDeepLinkHandler,
     })
 
     return (

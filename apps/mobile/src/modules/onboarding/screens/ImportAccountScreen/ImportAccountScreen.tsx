@@ -235,6 +235,7 @@ export const ImportAccountScreen = () => {
                 onClose={handleCloseQRScanner}
                 onSuccess={handleQRScannerSuccess}
                 animationType='slide'
+                skipDeepLinkHandler
             />
         </PWView>
     )
