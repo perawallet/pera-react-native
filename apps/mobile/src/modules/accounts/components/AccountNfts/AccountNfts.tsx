@@ -64,6 +64,7 @@ export const AccountNfts = () => {
         openManageSheet,
         openAddNftSheet,
         flatListRef,
+        sortMode,
     } = useAccountNfts()
 
     const isGrid = galleryLayout === 'grid'
@@ -174,7 +175,7 @@ export const AccountNfts = () => {
                     </PWView>
                     <PWFlatList
                         ref={flatListRef}
-                        key={`${galleryLayout}:${debouncedSearchFilter}`}
+                        key={`${galleryLayout}:${sortMode}:${debouncedSearchFilter}`}
                         data={collectibles}
                         renderItem={renderItem}
                         numColumns={isGrid ? GRID_COLUMNS : 1}
