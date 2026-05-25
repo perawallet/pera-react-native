@@ -238,7 +238,7 @@ export const PendingSignaturesContent = () => {
                             />
                         )}
                         <PWButton
-                            variant='secondary'
+                            variant='primary'
                             title={t(
                                 'multisig.pending_signatures.close_for_now',
                             )}

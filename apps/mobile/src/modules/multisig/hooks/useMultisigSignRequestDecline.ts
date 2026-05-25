@@ -25,6 +25,7 @@ import {
     type SignRequest,
 } from '@perawallet/wallet-core-signing'
 import { useToast } from '@hooks/useToast'
+import { getSignedResponseCount } from '../utils/signRequestStatus'
 
 export type UseMultisigSignRequestDeclineParams =
     | {
@@ -66,7 +67,9 @@ const CANCEL_ERROR_KEYS = {
  * - `mode: 'cancel'` — the proposer withdrawing their own request. There's
  *   no separate cancel endpoint, so we call the decline mutation against the
  *   proposer's address. Exposes a `canPerform` gate based on actionable
- *   status + local proposer + unsigned proposer.
+ *   status + local proposer. Mirrors pera-android: a proposer can cancel
+ *   regardless of whether they have already signed — the backend treats
+ *   their decline as the final word on the request.
  */
 export const useMultisigSignRequestDecline = (
     params: UseMultisigSignRequestDeclineParams,
@@ -90,25 +93,24 @@ export const useMultisigSignRequestDecline = (
         signRequestId,
     })
 
-    const unsignedProposerAddress = useMemo(() => {
+    // The proposer's address if it belongs to a local account — regardless
+    // of whether they have already signed. Mirrors pera-android's
+    // `hasProposer` check, which gates the Cancel/Close-for-now button pair
+    // on local ownership of the proposer slot only.
+    const localProposerAddress = useMemo(() => {
         if (params.mode !== 'cancel') return null
         const signRequest = params.signRequest
         if (!signRequest?.proposerAddress) return null
         const proposer = signRequest.proposerAddress
         const isLocalAccount = accounts.some(a => a.address === proposer)
         if (!isLocalAccount) return null
-
-        const responses = signRequest.transactionLists[0]?.responses ?? []
-        const hasResponded = responses.some(r => r.address === proposer)
-        if (hasResponded) return null
-
         return proposer
     }, [params, accounts])
 
     const targetAddress =
         params.mode === 'decline'
             ? params.signerAddress
-            : unsignedProposerAddress
+            : localProposerAddress
 
     const canPerform = useMemo(() => {
         if (params.mode === 'decline') return true
@@ -116,8 +118,15 @@ export const useMultisigSignRequestDecline = (
         if (!signRequest) return false
         if (!ACTIONABLE_SIGN_REQUEST_STATUSES.has(signRequest.status))
             return false
-        return unsignedProposerAddress !== null
-    }, [params, unsignedProposerAddress])
+        if (localProposerAddress === null) return false
+        // Mirror pera-android: once the threshold is met the backend will
+        // submit on its own, so the proposer can no longer cancel — only
+        // Close remains. Until then (status still `pending` and the
+        // request is short of the threshold) the proposer can cancel
+        // regardless of whether they themselves have already signed.
+        const signedCount = getSignedResponseCount(signRequest)
+        return signedCount < signRequest.multisigAccount.threshold
+    }, [params, localProposerAddress])
 
     const errorKeys =
         params.mode === 'decline' ? DECLINE_ERROR_KEYS : CANCEL_ERROR_KEYS

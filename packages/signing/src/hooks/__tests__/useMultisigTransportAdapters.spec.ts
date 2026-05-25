@@ -299,7 +299,10 @@ describe('useMultisigTransportAdapters', () => {
                     'sign-request-detail',
                     { network: 'testnet', signRequestId: 'sr-1' },
                 ],
-                cosignResponse,
+                // The adapter backfills `proposer_address` from the
+                // proposer we just sent in case the backend response omits
+                // it — this keeps the proposer's Cancel button visible.
+                { ...cosignResponse, proposer_address: 'PARTICIPANT_A' },
             )
         })
 
@@ -331,7 +334,10 @@ describe('useMultisigTransportAdapters', () => {
                     'sign-request-detail',
                     { network: 'testnet', signRequestId: 'sr-1' },
                 ],
-                baseSignRequestResponse,
+                {
+                    ...baseSignRequestResponse,
+                    proposer_address: 'PARTICIPANT_A',
+                },
             )
         })
 
@@ -443,7 +449,46 @@ describe('useMultisigTransportAdapters', () => {
                         signRequestId: 'sr-99',
                     },
                 ],
-                baseSignRequestResponse,
+                // No prior cache + response omits proposer_address → null.
+                // (The proposer-address-preserving path is exercised by the
+                // dedicated test below.)
+                { ...baseSignRequestResponse, proposer_address: null },
+            )
+        })
+
+        test('preserves proposer_address from existing cache when the cosign response omits it', async () => {
+            mocks.addSignature.mockResolvedValue(baseSignRequestResponse)
+            const { result, queryClient } = renderTransportFns()
+            // Seed the cache as if a previous propose call (or earlier
+            // cosign) had populated proposer_address.
+            queryClient.setQueryData(
+                [
+                    'multisig',
+                    'sign-request-detail',
+                    { network: 'testnet', signRequestId: 'sr-99' },
+                ],
+                {
+                    ...baseSignRequestResponse,
+                    proposer_address: 'PROPOSER_FROM_EARLIER_CALL',
+                },
+            )
+            const setQueryDataSpy = vi.spyOn(queryClient, 'setQueryData')
+
+            await result.current.addSignatures({
+                signRequestId: 'sr-99',
+                signers: [{ address: 'A', signatures: ['c2lnQTA='] }],
+            })
+
+            expect(setQueryDataSpy).toHaveBeenCalledWith(
+                [
+                    'multisig',
+                    'sign-request-detail',
+                    { network: 'testnet', signRequestId: 'sr-99' },
+                ],
+                {
+                    ...baseSignRequestResponse,
+                    proposer_address: 'PROPOSER_FROM_EARLIER_CALL',
+                },
             )
         })
 

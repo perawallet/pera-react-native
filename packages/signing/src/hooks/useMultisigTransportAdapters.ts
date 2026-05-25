@@ -212,9 +212,22 @@ export const useMultisigTransportAdapters =
                 // endpoint is unreliable on some environments, so an
                 // invalidation alone can leave the sheet stuck on its
                 // loading spinner.
+                //
+                // Defensively persist `proposer_address` from the request we
+                // just sent — the response schema declares it
+                // `.nullable().optional()` and some backend deployments
+                // return null in the echo. The proposer address is what
+                // gates the "Cancel transaction" button in
+                // PendingSignaturesContent (via canCancel /
+                // useMultisigSignRequestDecline), so losing it here would
+                // strip the user's ability to cancel their own proposal.
                 queryClient.setQueryData(
                     getSignRequestDetailQueryKey(network, signRequestId),
-                    latestResponse,
+                    {
+                        ...latestResponse,
+                        proposer_address:
+                            latestResponse.proposer_address ?? proposer.address,
+                    },
                 )
 
                 return { signRequestId, status: latestResponse.status }
@@ -255,12 +268,19 @@ export const useMultisigTransportAdapters =
                         network,
                         proposeParams,
                     )
+                    // See the normal propose path's setQueryData above for
+                    // why we backfill `proposer_address` from the request.
                     queryClient.setQueryData(
                         getSignRequestDetailQueryKey(
                             network,
                             proposeResponse.id,
                         ),
-                        proposeResponse,
+                        {
+                            ...proposeResponse,
+                            proposer_address:
+                                proposeResponse.proposer_address ??
+                                proposer.address,
+                        },
                     )
                     // The draft is deleted by `useMultisigProposeListener`
                     // atomically with `openSheet(realId)` so the next render
@@ -287,10 +307,27 @@ export const useMultisigTransportAdapters =
                 // `proposeSignRequestResponseSchema` and
                 // `signRequestDetailResponseSchema` alias the same
                 // `signRequestResponseSchema`.
-                queryClient.setQueryData(
-                    getSignRequestDetailQueryKey(network, signRequestId),
-                    response,
+                //
+                // Preserve `proposer_address` from whatever's already in the
+                // cache when the cosign response itself omits it (the
+                // backend's echo of `proposer_address` is optional per the
+                // schema, and some endpoints don't include it on
+                // addSignature). Without this, every cosign after the
+                // initial propose would wipe out the proposer pointer and
+                // strip the proposer's Cancel button.
+                const cacheKey = getSignRequestDetailQueryKey(
+                    network,
+                    signRequestId,
                 )
+                const previousCachedResponse =
+                    queryClient.getQueryData<typeof response>(cacheKey)
+                queryClient.setQueryData(cacheKey, {
+                    ...response,
+                    proposer_address:
+                        response.proposer_address ??
+                        previousCachedResponse?.proposer_address ??
+                        null,
+                })
                 return { status: response.status }
             },
             [network, queryClient],
