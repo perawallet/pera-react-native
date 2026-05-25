@@ -10,18 +10,4 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => ({
-    topActions: {
-        gap: theme.spacing.sm,
-    },
-    search: {
-        marginTop: theme.spacing.lg,
-    },
-    sectionHeader: {
-        color: theme.colors.textGray,
-        marginTop: theme.spacing.lg,
-        marginBottom: theme.spacing.sm,
-    },
-}))
+export { GalleryCategoryScreen } from './GalleryCategoryScreen'

@@ -17,18 +17,22 @@
  * logic layer (packages) so the UI/screen layer carries no mock-data code.
  */
 
+import { Decimal } from 'decimal.js'
+
 import type {
     Algo25Account,
     HDWalletAccount,
     WalletAccount,
     WatchAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import type { Contact } from '@perawallet/wallet-core-contacts'
 import type { ASAInbox } from '@perawallet/wallet-core-messages'
 import type {
     ArbitraryDataSignRequest,
     PeraArbitraryDataMessage,
 } from '@perawallet/wallet-core-signing'
+import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 
 // --- primitives ---
 
@@ -232,4 +236,99 @@ export const mockArbitraryDataSignRequest: ArbitraryDataSignRequest = {
     type: 'arbitrary-data',
     transport: 'algod',
     data: [mockArbitraryDataMessage],
+}
+
+// --- assets ---
+
+export const mockAsset: PeraAsset = {
+    assetId: MOCK_ASSET_ID,
+    name: 'USD Coin',
+    unitName: 'USDC',
+    decimals: 6,
+    totalSupply: new Decimal('10000000000000000'),
+    url: 'https://www.centre.io/usdc',
+    creator: {
+        address: MOCK_ADDRESS,
+    },
+    peraMetadata: {
+        isDeleted: false,
+        verificationTier: 'verified',
+        logo: 'https://perawallet.app/static/usdc-logo.png',
+        type: 'standard_asset',
+        isFavorited: false,
+        isPriceAlertEnabled: false,
+        projectName: 'Centre',
+        projectUrl: 'https://www.centre.io',
+        description: 'USD Coin is a fully collateralised US dollar stablecoin.',
+    },
+}
+
+// --- collectibles ---
+
+export const mockCollectible: PeraAsset = {
+    assetId: '470842789',
+    name: 'Mock NFT #1',
+    unitName: 'MNFT1',
+    decimals: 0,
+    totalSupply: new Decimal('1'),
+    url: 'https://perawallet.app/nft/mock',
+    creator: {
+        address: MOCK_ADDRESS,
+    },
+    peraMetadata: {
+        isDeleted: false,
+        verificationTier: 'verified',
+        logo: 'https://perawallet.app/static/nft-thumb.png',
+        type: 'collectible',
+        isFavorited: false,
+        isPriceAlertEnabled: false,
+        collectible: {
+            title: 'Mock NFT #1',
+            standard: 'arc69',
+            primaryImage: 'https://perawallet.app/static/nft-primary.png',
+            mediaType: 'image',
+            explorerUrl: 'https://explorer.perawallet.app/asset/470842789',
+            collection: {
+                id: 1001,
+                name: 'Mock Collection',
+                description: 'A collection of mock NFTs for gallery preview.',
+            },
+            description: 'A unique collectible for UI gallery review.',
+            traits: [
+                { displayName: 'Background', displayValue: 'Blue' },
+                { displayName: 'Rarity', displayValue: 'Rare' },
+            ],
+            media: [
+                {
+                    type: 'image',
+                    downloadUrl: 'https://perawallet.app/static/nft-full.png',
+                    previewUrl: 'https://perawallet.app/static/nft-thumb.png',
+                    extension: 'png',
+                },
+            ],
+        },
+    },
+}
+
+// --- transactions ---
+
+export const mockTransaction: TransactionHistoryItem = {
+    id: MOCK_TX_ID,
+    txType: 'pay',
+    sender: MOCK_ADDRESS,
+    receiver: MOCK_ADDRESS_2,
+    confirmedRound: 40_000_000,
+    roundTime: Math.floor(Date.now() / 1000) - 300,
+    swapGroupDetail: null,
+    interpretedMeaning: {
+        title: 'Sent ALGO',
+        description: `Sent 1.5 ALGO to ${MOCK_ADDRESS_2}`,
+    },
+    fee: new Decimal('1000'),
+    groupId: null,
+    amount: new Decimal('1500000'),
+    closeTo: null,
+    asset: null,
+    applicationId: null,
+    innerTransactionCount: null,
 }

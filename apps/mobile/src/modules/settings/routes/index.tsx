@@ -35,6 +35,10 @@ import { SettingsDeveloperMenuScreen } from '../screens/developer/SettingsDevelo
 import { SettingsDeveloperFeatureFlagsScreen } from '../screens/developer/SettingsDeveloperFeatureFlagsScreen/SettingsDeveloperFeatureFlagsScreen'
 import { SettingsDeveloperManageCacheScreen } from '../screens/developer/SettingsDeveloperManageCacheScreen'
 import { SettingsDeveloperGalleryScreen } from '../screens/developer/SettingsDeveloperGalleryScreen'
+import { GalleryCategoryScreen } from '../screens/developer/GalleryCategoryScreen'
+import { GalleryComponentPreviewScreen } from '../screens/developer/GalleryComponentPreviewScreen'
+
+import type { GalleryCategoryId } from '@modules/settings/screens/developer/gallery-catalog'
 
 export type DeveloperSettingsStackParamsList = {
     DeveloperSettingsHome: undefined
@@ -44,6 +48,8 @@ export type DeveloperSettingsStackParamsList = {
     FeatureFlags: undefined
     ManageCache: undefined
     Gallery: undefined
+    GalleryCategory: { categoryId: GalleryCategoryId }
+    GalleryPreview: { entryId: string }
 }
 
 const DeveloperSettingsStack =
@@ -111,6 +117,16 @@ const DeveloperSettingsStackNavigator = () => {
                     title: 'Screen Gallery',
                 }}
                 component={SettingsDeveloperGalleryScreen}
+            />
+            <DeveloperSettingsStack.Screen
+                name='GalleryCategory'
+                options={{ title: 'UI Catalog' }}
+                component={GalleryCategoryScreen}
+            />
+            <DeveloperSettingsStack.Screen
+                name='GalleryPreview'
+                options={{ title: 'Preview' }}
+                component={GalleryComponentPreviewScreen}
             />
         </DeveloperSettingsStack.Navigator>
     )

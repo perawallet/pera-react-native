@@ -2173,6 +2173,7 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
         isSwappableAsset: vi.fn(() => true),
         apiSlippageToPercent: (slippage: InstanceType<typeof Decimal>) =>
             slippage.mul(100).toString(),
+        useProvidersQuery: vi.fn(() => ({ data: [] })),
     }
 })
 
@@ -2323,6 +2324,36 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         hasNextPage: false,
         fetchNextPage: vi.fn(),
     })),
+    AssetSortModes: {
+        balanceDesc: 'balanceDesc',
+        balanceAsc: 'balanceAsc',
+        alphabeticalAsc: 'alphabeticalAsc',
+        alphabeticalDesc: 'alphabeticalDesc',
+    },
+    useAssetPreferencesStore: vi.fn((selector: (s: any) => any) =>
+        selector({
+            assetSortMode: 'balanceDesc',
+            hideZeroBalance: false,
+            displayNfts: true,
+            displayOptedInNfts: true,
+            setAssetSortMode: vi.fn(),
+            setHideZeroBalance: vi.fn(),
+            setDisplayNfts: vi.fn(),
+            setDisplayOptedInNfts: vi.fn(),
+            resetState: vi.fn(),
+        }),
+    ),
+    useCollectiblePreferencesStore: vi.fn((selector: (s: any) => any) =>
+        selector({
+            collectibleSortMode: 'newestFirst',
+            showOptedIn: false,
+            showWatchAccounts: false,
+            setCollectibleSortMode: vi.fn(),
+            setShowOptedIn: vi.fn(),
+            setShowWatchAccounts: vi.fn(),
+            resetState: vi.fn(),
+        }),
+    ),
 }))
 
 // Mock @perawallet/wallet-core-settings
@@ -2443,6 +2474,21 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             multisig: 'multisig',
             watch: 'watch',
         },
+        AccountSortModes: {
+            alphabeticalAsc: 'alphabeticalAsc',
+            alphabeticalDesc: 'alphabeticalDesc',
+            balanceAsc: 'balanceAsc',
+            balanceDesc: 'balanceDesc',
+            manual: 'manual',
+        },
+        useAccountsStore: vi.fn((selector: (s: any) => any) =>
+            selector({
+                accounts: [],
+                addAccount: vi.fn(),
+                removeAccount: vi.fn(),
+                resetState: vi.fn(),
+            }),
+        ),
         useOwnedAssets: vi.fn(() => ({
             assets: [],
             isLoading: false,
@@ -2472,13 +2518,44 @@ vi.mock('@perawallet/wallet-core-contacts', () => ({
     DuplicateAddressError: class DuplicateAddressError extends Error {},
 }))
 
-// Mock @perawallet/wallet-core-currencies
-vi.mock('@perawallet/wallet-core-currencies', () => ({
-    useCurrency: vi.fn(() => ({
-        preferredCurrency: 'USD',
-        portfolioPreferredValue: '0',
+// Mock @perawallet/wallet-core-staking (dist schema.d.ts uses z.infer<typeof ...> which
+// cannot be parsed as JS; mock the whole package to avoid the SyntaxError)
+vi.mock('@perawallet/wallet-core-staking', () => ({
+    useStakingProjectsQuery: vi.fn(() => ({
+        stakingProjects: [],
+        isLoading: false,
+        isError: false,
+        error: null,
+        refetch: vi.fn(),
     })),
 }))
+
+// Mock react-native-rate-app (native module not available in jsdom)
+vi.mock('react-native-rate-app', () => ({
+    default: {
+        requestReview: vi.fn().mockResolvedValue(true),
+        openStoreForReview: vi.fn().mockResolvedValue(true),
+        getAndroidMarketUrl: vi.fn(() => ''),
+    },
+    AndroidMarket: {
+        GOOGLE: 'google',
+        AMAZON: 'amazon',
+        SAMSUNG: 'samsung',
+        HUAWEI: 'huawei',
+    },
+}))
+
+// Mock @perawallet/wallet-core-currencies
+vi.mock('@perawallet/wallet-core-currencies', async () => {
+    const { Decimal } = await import('decimal.js')
+    return {
+        useCurrency: vi.fn(() => ({
+            preferredCurrency: 'USD',
+            portfolioPreferredValue: '0',
+            usdToPreferred: (usd: InstanceType<typeof Decimal>) => usd,
+        })),
+    }
+})
 
 // Mock @perawallet/wallet-core-blockchain
 class MockAlgodError extends Error {

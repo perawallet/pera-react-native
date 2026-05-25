@@ -1673,6 +1673,9 @@ importers:
       '@perawallet/wallet-core-accounts':
         specifier: workspace:*
         version: link:../accounts
+      '@perawallet/wallet-core-assets':
+        specifier: workspace:*
+        version: link:../assets
       '@perawallet/wallet-core-contacts':
         specifier: workspace:*
         version: link:../contacts
@@ -1688,9 +1691,15 @@ importers:
       '@perawallet/wallet-core-signing':
         specifier: workspace:*
         version: link:../signing
+      '@perawallet/wallet-core-transactions':
+        specifier: workspace:*
+        version: link:../transactions
       '@perawallet/wallet-core-walletconnect':
         specifier: workspace:*
         version: link:../walletconnect
+      decimal.js:
+        specifier: 'catalog:'
+        version: 10.6.0
     devDependencies:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
