@@ -257,14 +257,12 @@ describe('useSigningActorLifecycle', () => {
 
         renderHook(() => useSigningActorLifecycle())
         act(() => {
-            useSigningStore
-                .getState()
-                .addSignRequest(
-                    makeTxRequest({
-                        id: 'tx-int',
-                        sourceType: 'walletconnect',
-                    }),
-                )
+            useSigningStore.getState().addSignRequest(
+                makeTxRequest({
+                    id: 'tx-int',
+                    sourceType: 'walletconnect',
+                }),
+            )
         })
 
         expect(registerSpy).toHaveBeenCalledWith('tx-int')
