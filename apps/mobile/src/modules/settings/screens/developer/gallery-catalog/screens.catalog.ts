@@ -142,6 +142,20 @@ export const getScreenSections = (): GallerySection[] => [
         title: 'Accounts & assets',
         items: [
             {
+                id: 'scr-account-details',
+                label: 'Account details (Home)',
+                launch: {
+                    kind: 'navigate',
+                    target: {
+                        name: 'TabBar',
+                        params: {
+                            screen: 'Home',
+                            params: { screen: 'AccountDetails' },
+                        },
+                    },
+                },
+            },
+            {
                 id: 'scr-asset-details',
                 label: 'Asset details',
                 launch: {
@@ -193,6 +207,20 @@ export const getScreenSections = (): GallerySection[] => [
                 id: 'scr-staking',
                 label: 'Staking',
                 launch: { kind: 'navigate', target: { name: 'Staking' } },
+            },
+        ],
+    },
+    {
+        title: 'Onboarding',
+        items: [
+            // The Onboarding stack is only mounted before the first account
+            // exists; from a logged-in session (where the gallery lives) it is
+            // unreachable. Its import-flow screens are covered via the
+            // 'AddAccount' stack in the "Add account & import" section below.
+            {
+                id: 'scr-onboarding-home',
+                label: 'Onboarding welcome (needs onboarding state)',
+                launch: { kind: 'action', run: () => undefined },
             },
         ],
     },
@@ -260,6 +288,73 @@ export const getScreenSections = (): GallerySection[] => [
                 },
             },
             {
+                id: 'scr-import-info',
+                label: 'Import info',
+                launch: {
+                    kind: 'navigate',
+                    target: {
+                        name: 'AddAccount',
+                        params: {
+                            screen: 'ImportInfo',
+                            params: { accountType: 'algo25' },
+                        },
+                    },
+                },
+            },
+            {
+                id: 'scr-import-account',
+                label: 'Import account',
+                launch: {
+                    kind: 'navigate',
+                    target: {
+                        name: 'AddAccount',
+                        params: {
+                            screen: 'ImportAccount',
+                            params: { accountType: 'algo25' },
+                        },
+                    },
+                },
+            },
+            {
+                id: 'scr-search-accounts',
+                label: 'Search accounts',
+                launch: {
+                    kind: 'navigate',
+                    target: {
+                        name: 'AddAccount',
+                        params: { screen: 'SearchAccounts' },
+                    },
+                },
+            },
+            {
+                id: 'scr-import-select-addresses',
+                label: 'Import select addresses',
+                launch: {
+                    kind: 'navigate',
+                    target: {
+                        name: 'AddAccount',
+                        params: {
+                            screen: 'ImportSelectAddresses',
+                            params: { accounts: [] },
+                        },
+                    },
+                },
+            },
+            {
+                id: 'scr-import-rekeyed-addresses',
+                label: 'Import rekeyed addresses',
+                launch: {
+                    kind: 'navigate',
+                    target: {
+                        name: 'AddAccount',
+                        params: {
+                            screen: 'ImportRekeyedAddresses',
+                            params: { accounts: [] },
+                        },
+                    },
+                },
+            },
+            {
                 id: 'scr-ledger-instructions',
                 label: 'Ledger instructions',
                 launch: {
@@ -291,6 +386,21 @@ export const getScreenSections = (): GallerySection[] => [
                         params: { screen: 'LedgerScan' },
                     },
                 },
+            },
+            {
+                id: 'scr-ledger-fetch-accounts',
+                label: 'Ledger fetch accounts (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'scr-ledger-select-accounts',
+                label: 'Ledger select accounts (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'scr-ledger-verify',
+                label: 'Ledger verify (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'scr-ledger-troubleshooting',
@@ -592,6 +702,17 @@ export const getScreenSections = (): GallerySection[] => [
                     },
                 },
             },
+            {
+                id: 'scr-multisig-edit-participant',
+                label: 'Edit participant',
+                launch: {
+                    kind: 'navigate',
+                    target: {
+                        name: 'Multisig',
+                        params: { screen: 'EditParticipant' },
+                    },
+                },
+            },
         ],
     },
     {
@@ -683,7 +804,48 @@ export const getScreenSections = (): GallerySection[] => [
     },
     {
         title: 'Signing',
-        items: [],
+        items: [
+            {
+                id: 'scr-signing-single-transaction',
+                label: 'Single transaction (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'scr-signing-transaction-list',
+                label: 'Transaction list (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'scr-signing-group-detail',
+                label: 'Group detail (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'scr-signing-transaction-details',
+                label: 'Signing transaction details (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'scr-signing-arbitrary-data',
+                label: 'Arbitrary data signing (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'scr-signing-arbitrary-data-details',
+                label: 'Arbitrary data signing details (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'scr-signing-arc60',
+                label: 'ARC-60 signing (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'scr-signing-arc60-details',
+                label: 'ARC-60 signing details (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+        ],
     },
     {
         title: 'Contacts',
@@ -761,6 +923,91 @@ export const getScreenSections = (): GallerySection[] => [
                         params: { groupId: MOCK_GROUP_ID },
                     },
                 },
+            },
+        ],
+    },
+    {
+        title: 'Send funds',
+        items: [
+            {
+                id: 'scr-send-asset-selection',
+                label: 'Send · Asset selection (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'scr-send-input-amount',
+                label: 'Send · Input amount (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'scr-send-select-destination',
+                label: 'Send · Select destination (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'scr-send-confirm-transaction',
+                label: 'Send · Confirm transaction (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'scr-send-express-send',
+                label: 'Send · Express send (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'scr-send-arc59-summary',
+                label: 'Send · ARC-59 send summary (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'scr-send-insufficient-balance',
+                label: 'Send · Insufficient balance (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'scr-send-processing',
+                label: 'Send · Transaction processing (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'scr-send-success',
+                label: 'Send · Transaction success (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+        ],
+    },
+    {
+        title: 'Receive funds',
+        items: [
+            {
+                id: 'scr-receive-account-selection',
+                label: 'Receive · Account selection (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'scr-receive-qr-view',
+                label: 'Receive · QR view (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+        ],
+    },
+    {
+        title: 'Gift card (Bidali)',
+        items: [
+            {
+                id: 'scr-bidali-intro',
+                label: 'Bidali intro (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'scr-bidali-account-selection',
+                label: 'Bidali account selection (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'scr-bidali-webview',
+                label: 'Bidali web view (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
             },
         ],
     },
@@ -856,6 +1103,11 @@ export const getScreenSections = (): GallerySection[] => [
                     },
                 },
             },
+            {
+                id: 'scr-settings-wallet-connect-details',
+                label: 'WalletConnect session details (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
         ],
     },
     {
@@ -913,6 +1165,68 @@ export const getScreenSections = (): GallerySection[] => [
                         params: {
                             screen: 'DeveloperSettings',
                             params: { screen: 'ManageCache' },
+                        },
+                    },
+                },
+            },
+            {
+                id: 'scr-dev-menu',
+                label: 'Developer menu',
+                launch: {
+                    kind: 'navigate',
+                    target: {
+                        name: 'Settings',
+                        params: {
+                            screen: 'DeveloperSettings',
+                            params: { screen: 'DevMenu' },
+                        },
+                    },
+                },
+            },
+            {
+                id: 'scr-dev-gallery',
+                label: 'Gallery',
+                launch: {
+                    kind: 'navigate',
+                    target: {
+                        name: 'Settings',
+                        params: {
+                            screen: 'DeveloperSettings',
+                            params: { screen: 'Gallery' },
+                        },
+                    },
+                },
+            },
+            {
+                id: 'scr-dev-gallery-category',
+                label: 'Gallery category',
+                launch: {
+                    kind: 'navigate',
+                    target: {
+                        name: 'Settings',
+                        params: {
+                            screen: 'DeveloperSettings',
+                            params: {
+                                screen: 'GalleryCategory',
+                                params: { categoryId: 'screens' },
+                            },
+                        },
+                    },
+                },
+            },
+            {
+                id: 'scr-dev-gallery-preview',
+                label: 'Gallery preview',
+                launch: {
+                    kind: 'navigate',
+                    target: {
+                        name: 'Settings',
+                        params: {
+                            screen: 'DeveloperSettings',
+                            params: {
+                                screen: 'GalleryPreview',
+                                params: { entryId: 'scr-tab-home' },
+                            },
                         },
                     },
                 },
