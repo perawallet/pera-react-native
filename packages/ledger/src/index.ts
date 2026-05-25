@@ -27,6 +27,7 @@ export type {
 export {
     LedgerAddressMismatchError,
     LedgerAppNotOpenError,
+    LedgerAppOutdatedError,
     LedgerBluetoothDisabledError,
     LedgerConnectionError,
     LedgerDisconnectedError,
@@ -52,7 +53,9 @@ export {
     LEDGER_SCAN_TIMEOUT_MS,
     LEDGER_STATUS_CODES,
     MAX_ACCOUNT_SCAN_GAP,
+    MIN_ARBITRARY_SIGN_APP_VERSION,
     buildLedgerAccountPath,
+    isAppVersionAtLeast,
     resolveDeviceModel,
 } from '@perawallet/wallet-extension-ledger-react-native/protocol'
 

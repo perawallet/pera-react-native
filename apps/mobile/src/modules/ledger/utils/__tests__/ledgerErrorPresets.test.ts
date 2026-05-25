@@ -13,6 +13,7 @@
 import { describe, it, expect } from 'vitest'
 import {
     LedgerAppNotOpenError,
+    LedgerAppOutdatedError,
     LedgerConnectionError,
     LedgerDisconnectedError,
     LedgerTimeoutError,
@@ -120,7 +121,7 @@ describe('LedgerErrorPreset flags', () => {
     })
 })
 
-describe('LedgerErrorPreset 13-kind taxonomy', () => {
+describe('LedgerErrorPreset 14-kind taxonomy', () => {
     type Translate = (key: string, options?: Record<string, unknown>) => string
     const t: Translate = key => key
 
@@ -170,6 +171,11 @@ describe('LedgerErrorPreset 13-kind taxonomy', () => {
         [
             new LedgerUnsupportedDeviceError(),
             'unsupported_device',
+            { trbl: false, retry: false },
+        ],
+        [
+            new LedgerAppOutdatedError(),
+            'app_outdated',
             { trbl: false, retry: false },
         ],
     ]

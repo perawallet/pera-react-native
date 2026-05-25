@@ -22,6 +22,14 @@ export type HardwareErrorPayload = {
     cause: unknown
 }
 
+/**
+ * Discriminates whether the hardware-signing session is approving a
+ * transaction group or a data-signing request (ARC-60 / arbitrary-data).
+ * Drives the awaiting-approval overlay copy so the user sees context-aware
+ * instructions rather than generic transaction language.
+ */
+export type HardwareSigningOperation = 'transaction' | 'data'
+
 export type HardwareSigningInput = {
     groups: AnalyzedSignableGroup[]
     allAccounts: WalletAccount[]
@@ -31,6 +39,8 @@ export type HardwareSigningInput = {
     totalTxs: number
     /** Device name resolved at parent build-time so the overlay can render immediately. */
     deviceName: Nullable<string>
+    /** 'transaction' for tx groups, 'data' for arc60/arbitrary-data. Drives overlay copy. */
+    operation: HardwareSigningOperation
 }
 
 export type HardwareSigningContext = HardwareSigningInput & {
@@ -46,6 +56,12 @@ export type HardwareSigningEvent =
     | { type: 'PROGRESS'; current: number; total: number }
     | { type: 'GROUP_SIGNED'; result: SigningResult }
     | { type: 'STRATEGY_ERROR'; error: HardwareErrorPayload }
+    /**
+     * Non-device errors (ARC-60 validation, generic JS errors). Surface as an
+     * immediate failure rather than the BLE-class teardown carveout — the
+     * troubleshooting sheet only makes sense for genuine connection problems.
+     */
+    | { type: 'NON_LEDGER_ERROR'; error: HardwareErrorPayload }
     | { type: 'ALL_DONE' }
     | { type: 'USER_REJECTED_ON_DEVICE' }
     | { type: 'RETRY' }

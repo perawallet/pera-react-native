@@ -16,7 +16,6 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import {
     isInteractiveSource,
     useSigningEvent,
-    useSigningPipeline,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
 import { usePreferences } from '@perawallet/wallet-core-settings'
@@ -51,30 +50,25 @@ import { useLedgerSigningDriver } from './useLedgerSigningDriver'
  */
 const useSignRequestDriver = () => {
     const { pendingSignRequests } = useSigningRequest()
-    const { resolved } = useSigningPipeline()
     const { request: requestBottomSheet, dismiss } = useBottomSheet()
     const openIdRef = useRef<string | null>(null)
-
-    // 'idle' and 'searching' both render no hardware overlay. During
-    // 'searching' (silent BLE scan) the sign-request sheet stays visible
-    // so there is no blank-screen gap before the Ledger sheet appears.
-    // Derived from the hardware child snapshot — `searching` is the only
-    // in-flight phase that should NOT hide the request sheet.
-    const hardwareChild =
-        resolved?.activeChild?.kind === 'hardware'
-            ? resolved.activeChild.snapshot
-            : null
-    const isHardwareSigningInFlight =
-        hardwareChild !== null &&
-        !hardwareChild.matches({ active: 'searching' })
 
     const nextRequest = pendingSignRequests.find(r =>
         isInteractiveSource(r.sourceType),
     )
 
     useEffect(() => {
-        const sheetId =
-            !isHardwareSigningInFlight && nextRequest ? nextRequest.id : null
+        // Keep the sign-request sheet mounted for as long as its request is
+        // pending — including while the Ledger overlay is shown on top during
+        // hardware signing. Previously this sheet was dismissed (and then
+        // `remove`d once its close animation finished) the moment hardware
+        // signing started; because the Ledger overlay is presented on top of
+        // it, removing the underlying sheet mid-sign collapsed gorhom's modal
+        // stack and tore the Ledger overlay down (the "vanishes when the
+        // device prompts" bug). Leaving it mounted underneath (hidden behind
+        // the overlay's backdrop) keeps the stack intact; it's dismissed only
+        // when the request actually leaves the queue.
+        const sheetId = nextRequest ? nextRequest.id : null
 
         // No pending interactive request (or hardware overlay is showing) —
         // dismiss any open sheet so the user isn't left looking at stale
@@ -120,7 +114,7 @@ const useSignRequestDriver = () => {
         return () => {
             cancelled = true
         }
-    }, [nextRequest, isHardwareSigningInFlight, requestBottomSheet, dismiss])
+    }, [nextRequest, requestBottomSheet, dismiss])
 }
 
 /**

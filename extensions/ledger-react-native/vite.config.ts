@@ -46,7 +46,7 @@ export default defineConfig({
                 '@ledgerhq/devices',
                 '@ledgerhq/errors',
                 '@ledgerhq/react-native-hw-transport-ble',
-                '@ledgerhq/hw-app-algorand',
+                '@algorandfoundation/ledger-algorand-js',
                 '@ledgerhq/hw-transport',
                 'react-native',
                 'react-native-ble-plx',

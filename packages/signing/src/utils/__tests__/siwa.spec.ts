@@ -20,6 +20,7 @@ const baseSiwa = {
     account_address: 'ABC123',
     uri: 'https://arc60.io/login',
     version: '1',
+    nonce: 'abc123',
     chain_id: SIWA_CHAIN_ID,
     type: 'ed25519',
 } as const
@@ -37,7 +38,6 @@ describe('parseSiwa', () => {
         const full = {
             ...baseSiwa,
             statement: 'Sign in to Arc60',
-            nonce: 'abc123',
             'issued-at': '2026-01-01T00:00:00Z',
             'expiration-time': '2026-01-02T00:00:00Z',
             'not-before': '2026-01-01T00:00:00Z',
@@ -74,6 +74,17 @@ describe('parseSiwa', () => {
     test('rejects missing required fields', () => {
         const { domain: _, ...rest } = baseSiwa
         const canonical = canonify(rest)!
+        expect(() => parseSiwa(canonical)).toThrow(Arc60BadJsonError)
+    })
+
+    test('rejects a payload with a missing nonce', () => {
+        const { nonce: _nonce, ...rest } = baseSiwa
+        const canonical = canonify(rest)!
+        expect(() => parseSiwa(canonical)).toThrow(Arc60BadJsonError)
+    })
+
+    test('rejects a payload with an empty nonce', () => {
+        const canonical = canonify({ ...baseSiwa, nonce: '' })!
         expect(() => parseSiwa(canonical)).toThrow(Arc60BadJsonError)
     })
 

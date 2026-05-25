@@ -319,23 +319,40 @@ export class LedgerUnsupportedDeviceError extends AppError {
 }
 
 /**
+ * The device's Algorand app is too old to support arbitrary-data (ARC-60)
+ * signing — it lacks the SIGN_ARBITRARY instruction. The user must update
+ * the Algorand app via Ledger Live.
+ */
+export class LedgerAppOutdatedError extends AppError {
+    constructor(originalError?: Error) {
+        super(
+            'The Ledger Algorand app must be updated to sign this request',
+            {
+                severity: ErrorSeverity.MEDIUM,
+                category: ErrorCategory.BLOCKCHAIN,
+                retryable: false,
+            },
+            originalError,
+        )
+    }
+}
+
+/**
  * Extract the APDU status code from a Ledger SDK error.
- * Ledger errors typically have a `statusCode` property.
+ * `@algorandfoundation/ledger-algorand-js` errors expose `returnCode` via
+ * `@zondax/ledger-js` `ResponseError`; legacy `statusCode` is also handled for
+ * compatibility. Prefer `statusCode` when both are present.
  */
 const getStatusCode = (error: unknown): Nullable<number> => {
-    if (
-        error !== null &&
-        typeof error === 'object' &&
-        'statusCode' in error &&
-        typeof (error as { statusCode: unknown }).statusCode === 'number'
-    ) {
-        return (error as { statusCode: number }).statusCode
-    }
+    if (error === null || typeof error !== 'object') return null
+    const record = error as { statusCode?: unknown; returnCode?: unknown }
+    if (typeof record.statusCode === 'number') return record.statusCode
+    if (typeof record.returnCode === 'number') return record.returnCode
     return null
 }
 
 /**
- * Maps raw errors from `@ledgerhq/hw-app-algorand` or BLE transport
+ * Maps raw errors from `@algorandfoundation/ledger-algorand-js` or BLE transport
  * to typed Ledger error classes. Pass-through for already-classified
  * AppError instances so re-classification at catch sites preserves the
  * specific error type.

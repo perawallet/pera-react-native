@@ -16,6 +16,7 @@ import {
     useSigningPipeline,
     useSigningRequest,
     type HardwareChildSnapshot,
+    type HardwareSigningOperation,
 } from '@perawallet/wallet-core-signing'
 import { useLanguage } from '@hooks/useLanguage'
 import {
@@ -54,6 +55,7 @@ export type UseLedgerSigningContentResult = {
     deviceName: string | null
     currentTx: number | null
     totalTxs: number | null
+    operation: HardwareSigningOperation
     error: LedgerErrorPreset | null
     onCancel: () => void
     onRetry: () => void
@@ -75,11 +77,10 @@ export type UseLedgerSigningContentResult = {
  * sheet stays closed (isVisible is false) because there is no useful state
  * behind the troubleshooting copy.
  *
- * Troubleshooting-sheet visibility still lives in `useHardwareSigningStore`
- * (the `isTroubleshootingVisible` flag and its open/close actions); the
- * store no longer owns phase, progress, or error state — those come from
- * the child snapshot. The store will collapse to a single visibility flag
- * in the follow-up task.
+ * Troubleshooting-sheet visibility lives in `useHardwareSigningStore` — the
+ * slim store only owns the `isTroubleshootingVisible` flag plus its
+ * open/close actions; phase, progress, error, and operation are all read
+ * from the child machine snapshot.
  */
 export const useLedgerSigningContent = (): UseLedgerSigningContentResult => {
     const { t } = useLanguage()
@@ -96,6 +97,8 @@ export const useLedgerSigningContent = (): UseLedgerSigningContentResult => {
     const currentTx = hardware?.context.currentTx ?? null
     const totalTxs = hardware?.context.totalTxs ?? null
     const errorPayload = hardware?.context.error ?? null
+    const operation: HardwareSigningOperation =
+        hardware?.context.operation ?? 'transaction'
 
     const manualTroubleshootingOpen = useHardwareSigningStore(
         s => s.isTroubleshootingVisible,
@@ -157,6 +160,7 @@ export const useLedgerSigningContent = (): UseLedgerSigningContentResult => {
         deviceName,
         currentTx,
         totalTxs,
+        operation,
         error,
         onCancel,
         onRetry,

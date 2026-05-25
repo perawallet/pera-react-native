@@ -139,7 +139,19 @@ export const useSigningRequest = (): UseSigningRequestResult => {
      */
     const rejectRequest = useCallback(
         (request: SignRequest) => {
-            if (getActorRef(request.id)) {
+            const actor = getActorRef(request.id)
+            if (actor) {
+                // A retryable failure leaves the actor parked in `failed`,
+                // past the approval gate — which was already resolved when
+                // the user approved, so `approvalGate.reject` would be a
+                // no-op and the cancel tap would be silently dropped. Send
+                // USER_REJECTED straight to the actor instead (the `failed`
+                // state transitions to `rejected` on it). Mirrors how
+                // `next()` sends RETRY directly to a failed actor.
+                if (actor.getSnapshot().matches('failed')) {
+                    actor.send({ type: 'USER_REJECTED' })
+                    return
+                }
                 approvalGate.reject(request.id)
                 return
             }
@@ -157,7 +169,8 @@ export const useSigningRequest = (): UseSigningRequestResult => {
      */
     const retryRequest = useCallback(
         (request: SignRequest) => {
-            getActorRef(request.id)?.send({ type: 'RETRY' })
+            const actor = getActorRef(request.id)
+            actor?.send({ type: 'RETRY' })
         },
         [getActorRef],
     )

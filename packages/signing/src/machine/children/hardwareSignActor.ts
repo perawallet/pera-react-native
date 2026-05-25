@@ -15,7 +15,10 @@ import { isHardwareWalletAccount } from '@perawallet/wallet-core-accounts'
 import { HardwareWalletError } from '../../pipeline/errors'
 import { createHardwareStrategy } from '../../pipeline/signing/createHardwareStrategy'
 import { resolveSigningAccount } from '../utils/resolveSigningAccount'
-import { classifyLedgerErrorKind } from '../../utils/classifyLedgerErrorKind'
+import {
+    classifyLedgerErrorKind,
+    isLedgerError,
+} from '../../utils/classifyLedgerErrorKind'
 import type { SigningPhase } from '../../pipeline/types'
 import type {
     HardwareSigningEvent,
@@ -67,8 +70,16 @@ export const hardwareSignActor = fromCallback<
         },
         onError: (error: Error) => {
             if (cancelled) return
+            // Only genuine Ledger device/transport errors drive the BLE-class
+            // teardown gate. Non-device failures (e.g. ARC-60 validation
+            // errors wrapped in SigningError) bypass the gate and surface as
+            // an immediate inline error instead of pinning the troubleshooting
+            // sheet open.
+            const event = isLedgerError(error)
+                ? ('STRATEGY_ERROR' as const)
+                : ('NON_LEDGER_ERROR' as const)
             sendBack({
-                type: 'STRATEGY_ERROR',
+                type: event,
                 error: { kind: classifyLedgerErrorKind(error), cause: error },
             })
         },
@@ -107,8 +118,11 @@ export const hardwareSignActor = fromCallback<
             // anything thrown synchronously or escaping the strategy (e.g. the
             // signer_not_found guards above).
             const error = err instanceof Error ? err : new Error(String(err))
+            const event = isLedgerError(error)
+                ? ('STRATEGY_ERROR' as const)
+                : ('NON_LEDGER_ERROR' as const)
             sendBack({
-                type: 'STRATEGY_ERROR',
+                type: event,
                 error: { kind: classifyLedgerErrorKind(error), cause: error },
             })
         }

@@ -405,6 +405,14 @@ export const signingMachine = setup({
                                     context,
                                     groups,
                                 ),
+                                // First group determines the operation kind
+                                // (cosign requests don't mix arc60 + tx). The
+                                // overlay reads this to pick context-aware copy.
+                                operation:
+                                    groups[0]?.data.type === 'arc60' ||
+                                    groups[0]?.data.type === 'arbitrary-data'
+                                        ? ('data' as const)
+                                        : ('transaction' as const),
                             }
                         },
                         onDone: [

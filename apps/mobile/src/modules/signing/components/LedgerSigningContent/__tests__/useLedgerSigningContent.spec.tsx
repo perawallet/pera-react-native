@@ -36,6 +36,7 @@ type ChildSnapshotOverrides = {
     deviceName?: string | null
     currentTx?: number | null
     totalTxs?: number | null
+    operation?: 'transaction' | 'data'
     errorKind?: LedgerErrorPresetKind | null
 }
 
@@ -60,6 +61,7 @@ const buildChildSnapshot = (
             deviceName: overrides.deviceName ?? 'Nano X',
             currentTx: overrides.currentTx ?? null,
             totalTxs: overrides.totalTxs ?? null,
+            operation: overrides.operation ?? 'transaction',
             error: overrides.errorKind
                 ? { kind: overrides.errorKind, cause: undefined }
                 : null,

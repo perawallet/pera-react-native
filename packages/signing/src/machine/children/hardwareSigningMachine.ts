@@ -51,7 +51,7 @@ export const hardwareSigningMachine = setup({
                 (
                     event as Extract<
                         HardwareSigningEvent,
-                        { type: 'STRATEGY_ERROR' }
+                        { type: 'STRATEGY_ERROR' | 'NON_LEDGER_ERROR' }
                     >
                 ).error,
         }),
@@ -107,6 +107,11 @@ export const hardwareSigningMachine = setup({
                 PROGRESS: { actions: 'updateProgress' },
                 GROUP_SIGNED: { actions: 'appendResult' },
                 STRATEGY_ERROR: { target: 'error', actions: 'setError' },
+                // Non-device errors (e.g. ARC-60 validation) bypass the
+                // BLE-class teardown gate — go straight to done with kind:
+                // 'error' so the inline failure sheet surfaces immediately
+                // instead of pinning the troubleshooting sheet open.
+                NON_LEDGER_ERROR: { target: 'done', actions: 'setError' },
                 ALL_DONE: 'done',
                 USER_REJECTED_ON_DEVICE: 'rejected',
             },

@@ -142,6 +142,8 @@ export type ResolvedRequestKind =
 
 export type HardwareChildSnapshot = SnapshotFrom<typeof hardwareSigningMachine>
 
+export type { HardwareSigningOperation } from '../machine/children/hardwareSigningMachine.context'
+
 /**
  * Snapshot of the currently-invoked signer child machine, exposed via
  * `ResolvedSignRequest.activeChild`. Null when no child is in flight.

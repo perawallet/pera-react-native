@@ -37,6 +37,7 @@ const TROUBLESHOOTABLE_KINDS = BLE_CLASS_ERROR_KINDS
 const NON_RETRYABLE_KINDS: ReadonlySet<LedgerErrorPresetKind> = new Set([
     'address_mismatch',
     'unsupported_device',
+    'app_outdated',
 ])
 
 /**

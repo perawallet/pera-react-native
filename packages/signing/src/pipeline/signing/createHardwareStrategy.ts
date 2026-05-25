@@ -34,29 +34,24 @@ import type {
     SigningStrategy,
     AnalyzedSignableGroup,
     TransactionSignableData,
+    Arc60StdSigData,
+    Arc60Metadata,
     SigningResult,
     SigningCallbacks,
     SignerInfo,
 } from '../types'
 import { CannotSignError, HardwareWalletError, SigningError } from '../errors'
 import {
-    LedgerAppNotOpenError,
+    LedgerAppOutdatedError,
     LedgerConnectionError,
-    LedgerDisconnectedError,
-    LedgerTimeoutError,
-    LedgerUserRejectedError,
     LedgerAddressMismatchError,
     LEDGER_CONNECTION_TIMEOUT_MS,
     LEDGER_CONFIRMATION_TIMEOUT_MS,
+    MIN_ARBITRARY_SIGN_APP_VERSION,
+    isAppVersionAtLeast,
 } from '@perawallet/wallet-core-ledger'
-
-const isClassifiedLedgerError = (error: unknown): boolean =>
-    error instanceof LedgerConnectionError ||
-    error instanceof LedgerAppNotOpenError ||
-    error instanceof LedgerUserRejectedError ||
-    error instanceof LedgerDisconnectedError ||
-    error instanceof LedgerTimeoutError ||
-    error instanceof LedgerAddressMismatchError
+import { validateArc60AuthRequest } from '../../utils/arc60'
+import { isLedgerError } from '../../utils/classifyLedgerErrorKind'
 
 /**
  * Factory for the `rejectWith` callback of the shared `withTimeout` helper,
@@ -99,12 +94,6 @@ const validateAndExtract = (
     if (group.data.type === 'arbitrary-data') {
         throw new SigningError(
             'Hardware wallet signing of arbitrary data is not supported',
-        )
-    }
-
-    if (group.data.type === 'arc60') {
-        throw new SigningError(
-            'Hardware wallet signing of ARC-60 requests is not supported',
         )
     }
 
@@ -262,7 +251,7 @@ const toClassifiedError = (error: unknown): Error => {
     if (
         error instanceof CannotSignError ||
         error instanceof HardwareWalletError ||
-        isClassifiedLedgerError(error)
+        isLedgerError(error)
     ) {
         return error as Error
     }
@@ -277,6 +266,11 @@ export type SignTransactionsOnHardwareWalletOptions = {
     encodeTransaction: EncodeTransactionFunction
     callbacks?: SigningCallbacks
 }
+
+export type SignArc60OnHardwareWalletOptions = Omit<
+    SignTransactionsOnHardwareWalletOptions,
+    'encodeTransaction'
+>
 
 /**
  * Connect to the hardware device, verify the on-device address matches the
@@ -336,6 +330,88 @@ export const signTransactionsOnHardwareWallet = async (
 }
 
 /**
+ * Connect to the hardware device, verify address, gate on minimum app version,
+ * run host-side ARC-60 validation, then forward the sign request to the device.
+ * Returns the raw Ed25519 signature bytes.
+ */
+const signArc60OnHardwareWallet = async (
+    hwAccount: HardwareWalletAccount,
+    stdSigData: Arc60StdSigData,
+    metadata: Arc60Metadata,
+    options: SignArc60OnHardwareWalletOptions,
+): Promise<Uint8Array> => {
+    const { registry, callbacks } = options
+
+    const transportProvider = registry?.getProvider(
+        hwAccount.hardwareDetails.manufacturer,
+        hwAccount.hardwareDetails.transportType,
+    )
+    if (!transportProvider) {
+        throw new HardwareWalletError('transport_unavailable')
+    }
+
+    const { deviceId, accountIndex } = hwAccount.hardwareDetails
+    let transport: Optional<HardwareWalletTransport>
+
+    try {
+        transport = await connectAndVerify(
+            transportProvider,
+            deviceId,
+            accountIndex,
+            hwAccount.address,
+            callbacks,
+        )
+
+        // Early version gate — the device-side error is the fallback.
+        const version = await withTimeout(
+            transport.getAppVersion(),
+            LEDGER_CONNECTION_TIMEOUT_MS,
+            'Read Ledger app version',
+            ledgerTimeoutReason('Read Ledger app version'),
+        )
+        if (!isAppVersionAtLeast(version, MIN_ARBITRARY_SIGN_APP_VERSION)) {
+            throw new LedgerAppOutdatedError()
+        }
+
+        // Shared host-side validation (scope / domain / SIWA / signer).
+        validateArc60AuthRequest(stdSigData, metadata)
+
+        callbacks?.onSigningStart?.()
+        callbacks?.onProgress?.(1, 1)
+
+        const signature = await withTimeout(
+            transport.signData({
+                accountIndex,
+                data: stdSigData.data,
+                signerPublicKey: Address.fromString(hwAccount.address)
+                    .publicKey,
+                domain: stdSigData.domain,
+                authenticatorData: stdSigData.authenticatorData,
+                requestId: stdSigData.requestId,
+                scope: metadata.scope,
+                encoding: metadata.encoding,
+            }),
+            LEDGER_CONFIRMATION_TIMEOUT_MS,
+            'Sign Ledger data',
+            ledgerTimeoutReason('Sign Ledger data'),
+        )
+
+        callbacks?.onSigningComplete?.()
+        return signature
+    } catch (error) {
+        const classified = toClassifiedError(error)
+        callbacks?.onError?.(classified)
+        throw classified
+    } finally {
+        try {
+            await transport?.disconnect()
+        } catch {
+            // Swallow disconnect errors to preserve original error
+        }
+    }
+}
+
+/**
  * Creates a signing strategy for hardware wallets.
  * These accounts require device interaction with user prompts.
  */
@@ -354,6 +430,30 @@ export const createHardwareStrategy = (
             account: WalletAccount,
             callbacks?: SigningCallbacks,
         ): Promise<SigningResult> => {
+            if (!isHardwareWalletAccount(account)) {
+                throw new CannotSignError(
+                    account.address,
+                    'Account is not a hardware wallet',
+                )
+            }
+
+            if (group.data.type === 'arc60') {
+                const signature = await signArc60OnHardwareWallet(
+                    account,
+                    group.data.stdSigData,
+                    group.data.metadata,
+                    {
+                        registry: hardwareWalletRegistry,
+                        callbacks,
+                    },
+                )
+                return {
+                    signedData: { type: 'arc60', signature },
+                    signers: [{ address: account.address }],
+                    originalIndices: group.originalIndices,
+                }
+            }
+
             const { hwAccount, data } = validateAndExtract(group, account)
 
             const signed = await signTransactionsOnHardwareWallet(

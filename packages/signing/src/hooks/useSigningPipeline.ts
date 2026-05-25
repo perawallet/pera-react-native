@@ -289,8 +289,18 @@ export const useSigningPipeline = (
 
     const next = useCallback(() => {
         if (!currentRequest) return
+        // A retryable failure leaves the actor parked in `failed`, where
+        // resolving the approval gate (signAndSendRequest) is a no-op — the
+        // actor is no longer waiting on it. Re-attempting via the same
+        // control (e.g. the ARC-60 slide-to-confirm after "device locked" /
+        // "app not open") must RETRY the actor so the device re-prompts,
+        // rather than silently doing nothing.
+        if (stage === 'failed' && isRetryableError(error)) {
+            retryRequest(currentRequest)
+            return
+        }
         signAndSendRequest(currentRequest)
-    }, [currentRequest, signAndSendRequest])
+    }, [currentRequest, signAndSendRequest, retryRequest, stage, error])
 
     const fail = useCallback(() => {
         if (!currentRequest) return

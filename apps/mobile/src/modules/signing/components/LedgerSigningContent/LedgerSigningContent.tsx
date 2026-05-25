@@ -32,6 +32,7 @@ export const LedgerSigningContent = () => {
         deviceName,
         currentTx,
         totalTxs,
+        operation,
         error,
         onCancel,
         onRetry,
@@ -44,6 +45,7 @@ export const LedgerSigningContent = () => {
                 deviceName={deviceName}
                 currentTx={currentTx}
                 totalTxs={totalTxs}
+                operation={operation}
                 onCancel={onCancel}
             />
         )
