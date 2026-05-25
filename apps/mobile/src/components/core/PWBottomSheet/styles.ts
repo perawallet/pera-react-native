@@ -35,12 +35,6 @@ export const useStyles = makeStyles(
             flexGrow: 1,
             paddingBottom: isFull ? theme.spacing.md : insets.bottom,
         },
-        // Scroll content for `auto` sheets: no flexGrow, so once the sheet hits
-        // its max dynamic height the content overflows and scrolls instead of
-        // being squeezed to fit.
-        scrollContent: {
-            paddingBottom: insets.bottom,
-        },
         hidden: {
             display: 'none',
         },
