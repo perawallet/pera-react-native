@@ -20,7 +20,10 @@ let capturedOnCodeScanned: ((codes: { value: string }[]) => void) | null = null
 
 vi.mock('react-native-vision-camera', () => ({
     useCameraDevice: vi.fn(() => ({ id: 'mock-device' })),
-    useCameraPermission: () => ({ hasPermission: true, requestPermission: vi.fn() }),
+    useCameraPermission: () => ({
+        hasPermission: true,
+        requestPermission: vi.fn(),
+    }),
     useCodeScanner: vi.fn(({ onCodeScanned }) => {
         capturedOnCodeScanned = onCodeScanned
         return {}
@@ -34,7 +37,8 @@ vi.mock('@hooks/useDeepLink', () => ({
     })),
 }))
 
-const VALID_ADDRESS = 'VCMJKWOY5P5P7SKMZFFOCEROPJCZOTIJMNIYNUCKH7LRO45JMJP6UYBIJA'
+const VALID_ADDRESS =
+    'VCMJKWOY5P5P7SKMZFFOCEROPJCZOTIJMNIYNUCKH7LRO45JMJP6UYBIJA'
 
 describe('useQRScannerView', () => {
     beforeEach(() => {
@@ -45,7 +49,11 @@ describe('useQRScannerView', () => {
     it('calls handleDeepLink when skipDeepLinkHandler is false', () => {
         const onSuccess = vi.fn()
         renderHook(() =>
-            useQRScannerView({ isVisible: true, onSuccess, skipDeepLinkHandler: false }),
+            useQRScannerView({
+                isVisible: true,
+                onSuccess,
+                skipDeepLinkHandler: false,
+            }),
         )
         capturedOnCodeScanned?.([{ value: VALID_ADDRESS }])
         expect(mockHandleDeepLink).toHaveBeenCalledWith(
@@ -61,10 +69,17 @@ describe('useQRScannerView', () => {
     it('skips handleDeepLink and calls onSuccess directly when skipDeepLinkHandler is true', () => {
         const onSuccess = vi.fn()
         renderHook(() =>
-            useQRScannerView({ isVisible: true, onSuccess, skipDeepLinkHandler: true }),
+            useQRScannerView({
+                isVisible: true,
+                onSuccess,
+                skipDeepLinkHandler: true,
+            }),
         )
         capturedOnCodeScanned?.([{ value: VALID_ADDRESS }])
         expect(mockHandleDeepLink).not.toHaveBeenCalled()
-        expect(onSuccess).toHaveBeenCalledWith(VALID_ADDRESS, expect.any(Function))
+        expect(onSuccess).toHaveBeenCalledWith(
+            VALID_ADDRESS,
+            expect.any(Function),
+        )
     })
 })
