@@ -44,14 +44,24 @@ describe('useGalleryLauncher', () => {
 
     it('routes a preview entry to GalleryPreview with the entry id', () => {
         const { result } = renderHook(() => useGalleryLauncher())
-        result.current.launch({ id: 'comp-y', label: 'Y', launch: { kind: 'preview' } })
-        expect(navigate).toHaveBeenCalledWith('GalleryPreview', { entryId: 'comp-y' })
+        result.current.launch({
+            id: 'comp-y',
+            label: 'Y',
+            launch: { kind: 'preview' },
+        })
+        expect(navigate).toHaveBeenCalledWith('GalleryPreview', {
+            entryId: 'comp-y',
+        })
     })
 
     it('runs an action entry', () => {
         const run = vi.fn()
         const { result } = renderHook(() => useGalleryLauncher())
-        result.current.launch({ id: 'tool-z', label: 'Z', launch: { kind: 'action', run } })
+        result.current.launch({
+            id: 'tool-z',
+            label: 'Z',
+            launch: { kind: 'action', run },
+        })
         expect(run).toHaveBeenCalledOnce()
     })
 })

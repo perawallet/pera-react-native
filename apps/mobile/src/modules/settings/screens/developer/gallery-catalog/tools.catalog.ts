@@ -11,7 +11,10 @@
  */
 
 import { startGalleryTour } from '@routes/galleryTour'
-import { startApiRecording, startApiReplay } from '../SettingsDeveloperGalleryScreen/devApiMock'
+import {
+    startApiRecording,
+    startApiReplay,
+} from '../SettingsDeveloperGalleryScreen/devApiMock'
 
 import type { GallerySection } from './types'
 
@@ -20,15 +23,33 @@ type ToolHandlers = {
     onReplayApi: () => void
 }
 
-export const getToolSections = ({ onSeedContacts, onReplayApi }: ToolHandlers): GallerySection[] => [
+export const getToolSections = ({
+    onSeedContacts,
+    onReplayApi,
+}: ToolHandlers): GallerySection[] => [
     {
         title: 'Tools',
         items: [
-            { id: 'tool-tour', label: 'Run screenshot tour', launch: { kind: 'action', run: startGalleryTour } },
-            { id: 'tool-seed', label: 'Seed mock data (contacts)', launch: { kind: 'action', run: onSeedContacts } },
-            { id: 'tool-record', label: 'Record API (online)', launch: { kind: 'action', run: startApiRecording } },
-            { id: 'tool-replay', label: 'Replay API (offline)', launch: { kind: 'action', run: onReplayApi } },
+            {
+                id: 'tool-tour',
+                label: 'Run screenshot tour',
+                launch: { kind: 'action', run: startGalleryTour },
+            },
+            {
+                id: 'tool-seed',
+                label: 'Seed mock data (contacts)',
+                launch: { kind: 'action', run: onSeedContacts },
+            },
+            {
+                id: 'tool-record',
+                label: 'Record API (online)',
+                launch: { kind: 'action', run: startApiRecording },
+            },
+            {
+                id: 'tool-replay',
+                label: 'Replay API (offline)',
+                launch: { kind: 'action', run: onReplayApi },
+            },
         ],
     },
 ]
-

@@ -21,16 +21,48 @@ import type { GalleryCategory, GalleryCategoryId } from './types'
 export type ToolHandlers = Parameters<typeof getToolSections>[0]
 
 export const getCategories = (tools: ToolHandlers): GalleryCategory[] => [
-    { id: 'screens', title: 'Screens', icon: 'phone', sections: getScreenSections() },
-    { id: 'sheets', title: 'Bottom Sheets', icon: 'card-stack', sections: getSheetSections() },
-    { id: 'dialogs', title: 'Dialogs', icon: 'envelope-letter', sections: getDialogSections() },
-    { id: 'components', title: 'Components', icon: 'grid-view', sections: getComponentSections() },
-    { id: 'tools', title: 'Tools', icon: 'gear', sections: getToolSections(tools) },
+    {
+        id: 'screens',
+        title: 'Screens',
+        icon: 'phone',
+        sections: getScreenSections(),
+    },
+    {
+        id: 'sheets',
+        title: 'Bottom Sheets',
+        icon: 'card-stack',
+        sections: getSheetSections(),
+    },
+    {
+        id: 'dialogs',
+        title: 'Dialogs',
+        icon: 'envelope-letter',
+        sections: getDialogSections(),
+    },
+    {
+        id: 'components',
+        title: 'Components',
+        icon: 'grid-view',
+        sections: getComponentSections(),
+    },
+    {
+        id: 'tools',
+        title: 'Tools',
+        icon: 'gear',
+        sections: getToolSections(tools),
+    },
 ]
 
-export const getCategory = (id: GalleryCategoryId, tools: ToolHandlers): GalleryCategory | undefined =>
-    getCategories(tools).find(c => c.id === id)
+export const getCategory = (
+    id: GalleryCategoryId,
+    tools: ToolHandlers,
+): GalleryCategory | undefined => getCategories(tools).find(c => c.id === id)
 
 export { getPreviewEntry } from './registry'
 
-export type { GalleryCategory, GalleryCategoryId, GalleryEntry, GallerySection } from './types'
+export type {
+    GalleryCategory,
+    GalleryCategoryId,
+    GalleryEntry,
+    GallerySection,
+} from './types'

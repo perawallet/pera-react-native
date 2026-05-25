@@ -10,92 +10,23 @@
  limitations under the License
  */
 
-import { Fragment, useCallback } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
-import { useContacts } from '@perawallet/wallet-core-contacts'
-import { mockContacts } from '@perawallet/wallet-core-dev-fixtures'
+import { PWListItem, PWScreen } from '@components/core'
 
-import { PWButton, PWListItem, PWScreen, PWText } from '@components/core'
-import { startGalleryTour } from '@routes/galleryTour'
-import { startApiRecording, startApiReplay } from './devApiMock'
-import { useStyles } from './styles'
 import { useSettingsDeveloperGalleryScreen } from './useSettingsDeveloperGalleryScreen'
 
 export const SettingsDeveloperGalleryScreen = () => {
-    const styles = useStyles()
-    const { sections } = useSettingsDeveloperGalleryScreen()
-    const { addContact } = useContacts()
-    const queryClient = useQueryClient()
-
-    // Dev-only: seed contacts (store-backed, holds across reloads).
-    const handleSeedContacts = useCallback(() => {
-        mockContacts.forEach(contact => {
-            try {
-                addContact(contact)
-            } catch {
-                // already seeded — ignore duplicate-address errors
-            }
-        })
-    }, [addContact])
-
-    // Dev-only: capture real API responses (run on an ONLINE build), then
-    // browse the app to fill the dump.
-    const handleRecordApi = useCallback(() => {
-        startApiRecording()
-    }, [])
-
-    // Dev-only: replay captured responses + authored overrides, and refetch
-    // so the lists repopulate through the mock.
-    const handleReplayApi = useCallback(() => {
-        void startApiReplay().then(() => queryClient.invalidateQueries())
-    }, [queryClient])
+    const { categories, openCategory } = useSettingsDeveloperGalleryScreen()
 
     return (
-        <PWScreen
-            testID='developer_gallery_screen'
-        >
-            <PWButton
-                title='Run screenshot tour'
-                variant='primary'
-                onPress={startGalleryTour}
-                testID='gallery_run_tour'
-            />
-            <PWButton
-                title='Seed mock data (contacts)'
-                variant='secondary'
-                onPress={handleSeedContacts}
-                testID='gallery_seed_data'
-            />
-            <PWButton
-                title='Record API (online)'
-                variant='secondary'
-                onPress={handleRecordApi}
-                testID='gallery_record_api'
-            />
-            <PWButton
-                title='Replay API (offline)'
-                variant='secondary'
-                onPress={handleReplayApi}
-                testID='gallery_replay_api'
-            />
-            {sections.map(section => (
-                <Fragment key={section.title}>
-                    <PWText
-                        variant='bodySemibold'
-                        style={styles.sectionHeader}
-                    >
-                        {section.title}
-                    </PWText>
-                    {section.items.map(item => (
-                        <PWListItem
-                            key={item.id}
-                            icon='globe'
-                            title={item.label}
-                            onPress={item.onPress}
-                            testID={`gallery_item_${item.id}`}
-                        />
-                    ))}
-                </Fragment>
+        <PWScreen testID='developer_gallery_screen'>
+            {categories.map(category => (
+                <PWListItem
+                    key={category.id}
+                    icon={category.icon}
+                    title={category.title}
+                    onPress={() => openCategory(category.id)}
+                    testID={`gallery_category_${category.id}`}
+                />
             ))}
         </PWScreen>
     )

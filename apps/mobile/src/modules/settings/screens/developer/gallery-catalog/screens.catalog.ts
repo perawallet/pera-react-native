@@ -38,7 +38,10 @@ const rekeyFlow = (
             kind: 'navigate',
             target: {
                 name: root,
-                params: { screen: introScreen, params: { sourceAddress: MOCK_ADDRESS } },
+                params: {
+                    screen: introScreen,
+                    params: { sourceAddress: MOCK_ADDRESS },
+                },
             },
         },
     },
@@ -49,7 +52,10 @@ const rekeyFlow = (
             kind: 'navigate',
             target: {
                 name: root,
-                params: { screen: selectScreen, params: { sourceAddress: MOCK_ADDRESS } },
+                params: {
+                    screen: selectScreen,
+                    params: { sourceAddress: MOCK_ADDRESS },
+                },
             },
         },
     },
@@ -62,7 +68,10 @@ const rekeyFlow = (
                 name: root,
                 params: {
                     screen: confirmScreen,
-                    params: { sourceAddress: MOCK_ADDRESS, targetAddress: MOCK_ADDRESS_2 },
+                    params: {
+                        sourceAddress: MOCK_ADDRESS,
+                        targetAddress: MOCK_ADDRESS_2,
+                    },
                 },
             },
         },
@@ -74,7 +83,10 @@ const rekeyFlow = (
             kind: 'navigate',
             target: {
                 name: root,
-                params: { screen: successScreen, params: { sourceAddress: MOCK_ADDRESS } },
+                params: {
+                    screen: successScreen,
+                    params: { sourceAddress: MOCK_ADDRESS },
+                },
             },
         },
     },
@@ -87,27 +99,42 @@ export const getScreenSections = (): GallerySection[] => [
             {
                 id: 'scr-tab-home',
                 label: 'Home (account details)',
-                launch: { kind: 'navigate', target: { name: 'TabBar', params: { screen: 'Home' } } },
+                launch: {
+                    kind: 'navigate',
+                    target: { name: 'TabBar', params: { screen: 'Home' } },
+                },
             },
             {
                 id: 'scr-tab-discover',
                 label: 'Discover',
-                launch: { kind: 'navigate', target: { name: 'TabBar', params: { screen: 'Discover' } } },
+                launch: {
+                    kind: 'navigate',
+                    target: { name: 'TabBar', params: { screen: 'Discover' } },
+                },
             },
             {
                 id: 'scr-tab-swap',
                 label: 'Swap',
-                launch: { kind: 'navigate', target: { name: 'TabBar', params: { screen: 'Swap' } } },
+                launch: {
+                    kind: 'navigate',
+                    target: { name: 'TabBar', params: { screen: 'Swap' } },
+                },
             },
             {
                 id: 'scr-tab-fund',
                 label: 'Fund',
-                launch: { kind: 'navigate', target: { name: 'TabBar', params: { screen: 'Fund' } } },
+                launch: {
+                    kind: 'navigate',
+                    target: { name: 'TabBar', params: { screen: 'Fund' } },
+                },
             },
             {
                 id: 'scr-tab-menu',
                 label: 'Menu',
-                launch: { kind: 'navigate', target: { name: 'TabBar', params: { screen: 'Menu' } } },
+                launch: {
+                    kind: 'navigate',
+                    target: { name: 'TabBar', params: { screen: 'Menu' } },
+                },
             },
         ],
     },
@@ -123,7 +150,10 @@ export const getScreenSections = (): GallerySection[] => [
                         name: 'TabBar',
                         params: {
                             screen: 'Home',
-                            params: { screen: 'AssetDetails', params: { assetId: MOCK_ASSET_ID } },
+                            params: {
+                                screen: 'AssetDetails',
+                                params: { assetId: MOCK_ASSET_ID },
+                            },
                         },
                     },
                 },
@@ -137,7 +167,10 @@ export const getScreenSections = (): GallerySection[] => [
                         name: 'TabBar',
                         params: {
                             screen: 'Home',
-                            params: { screen: 'CollectibleDetails', params: { assetId: MOCK_ASSET_ID } },
+                            params: {
+                                screen: 'CollectibleDetails',
+                                params: { assetId: MOCK_ASSET_ID },
+                            },
                         },
                     },
                 },
@@ -149,7 +182,10 @@ export const getScreenSections = (): GallerySection[] => [
                     kind: 'navigate',
                     target: {
                         name: 'TabBar',
-                        params: { screen: 'Home', params: { screen: 'RemoveAssets' } },
+                        params: {
+                            screen: 'Home',
+                            params: { screen: 'RemoveAssets' },
+                        },
                     },
                 },
             },
@@ -171,67 +207,145 @@ export const getScreenSections = (): GallerySection[] => [
             {
                 id: 'scr-select-hd-wallet',
                 label: 'Select HD wallet',
-                launch: { kind: 'navigate', target: { name: 'AddAccount', params: { screen: 'SelectHDWallet' } } },
+                launch: {
+                    kind: 'navigate',
+                    target: {
+                        name: 'AddAccount',
+                        params: { screen: 'SelectHDWallet' },
+                    },
+                },
             },
             {
                 id: 'scr-watch-info',
                 label: 'Watch account info',
-                launch: { kind: 'navigate', target: { name: 'AddAccount', params: { screen: 'WatchInfo' } } },
+                launch: {
+                    kind: 'navigate',
+                    target: {
+                        name: 'AddAccount',
+                        params: { screen: 'WatchInfo' },
+                    },
+                },
             },
             {
                 id: 'scr-watch-account',
                 label: 'Watch account',
-                launch: { kind: 'navigate', target: { name: 'AddAccount', params: { screen: 'WatchAccount' } } },
+                launch: {
+                    kind: 'navigate',
+                    target: {
+                        name: 'AddAccount',
+                        params: { screen: 'WatchAccount' },
+                    },
+                },
             },
             {
                 id: 'scr-name-account',
                 label: 'Name account',
-                launch: { kind: 'navigate', target: { name: 'AddAccount', params: { screen: 'NameAccount' } } },
+                launch: {
+                    kind: 'navigate',
+                    target: {
+                        name: 'AddAccount',
+                        params: { screen: 'NameAccount' },
+                    },
+                },
             },
             {
                 id: 'scr-import-options',
                 label: 'Import options',
-                launch: { kind: 'navigate', target: { name: 'AddAccount', params: { screen: 'ImportAccountOptions' } } },
+                launch: {
+                    kind: 'navigate',
+                    target: {
+                        name: 'AddAccount',
+                        params: { screen: 'ImportAccountOptions' },
+                    },
+                },
             },
             {
                 id: 'scr-ledger-instructions',
                 label: 'Ledger instructions',
-                launch: { kind: 'navigate', target: { name: 'AddAccount', params: { screen: 'LedgerInstructions' } } },
+                launch: {
+                    kind: 'navigate',
+                    target: {
+                        name: 'AddAccount',
+                        params: { screen: 'LedgerInstructions' },
+                    },
+                },
             },
             {
                 id: 'scr-ledger-pair',
                 label: 'Ledger pair',
-                launch: { kind: 'navigate', target: { name: 'AddAccount', params: { screen: 'LedgerPair' } } },
+                launch: {
+                    kind: 'navigate',
+                    target: {
+                        name: 'AddAccount',
+                        params: { screen: 'LedgerPair' },
+                    },
+                },
             },
             {
                 id: 'scr-ledger-scan',
                 label: 'Ledger scan',
-                launch: { kind: 'navigate', target: { name: 'AddAccount', params: { screen: 'LedgerScan' } } },
+                launch: {
+                    kind: 'navigate',
+                    target: {
+                        name: 'AddAccount',
+                        params: { screen: 'LedgerScan' },
+                    },
+                },
             },
             {
                 id: 'scr-ledger-troubleshooting',
                 label: 'Ledger troubleshooting',
-                launch: { kind: 'navigate', target: { name: 'AddAccount', params: { screen: 'LedgerTroubleshooting' } } },
+                launch: {
+                    kind: 'navigate',
+                    target: {
+                        name: 'AddAccount',
+                        params: { screen: 'LedgerTroubleshooting' },
+                    },
+                },
             },
             {
                 id: 'scr-asb-import-info',
                 label: 'ASB import info',
-                launch: { kind: 'navigate', target: { name: 'AddAccount', params: { screen: 'AsbImportInfo' } } },
+                launch: {
+                    kind: 'navigate',
+                    target: {
+                        name: 'AddAccount',
+                        params: { screen: 'AsbImportInfo' },
+                    },
+                },
             },
             {
                 id: 'scr-asb-import-backup',
                 label: 'ASB import backup',
-                launch: { kind: 'navigate', target: { name: 'AddAccount', params: { screen: 'AsbImportBackup' } } },
+                launch: {
+                    kind: 'navigate',
+                    target: {
+                        name: 'AddAccount',
+                        params: { screen: 'AsbImportBackup' },
+                    },
+                },
             },
             {
                 id: 'scr-asb-import-key',
                 label: 'ASB import key',
-                launch: { kind: 'navigate', target: { name: 'AddAccount', params: { screen: 'AsbImportKey' } } },
+                launch: {
+                    kind: 'navigate',
+                    target: {
+                        name: 'AddAccount',
+                        params: { screen: 'AsbImportKey' },
+                    },
+                },
             },
             {
                 id: 'scr-asb-import-select',
                 label: 'ASB import select accounts',
-                launch: { kind: 'navigate', target: { name: 'AddAccount', params: { screen: 'AsbImportSelectAccounts' } } },
+                launch: {
+                    kind: 'navigate',
+                    target: {
+                        name: 'AddAccount',
+                        params: { screen: 'AsbImportSelectAccounts' },
+                    },
+                },
             },
             {
                 id: 'scr-asb-import-result',
@@ -240,19 +354,34 @@ export const getScreenSections = (): GallerySection[] => [
                     kind: 'navigate',
                     target: {
                         name: 'AddAccount',
-                        params: { screen: 'AsbImportResult', params: MOCK_IMPORT_RESULT },
+                        params: {
+                            screen: 'AsbImportResult',
+                            params: MOCK_IMPORT_RESULT,
+                        },
                     },
                 },
             },
             {
                 id: 'scr-pera-web-import-info',
                 label: 'Pera Web import info',
-                launch: { kind: 'navigate', target: { name: 'AddAccount', params: { screen: 'PeraWebImportInfo' } } },
+                launch: {
+                    kind: 'navigate',
+                    target: {
+                        name: 'AddAccount',
+                        params: { screen: 'PeraWebImportInfo' },
+                    },
+                },
             },
             {
                 id: 'scr-pera-web-import-loading',
                 label: 'Pera Web import loading',
-                launch: { kind: 'navigate', target: { name: 'AddAccount', params: { screen: 'PeraWebImportLoading' } } },
+                launch: {
+                    kind: 'navigate',
+                    target: {
+                        name: 'AddAccount',
+                        params: { screen: 'PeraWebImportLoading' },
+                    },
+                },
             },
             {
                 id: 'scr-pera-web-import-result',
@@ -261,7 +390,10 @@ export const getScreenSections = (): GallerySection[] => [
                     kind: 'navigate',
                     target: {
                         name: 'AddAccount',
-                        params: { screen: 'PeraWebImportResult', params: MOCK_IMPORT_RESULT },
+                        params: {
+                            screen: 'PeraWebImportResult',
+                            params: MOCK_IMPORT_RESULT,
+                        },
                     },
                 },
             },
@@ -277,7 +409,10 @@ export const getScreenSections = (): GallerySection[] => [
                     kind: 'navigate',
                     target: {
                         name: 'BackupWallet',
-                        params: { screen: 'BackupInfo', params: { address: MOCK_ADDRESS } },
+                        params: {
+                            screen: 'BackupInfo',
+                            params: { address: MOCK_ADDRESS },
+                        },
                     },
                 },
             },
@@ -288,7 +423,10 @@ export const getScreenSections = (): GallerySection[] => [
                     kind: 'navigate',
                     target: {
                         name: 'BackupWallet',
-                        params: { screen: 'BackupWriteDown', params: { address: MOCK_ADDRESS } },
+                        params: {
+                            screen: 'BackupWriteDown',
+                            params: { address: MOCK_ADDRESS },
+                        },
                     },
                 },
             },
@@ -299,7 +437,10 @@ export const getScreenSections = (): GallerySection[] => [
                     kind: 'navigate',
                     target: {
                         name: 'BackupWallet',
-                        params: { screen: 'BackupMnemonic', params: { address: MOCK_ADDRESS } },
+                        params: {
+                            screen: 'BackupMnemonic',
+                            params: { address: MOCK_ADDRESS },
+                        },
                     },
                 },
             },
@@ -310,7 +451,10 @@ export const getScreenSections = (): GallerySection[] => [
                     kind: 'navigate',
                     target: {
                         name: 'BackupWallet',
-                        params: { screen: 'BackupVerification', params: { address: MOCK_ADDRESS } },
+                        params: {
+                            screen: 'BackupVerification',
+                            params: { address: MOCK_ADDRESS },
+                        },
                     },
                 },
             },
@@ -319,7 +463,10 @@ export const getScreenSections = (): GallerySection[] => [
                 label: 'Backup success',
                 launch: {
                     kind: 'navigate',
-                    target: { name: 'BackupWallet', params: { screen: 'BackupSuccess' } },
+                    target: {
+                        name: 'BackupWallet',
+                        params: { screen: 'BackupSuccess' },
+                    },
                 },
             },
         ],
@@ -358,7 +505,10 @@ export const getScreenSections = (): GallerySection[] => [
                     kind: 'navigate',
                     target: {
                         name: 'UndoRekey',
-                        params: { screen: 'UndoRekeyConfirm', params: { sourceAddress: MOCK_ADDRESS } },
+                        params: {
+                            screen: 'UndoRekeyConfirm',
+                            params: { sourceAddress: MOCK_ADDRESS },
+                        },
                     },
                 },
             },
@@ -369,7 +519,10 @@ export const getScreenSections = (): GallerySection[] => [
                     kind: 'navigate',
                     target: {
                         name: 'UndoRekey',
-                        params: { screen: 'UndoRekeySuccess', params: { sourceAddress: MOCK_ADDRESS } },
+                        params: {
+                            screen: 'UndoRekeySuccess',
+                            params: { sourceAddress: MOCK_ADDRESS },
+                        },
                     },
                 },
             },
@@ -380,7 +533,10 @@ export const getScreenSections = (): GallerySection[] => [
                     kind: 'navigate',
                     target: {
                         name: 'RescanRekeyed',
-                        params: { screen: 'RescanRekeyedSelect', params: { sourceAddress: MOCK_ADDRESS } },
+                        params: {
+                            screen: 'RescanRekeyedSelect',
+                            params: { sourceAddress: MOCK_ADDRESS },
+                        },
                     },
                 },
             },
@@ -392,17 +548,35 @@ export const getScreenSections = (): GallerySection[] => [
             {
                 id: 'scr-multisig-create',
                 label: 'Create multisig',
-                launch: { kind: 'navigate', target: { name: 'Multisig', params: { screen: 'CreateMultisig' } } },
+                launch: {
+                    kind: 'navigate',
+                    target: {
+                        name: 'Multisig',
+                        params: { screen: 'CreateMultisig' },
+                    },
+                },
             },
             {
                 id: 'scr-multisig-threshold',
                 label: 'Set threshold',
-                launch: { kind: 'navigate', target: { name: 'Multisig', params: { screen: 'SetThreshold' } } },
+                launch: {
+                    kind: 'navigate',
+                    target: {
+                        name: 'Multisig',
+                        params: { screen: 'SetThreshold' },
+                    },
+                },
             },
             {
                 id: 'scr-multisig-name',
                 label: 'Name multisig',
-                launch: { kind: 'navigate', target: { name: 'Multisig', params: { screen: 'NameMultisig' } } },
+                launch: {
+                    kind: 'navigate',
+                    target: {
+                        name: 'Multisig',
+                        params: { screen: 'NameMultisig' },
+                    },
+                },
             },
             {
                 id: 'scr-multisig-import',
@@ -411,7 +585,10 @@ export const getScreenSections = (): GallerySection[] => [
                     kind: 'navigate',
                     target: {
                         name: 'Multisig',
-                        params: { screen: 'ImportSharedAccount', params: { address: MOCK_ADDRESS } },
+                        params: {
+                            screen: 'ImportSharedAccount',
+                            params: { address: MOCK_ADDRESS },
+                        },
                     },
                 },
             },
@@ -432,7 +609,10 @@ export const getScreenSections = (): GallerySection[] => [
                     kind: 'navigate',
                     target: {
                         name: 'Messages',
-                        params: { screen: 'AssetClaimDetail', params: { assetIndex: Number(MOCK_ASSET_ID) } },
+                        params: {
+                            screen: 'AssetClaimDetail',
+                            params: { assetIndex: Number(MOCK_ASSET_ID) },
+                        },
                     },
                 },
             },
@@ -445,7 +625,11 @@ export const getScreenSections = (): GallerySection[] => [
                         name: 'Messages',
                         params: {
                             screen: 'ClaimProcessing',
-                            params: { mode: 'claimArc59', assetIndex: Number(MOCK_ASSET_ID), shouldClaimAlgo: false },
+                            params: {
+                                mode: 'claimArc59',
+                                assetIndex: Number(MOCK_ASSET_ID),
+                                shouldClaimAlgo: false,
+                            },
                         },
                     },
                 },
@@ -459,7 +643,10 @@ export const getScreenSections = (): GallerySection[] => [
                         name: 'Messages',
                         params: {
                             screen: 'ClaimSuccess',
-                            params: { transactionId: MOCK_TX_ID, variant: 'claim' },
+                            params: {
+                                transactionId: MOCK_TX_ID,
+                                variant: 'claim',
+                            },
                         },
                     },
                 },
@@ -485,7 +672,10 @@ export const getScreenSections = (): GallerySection[] => [
                     kind: 'navigate',
                     target: {
                         name: 'Messages',
-                        params: { screen: 'AssetTransferRequests', params: { item: mockAsaInbox } },
+                        params: {
+                            screen: 'AssetTransferRequests',
+                            params: { item: mockAsaInbox },
+                        },
                     },
                 },
             },
@@ -506,14 +696,26 @@ export const getScreenSections = (): GallerySection[] => [
             {
                 id: 'scr-contact-view',
                 label: 'View contact',
-                launch: { kind: 'navigate', target: { name: 'Contacts', params: { screen: 'ViewContact' } } },
+                launch: {
+                    kind: 'navigate',
+                    target: {
+                        name: 'Contacts',
+                        params: { screen: 'ViewContact' },
+                    },
+                },
             },
             {
                 id: 'scr-contact-add',
                 label: 'Add contact',
                 launch: {
                     kind: 'navigate',
-                    target: { name: 'Contacts', params: { screen: 'AddContact', params: { address: MOCK_ADDRESS } } },
+                    target: {
+                        name: 'Contacts',
+                        params: {
+                            screen: 'AddContact',
+                            params: { address: MOCK_ADDRESS },
+                        },
+                    },
                 },
             },
             {
@@ -523,7 +725,13 @@ export const getScreenSections = (): GallerySection[] => [
                     kind: 'navigate',
                     target: {
                         name: 'Contacts',
-                        params: { screen: 'EditContact', params: { address: MOCK_ADDRESS, label: 'Mock contact' } },
+                        params: {
+                            screen: 'EditContact',
+                            params: {
+                                address: MOCK_ADDRESS,
+                                label: 'Mock contact',
+                            },
+                        },
                     },
                 },
             },
@@ -537,7 +745,10 @@ export const getScreenSections = (): GallerySection[] => [
                 label: 'Transaction details',
                 launch: {
                     kind: 'navigate',
-                    target: { name: 'TransactionDetails', params: { transactionId: MOCK_TX_ID } },
+                    target: {
+                        name: 'TransactionDetails',
+                        params: { transactionId: MOCK_TX_ID },
+                    },
                 },
             },
             {
@@ -545,7 +756,10 @@ export const getScreenSections = (): GallerySection[] => [
                 label: 'Group transaction list',
                 launch: {
                     kind: 'navigate',
-                    target: { name: 'GroupTransactionList', params: { groupId: MOCK_GROUP_ID } },
+                    target: {
+                        name: 'GroupTransactionList',
+                        params: { groupId: MOCK_GROUP_ID },
+                    },
                 },
             },
         ],
@@ -561,7 +775,10 @@ export const getScreenSections = (): GallerySection[] => [
             {
                 id: 'scr-banners-carousel',
                 label: 'Banners carousel',
-                launch: { kind: 'navigate', target: { name: 'BannersCarouselModal' } },
+                launch: {
+                    kind: 'navigate',
+                    target: { name: 'BannersCarouselModal' },
+                },
             },
         ],
     },
@@ -576,32 +793,68 @@ export const getScreenSections = (): GallerySection[] => [
             {
                 id: 'scr-settings-security',
                 label: 'Security',
-                launch: { kind: 'navigate', target: { name: 'Settings', params: { screen: 'SecuritySettings' } } },
+                launch: {
+                    kind: 'navigate',
+                    target: {
+                        name: 'Settings',
+                        params: { screen: 'SecuritySettings' },
+                    },
+                },
             },
             {
                 id: 'scr-settings-notifications',
                 label: 'Notifications',
-                launch: { kind: 'navigate', target: { name: 'Settings', params: { screen: 'NotificationsSettings' } } },
+                launch: {
+                    kind: 'navigate',
+                    target: {
+                        name: 'Settings',
+                        params: { screen: 'NotificationsSettings' },
+                    },
+                },
             },
             {
                 id: 'scr-settings-passkeys',
                 label: 'Passkeys',
-                launch: { kind: 'navigate', target: { name: 'Settings', params: { screen: 'PasskeysSettings' } } },
+                launch: {
+                    kind: 'navigate',
+                    target: {
+                        name: 'Settings',
+                        params: { screen: 'PasskeysSettings' },
+                    },
+                },
             },
             {
                 id: 'scr-settings-currency',
                 label: 'Currency',
-                launch: { kind: 'navigate', target: { name: 'Settings', params: { screen: 'CurrencySettings' } } },
+                launch: {
+                    kind: 'navigate',
+                    target: {
+                        name: 'Settings',
+                        params: { screen: 'CurrencySettings' },
+                    },
+                },
             },
             {
                 id: 'scr-settings-theme',
                 label: 'Theme',
-                launch: { kind: 'navigate', target: { name: 'Settings', params: { screen: 'ThemeSettings' } } },
+                launch: {
+                    kind: 'navigate',
+                    target: {
+                        name: 'Settings',
+                        params: { screen: 'ThemeSettings' },
+                    },
+                },
             },
             {
                 id: 'scr-settings-wallet-connect',
                 label: 'WalletConnect sessions',
-                launch: { kind: 'navigate', target: { name: 'Settings', params: { screen: 'WalletConnectSettings' } } },
+                launch: {
+                    kind: 'navigate',
+                    target: {
+                        name: 'Settings',
+                        params: { screen: 'WalletConnectSettings' },
+                    },
+                },
             },
         ],
     },
@@ -615,7 +868,10 @@ export const getScreenSections = (): GallerySection[] => [
                     kind: 'navigate',
                     target: {
                         name: 'Settings',
-                        params: { screen: 'DeveloperSettings', params: { screen: 'NodeSettings' } },
+                        params: {
+                            screen: 'DeveloperSettings',
+                            params: { screen: 'NodeSettings' },
+                        },
                     },
                 },
             },
@@ -626,7 +882,10 @@ export const getScreenSections = (): GallerySection[] => [
                     kind: 'navigate',
                     target: {
                         name: 'Settings',
-                        params: { screen: 'DeveloperSettings', params: { screen: 'DispenserSettings' } },
+                        params: {
+                            screen: 'DeveloperSettings',
+                            params: { screen: 'DispenserSettings' },
+                        },
                     },
                 },
             },
@@ -637,7 +896,10 @@ export const getScreenSections = (): GallerySection[] => [
                     kind: 'navigate',
                     target: {
                         name: 'Settings',
-                        params: { screen: 'DeveloperSettings', params: { screen: 'FeatureFlags' } },
+                        params: {
+                            screen: 'DeveloperSettings',
+                            params: { screen: 'FeatureFlags' },
+                        },
                     },
                 },
             },
@@ -648,7 +910,10 @@ export const getScreenSections = (): GallerySection[] => [
                     kind: 'navigate',
                     target: {
                         name: 'Settings',
-                        params: { screen: 'DeveloperSettings', params: { screen: 'ManageCache' } },
+                        params: {
+                            screen: 'DeveloperSettings',
+                            params: { screen: 'ManageCache' },
+                        },
                     },
                 },
             },

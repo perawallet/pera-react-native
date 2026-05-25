@@ -24,8 +24,7 @@ type UseGalleryLauncherResult = {
 }
 
 export const useGalleryLauncher = (): UseGalleryLauncherResult => {
-    const navigation =
-        useNavigation<NativeStackNavigationProp<ParamListBase>>()
+    const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { request, requestByType } = useBottomSheet()
 
     const launch = useCallback(

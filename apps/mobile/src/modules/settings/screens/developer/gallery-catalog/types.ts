@@ -16,6 +16,7 @@ import type {
     BottomSheetRegistry,
     BottomSheetRequest,
 } from '@modules/bottom-sheet'
+import type { IconName } from '@components/core/PWIcon'
 
 export type GalleryCategoryId =
     | 'screens'
@@ -50,7 +51,7 @@ export type GallerySection = {
 export type GalleryCategory = {
     id: GalleryCategoryId
     title: string
-    icon: string
+    icon: IconName
     sections: GallerySection[]
 }
 

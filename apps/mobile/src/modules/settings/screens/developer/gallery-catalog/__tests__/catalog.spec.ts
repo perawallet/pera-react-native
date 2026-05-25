@@ -13,11 +13,16 @@
 import { describe, it, expect } from 'vitest'
 import { getCategories, getPreviewEntry } from '..'
 
-const noopTools = { onSeedContacts: () => undefined, onReplayApi: () => undefined }
+const noopTools = {
+    onSeedContacts: () => undefined,
+    onReplayApi: () => undefined,
+}
 
 describe('catalog integrity', () => {
     it('has globally unique entry ids', () => {
-        const ids = getCategories(noopTools).flatMap(c => c.sections.flatMap(s => s.items.map(i => i.id)))
+        const ids = getCategories(noopTools).flatMap(c =>
+            c.sections.flatMap(s => s.items.map(i => i.id)),
+        )
         expect(new Set(ids).size).toBe(ids.length)
     })
 

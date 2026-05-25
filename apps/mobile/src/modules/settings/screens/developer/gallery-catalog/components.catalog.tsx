@@ -32,6 +32,12 @@ registerPreview({
 export const getComponentSections = (): GallerySection[] => [
     {
         title: 'Core (PW)',
-        items: [{ id: 'comp-pw-button', label: 'PWButton', launch: { kind: 'preview' } }],
+        items: [
+            {
+                id: 'comp-pw-button',
+                label: 'PWButton',
+                launch: { kind: 'preview' },
+            },
+        ],
     },
 ]

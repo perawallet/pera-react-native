@@ -22,7 +22,10 @@ import type { GallerySection } from './types'
 registerPreview({
     id: 'dlg-pw-dialog',
     render: () => (
-        <PWDialog isVisible={true} onBackdropPress={() => undefined}>
+        <PWDialog
+            isVisible={true}
+            onBackdropPress={() => undefined}
+        >
             <PWDialog.Title title='Preview Dialog' />
         </PWDialog>
     ),
@@ -43,8 +46,16 @@ export const getDialogSections = (): GallerySection[] => [
     {
         title: 'Dialogs',
         items: [
-            { id: 'dlg-pw-dialog', label: 'PWDialog (primitive)', launch: { kind: 'preview' } },
-            { id: 'dlg-multisig-intro', label: 'Multisig introduction', launch: { kind: 'preview' } },
+            {
+                id: 'dlg-pw-dialog',
+                label: 'PWDialog (primitive)',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'dlg-multisig-intro',
+                label: 'Multisig introduction',
+                launch: { kind: 'preview' },
+            },
         ],
     },
 ]

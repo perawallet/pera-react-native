@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import { MOCK_ADDRESS, MOCK_ASSET_ID } from '@perawallet/wallet-core-dev-fixtures'
+import {
+    MOCK_ADDRESS,
+    MOCK_ASSET_ID,
+} from '@perawallet/wallet-core-dev-fixtures'
 
 import type { GallerySection } from './types'
 
@@ -47,7 +50,11 @@ export const getSheetSections = (): GallerySection[] => [
                     kind: 'sheetByType',
                     type: 'send-funds',
                     props: {},
-                    options: { size: 'lg', enablePanDownToClose: true, autoCreateContainer: false },
+                    options: {
+                        size: 'lg',
+                        enablePanDownToClose: true,
+                        autoCreateContainer: false,
+                    },
                 },
             },
             {
@@ -57,7 +64,11 @@ export const getSheetSections = (): GallerySection[] => [
                     kind: 'sheetByType',
                     type: 'bidali',
                     props: {},
-                    options: { size: 'lg', enablePanDownToClose: true, autoCreateContainer: false },
+                    options: {
+                        size: 'lg',
+                        enablePanDownToClose: true,
+                        autoCreateContainer: false,
+                    },
                 },
             },
         ],
