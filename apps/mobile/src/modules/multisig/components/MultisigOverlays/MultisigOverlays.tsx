@@ -31,20 +31,40 @@ export const MultisigOverlays = () => {
     )
     const closeSheet = usePendingSignaturesSheetStore(state => state.closeSheet)
     const { request: requestBottomSheet } = useBottomSheet()
-    const openIdRef = useRef<string | null>(null)
+    // Track whether a sheet is currently presented (NOT which id) so a
+    // signRequestId change while the sheet is open (e.g. the deferred-propose
+    // draft → real swap) just re-renders the sheet's content in place
+    // instead of stacking a second gorhom modal on top.
+    const isSheetOpenRef = useRef(false)
 
     useEffect(() => {
         if (!signRequestId) return
-        if (openIdRef.current === signRequestId) return
-        openIdRef.current = signRequestId
+        if (isSheetOpenRef.current) return
+        isSheetOpenRef.current = true
         let cancelled = false
         void (async () => {
             await requestBottomSheet<void>({
                 contents: <PendingSignaturesContent />,
-                options: { size: 'auto', enablePanDownToClose: true },
+                options: {
+                    // Fixed 90% snap point gives the flex layout a definite
+                    // height so the sticky footer pins below the scrollable
+                    // signers list. `size: 'auto'` would size the sheet to
+                    // content height, but our scroll view uses `flex: 1`
+                    // which contributes 0 to natural measurement — the sheet
+                    // would collapse to header + footer height. Same pattern
+                    // SigningOverlays uses for its review sheet.
+                    size: 'lg',
+                    enablePanDownToClose: true,
+                    autoCreateContainer: false,
+                },
             })
+            // Always reset `isSheetOpenRef` once the sheet is dismissed,
+            // even on cancellation — otherwise a draft → real signRequestId
+            // swap (which cancels the effect mid-await) leaves the ref
+            // stuck at `true` and blocks every subsequent inbox tap from
+            // ever reopening the sheet.
+            isSheetOpenRef.current = false
             if (cancelled) return
-            openIdRef.current = null
             // Ensure the store is cleared if the sheet was dismissed via gesture
             // or backdrop press rather than handleClose.
             closeSheet()

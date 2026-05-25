@@ -107,6 +107,18 @@ const buildAccount = (address: string): WalletAccount => ({
     keyPairId: `kp-${address}`,
 })
 
+const buildHardwareAccount = (address: string): WalletAccount => ({
+    type: AccountTypes.hardware,
+    address,
+    hardwareDetails: {
+        manufacturer: 'ledger',
+        deviceId: 'dev-1',
+        deviceName: 'Ledger Nano X',
+        accountIndex: 0,
+        transportType: 'ble',
+    },
+})
+
 describe('useHandleMultisigSignTap', () => {
     beforeEach(() => {
         openSheetMock.mockClear()
@@ -214,5 +226,43 @@ describe('useHandleMultisigSignTap', () => {
 
         expect(openSheetMock).toHaveBeenCalledWith('sr-empty')
         expect(addSignRequestMock).not.toHaveBeenCalled()
+    })
+
+    it('dispatches local-key cosigns AND opens the pending sheet when hardware participants are also unsigned', () => {
+        // Ledger prompts must never auto-fire on inbox tap; the per-row
+        // Sign button in PendingSignaturesContent is the only entry point.
+        localUnsignedSignersMock.mockReturnValue([
+            buildAccount('A'),
+            buildHardwareAccount('L'),
+        ])
+
+        const { result } = renderHook(() => useHandleMultisigSignTap())
+        result.current(buildSignRequest({ id: 'sr-mixed', status: 'pending' }))
+
+        // Local-key A is dispatched; hardware L is NOT.
+        expect(buildCosignArgsMock).toHaveBeenCalledTimes(1)
+        expect(
+            (
+                buildCosignArgsMock.mock.calls[0]![0] as {
+                    signerAddress: string
+                }
+            ).signerAddress,
+        ).toBe('A')
+        expect(addSignRequestMock).toHaveBeenCalledTimes(1)
+        // Sheet opens so the user can per-row Sign the Ledger participant.
+        expect(openSheetMock).toHaveBeenCalledWith('sr-mixed')
+    })
+
+    it('opens the pending sheet WITHOUT dispatching anything when only hardware participants are unsigned', () => {
+        localUnsignedSignersMock.mockReturnValue([buildHardwareAccount('L')])
+
+        const { result } = renderHook(() => useHandleMultisigSignTap())
+        result.current(
+            buildSignRequest({ id: 'sr-hw-only', status: 'pending' }),
+        )
+
+        expect(addSignRequestMock).not.toHaveBeenCalled()
+        expect(buildCosignArgsMock).not.toHaveBeenCalled()
+        expect(openSheetMock).toHaveBeenCalledWith('sr-hw-only')
     })
 })

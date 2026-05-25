@@ -21,6 +21,8 @@ import {
     RekeyTargetNotFoundError,
     resolveAuthAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
+import type { AnalyzedSignableGroup, SigningResult } from '../types'
 
 /**
  * Get local participants for a multisig account, ordered by their position
@@ -69,6 +71,92 @@ export const getLocalParticipants = (
             return []
         return [localAccount]
     })
+}
+
+/**
+ * Subset of {@link getLocalParticipants} for the propose (Send) flow.
+ *
+ * Prefers local-key (Algo25 / HD) participants and skips hardware-wallet
+ * participants so a Ledger device prompt never auto-fires during Send.
+ * Hardware participants are deferred to the per-row Sign button in
+ * `PendingSignaturesContent`, which the proposer can tap explicitly after
+ * the propose call completes.
+ *
+ * Falls back to the full local-participant set (which may include hardware)
+ * when the user has no local-key participant — the propose endpoint
+ * requires at least one signature to create the backend record, so a
+ * hardware-only proposer still needs the Ledger prompt to bootstrap.
+ */
+export const getProposeParticipants = (
+    account: WalletAccount,
+    allAccounts: WalletAccount[],
+): WalletAccount[] => {
+    const allLocal = getLocalParticipants(account, allAccounts)
+    const localKey = allLocal.filter(p => !isHardwareWalletAccount(p))
+    return localKey.length > 0 ? localKey : allLocal
+}
+
+/**
+ * True if the propose call for this multisig should be deferred until the
+ * user explicitly taps Sign on a hardware participant in the pending
+ * signatures sheet — i.e. the user holds at least one hardware participant
+ * and zero local-key participants in this multisig.
+ *
+ * When true, `multisigSignerActor` short-circuits and emits a synthetic
+ * deferred SigningResult instead of running the strategy (which would
+ * otherwise fire parallel Ledger prompts during Send and fail because a
+ * single Ledger device can't serve multiple connections in parallel).
+ *
+ * Returns false for any non-multisig account or for multisigs where the
+ * user has any local-key participant (in which case the local-key sigs
+ * bootstrap the propose silently and the sheet opens behind the scenes).
+ * Resolves a single rekey hop, mirroring `canMeetThresholdLocally`.
+ */
+export const shouldDeferPropose = (
+    account: WalletAccount,
+    allAccounts: WalletAccount[],
+): boolean => {
+    let target: WalletAccount
+    try {
+        target = resolveAuthAccount(account, allAccounts)
+    } catch (e) {
+        if (e instanceof RekeyTargetNotFoundError) return false
+        throw e
+    }
+    if (!isMultisigAccount(target)) return false
+
+    const localParticipants = getLocalParticipants(target, allAccounts)
+    if (localParticipants.length === 0) return false
+    return localParticipants.every(isHardwareWalletAccount)
+}
+
+/**
+ * Produces an empty-signers `SigningResult` that signals the propose
+ * transport to skip the backend propose call and create a local draft
+ * instead. The unsigned transactions are carried in `signedData.signed[].txn`
+ * so the transport can encode the raw bytes for the draft without needing
+ * the original group passed through.
+ */
+export const buildDeferredProposeSigningResult = (
+    group: AnalyzedSignableGroup,
+): SigningResult => {
+    if (group.data.type !== 'transactions') {
+        throw new Error(
+            'Deferred propose is only supported for transaction signing requests',
+        )
+    }
+    return {
+        signedData: {
+            type: 'transactions',
+            // The transport in deferred mode reads `stx.txn` only — no sig
+            // or msig is needed because nothing is actually signed yet.
+            signed: group.data.transactions.map(
+                txn => ({ txn }) as PeraSignedTransaction,
+            ),
+        },
+        signers: [],
+        originalIndices: group.originalIndices,
+    }
 }
 
 /**

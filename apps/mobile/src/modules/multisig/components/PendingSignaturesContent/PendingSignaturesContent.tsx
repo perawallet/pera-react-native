@@ -11,6 +11,7 @@
  */
 
 import { ActivityIndicator } from 'react-native'
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet'
 import { useTheme } from '@rneui/themed'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { PWButton, PWIcon, PWText, PWView } from '@components/core'
@@ -45,6 +46,7 @@ export const PendingSignaturesContent = () => {
         canCancel,
         isCancelling,
         handleCancel,
+        disableOtherSignersForDraft,
     } = usePendingSignaturesContent()
 
     const getSignerAction = (signer: SignerRow): Optional<SignerAction> => {
@@ -53,12 +55,13 @@ export const PendingSignaturesContent = () => {
             label: t('multisig.pending_signatures.sign'),
             onPress: () => handleSignParticipant(signer.address),
             isLoading: signer.isSigning,
+            isDisabled: disableOtherSignersForDraft && !signer.isSigning,
         }
     }
 
     return (
-        <>
-            <PWView style={styles.scrollContent}>
+        <PWView style={styles.layout}>
+            <PWView style={styles.header}>
                 <PWText
                     variant='h4'
                     style={styles.title}
@@ -104,15 +107,21 @@ export const PendingSignaturesContent = () => {
                     </PWView>
                 )}
 
-                {!signRequest && (
+                {bannerVariant === 'submitting' && (
                     <PWView
-                        style={styles.loadingContainer}
-                        testID='pending_signatures_loading_indicator'
+                        style={styles.submittingBanner}
+                        testID='pending_signatures_submitting_banner'
                     >
                         <ActivityIndicator
-                            size='large'
+                            size='small'
                             color={theme.colors.textGray}
                         />
+                        <PWText
+                            variant='caption'
+                            style={styles.submittingBannerText}
+                        >
+                            {t('multisig.pending_signatures.submitting')}
+                        </PWText>
                     </PWView>
                 )}
 
@@ -155,6 +164,24 @@ export const PendingSignaturesContent = () => {
                         )}
                     </PWView>
                 )}
+            </PWView>
+
+            <BottomSheetScrollView
+                style={styles.scrollView}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+            >
+                {!signRequest && (
+                    <PWView
+                        style={styles.loadingContainer}
+                        testID='pending_signatures_loading_indicator'
+                    >
+                        <ActivityIndicator
+                            size='large'
+                            color={theme.colors.textGray}
+                        />
+                    </PWView>
+                )}
 
                 {!!signRequest && (
                     <PWView style={styles.accountsHeader}>
@@ -167,9 +194,7 @@ export const PendingSignaturesContent = () => {
                         >
                             {t(
                                 'multisig.pending_signatures.accounts_subtitle',
-                                {
-                                    count: threshold,
-                                },
+                                { count: threshold },
                             )}
                         </PWText>
                     </PWView>
@@ -187,7 +212,9 @@ export const PendingSignaturesContent = () => {
                         ))}
                     </PWView>
                 )}
+            </BottomSheetScrollView>
 
+            <PWView style={styles.footer}>
                 {canSign || canCancel ? (
                     <PWView style={styles.actionsRow}>
                         {canSign && (
@@ -225,11 +252,10 @@ export const PendingSignaturesContent = () => {
                         variant='secondary'
                         title={t('multisig.pending_signatures.close')}
                         onPress={handleClose}
-                        style={styles.closeButton}
                         testID='pending_signatures_close_button'
                     />
                 )}
             </PWView>
-        </>
+        </PWView>
     )
 }

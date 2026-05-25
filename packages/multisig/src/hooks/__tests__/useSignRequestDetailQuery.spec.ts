@@ -291,12 +291,15 @@ describe('useSignRequestDetailQuery', () => {
         expect(mocks.getSignRequestDetail).toHaveBeenCalledTimes(1)
     })
 
-    test('pollWhilePending schedules a refetch while status is pending/ready, and stops after', async () => {
+    test('pollWhilePending schedules a refetch through pending/ready/submitting, and stops once terminal', async () => {
         mocks.getSignRequestDetail.mockResolvedValueOnce(
             createSignRequestResponse('pending'),
         )
         mocks.getSignRequestDetail.mockResolvedValueOnce(
             createSignRequestResponse('ready'),
+        )
+        mocks.getSignRequestDetail.mockResolvedValueOnce(
+            createSignRequestResponse('submitting'),
         )
         mocks.getSignRequestDetail.mockResolvedValueOnce(
             createSignRequestResponse('confirmed'),
@@ -324,7 +327,15 @@ describe('useSignRequestDetailQuery', () => {
                 expect(result.current.data?.status).toBe('ready'),
             )
 
-            // Advance again — triggers third fetch (confirmed), poll should stop
+            // Advance again — triggers third fetch (submitting). Polling must
+            // continue here; stopping at `submitting` was the bug that left
+            // the UI stuck on "waiting" forever.
+            await vi.advanceTimersByTimeAsync(5000)
+            await vi.waitFor(() =>
+                expect(result.current.data?.status).toBe('submitting'),
+            )
+
+            // Advance again — triggers fourth fetch (confirmed), poll should stop
             await vi.advanceTimersByTimeAsync(5000)
             await vi.waitFor(() =>
                 expect(result.current.data?.status).toBe('confirmed'),

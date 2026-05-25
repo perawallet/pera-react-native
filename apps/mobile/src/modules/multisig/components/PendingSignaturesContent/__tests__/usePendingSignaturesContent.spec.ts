@@ -110,6 +110,7 @@ vi.mock('@perawallet/wallet-core-messages', () => ({
     useInboxInvalidator: () => ({ invalidate: vi.fn() }),
 }))
 
+import { useDraftSignRequestStore } from '@perawallet/wallet-core-multisig'
 import { usePendingSignaturesContent } from '../usePendingSignaturesContent'
 import { usePendingSignaturesSheetStore } from '../../../stores/usePendingSignaturesSheetStore'
 
@@ -656,6 +657,217 @@ describe('usePendingSignaturesContent', () => {
             const row = result.current.signers.find(s => s.address === 'C')
             expect(row?.isSigning).toBe(false)
             expect(row?.canSignAsHardware).toBe(true)
+        })
+    })
+
+    describe('draft mode (deferred propose)', () => {
+        const DRAFT_ID = 'draft-test-1'
+
+        const seedDraft = () => {
+            useDraftSignRequestStore.setState({
+                drafts: {
+                    [DRAFT_ID]: {
+                        localId: DRAFT_ID,
+                        network: 'mainnet',
+                        multisigAddress: 'DRAFT_MULTISIG',
+                        multisigDetails: {
+                            threshold: 2,
+                            version: 1,
+                            participantAddresses: ['L1', 'L2', 'C'],
+                        },
+                        rawTransactionsBase64: ['rawDraftTxn'],
+                        proposeType: 'async',
+                        createdAt: new Date('2026-05-06T09:00:00Z'),
+                    },
+                },
+            })
+        }
+
+        beforeEach(() => {
+            useDraftSignRequestStore.getState().resetState()
+        })
+
+        it('synthesizes a sign-request from the draft store when the sheet id is a draft prefix', () => {
+            usePendingSignaturesSheetStore.setState({
+                signRequestId: DRAFT_ID,
+            })
+            seedDraft()
+            localUnsignedSignersMock.mockReturnValue([
+                buildHardwareAccount('L1'),
+                buildHardwareAccount('L2'),
+            ])
+
+            const { result } = renderHook(() => usePendingSignaturesContent())
+
+            expect(result.current.isDraft).toBe(true)
+            expect(result.current.signRequest?.id).toBe(DRAFT_ID)
+            expect(result.current.signRequest?.multisigAccount.address).toBe(
+                'DRAFT_MULTISIG',
+            )
+            expect(
+                result.current.signRequest?.multisigAccount
+                    .participantAddresses,
+            ).toEqual(['L1', 'L2', 'C'])
+            // No responses yet — all participants render as pending.
+            expect(result.current.signers.map(s => s.status)).toEqual([
+                'pending',
+                'pending',
+                'pending',
+            ])
+            // Hardware rows expose canSignAsHardware so per-row Sign appears.
+            expect(
+                result.current.signers.find(s => s.address === 'L1')
+                    ?.canSignAsHardware,
+            ).toBe(true)
+            expect(
+                result.current.signers.find(s => s.address === 'L2')
+                    ?.canSignAsHardware,
+            ).toBe(true)
+            // Backend API query stays disabled in draft mode — no network call
+            // is made for a sign-request that doesn't exist yet.
+            expect(useSignRequestDetailQueryMock).toHaveBeenCalledWith(
+                expect.objectContaining({ enabled: false }),
+            )
+        })
+
+        it('returns null signRequest when the sheet points at a draft id that no longer exists (e.g. already swapped or cleared)', () => {
+            usePendingSignaturesSheetStore.setState({
+                signRequestId: DRAFT_ID,
+            })
+            // Don't seed the draft.
+
+            const { result } = renderHook(() => usePendingSignaturesContent())
+
+            expect(result.current.isDraft).toBe(true)
+            expect(result.current.signRequest).toBeNull()
+        })
+
+        it('hides the time-remaining badge in draft mode (no on-chain expiry yet)', () => {
+            usePendingSignaturesSheetStore.setState({
+                signRequestId: DRAFT_ID,
+            })
+            seedDraft()
+
+            const { result } = renderHook(() => usePendingSignaturesContent())
+
+            expect(result.current.timeRemaining).toBeNull()
+        })
+
+        it('handleSignParticipant dispatches a cosign pinned to the chosen Ledger row using the synthetic draft sign-request', () => {
+            usePendingSignaturesSheetStore.setState({
+                signRequestId: DRAFT_ID,
+            })
+            seedDraft()
+            localUnsignedSignersMock.mockReturnValue([
+                buildHardwareAccount('L1'),
+                buildHardwareAccount('L2'),
+            ])
+
+            const { result } = renderHook(() => usePendingSignaturesContent())
+            result.current.handleSignParticipant('L1')
+
+            expect(buildCosignArgsMock).toHaveBeenCalledTimes(1)
+            const call = buildCosignArgsMock.mock.calls[0]![0] as {
+                signRequest: { id: string }
+                signerAddress: string
+            }
+            expect(call.signRequest.id).toBe(DRAFT_ID)
+            expect(call.signerAddress).toBe('L1')
+            expect(addSignRequestMock).toHaveBeenCalledTimes(1)
+        })
+
+        it('blocks a second per-row Sign while another draft cosign is in flight (prevents double-propose race)', () => {
+            usePendingSignaturesSheetStore.setState({
+                signRequestId: DRAFT_ID,
+            })
+            seedDraft()
+            localUnsignedSignersMock.mockReturnValue([
+                buildHardwareAccount('L1'),
+                buildHardwareAccount('L2'),
+            ])
+            // L1 is already mid-flight (its actor is in pendingSignRequests).
+            pendingSignRequestsMock.mockReturnValue([
+                {
+                    type: 'transactions',
+                    sourceType: 'multisig-cosign',
+                    signRequestId: DRAFT_ID,
+                    signerOverrides: new Map([[0, 'L1']]),
+                },
+            ])
+
+            const { result } = renderHook(() => usePendingSignaturesContent())
+            result.current.handleSignParticipant('L2')
+
+            expect(addSignRequestMock).not.toHaveBeenCalled()
+            expect(buildCosignArgsMock).not.toHaveBeenCalled()
+        })
+
+        describe('disableOtherSignersForDraft', () => {
+            it('is true in draft mode while a cosign is in flight', () => {
+                usePendingSignaturesSheetStore.setState({
+                    signRequestId: DRAFT_ID,
+                })
+                seedDraft()
+                localUnsignedSignersMock.mockReturnValue([
+                    buildHardwareAccount('L1'),
+                    buildHardwareAccount('L2'),
+                ])
+                pendingSignRequestsMock.mockReturnValue([
+                    {
+                        type: 'transactions',
+                        sourceType: 'multisig-cosign',
+                        signRequestId: DRAFT_ID,
+                        signerOverrides: new Map([[0, 'L1']]),
+                    },
+                ])
+
+                const { result } = renderHook(() =>
+                    usePendingSignaturesContent(),
+                )
+
+                expect(result.current.disableOtherSignersForDraft).toBe(true)
+            })
+
+            it('is false in draft mode while no cosign is in flight', () => {
+                usePendingSignaturesSheetStore.setState({
+                    signRequestId: DRAFT_ID,
+                })
+                seedDraft()
+                localUnsignedSignersMock.mockReturnValue([
+                    buildHardwareAccount('L1'),
+                    buildHardwareAccount('L2'),
+                ])
+
+                const { result } = renderHook(() =>
+                    usePendingSignaturesContent(),
+                )
+
+                expect(result.current.disableOtherSignersForDraft).toBe(false)
+            })
+
+            it('is false outside draft mode even when a cosign is in flight (real backend record means propose has already landed)', () => {
+                usePendingSignaturesSheetStore.setState({
+                    signRequestId: 'sr-1',
+                })
+                mockQueryReturn(buildSignRequest({ status: 'pending' }))
+                localUnsignedSignersMock.mockReturnValue([
+                    buildHardwareAccount('C'),
+                ])
+                pendingSignRequestsMock.mockReturnValue([
+                    {
+                        type: 'transactions',
+                        sourceType: 'multisig-cosign',
+                        signRequestId: 'sr-1',
+                        signerOverrides: new Map([[0, 'C']]),
+                    },
+                ])
+
+                const { result } = renderHook(() =>
+                    usePendingSignaturesContent(),
+                )
+
+                expect(result.current.disableOtherSignersForDraft).toBe(false)
+            })
         })
     })
 })

@@ -888,6 +888,7 @@
             "accounts_subtitle_one": "You need at least 1 account to sign",
             "accounts_subtitle_other": "You need at least {{count}} accounts to sign",
             "confirmed": "Transaction successfully completed",
+            "submitting": "All signatures collected. Submitting transaction…",
             "failed_default": "Transaction failed",
             "canceled": "Transaction canceled.",
             "declined": "Transaction declined.",

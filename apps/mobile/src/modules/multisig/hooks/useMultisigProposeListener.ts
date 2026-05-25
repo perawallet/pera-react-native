@@ -11,6 +11,10 @@
  */
 
 import { useInboxInvalidator } from '@perawallet/wallet-core-messages'
+import {
+    isDraftSignRequestId,
+    useDraftSignRequestStore,
+} from '@perawallet/wallet-core-multisig'
 import { useSigningEvent } from '@perawallet/wallet-core-signing'
 import { usePendingSignaturesSheetStore } from '../stores/usePendingSignaturesSheetStore'
 
@@ -53,7 +57,22 @@ export const useMultisigProposeListener = () => {
             }
             invalidateInbox()
             if (result.status === 'confirmed') return
-            openSheet(result.signRequestId)
+
+            // Draft → real swap: a cosign result on a draft sheet means the
+            // addSignatures adapter bootstrapped the backend propose with the
+            // user's first per-row Sign. Clean up the now-orphaned draft and
+            // point the sheet at the real signRequestId.
+            const newId = result.signRequestId
+            const currentId =
+                usePendingSignaturesSheetStore.getState().signRequestId
+            if (
+                currentId &&
+                isDraftSignRequestId(currentId) &&
+                !isDraftSignRequestId(newId)
+            ) {
+                useDraftSignRequestStore.getState().deleteDraft(currentId)
+            }
+            openSheet(newId)
         },
     )
 }
