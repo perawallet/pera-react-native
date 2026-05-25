@@ -26,22 +26,21 @@ export const useStyles = makeStyles(theme => {
             flexShrink: 0,
             width: '100%',
         },
+        // The two sides flex equally so the title stays screen-centered, while
+        // the title only takes the width it needs (shrinking if ever too long).
         iconBarSide: {
-            width: '33.3333%',
-            flexShrink: 0,
+            flex: 1,
         },
         titleContainer: {
-            flex: 1,
+            flexShrink: 1,
             minWidth: 0,
             alignItems: 'center',
         },
         title: {
-            width: '100%',
             textAlign: 'center',
         },
         iconBarActions: {
-            width: '33.3333%',
-            flexShrink: 0,
+            flex: 1,
             flexDirection: 'row',
             justifyContent: 'flex-end',
             gap: theme.spacing.lg,
