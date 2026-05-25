@@ -11,7 +11,7 @@
  */
 
 import {
-    SignRequest,
+    type SignRequest,
     useLastSigningEvent,
     useSigningPipeline,
     useSigningRequest,
@@ -82,7 +82,10 @@ export const SignRequestView = ({ request }: SignRequestViewProps) => {
         request.id,
     )
 
-    const isSupported = resolved !== null
+    const isSupported =
+        request.type === 'transactions' ||
+        request.type === 'arbitrary-data' ||
+        request.type === 'arc60'
 
     if (!isSupported) {
         return (
