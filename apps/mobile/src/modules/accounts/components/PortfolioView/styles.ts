@@ -60,7 +60,7 @@ export const useStyles = makeStyles(theme => {
             width: '100%',
         },
         titleTextContainer: {
-            flex: 1,
+            flexShrink: 1,
             minWidth: 0,
         },
         infoButtonContainer: {
