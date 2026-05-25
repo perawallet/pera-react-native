@@ -38,6 +38,23 @@ import { AddAssetContent } from '@modules/assets/components/AddAssetContent'
 import { AsaVerificationInfoContent } from '@modules/assets/components/AsaVerificationInfoContent'
 import { OptInConfirmationContent } from '@modules/assets/components/OptInConfirmationContent'
 import { ViewTextDetailsContent } from '@modules/transactions/components/ViewTextDetailsContent'
+import { SwapAssetSelectionContent } from '@modules/swap/components/SwapAssetSelectionContent'
+import { SwapConfigurationContent } from '@modules/swap/components/SwapConfigurationContent'
+import { SwapHistoryContent } from '@modules/swap/components/SwapHistoryContent'
+import { SwapIntroductionContent } from '@modules/swap/components/SwapIntroductionContent'
+import { SigningCompletedContent } from '@modules/signing/components/SigningCompletedContent'
+import { LedgerAwaitingApprovalContent } from '@modules/signing/components/LedgerAwaitingApprovalContent'
+import { LedgerErrorContent } from '@modules/signing/components/LedgerErrorContent'
+import { RekeyGuardContent } from '@modules/signing/components/RekeyGuardContent'
+import { SecurityGuardContent } from '@modules/signing/components/SecurityGuardContent'
+import { TransactionRequestFAQContent } from '@modules/signing/components/TransactionRequestFAQContent'
+import { LedgerAccountInfoContent } from '@modules/ledger/components/LedgerAccountInfoContent'
+import { LedgerConnectingContent } from '@modules/ledger/components/LedgerConnectingContent'
+import { LedgerHowItWorksContent } from '@modules/ledger/components/LedgerHowItWorksContent'
+import { AddParticipantContent } from '@modules/multisig/components/AddParticipantContent'
+import { BeforeYouCreateContent } from '@modules/multisig/components/BeforeYouCreateContent'
+import { ExportShareAccountContent } from '@modules/multisig/components/ExportShareAccountContent'
+import { MultisigInvitationDetailContent } from '@modules/messages/components/MultisigInvitationDetailContent'
 
 import { GallerySheetBoundary } from './GallerySheetBoundary'
 
@@ -393,6 +410,418 @@ export const getSheetSections = (): GallerySection[] => [
                 id: 'sheet-add-note',
                 label: 'Add note (needs live state)',
                 launch: { kind: 'action', run: () => undefined },
+            },
+        ],
+    },
+    {
+        title: 'Swap',
+        items: [
+            {
+                id: 'sheet-swap-asset-selection-from',
+                label: 'Swap asset selection (from)',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <SwapAssetSelectionContent variant='from' />
+                            </GallerySheetBoundary>
+                        ),
+                        options: {
+                            size: 'lg',
+                            enablePanDownToClose: true,
+                        },
+                    }),
+                },
+            },
+            {
+                id: 'sheet-swap-asset-selection-to',
+                label: 'Swap asset selection (to)',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <SwapAssetSelectionContent
+                                    variant='to'
+                                    fromAssetId={String(MOCK_ASSET_ID)}
+                                />
+                            </GallerySheetBoundary>
+                        ),
+                        options: {
+                            size: 'lg',
+                            enablePanDownToClose: true,
+                        },
+                    }),
+                },
+            },
+            {
+                id: 'sheet-swap-configuration',
+                label: 'Swap configuration',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <SwapConfigurationContent />
+                            </GallerySheetBoundary>
+                        ),
+                        options: { enablePanDownToClose: true },
+                    }),
+                },
+            },
+            {
+                id: 'sheet-swap-confirmation',
+                label: 'Swap confirmation (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'sheet-swap-history',
+                label: 'Swap history',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <SwapHistoryContent address={A} />
+                            </GallerySheetBoundary>
+                        ),
+                        options: {
+                            size: 'lg',
+                            enablePanDownToClose: true,
+                        },
+                    }),
+                },
+            },
+            {
+                id: 'sheet-swap-introduction',
+                label: 'Swap introduction',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <SwapIntroductionContent />
+                            </GallerySheetBoundary>
+                        ),
+                        options: {
+                            size: 'lg',
+                            enablePanDownToClose: true,
+                        },
+                    }),
+                },
+            },
+            {
+                id: 'sheet-swap-provider',
+                label: 'Swap provider (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+        ],
+    },
+    {
+        title: 'Signing',
+        items: [
+            {
+                id: 'sheet-sign-request',
+                label: 'Sign request (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'sheet-signing-completed-transaction',
+                label: 'Signing completed (transaction)',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <SigningCompletedContent isTransaction />
+                            </GallerySheetBoundary>
+                        ),
+                        options: { enablePanDownToClose: true },
+                    }),
+                },
+            },
+            {
+                id: 'sheet-signing-completed-data',
+                label: 'Signing completed (data)',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <SigningCompletedContent isTransaction={false} />
+                            </GallerySheetBoundary>
+                        ),
+                        options: { enablePanDownToClose: true },
+                    }),
+                },
+            },
+            {
+                id: 'sheet-signing-warnings',
+                label: 'Signing warnings (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'sheet-ledger-signing',
+                label: 'Ledger signing (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'sheet-ledger-connection-issue',
+                label: 'Ledger connection issue (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'sheet-ledger-error',
+                label: 'Ledger error',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <LedgerErrorContent
+                                    error={{
+                                        kind: 'connection_failed',
+                                        title: 'Connection failed',
+                                        body: 'Unable to connect to Ledger device. Make sure it is unlocked and the Algorand app is open.',
+                                        isTroubleshootable: true,
+                                        isRetryable: true,
+                                    }}
+                                    onRetry={() => undefined}
+                                    onClose={() => undefined}
+                                    onOpenTroubleshooting={() => undefined}
+                                />
+                            </GallerySheetBoundary>
+                        ),
+                        options: { enablePanDownToClose: true },
+                    }),
+                },
+            },
+            {
+                id: 'sheet-ledger-awaiting-approval',
+                label: 'Ledger awaiting approval',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <LedgerAwaitingApprovalContent
+                                    deviceName='Ledger Nano X'
+                                    currentTx={1}
+                                    totalTxs={3}
+                                    operation='transaction'
+                                    onCancel={() => undefined}
+                                />
+                            </GallerySheetBoundary>
+                        ),
+                        options: { enablePanDownToClose: true },
+                    }),
+                },
+            },
+            {
+                id: 'sheet-rekey-guard',
+                label: 'Rekey guard',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <RekeyGuardContent />
+                            </GallerySheetBoundary>
+                        ),
+                        options: { enablePanDownToClose: true },
+                    }),
+                },
+            },
+            {
+                id: 'sheet-security-guard-rekey',
+                label: 'Security guard (rekey)',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <SecurityGuardContent warningType='rekey' />
+                            </GallerySheetBoundary>
+                        ),
+                        options: { enablePanDownToClose: true },
+                    }),
+                },
+            },
+            {
+                id: 'sheet-security-guard-asset-freeze',
+                label: 'Security guard (asset freeze)',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <SecurityGuardContent warningType='asset-freeze' />
+                            </GallerySheetBoundary>
+                        ),
+                        options: { enablePanDownToClose: true },
+                    }),
+                },
+            },
+            {
+                id: 'sheet-transaction-request-faq',
+                label: 'Transaction request FAQ',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <TransactionRequestFAQContent />
+                            </GallerySheetBoundary>
+                        ),
+                        options: { enablePanDownToClose: true },
+                    }),
+                },
+            },
+        ],
+    },
+    {
+        title: 'Ledger',
+        items: [
+            {
+                id: 'sheet-ledger-account-info',
+                label: 'Ledger account info',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <LedgerAccountInfoContent
+                                    address={A}
+                                    accountIndex={0}
+                                />
+                            </GallerySheetBoundary>
+                        ),
+                        options: {
+                            size: 'lg',
+                            enablePanDownToClose: true,
+                        },
+                    }),
+                },
+            },
+            {
+                id: 'sheet-ledger-connecting',
+                label: 'Ledger connecting',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <LedgerConnectingContent />
+                            </GallerySheetBoundary>
+                        ),
+                        options: { enablePanDownToClose: true },
+                    }),
+                },
+            },
+            {
+                id: 'sheet-ledger-how-it-works',
+                label: 'Ledger how it works',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <LedgerHowItWorksContent />
+                            </GallerySheetBoundary>
+                        ),
+                        options: { enablePanDownToClose: true },
+                    }),
+                },
+            },
+        ],
+    },
+    {
+        title: 'Multisig',
+        items: [
+            {
+                id: 'sheet-add-participant',
+                label: 'Add participant',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <AddParticipantContent />
+                            </GallerySheetBoundary>
+                        ),
+                        options: {
+                            size: 'lg',
+                            enablePanDownToClose: true,
+                        },
+                    }),
+                },
+            },
+            {
+                id: 'sheet-before-you-create',
+                label: 'Before you create',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <BeforeYouCreateContent />
+                            </GallerySheetBoundary>
+                        ),
+                        options: { enablePanDownToClose: true },
+                    }),
+                },
+            },
+            {
+                id: 'sheet-export-share-account',
+                label: 'Export share account',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <ExportShareAccountContent accountAddress={A} />
+                            </GallerySheetBoundary>
+                        ),
+                        options: {
+                            size: 'lg',
+                            enablePanDownToClose: true,
+                        },
+                    }),
+                },
+            },
+            {
+                id: 'sheet-pending-signatures',
+                label: 'Pending signatures (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'sheet-multisig-invitation-detail',
+                label: 'Multisig invitation detail',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <MultisigInvitationDetailContent
+                                    invitation={{
+                                        customId: 'mock-invite-id',
+                                        createdAt:
+                                            new Date().toISOString(),
+                                        address: A,
+                                        version: 1,
+                                        threshold: 2,
+                                        participantAddresses: [A, A2],
+                                    }}
+                                />
+                            </GallerySheetBoundary>
+                        ),
+                        options: {
+                            size: 'lg',
+                            enablePanDownToClose: true,
+                        },
+                    }),
+                },
             },
         ],
     },
