@@ -21,16 +21,15 @@ export const useStyles = makeStyles(theme => {
         },
         dataContainer: {
             flexDirection: 'row',
-            justifyContent: 'space-between',
             alignItems: 'center',
-            flexGrow: 1,
+            flex: 1,
+            gap: theme.spacing.md,
         },
         unitContainer: {
-            flexShrink: 1,
+            flex: 1,
         },
         amountContainer: {
             alignItems: 'flex-end',
-            flexShrink: 0,
         },
         suspiciousName: {
             color: theme.colors.error,

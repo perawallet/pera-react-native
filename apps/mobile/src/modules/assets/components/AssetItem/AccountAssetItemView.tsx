@@ -153,6 +153,7 @@ export const AccountAssetItemView = ({
                                     ? styles.suspiciousName
                                     : styles.primaryUnit
                             }
+                            ellipsizeMode='middle'
                             numberOfLines={1}
                         >
                             {displayName}
@@ -198,6 +199,7 @@ export const AccountAssetItemView = ({
                         minPrecision={2}
                         showSymbol
                         style={styles.primaryAmount}
+                        numberOfLines={1}
                     />
                     <PreferredCurrencyDisplay
                         sourceAmount={accountBalance.amount}
