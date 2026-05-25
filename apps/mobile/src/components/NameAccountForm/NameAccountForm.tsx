@@ -54,7 +54,6 @@ export const NameAccountForm = ({
     return (
         <>
             <PWScreen
-                scroll={false}
                 footer={
                     <PWButton
                         variant='primary'
