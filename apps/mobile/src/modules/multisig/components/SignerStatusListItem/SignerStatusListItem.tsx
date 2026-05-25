@@ -68,13 +68,7 @@ export const SignerStatusListItem = ({
                 color={theme.colors.textGray}
             />
         ),
-        unsigned: (
-            <PWIcon
-                name='minus'
-                size='md'
-                variant='secondary'
-            />
-        ),
+        unsigned: null,
     }
 
     return (

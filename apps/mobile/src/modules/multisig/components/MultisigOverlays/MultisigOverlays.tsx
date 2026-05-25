@@ -41,7 +41,6 @@ export const MultisigOverlays = () => {
         if (!signRequestId) return
         if (isSheetOpenRef.current) return
         isSheetOpenRef.current = true
-        let cancelled = false
         void (async () => {
             await requestBottomSheet<void>({
                 contents: <PendingSignaturesContent />,
@@ -58,20 +57,16 @@ export const MultisigOverlays = () => {
                     autoCreateContainer: false,
                 },
             })
-            // Always reset `isSheetOpenRef` once the sheet is dismissed,
-            // even on cancellation — otherwise a draft → real signRequestId
-            // swap (which cancels the effect mid-await) leaves the ref
-            // stuck at `true` and blocks every subsequent inbox tap from
-            // ever reopening the sheet.
+            // The user dismissed the visible sheet — reset both pieces of
+            // state. `signRequestId` may have changed mid-await (e.g. the
+            // deferred-propose draft → real swap), but it always represents
+            // "what the user is/was looking at", so clearing it on dismiss
+            // is correct regardless. The next `openSheet(...)` from any
+            // path (inbox tap, propose listener) flips Zustand to a fresh
+            // value and re-fires this effect.
             isSheetOpenRef.current = false
-            if (cancelled) return
-            // Ensure the store is cleared if the sheet was dismissed via gesture
-            // or backdrop press rather than handleClose.
             closeSheet()
         })()
-        return () => {
-            cancelled = true
-        }
     }, [signRequestId, requestBottomSheet, closeSheet])
 
     return null
