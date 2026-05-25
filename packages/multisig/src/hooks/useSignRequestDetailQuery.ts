@@ -18,10 +18,7 @@ import {
 } from '@tanstack/react-query'
 import type { Network } from '@perawallet/wallet-core-shared'
 import type { MultisigSignRequest } from '../models'
-import {
-    getSignRequestDetail,
-    type SignRequestDetailResponse,
-} from '../api'
+import { getSignRequestDetail, type SignRequestDetailResponse } from '../api'
 import { IN_FLIGHT_SIGN_REQUEST_STATUSES } from '../constants'
 import { mapSignRequest } from '../mappers'
 import { getSignRequestDetailQueryKey } from './querykeys'

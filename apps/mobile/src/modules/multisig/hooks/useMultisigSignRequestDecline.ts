@@ -108,9 +108,7 @@ export const useMultisigSignRequestDecline = (
     }, [params, accounts])
 
     const targetAddress =
-        params.mode === 'decline'
-            ? params.signerAddress
-            : localProposerAddress
+        params.mode === 'decline' ? params.signerAddress : localProposerAddress
 
     const canPerform = useMemo(() => {
         if (params.mode === 'decline') return true
