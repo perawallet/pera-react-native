@@ -10,30 +10,22 @@
  limitations under the License
  */
 
-import { describe, it, expect, beforeEach } from 'vitest'
-import {
-    registerPreview,
-    getPreviewEntry,
-    resetPreviewRegistry,
-} from '../registry'
+import { describe, it, expect } from 'vitest'
+import { getCategories, getPreviewEntry } from '..'
 
-describe('preview registry', () => {
-    beforeEach(() => resetPreviewRegistry())
+const noopTools = { onSeedContacts: () => undefined, onReplayApi: () => undefined }
 
-    it('returns a registered preview entry by id', () => {
-        const render = () => null
-        registerPreview({ id: 'comp-foo', render })
-        expect(getPreviewEntry('comp-foo')?.render).toBe(render)
+describe('catalog integrity', () => {
+    it('has globally unique entry ids', () => {
+        const ids = getCategories(noopTools).flatMap(c => c.sections.flatMap(s => s.items.map(i => i.id)))
+        expect(new Set(ids).size).toBe(ids.length)
     })
 
-    it('returns undefined for an unknown id', () => {
-        expect(getPreviewEntry('missing')).toBeUndefined()
-    })
-
-    it('throws on duplicate id registration', () => {
-        registerPreview({ id: 'dup', render: () => null })
-        expect(() =>
-            registerPreview({ id: 'dup', render: () => null }),
-        ).toThrow()
+    it('every preview entry resolves in the registry', () => {
+        const previewIds = getCategories(noopTools)
+            .flatMap(c => c.sections.flatMap(s => s.items))
+            .filter(i => i.launch.kind === 'preview')
+            .map(i => i.id)
+        previewIds.forEach(id => expect(getPreviewEntry(id)).toBeDefined())
     })
 })
