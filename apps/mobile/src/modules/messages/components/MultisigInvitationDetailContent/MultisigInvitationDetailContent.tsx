@@ -52,6 +52,7 @@ export const MultisigInvitationDetailContent = ({
     return (
         <>
             <PWScrollView
+                inBottomSheet
                 style={styles.scrollView}
                 contentContainerStyle={styles.scrollContent}
             >
