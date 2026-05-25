@@ -2493,6 +2493,33 @@ vi.mock('@perawallet/wallet-core-contacts', () => ({
     DuplicateAddressError: class DuplicateAddressError extends Error {},
 }))
 
+// Mock @perawallet/wallet-core-staking (dist schema.d.ts uses z.infer<typeof ...> which
+// cannot be parsed as JS; mock the whole package to avoid the SyntaxError)
+vi.mock('@perawallet/wallet-core-staking', () => ({
+    useStakingProjectsQuery: vi.fn(() => ({
+        stakingProjects: [],
+        isLoading: false,
+        isError: false,
+        error: null,
+        refetch: vi.fn(),
+    })),
+}))
+
+// Mock react-native-rate-app (native module not available in jsdom)
+vi.mock('react-native-rate-app', () => ({
+    default: {
+        requestReview: vi.fn().mockResolvedValue(true),
+        openStoreForReview: vi.fn().mockResolvedValue(true),
+        getAndroidMarketUrl: vi.fn(() => ''),
+    },
+    AndroidMarket: {
+        GOOGLE: 'google',
+        AMAZON: 'amazon',
+        SAMSUNG: 'samsung',
+        HUAWEI: 'huawei',
+    },
+}))
+
 // Mock @perawallet/wallet-core-currencies
 vi.mock('@perawallet/wallet-core-currencies', () => ({
     useCurrency: vi.fn(() => ({

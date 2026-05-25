@@ -34,9 +34,12 @@ import {
     TransactionFilter,
 } from '@modules/accounts/components/TransactionsFilterContent'
 import { OptOutConfirmationContent } from '@modules/accounts/components/AccountAssetList/OptOutConfirmationContent'
+import { RenameAccountContent } from '@modules/accounts/components/AccountOptionsContent/RenameAccountContent'
 import { AddAssetContent } from '@modules/assets/components/AddAssetContent'
 import { AsaVerificationInfoContent } from '@modules/assets/components/AsaVerificationInfoContent'
 import { OptInConfirmationContent } from '@modules/assets/components/OptInConfirmationContent'
+import { ARC59WarningContent } from '@modules/transactions/components/send-funds/ARC59WarningContent'
+import { SendFundsInfoContent } from '@modules/transactions/components/send-funds/SendFundsInfoContent'
 import { ViewTextDetailsContent } from '@modules/transactions/components/ViewTextDetailsContent'
 import { SwapAssetSelectionContent } from '@modules/swap/components/SwapAssetSelectionContent'
 import { SwapConfigurationContent } from '@modules/swap/components/SwapConfigurationContent'
@@ -55,10 +58,27 @@ import { AddParticipantContent } from '@modules/multisig/components/AddParticipa
 import { BeforeYouCreateContent } from '@modules/multisig/components/BeforeYouCreateContent'
 import { ExportShareAccountContent } from '@modules/multisig/components/ExportShareAccountContent'
 import { MultisigInvitationDetailContent } from '@modules/messages/components/MultisigInvitationDetailContent'
+import { ConnectionSuccessContent } from '@modules/walletconnect/components/ConnectionSuccessContent'
+import { WalletConnectErrorContent } from '@modules/walletconnect/components/WalletConnectErrorContent'
+import { ContactQRContent } from '@modules/contacts/components/ContactQRContent'
+import { DeleteAllSuccessContent } from '@modules/settings/components/DeleteAllSuccessContent'
+import { RatingsContent } from '@modules/settings/components/RatingsContent'
+import { NotificationSettingsContent } from '@modules/messages/components/NotificationSettingsContent'
+import { StakingDisclaimerContent } from '@modules/staking/components/StakingDisclaimerContent'
+import { StakingHelpContent } from '@modules/staking/components/StakingHelpContent'
+import { PassphraseAcknowledgeContent } from '@modules/view-passphrase/components/PassphraseAcknowledgeContent'
+import { SearchFilterContent } from '@modules/search/components/SearchFilterContent'
+import { PinEditContent } from '@modules/security/components/PinEditContent'
+import { ImportOptionsContent } from '@modules/onboarding/components/ImportOptionsContent'
+import { ImportAccountSupportOptionsContent } from '@modules/onboarding/screens/ImportAccountScreen/ImportAccountSupportOptionsContent'
+import { PreviousRekeyWarningSheet } from '@modules/rekey/components/PreviousRekeyWarningSheet'
+import { InfoButtonContent } from '@components/InfoButton/InfoButtonContent'
+import { PWText } from '@components/core'
 
 import { GallerySheetBoundary } from './GallerySheetBoundary'
 
 import type { GallerySection } from './types'
+import type { WalletConnectSessionRequest } from '@perawallet/wallet-core-walletconnect'
 
 const A = MOCK_ADDRESS
 const A2 = MOCK_ADDRESS
@@ -549,7 +569,9 @@ export const getSheetSections = (): GallerySection[] => [
                     request: () => ({
                         contents: (
                             <GallerySheetBoundary>
-                                <SigningCompletedContent isTransaction={false} />
+                                <SigningCompletedContent
+                                    isTransaction={false}
+                                />
                             </GallerySheetBoundary>
                         ),
                         options: { enablePanDownToClose: true },
@@ -806,8 +828,7 @@ export const getSheetSections = (): GallerySection[] => [
                                 <MultisigInvitationDetailContent
                                     invitation={{
                                         customId: 'mock-invite-id',
-                                        createdAt:
-                                            new Date().toISOString(),
+                                        createdAt: new Date().toISOString(),
                                         address: A,
                                         version: 1,
                                         threshold: 2,
@@ -825,4 +846,415 @@ export const getSheetSections = (): GallerySection[] => [
             },
         ],
     },
+    {
+        title: 'WalletConnect',
+        items: [
+            {
+                id: 'sheet-wc-connection-success',
+                label: 'Connection success',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <ConnectionSuccessContent
+                                    request={MOCK_WC_SESSION_REQUEST}
+                                />
+                            </GallerySheetBoundary>
+                        ),
+                        options: { enablePanDownToClose: true },
+                    }),
+                },
+            },
+            {
+                id: 'sheet-wc-connection-view',
+                label: 'Connection view (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'sheet-wc-error',
+                label: 'WalletConnect error',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <WalletConnectErrorContent
+                                    error={
+                                        new Error(
+                                            'Mock WalletConnect connection error',
+                                        )
+                                    }
+                                />
+                            </GallerySheetBoundary>
+                        ),
+                        options: { enablePanDownToClose: true },
+                    }),
+                },
+            },
+        ],
+    },
+    {
+        title: 'Contacts',
+        items: [
+            {
+                id: 'sheet-contact-qr',
+                label: 'Contact QR',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <ContactQRContent
+                                    contact={{
+                                        name: 'Mock Contact',
+                                        address: A,
+                                    }}
+                                />
+                            </GallerySheetBoundary>
+                        ),
+                        options: {
+                            size: 'lg',
+                            enablePanDownToClose: true,
+                        },
+                    }),
+                },
+            },
+        ],
+    },
+    {
+        title: 'Settings',
+        items: [
+            {
+                id: 'sheet-delete-all-success',
+                label: 'Delete all success',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <DeleteAllSuccessContent />
+                            </GallerySheetBoundary>
+                        ),
+                        options: { enablePanDownToClose: true },
+                    }),
+                },
+            },
+            {
+                id: 'sheet-ratings',
+                label: 'Ratings',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <RatingsContent />
+                            </GallerySheetBoundary>
+                        ),
+                        options: { enablePanDownToClose: true },
+                    }),
+                },
+            },
+            {
+                id: 'sheet-notification-settings',
+                label: 'Notification settings',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <NotificationSettingsContent />
+                            </GallerySheetBoundary>
+                        ),
+                        options: {
+                            size: 'lg',
+                            enablePanDownToClose: true,
+                        },
+                    }),
+                },
+            },
+        ],
+    },
+    {
+        title: 'Staking',
+        items: [
+            {
+                id: 'sheet-staking-disclaimer',
+                label: 'Staking disclaimer',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <StakingDisclaimerContent />
+                            </GallerySheetBoundary>
+                        ),
+                        options: {
+                            size: 'lg',
+                            enablePanDownToClose: true,
+                        },
+                    }),
+                },
+            },
+            {
+                id: 'sheet-staking-help',
+                label: 'Staking help',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <StakingHelpContent />
+                            </GallerySheetBoundary>
+                        ),
+                        options: { enablePanDownToClose: true },
+                    }),
+                },
+            },
+        ],
+    },
+    {
+        title: 'View passphrase',
+        items: [
+            {
+                id: 'sheet-passphrase-acknowledge',
+                label: 'Passphrase acknowledge',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <PassphraseAcknowledgeContent />
+                            </GallerySheetBoundary>
+                        ),
+                        options: {
+                            size: 'lg',
+                            enablePanDownToClose: true,
+                        },
+                    }),
+                },
+            },
+            {
+                id: 'sheet-view-passphrase',
+                label: 'View passphrase (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+        ],
+    },
+    {
+        title: 'Search & security',
+        items: [
+            {
+                id: 'sheet-search-filter',
+                label: 'Search filter',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <SearchFilterContent
+                                    scopes={['accounts', 'contacts', 'assets']}
+                                    onToggleScope={() => undefined}
+                                />
+                            </GallerySheetBoundary>
+                        ),
+                        options: { enablePanDownToClose: true },
+                    }),
+                },
+            },
+            {
+                id: 'sheet-pin-edit',
+                label: 'Pin edit (setup)',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <PinEditContent mode='setup' />
+                            </GallerySheetBoundary>
+                        ),
+                        options: {
+                            size: 'lg',
+                            enablePanDownToClose: true,
+                        },
+                    }),
+                },
+            },
+        ],
+    },
+    {
+        title: 'Onboarding & import',
+        items: [
+            {
+                id: 'sheet-import-options',
+                label: 'Import options',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <ImportOptionsContent />
+                            </GallerySheetBoundary>
+                        ),
+                        options: {
+                            size: 'lg',
+                            enablePanDownToClose: true,
+                        },
+                    }),
+                },
+            },
+            {
+                id: 'sheet-import-account-support-options',
+                label: 'Import account support options',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <ImportAccountSupportOptionsContent />
+                            </GallerySheetBoundary>
+                        ),
+                        options: { enablePanDownToClose: true },
+                    }),
+                },
+            },
+        ],
+    },
+    {
+        title: 'Misc',
+        items: [
+            {
+                id: 'sheet-arc59-warning',
+                label: 'ARC-59 warning',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <ARC59WarningContent />
+                            </GallerySheetBoundary>
+                        ),
+                        options: {
+                            size: 'lg',
+                            enablePanDownToClose: true,
+                        },
+                    }),
+                },
+            },
+            {
+                id: 'sheet-full-screen-image-viewer',
+                label: 'Full screen image viewer (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'sheet-info-button-content',
+                label: 'Info button content',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <InfoButtonContent title='What is this?'>
+                                    <PWText variant='body'>
+                                        This is a sample info tooltip sheet
+                                        shown when users tap an info button.
+                                    </PWText>
+                                </InfoButtonContent>
+                            </GallerySheetBoundary>
+                        ),
+                        options: { enablePanDownToClose: true },
+                    }),
+                },
+            },
+            {
+                id: 'sheet-rekeyed-account-info',
+                label: 'Rekeyed account info (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'sheet-rename-account',
+                label: 'Rename account',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <RenameAccountContent accountAddress={A} />
+                            </GallerySheetBoundary>
+                        ),
+                        options: { enablePanDownToClose: true },
+                    }),
+                },
+            },
+            {
+                id: 'sheet-receive-funds',
+                label: 'Receive funds (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'sheet-send-funds-info',
+                label: 'Send funds info',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <SendFundsInfoContent />
+                            </GallerySheetBoundary>
+                        ),
+                        options: { enablePanDownToClose: true },
+                    }),
+                },
+            },
+            {
+                id: 'sheet-previous-rekey-warning',
+                label: 'Previous rekey warning',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <PreviousRekeyWarningSheet
+                                    i18nPrefix='rekey.previous_rekey_warning'
+                                    testID='previous-rekey-warning-gallery'
+                                    currentAuthName='Ledger Account'
+                                    sourceName='Mock Account'
+                                    onLearnMore={() => undefined}
+                                    confirmVariant='destructive'
+                                />
+                            </GallerySheetBoundary>
+                        ),
+                        options: { enablePanDownToClose: true },
+                    }),
+                },
+            },
+            {
+                id: 'sheet-webview',
+                label: 'WebView sheet (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'sheet-model-viewer',
+                label: 'Model viewer (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'sheet-photo-permission-denied',
+                label: 'Photo permission denied (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+        ],
+    },
 ]
+
+const MOCK_WC_SESSION_REQUEST: WalletConnectSessionRequest = {
+    peerMeta: {
+        name: 'Mock dApp',
+        description: 'A mock decentralized application',
+        url: 'https://mock-dapp.example.com',
+        icons: [],
+    },
+    chainId: 416001,
+    permissions: ['algo_getAccounts', 'algo_signTxn'],
+    clientId: 'mock-client-id',
+}

@@ -16,7 +16,8 @@ import { renderHook, act } from '@testing-library/react'
 const navigate = vi.fn()
 
 vi.mock('@react-navigation/native', async importOriginal => {
-    const actual = await importOriginal<typeof import('@react-navigation/native')>()
+    const actual =
+        await importOriginal<typeof import('@react-navigation/native')>()
     return {
         ...actual,
         useNavigation: () => ({ navigate }),
