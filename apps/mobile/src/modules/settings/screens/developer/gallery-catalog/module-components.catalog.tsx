@@ -12,6 +12,7 @@
 
 import React from 'react'
 import { Decimal } from 'decimal.js'
+import { makeStyles } from '@rneui/themed'
 
 import { PWView } from '@components/core'
 
@@ -122,6 +123,52 @@ import {
 import { registerPreview } from './registry'
 
 import type { GallerySection } from './types'
+
+// ─── Preview wrapper components ───────────────────────────────────────────────
+
+const useThumbPreviewStyles = makeStyles(theme => ({
+    thumb: { width: theme.spacing['4xl'], height: theme.spacing['4xl'] },
+}))
+
+const AccountsCollectibleThumbnailPreview = () => {
+    const styles = useThumbPreviewStyles()
+    return (
+        <PWView>
+            <AccountsCollectibleThumbnail
+                thumbnailUrl='https://perawallet.app/static/nft-thumb.png'
+                imageStyle={styles.thumb}
+                placeholderStyle={styles.thumb}
+                iconSize='md'
+            />
+            <AccountsCollectibleThumbnail
+                thumbnailUrl={null}
+                imageStyle={styles.thumb}
+                placeholderStyle={styles.thumb}
+                iconSize='md'
+            />
+        </PWView>
+    )
+}
+
+const AssetsCollectibleThumbnailPreview = () => {
+    const styles = useThumbPreviewStyles()
+    return (
+        <PWView>
+            <AssetsCollectibleThumbnail
+                thumbnailUrl='https://perawallet.app/static/nft-thumb.png'
+                imageStyle={styles.thumb}
+                placeholderStyle={styles.thumb}
+                iconSize='md'
+            />
+            <AssetsCollectibleThumbnail
+                thumbnailUrl={null}
+                imageStyle={styles.thumb}
+                placeholderStyle={styles.thumb}
+                iconSize='md'
+            />
+        </PWView>
+    )
+}
 import type { DexSwapAsset, SwapQuote } from '@perawallet/wallet-core-swaps'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import type { StakingProject } from '@perawallet/wallet-core-staking'
@@ -180,22 +227,7 @@ registerPreview({
 
 registerPreview({
     id: 'comp-accounts-collectible-thumbnail',
-    render: () => (
-        <PWView>
-            <AccountsCollectibleThumbnail
-                thumbnailUrl='https://perawallet.app/static/nft-thumb.png'
-                imageStyle={{ width: 80, height: 80 }}
-                placeholderStyle={{ width: 80, height: 80 }}
-                iconSize='md'
-            />
-            <AccountsCollectibleThumbnail
-                thumbnailUrl={null}
-                imageStyle={{ width: 80, height: 80 }}
-                placeholderStyle={{ width: 80, height: 80 }}
-                iconSize='md'
-            />
-        </PWView>
-    ),
+    render: () => <AccountsCollectibleThumbnailPreview />,
 })
 
 registerPreview({
@@ -399,22 +431,7 @@ registerPreview({
 
 registerPreview({
     id: 'comp-assets-collectible-thumbnail',
-    render: () => (
-        <PWView>
-            <AssetsCollectibleThumbnail
-                thumbnailUrl='https://perawallet.app/static/nft-thumb.png'
-                imageStyle={{ width: 80, height: 80 }}
-                placeholderStyle={{ width: 80, height: 80 }}
-                iconSize='md'
-            />
-            <AssetsCollectibleThumbnail
-                thumbnailUrl={null}
-                imageStyle={{ width: 80, height: 80 }}
-                placeholderStyle={{ width: 80, height: 80 }}
-                iconSize='md'
-            />
-        </PWView>
-    ),
+    render: () => <AssetsCollectibleThumbnailPreview />,
 })
 
 registerPreview({

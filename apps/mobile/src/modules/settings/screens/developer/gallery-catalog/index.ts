@@ -45,7 +45,11 @@ export const getCategories = (tools: ToolHandlers): GalleryCategory[] => [
         id: 'components',
         title: 'Components',
         icon: 'grid-view',
-        sections: [...getComponentSections(), ...getSharedComponentSections(), ...getModuleComponentSections()],
+        sections: [
+            ...getComponentSections(),
+            ...getSharedComponentSections(),
+            ...getModuleComponentSections(),
+        ],
     },
     {
         id: 'tools',

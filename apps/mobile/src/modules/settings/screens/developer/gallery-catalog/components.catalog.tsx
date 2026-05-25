@@ -11,6 +11,7 @@
  */
 
 import React from 'react'
+import { makeStyles } from '@rneui/themed'
 
 import {
     PWBadge,
@@ -50,6 +51,22 @@ import {
 } from '@components/core'
 
 import { registerPreview } from './registry'
+
+const useLottiePreviewStyles = makeStyles(theme => ({
+    media: { width: theme.spacing['4xl'], height: theme.spacing['4xl'] },
+}))
+
+const LottiePreview = () => {
+    const styles = useLottiePreviewStyles()
+    return (
+        <PWLottie
+            source={require('@assets/animations/pera-transaction-loading.json')}
+            autoPlay
+            loop
+            style={styles.media}
+        />
+    )
+}
 
 import type { GallerySection } from './types'
 
@@ -260,14 +277,7 @@ registerPreview({
 
 registerPreview({
     id: 'comp-pw-lottie',
-    render: () => (
-        <PWLottie
-            source={require('@assets/animations/pera-transaction-loading.json')}
-            autoPlay
-            loop
-            style={{ width: 120, height: 120 }}
-        />
-    ),
+    render: () => <LottiePreview />,
 })
 
 // ─── Core — layout & structure ───────────────────────────────────────────────
@@ -343,7 +353,8 @@ registerPreview({
     render: () => (
         <PWView>
             <PWText variant='caption'>
-                PWTabView.createNavigator() — navigator factory, not inline-renderable
+                PWTabView.createNavigator() — navigator factory, not
+                inline-renderable
             </PWText>
         </PWView>
     ),
@@ -466,80 +477,216 @@ export const getComponentSections = (): GallerySection[] => [
     {
         title: 'Core — buttons & actions',
         items: [
-            { id: 'comp-pw-button', label: 'PWButton', launch: { kind: 'preview' } },
-            { id: 'comp-pw-slide-to-confirm', label: 'PWSlideToConfirm', launch: { kind: 'preview' } },
-            { id: 'comp-pw-touchable-opacity', label: 'PWTouchableOpacity', launch: { kind: 'preview' } },
-            { id: 'comp-pw-touchable-icon', label: 'PWTouchableIcon', launch: { kind: 'preview' } },
+            {
+                id: 'comp-pw-button',
+                label: 'PWButton',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-pw-slide-to-confirm',
+                label: 'PWSlideToConfirm',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-pw-touchable-opacity',
+                label: 'PWTouchableOpacity',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-pw-touchable-icon',
+                label: 'PWTouchableIcon',
+                launch: { kind: 'preview' },
+            },
         ],
     },
     {
         title: 'Core — inputs',
         items: [
-            { id: 'comp-pw-input', label: 'PWInput', launch: { kind: 'preview' } },
-            { id: 'comp-pw-checkbox', label: 'PWCheckbox', launch: { kind: 'preview' } },
-            { id: 'comp-pw-radio-button', label: 'PWRadioButton', launch: { kind: 'preview' } },
-            { id: 'comp-pw-switch', label: 'PWSwitch', launch: { kind: 'preview' } },
-            { id: 'comp-pw-numpad', label: 'PWNumpad', launch: { kind: 'preview' } },
-            { id: 'comp-pw-pin-circles', label: 'PWPinCircles', launch: { kind: 'preview' } },
+            {
+                id: 'comp-pw-input',
+                label: 'PWInput',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-pw-checkbox',
+                label: 'PWCheckbox',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-pw-radio-button',
+                label: 'PWRadioButton',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-pw-switch',
+                label: 'PWSwitch',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-pw-numpad',
+                label: 'PWNumpad',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-pw-pin-circles',
+                label: 'PWPinCircles',
+                launch: { kind: 'preview' },
+            },
         ],
     },
     {
         title: 'Core — display',
         items: [
-            { id: 'comp-pw-text', label: 'PWText', launch: { kind: 'preview' } },
-            { id: 'comp-pw-badge', label: 'PWBadge', launch: { kind: 'preview' } },
-            { id: 'comp-pw-chip', label: 'PWChip', launch: { kind: 'preview' } },
-            { id: 'comp-pw-icon', label: 'PWIcon', launch: { kind: 'preview' } },
-            { id: 'comp-pw-round-icon', label: 'PWRoundIcon', launch: { kind: 'preview' } },
-            { id: 'comp-pw-image', label: 'PWImage', launch: { kind: 'preview' } },
-            { id: 'comp-pw-skeleton', label: 'PWSkeleton', launch: { kind: 'preview' } },
-            { id: 'comp-pw-lottie', label: 'PWLottie', launch: { kind: 'preview' } },
+            {
+                id: 'comp-pw-text',
+                label: 'PWText',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-pw-badge',
+                label: 'PWBadge',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-pw-chip',
+                label: 'PWChip',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-pw-icon',
+                label: 'PWIcon',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-pw-round-icon',
+                label: 'PWRoundIcon',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-pw-image',
+                label: 'PWImage',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-pw-skeleton',
+                label: 'PWSkeleton',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-pw-lottie',
+                label: 'PWLottie',
+                launch: { kind: 'preview' },
+            },
         ],
     },
     {
         title: 'Core — layout & structure',
         items: [
-            { id: 'comp-pw-view', label: 'PWView', launch: { kind: 'preview' } },
-            { id: 'comp-pw-divider', label: 'PWDivider', launch: { kind: 'preview' } },
-            { id: 'comp-pw-scroll-view', label: 'PWScrollView', launch: { kind: 'preview' } },
-            { id: 'comp-pw-flat-list', label: 'PWFlatList', launch: { kind: 'preview' } },
-            { id: 'comp-pw-swipeable', label: 'PWSwipeable', launch: { kind: 'preview' } },
-            { id: 'comp-pw-screen', label: 'PWScreen', launch: { kind: 'preview' } },
+            {
+                id: 'comp-pw-view',
+                label: 'PWView',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-pw-divider',
+                label: 'PWDivider',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-pw-scroll-view',
+                label: 'PWScrollView',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-pw-flat-list',
+                label: 'PWFlatList',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-pw-swipeable',
+                label: 'PWSwipeable',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-pw-screen',
+                label: 'PWScreen',
+                launch: { kind: 'preview' },
+            },
         ],
     },
     {
         title: 'Core — navigation chrome',
         items: [
-            { id: 'comp-pw-header', label: 'PWHeader', launch: { kind: 'preview' } },
-            { id: 'comp-pw-toolbar', label: 'PWToolbar', launch: { kind: 'preview' } },
-            { id: 'comp-pw-tab-view', label: 'PWTabView (factory — not inline-renderable)', launch: { kind: 'preview' } },
+            {
+                id: 'comp-pw-header',
+                label: 'PWHeader',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-pw-toolbar',
+                label: 'PWToolbar',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-pw-tab-view',
+                label: 'PWTabView (factory — not inline-renderable)',
+                launch: { kind: 'preview' },
+            },
         ],
     },
     {
         title: 'Core — list items',
         items: [
-            { id: 'comp-pw-list-item', label: 'PWListItem', launch: { kind: 'preview' } },
+            {
+                id: 'comp-pw-list-item',
+                label: 'PWListItem',
+                launch: { kind: 'preview' },
+            },
         ],
     },
     {
         title: 'Core — info & result',
         items: [
-            { id: 'comp-pw-info-view', label: 'PWInfoView', launch: { kind: 'preview' } },
-            { id: 'comp-pw-result-view', label: 'PWResultView', launch: { kind: 'preview' } },
+            {
+                id: 'comp-pw-info-view',
+                label: 'PWInfoView',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-pw-result-view',
+                label: 'PWResultView',
+                launch: { kind: 'preview' },
+            },
         ],
     },
     {
         title: 'Core — dropdown',
         items: [
-            { id: 'comp-pw-dropdown', label: 'PWDropdown', launch: { kind: 'preview' } },
+            {
+                id: 'comp-pw-dropdown',
+                label: 'PWDropdown',
+                launch: { kind: 'preview' },
+            },
         ],
     },
     {
         title: 'Core — overlays & portals',
         items: [
-            { id: 'comp-pw-overlay', label: 'PWOverlay (portal — may not display inline)', launch: { kind: 'preview' } },
-            { id: 'comp-pw-loading-overlay', label: 'PWLoadingOverlay (portal — may not display inline)', launch: { kind: 'preview' } },
-            { id: 'comp-pw-bottom-sheet', label: 'PWBottomSheet (portal — may not display inline)', launch: { kind: 'preview' } },
+            {
+                id: 'comp-pw-overlay',
+                label: 'PWOverlay (portal — may not display inline)',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-pw-loading-overlay',
+                label: 'PWLoadingOverlay (portal — may not display inline)',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-pw-bottom-sheet',
+                label: 'PWBottomSheet (portal — may not display inline)',
+                launch: { kind: 'preview' },
+            },
         ],
     },
 ]

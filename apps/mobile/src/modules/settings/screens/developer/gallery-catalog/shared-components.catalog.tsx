@@ -138,8 +138,8 @@ registerPreview({
     render: () => (
         <ExpandablePanel isExpanded={true}>
             <PWText variant='body'>
-                This content is revealed when the panel is expanded. It can contain
-                any child nodes.
+                This content is revealed when the panel is expanded. It can
+                contain any child nodes.
             </PWText>
         </ExpandablePanel>
     ),
@@ -295,8 +295,8 @@ registerPreview({
                 title='Account type'
             >
                 <PWText variant='body'>
-                    A standard account is controlled by a single private key stored
-                    on this device.
+                    A standard account is controlled by a single private key
+                    stored on this device.
                 </PWText>
             </InfoButton>
         </PWView>
@@ -351,9 +351,7 @@ registerPreview({
 
 registerPreview({
     id: 'comp-zoomable-image',
-    render: () => (
-        <ZoomableImage uri='https://via.placeholder.com/300' />
-    ),
+    render: () => <ZoomableImage uri='https://via.placeholder.com/300' />,
 })
 
 // ─── Sections ─────────────────────────────────────────────────────────────────
@@ -362,90 +360,226 @@ export const getSharedComponentSections = (): GallerySection[] => [
     {
         title: 'Shared — display',
         items: [
-            { id: 'comp-contact-avatar', label: 'ContactAvatar', launch: { kind: 'preview' } },
-            { id: 'comp-copyable-text', label: 'CopyableText', launch: { kind: 'preview' } },
-            { id: 'comp-currency-display', label: 'CurrencyDisplay', launch: { kind: 'preview' } },
-            { id: 'comp-trend-indicator', label: 'TrendIndicator', launch: { kind: 'preview' } },
-            { id: 'comp-participant-count', label: 'ParticipantCount', launch: { kind: 'preview' } },
-            { id: 'comp-tab-label', label: 'TabLabel', launch: { kind: 'preview' } },
+            {
+                id: 'comp-contact-avatar',
+                label: 'ContactAvatar',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-copyable-text',
+                label: 'CopyableText',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-currency-display',
+                label: 'CurrencyDisplay',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-trend-indicator',
+                label: 'TrendIndicator',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-participant-count',
+                label: 'ParticipantCount',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-tab-label',
+                label: 'TabLabel',
+                launch: { kind: 'preview' },
+            },
         ],
     },
     {
         title: 'Shared — layout & panels',
         items: [
-            { id: 'comp-expandable-panel', label: 'ExpandablePanel', launch: { kind: 'preview' } },
-            { id: 'comp-expandable-text', label: 'ExpandableText', launch: { kind: 'preview' } },
-            { id: 'comp-key-value-row', label: 'KeyValueRow', launch: { kind: 'preview' } },
+            {
+                id: 'comp-expandable-panel',
+                label: 'ExpandablePanel',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-expandable-text',
+                label: 'ExpandableText',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-key-value-row',
+                label: 'KeyValueRow',
+                launch: { kind: 'preview' },
+            },
         ],
     },
     {
         title: 'Shared — empty & loading states',
         items: [
-            { id: 'comp-empty-view', label: 'EmptyView', launch: { kind: 'preview' } },
-            { id: 'comp-loading-view', label: 'LoadingView', launch: { kind: 'preview' } },
+            {
+                id: 'comp-empty-view',
+                label: 'EmptyView',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-loading-view',
+                label: 'LoadingView',
+                launch: { kind: 'preview' },
+            },
         ],
     },
     {
         title: 'Shared — inputs & number entry',
         items: [
-            { id: 'comp-search-input', label: 'SearchInput', launch: { kind: 'preview' } },
-            { id: 'comp-number-pad', label: 'NumberPad', launch: { kind: 'preview' } },
-            { id: 'comp-currency-input', label: 'CurrencyInput', launch: { kind: 'preview' } },
-            { id: 'comp-chart-period-selection', label: 'ChartPeriodSelection', launch: { kind: 'preview' } },
+            {
+                id: 'comp-search-input',
+                label: 'SearchInput',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-number-pad',
+                label: 'NumberPad',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-currency-input',
+                label: 'CurrencyInput',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-chart-period-selection',
+                label: 'ChartPeriodSelection',
+                launch: { kind: 'preview' },
+            },
         ],
     },
     {
         title: 'Shared — buttons',
         items: [
-            { id: 'comp-round-button', label: 'RoundButton', launch: { kind: 'preview' } },
-            { id: 'comp-panel-button', label: 'PanelButton', launch: { kind: 'preview' } },
-            { id: 'comp-info-button', label: 'InfoButton', launch: { kind: 'preview' } },
+            {
+                id: 'comp-round-button',
+                label: 'RoundButton',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-panel-button',
+                label: 'PanelButton',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-info-button',
+                label: 'InfoButton',
+                launch: { kind: 'preview' },
+            },
         ],
     },
     {
         title: 'Shared — screen chrome',
         items: [
-            { id: 'comp-screen-header', label: 'ScreenHeader', launch: { kind: 'preview' } },
+            {
+                id: 'comp-screen-header',
+                label: 'ScreenHeader',
+                launch: { kind: 'preview' },
+            },
         ],
     },
     {
         title: 'Shared — multisig',
         items: [
-            { id: 'comp-multisig-info-card', label: 'MultisigInfoCard', launch: { kind: 'preview' } },
+            {
+                id: 'comp-multisig-info-card',
+                label: 'MultisigInfoCard',
+                launch: { kind: 'preview' },
+            },
         ],
     },
     {
         title: 'Shared — forms',
         items: [
-            { id: 'comp-name-account-form', label: 'NameAccountForm', launch: { kind: 'preview' } },
-            { id: 'comp-contact-form', label: 'ContactForm (needs RHF control + QR)', launch: { kind: 'action', run: () => undefined } },
+            {
+                id: 'comp-name-account-form',
+                label: 'NameAccountForm',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-contact-form',
+                label: 'ContactForm (needs RHF control + QR)',
+                launch: { kind: 'action', run: () => undefined },
+            },
         ],
     },
     {
         title: 'Shared — media',
         items: [
-            { id: 'comp-zoomable-image', label: 'ZoomableImage', launch: { kind: 'preview' } },
-            { id: 'comp-audio-player', label: 'AudioPlayer (needs expo-audio)', launch: { kind: 'action', run: () => undefined } },
-            { id: 'comp-video-player', label: 'VideoPlayer (needs expo-video)', launch: { kind: 'action', run: () => undefined } },
-            { id: 'comp-media-carousel', label: 'MediaCarousel (needs expo-audio/video)', launch: { kind: 'action', run: () => undefined } },
+            {
+                id: 'comp-zoomable-image',
+                label: 'ZoomableImage',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-audio-player',
+                label: 'AudioPlayer (needs expo-audio)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'comp-video-player',
+                label: 'VideoPlayer (needs expo-video)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'comp-media-carousel',
+                label: 'MediaCarousel (needs expo-audio/video)',
+                launch: { kind: 'action', run: () => undefined },
+            },
         ],
     },
     {
         title: 'Shared — address & search',
         items: [
-            { id: 'comp-address-display', label: 'AddressDisplay (needs live state)', launch: { kind: 'action', run: () => undefined } },
-            { id: 'comp-address-entry-field', label: 'AddressEntryField (needs live state)', launch: { kind: 'action', run: () => undefined } },
-            { id: 'comp-address-search-view', label: 'AddressSearchView (needs live state)', launch: { kind: 'action', run: () => undefined } },
-            { id: 'comp-searchable-list', label: 'SearchableList (needs live state)', launch: { kind: 'action', run: () => undefined } },
+            {
+                id: 'comp-address-display',
+                label: 'AddressDisplay (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'comp-address-entry-field',
+                label: 'AddressEntryField (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'comp-address-search-view',
+                label: 'AddressSearchView (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'comp-searchable-list',
+                label: 'SearchableList (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
         ],
     },
     {
         title: 'Shared — wealth & account',
         items: [
-            { id: 'comp-account-header-menu', label: 'AccountHeaderMenu (needs live state)', launch: { kind: 'action', run: () => undefined } },
-            { id: 'comp-preferred-currency-display', label: 'PreferredCurrencyDisplay (needs live state)', launch: { kind: 'action', run: () => undefined } },
-            { id: 'comp-wealth-chart', label: 'WealthChart (needs live query)', launch: { kind: 'action', run: () => undefined } },
-            { id: 'comp-wealth-trend', label: 'WealthTrend (needs live query)', launch: { kind: 'action', run: () => undefined } },
+            {
+                id: 'comp-account-header-menu',
+                label: 'AccountHeaderMenu (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'comp-preferred-currency-display',
+                label: 'PreferredCurrencyDisplay (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'comp-wealth-chart',
+                label: 'WealthChart (needs live query)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'comp-wealth-trend',
+                label: 'WealthTrend (needs live query)',
+                launch: { kind: 'action', run: () => undefined },
+            },
         ],
     },
 ]
