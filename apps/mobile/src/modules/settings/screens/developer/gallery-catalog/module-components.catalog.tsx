@@ -64,6 +64,51 @@ import { ThresholdStepper } from '@modules/multisig/components/ThresholdStepper'
 import { StakingProjectCard } from '@modules/staking/components/StakingProjectCard'
 import { StakingTypeBadge } from '@modules/staking/components/StakingTypeBadge'
 
+// ─── messages module ──────────────────────────────────────────────────────────
+import { InboxItem } from '@modules/messages/components/InboxItem'
+import { UnreadIndicator } from '@modules/messages/components/UnreadIndicator'
+
+// ─── ledger module ────────────────────────────────────────────────────────────
+import { LedgerCompositeIcon } from '@modules/ledger/components/LedgerCompositeIcon'
+import { LedgerDeviceItem } from '@modules/ledger/components/LedgerDeviceItem'
+import { LedgerStatusIndicator } from '@modules/ledger/components/LedgerStatusIndicator'
+
+// ─── banners module ───────────────────────────────────────────────────────────
+import { BannerCard } from '@modules/banners/components/BannerCard'
+import { BannerIcon } from '@modules/banners/components/BannerIcon'
+import { CompactBanner } from '@modules/banners/components/CompactBanner'
+
+// ─── settings module ──────────────────────────────────────────────────────────
+import { AppVersion } from '@modules/settings/components/AppVersion'
+
+// ─── walletconnect module ─────────────────────────────────────────────────────
+import { PermissionItem } from '@modules/walletconnect/components/PermissionItem'
+
+// ─── rekey module ─────────────────────────────────────────────────────────────
+import { NumberedList } from '@modules/rekey/components/NumberedList'
+import { RekeySummaryRow } from '@modules/rekey/components/RekeySummaryRow'
+
+// ─── security module ──────────────────────────────────────────────────────────
+import { PinEntry } from '@modules/security/components/PinEntry'
+
+// ─── prompts module ───────────────────────────────────────────────────────────
+import { PinSecurityPrompt } from '@modules/prompts/components/PinSecurityPrompt/PinSecurityPrompt'
+
+// ─── projects module ──────────────────────────────────────────────────────────
+import { ProjectVerificationIcon } from '@modules/projects/components/ProjectVerificationIcon'
+
+// ─── onboarding module ────────────────────────────────────────────────────────
+import { MnemonicSuggestionBar } from '@modules/onboarding/components/MnemonicSuggestionBar'
+
+// ─── menu module ──────────────────────────────────────────────────────────────
+import { CardPanel } from '@modules/menu/components/CardPanel'
+
+// ─── backup module ────────────────────────────────────────────────────────────
+import { BackupQuizItem } from '@modules/backup/components/BackupQuizItem'
+
+// ─── webview module ───────────────────────────────────────────────────────────
+import { PWWebView } from '@modules/webview/components/PWWebView'
+
 import {
     mockAlgo25Account,
     mockAsset,
@@ -71,6 +116,7 @@ import {
     mockTransaction,
     MOCK_ASSET_ID,
     MOCK_ADDRESS,
+    mockAsaInbox,
 } from '@perawallet/wallet-core-dev-fixtures'
 
 import { registerPreview } from './registry'
@@ -79,6 +125,8 @@ import type { GallerySection } from './types'
 import type { DexSwapAsset, SwapQuote } from '@perawallet/wallet-core-swaps'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import type { StakingProject } from '@perawallet/wallet-core-staking'
+import type { Banner } from '@perawallet/wallet-core-banners'
+import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wallet'
 
 // ─── Accounts (module) ────────────────────────────────────────────────────────
 
@@ -162,9 +210,7 @@ registerPreview({
 
 registerPreview({
     id: 'comp-nft-empty-state',
-    render: () => (
-        <NftEmptyState onOptInPress={() => undefined} />
-    ),
+    render: () => <NftEmptyState onOptInPress={() => undefined} />,
 })
 
 registerPreview({
@@ -320,9 +366,7 @@ registerPreview({
 
 registerPreview({
     id: 'comp-asset-selection',
-    render: () => (
-        <AssetSelection asset={mockAsset} />
-    ),
+    render: () => <AssetSelection asset={mockAsset} />,
 })
 
 registerPreview({
@@ -393,9 +437,7 @@ registerPreview({
 
 registerPreview({
     id: 'comp-transaction-date-header',
-    render: () => (
-        <TransactionDateHeader title='May 25, 2025' />
-    ),
+    render: () => <TransactionDateHeader title='May 25, 2025' />,
 })
 
 registerPreview({
@@ -527,16 +569,12 @@ const mockSignRequestSource: SignRequestSource = {
 
 registerPreview({
     id: 'comp-source-metadata-badge',
-    render: () => (
-        <SourceMetadataBadge metadata={mockSignRequestSource} />
-    ),
+    render: () => <SourceMetadataBadge metadata={mockSignRequestSource} />,
 })
 
 registerPreview({
     id: 'comp-source-metadata-view',
-    render: () => (
-        <SourceMetadataView metadata={mockSignRequestSource} />
-    ),
+    render: () => <SourceMetadataView metadata={mockSignRequestSource} />,
 })
 
 // ─── Multisig (module) ────────────────────────────────────────────────────────
@@ -592,9 +630,7 @@ const mockStakingProject: StakingProject = {
 
 registerPreview({
     id: 'comp-staking-type-badge',
-    render: () => (
-        <StakingTypeBadge type='liquid' />
-    ),
+    render: () => <StakingTypeBadge type='liquid' />,
 })
 
 registerPreview({
@@ -604,6 +640,262 @@ registerPreview({
             project={mockStakingProject}
             isLast={false}
             onPress={() => undefined}
+        />
+    ),
+})
+
+// ─── Messages (module) ────────────────────────────────────────────────────────
+
+registerPreview({
+    id: 'comp-inbox-item-asa',
+    render: () => (
+        <InboxItem
+            item={{ type: 'asa_inbox', data: mockAsaInbox, createdAt: new Date() }}
+            onPress={() => undefined}
+        />
+    ),
+})
+
+registerPreview({
+    id: 'comp-unread-indicator',
+    render: () => (
+        <PWView>
+            <UnreadIndicator isUnread={true} />
+            <UnreadIndicator isUnread={false} />
+        </PWView>
+    ),
+})
+
+// ─── Ledger (module) ──────────────────────────────────────────────────────────
+
+registerPreview({
+    id: 'comp-ledger-composite-icon',
+    render: () => <LedgerCompositeIcon testID='gallery-ledger-composite' />,
+})
+
+const mockLedgerDevice: HardwareWalletDevice = {
+    id: 'mock-ledger-device',
+    name: 'Ledger Nano X',
+    manufacturer: 'ledger',
+    transportType: 'ble',
+    model: 'nanoX',
+    rssi: -70,
+}
+
+registerPreview({
+    id: 'comp-ledger-device-item',
+    render: () => (
+        <LedgerDeviceItem
+            device={mockLedgerDevice}
+            onPress={() => undefined}
+        />
+    ),
+})
+
+registerPreview({
+    id: 'comp-ledger-status-indicator',
+    render: () => (
+        <PWView>
+            <LedgerStatusIndicator status='disconnected' />
+            <LedgerStatusIndicator status='scanning' />
+            <LedgerStatusIndicator status='connected' />
+            <LedgerStatusIndicator status='ready' />
+        </PWView>
+    ),
+})
+
+// ─── Banners (module) ─────────────────────────────────────────────────────────
+
+const mockBanner: Banner = {
+    id: 1,
+    type: 'governance',
+    title: 'Algorand Governance',
+    subtitle: 'Participate and earn rewards',
+    buttonLabel: 'Learn more',
+    buttonUrl: 'https://governance.algorand.foundation',
+    isButtonUrlExternal: true,
+    autoOpenMode: null,
+    backgroundImageUrl: null,
+}
+
+registerPreview({
+    id: 'comp-banner-icon',
+    render: () => (
+        <PWView>
+            <BannerIcon
+                type='generic'
+                size='md'
+            />
+            <BannerIcon
+                type='governance'
+                size='md'
+            />
+            <BannerIcon
+                type='staking'
+                size='md'
+            />
+            <BannerIcon
+                type='card'
+                size='md'
+            />
+        </PWView>
+    ),
+})
+
+registerPreview({
+    id: 'comp-banner-card',
+    render: () => (
+        <BannerCard
+            banner={mockBanner}
+            onPressCTA={() => undefined}
+            onDismiss={() => undefined}
+            isDismissable={true}
+        />
+    ),
+})
+
+registerPreview({
+    id: 'comp-compact-banner',
+    render: () => (
+        <CompactBanner
+            primary={mockBanner}
+            additionalCount={2}
+            onPress={() => undefined}
+        />
+    ),
+})
+
+// ─── Settings (module) ────────────────────────────────────────────────────────
+
+registerPreview({
+    id: 'comp-app-version',
+    render: () => <AppVersion enableSecretTaps={false} />,
+})
+
+// ─── WalletConnect (module) ───────────────────────────────────────────────────
+
+registerPreview({
+    id: 'comp-permission-item',
+    render: () => (
+        <PWView>
+            <PermissionItem permission='algo_signTxn' />
+            <PermissionItem permission='algo_signData' />
+            <PermissionItem permission='algo_getAccounts' />
+        </PWView>
+    ),
+})
+
+// ─── Rekey (module) ───────────────────────────────────────────────────────────
+
+registerPreview({
+    id: 'comp-numbered-list',
+    render: () => (
+        <NumberedList
+            items={[
+                'Open your Algorand wallet application on your device.',
+                'Navigate to Settings and select Rekey Account.',
+                'Confirm the rekey by signing the transaction.',
+            ]}
+        />
+    ),
+})
+
+registerPreview({
+    id: 'comp-rekey-summary-row',
+    render: () => (
+        <RekeySummaryRow
+            account={mockAlgo25Account}
+            ignoreRekey={false}
+        />
+    ),
+})
+
+// ─── Security (module) ────────────────────────────────────────────────────────
+
+registerPreview({
+    id: 'comp-pin-entry',
+    render: () => (
+        <PinEntry
+            title='Enter your PIN'
+            onPinComplete={() => undefined}
+            isDisabled={false}
+            hasError={false}
+        />
+    ),
+})
+
+// ─── Prompts (module) ─────────────────────────────────────────────────────────
+
+registerPreview({
+    id: 'comp-pin-security-prompt',
+    render: () => (
+        <PinSecurityPrompt
+            onDismiss={() => undefined}
+            onHide={() => undefined}
+        />
+    ),
+})
+
+// ─── Projects (module) ────────────────────────────────────────────────────────
+
+registerPreview({
+    id: 'comp-project-verification-icon',
+    render: () => (
+        <PWView>
+            <ProjectVerificationIcon
+                tier='verified'
+                size='md'
+            />
+            <ProjectVerificationIcon
+                tier='suspicious'
+                size='md'
+            />
+        </PWView>
+    ),
+})
+
+// ─── Onboarding (module) ──────────────────────────────────────────────────────
+
+registerPreview({
+    id: 'comp-mnemonic-suggestion-bar',
+    render: () => (
+        <MnemonicSuggestionBar
+            suggestions={['abandon', 'ability', 'able', 'about']}
+            onSelectSuggestion={() => undefined}
+        />
+    ),
+})
+
+// ─── Menu (module) ────────────────────────────────────────────────────────────
+
+registerPreview({
+    id: 'comp-card-panel',
+    render: () => <CardPanel />,
+})
+
+// ─── Backup (module) ──────────────────────────────────────────────────────────
+
+registerPreview({
+    id: 'comp-backup-quiz-item',
+    render: () => (
+        <BackupQuizItem
+            position={2}
+            options={['abandon', 'ability', 'able']}
+            selectedWord='able'
+            onSelect={() => undefined}
+        />
+    ),
+})
+
+// ─── WebView (module) ─────────────────────────────────────────────────────────
+
+registerPreview({
+    id: 'comp-pw-webview',
+    render: () => (
+        <PWWebView
+            url='https://perawallet.app'
+            enablePeraConnect={false}
+            showControls={false}
         />
     ),
 })
@@ -998,6 +1290,221 @@ export const getModuleComponentSections = (): GallerySection[] => [
                 id: 'comp-staking-type-badge',
                 label: 'StakingTypeBadge',
                 launch: { kind: 'preview' },
+            },
+        ],
+    },
+    {
+        title: 'Messages (module)',
+        items: [
+            {
+                id: 'comp-inbox-item-asa',
+                label: 'InboxItem (asa_inbox)',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-notification-item',
+                label: 'NotificationItem (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'comp-notifications-icon',
+                label: 'NotificationsIcon (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'comp-unread-indicator',
+                label: 'UnreadIndicator',
+                launch: { kind: 'preview' },
+            },
+        ],
+    },
+    {
+        title: 'Ledger (module)',
+        items: [
+            {
+                id: 'comp-ledger-composite-icon',
+                label: 'LedgerCompositeIcon',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-ledger-device-item',
+                label: 'LedgerDeviceItem',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-ledger-status-indicator',
+                label: 'LedgerStatusIndicator',
+                launch: { kind: 'preview' },
+            },
+        ],
+    },
+    {
+        title: 'Banners (module)',
+        items: [
+            {
+                id: 'comp-banner-card',
+                label: 'BannerCard',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-banner-carousel',
+                label: 'BannerCarousel (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'comp-banner-icon',
+                label: 'BannerIcon',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-compact-banner',
+                label: 'CompactBanner',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-home-banners-strip',
+                label: 'HomeBannersStrip (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'comp-messages-spot-banners',
+                label: 'MessagesSpotBanners (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'comp-spot-banner-carousel',
+                label: 'SpotBannerCarousel (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+        ],
+    },
+    {
+        title: 'Settings (module)',
+        items: [
+            {
+                id: 'comp-app-version',
+                label: 'AppVersion',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-feature-flag-overrides',
+                label: 'FeatureFlagOverrides (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'comp-notification-settings-list',
+                label: 'NotificationSettingsList (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'comp-settings-walletconnect',
+                label: 'WalletConnect (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+        ],
+    },
+    {
+        title: 'WalletConnect (module)',
+        items: [
+            {
+                id: 'comp-permission-item',
+                label: 'PermissionItem',
+                launch: { kind: 'preview' },
+            },
+        ],
+    },
+    {
+        title: 'Rekey (module)',
+        items: [
+            {
+                id: 'comp-numbered-list',
+                label: 'NumberedList',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-rekey-summary-row',
+                label: 'RekeySummaryRow',
+                launch: { kind: 'preview' },
+            },
+        ],
+    },
+    {
+        title: 'Security (module)',
+        items: [
+            {
+                id: 'comp-pin-entry',
+                label: 'PinEntry',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-pin-edit-view',
+                label: 'PinEditView (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+        ],
+    },
+    {
+        title: 'Prompts (module)',
+        items: [
+            {
+                id: 'comp-pin-security-prompt',
+                label: 'PinSecurityPrompt',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-prompt-container',
+                label: 'PromptContainer (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+        ],
+    },
+    {
+        title: 'Projects (module)',
+        items: [
+            {
+                id: 'comp-application-display',
+                label: 'ApplicationDisplay (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
+            },
+            {
+                id: 'comp-project-verification-icon',
+                label: 'ProjectVerificationIcon',
+                launch: { kind: 'preview' },
+            },
+        ],
+    },
+    {
+        title: 'Onboarding (module)',
+        items: [
+            {
+                id: 'comp-mnemonic-suggestion-bar',
+                label: 'MnemonicSuggestionBar',
+                launch: { kind: 'preview' },
+            },
+        ],
+    },
+    {
+        title: 'Misc (module)',
+        items: [
+            {
+                id: 'comp-card-panel',
+                label: 'CardPanel',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-backup-quiz-item',
+                label: 'BackupQuizItem',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-pw-webview',
+                label: 'PWWebView',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-webview-overlay',
+                label: 'WebViewOverlay (needs live state)',
+                launch: { kind: 'action', run: () => undefined },
             },
         ],
     },
