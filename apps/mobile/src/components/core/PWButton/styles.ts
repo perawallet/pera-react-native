@@ -77,9 +77,7 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
             // the height of icon-only dense buttons: the h4 label box (24) is
             // 8px taller than the sm icon (16), so sm vs md padding lands both
             // at 40px.
-            paddingVertical: props.title
-                ? theme.spacing.sm
-                : theme.spacing.md,
+            paddingVertical: props.title ? theme.spacing.sm : theme.spacing.md,
             minWidth: theme.spacing.xxl,
         },
         none: {

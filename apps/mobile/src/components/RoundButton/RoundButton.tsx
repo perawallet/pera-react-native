@@ -24,7 +24,7 @@ import { getTestProps } from '@utils/test-id-helper'
 export type RoundButtonProps = {
     icon: IconName
     title?: string
-    size?: 'sm' | 'md' | 'lg'
+    size?: 'sm' | 'md' | 'lg' | 'xl'
     variant?: 'primary' | 'secondary'
     testID?: string
 } & PWTouchableOpacityProps

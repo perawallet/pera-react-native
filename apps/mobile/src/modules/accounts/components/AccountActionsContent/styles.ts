@@ -14,11 +14,11 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
-        paddingVertical: theme.spacing.lg,
+        paddingVertical: theme.spacing.xl,
     },
     addressCard: {
         marginHorizontal: theme.spacing.xl,
-        marginBottom: theme.spacing.lg,
+        marginBottom: theme.spacing.xl,
         padding: theme.spacing.lg,
         backgroundColor: theme.colors.layerGrayLighter,
         borderRadius: theme.borderRadius.lg,

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWBadge, PWIcon, PWText, PWView } from '@components/core'
+import { PWBadge, PWIcon, PWScrollView, PWText, PWView } from '@components/core'
 import { SheetHeader } from '@modules/bottom-sheet'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
@@ -80,7 +80,9 @@ export const ViewTextDetailsContent = ({
                     onPress={() => setMode('base64')}
                 />
             </PWView>
-            <PWText style={styles.noteText}>{textToDisplay}</PWText>
+            <PWScrollView inBottomSheet>
+                <PWText style={styles.noteText}>{textToDisplay}</PWText>
+            </PWScrollView>
         </PWView>
     )
 }

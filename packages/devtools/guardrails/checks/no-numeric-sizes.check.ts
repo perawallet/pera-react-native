@@ -99,9 +99,7 @@ function checkStyleObject(
  * `style={[styles.x, { … }]}`. Identifiers / member expressions (makeStyles
  * references) are ignored — they're covered by the makeStyles path.
  */
-function inlineStyleObjects(
-    expr: ts.Expression,
-): ts.ObjectLiteralExpression[] {
+function inlineStyleObjects(expr: ts.Expression): ts.ObjectLiteralExpression[] {
     if (ts.isObjectLiteralExpression(expr)) return [expr]
     if (ts.isArrayLiteralExpression(expr)) {
         return expr.elements.filter(ts.isObjectLiteralExpression)

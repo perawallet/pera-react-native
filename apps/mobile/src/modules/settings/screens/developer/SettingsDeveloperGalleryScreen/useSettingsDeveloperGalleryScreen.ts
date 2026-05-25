@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 
@@ -45,6 +45,8 @@ export type GallerySection = {
 
 export type UseSettingsDeveloperGalleryScreenResult = {
     sections: GallerySection[]
+    searchQuery: string
+    onSearchChange: (query: string) => void
 }
 
 export const useSettingsDeveloperGalleryScreen =
@@ -67,7 +69,9 @@ export const useSettingsDeveloperGalleryScreen =
             [navigation],
         )
 
-        const sections = useMemo<GallerySection[]>(() => {
+        const [searchQuery, setSearchQuery] = useState('')
+
+        const allSections = useMemo<GallerySection[]>(() => {
             const rekeyFlow = (
                 root: string,
                 introScreen: string,
@@ -751,5 +755,20 @@ export const useSettingsDeveloperGalleryScreen =
             ]
         }, [go, requestByType, addSignRequest, address, targetAddress])
 
-        return { sections }
+        // Filter by page name (item label); drop sections left with no matches.
+        const sections = useMemo<GallerySection[]>(() => {
+            const query = searchQuery.trim().toLowerCase()
+            if (!query) return allSections
+
+            return allSections
+                .map(section => ({
+                    ...section,
+                    items: section.items.filter(item =>
+                        item.label.toLowerCase().includes(query),
+                    ),
+                }))
+                .filter(section => section.items.length > 0)
+        }, [allSections, searchQuery])
+
+        return { sections, searchQuery, onSearchChange: setSearchQuery }
     }

@@ -13,6 +13,12 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
+    topActions: {
+        gap: theme.spacing.sm,
+    },
+    search: {
+        marginTop: theme.spacing.lg,
+    },
     sectionHeader: {
         color: theme.colors.textGray,
         marginTop: theme.spacing.lg,

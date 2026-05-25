@@ -290,7 +290,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
                             assetId: parsedData.assetId,
                             accountAddress,
                         },
-                        { enablePanDownToClose: true },
+                        { size: 'lg', enablePanDownToClose: true },
                     )
                     break
                 }

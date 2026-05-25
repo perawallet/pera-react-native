@@ -13,6 +13,7 @@
 import { PWButton, PWImage, PWText, PWView } from '@components/core'
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet'
 import { Trans } from 'react-i18next'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
@@ -24,6 +25,7 @@ import swapIntroHero from '@assets/images/swap-intro-hero.png'
 export const SwapIntroductionContent = () => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const insets = useSafeAreaInsets()
     const { pushWebView } = useWebView()
     const { resolve, dismiss } = useBottomSheetResult<'start'>()
 
@@ -37,7 +39,10 @@ export const SwapIntroductionContent = () => {
     return (
         <BottomSheetScrollView
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={[
+                styles.scrollContent,
+                { paddingBottom: insets.bottom },
+            ]}
             testID='swap-intro-scroll'
         >
             <PWView style={styles.heroSection}>

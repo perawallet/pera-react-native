@@ -17,15 +17,16 @@ import { getTypography } from '@theme/typography'
 const ICON_SIZE = 48
 
 export const useStyles = makeStyles(theme => ({
+    // PagerView (multi-banner only) needs an explicit height; size it to the
+    // card's natural height (icon + equal vertical padding). The single-banner
+    // path skips the pager and wraps content.
     pager: {
-        height: theme.spacing['4xl'] + theme.spacing.xs * 2, // Icon size + vertical padding of the card
+        height: ICON_SIZE + theme.spacing.md * 2,
     },
     page: {
-        flex: 1,
         paddingHorizontal: theme.spacing.md,
     },
     card: {
-        flexGrow: 1,
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.md,

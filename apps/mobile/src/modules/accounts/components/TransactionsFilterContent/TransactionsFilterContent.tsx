@@ -12,12 +12,7 @@
 
 import React, { useState } from 'react'
 import { Platform } from 'react-native'
-import {
-    PWIcon,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
+import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import DateTimePicker, {
     DateTimePickerEvent,
 } from '@react-native-community/datetimepicker'

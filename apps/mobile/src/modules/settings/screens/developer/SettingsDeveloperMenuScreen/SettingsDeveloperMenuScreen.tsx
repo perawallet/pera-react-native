@@ -65,6 +65,12 @@ export const SettingsDeveloperMenuScreen = () => {
                 icon='reload'
                 title={t('settings.developer.manage_cache')}
             />
+            <PWListItem
+                onPress={() => handleTapEvent('Gallery')}
+                icon='dot-stack'
+                title='Screen Gallery'
+                testID='developer_menu_gallery_item'
+            />
         </PWScreen>
     )
 }

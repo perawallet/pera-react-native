@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWView, PWText, PWIcon } from '@components/core'
+import { PWIcon, PWScrollView, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
@@ -34,28 +34,30 @@ export const LedgerHowItWorksContent = () => {
                 {t('ledger.how_does_it_work.title')}
             </PWText>
 
-            <PWView style={styles.list}>
-                {STEP_KEYS.map(key => (
-                    <PWView
-                        key={key}
-                        style={styles.item}
-                    >
-                        <PWView style={styles.bullet}>
-                            <PWIcon
-                                name='check'
-                                size='xs'
-                                variant='positive'
-                            />
-                        </PWView>
-                        <PWText
-                            variant='body'
-                            style={styles.itemText}
+            <PWScrollView inBottomSheet>
+                <PWView style={styles.list}>
+                    {STEP_KEYS.map(key => (
+                        <PWView
+                            key={key}
+                            style={styles.item}
                         >
-                            {t(key)}
-                        </PWText>
-                    </PWView>
-                ))}
-            </PWView>
+                            <PWView style={styles.bullet}>
+                                <PWIcon
+                                    name='check'
+                                    size='xs'
+                                    variant='positive'
+                                />
+                            </PWView>
+                            <PWText
+                                variant='body'
+                                style={styles.itemText}
+                            >
+                                {t(key)}
+                            </PWText>
+                        </PWView>
+                    ))}
+                </PWView>
+            </PWScrollView>
         </PWView>
     )
 }

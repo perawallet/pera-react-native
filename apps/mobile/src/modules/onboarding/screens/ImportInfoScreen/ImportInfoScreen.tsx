@@ -21,8 +21,7 @@ import { useNavigationHeader } from '@hooks/useNavigationHeader'
 export const ImportInfoScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { handleRecoverPress, handleInfoPress, KeyImageComponent } =
-        useImportInfoScreen()
+    const { handleRecoverPress, handleInfoPress } = useImportInfoScreen()
 
     useNavigationHeader({
         right: (
@@ -47,12 +46,8 @@ export const ImportInfoScreen = () => {
             }
         >
             <PWView style={styles.content}>
-                <KeyImageComponent
-                    style={styles.image}
-                    width={160}
-                    height={160}
-                />
                 <ScreenHeader
+                    icon='key'
                     title={t('onboarding.import_info.title')}
                     description={t('onboarding.import_info.body')}
                 />

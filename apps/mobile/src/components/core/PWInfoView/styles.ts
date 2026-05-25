@@ -17,8 +17,11 @@ export const useStyles = makeStyles(theme => ({
         flex: 1,
         backgroundColor: theme.colors.background,
     },
-    content: {
+    scroll: {
         flex: 1,
+    },
+    content: {
+        flexGrow: 1,
         justifyContent: 'flex-start',
         alignItems: 'flex-start',
         paddingHorizontal: theme.spacing.xl,

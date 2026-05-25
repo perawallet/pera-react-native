@@ -37,13 +37,13 @@ export const useStyles = makeStyles(
             },
             leftSlotContainer: {
                 ...sideSlot,
-                alignSelf: 'flex-start',
+                alignSelf: 'center',
                 alignItems: 'flex-start',
                 minWidth: 0,
                 overflow: 'hidden',
             },
             centerSlotContainer: {
-                alignSelf: 'flex-start',
+                alignSelf: 'center',
                 alignItems: 'center',
                 justifyContent: 'center',
                 flexShrink: 1,
@@ -52,7 +52,7 @@ export const useStyles = makeStyles(
             },
             rightSlotContainer: {
                 ...sideSlot,
-                alignSelf: 'flex-start',
+                alignSelf: 'center',
                 flexDirection: 'row',
                 justifyContent: 'flex-end',
                 alignItems: 'center',

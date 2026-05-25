@@ -14,6 +14,10 @@ import { makeStyles } from '@rneui/themed'
 
 export const DROPDOWN_MIN_WIDTH = 200
 
+// Cap the menu at 80% of the screen so a long label can't push it edge-to-edge;
+// labels that still don't fit truncate at this width rather than overflowing.
+export const DROPDOWN_MAX_WIDTH_RATIO = 0.8
+
 type StyleProps = {
     windowWidth: number
 }
@@ -30,7 +34,7 @@ export const useStyles = makeStyles((theme, { windowWidth }: StyleProps) => ({
         paddingVertical: theme.spacing.sm,
         paddingHorizontal: theme.spacing.md,
         minWidth: DROPDOWN_MIN_WIDTH,
-        maxWidth: windowWidth - theme.spacing.xl * 2,
+        maxWidth: windowWidth * DROPDOWN_MAX_WIDTH_RATIO,
         overflow: 'hidden',
         ...theme.shadows.md,
         borderWidth: theme.borders.sm,
@@ -45,7 +49,7 @@ export const useStyles = makeStyles((theme, { windowWidth }: StyleProps) => ({
         minWidth: 0,
     },
     labelContainer: {
-        flex: 1,
+        flexShrink: 1,
         minWidth: 0,
     },
     label: {

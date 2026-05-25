@@ -35,9 +35,7 @@ export const SettingsScreen = () => {
         useSettingsScreen()
 
     return (
-        <PWScreen
-            testID='settings_screen'
-        >
+        <PWScreen testID='settings_screen'>
             <PWView style={styles.sectionContainer}>
                 {settingsOptions.map(item => (
                     <PWView

@@ -82,7 +82,13 @@ export const useInboxScreen = (): UseInboxScreenResult => {
                                 invitation={invitation}
                             />
                         ),
-                        options: { size: 'auto', enablePanDownToClose: true },
+                        // Opts out of host auto-scroll: the content manages its
+                        // own scroll view with a footer pinned outside it.
+                        options: {
+                            size: 'auto',
+                            enablePanDownToClose: true,
+                            scrollable: false,
+                        },
                     },
                 )
 

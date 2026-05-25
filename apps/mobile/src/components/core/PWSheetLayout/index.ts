@@ -10,23 +10,5 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => ({
-    container: {
-        flex: 1,
-        backgroundColor: theme.colors.background,
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: theme.spacing.xl,
-    },
-    dontAskButton: {
-        padding: theme.spacing.sm,
-        alignItems: 'flex-end',
-        justifyContent: 'flex-end',
-        width: '100%',
-    },
-}))
+export { PWSheetLayout } from './PWSheetLayout'
+export type { PWSheetLayoutProps } from './PWSheetLayout'

@@ -31,7 +31,7 @@ export const useStyles = makeStyles((theme, props: PanelButtonProps) => {
             backgroundColor,
             borderRadius: theme.spacing.lg,
             flexDirection: 'row',
-            alignItems: 'flex-start',
+            alignItems: props.description ? 'flex-start' : 'center',
             padding,
             gap: theme.spacing.md,
         },

@@ -16,7 +16,6 @@ export const useStyles = makeStyles(
     (theme, { isLast }: { isLast: boolean }) => {
         return {
             container: {
-                gap: theme.spacing.md,
                 paddingHorizontal: theme.spacing.lg,
             },
             contentContainer: {

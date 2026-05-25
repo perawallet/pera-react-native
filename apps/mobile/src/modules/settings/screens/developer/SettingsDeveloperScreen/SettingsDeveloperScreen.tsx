@@ -42,21 +42,12 @@ export const SettingsDeveloperScreen = () => {
     }
 
     return (
-        <PWScreen
-            testID='developer_settings_screen'
-        >
+        <PWScreen testID='developer_settings_screen'>
             <PWListItem
                 onPress={() => handleTapEvent('NodeSettings')}
                 icon='tree'
                 title={t('settings.developer.node_settings_title')}
                 testID='developer_settings_node_item'
-            />
-
-            <PWListItem
-                onPress={() => handleTapEvent('Gallery')}
-                icon='sliders'
-                title='Screen Gallery'
-                testID='developer_settings_gallery_item'
             />
 
             {isTestnet && (

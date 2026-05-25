@@ -21,7 +21,6 @@ export const useStyles = makeStyles(theme => {
     }
     return {
         container: {
-            flex: 1,
             paddingBottom: theme.spacing.xxl,
             borderTopStartRadius: theme.spacing.sm,
             borderTopEndRadius: theme.spacing.sm,

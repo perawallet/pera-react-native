@@ -19,18 +19,27 @@ export const useStyles = makeStyles(theme => {
     }
     return {
         container: {
-            padding: theme.spacing.xl,
             borderTopStartRadius: theme.spacing.sm,
             borderTopEndRadius: theme.spacing.sm,
+        },
+        // Lets the scroll view yield height so the footer CTA stays pinned when
+        // content overflows. `flex: 1` would feed an unbounded height to the
+        // dynamically-sized sheet and break its measurement.
+        scrollBody: {
+            flexShrink: 1,
+        },
+        scrollContent: {
             alignItems: 'center',
+            paddingTop: theme.spacing.xl,
+            paddingHorizontal: theme.spacing.xl,
         },
         bodyContainer: {
-            // Stretch to the full width — the container centers its children,
-            // which would otherwise shrink this block to its content width and
-            // leave the button/tips not spanning the available space. The
-            // container already supplies the xl (24) horizontal gutter, so no
-            // padding here (it would double it).
             width: '100%',
+        },
+        footer: {
+            paddingTop: theme.spacing.lg,
+            paddingBottom: theme.spacing.xl,
+            paddingHorizontal: theme.spacing.xl,
         },
         title: {
             marginTop: theme.spacing.lg,
@@ -39,13 +48,14 @@ export const useStyles = makeStyles(theme => {
         preamble: {
             textAlign: 'center',
             color: theme.colors.textGray,
-            marginVertical: theme.spacing.xl,
+            marginVertical: theme.spacing.lg,
         },
         postamble: {
             marginVertical: theme.spacing.lg,
         },
         tipsContainer: {
             gap: theme.spacing.xl,
+            paddingBottom: theme.spacing.xl,
         },
         tip: {
             flexDirection: 'row',

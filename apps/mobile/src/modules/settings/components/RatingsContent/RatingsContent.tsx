@@ -53,16 +53,6 @@ export const RatingsContent = () => {
 
     return (
         <PWView style={styles.bottomSheetContainer}>
-            <PWView style={styles.buttonContainer}>
-                <RoundButton
-                    icon='thumb_up'
-                    onPress={handleRatingClick}
-                />
-                <RoundButton
-                    icon='thumb_down'
-                    onPress={handleRatingClick}
-                />
-            </PWView>
             <PWText
                 variant='h3'
                 style={styles.title}
@@ -77,6 +67,18 @@ export const RatingsContent = () => {
             >
                 {t('settings.rating.body')}
             </PWText>
+            <PWView style={styles.buttonContainer}>
+                <RoundButton
+                    icon='thumb_down'
+                    size='xl'
+                    onPress={handleRatingClick}
+                />
+                <RoundButton
+                    icon='thumb_up'
+                    size='xl'
+                    onPress={handleRatingClick}
+                />
+            </PWView>
         </PWView>
     )
 }

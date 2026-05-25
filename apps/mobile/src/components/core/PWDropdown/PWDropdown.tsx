@@ -53,17 +53,16 @@ export const PWDropdown = ({
         if (!view) return
 
         if (view.measure) {
-            view.measure((_x, _y, width, height, pageX, pageY) => {
+            view.measure((_x, _y, _width, height, pageX, pageY) => {
                 const horizontalInset = theme.spacing.xl
                 const top = pageY + height
 
                 if (align === 'right') {
+                    // Pin the menu's right edge to the page gutter rather than
+                    // the trigger, so it lines up with the screen edge inset.
                     setPosition({
                         top,
-                        right: Math.max(
-                            horizontalInset,
-                            windowWidth - (pageX + width),
-                        ),
+                        right: horizontalInset,
                     })
                 } else {
                     const left = Math.max(

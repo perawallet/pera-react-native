@@ -10,7 +10,13 @@
  limitations under the License
  */
 
-import { PWButton, PWSlideToConfirm, PWText, PWView } from '@components/core'
+import {
+    PWButton,
+    PWSheetLayout,
+    PWSlideToConfirm,
+    PWText,
+    PWView,
+} from '@components/core'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { AddressDisplay } from '@components/AddressDisplay'
 import {
@@ -54,10 +60,19 @@ export const OptInConfirmationContent = ({
         copyToClipboard(assetId)
     }
 
-    return (
-        <PWView style={styles.container}>
-            <SheetHeader title={t('add_asset.confirmation.title')} />
+    const handleConfirm = () => resolve('confirm')
 
+    return (
+        <PWSheetLayout
+            header={<SheetHeader title={t('add_asset.confirmation.title')} />}
+            footer={
+                <PWSlideToConfirm
+                    title={t('common.slide_to_confirm.label')}
+                    onConfirm={handleConfirm}
+                    testID='opt_in_confirm'
+                />
+            }
+        >
             <PWView style={styles.body}>
                 <PWView style={styles.assetNameRow}>
                     <AssetNameBadge
@@ -142,15 +157,7 @@ export const OptInConfirmationContent = ({
                 >
                     {t('add_asset.confirmation.description')}
                 </PWText>
-
-                <PWView style={styles.buttonContainer}>
-                    <PWSlideToConfirm
-                        title={t('common.slide_to_confirm.label')}
-                        onConfirm={() => resolve('confirm')}
-                        testID='opt_in_confirm'
-                    />
-                </PWView>
             </PWView>
-        </PWView>
+        </PWSheetLayout>
     )
 }

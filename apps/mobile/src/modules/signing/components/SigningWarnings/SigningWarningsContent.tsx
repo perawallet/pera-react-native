@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWView } from '@components/core'
+import { PWScrollView, PWView } from '@components/core'
 import { SheetHeader } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSigningPipeline } from '@perawallet/wallet-core-signing'
@@ -37,14 +37,16 @@ export const SigningWarningsContent = ({
                 })}
             />
 
-            {distinctWarnings.map((warning, index) => (
-                <WarningItem
-                    key={`${warning.type}-${warning.senderAddress}-${warning.targetAddress}`}
-                    warning={warning}
-                    showDivider={index > 0}
-                    isGroup={isGroup}
-                />
-            ))}
+            <PWScrollView inBottomSheet>
+                {distinctWarnings.map((warning, index) => (
+                    <WarningItem
+                        key={`${warning.type}-${warning.senderAddress}-${warning.targetAddress}`}
+                        warning={warning}
+                        showDivider={index > 0}
+                        isGroup={isGroup}
+                    />
+                ))}
+            </PWScrollView>
         </PWView>
     )
 }

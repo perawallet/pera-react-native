@@ -13,20 +13,20 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
+    // Takes the space between the fixed toolbar and footer; the body scrolls
+    // within it once it overflows.
+    scrollView: {
         flex: 1,
-        backgroundColor: theme.colors.background,
     },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
+    scrollContent: {
         paddingHorizontal: theme.spacing.xl,
+        paddingVertical: theme.spacing.xl,
     },
-    dontAskButton: {
-        padding: theme.spacing.sm,
-        alignItems: 'flex-end',
-        justifyContent: 'flex-end',
-        width: '100%',
+    // The bottom safe area is added by the host PWBottomSheet's inner container;
+    // `paddingBottom` here is the 16 gap above it.
+    footer: {
+        paddingHorizontal: theme.spacing.lg,
+        paddingTop: theme.spacing.lg,
+        paddingBottom: theme.spacing.lg,
     },
 }))

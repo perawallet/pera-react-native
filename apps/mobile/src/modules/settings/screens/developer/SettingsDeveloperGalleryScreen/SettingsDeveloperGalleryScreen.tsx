@@ -15,7 +15,14 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useContacts } from '@perawallet/wallet-core-contacts'
 import { mockContacts } from '@perawallet/wallet-core-dev-fixtures'
 
-import { PWButton, PWListItem, PWScreen, PWText } from '@components/core'
+import {
+    PWButton,
+    PWListItem,
+    PWScreen,
+    PWText,
+    PWView,
+} from '@components/core'
+import { SearchInput } from '@components/SearchInput'
 import { startGalleryTour } from '@routes/galleryTour'
 import { startApiRecording, startApiReplay } from './devApiMock'
 import { useStyles } from './styles'
@@ -23,7 +30,8 @@ import { useSettingsDeveloperGalleryScreen } from './useSettingsDeveloperGallery
 
 export const SettingsDeveloperGalleryScreen = () => {
     const styles = useStyles()
-    const { sections } = useSettingsDeveloperGalleryScreen()
+    const { sections, searchQuery, onSearchChange } =
+        useSettingsDeveloperGalleryScreen()
     const { addContact } = useContacts()
     const queryClient = useQueryClient()
 
@@ -51,33 +59,42 @@ export const SettingsDeveloperGalleryScreen = () => {
     }, [queryClient])
 
     return (
-        <PWScreen
-            testID='developer_gallery_screen'
-        >
-            <PWButton
-                title='Run screenshot tour'
-                variant='primary'
-                onPress={startGalleryTour}
-                testID='gallery_run_tour'
+        <PWScreen testID='developer_gallery_screen'>
+            <PWView style={styles.topActions}>
+                <PWButton
+                    title='Run screenshot tour'
+                    variant='primary'
+                    onPress={startGalleryTour}
+                    testID='gallery_run_tour'
+                />
+                <PWButton
+                    title='Seed mock data (contacts)'
+                    variant='secondary'
+                    onPress={handleSeedContacts}
+                    testID='gallery_seed_data'
+                />
+                <PWButton
+                    title='Record API (online)'
+                    variant='secondary'
+                    onPress={handleRecordApi}
+                    testID='gallery_record_api'
+                />
+                <PWButton
+                    title='Replay API (offline)'
+                    variant='secondary'
+                    onPress={handleReplayApi}
+                    testID='gallery_replay_api'
+                />
+            </PWView>
+
+            <SearchInput
+                value={searchQuery}
+                onChangeText={onSearchChange}
+                placeholder='Search screens'
+                containerStyle={styles.search}
+                testID='gallery_search'
             />
-            <PWButton
-                title='Seed mock data (contacts)'
-                variant='secondary'
-                onPress={handleSeedContacts}
-                testID='gallery_seed_data'
-            />
-            <PWButton
-                title='Record API (online)'
-                variant='secondary'
-                onPress={handleRecordApi}
-                testID='gallery_record_api'
-            />
-            <PWButton
-                title='Replay API (offline)'
-                variant='secondary'
-                onPress={handleReplayApi}
-                testID='gallery_replay_api'
-            />
+
             {sections.map(section => (
                 <Fragment key={section.title}>
                     <PWText

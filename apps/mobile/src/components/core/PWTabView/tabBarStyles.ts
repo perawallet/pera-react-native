@@ -61,7 +61,7 @@ export const useStyles = makeStyles(theme => {
             alignItems: 'center',
             flexDirection: 'row',
             gap: theme.spacing.xs,
-            paddingHorizontal: theme.spacing.xs,
+            paddingHorizontal: theme.spacing.md,
         },
         indicatorWrapper: {
             position: 'absolute',

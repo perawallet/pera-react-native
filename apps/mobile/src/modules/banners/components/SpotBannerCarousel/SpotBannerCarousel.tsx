@@ -38,13 +38,11 @@ export const SpotBannerCarousel = ({
     if (banners.length === 1) {
         return (
             <PWView testID={testID}>
-                <PWView style={styles.pager}>
-                    <SpotBannerCard
-                        banner={banners[0]}
-                        onPress={onPress}
-                        onDismiss={onDismiss}
-                    />
-                </PWView>
+                <SpotBannerCard
+                    banner={banners[0]}
+                    onPress={onPress}
+                    onDismiss={onDismiss}
+                />
             </PWView>
         )
     }

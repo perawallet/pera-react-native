@@ -90,7 +90,7 @@ const STEPS: Step[] = [
             void sheet().requestByType(
                 'asset-opt-in',
                 { assetId: MOCK_ASSET_ID, accountAddress: A },
-                { enablePanDownToClose: true },
+                { size: 'lg', enablePanDownToClose: true },
             ),
     },
     {

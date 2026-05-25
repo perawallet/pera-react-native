@@ -76,9 +76,7 @@ export const SettingsDeveloperManageCacheScreen = () => {
     }
 
     return (
-        <PWScreen
-            contentContainerStyle={styles.content}
-        >
+        <PWScreen contentContainerStyle={styles.content}>
             <PWButton
                 variant='primary'
                 title={t('settings.developer.refresh_cache')}

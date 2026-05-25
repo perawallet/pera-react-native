@@ -51,7 +51,9 @@ export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
         ref,
     ) => {
         const insets = useSafeAreaInsets()
-        const styles = useStyles({ bottomInset: inBottomSheet ? insets.bottom : 0 })
+        const styles = useStyles({
+            bottomInset: inBottomSheet ? insets.bottom : 0,
+        })
         const innerRef = useRef<LegendListRef>(null)
         const BottomSheetScrollable = useBottomSheetScrollableCreator()
 

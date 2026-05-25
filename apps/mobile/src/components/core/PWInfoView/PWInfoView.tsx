@@ -12,6 +12,7 @@
 
 import type { ReactNode } from 'react'
 import { PWButton } from '@components/core/PWButton'
+import { PWScrollView } from '@components/core/PWScrollView'
 import { PWText } from '@components/core/PWText'
 import { PWView } from '@components/core/PWView'
 import { useStyles } from './styles'
@@ -55,7 +56,10 @@ export const PWInfoView = ({
             style={styles.root}
             testID={testID}
         >
-            <PWView style={styles.content}>
+            <PWScrollView
+                style={styles.scroll}
+                contentContainerStyle={styles.content}
+            >
                 {illustration}
                 <PWText
                     variant='h1'
@@ -69,7 +73,7 @@ export const PWInfoView = ({
                 >
                     {body}
                 </PWText>
-            </PWView>
+            </PWScrollView>
 
             <PWView style={styles.footer}>
                 {footerExtras}
