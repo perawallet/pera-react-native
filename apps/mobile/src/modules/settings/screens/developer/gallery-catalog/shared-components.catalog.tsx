@@ -13,7 +13,7 @@
 import React from 'react'
 import { Decimal } from 'decimal.js'
 
-import { PWText, PWView } from '@components/core'
+import { PWButton, PWText, PWView } from '@components/core'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
 import { ContactAvatar } from '@components/ContactAvatar'
 import { CopyableText } from '@components/CopyableText'
@@ -38,6 +38,7 @@ import { TrendIndicator } from '@components/TrendIndicator'
 import { ZoomableImage } from '@components/ZoomableImage'
 
 import { registerPreview } from './registry'
+import { VariantPreview } from './VariantPreview'
 
 import type { GallerySection } from './types'
 
@@ -46,12 +47,42 @@ import type { GallerySection } from './types'
 registerPreview({
     id: 'comp-contact-avatar',
     render: () => (
-        <PWView>
-            <ContactAvatar
-                size='md'
-                contact={{ name: 'Alice', address: 'AAAAA', image: undefined }}
-            />
-        </PWView>
+        <VariantPreview
+            items={[
+                {
+                    label: 'xs / no image',
+                    node: (
+                        <ContactAvatar
+                            size='xs'
+                            contact={{ name: 'Alice', address: 'AAAA', image: undefined }}
+                        />
+                    ),
+                },
+                {
+                    label: 'md / no image / default',
+                    node: (
+                        <ContactAvatar
+                            size='md'
+                            contact={{ name: 'Alice', address: 'AAAA', image: undefined }}
+                        />
+                    ),
+                },
+                {
+                    label: 'lg / no image / highlighted',
+                    node: (
+                        <ContactAvatar
+                            size='lg'
+                            variant='highlighted'
+                            contact={{ name: 'Bob', address: 'BBBB', image: undefined }}
+                        />
+                    ),
+                },
+                {
+                    label: 'xl / no contact',
+                    node: <ContactAvatar size='xl' />,
+                },
+            ]}
+        />
     ),
 })
 
@@ -67,67 +98,144 @@ registerPreview({
 registerPreview({
     id: 'comp-currency-display',
     render: () => (
-        <PWView>
-            <CurrencyDisplay
-                currency='USD'
-                value={new Decimal('1234.56')}
-                precision={2}
-                variant='h2'
-            />
-            <CurrencyDisplay
-                currency='ALGO'
-                value={new Decimal('42.5')}
-                precision={6}
-                variant='body'
-            />
-        </PWView>
+        <VariantPreview
+            items={[
+                {
+                    label: 'USD / large / h2',
+                    node: (
+                        <CurrencyDisplay
+                            currency='USD'
+                            value={new Decimal('1234567.89')}
+                            precision={2}
+                            variant='h2'
+                        />
+                    ),
+                },
+                {
+                    label: 'ALGO / medium / h3',
+                    node: (
+                        <CurrencyDisplay
+                            currency='ALGO'
+                            value={new Decimal('42.500000')}
+                            precision={6}
+                            variant='h3'
+                        />
+                    ),
+                },
+                {
+                    label: 'USD / small / body',
+                    node: (
+                        <CurrencyDisplay
+                            currency='USD'
+                            value={new Decimal('0.01')}
+                            precision={2}
+                            variant='body'
+                        />
+                    ),
+                },
+                {
+                    label: 'USD / zero / body',
+                    node: (
+                        <CurrencyDisplay
+                            currency='USD'
+                            value={new Decimal('0')}
+                            precision={2}
+                            variant='body'
+                        />
+                    ),
+                },
+            ]}
+        />
     ),
 })
 
 registerPreview({
     id: 'comp-trend-indicator',
     render: () => (
-        <PWView>
-            <TrendIndicator percentage={new Decimal('3.47')} />
-            <TrendIndicator percentage={new Decimal('-1.23')} />
-            <TrendIndicator
-                percentage={new Decimal('5.0')}
-                absolute={{
-                    amount: new Decimal('12.34'),
-                    currency: 'USD',
-                    precision: 2,
-                }}
-            />
-        </PWView>
+        <VariantPreview
+            items={[
+                {
+                    label: 'positive percentage',
+                    node: <TrendIndicator percentage={new Decimal('3.47')} />,
+                },
+                {
+                    label: 'negative percentage',
+                    node: <TrendIndicator percentage={new Decimal('-1.23')} />,
+                },
+                {
+                    label: 'zero (flat)',
+                    node: <TrendIndicator percentage={new Decimal('0')} />,
+                },
+                {
+                    label: 'positive + absolute amount',
+                    node: (
+                        <TrendIndicator
+                            percentage={new Decimal('5.0')}
+                            absolute={{
+                                amount: new Decimal('12.34'),
+                                currency: 'USD',
+                                precision: 2,
+                            }}
+                        />
+                    ),
+                },
+            ]}
+        />
     ),
 })
 
 registerPreview({
     id: 'comp-participant-count',
     render: () => (
-        <PWView>
-            <ParticipantCount count={3} />
-            <ParticipantCount
-                count={5}
-                size='h1'
-            />
-        </PWView>
+        <VariantPreview
+            items={[
+                {
+                    label: 'count 3 / default size',
+                    node: <ParticipantCount count={3} />,
+                },
+                {
+                    label: 'count 5 / h1',
+                    node: (
+                        <ParticipantCount
+                            count={5}
+                            size='h1'
+                        />
+                    ),
+                },
+                {
+                    label: 'count 10 / h2 (default)',
+                    node: <ParticipantCount count={10} />,
+                },
+            ]}
+        />
     ),
 })
 
 registerPreview({
     id: 'comp-tab-label',
     render: () => (
-        <PWView>
-            <TabLabel
-                i18nKey='common.assets'
-                active={true}
-            />
-            <TabLabel
-                i18nKey='common.activity'
-                active={false}
-            />
-        </PWView>
+        <VariantPreview
+            items={[
+                {
+                    label: 'active',
+                    node: (
+                        <TabLabel
+                            i18nKey='common.assets'
+                            active={true}
+                        />
+                    ),
+                },
+                {
+                    label: 'inactive',
+                    node: (
+                        <TabLabel
+                            i18nKey='common.activity'
+                            active={false}
+                        />
+                    ),
+                },
+            ]}
+        />
     ),
 })
 
@@ -136,21 +244,59 @@ registerPreview({
 registerPreview({
     id: 'comp-expandable-panel',
     render: () => (
-        <ExpandablePanel isExpanded={true}>
-            <PWText variant='body'>
-                This content is revealed when the panel is expanded. It can
-                contain any child nodes.
-            </PWText>
-        </ExpandablePanel>
+        <VariantPreview
+            items={[
+                {
+                    label: 'expanded',
+                    node: (
+                        <ExpandablePanel isExpanded={true}>
+                            <PWText variant='body'>
+                                This content is revealed when the panel is
+                                expanded. It can contain any child nodes.
+                            </PWText>
+                        </ExpandablePanel>
+                    ),
+                },
+                {
+                    label: 'collapsed',
+                    node: (
+                        <ExpandablePanel isExpanded={false}>
+                            <PWText variant='body'>
+                                This content is hidden when the panel is
+                                collapsed — you should not see this.
+                            </PWText>
+                        </ExpandablePanel>
+                    ),
+                },
+            ]}
+        />
     ),
 })
 
 registerPreview({
     id: 'comp-expandable-text',
     render: () => (
-        <ExpandableText
-            text='Pera Wallet is a non-custodial Algorand wallet that gives you full control of your assets. It supports standard accounts, hardware wallets, multi-signature accounts, and rich NFT/collectible browsing. This is a longer description to trigger the "Show more" truncation behaviour.'
-            limit={100}
+        <VariantPreview
+            items={[
+                {
+                    label: 'long text (triggers Show more)',
+                    node: (
+                        <ExpandableText
+                            text='Pera Wallet is a non-custodial Algorand wallet that gives you full control of your assets. It supports standard accounts, hardware wallets, multi-signature accounts, and rich NFT/collectible browsing. This is a longer description to trigger the "Show more" truncation behaviour.'
+                            limit={100}
+                        />
+                    ),
+                },
+                {
+                    label: 'short text (no Show more)',
+                    node: (
+                        <ExpandableText
+                            text='Short description.'
+                            limit={100}
+                        />
+                    ),
+                },
+            ]}
         />
     ),
 })
@@ -158,14 +304,36 @@ registerPreview({
 registerPreview({
     id: 'comp-key-value-row',
     render: () => (
-        <PWView>
-            <KeyValueRow title='Account type'>
-                <PWText variant='bodyCompact'>Standard</PWText>
-            </KeyValueRow>
-            <KeyValueRow title='Network'>
-                <PWText variant='bodyCompact'>Algorand MainNet</PWText>
-            </KeyValueRow>
-        </PWView>
+        <VariantPreview
+            items={[
+                {
+                    label: 'short value',
+                    node: (
+                        <KeyValueRow title='Account type'>
+                            <PWText variant='bodyCompact'>Standard</PWText>
+                        </KeyValueRow>
+                    ),
+                },
+                {
+                    label: 'long value',
+                    node: (
+                        <KeyValueRow title='Address'>
+                            <PWText variant='bodyCompact'>
+                                AAABBBCCC111222333444555666777888999000111222333444555666777888999
+                            </PWText>
+                        </KeyValueRow>
+                    ),
+                },
+                {
+                    label: 'network row',
+                    node: (
+                        <KeyValueRow title='Network'>
+                            <PWText variant='bodyCompact'>Algorand MainNet</PWText>
+                        </KeyValueRow>
+                    ),
+                },
+            ]}
+        />
     ),
 })
 
@@ -174,10 +342,36 @@ registerPreview({
 registerPreview({
     id: 'comp-empty-view',
     render: () => (
-        <EmptyView
-            icon='magnifying-glass'
-            title='No results found'
-            body='Try adjusting your search or filters to find what you are looking for.'
+        <VariantPreview
+            items={[
+                {
+                    label: 'without action button',
+                    node: (
+                        <EmptyView
+                            icon='magnifying-glass'
+                            title='No results found'
+                            body='Try adjusting your search or filters to find what you are looking for.'
+                        />
+                    ),
+                },
+                {
+                    label: 'with action button',
+                    node: (
+                        <EmptyView
+                            icon='magnifying-glass'
+                            title='No assets yet'
+                            body='Add your first asset to get started.'
+                            button={
+                                <PWButton
+                                    variant='primary'
+                                    title='Add asset'
+                                    onPress={() => undefined}
+                                />
+                            }
+                        />
+                    ),
+                },
+            ]}
         />
     ),
 })
@@ -185,12 +379,37 @@ registerPreview({
 registerPreview({
     id: 'comp-loading-view',
     render: () => (
-        <PWView>
-            <LoadingView
-                variant='circle'
-                size='lg'
-            />
-        </PWView>
+        <VariantPreview
+            items={[
+                {
+                    label: 'circle / sm',
+                    node: (
+                        <LoadingView
+                            variant='circle'
+                            size='sm'
+                        />
+                    ),
+                },
+                {
+                    label: 'circle / lg',
+                    node: (
+                        <LoadingView
+                            variant='circle'
+                            size='lg'
+                        />
+                    ),
+                },
+                {
+                    label: 'skeleton / 3 rows',
+                    node: (
+                        <LoadingView
+                            variant='skeleton'
+                            count={3}
+                        />
+                    ),
+                },
+            ]}
+        />
     ),
 })
 
@@ -199,10 +418,29 @@ registerPreview({
 registerPreview({
     id: 'comp-search-input',
     render: () => (
-        <SearchInput
-            placeholder='Search accounts, assets…'
-            value=''
-            onChangeText={() => undefined}
+        <VariantPreview
+            items={[
+                {
+                    label: 'empty',
+                    node: (
+                        <SearchInput
+                            placeholder='Search accounts, assets…'
+                            value=''
+                            onChangeText={() => undefined}
+                        />
+                    ),
+                },
+                {
+                    label: 'with typed value',
+                    node: (
+                        <SearchInput
+                            placeholder='Search accounts, assets…'
+                            value='ALGO'
+                            onChangeText={() => undefined}
+                        />
+                    ),
+                },
+            ]}
         />
     ),
 })
@@ -220,11 +458,31 @@ registerPreview({
 registerPreview({
     id: 'comp-currency-input',
     render: () => (
-        <CurrencyInput
-            minPrecision={2}
-            maxPrecision={6}
-            value=''
-            onChangeText={() => undefined}
+        <VariantPreview
+            items={[
+                {
+                    label: 'empty',
+                    node: (
+                        <CurrencyInput
+                            minPrecision={2}
+                            maxPrecision={6}
+                            value=''
+                            onChangeText={() => undefined}
+                        />
+                    ),
+                },
+                {
+                    label: 'with value',
+                    node: (
+                        <CurrencyInput
+                            minPrecision={2}
+                            maxPrecision={6}
+                            value='42.5'
+                            onChangeText={() => undefined}
+                        />
+                    ),
+                },
+            ]}
         />
     ),
 })
@@ -246,60 +504,137 @@ registerPreview({
 registerPreview({
     id: 'comp-round-button',
     render: () => (
-        <PWView>
-            <RoundButton
-                icon='transactions/send'
-                title='Send'
-                onPress={() => undefined}
-            />
-            <RoundButton
-                icon='transactions/receive'
-                title='Receive'
-                variant='primary'
-                onPress={() => undefined}
-            />
-        </PWView>
+        <VariantPreview
+            items={[
+                {
+                    label: 'send / secondary / lg',
+                    node: (
+                        <RoundButton
+                            icon='transactions/send'
+                            title='Send'
+                            onPress={() => undefined}
+                        />
+                    ),
+                },
+                {
+                    label: 'receive / primary / lg',
+                    node: (
+                        <RoundButton
+                            icon='transactions/receive'
+                            title='Receive'
+                            variant='primary'
+                            onPress={() => undefined}
+                        />
+                    ),
+                },
+                {
+                    label: 'send / secondary / sm',
+                    node: (
+                        <RoundButton
+                            icon='transactions/send'
+                            title='Send'
+                            size='sm'
+                            onPress={() => undefined}
+                        />
+                    ),
+                },
+                {
+                    label: 'no title',
+                    node: (
+                        <RoundButton
+                            icon='transactions/send'
+                            onPress={() => undefined}
+                        />
+                    ),
+                },
+            ]}
+        />
     ),
 })
 
 registerPreview({
     id: 'comp-panel-button',
     render: () => (
-        <PWView>
-            <PanelButton
-                leftIcon='wallet'
-                rightIcon='chevron-right'
-                title='Connect Hardware Wallet'
-                description='Use a Ledger device to keep your keys offline'
-                titleWeight='h3'
-                onPress={() => undefined}
-            />
-            <PanelButton
-                leftIcon='trash'
-                title='Remove account'
-                titleWeight='h4'
-                variant='error'
-                onPress={() => undefined}
-            />
-        </PWView>
+        <VariantPreview
+            items={[
+                {
+                    label: 'default variant with description',
+                    node: (
+                        <PanelButton
+                            leftIcon='wallet'
+                            rightIcon='chevron-right'
+                            title='Connect Hardware Wallet'
+                            description='Use a Ledger device to keep your keys offline'
+                            titleWeight='h3'
+                            onPress={() => undefined}
+                        />
+                    ),
+                },
+                {
+                    label: 'error variant (destructive)',
+                    node: (
+                        <PanelButton
+                            leftIcon='trash'
+                            title='Remove account'
+                            titleWeight='h4'
+                            variant='error'
+                            onPress={() => undefined}
+                        />
+                    ),
+                },
+                {
+                    label: 'no description, no right icon',
+                    node: (
+                        <PanelButton
+                            leftIcon='bell'
+                            title='Notifications'
+                            titleWeight='h4'
+                            onPress={() => undefined}
+                        />
+                    ),
+                },
+            ]}
+        />
     ),
 })
 
 registerPreview({
     id: 'comp-info-button',
     render: () => (
-        <PWView>
-            <InfoButton
-                variant='secondary'
-                size='sm'
-                title='Account type'
-            >
-                <PWText variant='body'>
-                    A standard account is controlled by a single private key
-                    stored on this device.
-                </PWText>
-            </InfoButton>
-        </PWView>
+        <VariantPreview
+            items={[
+                {
+                    label: 'secondary / sm',
+                    node: (
+                        <InfoButton
+                            variant='secondary'
+                            size='sm'
+                            title='Account type'
+                        >
+                            <PWText variant='body'>
+                                A standard account is controlled by a single
+                                private key stored on this device.
+                            </PWText>
+                        </InfoButton>
+                    ),
+                },
+                {
+                    label: 'primary / md',
+                    node: (
+                        <InfoButton
+                            variant='primary'
+                            size='md'
+                            title='Multisig threshold'
+                        >
+                            <PWText variant='body'>
+                                The threshold is the minimum number of signers
+                                required to approve a transaction.
+                            </PWText>
+                        </InfoButton>
+                    ),
+                },
+            ]}
+        />
     ),
 })
 
@@ -308,10 +643,23 @@ registerPreview({
 registerPreview({
     id: 'comp-screen-header',
     render: () => (
-        <ScreenHeader
-            icon='ledger'
-            title='Select Ledger account'
-            description='Choose which account you want to import from your Ledger device.'
+        <VariantPreview
+            items={[
+                {
+                    label: 'with icon + description',
+                    node: (
+                        <ScreenHeader
+                            icon='ledger'
+                            title='Select Ledger account'
+                            description='Choose which account you want to import from your Ledger device.'
+                        />
+                    ),
+                },
+                {
+                    label: 'title only',
+                    node: <ScreenHeader title='Simple header' />,
+                },
+            ]}
         />
     ),
 })
@@ -321,10 +669,29 @@ registerPreview({
 registerPreview({
     id: 'comp-multisig-info-card',
     render: () => (
-        <MultisigInfoCard
-            totalParticipants={3}
-            threshold={2}
-            isUserIncluded={true}
+        <VariantPreview
+            items={[
+                {
+                    label: '2-of-3 / user included',
+                    node: (
+                        <MultisigInfoCard
+                            totalParticipants={3}
+                            threshold={2}
+                            isUserIncluded={true}
+                        />
+                    ),
+                },
+                {
+                    label: '3-of-5 / user not included',
+                    node: (
+                        <MultisigInfoCard
+                            totalParticipants={5}
+                            threshold={3}
+                            isUserIncluded={false}
+                        />
+                    ),
+                },
+            ]}
         />
     ),
 })
@@ -334,15 +701,39 @@ registerPreview({
 registerPreview({
     id: 'comp-name-account-form',
     render: () => (
-        <NameAccountForm
-            title='Name your account'
-            description='Give this account a nickname so you can easily find it later.'
-            finishButtonTitle='Save'
-            loadingTitle='Saving…'
-            value='My Main Wallet'
-            onChangeText={() => undefined}
-            onFinish={() => undefined}
-            isLoading={false}
+        <VariantPreview
+            items={[
+                {
+                    label: 'not loading',
+                    node: (
+                        <NameAccountForm
+                            title='Name your account'
+                            description='Give this account a nickname so you can easily find it later.'
+                            finishButtonTitle='Save'
+                            loadingTitle='Saving…'
+                            value='My Main Wallet'
+                            onChangeText={() => undefined}
+                            onFinish={() => undefined}
+                            isLoading={false}
+                        />
+                    ),
+                },
+                {
+                    label: 'loading',
+                    node: (
+                        <NameAccountForm
+                            title='Name your account'
+                            description='Give this account a nickname so you can easily find it later.'
+                            finishButtonTitle='Save'
+                            loadingTitle='Saving…'
+                            value='My Main Wallet'
+                            onChangeText={() => undefined}
+                            onFinish={() => undefined}
+                            isLoading={true}
+                        />
+                    ),
+                },
+            ]}
         />
     ),
 })
