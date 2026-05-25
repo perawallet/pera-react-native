@@ -60,7 +60,10 @@ export const AsaVerificationInfoContent = (
                 />
             </PWTouchableOpacity>
 
-            <PWScrollView style={styles.scrollContent}>
+            <PWScrollView
+                inBottomSheet
+                style={styles.scrollContent}
+            >
                 <PWImage
                     source={heroImage}
                     style={styles.heroImage}

@@ -13,14 +13,23 @@
 import { getTestProps } from '@utils/test-id-helper'
 import { ScrollViewProps, StyleSheet } from 'react-native'
 import { ScrollView } from 'react-native-gesture-handler'
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet'
 import { useStyles } from './styles'
 
 export type PWScrollViewProps = ScrollViewProps & {
     testID?: string
+    /**
+     * Render gorhom's `BottomSheetScrollView` so the scroll gesture cooperates
+     * with the sheet's pan gesture. A plain ScrollView inside a bottom sheet
+     * won't scroll. Mirrors `PWFlatList`'s `inBottomSheet`.
+     */
+    inBottomSheet?: boolean
 }
 
 export const PWScrollView = ({
     testID,
+    inBottomSheet,
+    children,
     keyboardShouldPersistTaps,
     contentContainerStyle,
     showsVerticalScrollIndicator = false,
@@ -42,6 +51,23 @@ export const PWScrollView = ({
         ? contentContainerStyle
         : [styles.contentContainer, contentContainerStyle]
 
+    if (inBottomSheet) {
+        return (
+            <BottomSheetScrollView
+                keyboardShouldPersistTaps={
+                    keyboardShouldPersistTaps ?? 'handled'
+                }
+                contentContainerStyle={resolvedContentContainerStyle}
+                showsVerticalScrollIndicator={showsVerticalScrollIndicator}
+                showsHorizontalScrollIndicator={showsHorizontalScrollIndicator}
+                {...getTestProps(testID)}
+                {...props}
+            >
+                {children}
+            </BottomSheetScrollView>
+        )
+    }
+
     return (
         <ScrollView
             // Default to `'handled'` so taps on touchable children fire
@@ -55,6 +81,8 @@ export const PWScrollView = ({
             showsHorizontalScrollIndicator={showsHorizontalScrollIndicator}
             {...getTestProps(testID)}
             {...props}
-        />
+        >
+            {children}
+        </ScrollView>
     )
 }
