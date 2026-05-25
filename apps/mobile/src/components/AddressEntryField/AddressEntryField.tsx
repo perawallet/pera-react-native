@@ -92,6 +92,7 @@ export const AddressEntryField = ({
                     onClose={hideScanner}
                     animationType='slide'
                     title={t('address_entry.scan_qr')}
+                    skipDeepLinkHandler
                 />
             )}
         </PWView>
