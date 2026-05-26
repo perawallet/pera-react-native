@@ -10,4 +10,5 @@
  limitations under the License
  */
 
+export { useMultisigNotificationIntentStore } from './useMultisigNotificationIntentStore'
 export { usePendingSignaturesSheetStore } from './usePendingSignaturesSheetStore'

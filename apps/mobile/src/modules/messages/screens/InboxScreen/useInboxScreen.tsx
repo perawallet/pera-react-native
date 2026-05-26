@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 import {
     type ASAInbox,
     type InboxItem,
@@ -22,6 +22,7 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useHandleMultisigSignTap } from '@modules/multisig/hooks/useHandleMultisigSignTap'
+import { useMultisigNotificationIntentStore } from '@modules/multisig/stores/useMultisigNotificationIntentStore'
 import {
     MultisigInvitationDetailContent,
     type MultisigInvitationDetailContentResult,
@@ -124,6 +125,44 @@ export const useInboxScreen = (): UseInboxScreenResult => {
         },
         [push, errorToast, handleMultisigSignTap, openInvitationDetail],
     )
+
+    const pendingIntent = useMultisigNotificationIntentStore(
+        state => state.pendingIntent,
+    )
+    const consumeIntent = useMultisigNotificationIntentStore(
+        state => state.consumeIntent,
+    )
+
+    useEffect(() => {
+        if (!pendingIntent || isPending) return
+        const matches = (inboxItems ?? []).filter(item => {
+            if (
+                pendingIntent.kind === 'sign' &&
+                item.type === 'multisig_sign'
+            ) {
+                return (
+                    item.data.multisigAccount.address === pendingIntent.address
+                )
+            }
+            if (
+                pendingIntent.kind === 'import' &&
+                item.type === 'multisig_import'
+            ) {
+                return item.data.address === pendingIntent.address
+            }
+            return false
+        })
+        if (matches.length === 1) {
+            handleInboxItemPress(matches[0])
+        }
+        consumeIntent()
+    }, [
+        pendingIntent,
+        isPending,
+        inboxItems,
+        handleInboxItemPress,
+        consumeIntent,
+    ])
 
     return {
         inboxItems: inboxItems ?? [],

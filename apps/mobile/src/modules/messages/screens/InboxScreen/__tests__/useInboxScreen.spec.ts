@@ -14,6 +14,7 @@ import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useInboxScreen } from '../useInboxScreen'
 import { useInboxQuery } from '@perawallet/wallet-core-messages'
+import { useMultisigNotificationIntentStore } from '@modules/multisig/stores/useMultisigNotificationIntentStore'
 
 const mockPush = vi.fn()
 const mockErrorToast = vi.fn()
@@ -66,6 +67,7 @@ vi.mock('@modules/multisig/hooks/useHandleMultisigSignTap', () => ({
 describe('useInboxScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        useMultisigNotificationIntentStore.getState().resetState()
         vi.mocked(useInboxQuery).mockReturnValue({
             data: [],
             isPending: false,
@@ -240,5 +242,137 @@ describe('useInboxScreen', () => {
         expect(mockHandleMultisigSignTap).toHaveBeenCalledWith(signItem.data)
         expect(mockErrorToast).not.toHaveBeenCalled()
         expect(mockPush).not.toHaveBeenCalled()
+    })
+
+    describe('multisig notification intent', () => {
+        const createSignItem = (multisigAddress: string, id = 'sign-1') => ({
+            type: 'multisig_sign' as const,
+            data: {
+                id,
+                multisigAccount: { address: multisigAddress },
+            },
+            createdAt: new Date(0),
+        })
+
+        const createImportItem = (address: string, customId = 'msig-1') => ({
+            type: 'multisig_import' as const,
+            data: {
+                customId,
+                createdAt: new Date(0),
+                address,
+                version: 1,
+                threshold: 2,
+                participantAddresses: ['ADDR1', 'ADDR2'],
+            },
+            createdAt: new Date(0),
+        })
+
+        it('auto-presses the matching multisig_sign item and consumes the intent', () => {
+            const signItem = createSignItem('MSIG_ADDR')
+            vi.mocked(useInboxQuery).mockReturnValue({
+                data: [signItem],
+                isPending: false,
+                isRefetching: false,
+                refetch: vi.fn(),
+            } as unknown as ReturnType<typeof useInboxQuery>)
+            useMultisigNotificationIntentStore.getState().setIntent({
+                kind: 'sign',
+                address: 'MSIG_ADDR',
+            })
+
+            renderHook(() => useInboxScreen())
+
+            expect(mockHandleMultisigSignTap).toHaveBeenCalledWith(
+                signItem.data,
+            )
+            expect(
+                useMultisigNotificationIntentStore.getState().pendingIntent,
+            ).toBeNull()
+        })
+
+        it('opens the invitation sheet for the matching multisig_import item', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+            const importItem = createImportItem('MSIG_IMPORT_ADDR')
+            vi.mocked(useInboxQuery).mockReturnValue({
+                data: [importItem],
+                isPending: false,
+                isRefetching: false,
+                refetch: vi.fn(),
+            } as unknown as ReturnType<typeof useInboxQuery>)
+            useMultisigNotificationIntentStore.getState().setIntent({
+                kind: 'import',
+                address: 'MSIG_IMPORT_ADDR',
+            })
+
+            renderHook(() => useInboxScreen())
+
+            expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+            expect(
+                useMultisigNotificationIntentStore.getState().pendingIntent,
+            ).toBeNull()
+        })
+
+        it('clears the intent without dispatching when no matching item exists', () => {
+            vi.mocked(useInboxQuery).mockReturnValue({
+                data: [createSignItem('OTHER_MSIG_ADDR')],
+                isPending: false,
+                isRefetching: false,
+                refetch: vi.fn(),
+            } as unknown as ReturnType<typeof useInboxQuery>)
+            useMultisigNotificationIntentStore.getState().setIntent({
+                kind: 'sign',
+                address: 'MSIG_ADDR',
+            })
+
+            renderHook(() => useInboxScreen())
+
+            expect(mockHandleMultisigSignTap).not.toHaveBeenCalled()
+            expect(
+                useMultisigNotificationIntentStore.getState().pendingIntent,
+            ).toBeNull()
+        })
+
+        it('clears the intent without dispatching when multiple items match', () => {
+            vi.mocked(useInboxQuery).mockReturnValue({
+                data: [
+                    createSignItem('MSIG_ADDR', 'sign-1'),
+                    createSignItem('MSIG_ADDR', 'sign-2'),
+                ],
+                isPending: false,
+                isRefetching: false,
+                refetch: vi.fn(),
+            } as unknown as ReturnType<typeof useInboxQuery>)
+            useMultisigNotificationIntentStore.getState().setIntent({
+                kind: 'sign',
+                address: 'MSIG_ADDR',
+            })
+
+            renderHook(() => useInboxScreen())
+
+            expect(mockHandleMultisigSignTap).not.toHaveBeenCalled()
+            expect(
+                useMultisigNotificationIntentStore.getState().pendingIntent,
+            ).toBeNull()
+        })
+
+        it('does not dispatch while the inbox query is still pending', () => {
+            vi.mocked(useInboxQuery).mockReturnValue({
+                data: undefined,
+                isPending: true,
+                isRefetching: false,
+                refetch: vi.fn(),
+            } as unknown as ReturnType<typeof useInboxQuery>)
+            useMultisigNotificationIntentStore.getState().setIntent({
+                kind: 'sign',
+                address: 'MSIG_ADDR',
+            })
+
+            renderHook(() => useInboxScreen())
+
+            expect(mockHandleMultisigSignTap).not.toHaveBeenCalled()
+            expect(
+                useMultisigNotificationIntentStore.getState().pendingIntent,
+            ).toEqual({ kind: 'sign', address: 'MSIG_ADDR' })
+        })
     })
 })

@@ -14,9 +14,11 @@ import { renderHook } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useNotificationPress } from '../useNotificationPress'
 import type { PeraNotification } from '@perawallet/wallet-core-messages'
+import { useMultisigNotificationIntentStore } from '@modules/multisig/stores/useMultisigNotificationIntentStore'
 
 const mockHandleDeepLink = vi.fn()
 const mockIsValidDeepLink = vi.fn()
+const mockNavigateToScreen = vi.fn()
 
 vi.mock('@hooks/useDeepLink', () => ({
     useDeepLink: () => ({
@@ -24,6 +26,21 @@ vi.mock('@hooks/useDeepLink', () => ({
         handleDeepLink: mockHandleDeepLink,
     }),
 }))
+
+vi.mock('@hooks/deeplink/navigateToScreen', () => ({
+    navigateToScreen: (...args: unknown[]) => mockNavigateToScreen(...args),
+}))
+
+const mockInvalidateInbox = vi.fn()
+vi.mock('@perawallet/wallet-core-messages', async () => {
+    const actual = await vi.importActual<
+        typeof import('@perawallet/wallet-core-messages')
+    >('@perawallet/wallet-core-messages')
+    return {
+        ...actual,
+        useInboxInvalidator: () => ({ invalidate: mockInvalidateInbox }),
+    }
+})
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: vi.fn(() => ({
@@ -45,6 +62,7 @@ describe('useNotificationPress', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        useMultisigNotificationIntentStore.getState().resetState()
     })
 
     it('calls handleDeepLink when url is valid', () => {
@@ -88,5 +106,99 @@ describe('useNotificationPress', () => {
             'https://invalid-url.com',
         )
         expect(mockHandleDeepLink).not.toHaveBeenCalled()
+    })
+
+    it('sets a sign intent and navigates to Inbox for multisig-new-sign-request, skipping handleDeepLink', () => {
+        const { result } = renderHook(() => useNotificationPress())
+        const notification = makeNotification({
+            type: 'multisig-new-sign-request',
+            accountAddress: 'MSIG_ADDR',
+            url: 'perawallet://asset-inbox/?address=MSIG_ADDR',
+        })
+
+        result.current.handleNotificationPress(notification)
+
+        expect(
+            useMultisigNotificationIntentStore.getState().pendingIntent,
+        ).toEqual({ kind: 'sign', address: 'MSIG_ADDR' })
+        expect(mockNavigateToScreen).toHaveBeenCalledWith(false, 'Messages', {
+            screen: 'MessagesHome',
+            params: { screen: 'Inbox' },
+        })
+        expect(mockInvalidateInbox).toHaveBeenCalled()
+        expect(mockHandleDeepLink).not.toHaveBeenCalled()
+    })
+
+    it('sets an import intent and navigates to Inbox for multi-sig-import-account', () => {
+        const { result } = renderHook(() => useNotificationPress())
+        const notification = makeNotification({
+            type: 'multi-sig-import-account',
+            accountAddress: 'MSIG_IMPORT_ADDR',
+            url: 'perawallet://asset-inbox/?address=MSIG_IMPORT_ADDR',
+        })
+
+        result.current.handleNotificationPress(notification)
+
+        expect(
+            useMultisigNotificationIntentStore.getState().pendingIntent,
+        ).toEqual({ kind: 'import', address: 'MSIG_IMPORT_ADDR' })
+        expect(mockNavigateToScreen).toHaveBeenCalledWith(false, 'Messages', {
+            screen: 'MessagesHome',
+            params: { screen: 'Inbox' },
+        })
+        expect(mockHandleDeepLink).not.toHaveBeenCalled()
+    })
+
+    it('is a no-op for multisig-declined notifications', () => {
+        const { result } = renderHook(() => useNotificationPress())
+        const notification = makeNotification({
+            type: 'multisig-declined',
+            url: 'perawallet://app/account-detail/?address=MSIG_ADDR',
+        })
+
+        result.current.handleNotificationPress(notification)
+
+        expect(
+            useMultisigNotificationIntentStore.getState().pendingIntent,
+        ).toBeNull()
+        expect(mockNavigateToScreen).not.toHaveBeenCalled()
+        expect(mockHandleDeepLink).not.toHaveBeenCalled()
+    })
+
+    it('is a no-op for multisig-expired notifications', () => {
+        const { result } = renderHook(() => useNotificationPress())
+        const notification = makeNotification({
+            type: 'multisig-expired',
+            url: 'perawallet://app/account-detail/?address=MSIG_ADDR',
+        })
+
+        result.current.handleNotificationPress(notification)
+
+        expect(
+            useMultisigNotificationIntentStore.getState().pendingIntent,
+        ).toBeNull()
+        expect(mockNavigateToScreen).not.toHaveBeenCalled()
+        expect(mockHandleDeepLink).not.toHaveBeenCalled()
+    })
+
+    it('falls through to handleDeepLink for non-multisig notification types', () => {
+        mockIsValidDeepLink.mockReturnValue(true)
+
+        const { result } = renderHook(() => useNotificationPress())
+        const notification = makeNotification({
+            type: 'transaction-received',
+        })
+
+        result.current.handleNotificationPress(notification)
+
+        expect(
+            useMultisigNotificationIntentStore.getState().pendingIntent,
+        ).toBeNull()
+        expect(mockNavigateToScreen).not.toHaveBeenCalled()
+        expect(mockHandleDeepLink).toHaveBeenCalledWith(
+            notification.url,
+            true,
+            'deeplink',
+        )
     })
 })

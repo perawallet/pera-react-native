@@ -39,8 +39,16 @@ export type NotificationIcon = {
     shape: 'circle' | 'rectangle'
 }
 
+export const MULTISIG_NEW_SIGN_REQUEST_NOTIFICATION_TYPE =
+    'multisig-new-sign-request'
+export const MULTISIG_IMPORT_ACCOUNT_NOTIFICATION_TYPE =
+    'multi-sig-import-account'
+export const MULTISIG_DECLINED_NOTIFICATION_TYPE = 'multisig-declined'
+export const MULTISIG_EXPIRED_NOTIFICATION_TYPE = 'multisig-expired'
+
 export type PeraNotification = {
     id: string
+    type?: string
     accountAddress: string
     message: string
     url: string

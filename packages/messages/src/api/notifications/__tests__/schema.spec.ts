@@ -73,6 +73,16 @@ describe('notificationResponseSchema', () => {
         }
         const result = notificationResponseSchema.parse(input)
         expect(result.id).toBe('1')
+        expect(result.type).toBeUndefined()
+    })
+
+    test('parses with a type field', () => {
+        const input = {
+            ...validNotification,
+            type: 'multisig-new-sign-request',
+        }
+        const result = notificationResponseSchema.parse(input)
+        expect(result.type).toBe('multisig-new-sign-request')
     })
 
     test('parses with null icon', () => {
