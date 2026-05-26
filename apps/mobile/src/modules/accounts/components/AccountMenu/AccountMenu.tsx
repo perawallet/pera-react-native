@@ -97,7 +97,6 @@ export const AccountMenu = (props: AccountMenuProps) => {
                         </PWTouchableOpacity>
                     )}
                     ItemSeparatorComponent={ListSeparator}
-                    estimatedItemSize={64}
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={styles.accountContainer}
                     inBottomSheet

@@ -11,7 +11,7 @@
  */
 
 import React, { forwardRef, useImperativeHandle, useRef } from 'react'
-import { LegendList, LegendListProps, LegendListRef } from '@legendapp/list'
+import { FlashList, FlashListProps, FlashListRef } from '@shopify/flash-list'
 import { useBottomSheetScrollableCreator } from '@gorhom/bottom-sheet'
 
 export type PWFlatListRef = {
@@ -25,24 +25,26 @@ export type PWFlatListRef = {
     scrollToEnd: (options?: { animated?: boolean }) => void
 }
 
-export type PWFlatListProps<T> = LegendListProps<T> & {
+export type PWFlatListProps<T> = FlashListProps<T> & {
     inBottomSheet?: boolean
 }
 
 export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
     ({ inBottomSheet, ...props }, ref) => {
-        const innerRef = useRef<LegendListRef>(null)
+        const innerRef = useRef<FlashListRef<unknown>>(null)
         const BottomSheetScrollable = useBottomSheetScrollableCreator()
 
         useImperativeHandle(ref, () => ({
             scrollToOffset: params => innerRef.current?.scrollToOffset(params),
-            scrollToIndex: params => innerRef.current?.scrollToIndex(params),
+            scrollToIndex: params => {
+                void innerRef.current?.scrollToIndex(params)
+            },
             scrollToEnd: options => innerRef.current?.scrollToEnd(options),
         }))
 
         if (inBottomSheet) {
             return (
-                <LegendList
+                <FlashList
                     {...(props ?? {})}
                     ref={innerRef}
                     renderScrollComponent={BottomSheetScrollable}
@@ -50,7 +52,7 @@ export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
             )
         } else {
             return (
-                <LegendList
+                <FlashList
                     {...(props ?? {})}
                     ref={innerRef}
                 />

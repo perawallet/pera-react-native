@@ -11,7 +11,7 @@
  */
 
 import React, { createElement, forwardRef, useCallback, useMemo } from 'react'
-import type { LegendListRenderItemProps } from '@legendapp/list'
+import type { ListRenderItemInfo } from '@shopify/flash-list'
 
 import { PWFlatList, PWView } from '@components/core'
 import type { PWFlatListProps, PWFlatListRef } from '@components/core'
@@ -24,7 +24,7 @@ import {
 import { DEFAULT_SNAP_THRESHOLD, SCROLL_EVENT_THROTTLE } from '@constants/ui'
 import { Maybe } from '@perawallet/wallet-core-shared'
 
-type RenderItem<T> = (props: LegendListRenderItemProps<T>) => React.ReactNode
+type RenderItem<T> = (props: ListRenderItemInfo<T>) => React.ReactNode
 
 export type SearchableListSearchProps = {
     value?: string
@@ -48,7 +48,7 @@ const renderHeaderNode = (
 
 export type SearchableListProps<T> = Omit<
     PWFlatListProps<T>,
-    'stickyIndices' | 'renderItem' | 'ListEmptyComponent'
+    'stickyHeaderIndices' | 'renderItem' | 'ListEmptyComponent'
 > & {
     renderItem?: RenderItem<T>
     ListEmptyComponent?: Maybe<React.ComponentType | React.ReactElement>
@@ -105,7 +105,6 @@ const SearchableListInner = <T,>(
         data,
         keyExtractor,
         snapThreshold,
-        itemHeightEstimate: listProps.estimatedItemSize,
         onScroll,
         onScrollEndDrag,
     })
@@ -166,7 +165,6 @@ const SearchableListInner = <T,>(
                     ...info,
                     item: info.item,
                     index: toUserIndex(info.index),
-                    data: (info.data?.slice(1) ?? []) as readonly T[],
                 }) ?? null
             )
         },
@@ -189,11 +187,11 @@ const SearchableListInner = <T,>(
         [callerExtraData, searchValue],
     )
 
-    // LegendList's data-mode prop type uses `children: never`, while React's
-    // intrinsic component types always add `children?: ReactNode` — so any
-    // structural cast at this boundary fails. The single `any` here is
-    // strictly to bridge that mismatch; everything we *write* (data,
-    // renderItem, keyExtractor, etc.) is properly typed above.
+    // PWFlatList's generic forwarded-ref signature doesn't unify with the
+    // prop object we build here via JSX, so we go through createElement with a
+    // single `any` to bridge it; everything we *write* (data, renderItem,
+    // keyExtractor, etc.) is properly typed above. FlashList enables
+    // maintainVisibleContentPosition by default, so it isn't set explicitly.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return createElement(PWFlatList as any, {
         ...listProps,
@@ -203,8 +201,7 @@ const SearchableListInner = <T,>(
         keyExtractor: augmentedKeyExtractor,
         ListHeaderComponent: augmentedHeader,
         ListFooterComponent: augmentedFooter,
-        stickyIndices: [0],
-        maintainVisibleContentPosition: true,
+        stickyHeaderIndices: [0],
         extraData: augmentedExtraData,
         onLayout: handleListLayout,
         onContentSizeChange: handleContentSizeChange,

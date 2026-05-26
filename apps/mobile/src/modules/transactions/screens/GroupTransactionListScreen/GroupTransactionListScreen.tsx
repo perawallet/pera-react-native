@@ -74,7 +74,6 @@ export const GroupTransactionListScreen = () => {
                     renderItem={renderItem}
                     keyExtractor={keyExtractor}
                     ItemSeparatorComponent={ItemSeparator}
-                    recycleItems
                 />
             </PWView>
         </PWView>

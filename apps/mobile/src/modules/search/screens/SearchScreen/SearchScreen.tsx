@@ -31,7 +31,6 @@ import { useStyles } from './styles'
 import { useSearchScreen, type SearchRow } from './useSearchScreen'
 
 const SKELETON_ROW_COUNT = 5
-const ESTIMATED_ROW_SIZE = 64
 
 export const SearchScreen = () => {
     const styles = useStyles()
@@ -169,7 +168,6 @@ export const SearchScreen = () => {
                 data={rows}
                 renderItem={renderItem}
                 keyExtractor={keyExtractor}
-                estimatedItemSize={ESTIMATED_ROW_SIZE}
                 style={styles.list}
                 contentContainerStyle={styles.contentContainer}
                 ListEmptyComponent={

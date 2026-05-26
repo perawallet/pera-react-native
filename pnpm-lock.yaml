@@ -104,7 +104,7 @@ catalogs:
       version: 5.0.0
     vitest:
       specifier: ^4.1.4
-      version: 4.1.6
+      version: 4.1.4
     xstate:
       specifier: ^5.28.0
       version: 5.31.1
@@ -227,9 +227,6 @@ importers:
       '@ledgerhq/react-native-hid':
         specifier: ^6.39.1
         version: 6.39.2(react-native@0.83.4(@babel/core@7.29.0)(@react-native/metro-config@0.85.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.6))
-      '@legendapp/list':
-        specifier: ^2.0.19
-        version: 2.0.19(react-native@0.83.4(@babel/core@7.29.0)(@react-native/metro-config@0.85.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.6))(react@19.2.6)
       '@noble/hashes':
         specifier: 'catalog:'
         version: 1.8.0
@@ -380,6 +377,9 @@ importers:
       '@scure/bip39':
         specifier: 'catalog:'
         version: 2.2.0
+      '@shopify/flash-list':
+        specifier: ^2.3.1
+        version: 2.3.1(@babel/runtime@7.29.2)(react-native@0.83.4(@babel/core@7.29.0)(@react-native/metro-config@0.85.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.6))(react@19.2.6)
       '@tanstack/query-async-storage-persister':
         specifier: 'catalog:'
         version: 5.100.10
@@ -4884,12 +4884,6 @@ packages:
   '@ledgerhq/react-native-hw-transport-ble@6.40.2':
     resolution: {integrity: sha512-AZcfjKRLFE7TO4XEWyemnKt20MuhdmpvPC//CGDX1DknrznkKkOTZ7XV73ksjD8aKvH5oIhOshC/bwz/9gx3kQ==}
 
-  '@legendapp/list@2.0.19':
-    resolution: {integrity: sha512-zDWg8yg0smKxxk+M7gwAbZAnf5uczohPA+IjqLSkImz7+e9ytxeT0Mq35RBO9RTKODOXfV/aIgm1uqUHLBEdmg==}
-    peerDependencies:
-      react: '*'
-      react-native: 0.83.4
-
   '@microsoft/api-extractor-model@7.33.4':
     resolution: {integrity: sha512-u1LTaNTikZAQ9uK6KG1Ms7nvNedsnODnspq/gH2dcyETWvH4hVNGNDvRAEutH66kAmxA4/necElqGNs1FggC8w==}
 
@@ -5891,6 +5885,13 @@ packages:
 
   '@scure/bip39@2.2.0':
     resolution: {integrity: sha512-T/Bj/YvYMNkIPq6EENO6/rcs2e7qTNuyoUXf0KBFDmp0ZDu0H2X4Lq6yC3i0c8PcWkov5EbW+yQZZbdMmk154A==}
+
+  '@shopify/flash-list@2.3.1':
+    resolution: {integrity: sha512-7oktg2NQR7KAODjFoDaWe8/OBzyYbdTE3zQTrUBMxjIbxHTHN7UXRX1hX3DHk8KvtkgQdRfZOV8Gjj2l4fGrXw==}
+    peerDependencies:
+      '@babel/runtime': '*'
+      react: '*'
+      react-native: 0.83.4
 
   '@sinclair/typebox@0.27.10':
     resolution: {integrity: sha512-MTBk/3jGLNB2tVxv6uLlFh1iu64iYOQ2PbdOSK3NW8JZsmlaOh2q6sdtKowBhfw8QFLmYNzTW4/oK4uATIi6ZA==}
@@ -12963,12 +12964,6 @@ snapshots:
       - react
       - react-native
 
-  '@legendapp/list@2.0.19(react-native@0.83.4(@babel/core@7.29.0)(@react-native/metro-config@0.85.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.6))(react@19.2.6)':
-    dependencies:
-      react: 19.2.6
-      react-native: 0.83.4(@babel/core@7.29.0)(@react-native/metro-config@0.85.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.6)
-      use-sync-external-store: 1.6.0(react@19.2.6)
-
   '@microsoft/api-extractor-model@7.33.4(@types/node@20.19.39)':
     dependencies:
       '@microsoft/tsdoc': 0.16.0
@@ -14010,6 +14005,12 @@ snapshots:
     dependencies:
       '@noble/hashes': 2.2.0
       '@scure/base': 2.2.0
+
+  '@shopify/flash-list@2.3.1(@babel/runtime@7.29.2)(react-native@0.83.4(@babel/core@7.29.0)(@react-native/metro-config@0.85.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.6))(react@19.2.6)':
+    dependencies:
+      '@babel/runtime': 7.29.2
+      react: 19.2.6
+      react-native: 0.83.4(@babel/core@7.29.0)(@react-native/metro-config@0.85.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.6)
 
   '@sinclair/typebox@0.27.10': {}
 

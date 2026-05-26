@@ -149,8 +149,6 @@ export const AccountAssetList = ({
                     renderItem={renderItem}
                     scrollEnabled={scrollEnabled}
                     keyExtractor={item => item.assetId}
-                    estimatedItemSize={72}
-                    recycleItems
                     automaticallyAdjustKeyboardInsets
                     keyboardDismissMode='interactive'
                     contentContainerStyle={styles.rootContainer}

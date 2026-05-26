@@ -22,8 +22,6 @@ import { InboxItem } from '@modules/messages/components/InboxItem/InboxItem'
 import { useStyles } from './styles'
 import { useInboxScreen } from './useInboxScreen'
 
-const ESTIMATED_INBOX_ITEM_SIZE = 72
-
 export const InboxScreen = () => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
@@ -68,8 +66,6 @@ export const InboxScreen = () => {
                         body={t('messages.inbox.empty_body')}
                     />
                 }
-                estimatedItemSize={ESTIMATED_INBOX_ITEM_SIZE}
-                waitForInitialLayout
                 refreshControl={
                     <RefreshControl
                         refreshing={isRefetching}

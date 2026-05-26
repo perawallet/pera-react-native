@@ -19,7 +19,6 @@ export const useStyles = makeStyles(theme => {
             padding: theme.spacing.xl,
         },
         contentContainer: {
-            gap: theme.spacing.md,
             paddingBottom: theme.spacing.xl,
         },
         icon: {
@@ -92,6 +91,7 @@ export const useStyles = makeStyles(theme => {
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: theme.spacing.sm,
+            paddingVertical: theme.spacing.sm,
         },
     }
 })
