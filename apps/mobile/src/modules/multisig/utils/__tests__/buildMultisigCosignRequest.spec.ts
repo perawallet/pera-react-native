@@ -115,7 +115,7 @@ describe('buildMultisigCosignRequest', () => {
     it('assigns a non-empty unique id to each cosign request', () => {
         // Regression: an empty id collides in the actor map and `??` fall-
         // backs further upstream, so two cosigns trample each other and a
-        // stale `lastFailedRequest` falsely matches any future cosign.
+        // stale signing-event-bus failure falsely matches any future cosign.
         const decodeTransaction = vi.fn(
             () => ({}) as unknown as PeraTransaction,
         )

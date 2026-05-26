@@ -34,7 +34,7 @@ import {
 } from '../utils/arc60'
 import { parseSiwa } from '../utils/siwa'
 
-export type UseArc60SignerResult = {
+export type UseLocalKeyArc60SignerResult = {
     /**
      * Produces a single ARC-60 AUTH-scope signature for the given signer
      * account. Throws spec-aligned errors (`Arc60*Error`) for every rejection
@@ -47,7 +47,10 @@ export type UseArc60SignerResult = {
     ) => Promise<Uint8Array>
 }
 
-export const useArc60Signer = (): UseArc60SignerResult => {
+// Local-key-only path (Algo25 / HDWallet via KMS). Ledger ARC-60 takes a
+// separate route: hardware signer-type dispatch → createHardwareStrategy →
+// signArc60OnHardwareWallet, so it never hits this hook.
+export const useLocalKeyArc60Signer = (): UseLocalKeyArc60SignerResult => {
     const { signDataWithKey } = useKMS()
 
     const signArc60 = useCallback(

@@ -208,6 +208,51 @@ describe('useWalletConnectHandoffResolver', () => {
         )
     })
 
+    it('prunes resolved guard entries when their handoff leaves the registry', async () => {
+        // Covers the resolvedRef pruning branch: after a terminal outcome is
+        // delivered, the handoff stays in resolvedRef. When the registry
+        // unregisters it, the next effect run must drop the stale entry so
+        // a re-registration with the same id would be re-pollable.
+        mocks.classifyHandoffPoll.mockReturnValue({
+            kind: 'soft-reject',
+            reason: 'declined',
+        })
+        const handoff = makeHandoff('sr-1')
+        useWalletConnectHandoffsStore.getState().register(handoff)
+
+        renderHook(
+            () =>
+                useWalletConnectHandoffResolver({
+                    isAppActive: true,
+                    messages,
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() =>
+            expect(mocks.resolveHandoffOutcome).toHaveBeenCalledTimes(1),
+        )
+
+        // Unregister the handoff and confirm the effect re-runs without
+        // re-delivering. The internal resolvedRef pruning path runs as
+        // part of this effect re-run.
+        act(() => {
+            useWalletConnectHandoffsStore.getState().unregister('sr-1')
+        })
+
+        // Re-registering the SAME id after pruning must allow the resolver
+        // to fire again (proving the stale guard was dropped).
+        act(() => {
+            useWalletConnectHandoffsStore
+                .getState()
+                .register(makeHandoff('sr-1'))
+        })
+
+        await waitFor(() =>
+            expect(mocks.resolveHandoffOutcome).toHaveBeenCalledTimes(2),
+        )
+    })
+
     it('delivers each terminal outcome only once across repeated polls', async () => {
         mocks.classifyHandoffPoll.mockReturnValue({
             kind: 'soft-reject',

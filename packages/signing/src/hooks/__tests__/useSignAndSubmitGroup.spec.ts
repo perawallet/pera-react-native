@@ -132,6 +132,35 @@ describe('useSignAndSubmitGroup', () => {
         expect(mockSubmitAndAutoRefresh).not.toHaveBeenCalled()
     })
 
+    it('wraps a non-Error rejection from submitAndAutoRefresh into a real Error', async () => {
+        // Covers the false branch of `err instanceof Error` in the approve
+        // path — promises can reject with primitives, and the hook normalises
+        // those into Error so downstream consumers can rely on Error.message.
+        mockSubmitAndAutoRefresh.mockRejectedValue('plain-string-failure')
+        let captured: Optional<TransactionSignRequest>
+        mockAddSignRequest.mockImplementation((r: TransactionSignRequest) => {
+            captured = r
+        })
+
+        const { result } = renderHook(() => useSignAndSubmitGroup())
+
+        const promise = act(async () =>
+            result.current.submit({
+                unsignedTxs: [fakeTxn],
+                source: { name: 'opt-in', description: 'test' },
+            }),
+        )
+
+        await captured?.approve?.([
+            { txn: fakeTxn, sig: new Uint8Array([1]) },
+        ] as PeraSignedTransaction[])
+
+        await expect(promise).rejects.toBeInstanceOf(Error)
+        await expect(promise).rejects.toMatchObject({
+            message: 'plain-string-failure',
+        })
+    })
+
     it('returns immediately with no submission when given an empty group', async () => {
         const { result } = renderHook(() => useSignAndSubmitGroup())
 

@@ -21,7 +21,6 @@ import type {
     TransportResult,
 } from '../pipeline/types'
 import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
-import type { SigningCallbacks } from '../pipeline/types'
 import type {
     LocalSigningFunction,
     LocalArbitrarySigningFunction,
@@ -74,7 +73,7 @@ export type SigningMachineDeps = {
     signTransactions: LocalSigningFunction
     /** KMS arbitrary-data signing function from useArbitraryDataSigner */
     signArbitraryData: LocalArbitrarySigningFunction
-    /** KMS ARC-60 signing function from useArc60Signer */
+    /** KMS ARC-60 signing function from useLocalKeyArc60Signer */
     signArc60: LocalArc60SigningFunction
     /** Selects the correct transport (algod, callback, multisig, etc.) */
     createTransport: TransportFactory
@@ -84,8 +83,6 @@ export type SigningMachineDeps = {
     hardwareWalletRegistry?: HardwareWalletRegistry
     /** Transaction encoder for hardware wallet signing */
     encodeTransaction: EncodeTransactionFunction
-    /** Optional callbacks for hardware wallet signing UI integration */
-    signingCallbacks?: SigningCallbacks
 }
 
 // =============================================================================
@@ -188,11 +185,21 @@ export type UserRejectedEvent = { type: 'USER_REJECTED' }
 /** User tapped retry after a retryable failure */
 export type RetryEvent = { type: 'RETRY' }
 
+/** UI requests the hardware child re-attempts the current group after a recoverable error */
+export type RetryHardwareEvent = { type: 'RETRY_HARDWARE' }
+
+/** UI acknowledges the hardware child error, abandoning the in-flight request */
+export type AcknowledgeHardwareErrorEvent = {
+    type: 'ACKNOWLEDGE_HARDWARE_ERROR'
+}
+
 /** All events the signing machine accepts */
 export type SigningMachineEvent =
     | UserApprovedEvent
     | UserRejectedEvent
     | RetryEvent
+    | RetryHardwareEvent
+    | AcknowledgeHardwareErrorEvent
 
 // =============================================================================
 // Machine Input

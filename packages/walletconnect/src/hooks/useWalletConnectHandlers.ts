@@ -279,8 +279,7 @@ export const useWalletConnectHandlers = () => {
     const connections = useWalletConnectStore(
         state => state.walletConnectConnections,
     )
-    const { addSignRequest, removeSignRequest, clearLastFailedRequest } =
-        useSigningRequest()
+    const { addSignRequest, removeSignRequest } = useSigningRequest()
     const accounts = useAllAccounts()
     const resolveArc0001 = useArc0001Resolver()
     const enqueueSignRequest = useEnqueueArc0001SignRequest()
@@ -349,21 +348,15 @@ export const useWalletConnectHandlers = () => {
                             new WalletConnectSignRequestError(err.message),
                         )
                     // The WC error bottom sheet is the only surface here;
-                    // clearing the failed-request flag suppresses the
-                    // signing pipeline's full-screen "Signing Failed" view.
-                    clearLastFailedRequest()
+                    // SignRequestView already returns null for walletconnect
+                    // sources when a failed event arrives, so removing the
+                    // request from the queue is sufficient cleanup.
                     removeSignRequest(signRequest)
                 },
             } as Arc60SignRequest
             addSignRequest(signRequest)
         },
-        [
-            connections,
-            accounts,
-            addSignRequest,
-            removeSignRequest,
-            clearLastFailedRequest,
-        ],
+        [connections, accounts, addSignRequest, removeSignRequest],
     )
 
     const handleSignData = useCallback(
@@ -450,7 +443,6 @@ export const useWalletConnectHandlers = () => {
                         .setConnectionError(
                             new WalletConnectSignRequestError(error.message),
                         )
-                    clearLastFailedRequest()
                     removeSignRequest(signRequest)
                 },
             } as ArbitraryDataSignRequest
@@ -461,7 +453,6 @@ export const useWalletConnectHandlers = () => {
             accounts,
             addSignRequest,
             removeSignRequest,
-            clearLastFailedRequest,
             handleArc60SignData,
         ],
     )
@@ -526,16 +517,10 @@ export const useWalletConnectHandlers = () => {
                         .setConnectionError(
                             new WalletConnectSignRequestError(error.message),
                         )
-                    clearLastFailedRequest()
                 },
             })
         },
-        [
-            connections,
-            clearLastFailedRequest,
-            enqueueSignRequest,
-            resolveArc0001,
-        ],
+        [connections, enqueueSignRequest, resolveArc0001],
     )
 
     return {

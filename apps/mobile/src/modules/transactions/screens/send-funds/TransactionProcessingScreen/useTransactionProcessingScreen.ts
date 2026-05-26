@@ -26,8 +26,7 @@ import {
 } from '@perawallet/wallet-core-transactions'
 import {
     UserRejectedSigningError,
-    useLastTransportResult,
-    type TransportResult,
+    useSigningEvent,
 } from '@perawallet/wallet-core-signing'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
@@ -74,44 +73,37 @@ export const useTransactionProcessingScreen =
 
         const { execute } = useTransactionSendFlow()
 
-        // Multisig propose returns via the `proposed` transport result instead of
-        // resolving the algod submission Promise — `execute()` never settles in
-        // that case. Watch `lastTransportResult` from the signing store (set
-        // unconditionally by the actor lifecycle on completion) and exit the
+        // Multisig propose returns via the `proposed` transport result instead
+        // of resolving the algod submission Promise — `execute()` never settles
+        // in that case. Subscribe to the signing event bus and exit the
         // send-funds flow so the PendingSignaturesBottomSheet (opened by
-        // useMultisigProposeListener on the same store change) can take over.
-        //
-        // We don't use `useSigningPipeline({ onEvent })` here: its actor
-        // subscription doesn't reliably establish in time for headless propose
-        // requests, because the lifecycle's actor map is non-reactive.
-        const lastTransportResult = useLastTransportResult()
-        const seenTransportResultRef = useRef<TransportResult | null>(
-            lastTransportResult ?? null,
-        )
+        // useMultisigProposeListener on the same event) can take over.
         const hasExitedRef = useRef(false)
+        const proposeReceivedRef = useRef(false)
+
+        useSigningEvent(
+            event =>
+                event.type === 'transport-result' &&
+                event.result.type === 'proposed',
+            () => {
+                proposeReceivedRef.current = true
+                if (hasExitedRef.current) return
+                if (!onFinished) return
+                hasExitedRef.current = true
+                onFinished()
+            },
+        )
 
         useEffect(() => {
-            if (lastTransportResult === seenTransportResultRef.current) return
-            // Non-proposed (or null) results are noise for this screen; mark seen
-            // and bail without consuming the proposed-exit budget.
-            if (!lastTransportResult) {
-                seenTransportResultRef.current = null
-                return
-            }
-            if (lastTransportResult.type !== 'proposed') {
-                seenTransportResultRef.current = lastTransportResult
-                return
-            }
+            // Re-fire when onFinished becomes available after a propose event
+            // arrived early — avoids stranding the screen with a consumed
+            // propose result.
+            if (!proposeReceivedRef.current) return
             if (hasExitedRef.current) return
-            // Defer until onFinished resolves — don't update seenRef yet so the
-            // effect re-fires when onFinished becomes available. Avoids a bug
-            // where the screen "consumes" a proposed result without exiting,
-            // permanently leaving the sheet visible.
             if (!onFinished) return
-            seenTransportResultRef.current = lastTransportResult
             hasExitedRef.current = true
             onFinished()
-        }, [lastTransportResult, onFinished])
+        }, [onFinished])
 
         useEffect(() => {
             const subscription = BackHandler.addEventListener(

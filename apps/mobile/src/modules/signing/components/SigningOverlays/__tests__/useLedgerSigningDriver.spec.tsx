@@ -11,8 +11,13 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
-import { useHardwareSigningStore } from '@perawallet/wallet-core-signing'
+import { renderHook } from '@testing-library/react'
+import {
+    useHardwareSigningStore,
+    useSigningPipeline,
+    useSigningRequest,
+    type HardwareChildSnapshot,
+} from '@perawallet/wallet-core-signing'
 import { useLedgerSigningDriver } from '../useLedgerSigningDriver'
 
 const { requestBottomSheetMock, dismissMock } = vi.hoisted(() => ({
@@ -38,66 +43,103 @@ vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
         await importOriginal<typeof import('@perawallet/wallet-core-signing')>()
     return {
         ...actual,
-        useSigningRequest: () => ({
-            pendingSignRequests: [],
-            rejectRequest: vi.fn(),
-            retryRequest: vi.fn(),
-        }),
+        useSigningRequest: vi.fn(),
+        useSigningPipeline: vi.fn(),
     }
 })
+
+type ChildValue =
+    | 'error'
+    | { active: 'searching' | 'awaiting_approval' | 'signing' }
+
+const buildChildSnapshot = (value: ChildValue): HardwareChildSnapshot => {
+    const matches = (target: unknown): boolean => {
+        if (typeof target === 'string')
+            return typeof value === 'string' && value === target
+        if (typeof value === 'string') return false
+        const targetObj = target as { active?: string }
+        const valueObj = value as { active?: string }
+        return targetObj.active === valueObj.active
+    }
+    return {
+        value,
+        matches,
+        context: {
+            deviceName: 'Nano X',
+            currentTx: null,
+            totalTxs: null,
+            error: null,
+        },
+    } as unknown as HardwareChildSnapshot
+}
+
+const mockPipelineWithChild = (snapshot: HardwareChildSnapshot | null) => {
+    vi.mocked(useSigningPipeline).mockReturnValue({
+        resolved: snapshot
+            ? { activeChild: { kind: 'hardware', snapshot } }
+            : { activeChild: null },
+        retryHardware: vi.fn(),
+        acknowledgeHardwareError: vi.fn(),
+    } as never)
+}
+
+const mockPendingRequests = (ids: string[]) => {
+    vi.mocked(useSigningRequest).mockReturnValue({
+        currentRequest: ids[0] ? { id: ids[0] } : undefined,
+        pendingSignRequests: ids.map(id => ({ id })),
+        rejectRequest: vi.fn(),
+        retryRequest: vi.fn(),
+    } as never)
+}
 
 describe('useLedgerSigningDriver', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        useHardwareSigningStore.getState().reset()
+        useHardwareSigningStore.getState().resetState()
+        vi.mocked(useSigningRequest).mockReturnValue({
+            currentRequest: undefined,
+            pendingSignRequests: [],
+            rejectRequest: vi.fn(),
+            retryRequest: vi.fn(),
+        } as never)
     })
 
-    it('opens the sheet when the hardware-signing store flips to awaitingApproval', () => {
-        const { rerender } = renderHook(() => useLedgerSigningDriver())
-        act(() => {
-            useHardwareSigningStore.getState().start('req-1', 'Nano X')
-            useHardwareSigningStore.getState().setStatus('awaitingApproval')
-        })
-        rerender()
+    it('opens the sheet when the hardware child enters awaiting_approval', () => {
+        mockPendingRequests(['req-1'])
+        mockPipelineWithChild(
+            buildChildSnapshot({ active: 'awaiting_approval' }),
+        )
+        renderHook(() => useLedgerSigningDriver())
         expect(requestBottomSheetMock).toHaveBeenCalledTimes(1)
         expect(requestBottomSheetMock.mock.calls[0][0].id).toBe(
             'ledger-signing:req-1',
         )
     })
 
-    it('keeps the sheet closed during the silent BLE-scan phase', () => {
-        const { rerender } = renderHook(() => useLedgerSigningDriver())
-        act(() => {
-            // start() sets status='searching' — the silent phase.
-            useHardwareSigningStore.getState().start('req-1', 'Nano X')
-        })
-        rerender()
+    it('keeps the sheet closed during the silent BLE-scan phase (searching)', () => {
+        mockPendingRequests(['req-1'])
+        mockPipelineWithChild(buildChildSnapshot({ active: 'searching' }))
+        renderHook(() => useLedgerSigningDriver())
         expect(requestBottomSheetMock).not.toHaveBeenCalled()
     })
 
     it('opens the sheet for the signing phase too', () => {
-        const { rerender } = renderHook(() => useLedgerSigningDriver())
-        act(() => {
-            useHardwareSigningStore.getState().start('req-1', 'Nano X')
-            useHardwareSigningStore.getState().setStatus('signing')
-        })
-        rerender()
+        mockPendingRequests(['req-1'])
+        mockPipelineWithChild(buildChildSnapshot({ active: 'signing' }))
+        renderHook(() => useLedgerSigningDriver())
         expect(requestBottomSheetMock).toHaveBeenCalledTimes(1)
     })
 
-    it('dismisses the sheet when the hardware-signing store resets', () => {
+    it('dismisses the sheet when the hardware child tears down', () => {
+        mockPendingRequests(['req-1'])
+        mockPipelineWithChild(
+            buildChildSnapshot({ active: 'awaiting_approval' }),
+        )
         const { rerender } = renderHook(() => useLedgerSigningDriver())
-        act(() => {
-            useHardwareSigningStore.getState().start('req-1', 'Nano X')
-            useHardwareSigningStore.getState().setStatus('awaitingApproval')
-        })
-        rerender()
         expect(requestBottomSheetMock).toHaveBeenCalledTimes(1)
         expect(dismissMock).not.toHaveBeenCalled()
 
-        act(() => {
-            useHardwareSigningStore.getState().reset()
-        })
+        mockPipelineWithChild(null)
         rerender()
         expect(dismissMock).toHaveBeenCalledWith('ledger-signing:req-1')
     })

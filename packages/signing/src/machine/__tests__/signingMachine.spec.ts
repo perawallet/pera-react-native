@@ -604,4 +604,128 @@ describe('signingMachine', () => {
             expect.arrayContaining(['localKey', 'multisig']),
         )
     })
+
+    describe('hardware signer dispatch', () => {
+        const HW_ADDRESS =
+            'HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH'
+
+        const hwAccount = {
+            type: 'hardware',
+            address: HW_ADDRESS,
+            hardwareDetails: {
+                manufacturer: 'ledger',
+                deviceId: 'device-1',
+                deviceName: 'Nano X',
+                accountIndex: 0,
+                transportType: 'ble',
+            },
+        } as unknown as WalletAccount
+
+        const hwTx = {
+            sender: { toString: () => HW_ADDRESS },
+            fee: 1000n,
+            type: 'pay',
+        } as never
+
+        const hwRequest: TransactionSignRequest = {
+            id: 'req-hw',
+            type: 'transactions',
+            transport: 'algod',
+            txs: [hwTx],
+        }
+
+        const hwResult: SigningResult = {
+            signedData: { type: 'transactions', signed: [] },
+            signers: [{ address: HW_ADDRESS }],
+            originalIndices: [0],
+        }
+
+        const inputForHardware = (): SigningMachineInput =>
+            makeInput({
+                request: hwRequest,
+                allAccounts: [hwAccount],
+                hardwareWalletRegistry: {} as never,
+                encodeTransaction: vi.fn() as never,
+            })
+
+        it('hardware child success → results accumulated, machine completes', async () => {
+            const machine = signingMachine.provide({
+                actors: {
+                    analyzerActor: fromPromise(
+                        async (): Promise<SignableAnalysis[]> => [mockAnalysis],
+                    ),
+                    hardwareSigningMachine: fromPromise(async () => ({
+                        kind: 'success' as const,
+                        results: [hwResult],
+                    })) as never,
+                    transportActor: fromPromise(
+                        async (): Promise<TransportResult> =>
+                            mockTransportResult,
+                    ),
+                },
+            })
+
+            const actor = createActor(machine, { input: inputForHardware() })
+            actor.start()
+            await waitFor(actor, s => s.matches('awaiting_user'))
+            actor.send({ type: 'USER_APPROVED' })
+
+            const state = await waitFor(actor, s => s.matches('completed'))
+            expect(state.context.signingResults).toEqual([hwResult])
+            expect(state.context.completedSignerTypes).toContain('hardware')
+        })
+
+        it('hardware child rejected → machine reaches rejected state', async () => {
+            const machine = signingMachine.provide({
+                actors: {
+                    analyzerActor: fromPromise(
+                        async (): Promise<SignableAnalysis[]> => [mockAnalysis],
+                    ),
+                    hardwareSigningMachine: fromPromise(async () => ({
+                        kind: 'rejected' as const,
+                    })) as never,
+                    transportActor: fromPromise(
+                        async (): Promise<TransportResult> =>
+                            mockTransportResult,
+                    ),
+                },
+            })
+
+            const actor = createActor(machine, { input: inputForHardware() })
+            actor.start()
+            await waitFor(actor, s => s.matches('awaiting_user'))
+            actor.send({ type: 'USER_APPROVED' })
+
+            const state = await waitFor(actor, s => s.matches('rejected'))
+            expect(state.matches('rejected')).toBe(true)
+        })
+
+        it('hardware child error → machine reaches failed with the error cause', async () => {
+            const cause = new Error('ledger bluetooth off')
+            const machine = signingMachine.provide({
+                actors: {
+                    analyzerActor: fromPromise(
+                        async (): Promise<SignableAnalysis[]> => [mockAnalysis],
+                    ),
+                    hardwareSigningMachine: fromPromise(async () => ({
+                        kind: 'error' as const,
+                        error: { kind: 'bluetooth_disabled', cause },
+                    })) as never,
+                    transportActor: fromPromise(
+                        async (): Promise<TransportResult> =>
+                            mockTransportResult,
+                    ),
+                },
+            })
+
+            const actor = createActor(machine, { input: inputForHardware() })
+            actor.start()
+            await waitFor(actor, s => s.matches('awaiting_user'))
+            actor.send({ type: 'USER_APPROVED' })
+
+            const state = await waitFor(actor, s => s.matches('failed'))
+            expect(state.context.error).toBe(cause)
+            expect(state.context.failedDuringState).toBe('signing')
+        })
+    })
 })

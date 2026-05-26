@@ -26,7 +26,11 @@ import type {
     SigningConfiguration,
     SigningPipeline,
     MachineSnapshot,
+    ResolvedSignRequest,
+    ActiveSigningChild,
+    HardwareChildSnapshot,
 } from './types'
+import { buildResolvedSignRequest } from './buildResolvedSignRequest'
 import {
     EMPTY_TRANSACTIONS,
     EMPTY_LIST_ITEMS,
@@ -137,6 +141,8 @@ export const useSigningPipeline = (
 
     const [stage, setStage] = useState<PipelineStage>('idle')
     const [error, setError] = useState<Nullable<Error>>(null)
+    const [resolved, setResolved] =
+        useState<Nullable<ResolvedSignRequest>>(null)
 
     // Keep onEvent in a ref so the subscription closure never goes stale
     const onEventRef = useRef(onEvent)
@@ -149,30 +155,130 @@ export const useSigningPipeline = (
         if (!currentActorRef) {
             setStage('idle')
             setError(null)
+            setResolved(null)
             prevStageRef.current = null
             return
         }
 
-        const subscription = (currentActorRef as AnyActorRef).subscribe(
-            rawSnapshot => {
-                const snapshot = rawSnapshot as MachineSnapshot
-                const newStage = deriveStage(snapshot)
+        const actor = currentActorRef as AnyActorRef
 
-                setStage(newStage)
-                setError(snapshot.context.error)
-
-                if (newStage !== prevStageRef.current) {
-                    const event = deriveEvent(snapshot, newStage)
-                    if (event) {
-                        onEventRef.current?.(event)
-                    }
-                    prevStageRef.current = newStage
+        // Extract the hardware child snapshot from the parent snapshot's
+        // `children` map. The parent invokes the child with id 'hardwareChild'
+        // (see signingMachine.ts → states.signing.states.hardware.invoke).
+        const readActiveChild = (
+            snapshot: MachineSnapshot,
+        ): ActiveSigningChild => {
+            const children = (
+                snapshot as {
+                    children?: Record<string, AnyActorRef | undefined>
                 }
-            },
-        )
+            ).children
+            const hardwareChild = children?.hardwareChild
+            if (!hardwareChild) return null
+            const childSnapshot = (
+                hardwareChild as { getSnapshot?: () => unknown }
+            ).getSnapshot?.() as HardwareChildSnapshot | undefined
+            if (!childSnapshot) return null
+            return { kind: 'hardware', snapshot: childSnapshot }
+        }
+
+        const project = (
+            snapshot: MachineSnapshot,
+        ): ResolvedSignRequest | null => {
+            const base = buildResolvedSignRequest(snapshot.context)
+            if (!base) return null
+            return { ...base, activeChild: readActiveChild(snapshot) }
+        }
+
+        // Seed from the current snapshot so a late-mount picks up state
+        // without waiting for the next machine transition. Guard against
+        // mocks/actors that don't implement getSnapshot().
+        const getSnapshot = (actor as { getSnapshot?: () => unknown })
+            .getSnapshot
+        if (typeof getSnapshot === 'function') {
+            const initialSnapshot = getSnapshot.call(actor) as MachineSnapshot
+            if (initialSnapshot?.context) {
+                setResolved(project(initialSnapshot))
+            }
+        }
+
+        // Track the latest child subscription so we can resubscribe whenever
+        // the parent invokes a new hardware child (or tears one down). XState
+        // v5 parent snapshots don't always re-emit when only the child's
+        // sub-state changes; subscribing to the child directly guarantees the
+        // UI re-renders on phase transitions (searching → awaiting_approval →
+        // signing) and on PROGRESS events.
+        let childUnsubscribe: (() => void) | null = null
+        let lastHardwareChild: AnyActorRef | null = null
+
+        const syncChildSubscription = (parentSnapshot: MachineSnapshot) => {
+            const children = (
+                parentSnapshot as {
+                    children?: Record<string, AnyActorRef | undefined>
+                }
+            ).children
+            const hardwareChild = children?.hardwareChild ?? null
+            if (hardwareChild === lastHardwareChild) return
+            if (childUnsubscribe) {
+                childUnsubscribe()
+                childUnsubscribe = null
+            }
+            lastHardwareChild = hardwareChild
+            if (!hardwareChild) return
+            // Reproject immediately on (re)subscribe so the very first child
+            // snapshot is observed without waiting for the next child event.
+            const currentParent = (
+                actor as { getSnapshot?: () => unknown }
+            ).getSnapshot?.() as MachineSnapshot | undefined
+            if (currentParent?.context) {
+                setResolved(project(currentParent))
+            }
+            const childSub = hardwareChild.subscribe(() => {
+                const nextParent = (
+                    actor as { getSnapshot?: () => unknown }
+                ).getSnapshot?.() as MachineSnapshot | undefined
+                if (nextParent?.context) {
+                    setResolved(project(nextParent))
+                }
+            })
+            childUnsubscribe = () => childSub.unsubscribe()
+        }
+
+        const subscription = actor.subscribe(rawSnapshot => {
+            const snapshot = rawSnapshot as MachineSnapshot
+            const newStage = deriveStage(snapshot)
+
+            setStage(newStage)
+            setError(snapshot.context.error)
+            setResolved(project(snapshot))
+            syncChildSubscription(snapshot)
+
+            if (newStage !== prevStageRef.current) {
+                const event = deriveEvent(snapshot, newStage)
+                if (event) {
+                    onEventRef.current?.(event)
+                }
+                prevStageRef.current = newStage
+            }
+        })
+
+        // Seed the child subscription from the initial snapshot so the very
+        // first child phase change is observed even if it lands before the
+        // parent subscribe fires.
+        if (typeof getSnapshot === 'function') {
+            const initialSnapshot = getSnapshot.call(actor) as MachineSnapshot
+            if (initialSnapshot?.context) {
+                syncChildSubscription(initialSnapshot)
+            }
+        }
 
         return () => {
             subscription.unsubscribe()
+            if (childUnsubscribe) {
+                childUnsubscribe()
+                childUnsubscribe = null
+            }
+            lastHardwareChild = null
             prevStageRef.current = null
         }
     }, [currentActorRef])
@@ -206,6 +312,18 @@ export const useSigningPipeline = (
         retryRequest(currentRequest)
     }, [currentRequest, retryRequest])
 
+    const retryHardware = useCallback(() => {
+        ;(currentActorRef as AnyActorRef | null)?.send({
+            type: 'RETRY_HARDWARE',
+        })
+    }, [currentActorRef])
+
+    const acknowledgeHardwareError = useCallback(() => {
+        ;(currentActorRef as AnyActorRef | null)?.send({
+            type: 'ACKNOWLEDGE_HARDWARE_ERROR',
+        })
+    }, [currentActorRef])
+
     // -------------------------------------------------------------------------
     // Derived flags
     // -------------------------------------------------------------------------
@@ -238,5 +356,8 @@ export const useSigningPipeline = (
         next,
         fail,
         retry,
+        resolved,
+        retryHardware,
+        acknowledgeHardwareError,
     }
 }
