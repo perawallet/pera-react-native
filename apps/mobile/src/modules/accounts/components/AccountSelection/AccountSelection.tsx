@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, ReactNode } from 'react'
+import { useCallback, useRef, ReactNode } from 'react'
 import {
     useSelectedAccount,
     WalletAccount,
@@ -55,8 +55,12 @@ export const AccountSelection = ({
     const account = useSelectedAccount()
     const navigation = useAppNavigation()
     const { request: requestBottomSheet } = useBottomSheet()
+    const isOpenRef = useRef(false)
 
     const openAccountMenu = useCallback(async () => {
+        if (isOpenRef.current) return
+        isOpenRef.current = true
+
         const result = await requestBottomSheet<AccountMenuContentResult>({
             contents: (
                 <AccountMenuContent
@@ -73,6 +77,8 @@ export const AccountSelection = ({
                 autoCreateContainer: false,
             },
         })
+
+        isOpenRef.current = false
 
         if (!result) return
 
