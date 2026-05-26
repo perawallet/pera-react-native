@@ -44,7 +44,7 @@ export const MenuScreen = () => {
         void requestBottomSheet({
             contents: <ReceiveFundsContent />,
             options: {
-                size: 'lg',
+                size: 'modal',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },
@@ -55,7 +55,7 @@ export const MenuScreen = () => {
         void requestBottomSheet({
             contents: <BidaliContent />,
             options: {
-                size: 'lg',
+                size: 'modal',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },

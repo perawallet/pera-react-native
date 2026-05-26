@@ -130,7 +130,7 @@ describe('useAccountActions', () => {
         expect(mockRequestByType).toHaveBeenCalledWith(
             'send-funds',
             {},
-            expect.objectContaining({ size: 'lg' }),
+            expect.objectContaining({ size: 'modal' }),
         )
     })
 

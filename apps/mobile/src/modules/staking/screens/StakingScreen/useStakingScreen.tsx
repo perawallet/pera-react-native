@@ -71,7 +71,7 @@ export const useStakingScreen = (): UseStakingScreenResult => {
             const accepted = await requestBottomSheet<boolean>({
                 contents: <StakingDisclaimerContent />,
                 options: {
-                    size: 'lg',
+                    size: 'modal',
                     enablePanDownToClose: true,
                     autoCreateContainer: false,
                 },
@@ -97,7 +97,7 @@ export const useStakingScreen = (): UseStakingScreenResult => {
             // 'auto' the sheet hugs the content so there's nothing to scroll.
             // Mirrors the sibling StakingDisclaimerContent open.
             options: {
-                size: 'lg',
+                size: 'modal',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },

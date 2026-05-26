@@ -88,7 +88,7 @@ export const useCreateMultisigScreen = (): UseCreateMultisigScreenResult => {
         const address = await requestBottomSheet<string>({
             contents: <AddParticipantContent />,
             options: {
-                size: 'lg',
+                size: 'modal',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },

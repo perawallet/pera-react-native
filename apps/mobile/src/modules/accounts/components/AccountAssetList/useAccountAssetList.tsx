@@ -218,7 +218,7 @@ export const useAccountAssetList = ({
         void requestBottomSheet<void>({
             contents: <AddAssetContent />,
             options: {
-                size: 'lg',
+                size: 'modal',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },

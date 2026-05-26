@@ -68,7 +68,7 @@ export const useSendFundsDeeplink = (): SendFundsDeeplinkHandler => {
                 'send-funds',
                 { assetId },
                 {
-                    size: 'lg',
+                    size: 'modal',
                     enablePanDownToClose: true,
                     autoCreateContainer: false,
                 },

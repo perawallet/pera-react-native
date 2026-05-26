@@ -184,8 +184,7 @@ describe('PWBottomSheet', () => {
 
     it.each([
         ['auto', true, undefined],
-        ['lg', false, ['96%']],
-        ['md', false, ['50%']],
+        ['modal', false, ['96%']],
         ['full', false, ['100%']],
     ] as [PWBottomSheetSize, boolean, Optional<string[]>][])(
         'passes correct config for size=%s',
@@ -227,7 +226,7 @@ describe('PWBottomSheet', () => {
         expect(capturedProps.enablePanDownToClose).toBe(false)
     })
 
-    it.each(['lg', 'full'] as PWBottomSheetSize[])(
+    it.each(['modal', 'full'] as PWBottomSheetSize[])(
         'hides the drag-handle notch on full-screen size=%s even with pan-down',
         size => {
             render(
@@ -250,7 +249,7 @@ describe('PWBottomSheet', () => {
         render(
             <PWBottomSheet
                 isVisible={true}
-                size='md'
+                size='auto'
                 enablePanDownToClose={true}
             >
                 <Text>Content</Text>

@@ -458,7 +458,10 @@ describe('useLedgerSelectAccountsScreen', () => {
 
         expect(mockRequest).toHaveBeenCalledTimes(1)
         const arg = mockRequest.mock.calls[0][0]
-        expect(arg.options).toEqual({ size: 'lg', enablePanDownToClose: true })
+        expect(arg.options).toEqual({
+            size: 'modal',
+            enablePanDownToClose: true,
+        })
         expect(arg.contents).toBeTruthy()
     })
 

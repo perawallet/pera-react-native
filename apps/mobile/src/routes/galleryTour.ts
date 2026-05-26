@@ -90,7 +90,7 @@ const STEPS: Step[] = [
             void sheet().requestByType(
                 'asset-opt-in',
                 { assetId: MOCK_ASSET_ID, accountAddress: A },
-                { size: 'lg', enablePanDownToClose: true },
+                { size: 'modal', enablePanDownToClose: true },
             ),
     },
     {
@@ -100,7 +100,7 @@ const STEPS: Step[] = [
                 'send-funds',
                 {},
                 {
-                    size: 'lg',
+                    size: 'modal',
                     enablePanDownToClose: true,
                     autoCreateContainer: false,
                 },
@@ -113,7 +113,7 @@ const STEPS: Step[] = [
                 'bidali',
                 {},
                 {
-                    size: 'lg',
+                    size: 'modal',
                     enablePanDownToClose: true,
                     autoCreateContainer: false,
                 },

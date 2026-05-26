@@ -334,7 +334,7 @@ export const useSwapForm = (): UseSwapFormResult => {
                 />
             ),
             options: {
-                size: 'lg',
+                size: 'modal',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },
@@ -358,7 +358,7 @@ export const useSwapForm = (): UseSwapFormResult => {
                 />
             ),
             options: {
-                size: 'lg',
+                size: 'modal',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },
@@ -442,7 +442,7 @@ export const useSwapForm = (): UseSwapFormResult => {
         const result = await requestBottomSheet<SwapConfigurationResult>({
             contents: <SwapConfigurationContent />,
             options: {
-                size: 'lg',
+                size: 'modal',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },

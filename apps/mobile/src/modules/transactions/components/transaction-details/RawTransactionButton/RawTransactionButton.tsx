@@ -31,7 +31,7 @@ export const RawTransactionButton = ({
         void requestBottomSheet({
             contents: <RawTransactionContent transaction={transaction} />,
             options: {
-                size: 'lg',
+                size: 'modal',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },

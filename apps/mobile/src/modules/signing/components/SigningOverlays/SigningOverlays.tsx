@@ -95,7 +95,7 @@ const useSignRequestDriver = () => {
                     id: sheetId,
                     contents: <SignRequestContent request={nextRequest!} />,
                     options: {
-                        size: 'lg',
+                        size: 'modal',
                         enablePanDownToClose: false,
                         enableCloseOnBackdropPress: false,
                         autoCreateContainer: false,

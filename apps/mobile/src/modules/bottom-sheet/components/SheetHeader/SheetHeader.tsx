@@ -46,7 +46,7 @@ export type SheetHeaderProps = {
  *
  * The close (X) is dropped only when the host sheet is *not* full-screen and
  * enables pan-down-to-close, since the drag handle then provides dismissal.
- * Full-screen sheets (`full` / `lg` — the 96–100% snap points) keep the X
+ * Full-screen sheets (`full` / `modal` — the 96–100% snap points) keep the X
  * because the drag handle is far away, and sheets without pan-down keep it so
  * they stay dismissable.
  */
@@ -68,7 +68,7 @@ export const SheetHeader = ({
 
     // Full-screen sheets keep the X (the drag handle is too far to reach);
     // smaller pan-down sheets drop it since swiping down dismisses them.
-    const isFullScreen = size === 'full' || size === 'lg'
+    const isFullScreen = size === 'full' || size === 'modal'
     const showClose = isFullScreen || !isPanDownEnabled
 
     return (

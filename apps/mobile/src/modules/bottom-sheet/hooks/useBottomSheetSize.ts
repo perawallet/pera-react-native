@@ -17,7 +17,7 @@ import { useBottomSheetStore } from '../store/bottomSheetStore'
 import type { BottomSheetSize } from '../types'
 
 /**
- * The size the host sheet was opened with (`full`, `lg`, `md`, `auto`). Sheets
+ * The size the host sheet was opened with (`full`, `modal`, `auto`). Sheets
  * opened without an explicit size fall back to the host default (`auto`).
  * `SheetHeader` uses this to keep the close (X) on full-screen sheets even when
  * pan-down is enabled. Returns `undefined` outside a managed sheet.

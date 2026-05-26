@@ -135,7 +135,7 @@ export const useCollectibleDetail = (
         void requestBottomSheet({
             contents: <SendFundsContent assetId={assetId} />,
             options: {
-                size: 'lg',
+                size: 'modal',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },

@@ -310,7 +310,7 @@ export const useLedgerSelectAccountsScreen =
                             title={title}
                         />
                     ),
-                    options: { size: 'lg', enablePanDownToClose: true },
+                    options: { size: 'modal', enablePanDownToClose: true },
                 })
             },
             [request, selectableByAddress, t],

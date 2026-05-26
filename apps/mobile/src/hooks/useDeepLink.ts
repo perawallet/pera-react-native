@@ -290,7 +290,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
                             assetId: parsedData.assetId,
                             accountAddress,
                         },
-                        { size: 'lg', enablePanDownToClose: true },
+                        { size: 'modal', enablePanDownToClose: true },
                     )
                     break
                 }
@@ -392,7 +392,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         'bidali',
                         {},
                         {
-                            size: 'lg',
+                            size: 'modal',
                             enablePanDownToClose: true,
                             autoCreateContainer: false,
                         },

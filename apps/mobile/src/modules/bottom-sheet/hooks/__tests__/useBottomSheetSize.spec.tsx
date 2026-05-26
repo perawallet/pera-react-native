@@ -37,12 +37,12 @@ describe('useBottomSheetSize', () => {
         useBottomSheetStore.getState().request({
             id: 'x',
             contents: 'A',
-            options: { size: 'lg' },
+            options: { size: 'modal' },
         })
         const { result } = renderHook(() => useBottomSheetSize(), {
             wrapper: wrapWithId('x'),
         })
-        expect(result.current).toBe('lg')
+        expect(result.current).toBe('modal')
     })
 
     it('returns undefined when no size was set', () => {

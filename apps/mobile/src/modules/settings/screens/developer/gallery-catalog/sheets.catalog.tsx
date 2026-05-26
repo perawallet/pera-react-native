@@ -115,7 +115,7 @@ export const getSheetSections = (): GallerySection[] => [
                     type: 'send-funds',
                     props: {},
                     options: {
-                        size: 'lg',
+                        size: 'modal',
                         enablePanDownToClose: true,
                         autoCreateContainer: false,
                     },
@@ -129,7 +129,7 @@ export const getSheetSections = (): GallerySection[] => [
                     type: 'bidali',
                     props: {},
                     options: {
-                        size: 'lg',
+                        size: 'modal',
                         enablePanDownToClose: true,
                         autoCreateContainer: false,
                     },
@@ -151,7 +151,7 @@ export const getSheetSections = (): GallerySection[] => [
                                 <AccountMenuContent />
                             </GallerySheetBoundary>
                         ),
-                        options: { size: 'lg', enablePanDownToClose: true },
+                        options: { size: 'modal', enablePanDownToClose: true },
                     }),
                 },
             },
@@ -169,7 +169,7 @@ export const getSheetSections = (): GallerySection[] => [
                                 />
                             </GallerySheetBoundary>
                         ),
-                        options: { size: 'lg', enablePanDownToClose: true },
+                        options: { size: 'modal', enablePanDownToClose: true },
                     }),
                 },
             },
@@ -297,7 +297,7 @@ export const getSheetSections = (): GallerySection[] => [
                                 />
                             </GallerySheetBoundary>
                         ),
-                        options: { size: 'lg', enablePanDownToClose: true },
+                        options: { size: 'modal', enablePanDownToClose: true },
                     }),
                 },
             },
@@ -356,7 +356,7 @@ export const getSheetSections = (): GallerySection[] => [
                                 <AddAssetContent variant='asset' />
                             </GallerySheetBoundary>
                         ),
-                        options: { size: 'lg', enablePanDownToClose: true },
+                        options: { size: 'modal', enablePanDownToClose: true },
                     }),
                 },
             },
@@ -371,7 +371,7 @@ export const getSheetSections = (): GallerySection[] => [
                                 <AsaVerificationInfoContent />
                             </GallerySheetBoundary>
                         ),
-                        options: { size: 'lg', enablePanDownToClose: true },
+                        options: { size: 'modal', enablePanDownToClose: true },
                     }),
                 },
             },
@@ -448,7 +448,7 @@ export const getSheetSections = (): GallerySection[] => [
                             </GallerySheetBoundary>
                         ),
                         options: {
-                            size: 'lg',
+                            size: 'modal',
                             enablePanDownToClose: true,
                         },
                     }),
@@ -469,7 +469,7 @@ export const getSheetSections = (): GallerySection[] => [
                             </GallerySheetBoundary>
                         ),
                         options: {
-                            size: 'lg',
+                            size: 'modal',
                             enablePanDownToClose: true,
                         },
                     }),
@@ -507,7 +507,7 @@ export const getSheetSections = (): GallerySection[] => [
                             </GallerySheetBoundary>
                         ),
                         options: {
-                            size: 'lg',
+                            size: 'modal',
                             enablePanDownToClose: true,
                         },
                     }),
@@ -525,7 +525,7 @@ export const getSheetSections = (): GallerySection[] => [
                             </GallerySheetBoundary>
                         ),
                         options: {
-                            size: 'lg',
+                            size: 'modal',
                             enablePanDownToClose: true,
                         },
                     }),
@@ -720,7 +720,7 @@ export const getSheetSections = (): GallerySection[] => [
                             </GallerySheetBoundary>
                         ),
                         options: {
-                            size: 'lg',
+                            size: 'modal',
                             enablePanDownToClose: true,
                         },
                     }),
@@ -773,7 +773,7 @@ export const getSheetSections = (): GallerySection[] => [
                             </GallerySheetBoundary>
                         ),
                         options: {
-                            size: 'lg',
+                            size: 'modal',
                             enablePanDownToClose: true,
                         },
                     }),
@@ -806,7 +806,7 @@ export const getSheetSections = (): GallerySection[] => [
                             </GallerySheetBoundary>
                         ),
                         options: {
-                            size: 'lg',
+                            size: 'modal',
                             enablePanDownToClose: true,
                         },
                     }),
@@ -838,7 +838,7 @@ export const getSheetSections = (): GallerySection[] => [
                             </GallerySheetBoundary>
                         ),
                         options: {
-                            size: 'lg',
+                            size: 'modal',
                             enablePanDownToClose: true,
                         },
                     }),
@@ -914,7 +914,7 @@ export const getSheetSections = (): GallerySection[] => [
                             </GallerySheetBoundary>
                         ),
                         options: {
-                            size: 'lg',
+                            size: 'modal',
                             enablePanDownToClose: true,
                         },
                     }),
@@ -967,7 +967,7 @@ export const getSheetSections = (): GallerySection[] => [
                             </GallerySheetBoundary>
                         ),
                         options: {
-                            size: 'lg',
+                            size: 'modal',
                             enablePanDownToClose: true,
                         },
                     }),
@@ -990,7 +990,7 @@ export const getSheetSections = (): GallerySection[] => [
                             </GallerySheetBoundary>
                         ),
                         options: {
-                            size: 'lg',
+                            size: 'modal',
                             enablePanDownToClose: true,
                         },
                     }),
@@ -1028,7 +1028,7 @@ export const getSheetSections = (): GallerySection[] => [
                             </GallerySheetBoundary>
                         ),
                         options: {
-                            size: 'lg',
+                            size: 'modal',
                             enablePanDownToClose: true,
                         },
                     }),
@@ -1074,7 +1074,7 @@ export const getSheetSections = (): GallerySection[] => [
                             </GallerySheetBoundary>
                         ),
                         options: {
-                            size: 'lg',
+                            size: 'modal',
                             enablePanDownToClose: true,
                         },
                     }),
@@ -1097,7 +1097,7 @@ export const getSheetSections = (): GallerySection[] => [
                             </GallerySheetBoundary>
                         ),
                         options: {
-                            size: 'lg',
+                            size: 'modal',
                             enablePanDownToClose: true,
                         },
                     }),
@@ -1135,7 +1135,7 @@ export const getSheetSections = (): GallerySection[] => [
                             </GallerySheetBoundary>
                         ),
                         options: {
-                            size: 'lg',
+                            size: 'modal',
                             enablePanDownToClose: true,
                         },
                     }),

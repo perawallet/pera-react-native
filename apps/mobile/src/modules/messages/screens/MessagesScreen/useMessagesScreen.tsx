@@ -32,7 +32,7 @@ export const useMessagesScreen = () => {
         void requestBottomSheet({
             contents: <NotificationSettingsContent />,
             options: {
-                size: 'lg',
+                size: 'modal',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },

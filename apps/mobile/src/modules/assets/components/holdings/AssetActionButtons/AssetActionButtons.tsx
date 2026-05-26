@@ -54,7 +54,7 @@ export const AssetActionButtons = ({
         void requestBottomSheet({
             contents: <ReceiveFundsContent account={account ?? undefined} />,
             options: {
-                size: 'lg',
+                size: 'modal',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },
@@ -84,7 +84,7 @@ export const AssetActionButtons = ({
         void requestBottomSheet({
             contents: <SendFundsContent assetId={asset.assetId} />,
             options: {
-                size: 'lg',
+                size: 'modal',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },

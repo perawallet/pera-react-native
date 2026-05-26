@@ -62,7 +62,7 @@ export const useAccountActions = ({
             'send-funds',
             {},
             {
-                size: 'lg',
+                size: 'modal',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },

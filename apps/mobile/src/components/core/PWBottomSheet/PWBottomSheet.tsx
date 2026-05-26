@@ -42,17 +42,19 @@ type DefaultPropsReturn = {
     enableDynamicSizing: boolean
 }
 
+/**
+ * Shared ceiling for tall sheets. Feeds BOTH `modal`'s snap point and `auto`'s
+ * dynamic max height so the two land on the same visual ceiling and can't drift.
+ */
+const SHEET_MAX_RATIO = 0.96
+
 const DEFAULT_PROPS: Record<PWBottomSheetSize, DefaultPropsReturn> = {
     auto: {
         enableDynamicSizing: true,
     },
-    lg: {
+    modal: {
         enableDynamicSizing: false,
-        snapPoints: ['96%'],
-    },
-    md: {
-        enableDynamicSizing: false,
-        snapPoints: ['50%'],
+        snapPoints: [`${SHEET_MAX_RATIO * 100}%`],
     },
     full: {
         enableDynamicSizing: false,
@@ -60,7 +62,7 @@ const DEFAULT_PROPS: Record<PWBottomSheetSize, DefaultPropsReturn> = {
     },
 }
 
-export type PWBottomSheetSize = 'full' | 'lg' | 'md' | 'auto'
+export type PWBottomSheetSize = 'full' | 'modal' | 'auto'
 
 export type PWBottomSheetProps = {
     isVisible: boolean
@@ -96,12 +98,12 @@ export const PWBottomSheet = ({
     const { height: windowHeight } = useWindowDimensions()
     const defaults = DEFAULT_PROPS[size]
 
-    // `auto` sheets size to their content. Cap that at the safe-area height so
-    // an over-tall sheet stops at the screen and its (scrollable) content
-    // scrolls instead of running under the status bar / nav bar. Non-dynamic
-    // sizes already have fixed snap points, so the cap only applies to `auto`.
+    // `auto` sheets size to their content; cap at the shared ratio so a tall
+    // `auto` sheet shares `modal`'s ceiling and its content scrolls past it.
+    // `topInset` still prevents rising above the status bar; `bottomInset`
+    // (passed to gorhom) keeps it above the home indicator.
     const maxDynamicContentSize =
-        size === 'auto' ? windowHeight - insets.top - insets.bottom : undefined
+        size === 'auto' ? Math.round(windowHeight * SHEET_MAX_RATIO) : undefined
 
     const styles = useStyles({
         insets,
@@ -112,7 +114,7 @@ export const PWBottomSheet = ({
     // Full-screen sheets (96–100% snap points) surface a header close (X)
     // instead, so the drag-handle notch is dropped to avoid a redundant
     // dismissal affordance.
-    const isFullScreen = size === 'full' || size === 'lg'
+    const isFullScreen = size === 'full' || size === 'modal'
 
     // Sync isVisible prop with modal state. Dismiss the keyboard on the
     // outgoing transition so a sheet that owns a focused input doesn't leave

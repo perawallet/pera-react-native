@@ -65,7 +65,7 @@ export const AccountSelection = ({
                 />
             ),
             options: {
-                size: 'lg',
+                size: 'modal',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },
@@ -86,7 +86,7 @@ export const AccountSelection = ({
             case 'sort':
                 await requestBottomSheet<void>({
                     contents: <AccountSortContent />,
-                    options: { size: 'lg', enablePanDownToClose: true },
+                    options: { size: 'modal', enablePanDownToClose: true },
                 })
                 // After sorting, reopen the account menu so the user can pick.
                 void openAccountMenu()

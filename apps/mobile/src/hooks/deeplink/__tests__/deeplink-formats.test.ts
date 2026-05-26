@@ -488,7 +488,7 @@ const cases: Case[] = [
                     assetId: ASSET_ID,
                     accountAddress: 'fallback-addr',
                 },
-                { size: 'lg', enablePanDownToClose: true },
+                { size: 'modal', enablePanDownToClose: true },
             )
         },
     ),
@@ -612,7 +612,7 @@ const cases: Case[] = [
             expect(mockRequestByType).toHaveBeenCalledWith(
                 'bidali',
                 {},
-                expect.objectContaining({ size: 'lg' }),
+                expect.objectContaining({ size: 'modal' }),
             )
         },
     ),

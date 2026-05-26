@@ -170,7 +170,7 @@ export const useAccountOptions = ({
         await requestBottomSheet<void>({
             contents: <SharedAccountDetailsContent details={details} />,
             options: {
-                size: 'lg',
+                size: 'modal',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },

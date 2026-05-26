@@ -39,7 +39,7 @@ export const ImportRekeyedAddressesItem = ({
         requestBottomSheet<void>({
             contents: <RekeyedAccountInfoContent account={account} />,
             options: {
-                size: 'lg',
+                size: 'modal',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },

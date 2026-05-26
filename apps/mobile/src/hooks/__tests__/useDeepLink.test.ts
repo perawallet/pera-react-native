@@ -401,7 +401,7 @@ describe('useDeepLink', () => {
         expect(mockRequestByType).toHaveBeenCalledWith(
             'send-funds',
             { assetId: '0' },
-            expect.objectContaining({ size: 'lg' }),
+            expect.objectContaining({ size: 'modal' }),
         )
         expect(mockSetDestination).toHaveBeenCalledWith('receiver1')
         expect(mockSetSelectedAssetId).toHaveBeenCalledWith('0')
@@ -434,7 +434,7 @@ describe('useDeepLink', () => {
         expect(mockRequestByType).toHaveBeenCalledWith(
             'send-funds',
             { assetId: '123' },
-            expect.objectContaining({ size: 'lg' }),
+            expect.objectContaining({ size: 'modal' }),
         )
         expect(mockSetDestination).toHaveBeenCalledWith('receiver1')
         expect(mockSetSelectedAssetId).toHaveBeenCalledWith('123')
@@ -849,7 +849,7 @@ describe('useDeepLink', () => {
         expect(mockRequestByType).toHaveBeenCalledWith(
             'bidali',
             {},
-            expect.objectContaining({ size: 'lg' }),
+            expect.objectContaining({ size: 'modal' }),
         )
     })
 
@@ -1029,7 +1029,7 @@ describe('useDeepLink', () => {
         expect(mockRequestByType).toHaveBeenCalledWith(
             'send-funds',
             { assetId: undefined },
-            expect.objectContaining({ size: 'lg' }),
+            expect.objectContaining({ size: 'modal' }),
         )
     })
 

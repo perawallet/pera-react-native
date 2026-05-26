@@ -12,7 +12,7 @@
 
 import type { ReactNode } from 'react'
 
-export type BottomSheetSize = 'full' | 'lg' | 'md' | 'auto'
+export type BottomSheetSize = 'full' | 'modal' | 'auto'
 
 export type BottomSheetOptions = {
     size?: BottomSheetSize

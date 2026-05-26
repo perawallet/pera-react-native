@@ -138,7 +138,7 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         void requestBottomSheet<void>({
             contents: <AddAssetContent variant='collectible' />,
             options: {
-                size: 'lg',
+                size: 'modal',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },
