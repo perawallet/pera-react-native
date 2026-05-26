@@ -17,7 +17,7 @@ const {
   withAndroidManifest,
   withDangerousMod,
   AndroidConfig,
-} = require('@expo/config-plugins');
+} = require('expo/config-plugins');
 
 const USB_INTENT_ACTION = 'android.hardware.usb.action.USB_DEVICE_ATTACHED';
 const DEVICE_FILTER_RESOURCE_NAME = 'usb_device_filter';
@@ -32,7 +32,7 @@ const DEVICE_FILTER_XML = `<?xml version="1.0" encoding="utf-8"?>
 `;
 
 /**
- * @type {import('@expo/config-plugins').ConfigPlugin}
+ * @type {import('expo/config-plugins').ConfigPlugin}
  *
  * Adds the USB_DEVICE_ATTACHED intent-filter and meta-data to the
  * MainActivity, plus the res/xml/usb_device_filter.xml resource.
