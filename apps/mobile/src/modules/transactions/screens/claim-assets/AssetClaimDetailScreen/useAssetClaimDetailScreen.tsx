@@ -51,7 +51,7 @@ export const useAssetClaimDetailScreen =
         const accounts = useAllAccounts()
         const { copyToClipboard } = useClipboard()
         const { request: requestBottomSheet } = useBottomSheet()
-        const { showToast } = useToast()
+        const { showToast, errorToast } = useToast()
         const { t } = useLanguage()
 
         const request = assetRequests[assetIndex] ?? null
@@ -90,11 +90,10 @@ export const useAssetClaimDetailScreen =
                 request.insufficientAlgoForRejecting &&
                 !request.shouldUseFundsBeforeRejecting
             ) {
-                showToast({
-                    title: t('errors.transaction.title'),
-                    body: t('messages.claim.insufficient_algo_reject'),
-                    type: 'error',
-                })
+                errorToast(
+                    t('errors.transaction.title'),
+                    t('messages.claim.insufficient_algo_reject'),
+                )
                 return
             }
 
