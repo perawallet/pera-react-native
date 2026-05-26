@@ -77,6 +77,11 @@ export const useBottomSheetStore: UseBoundStore<StoreApi<BottomSheetStore>> =
             // (not inside the `set` updater) to keep the updater pure.
             const existing = get().requests.find(r => r.id === id)
             if (existing) {
+                if (existing.isVisible) {
+                    // Already open — ignore the duplicate request.
+                    return Promise.resolve(undefined) as Promise<Optional<T>>
+                }
+                // Mid-dismiss dedupe (existing behaviour): replace the stale entry.
                 pendingValues.delete(id)
                 existing.resolver(undefined)
                 set(state => ({
