@@ -15,7 +15,7 @@ import { EdgeInsets } from 'react-native-safe-area-context'
 
 type StyleProps = { insets: EdgeInsets }
 
-export const useStyles = makeStyles((theme, _props: StyleProps) => ({
+export const useStyles = makeStyles((theme, { insets }: StyleProps) => ({
     container: {
         flex: 1,
     },
@@ -37,9 +37,11 @@ export const useStyles = makeStyles((theme, _props: StyleProps) => ({
         marginTop: theme.spacing.xl,
         backgroundColor: theme.colors.background,
     },
+    // Fixed footer outside the scroll: owns the bottom safe-area inset so the
+    // CTA clears the nav bar / home indicator (the sheet draws edge-to-edge).
     footer: {
         paddingHorizontal: theme.spacing.xl,
-        paddingBottom: theme.spacing.xl,
+        paddingBottom: theme.spacing.xl + insets.bottom,
         backgroundColor: theme.colors.background,
     },
 }))
