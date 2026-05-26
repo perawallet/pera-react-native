@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { FC, useCallback, useEffect } from 'react'
+import { FC, useCallback, useEffect, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import {
@@ -49,6 +49,7 @@ type UseARC59SendSummaryScreenResult = {
     handleSend: () => void
     handleClose: () => void
     handleReadMore: () => void
+    sliderResetKey: number
 }
 
 export const useARC59SendSummaryScreen =
@@ -108,7 +109,10 @@ export const useARC59SendSummaryScreen =
             ? toWholeUnits(summary.total_protocol_and_mbr_fee, ALGO_ASSET)
             : null
 
+        const [sliderResetKey, setSliderResetKey] = useState(0)
+
         const showWarningSheet = useCallback(async () => {
+            setSliderResetKey(k => k + 1)
             const result = await requestBottomSheet<'confirm'>({
                 contents: <ARC59WarningContent />,
                 options: { size: 'auto', enablePanDownToClose: true },
@@ -141,5 +145,6 @@ export const useARC59SendSummaryScreen =
             handleSend,
             handleClose,
             handleReadMore,
+            sliderResetKey
         }
     }
