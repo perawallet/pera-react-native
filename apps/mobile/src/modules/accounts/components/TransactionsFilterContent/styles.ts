@@ -14,7 +14,9 @@ import { makeStyles } from '@rneui/themed'
 
 const CHECK_ICON_RADIUS = 20
 
-export const useStyles = makeStyles(theme => {
+type StyleProps = { bottomInset: number }
+
+export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => {
     return {
         header: {
             flexDirection: 'row',
@@ -29,6 +31,11 @@ export const useStyles = makeStyles(theme => {
         headerSpacer: {
             width: theme.spacing.xl,
             flexShrink: 0,
+        },
+        // Trailing spacer so the last filter row clears the nav bar (the sheet
+        // draws edge-to-edge). Avoids over-padding every row.
+        bottomSpacer: {
+            height: theme.spacing.xl + bottomInset,
         },
         headerAction: {
             flexShrink: 0,
@@ -74,7 +81,7 @@ export const useStyles = makeStyles(theme => {
         },
         customRangeContainer: {
             paddingHorizontal: theme.spacing.xl,
-            paddingBottom: theme.spacing.xl,
+            paddingBottom: theme.spacing.xl + bottomInset,
             width: '100%',
             minWidth: 0,
             overflow: 'hidden',

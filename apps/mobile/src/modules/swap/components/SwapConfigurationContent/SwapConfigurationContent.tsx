@@ -15,6 +15,7 @@ import type { SwapConfigurationResult } from '@perawallet/wallet-core-swaps'
 import { PWButton, PWIcon, PWText, PWToolbar } from '@components/core'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { BalancePercentageSection } from './BalancePercentageSection'
 import { SlippageToleranceSection } from './SlippageToleranceSection'
 import { PrimaryCurrencyToggle } from './PrimaryCurrencyToggle'
@@ -26,6 +27,7 @@ export const SwapConfigurationContent = (
     _: SwapConfigurationContentProps = {},
 ) => {
     const { t } = useLanguage()
+    const insets = useSafeAreaInsets()
     const { resolve, dismiss } = useBottomSheetResult<SwapConfigurationResult>()
 
     const handleApplyInternal = useCallback(
@@ -92,6 +94,7 @@ export const SwapConfigurationContent = (
             <PrimaryCurrencyToggle
                 value={useLocalCurrency}
                 onValueChange={setUseLocalCurrency}
+                bottomInset={insets.bottom}
             />
         </>
     )

@@ -13,6 +13,7 @@
 import { PWButton, PWRadioButton, PWText, PWView } from '@components/core'
 import { AccountSortModes } from '@perawallet/wallet-core-accounts'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useAccountSortContent } from './useAccountSortContent'
 import { DraggableAccountList } from './DraggableAccountList'
 import { useStyles } from './styles'
@@ -20,7 +21,8 @@ import { useStyles } from './styles'
 export type AccountSortContentProps = Record<string, never>
 
 export const AccountSortContent = (_: AccountSortContentProps = {}) => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles({ bottomInset: insets.bottom })
     const { dismiss } = useBottomSheetResult<void>()
     const {
         sortOptions,

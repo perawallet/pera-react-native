@@ -12,10 +12,13 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
+type StyleProps = { bottomInset: number }
+
+export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
     bottomSheetActions: {
         gap: theme.spacing.md,
         width: '100%',
+        paddingBottom: theme.spacing.xl + bottomInset,
     },
     bottomSheetMessage: {
         textAlign: 'center',

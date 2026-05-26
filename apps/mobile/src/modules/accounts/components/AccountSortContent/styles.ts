@@ -12,7 +12,9 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
+type StyleProps = { bottomInset?: number }
+
+export const useStyles = makeStyles((theme, { bottomInset = 0 }: StyleProps = {}) => ({
     container: {
         flex: 1,
     },
@@ -21,6 +23,7 @@ export const useStyles = makeStyles(theme => ({
     },
     contentContainer: {
         paddingHorizontal: theme.spacing.lg,
+        paddingBottom: theme.spacing.xl + bottomInset,
     },
     subtitle: {
         color: theme.colors.textGrayLighter,

@@ -12,7 +12,9 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
+type StyleProps = { bottomInset: number }
+
+export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
     container: {
         paddingVertical: theme.spacing.lg,
         alignItems: 'center',
@@ -30,6 +32,7 @@ export const useStyles = makeStyles(theme => ({
         width: '100%',
         paddingHorizontal: theme.spacing.lg,
         paddingTop: theme.spacing.md,
+        paddingBottom: theme.spacing.xl + bottomInset,
         gap: theme.spacing.md,
     },
 }))

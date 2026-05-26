@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+
 import { PWButton, PWIcon, PWText, PWView } from '@components/core'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
@@ -20,7 +22,8 @@ import { useStyles } from './styles'
 export type BeforeYouCreateContentProps = Record<string, never>
 
 export const BeforeYouCreateContent = () => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles({ bottomInset: insets.bottom })
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
     const { resolve, dismiss } = useBottomSheetResult<'proceed'>()

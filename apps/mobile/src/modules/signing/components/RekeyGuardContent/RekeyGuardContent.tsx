@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWButton, PWIcon, PWText, PWView } from '@components/core'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
@@ -23,7 +24,8 @@ export type RekeyGuardContentProps = Record<string, never>
 
 export const RekeyGuardContent = (_props: RekeyGuardContentProps = {}) => {
     const { t } = useLanguage()
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles({ bottomInset: insets.bottom })
     const { getPreference } = usePreferences()
     const { resolve, dismiss } = useBottomSheetResult<RekeyGuardContentResult>()
     const isRekeySupportEnabled = !!getPreference(

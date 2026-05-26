@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+
 import { PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
 import RateApp, { AndroidMarket } from 'react-native-rate-app'
@@ -22,7 +24,8 @@ import { usePeraProvider } from '@perawallet/wallet-extension-provider'
 export type RatingsContentProps = Record<string, never>
 
 export const RatingsContent = () => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles({ bottomInset: insets.bottom })
     const { t } = useLanguage()
     const provider = usePeraProvider()
     const deviceInfoService = provider.deviceInfo

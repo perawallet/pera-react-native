@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+
 import { PWButton, PWIcon, PWText, PWView } from '@components/core'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useStyles } from './styles'
@@ -55,7 +57,8 @@ export const ConfirmActionContent = ({
     buttonPaddingStyle,
     testID,
 }: ConfirmActionContentProps) => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles({ bottomInset: insets.bottom })
     const { resolve, dismiss } = useBottomSheetResult<boolean>()
 
     return (

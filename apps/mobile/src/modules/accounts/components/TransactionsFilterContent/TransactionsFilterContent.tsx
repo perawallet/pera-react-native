@@ -18,6 +18,7 @@ import DateTimePicker, {
 } from '@react-native-community/datetimepicker'
 
 import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useStyles } from './styles'
 import { TransactionFilter, CustomDateRange } from './types'
 import { useLanguage } from '@hooks/useLanguage'
@@ -37,7 +38,8 @@ export const TransactionsFilterContent = ({
     activeFilter,
     initialCustomRange,
 }: TransactionsFilterContentProps) => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles({ bottomInset: insets.bottom })
     const { t } = useLanguage()
     const isDarkMode = useIsDarkMode()
     const { resolve } = useBottomSheetResult<TransactionsFilterResult>()
@@ -227,6 +229,8 @@ export const TransactionsFilterContent = ({
                     </PWTouchableOpacity>
                 )
             })}
+
+            <PWView style={styles.bottomSpacer} />
         </>
     )
 
