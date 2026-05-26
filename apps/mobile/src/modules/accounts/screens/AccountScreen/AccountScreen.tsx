@@ -77,7 +77,11 @@ export const AccountScreen = () => {
             >
                 <PWToolbar
                     style={styles.iconBar}
-                    left={<AccountSelection style={styles.accountSelectionToolbar} />}
+                    left={
+                        <AccountSelection
+                            style={styles.accountSelectionToolbar}
+                        />
+                    }
                     right={
                         <PWView style={styles.iconBarSection}>
                             <AccountHeaderMenu testID='account_screen_dropdown' />
