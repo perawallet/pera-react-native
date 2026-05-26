@@ -12,5 +12,4 @@
 
 export { createStandardAnalyzer } from './createStandardAnalyzer'
 export { createNoOpAnalyzer } from './createNoOpAnalyzer'
-export { createChainedAnalyzer } from './createChainedAnalyzer'
 export { EMPTY_SIGNABLE_ANALYSIS } from './constants'

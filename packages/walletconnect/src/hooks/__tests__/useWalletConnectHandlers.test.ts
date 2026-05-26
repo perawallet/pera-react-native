@@ -23,8 +23,9 @@ import {
 import { Networks } from '@perawallet/wallet-core-shared'
 import {
     canSignArbitraryData,
-    useAllAccounts,
     isHardwareWalletAccount,
+    useAllAccounts,
+    useSigningAccounts,
 } from '@perawallet/wallet-core-accounts'
 import {
     WalletConnectConnectionTimeoutError,
@@ -266,15 +267,17 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => {
-    const canSignArbitraryData = vi.fn(() => true)
-    const isHardwareWalletAccount = vi.fn(() => false)
+    // Hardware accounts can't sign arbitrary data (no raw-byte opcode).
+    // Tests flip this on by setting account.type = 'hardware'.
+    const canSignArbitraryData = vi.fn(
+        (account: any) => account?.type !== 'hardware',
+    )
+    const isHardwareWalletAccount = vi.fn(
+        (account: any) => account?.type === 'hardware',
+    )
     return {
-        useAllAccounts: vi.fn(() => [
-            { address: 'addr1', name: 'Account 1', type: 'standard' },
-        ]),
-        useSigningAccounts: vi.fn(() => [
-            { address: 'addr1', name: 'Account 1', type: 'standard' },
-        ]),
+        useAllAccounts: vi.fn(() => signingAccountsState.current),
+        useSigningAccounts: vi.fn(() => signingAccountsState.current),
         canSignWith: vi.fn(() => true),
         canSignArbitraryData,
         // Mirror the real composition so tests that toggle the two predicates
@@ -344,7 +347,6 @@ describe('useWalletConnectHandlers', () => {
         ;(useSigningRequest as any).mockReturnValue({
             addSignRequest: mockAddSignRequest,
             removeSignRequest: vi.fn(),
-            clearLastFailedRequest: vi.fn(),
         })
         ;(useNetwork as any).mockReturnValue({
             network: Networks.mainnet,

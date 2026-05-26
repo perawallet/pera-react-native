@@ -10,11 +10,9 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
 import { PWView } from '@components/core'
 import {
     type Arc60SignRequest,
-    parseArc60ForDisplay,
     useSigningPipeline,
 } from '@perawallet/wallet-core-signing'
 import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
@@ -24,20 +22,11 @@ import { useStyles } from './styles'
 
 export const Arc60SigningDetailsScreen = () => {
     const styles = useStyles()
-    const { currentRequest } = useSigningPipeline()
+    const { currentRequest, resolved } = useSigningPipeline()
     const request = currentRequest as Optional<Arc60SignRequest>
 
     const account = useFindAccountByAddress(request?.stdSigData.signer ?? '')
-    const parsed = useMemo(
-        () =>
-            request
-                ? parseArc60ForDisplay(
-                      request.stdSigData.data,
-                      request.metadata.encoding,
-                  )
-                : null,
-        [request],
-    )
+    const parsed = resolved?.kind.type === 'arc60' ? resolved.kind.parsed : null
 
     if (!request || !parsed) return null
 

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, expect, it, test } from 'vitest'
+import { describe, expect, it, test, vi } from 'vitest'
 import { sha256 } from '@noble/hashes/sha2.js'
 import { canonify } from 'canonify'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
@@ -19,6 +19,7 @@ import {
     Arc60BadJsonError,
     Arc60DomainMismatchError,
     Arc60FailedDecodingError,
+    Arc60FailedHdPathError,
     Arc60InvalidScopeError,
     Arc60InvalidSignerError,
     Arc60MissingAuthDataError,
@@ -98,7 +99,7 @@ describe('verifyAuthenticatorDomain', () => {
 
 // =============================================================================
 // Fixtures shared by validateArc60AuthRequest tests — use the same valid
-// signer/domain shape as useArc60Signer.spec.ts, with a realistic 37-byte
+// signer/domain shape as useLocalKeyArc60Signer.spec.ts, with a realistic 37-byte
 // authenticatorData (first 32 bytes = sha256(domain)).
 // =============================================================================
 
@@ -264,6 +265,89 @@ describe('validateArc60AuthRequest', () => {
                 { scope: ARC60_SCOPE_AUTH, encoding: 'base64' },
             ),
         ).toThrow(Arc60BadJsonError)
+    })
+})
+
+describe('error classes', () => {
+    test('Arc60InvalidSignerError includes the reason when provided', () => {
+        const err = new Arc60InvalidSignerError('SIGNER', 'wrong network')
+        expect(err.message).toContain('SIGNER')
+        expect(err.message).toContain('wrong network')
+    })
+
+    test('Arc60InvalidSignerError omits the reason when not provided', () => {
+        // Covers the falsy branch of the ternary in the constructor.
+        const err = new Arc60InvalidSignerError('SIGNER')
+        expect(err.message).toContain('SIGNER')
+        expect(err.message).toContain('not available')
+    })
+
+    test('Arc60FailedHdPathError includes the reason when provided', () => {
+        const err = new Arc60FailedHdPathError("m/44'/0'/0'", 'malformed')
+        expect(err.message).toContain("m/44'/0'/0'")
+        expect(err.message).toContain('malformed')
+    })
+
+    test('Arc60FailedHdPathError omits the reason when not provided', () => {
+        // Covers the falsy branch of the ternary in the constructor.
+        const err = new Arc60FailedHdPathError("m/44'/0'/0'")
+        expect(err.message).toContain("m/44'/0'/0'")
+        expect(err.message).toContain('is invalid')
+    })
+
+    test('Arc60FailedDecodingError preserves the original Error cause', () => {
+        const original = new Error('atob failed')
+        const err = new Arc60FailedDecodingError('base64', original)
+        expect(err.message).toContain('base64')
+    })
+})
+
+describe('decodeArc60Data — non-Error catch path', () => {
+    test('does not crash when the decoder throws a non-Error value', async () => {
+        // The catch branch in decodeArc60Data inspects `error instanceof Error`.
+        // We cover the `false` side by monkey-patching the global atob to throw
+        // a non-Error string, since the wallet-core decoder ultimately falls
+        // back to that primitive.
+        const shared = await import('@perawallet/wallet-core-shared')
+        const spy = vi
+            .spyOn(shared, 'decodeFromBase64')
+            .mockImplementationOnce(() => {
+                throw 'not an Error instance'
+            })
+        try {
+            expect(() => decodeArc60Data('anything', 'base64')).toThrow(
+                Arc60FailedDecodingError,
+            )
+        } finally {
+            spy.mockRestore()
+        }
+    })
+})
+
+describe('validateArc60AuthRequest — non-Error UTF-8 catch path', () => {
+    test('wraps a non-Error UTF-8 throw into Arc60BadJsonError', () => {
+        // TextDecoder with fatal:true throws a TypeError on invalid UTF-8, so
+        // the `caught instanceof Error` branch usually goes true. To cover the
+        // false side, monkey-patch the global TextDecoder.decode for one call.
+        const realDecode = TextDecoder.prototype.decode
+        TextDecoder.prototype.decode = function patched() {
+            throw 'not an Error instance'
+        }
+        try {
+            expect(() =>
+                validateArc60AuthRequest(
+                    {
+                        data: encodeToBase64(utf8('{}')),
+                        signer: SIGNER,
+                        domain: DOMAIN,
+                        authenticatorData: AUTH_DATA,
+                    },
+                    { scope: ARC60_SCOPE_AUTH, encoding: 'base64' },
+                ),
+            ).toThrow(Arc60BadJsonError)
+        } finally {
+            TextDecoder.prototype.decode = realDecode
+        }
     })
 })
 

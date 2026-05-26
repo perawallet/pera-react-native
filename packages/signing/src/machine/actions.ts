@@ -337,7 +337,6 @@ const extractDeps = (input: SigningMachineInput): SigningMachineDeps => ({
     network: input.network,
     encodeTransaction: input.encodeTransaction,
     hardwareWalletRegistry: input.hardwareWalletRegistry,
-    signingCallbacks: input.signingCallbacks,
 })
 
 /**

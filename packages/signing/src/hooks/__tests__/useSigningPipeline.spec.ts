@@ -301,4 +301,49 @@ describe('useSigningPipeline', () => {
         expect(result.current.stage).toBe('signing')
         expect(result.current.isLoading).toBe(true)
     })
+
+    test('exposes resolved when actor snapshot has populated context', () => {
+        const subscriberCalls: Array<(s: unknown) => void> = []
+        const initialSnapshot = {
+            matches: (s: string) => s === 'awaiting_user',
+            context: {
+                signerAddress: 'A123',
+                allAccounts: [{ address: 'A123', type: 'algo25' }],
+                groupSignerTypes: new Map([['A123', 'localKey']]),
+                request: {
+                    id: 'r1',
+                    type: 'transactions',
+                    sourceType: 'local',
+                    transport: 'algod',
+                    txs: [{}],
+                },
+                signableGroups: [{ signerAddress: 'A123' }],
+                error: null,
+            },
+        }
+        const actorRef = {
+            subscribe: (cb: (s: unknown) => void) => {
+                subscriberCalls.push(cb)
+                return { unsubscribe: vi.fn() }
+            },
+            getSnapshot: () => initialSnapshot,
+        }
+        mockSigningRequest.currentActorRef = actorRef
+
+        const { result } = renderHook(() => useSigningPipeline())
+
+        expect(result.current.resolved).not.toBeNull()
+        expect(result.current.resolved!.signerType).toBe('localKey')
+        expect(result.current.resolved!.kind).toMatchObject({
+            type: 'transactions',
+            isMultisigCosign: false,
+            hasMultiple: false,
+        })
+    })
+
+    test('resolved is null when no actor is active', () => {
+        mockSigningRequest.currentActorRef = null
+        const { result } = renderHook(() => useSigningPipeline())
+        expect(result.current.resolved).toBeNull()
+    })
 })

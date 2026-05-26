@@ -10,12 +10,8 @@
  limitations under the License
  */
 
-import { useEffect, useRef } from 'react'
 import { useInboxInvalidator } from '@perawallet/wallet-core-messages'
-import {
-    useLastTransportResult,
-    type TransportResult,
-} from '@perawallet/wallet-core-signing'
+import { useSigningEvent } from '@perawallet/wallet-core-signing'
 import { usePendingSignaturesSheetStore } from '../stores/usePendingSignaturesSheetStore'
 
 /**
@@ -26,40 +22,38 @@ import { usePendingSignaturesSheetStore } from '../stores/usePendingSignaturesSh
  * having to navigate to the inbox.
  *
  * Source-agnostic: a propose from a WalletConnect / webview / deeplink
- * handoff lands here too, with `lastTransportResult.sourceType` reflecting
+ * handoff lands here too, with the transport result's `sourceType` reflecting
  * the original sync request. The dApp peer is resolved separately by the
  * propose transport via `softReject` — this hook only owns the in-app
  * sheet. A future follow-up could add a one-time toast for external
  * handoffs ("Sign request created. The dApp was notified."); deferred
  * because no generic toast/snackbar infrastructure exists yet.
  *
- * Reads `lastTransportResult` from the signing store (set unconditionally by
- * the actor lifecycle on every completed transition) rather than subscribing
- * via `useSigningPipeline({ onEvent })`. The pipeline subscription doesn't
- * reliably establish in time for headless propose requests — see the
- * lifecycle hook's `setLastTransportResultRef.current` call.
- *
- * Dedupes via a ref so the effect skips the value already in the store at
- * mount time (e.g. a stale result from a prior in-session propose).
+ * Subscribes to the signing event bus — the bus publishes once per actor
+ * transition, so dedupe is intrinsic (no ref tracking needed) and no
+ * stale-at-mount value can re-trigger the sheet.
  */
 export const useMultisigProposeListener = () => {
     const openSheet = usePendingSignaturesSheetStore(state => state.openSheet)
     const { invalidate: invalidateInbox } = useInboxInvalidator()
-    const lastTransportResult = useLastTransportResult()
-    const seenRef = useRef<TransportResult | null>(lastTransportResult ?? null)
 
-    useEffect(() => {
-        if (lastTransportResult === seenRef.current) return
-        seenRef.current = lastTransportResult ?? null
-        if (!lastTransportResult) return
-        if (
-            lastTransportResult.type !== 'proposed' &&
-            lastTransportResult.type !== 'signatures-added'
-        ) {
-            return
-        }
-        invalidateInbox()
-        if (lastTransportResult.status === 'confirmed') return
-        openSheet(lastTransportResult.signRequestId)
-    }, [lastTransportResult, invalidateInbox, openSheet])
+    useSigningEvent(
+        event =>
+            event.type === 'transport-result' &&
+            (event.result.type === 'proposed' ||
+                event.result.type === 'signatures-added'),
+        event => {
+            if (event.type !== 'transport-result') return
+            const { result } = event
+            if (
+                result.type !== 'proposed' &&
+                result.type !== 'signatures-added'
+            ) {
+                return
+            }
+            invalidateInbox()
+            if (result.status === 'confirmed') return
+            openSheet(result.signRequestId)
+        },
+    )
 }

@@ -31,9 +31,7 @@ export interface CreateMultisigStrategyOptions {
         allAccounts: WalletAccount[],
     ) => WalletAccount[]
 
-    /** Get signing strategy for an individual participant.
-     *  Multisig participant slots are bound to the participant's own pubkey
-     *  at multisig creation, so rekey indirection is intentionally NOT
+    /** Get signing strategy for an individual participant. Rekey indirection is intentionally NOT
      *  followed here — that's why no `allAccounts` is threaded through. */
     getStrategyForParticipant: (participant: WalletAccount) => SigningStrategy
 
@@ -70,13 +68,6 @@ export const createMultisigStrategy = (
             }
 
             const allAccounts = getAllAccounts()
-            // `account` is a multisig — possibly one that has itself been
-            // rekeyed to another multisig (a shared account can only be
-            // rekeyed to another shared account). Resolve the single rekey
-            // hop so participant lookup uses the auth multisig;
-            // `resolveAuthAccount` returns the account unchanged when it is
-            // not rekeyed. The `group` keeps the original sender's
-            // transactions — only the participant set comes from the multisig.
             const multisigAccount = resolveAuthAccount(account, allAccounts)
             const localParticipants = getLocalParticipants(
                 multisigAccount,

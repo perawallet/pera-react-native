@@ -52,10 +52,10 @@ vi.mock('@perawallet/wallet-core-multisig', () => ({
     }),
 }))
 
-const removeSignRequestMock = vi.fn()
+const rejectRequestMock = vi.fn()
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: () => ({
-        removeSignRequest: removeSignRequestMock,
+        rejectRequest: rejectRequestMock,
     }),
 }))
 
@@ -129,7 +129,7 @@ describe('useMultisigSignRequestDecline', () => {
         declineIsPendingMock.mockReset().mockReturnValue(false)
         errorToastMock.mockReset()
         useAllAccountsMock.mockReset().mockReturnValue([])
-        removeSignRequestMock.mockReset()
+        rejectRequestMock.mockReset()
         invalidateInboxMock.mockReset()
     })
 
@@ -251,7 +251,7 @@ describe('useMultisigSignRequestDecline', () => {
             })
         })
 
-        it('does not call removeSignRequest in cancel mode on success', async () => {
+        it('does not call rejectRequest in cancel mode on success', async () => {
             useAllAccountsMock.mockReturnValue([buildAccount(PROPOSER)])
 
             const { result } = renderHook(() =>
@@ -265,7 +265,7 @@ describe('useMultisigSignRequestDecline', () => {
                 await result.current.handleConfirm()
             })
 
-            expect(removeSignRequestMock).not.toHaveBeenCalled()
+            expect(rejectRequestMock).not.toHaveBeenCalled()
         })
 
         it('invalidates inbox queries on successful cancel', async () => {
@@ -392,7 +392,7 @@ describe('useMultisigSignRequestDecline', () => {
                 await result.current.handleConfirm()
             })
 
-            expect(removeSignRequestMock).toHaveBeenCalledWith(request)
+            expect(rejectRequestMock).toHaveBeenCalledWith(request)
         })
 
         it('invalidates inbox queries on successful decline', async () => {
@@ -477,7 +477,7 @@ describe('useMultisigSignRequestDecline', () => {
                 'multisig.decline.error.title',
                 'multisig.decline.error.body',
             )
-            expect(removeSignRequestMock).not.toHaveBeenCalled()
+            expect(rejectRequestMock).not.toHaveBeenCalled()
             expect(invalidateInboxMock).not.toHaveBeenCalled()
         })
     })
