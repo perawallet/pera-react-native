@@ -184,7 +184,7 @@ describe('fetchArc59AssetRequests', () => {
             fetchArc59AssetRequests('mainnet', 'ADDR1'),
         ).rejects.toThrow()
     })
-    
+
     test('maps collectible asset with primary_image', async () => {
         ;(queryClient as Mock).mockResolvedValue({
             data: {
@@ -193,7 +193,10 @@ describe('fetchArc59AssetRequests', () => {
                         ...validAssetRequest,
                         asset: {
                             ...validAssetRequest.asset,
-                            collectible: { title: 'Cool NFT', primary_image: 'https://example.com/nft.png' },
+                            collectible: {
+                                title: 'Cool NFT',
+                                primary_image: 'https://example.com/nft.png',
+                            },
                         },
                     },
                 ],
@@ -203,7 +206,16 @@ describe('fetchArc59AssetRequests', () => {
         const result = await fetchArc59AssetRequests('mainnet', 'ADDR1')
 
         expect(result).toMatchObject([
-            { asset: { peraMetadata: { collectible: { title: 'Cool NFT', primaryImage: 'https://example.com/nft.png' } } } },
+            {
+                asset: {
+                    peraMetadata: {
+                        collectible: {
+                            title: 'Cool NFT',
+                            primaryImage: 'https://example.com/nft.png',
+                        },
+                    },
+                },
+            },
         ])
     })
 
@@ -215,7 +227,10 @@ describe('fetchArc59AssetRequests', () => {
                         ...validAssetRequest,
                         asset: {
                             ...validAssetRequest.asset,
-                            collectible: { title: 'Cool NFT', primary_image: null },
+                            collectible: {
+                                title: 'Cool NFT',
+                                primary_image: null,
+                            },
                         },
                     },
                 ],
@@ -225,7 +240,16 @@ describe('fetchArc59AssetRequests', () => {
         const result = await fetchArc59AssetRequests('mainnet', 'ADDR1')
 
         expect(result).toMatchObject([
-            { asset: { peraMetadata: { collectible: { title: 'Cool NFT', primaryImage: undefined } } } },
+            {
+                asset: {
+                    peraMetadata: {
+                        collectible: {
+                            title: 'Cool NFT',
+                            primaryImage: undefined,
+                        },
+                    },
+                },
+            },
         ])
     })
 })
