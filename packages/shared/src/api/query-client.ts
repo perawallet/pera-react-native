@@ -16,7 +16,6 @@ import ky, {
     type BeforeRequestState,
     type BeforeRetryState,
     type BeforeErrorState,
-    type AfterResponseState,
     HTTPError,
     isHTTPError,
     isNetworkError,
@@ -63,13 +62,6 @@ const logRequest = ({ request, options }: BeforeRequestState) => {
     logger.debug('Sending request', {
         url: request.url,
         method: request.method,
-    })
-}
-
-const logResponse = ({ response }: AfterResponseState) => {
-    logger.debug('Received response', {
-        status: response.status,
-        url: response.url,
     })
 }
 
@@ -176,6 +168,11 @@ const createFetchClient = (clients: Map<string, BackendInstances>) => {
                 headers: requestConfig.headers,
             })
 
+            logger.debug('Received response', {
+                status: response.status,
+                url: response.url,
+            })
+
             let data: TData
             const responseType = requestConfig.responseType ?? 'json'
 
@@ -226,9 +223,15 @@ const setStandardHeaders = ({ request }: BeforeRequestState) => {
     }
 }
 
+// afterResponse intentionally empty: in ky 2.x every hook invocation calls
+// `response.clone()`, which interacts badly with Expo SDK 56's winter fetch
+// (its FetchResponse.clone tees the body and then ky's own cleanup cancels
+// the clone branch, leaving the original body unreadable when the caller
+// later calls `.text()` / `.json()`). Response status is logged inline in
+// createFetchClient instead.
 const standardHooks = {
     beforeRequest: [logRequest],
-    afterResponse: [logResponse],
+    afterResponse: [],
     beforeError: [logError],
     beforeRetry: [logRetry],
 }
@@ -353,7 +356,8 @@ export const updateBackendHeaders = (headers: Map<string, string>) => {
                     },
                     logRequest,
                 ],
-                afterResponse: [logResponse],
+                // afterResponse intentionally empty: see comment on standardHooks.
+                afterResponse: [],
             },
         })
 

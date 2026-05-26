@@ -221,7 +221,7 @@ module.exports = {
       'expo-build-properties',
       {
         ios: {
-          deploymentTarget: '16.0',
+          deploymentTarget: '16.4',
           flipper: false,
         },
         android: {
