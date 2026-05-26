@@ -19,7 +19,7 @@ export const useStyles = makeStyles(theme => {
             paddingBottom: theme.spacing.sm,
         },
         listContent: {
-            paddingTop: theme.spacing.xl,
+            paddingVertical: theme.spacing.xl,
         },
         contactContainer: {
             flexDirection: 'row',

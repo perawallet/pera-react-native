@@ -13,8 +13,14 @@
 import { makeStyles } from '@rneui/themed'
 import { EdgeInsets } from 'react-native-safe-area-context'
 
+type StyleProps = {
+    insets: EdgeInsets
+    isFull: boolean
+    maxDynamicContentSize?: number
+}
+
 export const useStyles = makeStyles(
-    (theme, { insets, isFull }: { insets: EdgeInsets; isFull: boolean }) => ({
+    (theme, { insets, isFull, maxDynamicContentSize }: StyleProps) => ({
         background: {
             backgroundColor: theme.colors.background,
             borderTopStartRadius: isFull ? 0 : theme.spacing.xl,
@@ -27,13 +33,18 @@ export const useStyles = makeStyles(
             backgroundColor: theme.colors.layerGray,
             width: theme.spacing.xxl,
         },
+        // Content wrapper constrains the max height for auto sheets so content
+        // actually scrolls when it reaches the maxDynamicContentSize cap.
         contentWrapper: {
             flex: 1,
             paddingTop: isFull ? insets.top : 0,
+            maxHeight: maxDynamicContentSize,
         },
+        // Inner container holds the content. No bottom padding here - let
+        // PWSheetLayout or content components handle their own bottom inset.
         innerContainer: {
             flexGrow: 1,
-            paddingBottom: isFull ? theme.spacing.md : insets.bottom,
+            paddingBottom: isFull ? theme.spacing.md : 0,
         },
         hidden: {
             display: 'none',

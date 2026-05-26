@@ -11,7 +11,7 @@
  */
 
 import React from 'react'
-import { PWButton, PWRadioButton, PWView } from '@components/core'
+import { PWButton, PWRadioButton, PWSheetLayout } from '@components/core'
 import {
     useCollectiblePreferencesStore,
     type CollectibleSortMode,
@@ -39,42 +39,41 @@ export const NftSortContent = (_: NftSortContentProps = {}) => {
     }
 
     return (
-        <>
-            <SheetHeader
-                title={t('account_details.nfts.sort')}
-                rightAction={
-                    <PWButton
-                        variant='linkPositive'
-                        title={t('account_details.nfts.filter_done')}
-                        onPress={dismiss}
-                        paddingStyle='none'
-                    />
-                }
-                style={styles.toolbar}
+        <PWSheetLayout
+            header={
+                <SheetHeader
+                    title={t('account_details.nfts.sort')}
+                    rightAction={
+                        <PWButton
+                            variant='linkPositive'
+                            title={t('account_details.nfts.filter_done')}
+                            onPress={dismiss}
+                            paddingStyle='none'
+                        />
+                    }
+                />
+            }
+        >
+            <PWRadioButton
+                title={t('account_details.nfts.sort_newest_first')}
+                isSelected={sortMode === 'newestFirst'}
+                onPress={() => handleChange('newestFirst')}
             />
-
-            <PWView style={styles.contentContainer}>
-                <PWRadioButton
-                    title={t('account_details.nfts.sort_newest_first')}
-                    isSelected={sortMode === 'newestFirst'}
-                    onPress={() => handleChange('newestFirst')}
-                />
-                <PWRadioButton
-                    title={t('account_details.nfts.sort_oldest_first')}
-                    isSelected={sortMode === 'oldestFirst'}
-                    onPress={() => handleChange('oldestFirst')}
-                />
-                <PWRadioButton
-                    title={t('account_details.nfts.sort_title_asc')}
-                    isSelected={sortMode === 'titleAsc'}
-                    onPress={() => handleChange('titleAsc')}
-                />
-                <PWRadioButton
-                    title={t('account_details.nfts.sort_title_desc')}
-                    isSelected={sortMode === 'titleDesc'}
-                    onPress={() => handleChange('titleDesc')}
-                />
-            </PWView>
-        </>
+            <PWRadioButton
+                title={t('account_details.nfts.sort_oldest_first')}
+                isSelected={sortMode === 'oldestFirst'}
+                onPress={() => handleChange('oldestFirst')}
+            />
+            <PWRadioButton
+                title={t('account_details.nfts.sort_title_asc')}
+                isSelected={sortMode === 'titleAsc'}
+                onPress={() => handleChange('titleAsc')}
+            />
+            <PWRadioButton
+                title={t('account_details.nfts.sort_title_desc')}
+                isSelected={sortMode === 'titleDesc'}
+                onPress={() => handleChange('titleDesc')}
+            />
+        </PWSheetLayout>
     )
 }

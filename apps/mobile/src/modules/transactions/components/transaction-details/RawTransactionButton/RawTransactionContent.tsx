@@ -14,13 +14,16 @@ import {
     algorandSafeJsonStringify,
     PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
-import { bottomSheetNotifier, PWIcon, PWText, PWView } from '@components/core'
+import {
+    bottomSheetNotifier,
+    PWIcon,
+    PWSheetLayout,
+    PWText,
+} from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useClipboard } from '@hooks/useClipboard'
 import { SheetHeader } from '@modules/bottom-sheet'
-import { useStyles } from './styles'
 import { useMemo } from 'react'
-import { BottomSheetScrollView } from '@gorhom/bottom-sheet'
 
 export type RawTransactionContentProps = {
     transaction: PeraDisplayableTransaction
@@ -30,7 +33,6 @@ export const RawTransactionContent = ({
     transaction,
 }: RawTransactionContentProps) => {
     const { t } = useLanguage()
-    const styles = useStyles()
     const { copyToClipboard } = useClipboard()
 
     const rawText = useMemo(() => {
@@ -42,24 +44,21 @@ export const RawTransactionContent = ({
     }
 
     return (
-        <PWView style={styles.contentContainer}>
-            <SheetHeader
-                title={t('transactions.common.raw_transaction')}
-                rightAction={
-                    <PWIcon
-                        name='copy'
-                        variant='secondary'
-                        onPress={copyText}
-                    />
-                }
-            />
-            <BottomSheetScrollView
-                contentContainerStyle={styles.scrollview}
-                showsVerticalScrollIndicator={false}
-                scrollEnabled
-            >
-                <PWText variant='mono'>{rawText}</PWText>
-            </BottomSheetScrollView>
-        </PWView>
+        <PWSheetLayout
+            header={
+                <SheetHeader
+                    title={t('transactions.common.raw_transaction')}
+                    rightAction={
+                        <PWIcon
+                            name='copy'
+                            variant='secondary'
+                            onPress={copyText}
+                        />
+                    }
+                />
+            }
+        >
+            <PWText variant='mono'>{rawText}</PWText>
+        </PWSheetLayout>
     )
 }

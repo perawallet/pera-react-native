@@ -20,22 +20,12 @@ export const useStyles = makeStyles(theme => {
         fontSize: theme.spacing.md,
     }
     return {
-        container: {
-            paddingBottom: theme.spacing.xxl,
-            borderTopStartRadius: theme.spacing.sm,
-            borderTopEndRadius: theme.spacing.sm,
-            overflow: 'hidden',
-            gap: theme.spacing.xl,
-        },
         buttonContainer: {
             flexDirection: 'row',
             gap: theme.spacing.sm,
             paddingHorizontal: theme.spacing.xl,
+            paddingBottom: theme.spacing.md,
         },
         buttonText,
-        noteText: {
-            marginBottom: theme.spacing.xl,
-            paddingHorizontal: theme.spacing.xl,
-        },
     }
 })

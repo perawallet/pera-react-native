@@ -328,6 +328,11 @@ export const useCollectibleDetail = (
                     options: {
                         size: 'full',
                         enablePanDownToClose: true,
+                        // The viewer owns a full-bleed PagerView that needs a
+                        // bounded height; the default gorhom `BottomSheetView`
+                        // is position-absolute / content-sized, which collapses
+                        // it. A plain flex container fills the `full` sheet.
+                        autoCreateContainer: false,
                     },
                 })
             }

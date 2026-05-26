@@ -17,14 +17,13 @@ const DOT_SIZE = 6
 const DOT_RADIUS = 3
 
 export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
-    const maxWidth = dimensions.width - 2 * theme.spacing.lg
-    const maxHeight = dimensions.width - 2 * theme.spacing.lg
+    const maxWidth = dimensions.width - 2 * theme.spacing.xl
+    const maxHeight = dimensions.width - 2 * theme.spacing.xl
 
     return {
         image: {
             width: '100%',
             height: '100%',
-            margin: theme.spacing.lg,
             borderRadius: theme.borderRadius.lg,
             overflow: 'hidden',
             maxWidth,
@@ -33,7 +32,6 @@ export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
         videoPlayer: {
             width: '100%',
             height: '100%',
-            margin: theme.spacing.lg,
             borderRadius: theme.borderRadius.lg,
             overflow: 'hidden',
             maxWidth,
@@ -60,8 +58,8 @@ export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
             borderRadius: theme.borderRadius.full,
             paddingHorizontal: theme.spacing.sm,
             paddingVertical: theme.spacing.xs,
-            bottom: theme.spacing.sm,
-            left: theme.spacing.xl,
+            bottom: theme.spacing.md,
+            left: theme.spacing.md,
             backgroundColor: theme.colors.nftIconBg,
             alignItems: 'center',
             justifyContent: 'center',
@@ -71,8 +69,8 @@ export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
         },
         fullScreenButton: {
             position: 'absolute',
-            bottom: theme.spacing.xl,
-            right: 0,
+            bottom: theme.spacing.md,
+            right: theme.spacing.md,
             borderRadius: theme.borderRadius.sm,
             backgroundColor: theme.colors.nftIconBg,
             alignItems: 'center',
@@ -85,6 +83,10 @@ export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
             // The maxWidth cap would otherwise left-align the item (and its
             // centered placeholder), shifting it off-centre on wider screens.
             alignSelf: 'center',
+            // Vertical spacing lives on this box (not the media) so the media
+            // fills it exactly and the absolute overlays (fullscreen / 3D
+            // badge) land on the media's real corners.
+            marginVertical: theme.spacing.lg,
         },
         indicator: {
             flexDirection: 'row',

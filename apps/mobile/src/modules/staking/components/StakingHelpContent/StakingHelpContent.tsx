@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWView } from '@components/core'
+import { PWSheetLayout, PWView } from '@components/core'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import type { StakingType } from '../../models'
@@ -25,15 +25,15 @@ export const StakingHelpContent = () => {
     const { dismiss } = useBottomSheetResult()
 
     return (
-        <PWView
-            style={styles.container}
+        <PWSheetLayout
+            header={
+                <SheetHeader
+                    title={t('staking.help.title')}
+                    testID='staking-help-sheet'
+                />
+            }
             testID='staking-help-sheet'
         >
-            <SheetHeader
-                title={t('staking.help.title')}
-                testID='staking-help-sheet'
-            />
-
             <PWView style={styles.contentContainer}>
                 {STAKING_TYPES.map((type, index) => (
                     <StakingTypeRow
@@ -44,6 +44,6 @@ export const StakingHelpContent = () => {
                     />
                 ))}
             </PWView>
-        </PWView>
+        </PWSheetLayout>
     )
 }

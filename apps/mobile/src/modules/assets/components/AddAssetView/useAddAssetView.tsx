@@ -119,7 +119,7 @@ export const useAddAssetView = (
             const result = await requestByType<'asset-opt-in', 'confirm'>(
                 'asset-opt-in',
                 { assetId, accountAddress: selectedAccount.address },
-                { size: 'lg', enablePanDownToClose: true },
+                { size: 'auto', enablePanDownToClose: true },
             )
             if (result !== 'confirm') return
 

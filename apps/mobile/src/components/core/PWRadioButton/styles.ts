@@ -22,8 +22,11 @@ export const useStyles = makeStyles(theme => {
             alignItems: 'center',
             gap: theme.spacing.md,
         },
+        // Fills the row so the radio stays pinned right and any trailing
+        // content a caller renders (e.g. a right-aligned value) can reach the
+        // edge instead of hugging the label. minWidth:0 keeps truncation working.
         content: {
-            flexShrink: 1,
+            flex: 1,
             minWidth: 0,
         },
         radioContainer: {

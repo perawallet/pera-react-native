@@ -95,6 +95,7 @@ export const AsbImportSelectAccountsScreen = () => {
                             <PWText
                                 variant='bodySemibold'
                                 style={styles.headerCount}
+                                truncate
                             >
                                 {t('onboarding.asb_import.select.count', {
                                     count: importableCount,

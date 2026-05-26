@@ -16,29 +16,14 @@ import { render, screen } from '@test-utils/render'
 import { PWSheetLayout } from '../PWSheetLayout'
 
 describe('PWSheetLayout', () => {
-    it('renders header, body, and footer slots together', () => {
-        render(
-            <PWSheetLayout
-                header={<PWText>Header</PWText>}
-                footer={<PWText>Footer</PWText>}
-            >
-                <PWText>Body</PWText>
-            </PWSheetLayout>,
-        )
-
-        expect(screen.getByText('Header')).toBeTruthy()
-        expect(screen.getByText('Body')).toBeTruthy()
-        expect(screen.getByText('Footer')).toBeTruthy()
-    })
-
-    it('omits the footer when none is provided', () => {
+    it('renders the header above the body', () => {
         render(
             <PWSheetLayout header={<PWText>Header</PWText>}>
                 <PWText>Body</PWText>
             </PWSheetLayout>,
         )
 
-        expect(screen.queryByText('Footer')).toBeNull()
+        expect(screen.getByText('Header')).toBeTruthy()
         expect(screen.getByText('Body')).toBeTruthy()
     })
 

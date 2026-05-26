@@ -13,8 +13,8 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        paddingHorizontal: theme.spacing.xl,
+    body: {
+        paddingTop: 0,
         paddingBottom: theme.spacing.xxl,
     },
     qrSection: {

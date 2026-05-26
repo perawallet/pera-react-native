@@ -17,11 +17,16 @@ import { useBottomSheetPanDownEnabled } from '../../hooks/useBottomSheetPanDownE
 import { useBottomSheetSize } from '../../hooks/useBottomSheetSize'
 
 import type { StyleProp, ViewStyle } from 'react-native'
+import type { FontWeight, TypographyVariant } from '@theme/typography'
 
 import { useStyles } from './styles'
 
 export type SheetHeaderProps = {
     title: ReactNode
+    /** Typography variant applied to a string title. Defaults to `h4`. */
+    titleVariant?: TypographyVariant
+    /** Overrides the font weight applied to a string title. */
+    titleWeight?: FontWeight
     /** Optional element shown in the toolbar's right slot. */
     rightAction?: ReactNode
     /** Override the default close behaviour (which calls `dismiss()`). */
@@ -47,6 +52,8 @@ export type SheetHeaderProps = {
  */
 export const SheetHeader = ({
     title,
+    titleVariant = 'h4',
+    titleWeight,
     rightAction,
     onClose,
     paddingStyle = 'dense',
@@ -79,7 +86,8 @@ export const SheetHeader = ({
             center={
                 typeof title === 'string' ? (
                     <PWText
-                        variant='h4'
+                        variant={titleVariant}
+                        weight={titleWeight}
                         truncate
                         style={styles.title}
                         testID={testID ? `${testID}-title` : undefined}

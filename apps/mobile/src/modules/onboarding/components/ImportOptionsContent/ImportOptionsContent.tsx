@@ -14,6 +14,7 @@ import React from 'react'
 import {
     PWChip,
     PWIcon,
+    PWSheetLayout,
     PWText,
     PWTouchableOpacity,
     PWView,
@@ -33,12 +34,11 @@ export const ImportOptionsContent = () => {
     const { resolve } = useBottomSheetResult<ImportOptionsContentResult>()
 
     return (
-        <PWView style={styles.content}>
-            <SheetHeader
-                title={t('onboarding.import_options.title')}
-                paddingStyle='none'
-            />
-
+        <PWSheetLayout
+            header={
+                <SheetHeader title={t('onboarding.import_options.title')} />
+            }
+        >
             <PWView style={styles.optionsContainer}>
                 <PWTouchableOpacity
                     onPress={() => resolve('hdWallet')}
@@ -157,6 +157,6 @@ export const ImportOptionsContent = () => {
                     </PWView>
                 </PWTouchableOpacity>
             </PWView>
-        </PWView>
+        </PWSheetLayout>
     )
 }

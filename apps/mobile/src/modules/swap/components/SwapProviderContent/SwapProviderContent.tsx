@@ -15,6 +15,7 @@ import { useTheme } from '@rneui/themed'
 import {
     PWIcon,
     PWImage,
+    PWSheetLayout,
     PWText,
     PWTouchableOpacity,
     PWView,
@@ -55,81 +56,83 @@ export const SwapProviderContent = ({
     }, [resolve, userSelection])
 
     return (
-        <>
-            <SheetHeader
-                title={t('swap.provider.change_title')}
-                rightAction={
-                    <PWTouchableOpacity
-                        onPress={handleApply}
-                        testID='swap-provider-apply'
-                    >
-                        <PWText variant='linkPositive'>
-                            {t('swap.provider.apply')}
-                        </PWText>
-                    </PWTouchableOpacity>
-                }
-            />
-            <PWView style={styles.list}>
-                <ProviderSelectionItem
-                    left={
-                        <PWIcon
-                            name='sparkle'
-                            size='lg'
-                        />
-                    }
-                    label={t('swap.provider.auto_label')}
-                    right={
-                        <PWText
-                            variant='body'
-                            style={styles.autoDescription}
+        <PWSheetLayout
+            header={
+                <SheetHeader
+                    title={t('swap.provider.change_title')}
+                    rightAction={
+                        <PWTouchableOpacity
+                            onPress={handleApply}
+                            testID='swap-provider-apply'
                         >
-                            {t('swap.provider.auto_description')}
-                        </PWText>
+                            <PWText variant='linkPositive'>
+                                {t('swap.provider.apply')}
+                            </PWText>
+                        </PWTouchableOpacity>
                     }
-                    isSelected={userSelection === null}
-                    onPress={() => handleSelect(null)}
-                    testID='swap-provider-option-auto'
                 />
-                {rows.map((row, index) => (
-                    <ProviderSelectionItem
-                        key={`${row.quote.provider ?? 'unknown'}-${index}`}
-                        left={
-                            row.iconUrl ? (
-                                <PWImage
-                                    source={{ uri: row.iconUrl }}
-                                    width={theme.spacing.xxl}
-                                    height={theme.spacing.xxl}
-                                    containerStyle={styles.logo}
-                                />
-                            ) : (
-                                <PWView style={styles.logo} />
-                            )
-                        }
-                        label={row.displayName}
-                        right={
-                            <PWView style={styles.rightTextColumn}>
+            }
+            bodyStyle={styles.list}
+        >
+            <ProviderSelectionItem
+                left={
+                    <PWIcon
+                        name='sparkle'
+                        size='lg'
+                    />
+                }
+                label={t('swap.provider.auto_label')}
+                right={
+                    <PWText
+                        variant='body'
+                        style={styles.autoDescription}
+                    >
+                        {t('swap.provider.auto_description')}
+                    </PWText>
+                }
+                isSelected={userSelection === null}
+                onPress={() => handleSelect(null)}
+                testID='swap-provider-option-auto'
+            />
+            {rows.map((row, index) => (
+                <ProviderSelectionItem
+                    key={`${row.quote.provider ?? 'unknown'}-${index}`}
+                    left={
+                        row.iconUrl ? (
+                            <PWImage
+                                source={{ uri: row.iconUrl }}
+                                width={theme.spacing.xxl}
+                                height={theme.spacing.xxl}
+                                containerStyle={styles.logo}
+                            />
+                        ) : (
+                            <PWView style={styles.logo} />
+                        )
+                    }
+                    label={row.displayName}
+                    right={
+                        <PWView style={styles.rightTextColumn}>
+                            <PWText
+                                variant='body'
+                                style={styles.amountText}
+                            >
+                                {row.amountDisplay}
+                            </PWText>
+                            {row.fiatDisplay && (
                                 <PWText
                                     variant='body'
-                                    style={styles.amountText}
+                                    style={styles.fiatText}
                                 >
-                                    {row.amountDisplay}
+                                    {row.fiatDisplay}
                                 </PWText>
-                                {row.fiatDisplay && (
-                                    <PWText
-                                        variant='body'
-                                        style={styles.fiatText}
-                                    >
-                                        {row.fiatDisplay}
-                                    </PWText>
-                                )}
-                            </PWView>
-                        }
-                        isSelected={userSelection === row.quote.provider}
-                        onPress={() => handleSelect(row.quote.provider ?? null)}
-                        testID={`swap-provider-option-${row.quote.provider ?? 'unknown'}`}
-                    />
-                ))}
-            </PWView>
-        </>
+                            )}
+                        </PWView>
+                    }
+                    isSelected={userSelection === row.quote.provider}
+                    onPress={() => handleSelect(row.quote.provider ?? null)}
+                    testID={`swap-provider-option-${row.quote.provider ?? 'unknown'}`}
+                />
+            ))}
+        </PWSheetLayout>
     )
 }

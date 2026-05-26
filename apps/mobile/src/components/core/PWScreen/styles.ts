@@ -40,6 +40,7 @@ export const useStyles = makeStyles(
             fixedBody: {
                 flex: 1,
                 paddingHorizontal,
+                paddingBottom: theme.spacing.xl,
             },
             footer: {
                 // Bottom CTAs share one screen gutter (xl) regardless of the

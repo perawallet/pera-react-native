@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { PWText, PWView } from '@components/core'
+import { PWView } from '@components/core'
 import { AddressSearchView } from '@components/AddressSearchView'
 import {
     AccountTypes,
@@ -95,16 +95,8 @@ export const AddParticipantContent = () => {
 
     return (
         <PWView style={styles.container}>
-            <SheetHeader
-                title={
-                    <PWText
-                        variant='h4'
-                        style={styles.title}
-                    >
-                        {t('multisig.add_participant.title')}
-                    </PWText>
-                }
-            />
+            <SheetHeader title={t('multisig.add_participant.title')} />
+
             <AddressSearchView
                 onSelected={handleSelected}
                 excludeTypes={EXCLUDE_TYPES}

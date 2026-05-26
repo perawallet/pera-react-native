@@ -12,11 +12,12 @@
 
 import { useWindowDimensions } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
     PWButton,
     PWIcon,
     PWImage,
-    PWScreen,
+    PWScrollView,
     PWText,
     PWToolbar,
     PWView,
@@ -34,7 +35,8 @@ const BG_IMAGE_ASPECT_RATIO = 0.784
 
 export const BidaliIntroScreen = () => {
     const { width } = useWindowDimensions()
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles({ insets })
     const { t } = useLanguage()
     const { onClose } = useBidali()
     const navigation =
@@ -65,17 +67,9 @@ export const BidaliIntroScreen = () => {
                 paddingStyle='dense'
             />
 
-            <PWScreen
-                horizontalPadding='none'
-                keyboard='none'
-                footer={
-                    <PWButton
-                        variant='primary'
-                        title={t('giftCard.intro.buy_gift_cards')}
-                        onPress={handleBuyGiftCards}
-                        testID='bidali_intro_buy_button'
-                    />
-                }
+            <PWScrollView
+                inBottomSheet
+                contentContainerStyle={styles.scrollContent}
             >
                 <PWView style={styles.heroSection}>
                     <PWView style={styles.heroImage}>
@@ -94,7 +88,16 @@ export const BidaliIntroScreen = () => {
                         description={t('giftCard.intro.body')}
                     />
                 </PWView>
-            </PWScreen>
+            </PWScrollView>
+
+            <PWView style={styles.footer}>
+                <PWButton
+                    variant='primary'
+                    title={t('giftCard.intro.buy_gift_cards')}
+                    onPress={handleBuyGiftCards}
+                    testID='bidali_intro_buy_button'
+                />
+            </PWView>
         </PWView>
     )
 }

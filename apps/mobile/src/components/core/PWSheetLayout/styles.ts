@@ -12,21 +12,26 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
-    // Takes the space between the fixed toolbar and footer; the body scrolls
-    // within it once it overflows.
+type StyleProps = { bottomInset: number }
+
+export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
     scrollView: {
-        flex: 1,
+        flexShrink: 1,
     },
-    scrollContent: {
+    // Sticky header lives inside the scroll (so the sheet measures the full
+    // content and sizes to it); an opaque background keeps body content from
+    // showing through as it scrolls underneath.
+    header: {
+        backgroundColor: theme.colors.background,
+    },
+    body: {
         paddingHorizontal: theme.spacing.xl,
-        paddingVertical: theme.spacing.xl,
+        paddingTop: theme.spacing.xl,
     },
-    // The bottom safe area is added by the host PWBottomSheet's inner container;
-    // `paddingBottom` here is the 16 gap above it.
-    footer: {
-        paddingHorizontal: theme.spacing.lg,
-        paddingTop: theme.spacing.lg,
-        paddingBottom: theme.spacing.lg,
+    // Applied after `bodyStyle` so the home-indicator inset is always cleared:
+    // the sheet hugs this scroll content, so the safe area must sit inside it
+    // (the host's bottom padding is outside the scroll and ignored at `auto`).
+    bodyBottom: {
+        paddingBottom: theme.spacing.xl,
     },
 }))

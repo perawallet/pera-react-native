@@ -16,11 +16,9 @@ type StyleProps = { hasPadding: boolean }
 
 export const useStyles = makeStyles((theme, { hasPadding }: StyleProps) => ({
     searchContainer: {
-        paddingHorizontal: hasPadding ? theme.spacing.md : 0,
         marginBottom: theme.spacing.md,
     },
     item: {
         width: '100%',
-        paddingHorizontal: hasPadding ? theme.spacing.md : 0,
     },
 }))

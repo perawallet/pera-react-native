@@ -10,11 +10,10 @@
  limitations under the License
  */
 
-import { PWScrollView, PWView } from '@components/core'
+import { PWSheetLayout } from '@components/core'
 import { SheetHeader } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSigningPipeline } from '@perawallet/wallet-core-signing'
-import { useStyles } from './styles'
 import { WarningItem } from './WarningItem'
 
 export type SigningWarningsContentProps = {
@@ -24,29 +23,28 @@ export type SigningWarningsContentProps = {
 export const SigningWarningsContent = ({
     isGroup = false,
 }: SigningWarningsContentProps) => {
-    const styles = useStyles()
     const { t } = useLanguage()
     const { distinctWarnings, warnings } = useSigningPipeline()
     const warningCount = warnings.length
 
     return (
-        <PWView style={styles.sheetContainer}>
-            <SheetHeader
-                title={t('transactions.warning.title', {
-                    count: warningCount,
-                })}
-            />
-
-            <PWScrollView inBottomSheet>
-                {distinctWarnings.map((warning, index) => (
-                    <WarningItem
-                        key={`${warning.type}-${warning.senderAddress}-${warning.targetAddress}`}
-                        warning={warning}
-                        showDivider={index > 0}
-                        isGroup={isGroup}
-                    />
-                ))}
-            </PWScrollView>
-        </PWView>
+        <PWSheetLayout
+            header={
+                <SheetHeader
+                    title={t('transactions.warning.title', {
+                        count: warningCount,
+                    })}
+                />
+            }
+        >
+            {distinctWarnings.map((warning, index) => (
+                <WarningItem
+                    key={`${warning.type}-${warning.senderAddress}-${warning.targetAddress}`}
+                    warning={warning}
+                    showDivider={index > 0}
+                    isGroup={isGroup}
+                />
+            ))}
+        </PWSheetLayout>
     )
 }

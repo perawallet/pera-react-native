@@ -51,14 +51,12 @@ export const AccountSelectionScreen = () => {
     const keyExtractor = useCallback((item: WalletAccount) => item.address, [])
 
     return (
-        <PWScreen scroll={false}>
-            <PWFlatList
-                inBottomSheet
-                data={accounts}
-                renderItem={renderItem}
-                keyExtractor={keyExtractor}
-                contentContainerStyle={styles.listContent}
-            />
-        </PWScreen>
+        <PWFlatList
+            inBottomSheet
+            data={accounts}
+            renderItem={renderItem}
+            keyExtractor={keyExtractor}
+            contentContainerStyle={styles.listContent}
+        />
     )
 }

@@ -64,4 +64,7 @@ export const useStyles = makeStyles(theme => ({
         marginTop: theme.spacing.sm,
         width: '100%',
     },
+    confirmButton: {
+        marginTop: theme.spacing.md,
+    },
 }))

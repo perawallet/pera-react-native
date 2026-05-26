@@ -14,6 +14,7 @@ import React from 'react'
 import { StyleProp, ViewStyle } from 'react-native'
 import { PWView } from '../PWView'
 import { useStyles } from './styles'
+import { usePWToolbar } from './usePWToolbar'
 
 export type PWToolbarProps = {
     left?: React.ReactNode
@@ -32,7 +33,12 @@ export const PWToolbar = ({
     paddingStyle,
     testID,
 }: PWToolbarProps) => {
-    const styles = useStyles({ paddingStyle, hasCenter: center != null })
+    const hasCenter = center != null
+    const { sideMinWidth, handleSideLayout } = usePWToolbar()
+    const styles = useStyles({ paddingStyle, hasCenter, sideMinWidth })
+
+    // Only measure when a center title needs centering between the two actions.
+    const onSideLayout = hasCenter ? handleSideLayout : undefined
 
     return (
         <PWView
@@ -41,6 +47,7 @@ export const PWToolbar = ({
         >
             <PWView
                 style={styles.leftSlotContainer}
+                onLayout={onSideLayout}
                 testID={testID ? `${testID}-left` : undefined}
             >
                 {left}
@@ -55,6 +62,7 @@ export const PWToolbar = ({
 
             <PWView
                 style={styles.rightSlotContainer}
+                onLayout={onSideLayout}
                 testID={testID ? `${testID}-right` : undefined}
             >
                 {right}

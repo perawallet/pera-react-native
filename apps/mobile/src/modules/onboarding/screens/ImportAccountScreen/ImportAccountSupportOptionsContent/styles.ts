@@ -15,7 +15,6 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     optionsContainer: {
         marginTop: theme.spacing.lg,
-        paddingHorizontal: theme.spacing.xl,
         paddingBottom: theme.spacing['4xl'],
     },
 }))

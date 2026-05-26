@@ -11,7 +11,12 @@
  */
 
 import React from 'react'
-import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
+import {
+    PWIcon,
+    PWSheetLayout,
+    PWText,
+    PWTouchableOpacity,
+} from '@components/core'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
@@ -26,39 +31,35 @@ export const ManageNftsContent = (_: ManageNftsContentProps = {}) => {
     const { resolve } = useBottomSheetResult<ManageNftsAction>()
 
     return (
-        <>
-            <SheetHeader
-                title={t('account_details.nfts.manage_title')}
-                style={styles.toolbar}
-            />
+        <PWSheetLayout
+            header={
+                <SheetHeader title={t('account_details.nfts.manage_title')} />
+            }
+            bodyStyle={styles.contentContainer}
+        >
+            <PWTouchableOpacity
+                style={styles.menuRow}
+                onPress={() => resolve('sort')}
+            >
+                <PWIcon
+                    name='list-arrow-down'
+                    size='md'
+                />
+                <PWText variant='body'>{t('account_details.nfts.sort')}</PWText>
+            </PWTouchableOpacity>
 
-            <PWView style={styles.contentContainer}>
-                <PWTouchableOpacity
-                    style={styles.menuRow}
-                    onPress={() => resolve('sort')}
-                >
-                    <PWIcon
-                        name='list-arrow-down'
-                        size='md'
-                    />
-                    <PWText variant='body'>
-                        {t('account_details.nfts.sort')}
-                    </PWText>
-                </PWTouchableOpacity>
-
-                <PWTouchableOpacity
-                    style={styles.menuRow}
-                    onPress={() => resolve('filter')}
-                >
-                    <PWIcon
-                        name='funnel'
-                        size='md'
-                    />
-                    <PWText variant='body'>
-                        {t('account_details.nfts.filter')}
-                    </PWText>
-                </PWTouchableOpacity>
-            </PWView>
-        </>
+            <PWTouchableOpacity
+                style={styles.menuRow}
+                onPress={() => resolve('filter')}
+            >
+                <PWIcon
+                    name='funnel'
+                    size='md'
+                />
+                <PWText variant='body'>
+                    {t('account_details.nfts.filter')}
+                </PWText>
+            </PWTouchableOpacity>
+        </PWSheetLayout>
     )
 }

@@ -15,13 +15,13 @@ import { getTypography } from '@theme/typography'
 
 export const useStyles = makeStyles(theme => ({
     container: {
-        paddingHorizontal: theme.spacing.lg,
+        paddingHorizontal: theme.spacing.xl,
         paddingTop: theme.spacing.md,
     },
     receiveContainer: {
         backgroundColor: theme.colors.layerGrayLighter,
         borderRadius: theme.spacing.xl,
-        paddingHorizontal: theme.spacing.lg,
+        paddingHorizontal: theme.spacing.xl,
         paddingTop: theme.spacing.xl,
         paddingBottom: theme.spacing.md,
         marginTop: theme.spacing.xl,
@@ -30,17 +30,23 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        gap: theme.spacing.sm,
         marginBottom: theme.spacing.sm,
     },
     label: {
         color: theme.colors.textGray,
+        flexShrink: 0,
     },
     balance: {
         color: theme.colors.textGray,
     },
+    // Shrinks so a long balance truncates within the row instead of running
+    // off-screen; the "Balance:" label stays intact and the amount gives way.
     balanceWrapper: {
         flexDirection: 'row',
         alignItems: 'center',
+        flexShrink: 1,
+        minWidth: 0,
     },
     inputRow: {
         flexDirection: 'row',

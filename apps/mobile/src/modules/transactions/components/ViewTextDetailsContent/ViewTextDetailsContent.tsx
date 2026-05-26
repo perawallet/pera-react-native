@@ -10,7 +10,13 @@
  limitations under the License
  */
 
-import { PWBadge, PWIcon, PWScrollView, PWText, PWView } from '@components/core'
+import {
+    PWBadge,
+    PWIcon,
+    PWSheetLayout,
+    PWText,
+    PWView,
+} from '@components/core'
 import { SheetHeader } from '@modules/bottom-sheet'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
@@ -48,41 +54,45 @@ export const ViewTextDetailsContent = ({
     }
 
     return (
-        <PWView style={styles.container}>
-            <SheetHeader
-                title={title}
-                rightAction={
-                    <PWIcon
-                        name='copy'
-                        variant='secondary'
-                        onPress={copyText}
+        <PWSheetLayout
+            header={
+                <>
+                    <SheetHeader
+                        title={title}
+                        rightAction={
+                            <PWIcon
+                                name='copy'
+                                variant='secondary'
+                                onPress={copyText}
+                            />
+                        }
                     />
-                }
-            />
-
-            <PWView style={styles.buttonContainer}>
-                <PWBadge
-                    variant={mode === 'text' ? 'primary' : 'secondary'}
-                    value={t('common.text.label')}
-                    textStyle={styles.buttonText}
-                    onPress={() => setMode('text')}
-                />
-                <PWBadge
-                    variant={mode === 'hex' ? 'primary' : 'secondary'}
-                    value={t('common.hex.label')}
-                    textStyle={styles.buttonText}
-                    onPress={() => setMode('hex')}
-                />
-                <PWBadge
-                    variant={mode === 'base64' ? 'primary' : 'secondary'}
-                    value={t('common.base64.label')}
-                    textStyle={styles.buttonText}
-                    onPress={() => setMode('base64')}
-                />
-            </PWView>
-            <PWScrollView inBottomSheet>
-                <PWText style={styles.noteText}>{textToDisplay}</PWText>
-            </PWScrollView>
-        </PWView>
+                    <PWView style={styles.buttonContainer}>
+                        <PWBadge
+                            variant={mode === 'text' ? 'primary' : 'secondary'}
+                            value={t('common.text.label')}
+                            textStyle={styles.buttonText}
+                            onPress={() => setMode('text')}
+                        />
+                        <PWBadge
+                            variant={mode === 'hex' ? 'primary' : 'secondary'}
+                            value={t('common.hex.label')}
+                            textStyle={styles.buttonText}
+                            onPress={() => setMode('hex')}
+                        />
+                        <PWBadge
+                            variant={
+                                mode === 'base64' ? 'primary' : 'secondary'
+                            }
+                            value={t('common.base64.label')}
+                            textStyle={styles.buttonText}
+                            onPress={() => setMode('base64')}
+                        />
+                    </PWView>
+                </>
+            }
+        >
+            <PWText>{textToDisplay}</PWText>
+        </PWSheetLayout>
     )
 }

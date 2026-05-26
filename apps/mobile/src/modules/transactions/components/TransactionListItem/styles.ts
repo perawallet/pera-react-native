@@ -46,11 +46,13 @@ export const useStyles = makeStyles(theme => {
             minWidth: 0,
             marginRight: theme.spacing.sm,
         },
+        // No fixed max-width: the amount sizes to its content and the title
+        // (a short label + already-truncated address) yields the rest, so the
+        // amount only truncates when the row genuinely can't fit it.
         amountContainer: {
             alignItems: 'flex-end',
             flexShrink: 1,
             minWidth: 0,
-            maxWidth: '45%',
         },
         title: {
             color: theme.colors.textMain,

@@ -119,9 +119,7 @@ export const LedgerAccountInfoContent = ({
 
     return (
         <PWView style={styles.container}>
-            <SheetHeader
-                title={<PWText variant='h3'>{resolvedTitle}</PWText>}
-            />
+            <SheetHeader title={resolvedTitle} />
 
             {isLoading && (
                 <PWView

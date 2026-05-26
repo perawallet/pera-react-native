@@ -74,6 +74,7 @@ export const EmptyView = (props: EmptyViewProps) => {
                 <PWText
                     variant='h3'
                     style={styles.titleText}
+                    numberOfLines={2}
                     truncate
                 >
                     {title}
@@ -82,7 +83,7 @@ export const EmptyView = (props: EmptyViewProps) => {
             <PWText
                 style={styles.text}
                 numberOfLines={3}
-                ellipsizeMode='tail'
+                truncate
             >
                 {body}
             </PWText>

@@ -22,6 +22,8 @@ export type VideoPlayerProps = {
     height?: number
     autoPlay?: boolean
     loop?: boolean
+    /** Start muted; the user can unmute via the native player controls. */
+    muted?: boolean
     style?: StyleProp<ViewStyle>
 }
 
@@ -31,6 +33,7 @@ export const VideoPlayer = ({
     height: heightProp,
     autoPlay = true,
     loop = true,
+    muted = true,
     style,
 }: VideoPlayerProps) => {
     const window = useWindowDimensions()
@@ -39,6 +42,7 @@ export const VideoPlayer = ({
     const styles = useStyles({ width, height })
     const player = useVideoPlayer(uri, player => {
         player.loop = loop
+        player.muted = muted
         if (autoPlay) {
             player.play()
         }

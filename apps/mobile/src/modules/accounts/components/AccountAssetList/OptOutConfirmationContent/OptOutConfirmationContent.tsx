@@ -10,7 +10,13 @@
  limitations under the License
  */
 
-import { PWButton, PWSlideToConfirm, PWText, PWView } from '@components/core'
+import {
+    PWButton,
+    PWSheetLayout,
+    PWSlideToConfirm,
+    PWText,
+    PWView,
+} from '@components/core'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { AddressDisplay } from '@components/AddressDisplay'
 import {
@@ -61,9 +67,9 @@ export const OptOutConfirmationContent = ({
     }
 
     return (
-        <PWView style={styles.container}>
-            <SheetHeader title={t('asset_opt_out.title')} />
-
+        <PWSheetLayout
+            header={<SheetHeader title={t('asset_opt_out.title')} />}
+        >
             <PWView style={styles.body}>
                 <PWView style={styles.assetNameRow}>
                     <PWText
@@ -161,6 +167,6 @@ export const OptOutConfirmationContent = ({
                     />
                 </PWView>
             </PWView>
-        </PWView>
+        </PWSheetLayout>
     )
 }

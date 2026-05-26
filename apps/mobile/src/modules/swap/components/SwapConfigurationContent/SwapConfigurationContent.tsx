@@ -60,7 +60,10 @@ export const SwapConfigurationContent = (
                     />
                 }
                 center={
-                    <PWText variant='h4'>
+                    <PWText
+                        variant='h4'
+                        truncate
+                    >
                         {t('swap.configuration.title')}
                     </PWText>
                 }

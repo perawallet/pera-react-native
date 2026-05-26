@@ -23,9 +23,9 @@ import { useStyles } from './styles'
 import swapIntroHero from '@assets/images/swap-intro-hero.png'
 
 export const SwapIntroductionContent = () => {
-    const styles = useStyles()
-    const { t } = useLanguage()
     const insets = useSafeAreaInsets()
+    const styles = useStyles({ insets })
+    const { t } = useLanguage()
     const { pushWebView } = useWebView()
     const { resolve, dismiss } = useBottomSheetResult<'start'>()
 
@@ -39,10 +39,7 @@ export const SwapIntroductionContent = () => {
     return (
         <BottomSheetScrollView
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={[
-                styles.scrollContent,
-                { paddingBottom: insets.bottom },
-            ]}
+            contentContainerStyle={styles.scrollContent}
             testID='swap-intro-scroll'
         >
             <PWView style={styles.heroSection}>

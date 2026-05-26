@@ -93,6 +93,7 @@ export const TxTypeDetails = ({ tx }: { tx: PeraDisplayableTransaction }) => {
                 secondary = (
                     <PWText
                         variant='caption'
+                        truncate
                         style={styles.secondaryText}
                     >
                         {t('transactions.app_call.inner_transactions', {
@@ -104,6 +105,7 @@ export const TxTypeDetails = ({ tx }: { tx: PeraDisplayableTransaction }) => {
                 secondary = (
                     <PWText
                         variant='caption'
+                        truncate
                         style={styles.secondaryText}
                     >
                         {tx.applicationTransaction?.applicationId?.toString()}
@@ -113,6 +115,7 @@ export const TxTypeDetails = ({ tx }: { tx: PeraDisplayableTransaction }) => {
                 secondary = (
                     <PWText
                         variant='caption'
+                        truncate
                         style={styles.secondaryText}
                     >
                         {senderDisplayName}
@@ -125,6 +128,7 @@ export const TxTypeDetails = ({ tx }: { tx: PeraDisplayableTransaction }) => {
             secondary = (
                 <PWText
                     variant='caption'
+                    truncate
                     style={styles.secondaryText}
                 >
                     {senderDisplayName}
@@ -134,7 +138,10 @@ export const TxTypeDetails = ({ tx }: { tx: PeraDisplayableTransaction }) => {
 
     return (
         <PWView style={styles.content}>
-            <PWText style={styles.primaryText}>
+            <PWText
+                truncate
+                style={styles.primaryText}
+            >
                 {t(`transactions.type.${tx.txType}`)}
             </PWText>
             {secondary}

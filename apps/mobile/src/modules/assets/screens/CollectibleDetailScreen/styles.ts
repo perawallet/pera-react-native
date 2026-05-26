@@ -74,6 +74,11 @@ export const useStyles = makeStyles(theme => ({
     },
     infoLabel: {
         color: theme.colors.textGray,
+        // Yield space (and truncate) so the value — e.g. an address link —
+        // stays whole on screen instead of overflowing.
+        flexShrink: 1,
+        minWidth: 0,
+        marginRight: theme.spacing.md,
     },
     infoValue: {
         color: theme.colors.textMain,

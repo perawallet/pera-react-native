@@ -48,17 +48,14 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         gap: theme.spacing.sm,
         alignItems: 'center',
-        flexShrink: 1,
-        minWidth: 0,
-        maxWidth: '50%',
     },
     manageButton: {
         flexShrink: 0,
     },
+    // Stays full-size (overrides PWButton's default flexShrink:1); the title
+    // truncates instead when the row is tight.
     addAssetButton: {
-        flex: 1,
-        minWidth: 0,
-        maxWidth: '100%',
+        flexShrink: 0,
     },
     loading: {
         justifyContent: 'flex-start',

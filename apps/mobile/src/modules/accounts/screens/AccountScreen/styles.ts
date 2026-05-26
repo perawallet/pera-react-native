@@ -46,19 +46,13 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
             paddingVertical: 0,
             paddingHorizontal: theme.spacing.lg,
         },
-        // Allow the selector to shrink so the account name truncates and the
-        // chevron stays pinned beside it, rather than the chevron being clipped
-        // by the toolbar's max-width + overflow:hidden.
-        accountSelectionTrigger: {
-            flexShrink: 1,
-            minWidth: 0,
-        },
         iconBarSection: {
             flexDirection: 'row',
             gap: theme.spacing.lg,
         },
         tabNavigator: {
             flex: 1,
+            marginTop: theme.spacing.xs,
             minHeight: 0,
         },
     }

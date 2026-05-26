@@ -30,6 +30,8 @@ export const useStyles = makeStyles(theme => {
         },
         content: {
             flexGrow: 1,
+            flexShrink: 1,
+            minWidth: 0,
         },
         rightContent: {
             flexDirection: 'row',

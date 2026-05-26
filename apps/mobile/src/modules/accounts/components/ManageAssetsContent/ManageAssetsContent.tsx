@@ -10,7 +10,12 @@
  limitations under the License
  */
 
-import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
+import {
+    PWIcon,
+    PWSheetLayout,
+    PWText,
+    PWTouchableOpacity,
+} from '@components/core'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
@@ -29,74 +34,65 @@ export const ManageAssetsContent = ({
     const { resolve } = useBottomSheetResult<ManageAssetsAction>()
 
     return (
-        <>
-            <SheetHeader
-                title={
-                    <PWText
-                        variant='bodyLarge'
-                        weight={500}
-                    >
-                        {t('manage_assets.title')}
-                    </PWText>
-                }
-            />
-            <PWView style={styles.container}>
+        <PWSheetLayout
+            header={<SheetHeader title={t('manage_assets.title')} />}
+            bodyStyle={styles.container}
+        >
+            <PWTouchableOpacity
+                style={styles.menuRow}
+                onPress={() => resolve('sort')}
+                testID='manage_assets_sort'
+            >
+                <PWIcon
+                    name='list-arrow-down'
+                    variant='primary'
+                    size='md'
+                />
+                <PWText
+                    variant='bodyLarge'
+                    style={styles.menuLabel}
+                >
+                    {t('manage_assets.sort')}
+                </PWText>
+            </PWTouchableOpacity>
+
+            <PWTouchableOpacity
+                style={styles.menuRow}
+                onPress={() => resolve('filter')}
+                testID='manage_assets_filter'
+            >
+                <PWIcon
+                    name='funnel'
+                    variant='primary'
+                    size='md'
+                />
+                <PWText
+                    variant='bodyLarge'
+                    style={styles.menuLabel}
+                >
+                    {t('manage_assets.filter')}
+                </PWText>
+            </PWTouchableOpacity>
+
+            {!isReadOnly && (
                 <PWTouchableOpacity
                     style={styles.menuRow}
-                    onPress={() => resolve('sort')}
-                    testID='manage_assets_sort'
+                    onPress={() => resolve('remove')}
+                    testID='manage_assets_remove'
                 >
                     <PWIcon
-                        name='list-arrow-down'
-                        variant='primary'
+                        name='trash'
+                        variant='error'
                         size='md'
                     />
                     <PWText
                         variant='bodyLarge'
-                        style={styles.menuLabel}
+                        style={styles.menuLabelDestructive}
                     >
-                        {t('manage_assets.sort')}
+                        {t('manage_assets.remove_assets')}
                     </PWText>
                 </PWTouchableOpacity>
-
-                <PWTouchableOpacity
-                    style={styles.menuRow}
-                    onPress={() => resolve('filter')}
-                    testID='manage_assets_filter'
-                >
-                    <PWIcon
-                        name='funnel'
-                        variant='primary'
-                        size='md'
-                    />
-                    <PWText
-                        variant='bodyLarge'
-                        style={styles.menuLabel}
-                    >
-                        {t('manage_assets.filter')}
-                    </PWText>
-                </PWTouchableOpacity>
-
-                {!isReadOnly && (
-                    <PWTouchableOpacity
-                        style={styles.menuRow}
-                        onPress={() => resolve('remove')}
-                        testID='manage_assets_remove'
-                    >
-                        <PWIcon
-                            name='trash'
-                            variant='error'
-                            size='md'
-                        />
-                        <PWText
-                            variant='bodyLarge'
-                            style={styles.menuLabelDestructive}
-                        >
-                            {t('manage_assets.remove_assets')}
-                        </PWText>
-                    </PWTouchableOpacity>
-                )}
-            </PWView>
-        </>
+            )}
+        </PWSheetLayout>
     )
 }

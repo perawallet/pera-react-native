@@ -65,13 +65,6 @@ export const OptInConfirmationContent = ({
     return (
         <PWSheetLayout
             header={<SheetHeader title={t('add_asset.confirmation.title')} />}
-            footer={
-                <PWSlideToConfirm
-                    title={t('common.slide_to_confirm.label')}
-                    onConfirm={handleConfirm}
-                    testID='opt_in_confirm'
-                />
-            }
         >
             <PWView style={styles.body}>
                 <PWView style={styles.assetNameRow}>
@@ -157,6 +150,13 @@ export const OptInConfirmationContent = ({
                 >
                     {t('add_asset.confirmation.description')}
                 </PWText>
+
+                <PWSlideToConfirm
+                    title={t('common.slide_to_confirm.label')}
+                    onConfirm={handleConfirm}
+                    style={styles.confirmButton}
+                    testID='opt_in_confirm'
+                />
             </PWView>
         </PWSheetLayout>
     )

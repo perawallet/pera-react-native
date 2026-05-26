@@ -12,8 +12,9 @@
 
 import { render } from '@test-utils/render'
 import { describe, it, expect } from 'vitest'
-import { CurrencyDisplay } from '../CurrencyDisplay'
+import { CurrencyDisplay, getAlgoSymbolWeight } from '../CurrencyDisplay'
 import { Decimal } from 'decimal.js'
+import type { TypographyVariant } from '@theme/typography'
 
 describe('CurrencyDisplay', () => {
     it('renders formatted currency value', () => {
@@ -48,5 +49,58 @@ describe('CurrencyDisplay', () => {
             />,
         )
         expect(container.textContent).toContain('+')
+    })
+
+    it('renders the Algo symbol as a text glyph for ALGO', () => {
+        const { container } = render(
+            <CurrencyDisplay
+                value={new Decimal('0.001')}
+                currency='ALGO'
+                precision={6}
+            />,
+        )
+        // U+00A6 is the Algo mark in the bundled DMSans font.
+        expect(container.textContent).toContain('¦')
+    })
+})
+
+describe('getAlgoSymbolWeight', () => {
+    // U+00A6 only carries the Algo logo in DMSans 400/500/700; weight 600
+    // (h4/bodySemibold) and DMMono render the stock broken-bar glyph.
+    const ALL_VARIANTS: TypographyVariant[] = [
+        'h1',
+        'h2',
+        'h3',
+        'h4',
+        'body',
+        'bodyLarge',
+        'bodyCompact',
+        'bodySemibold',
+        'footnoteMedium',
+        'caption',
+        'captionMedium',
+        'captionSmall',
+        'link',
+        'linkPositive',
+        'mono',
+    ]
+
+    it.each(ALL_VARIANTS)('never resolves %s to the unpatched 600', variant => {
+        expect(getAlgoSymbolWeight(variant)).not.toBe(600)
+    })
+
+    it('bumps weight-600 variants to 700 so the logo glyph renders', () => {
+        expect(getAlgoSymbolWeight('h4')).toBe(700)
+        expect(getAlgoSymbolWeight('bodySemibold')).toBe(700)
+    })
+
+    it('leaves already-patched variant weights unchanged', () => {
+        expect(getAlgoSymbolWeight('h1')).toBe(500)
+        expect(getAlgoSymbolWeight('body')).toBe(400)
+    })
+
+    it('honours an explicit weight override, still clamping 600 to 700', () => {
+        expect(getAlgoSymbolWeight('h4', 500)).toBe(500)
+        expect(getAlgoSymbolWeight('body', 600)).toBe(700)
     })
 })

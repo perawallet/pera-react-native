@@ -21,7 +21,7 @@ export const useStyles = makeStyles(theme => ({
     // card's natural height (icon + equal vertical padding). The single-banner
     // path skips the pager and wraps content.
     pager: {
-        height: ICON_SIZE + theme.spacing.md * 2,
+        height: ICON_SIZE + theme.spacing.lg * 2,
     },
     page: {
         paddingHorizontal: theme.spacing.md,
@@ -30,7 +30,6 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.md,
-        paddingVertical: theme.spacing.md,
         paddingHorizontal: theme.spacing.md,
         borderRadius: theme.borderRadius.md,
         backgroundColor: theme.colors.background,
@@ -40,6 +39,7 @@ export const useStyles = makeStyles(theme => ({
     iconWrapper: {
         width: ICON_SIZE,
         height: ICON_SIZE,
+        marginVertical: theme.spacing.md,
         borderRadius: theme.borderRadius.full,
         overflow: 'hidden',
         backgroundColor: theme.colors.background,
@@ -59,6 +59,7 @@ export const useStyles = makeStyles(theme => ({
     },
     dismissButton: {
         borderRadius: theme.borderRadius.full,
+        marginTop: theme.spacing.md,
         alignItems: 'center',
         alignSelf: 'flex-start',
         justifyContent: 'center',
@@ -68,9 +69,7 @@ export const useStyles = makeStyles(theme => ({
     dotsContainer: {
         flexDirection: 'row',
         alignSelf: 'center',
-        marginTop: theme.spacing.sm,
         gap: theme.spacing.xs,
-        marginBottom: theme.spacing.xs,
     },
     dot: {
         width: theme.spacing.xs,

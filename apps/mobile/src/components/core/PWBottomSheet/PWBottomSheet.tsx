@@ -95,7 +95,6 @@ export const PWBottomSheet = ({
     const insets = useSafeAreaInsets()
     const { height: windowHeight } = useWindowDimensions()
     const defaults = DEFAULT_PROPS[size]
-    const styles = useStyles({ insets, isFull: size === 'full' })
 
     // `auto` sheets size to their content. Cap that at the safe-area height so
     // an over-tall sheet stops at the screen and its (scrollable) content
@@ -103,6 +102,12 @@ export const PWBottomSheet = ({
     // sizes already have fixed snap points, so the cap only applies to `auto`.
     const maxDynamicContentSize =
         size === 'auto' ? windowHeight - insets.top - insets.bottom : undefined
+
+    const styles = useStyles({
+        insets,
+        isFull: size === 'full',
+        maxDynamicContentSize,
+    })
 
     // Full-screen sheets (96–100% snap points) surface a header close (X)
     // instead, so the drag-handle notch is dropped to avoid a redundant
@@ -184,6 +189,10 @@ export const PWBottomSheet = ({
             // would otherwise push it past the configured snap point. Skip
             // for `full`-size sheets which intentionally cover everything.
             topInset={size === 'full' ? 0 : insets.top}
+            // Pass bottom inset to gorhom so it calculates snap points correctly
+            // and positions the sheet above the home indicator. Content padding
+            // is handled by PWSheetLayout or individual content components.
+            bottomInset={size === 'full' ? 0 : insets.bottom}
             backdropComponent={renderBackdrop}
             onDismiss={handleDismiss}
             onAnimate={handleAnimate}

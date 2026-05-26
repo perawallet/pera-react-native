@@ -13,11 +13,8 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    contentContainer: {
+    body: {
         flex: 1,
-        padding: theme.spacing.md,
-    },
-    scrollview: {
         paddingHorizontal: theme.spacing.xl,
     },
 }))

@@ -20,10 +20,6 @@ export const useStyles = makeStyles(theme => ({
     bulletText: {
         color: theme.colors.textGray,
     },
-    container: {
-        gap: theme.spacing.md,
-        paddingHorizontal: theme.spacing.lg,
-    },
     emphasizedText: {
         color: theme.colors.textMain,
     },
@@ -35,6 +31,6 @@ export const useStyles = makeStyles(theme => ({
         paddingBottom: theme.spacing.lg,
     },
     acceptButton: {
-        marginVertical: theme.spacing.xl,
+        marginTop: theme.spacing.md,
     },
 }))

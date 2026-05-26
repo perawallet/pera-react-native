@@ -13,6 +13,7 @@
 import {
     PWDivider,
     PWIcon,
+    PWSheetLayout,
     PWText,
     PWTouchableOpacity,
     PWView,
@@ -22,7 +23,6 @@ import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useStyles } from './styles'
 import { AccountOption, useAccountOptions } from './useAccountOptions'
 import { AccountInfoCard } from '../AccountInfoCard'
-import { BottomSheetScrollView } from '@gorhom/bottom-sheet'
 
 export type AccountOptionsContentProps = {
     onShowAddress: () => void
@@ -110,66 +110,63 @@ export const AccountOptionsContent = ({
     )
 
     return (
-        <>
-            <SheetHeader title={account.name} />
-            <BottomSheetScrollView
-                contentContainerStyle={styles.container}
-                showsVerticalScrollIndicator={false}
-            >
-                <PWView style={styles.accountInfoContainer}>
-                    <AccountInfoCard
-                        account={account}
-                        onClose={dismiss}
-                        rekeyedTo={
-                            isRekeyed && authAddress
-                                ? {
-                                      authAccount,
-                                      authAddress,
-                                      onUndoRekey: canUndoRekey
-                                          ? handleUndoRekey
-                                          : undefined,
-                                  }
-                                : undefined
-                        }
+        <PWSheetLayout
+            header={<SheetHeader title={account.name} />}
+            bodyStyle={styles.container}
+        >
+            <PWView style={styles.accountInfoContainer}>
+                <AccountInfoCard
+                    account={account}
+                    onClose={dismiss}
+                    rekeyedTo={
+                        isRekeyed && authAddress
+                            ? {
+                                  authAccount,
+                                  authAddress,
+                                  onUndoRekey: canUndoRekey
+                                      ? handleUndoRekey
+                                      : undefined,
+                              }
+                            : undefined
+                    }
+                />
+            </PWView>
+
+            <PWView>
+                {generalOptions.map(option => (
+                    <OptionRow
+                        key={option.id}
+                        option={option}
+                        styles={styles}
                     />
-                </PWView>
+                ))}
+            </PWView>
 
-                <PWView>
-                    {generalOptions.map(option => (
-                        <OptionRow
-                            key={option.id}
-                            option={option}
-                            styles={styles}
-                        />
-                    ))}
-                </PWView>
+            {rekeyOptions.length > 0 && (
+                <>
+                    <PWDivider style={styles.divider} />
+                    <PWView>
+                        {rekeyOptions.map(option => (
+                            <OptionRow
+                                key={option.id}
+                                option={option}
+                                styles={styles}
+                            />
+                        ))}
+                    </PWView>
+                </>
+            )}
 
-                {rekeyOptions.length > 0 && (
-                    <>
-                        <PWDivider style={styles.divider} />
-                        <PWView>
-                            {rekeyOptions.map(option => (
-                                <OptionRow
-                                    key={option.id}
-                                    option={option}
-                                    styles={styles}
-                                />
-                            ))}
-                        </PWView>
-                    </>
-                )}
-
-                <PWDivider style={styles.divider} />
-                <PWView>
-                    {managementOptions.map(option => (
-                        <OptionRow
-                            key={option.id}
-                            option={option}
-                            styles={styles}
-                        />
-                    ))}
-                </PWView>
-            </BottomSheetScrollView>
-        </>
+            <PWDivider style={styles.divider} />
+            <PWView>
+                {managementOptions.map(option => (
+                    <OptionRow
+                        key={option.id}
+                        option={option}
+                        styles={styles}
+                    />
+                ))}
+            </PWView>
+        </PWSheetLayout>
     )
 }

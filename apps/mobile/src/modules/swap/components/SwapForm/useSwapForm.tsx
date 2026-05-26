@@ -380,7 +380,13 @@ export const useSwapForm = (): UseSwapFormResult => {
                     selectedProviderName={selectedProviderName}
                 />
             ),
-            options: { size: 'auto', enablePanDownToClose: true },
+            // PWSheetLayout owns its BottomSheetScrollView, so skip the
+            // content-sized BottomSheetView wrapper or the list can't scroll.
+            options: {
+                size: 'auto',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
         })
         // undefined means the sheet was dismissed; null means Auto was applied.
         if (result === undefined) return
@@ -396,6 +402,7 @@ export const useSwapForm = (): UseSwapFormResult => {
                 size: 'auto',
                 enablePanDownToClose: false,
                 enableCloseOnBackdropPress: false,
+                autoCreateContainer: false,
             },
         })
         if (!result || result.kind === 'cancelled') return

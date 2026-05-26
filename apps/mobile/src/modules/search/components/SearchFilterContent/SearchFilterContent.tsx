@@ -11,7 +11,7 @@
  */
 
 import { useState } from 'react'
-import { PWSwitch, PWText, PWView } from '@components/core'
+import { PWSheetLayout, PWSwitch, PWText, PWView } from '@components/core'
 import { SEARCH_SCOPES, type SearchScope } from '@perawallet/wallet-core-search'
 import { SheetHeader } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
@@ -51,8 +51,10 @@ export const SearchFilterContent = ({
     }
 
     return (
-        <PWView style={styles.container}>
-            <SheetHeader title={t('search.filter.title')} />
+        <PWSheetLayout
+            header={<SheetHeader title={t('search.filter.title')} />}
+            bodyStyle={styles.body}
+        >
             {SEARCH_SCOPES.map(scope => (
                 <PWView
                     key={scope}
@@ -66,6 +68,6 @@ export const SearchFilterContent = ({
                     />
                 </PWView>
             ))}
-        </PWView>
+        </PWSheetLayout>
     )
 }

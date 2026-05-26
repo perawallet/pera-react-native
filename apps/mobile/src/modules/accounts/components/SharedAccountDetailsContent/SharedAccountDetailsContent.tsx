@@ -16,6 +16,7 @@ import { AddressDisplay } from '@components/AddressDisplay'
 import { MultisigInfoCard } from '@components/MultisigInfoCard'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useSharedAccountDetailsContent } from './useSharedAccountDetailsContent'
 import { useStyles } from './styles'
 
@@ -34,7 +35,8 @@ export type SharedAccountDetailsContentProps = {
 export const SharedAccountDetailsContent = ({
     details,
 }: SharedAccountDetailsContentProps) => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles({ insets })
     const { t } = useLanguage()
     const { isUserIncluded, isAddressInWallet, handleEditContact } =
         useSharedAccountDetailsContent(details.addresses)

@@ -20,13 +20,6 @@ export const useStyles = makeStyles(theme => {
             width: '100%',
             marginBottom: theme.spacing.md,
         },
-        sheetContainer: {
-            paddingBottom: theme.spacing.xxl,
-            paddingHorizontal: theme.spacing.xl,
-            borderTopStartRadius: theme.spacing.sm,
-            borderTopEndRadius: theme.spacing.sm,
-            overflow: 'hidden',
-        },
         warningSection: {
             marginVertical: theme.spacing.md,
             gap: theme.spacing.xs,

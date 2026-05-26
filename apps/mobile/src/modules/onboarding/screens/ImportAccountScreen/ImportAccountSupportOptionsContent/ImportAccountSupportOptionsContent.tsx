@@ -11,7 +11,7 @@
  */
 
 import React from 'react'
-import { PWListItem, PWView } from '@components/core'
+import { PWListItem, PWSheetLayout, PWView } from '@components/core'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useTranslation } from 'react-i18next'
 import { useStyles } from './styles'
@@ -30,11 +30,13 @@ export const ImportAccountSupportOptionsContent = () => {
         useBottomSheetResult<ImportAccountSupportOptionsContentResult>()
 
     return (
-        <>
-            <SheetHeader
-                title={t('onboarding.import_account.support_options.title')}
-            />
-
+        <PWSheetLayout
+            header={
+                <SheetHeader
+                    title={t('onboarding.import_account.support_options.title')}
+                />
+            }
+        >
             <PWView style={styles.optionsContainer}>
                 <PWListItem
                     icon='text-document'
@@ -58,6 +60,6 @@ export const ImportAccountSupportOptionsContent = () => {
                     onPress={() => resolve('learn-more')}
                 />
             </PWView>
-        </>
+        </PWSheetLayout>
     )
 }
