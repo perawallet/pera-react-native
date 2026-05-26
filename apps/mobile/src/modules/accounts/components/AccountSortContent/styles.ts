@@ -14,34 +14,36 @@ import { makeStyles } from '@rneui/themed'
 
 type StyleProps = { bottomInset?: number }
 
-export const useStyles = makeStyles((theme, { bottomInset = 0 }: StyleProps = {}) => ({
-    container: {
-        flex: 1,
-    },
-    toolbar: {
-        paddingHorizontal: theme.spacing.lg,
-    },
-    contentContainer: {
-        paddingHorizontal: theme.spacing.lg,
-        paddingBottom: theme.spacing.xl + bottomInset,
-    },
-    subtitle: {
-        color: theme.colors.textGrayLighter,
-        marginTop: theme.spacing.lg,
-        marginBottom: theme.spacing.sm,
-    },
-    draggableRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: theme.spacing.sm,
-    },
-    accountDisplayContainer: {
-        flex: 1,
-    },
-    dragHandle: {
-        paddingLeft: theme.spacing.md,
-    },
-    listContent: {
-        paddingBottom: theme.spacing.xl,
-    },
-}))
+export const useStyles = makeStyles(
+    (theme, { bottomInset = 0 }: StyleProps = {}) => ({
+        container: {
+            flex: 1,
+        },
+        toolbar: {
+            paddingHorizontal: theme.spacing.lg,
+        },
+        contentContainer: {
+            paddingHorizontal: theme.spacing.lg,
+            paddingBottom: theme.spacing.xl + bottomInset,
+        },
+        subtitle: {
+            color: theme.colors.textGrayLighter,
+            marginTop: theme.spacing.lg,
+            marginBottom: theme.spacing.sm,
+        },
+        draggableRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingVertical: theme.spacing.sm,
+        },
+        accountDisplayContainer: {
+            flex: 1,
+        },
+        dragHandle: {
+            paddingLeft: theme.spacing.md,
+        },
+        listContent: {
+            paddingBottom: theme.spacing.xl,
+        },
+    }),
+)
