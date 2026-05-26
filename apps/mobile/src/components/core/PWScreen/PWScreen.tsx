@@ -74,6 +74,17 @@ export type PWScreenProps = {
     testID?: string
 }
 
+/**
+ * Canonical screen body: a keyboard-aware scrollable content area with an
+ * optional sticky footer that rises with the keyboard, above the bottom safe
+ * area.
+ *
+ * Safe-area ownership: PWScreen owns the BOTTOM inset (via `usePWScreenInsets`)
+ * and the footer's safe area. It deliberately does NOT pad the TOP — the React
+ * Navigation header owns the top safe area and the toolbar (the layout rules'
+ * "Toolbar" / "TopSafeArea" zone). Screens without a native header should supply
+ * their own toolbar/top inset rather than expecting PWScreen to add it.
+ */
 export const PWScreen = ({
     children,
     scroll = true,
