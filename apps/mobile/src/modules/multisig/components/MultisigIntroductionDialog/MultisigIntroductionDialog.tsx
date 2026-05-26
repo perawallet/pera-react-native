@@ -10,13 +10,7 @@
  limitations under the License
  */
 
-import {
-    PWButton,
-    PWDialog,
-    PWImage,
-    PWText,
-    PWView,
-} from '@components/core'
+import { PWButton, PWDialog, PWImage, PWText, PWView } from '@components/core'
 import { useTheme } from '@rneui/themed'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
