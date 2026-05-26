@@ -13,7 +13,7 @@
 import React from 'react'
 
 import { MultisigIntroductionDialog } from '@modules/multisig/components/MultisigIntroductionDialog'
-import { PWDialog } from '@components/core'
+import { PWButton, PWDialog, PWText } from '@components/core'
 
 import { registerPreview } from './registry'
 
@@ -24,9 +24,20 @@ registerPreview({
     render: () => (
         <PWDialog
             isVisible={true}
+            title='Preview Dialog'
             onBackdropPress={() => undefined}
+            footer={
+                <PWButton
+                    variant='primary'
+                    title='Confirm'
+                    onPress={() => undefined}
+                />
+            }
         >
-            <PWDialog.Title title='Preview Dialog' />
+            <PWText variant='body'>
+                A centered dialog: scrollable content capped at 70% of the safe
+                window height and 560 wide, with a pinned footer.
+            </PWText>
         </PWDialog>
     ),
 })

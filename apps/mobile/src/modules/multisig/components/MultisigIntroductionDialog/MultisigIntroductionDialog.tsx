@@ -10,12 +10,10 @@
  limitations under the License
  */
 
-import { useWindowDimensions } from 'react-native'
 import {
     PWButton,
+    PWDialog,
     PWImage,
-    PWOverlay,
-    PWScrollView,
     PWText,
     PWView,
 } from '@components/core'
@@ -43,72 +41,18 @@ export const MultisigIntroductionDialog = ({
     onContinue,
     onDismiss,
 }: MultisigIntroductionDialogProps) => {
-    const { width: screenWidth, height: screenHeight } = useWindowDimensions()
-    const styles = useStyles({ screenWidth, screenHeight })
+    const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
     const heroImage =
         theme.mode === 'dark' ? multisigIntroHeroDark : multisigIntroHero
 
     return (
-        <PWOverlay
+        <PWDialog
             isVisible={isVisible}
             onBackdropPress={onDismiss}
-            overlayStyle={styles.overlay}
-            backdropStyle={styles.backdrop}
-        >
-            <PWScrollView
-                style={styles.scrollArea}
-                contentContainerStyle={styles.container}
-                showsVerticalScrollIndicator={false}
-                bounces={false}
-                testID='multisig_introduction_dialog'
-            >
-                <PWImage
-                    source={heroImage}
-                    style={styles.headerImage}
-                    resizeMode='contain'
-                />
-
-                <PWView style={styles.titleContainer}>
-                    <PWText
-                        variant='h3'
-                        style={styles.title}
-                        numberOfLines={2}
-                        ellipsizeMode='tail'
-                    >
-                        {t('multisig.introduction.title')}
-                    </PWText>
-                </PWView>
-
-                <PWView style={styles.bulletContainer}>
-                    {BULLET_KEYS.map((key, index) => (
-                        <PWView
-                            key={key}
-                            style={styles.bulletItem}
-                            testID={`multisig_introduction_bullet_${index + 1}`}
-                        >
-                            <PWView style={styles.numberBadge}>
-                                <PWText
-                                    variant='body'
-                                    style={styles.numberText}
-                                >
-                                    {index + 1}
-                                </PWText>
-                            </PWView>
-
-                            <PWText
-                                variant='body'
-                                style={styles.bulletText}
-                            >
-                                {t(key)}
-                            </PWText>
-                        </PWView>
-                    ))}
-                </PWView>
-            </PWScrollView>
-
-            <PWView style={styles.footer}>
+            testID='multisig_introduction_dialog'
+            footer={
                 <PWButton
                     variant='primary'
                     title={t('multisig.introduction.continue')}
@@ -116,7 +60,50 @@ export const MultisigIntroductionDialog = ({
                     style={styles.continueButton}
                     testID='multisig_introduction_continue_button'
                 />
+            }
+        >
+            <PWImage
+                source={heroImage}
+                style={styles.headerImage}
+                resizeMode='contain'
+            />
+
+            <PWView style={styles.titleContainer}>
+                <PWText
+                    variant='h3'
+                    style={styles.title}
+                    numberOfLines={2}
+                    ellipsizeMode='tail'
+                >
+                    {t('multisig.introduction.title')}
+                </PWText>
             </PWView>
-        </PWOverlay>
+
+            <PWView style={styles.bulletContainer}>
+                {BULLET_KEYS.map((key, index) => (
+                    <PWView
+                        key={key}
+                        style={styles.bulletItem}
+                        testID={`multisig_introduction_bullet_${index + 1}`}
+                    >
+                        <PWView style={styles.numberBadge}>
+                            <PWText
+                                variant='body'
+                                style={styles.numberText}
+                            >
+                                {index + 1}
+                            </PWText>
+                        </PWView>
+
+                        <PWText
+                            variant='body'
+                            style={styles.bulletText}
+                        >
+                            {t(key)}
+                        </PWText>
+                    </PWView>
+                ))}
+            </PWView>
+        </PWDialog>
     )
 }

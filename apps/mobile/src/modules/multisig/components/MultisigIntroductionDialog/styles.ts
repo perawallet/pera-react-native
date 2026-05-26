@@ -14,94 +14,61 @@ import { makeStyles } from '@rneui/themed'
 
 const HEADER_IMAGE_HEIGHT = 220
 
-type StyleProps = { screenWidth: number; screenHeight: number }
-
-export const useStyles = makeStyles(
-    (theme, { screenWidth, screenHeight }: StyleProps) => ({
-        overlay: {
-            width: screenWidth - theme.spacing.lg * 2,
-            maxWidth: '100%',
-            // Cap the dialog at 80% of the screen; taller content scrolls
-            // inside instead of running off the top and bottom edges.
-            maxHeight: Math.round(screenHeight * 0.8),
-            borderRadius: theme.borderRadius.lg,
-            backgroundColor: theme.colors.background,
-            padding: 0,
-            overflow: 'hidden',
-        },
-        backdrop: {
-            backgroundColor: theme.colors.backdropModalBg,
-        },
-        // Shrinks within the 80%-capped overlay so the footer button keeps its
-        // space; only this region scrolls.
-        scrollArea: {
-            flexShrink: 1,
-        },
-        container: {
-            alignItems: 'center',
-            width: '100%',
-            minWidth: 0,
-            overflow: 'hidden',
-            paddingHorizontal: theme.spacing.xl,
-        },
-        footer: {
-            width: '100%',
-            paddingHorizontal: theme.spacing.xl,
-            paddingBottom: theme.spacing['3xl'],
-        },
-        headerImage: {
-            alignSelf: 'stretch',
-            height: HEADER_IMAGE_HEIGHT,
-            marginHorizontal: -theme.spacing.xl,
-            marginBottom: theme.spacing.xl,
-        },
-        titleContainer: {
-            alignItems: 'center',
-            width: '100%',
-            minWidth: 0,
-            marginBottom: theme.spacing.lg,
-        },
-        title: {
-            textAlign: 'center',
-            width: '100%',
-        },
-        bulletContainer: {
-            width: '100%',
-            gap: theme.spacing.lg,
-            marginBottom: theme.spacing['3xl'],
-        },
-        bulletItem: {
-            width: '100%',
-            minWidth: 0,
-            flexDirection: 'row',
-            alignItems: 'flex-start',
-            gap: theme.spacing.lg,
-        },
-        numberBadge: {
-            width: theme.spacing.xxl,
-            height: theme.spacing.xxl,
-            borderRadius: theme.borderRadius.full,
-            borderWidth: theme.borders.sm,
-            borderColor: theme.colors.layerGrayLighter,
-            backgroundColor: theme.colors.background,
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-        },
-        numberText: {
-            color: theme.colors.textMain,
-            textAlign: 'center',
-        },
-        bulletText: {
-            flex: 1,
-            minWidth: 0,
-            color: theme.colors.textGray,
-            paddingTop: theme.spacing.xs,
-        },
-        continueButton: {
-            alignSelf: 'stretch',
-            width: '100%',
-            minWidth: 0,
-        },
-    }),
-)
+export const useStyles = makeStyles(theme => ({
+    // Full-bleed hero: negative margins cancel PWDialog's content padding so the
+    // image reaches the box edges (clipped by the box's rounded corners).
+    headerImage: {
+        alignSelf: 'stretch',
+        height: HEADER_IMAGE_HEIGHT,
+        marginTop: -theme.spacing.xl,
+        marginHorizontal: -theme.spacing.xl,
+        marginBottom: theme.spacing.xl,
+    },
+    titleContainer: {
+        alignItems: 'center',
+        width: '100%',
+        minWidth: 0,
+        marginBottom: theme.spacing.lg,
+    },
+    title: {
+        textAlign: 'center',
+        width: '100%',
+    },
+    bulletContainer: {
+        width: '100%',
+        gap: theme.spacing.lg,
+    },
+    bulletItem: {
+        width: '100%',
+        minWidth: 0,
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: theme.spacing.lg,
+    },
+    numberBadge: {
+        width: theme.spacing.xxl,
+        height: theme.spacing.xxl,
+        borderRadius: theme.borderRadius.full,
+        borderWidth: theme.borders.sm,
+        borderColor: theme.colors.layerGrayLighter,
+        backgroundColor: theme.colors.background,
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+    },
+    numberText: {
+        color: theme.colors.textMain,
+        textAlign: 'center',
+    },
+    bulletText: {
+        flex: 1,
+        minWidth: 0,
+        color: theme.colors.textGray,
+        paddingTop: theme.spacing.xs,
+    },
+    continueButton: {
+        alignSelf: 'stretch',
+        width: '100%',
+        minWidth: 0,
+    },
+}))

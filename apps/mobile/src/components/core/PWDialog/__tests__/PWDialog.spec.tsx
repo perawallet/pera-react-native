@@ -12,16 +12,33 @@
 
 import { render, screen } from '@test-utils/render'
 import { describe, it, expect } from 'vitest'
-import { PWDialog } from '../PWDialog'
 import { Text } from 'react-native'
+import { PWDialog } from '../PWDialog'
 
 describe('PWDialog', () => {
-    it('renders content', () => {
+    it('renders title, body and footer when visible', () => {
         render(
-            <PWDialog isVisible={true}>
-                <Text>Dialog Content</Text>
+            <PWDialog
+                isVisible={true}
+                title='Dialog Title'
+                footer={<Text>Footer CTA</Text>}
+            >
+                <Text>Dialog Body</Text>
             </PWDialog>,
         )
-        expect(screen.getByText('Dialog Content')).toBeTruthy()
+
+        expect(screen.getByText('Dialog Title')).toBeTruthy()
+        expect(screen.getByText('Dialog Body')).toBeTruthy()
+        expect(screen.getByText('Footer CTA')).toBeTruthy()
+    })
+
+    it('does not render content when hidden', () => {
+        render(
+            <PWDialog isVisible={false}>
+                <Text>Hidden Body</Text>
+            </PWDialog>,
+        )
+
+        expect(screen.queryByText('Hidden Body')).toBeNull()
     })
 })
