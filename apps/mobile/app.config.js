@@ -230,7 +230,7 @@ module.exports = {
           compileSdkVersion: 36,
           buildToolsVersion: '35.0.0',
           enableProguardInReleaseBuilds: false,
-          kotlinVersion: '2.0.21',
+          kotlinVersion: '2.1.20',
         },
       },
     ],
