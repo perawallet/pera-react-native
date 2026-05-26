@@ -40,14 +40,13 @@ export const useStyles = makeStyles(
             paddingTop: isFull ? insets.top : 0,
             maxHeight: maxDynamicContentSize,
         },
-        // Inner container wraps every sheet's content (both autoCreateContainer
-        // branches), so it owns the bottom safe-area inset centrally: scroll,
-        // plain, and fixed-footer content all clear the home indicator / nav bar
-        // while the sheet draws edge-to-edge. Content adds only its own visual
-        // gap, never `insets.bottom`.
+        // Inner container wraps the sheet's content. The bottom safe-area inset
+        // is owned by the scroll content itself (PWSheetLayout / PWFlatList /
+        // PWScrollView / raw scrolls place it inside their scroll so it clears
+        // the nav bar), so it is not added here — only the `full` visual gap.
         innerContainer: {
             flexGrow: 1,
-            paddingBottom: isFull ? theme.spacing.md : insets.bottom,
+            paddingBottom: isFull ? theme.spacing.md : 0,
         },
         hidden: {
             display: 'none',

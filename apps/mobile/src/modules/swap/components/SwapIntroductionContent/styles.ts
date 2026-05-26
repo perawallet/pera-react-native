@@ -12,12 +12,14 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
+type StyleProps = { bottomInset: number }
+
+export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
     scrollContent: {
         flexGrow: 1,
-        // Visual gap below content; the safe-area inset is owned centrally by
-        // PWBottomSheet's innerContainer.
-        paddingBottom: theme.spacing.xl,
+        // Visual gap + safe-area inset inside the scroll so content clears the
+        // nav bar (the sheet draws edge-to-edge).
+        paddingBottom: theme.spacing.xl + bottomInset,
     },
     heroSection: {
         backgroundColor: theme.colors.modalityBg,

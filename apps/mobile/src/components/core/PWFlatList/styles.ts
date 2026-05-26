@@ -12,17 +12,20 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
+type StyleProps = { bottomInset: number }
+
+export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
     fill: {
         flex: 1,
     },
     gap: {
         gap: theme.spacing.md,
     },
-    // Visual gap below the last row. In a bottom sheet the safe-area inset is
-    // owned by PWBottomSheet's innerContainer; on screens it comes from PWScreen.
+    // Visual gap + safe-area inset placed INSIDE the scroll so the last row
+    // clears the nav bar in a sheet (the sheet draws edge-to-edge). `bottomInset`
+    // is zero outside a sheet — screens get their inset from PWScreen.
     verticalContentContainer: {
         flexGrow: 1,
-        paddingBottom: theme.spacing.xl,
+        paddingBottom: theme.spacing.xl + bottomInset,
     },
 }))

@@ -12,6 +12,7 @@
 
 import { useContext, useEffect } from 'react'
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { getTestProps } from '@utils/test-id-helper'
 import { PWView } from '../PWView'
 import { AutoCreatedContainerContext } from '../PWBottomSheet/autoCreatedContainerContext'
@@ -57,9 +58,10 @@ export type PWSheetLayoutProps = {
  * Bottom-sheet skeleton: a sticky toolbar above a scrolling body, with an
  * optional fixed footer pinned below. Pages inject content into the `header`,
  * `children` (body) and `footer` slots; the skeleton owns scroll, sticky-header
- * behaviour and the visual gaps, while the bottom safe-area inset is owned
- * centrally by `PWBottomSheet`'s `innerContainer`. CTAs can either live at the
- * end of the body or in the pinned `footer`.
+ * behaviour, the visual gaps, and the bottom safe-area inset (placed inside the
+ * scroll, or on the footer when present, so content clears the nav bar while
+ * the sheet draws edge-to-edge). CTAs can live at the end of the body or in the
+ * pinned `footer`.
  */
 export const PWSheetLayout = ({
     header,
@@ -70,7 +72,12 @@ export const PWSheetLayout = ({
     onScroll,
     testID,
 }: PWSheetLayoutProps) => {
-    const styles = useStyles({ horizontalPadding })
+    const insets = useSafeAreaInsets()
+    const styles = useStyles({
+        horizontalPadding,
+        bottomInset: insets.bottom,
+        hasFooter: footer != null,
+    })
     const isInAutoCreatedContainer = useContext(AutoCreatedContainerContext)
 
     useEffect(() => {

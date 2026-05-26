@@ -21,6 +21,7 @@ import {
 } from '@components/core'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useStyles } from './styles'
 import { useAccountActions } from './useAccountActions'
 
@@ -41,7 +42,8 @@ export const AccountActionsContent = ({
     address,
     label,
 }: AccountActionsContentProps) => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles({ bottomInset: insets.bottom })
     const { t } = useLanguage()
     const { dismiss } = useBottomSheetResult<void>()
     const {

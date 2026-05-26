@@ -12,10 +12,14 @@
 
 import { makeStyles } from '@rneui/themed'
 
-type StyleProps = { horizontalPadding: 'xl' | 'none' }
+type StyleProps = {
+    horizontalPadding: 'xl' | 'none'
+    bottomInset: number
+    hasFooter: boolean
+}
 
 export const useStyles = makeStyles(
-    (theme, { horizontalPadding }: StyleProps) => ({
+    (theme, { horizontalPadding, bottomInset, hasFooter }: StyleProps) => ({
         // Column wrapper used only when a `footer` is present, so the scroll can
         // shrink and the footer stays pinned below it.
         root: {
@@ -35,18 +39,22 @@ export const useStyles = makeStyles(
                 horizontalPadding === 'none' ? 0 : theme.spacing.xl,
             paddingTop: theme.spacing.xl,
         },
-        // Visual gap below the last item. The bottom safe-area inset is owned
-        // centrally by PWBottomSheet's innerContainer, so it is not added here.
-        // Applied after `bodyStyle` so callers can't accidentally drop the gap.
+        // Bottom of the scroll body. With no footer the safe-area inset lives
+        // here, INSIDE the scroll, so the last item clears the nav bar / home
+        // indicator (gorhom draws the sheet edge-to-edge). With a footer it is
+        // just a visual gap — the footer owns the inset. Applied after
+        // `bodyStyle` so callers can't accidentally drop it.
         bodyBottom: {
-            paddingBottom: theme.spacing.xl,
+            paddingBottom: hasFooter
+                ? theme.spacing.xl
+                : theme.spacing.xl + bottomInset,
         },
-        // Fixed footer pinned below the scroll (e.g. a CTA). Horizontal + visual
-        // gap only; the safe-area inset comes from the host's innerContainer.
+        // Fixed footer pinned below the scroll. Owns the bottom safe-area inset
+        // (12 visual gap + nav-bar inset) since it is the bottom-most element.
         footer: {
             paddingHorizontal: theme.spacing.xl,
             paddingTop: theme.spacing.lg,
-            paddingBottom: theme.spacing.xl,
+            paddingBottom: theme.spacing.md + bottomInset,
         },
     }),
 )
