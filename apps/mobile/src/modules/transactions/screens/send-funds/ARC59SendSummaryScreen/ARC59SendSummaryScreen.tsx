@@ -42,7 +42,7 @@ export const ARC59SendSummaryScreen = () => {
         handleSend,
         handleClose,
         handleReadMore,
-        sliderResetKey
+        sliderResetKey,
     } = useARC59SendSummaryScreen()
 
     if (isLoading) {

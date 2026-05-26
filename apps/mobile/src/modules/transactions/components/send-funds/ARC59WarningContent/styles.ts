@@ -17,7 +17,7 @@ export const useStyles = makeStyles(theme => ({
         paddingHorizontal: theme.spacing.xl,
         paddingBottom: theme.spacing.xl,
         gap: theme.spacing.lg,
-        width: '100%'
+        width: '100%',
     },
     icon: {
         alignSelf: 'center',

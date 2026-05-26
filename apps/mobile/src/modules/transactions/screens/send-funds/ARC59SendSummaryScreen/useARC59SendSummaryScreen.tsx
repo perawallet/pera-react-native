@@ -145,6 +145,6 @@ export const useARC59SendSummaryScreen =
             handleSend,
             handleClose,
             handleReadMore,
-            sliderResetKey
+            sliderResetKey,
         }
     }

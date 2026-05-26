@@ -19,7 +19,10 @@ import { useStyles } from './styles'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { AssetIcon, AssetNameBadge } from '@modules/assets/components'
 import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
-import { useSingleAssetDetailsQuery, toWholeUnits } from '@perawallet/wallet-core-assets'
+import {
+    useSingleAssetDetailsQuery,
+    toWholeUnits,
+} from '@perawallet/wallet-core-assets'
 import { useMemo } from 'react'
 
 export type AssetTransferRequestItemProps = {
@@ -56,7 +59,7 @@ export const AssetTransferRequestItem = ({
         >
             <PWView style={styles.iconContainer}>
                 <AssetIcon
-                   asset={resolvedAsset}
+                    asset={resolvedAsset}
                     size='xl'
                 />
             </PWView>
