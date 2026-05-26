@@ -10,104 +10,24 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
 import { PWText, PWToolbar, PWTouchableIcon, PWView } from '@components/core'
 import { AddressSearchView } from '@components/AddressSearchView'
 import {
     AccountTypes,
-    useAllAccounts,
     type AccountType,
 } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { useContacts } from '@perawallet/wallet-core-contacts'
-import { useIsMultisigAddressQuery } from '@perawallet/wallet-core-multisig'
-import { type Optional } from '@perawallet/wallet-core-shared'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
-import { useToast } from '@hooks/useToast'
+import { useAddParticipantContent } from './useAddParticipantContent'
 import { useStyles } from './styles'
 
-const EXCLUDE_TYPES: AccountType[] = [AccountTypes.multisig]
+const EXCLUDE_TYPES: AccountType[] = [AccountTypes.multisig, AccountTypes.watch]
 
 export type AddParticipantContentProps = Record<string, never>
-
-/**
- * Value the add-participant bottom sheet resolves with. `nfdName` is set
- * only when the user picked an NFD search result, so the caller can save
- * the contact under the NFD name instead of a truncated address.
- */
-export type AddParticipantResult = {
-    address: string
-    nfdName?: string
-}
 
 export const AddParticipantContent = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { network } = useNetwork()
-    const { showToast } = useToast()
-    const accounts = useAllAccounts()
-    const { contacts } = useContacts()
-    const [selectedAddress, setSelectedAddress] = useState('')
-    const [selectedNfdName, setSelectedNfdName] = useState<Optional<string>>()
-    const { resolve, dismiss } = useBottomSheetResult<AddParticipantResult>()
-
-    const isLocalEntity = useMemo(
-        () =>
-            accounts.some(a => a.address === selectedAddress) ||
-            contacts.some(c => c.address === selectedAddress),
-        [accounts, contacts, selectedAddress],
-    )
-
-    const multisigCheck = useIsMultisigAddressQuery({
-        network,
-        address: selectedAddress,
-        enabled: !!selectedAddress && !isLocalEntity,
-    })
-
-    useEffect(() => {
-        if (!selectedAddress || multisigCheck.isFetching) return
-
-        if (multisigCheck.data?.isMultisig) {
-            showToast({
-                title: t('multisig.add_participant.cannot_add_multisig_error'),
-                body: t(
-                    'multisig.add_participant.cannot_add_multisig_error_body',
-                ),
-                type: 'error',
-            })
-            setSelectedAddress('')
-            setSelectedNfdName(undefined)
-            return
-        }
-
-        resolve({ address: selectedAddress, nfdName: selectedNfdName })
-        setSelectedAddress('')
-        setSelectedNfdName(undefined)
-    }, [
-        selectedAddress,
-        selectedNfdName,
-        multisigCheck.data?.isMultisig,
-        multisigCheck.isFetching,
-        resolve,
-        showToast,
-        t,
-    ])
-
-    const handleSelected = useCallback(
-        (address: string, nfdName?: string) => {
-            const isLocal =
-                accounts.some(a => a.address === address) ||
-                contacts.some(c => c.address === address)
-            if (isLocal) {
-                resolve({ address, nfdName })
-                return
-            }
-            setSelectedAddress(address)
-            setSelectedNfdName(nfdName)
-        },
-        [accounts, contacts, resolve],
-    )
+    const { handleSelected, dismiss } = useAddParticipantContent()
 
     return (
         <PWView style={styles.container}>
@@ -135,8 +55,8 @@ export const AddParticipantContent = () => {
                 excludeTypes={EXCLUDE_TYPES}
                 showAllContactsWhenEmpty
                 inBottomSheet
-                showAccountBalance
                 showAddIcon
+                showAccountBalance
             />
         </PWView>
     )
