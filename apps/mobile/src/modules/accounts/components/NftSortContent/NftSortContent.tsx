@@ -18,12 +18,10 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
-import { useStyles } from './styles'
 
 export type NftSortContentProps = Record<string, never>
 
 export const NftSortContent = (_: NftSortContentProps = {}) => {
-    const styles = useStyles()
     const { t } = useLanguage()
     const { dismiss } = useBottomSheetResult<void>()
 

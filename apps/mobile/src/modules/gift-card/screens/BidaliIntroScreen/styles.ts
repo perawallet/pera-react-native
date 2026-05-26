@@ -15,7 +15,7 @@ import { EdgeInsets } from 'react-native-safe-area-context'
 
 type StyleProps = { insets: EdgeInsets }
 
-export const useStyles = makeStyles((theme, { insets }: StyleProps) => ({
+export const useStyles = makeStyles((theme, _props: StyleProps) => ({
     container: {
         flex: 1,
     },

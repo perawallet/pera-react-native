@@ -14,7 +14,7 @@ import { makeStyles } from '@rneui/themed'
 
 type StyleProps = { hasPadding: boolean }
 
-export const useStyles = makeStyles((theme, { hasPadding }: StyleProps) => ({
+export const useStyles = makeStyles((theme, _props: StyleProps) => ({
     searchContainer: {
         marginBottom: theme.spacing.md,
     },

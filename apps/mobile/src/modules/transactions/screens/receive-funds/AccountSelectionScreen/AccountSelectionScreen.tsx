@@ -14,7 +14,7 @@ import { useCallback } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 
-import { PWFlatList, PWScreen } from '@components/core'
+import { PWFlatList } from '@components/core'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { SelectableAccountRow } from '@modules/accounts/components/SelectableAccountRow'
 import { useReceiveFunds } from '@modules/transactions/hooks'
