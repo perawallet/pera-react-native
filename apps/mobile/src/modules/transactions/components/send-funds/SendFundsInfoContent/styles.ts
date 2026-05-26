@@ -12,7 +12,9 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => {
+type StyleProps = { bottomInset: number }
+
+export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => {
     const tipNumber = {
         fontSize: theme.spacing.lg,
         color: theme.colors.textGray,
@@ -36,9 +38,11 @@ export const useStyles = makeStyles(theme => {
         bodyContainer: {
             width: '100%',
         },
+        // Fixed footer outside the scroll: owns the bottom safe-area inset so
+        // the CTA clears the nav bar (the sheet draws edge-to-edge).
         footer: {
             paddingTop: theme.spacing.lg,
-            paddingBottom: theme.spacing.xl,
+            paddingBottom: theme.spacing.xl + bottomInset,
             paddingHorizontal: theme.spacing.xl,
         },
         title: {

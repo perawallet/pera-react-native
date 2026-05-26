@@ -21,6 +21,7 @@ import {
     PWView,
 } from '@components/core'
 import { useTheme } from '@rneui/themed'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@modules/webview'
@@ -35,7 +36,8 @@ export type AsaVerificationInfoContentProps = Record<string, never>
 export const AsaVerificationInfoContent = (
     _: AsaVerificationInfoContentProps = {},
 ) => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles({ bottomInset: insets.bottom })
     const { theme } = useTheme()
     const { t } = useLanguage()
     const { pushWebView } = useWebView()

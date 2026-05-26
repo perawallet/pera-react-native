@@ -19,6 +19,7 @@ import {
     PWView,
 } from '@components/core'
 import { Trans } from 'react-i18next'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSendFundsInfoContent } from './useSendFundsInfoContent'
@@ -27,7 +28,8 @@ import { useBottomSheetResult } from '@modules/bottom-sheet'
 
 export const SendFundsInfoContent = () => {
     const { theme } = useTheme()
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles({ bottomInset: insets.bottom })
     const { t } = useLanguage()
     const { resolve } = useBottomSheetResult<boolean>()
     const { handleOpenInfoLink, handleClose } = useSendFundsInfoContent(() =>
