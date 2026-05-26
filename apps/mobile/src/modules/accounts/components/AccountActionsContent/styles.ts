@@ -11,15 +11,13 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { EdgeInsets } from 'react-native-safe-area-context'
 
-type StyleProps = { insets: EdgeInsets }
-
-export const useStyles = makeStyles((theme, { insets }: StyleProps) => ({
+export const useStyles = makeStyles(theme => ({
     container: {
         paddingTop: theme.spacing.xl,
-        // Bottom padding: visual gap (24px) + home-indicator safe area
-        paddingBottom: theme.spacing.xl + insets.bottom,
+        // Visual gap below the last row; the safe-area inset is owned centrally
+        // by PWBottomSheet's innerContainer.
+        paddingBottom: theme.spacing.xl,
     },
     addressCard: {
         marginHorizontal: theme.spacing.xl,

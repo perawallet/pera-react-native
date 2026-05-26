@@ -12,15 +12,11 @@
 
 import { makeStyles } from '@rneui/themed'
 
-type StyleProps = { bottomInset: number }
-
-export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
+export const useStyles = makeStyles(theme => ({
     container: {
         flexGrow: 1,
         backgroundColor: theme.colors.background,
-        // End the list viewport at the top of the home-indicator safe area
-        // rather than letting rows scroll underneath it.
-        paddingBottom: bottomInset,
+        // Safe-area inset is owned centrally by PWBottomSheet's innerContainer.
     },
     searchContainer: {
         paddingHorizontal: theme.spacing.md,

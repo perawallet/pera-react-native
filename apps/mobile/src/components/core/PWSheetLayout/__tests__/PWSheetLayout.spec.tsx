@@ -36,4 +36,15 @@ describe('PWSheetLayout', () => {
 
         expect(screen.getByText('Body')).toBeTruthy()
     })
+
+    it('renders the pinned footer alongside the body', () => {
+        render(
+            <PWSheetLayout footer={<PWText>Footer</PWText>}>
+                <PWText>Body</PWText>
+            </PWSheetLayout>,
+        )
+
+        expect(screen.getByText('Body')).toBeTruthy()
+        expect(screen.getByText('Footer')).toBeTruthy()
+    })
 })

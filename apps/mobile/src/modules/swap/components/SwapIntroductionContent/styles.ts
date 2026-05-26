@@ -11,15 +11,13 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { EdgeInsets } from 'react-native-safe-area-context'
 
-type StyleProps = { insets: EdgeInsets }
-
-export const useStyles = makeStyles((theme, { insets }: StyleProps) => ({
+export const useStyles = makeStyles(theme => ({
     scrollContent: {
         flexGrow: 1,
-        // Bottom padding: visual gap + home-indicator safe area
-        paddingBottom: theme.spacing.xl + insets.bottom,
+        // Visual gap below content; the safe-area inset is owned centrally by
+        // PWBottomSheet's innerContainer.
+        paddingBottom: theme.spacing.xl,
     },
     heroSection: {
         backgroundColor: theme.colors.modalityBg,

@@ -12,7 +12,6 @@
 
 import React, { useCallback } from 'react'
 import { ActivityIndicator } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWFlatList, PWIcon, PWText, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { AssetSearchItem } from '@modules/assets/components/AssetSearchItem'
@@ -28,8 +27,7 @@ type AddAssetScreenProps = {
 }
 
 export const AddAssetView = ({ variant = 'asset' }: AddAssetScreenProps) => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles({ bottomInset: insets.bottom })
+    const styles = useStyles()
     const isCollectible = variant === 'collectible'
     const {
         searchQuery,

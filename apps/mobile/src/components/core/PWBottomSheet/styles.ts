@@ -40,11 +40,14 @@ export const useStyles = makeStyles(
             paddingTop: isFull ? insets.top : 0,
             maxHeight: maxDynamicContentSize,
         },
-        // Inner container holds the content. No bottom padding here - let
-        // PWSheetLayout or content components handle their own bottom inset.
+        // Inner container wraps every sheet's content (both autoCreateContainer
+        // branches), so it owns the bottom safe-area inset centrally: scroll,
+        // plain, and fixed-footer content all clear the home indicator / nav bar
+        // while the sheet draws edge-to-edge. Content adds only its own visual
+        // gap, never `insets.bottom`.
         innerContainer: {
             flexGrow: 1,
-            paddingBottom: isFull ? theme.spacing.md : 0,
+            paddingBottom: isFull ? theme.spacing.md : insets.bottom,
         },
         hidden: {
             display: 'none',

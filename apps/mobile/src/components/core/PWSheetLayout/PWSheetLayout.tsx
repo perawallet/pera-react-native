@@ -10,10 +10,11 @@
  limitations under the License
  */
 
+import { useContext, useEffect } from 'react'
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { getTestProps } from '@utils/test-id-helper'
 import { PWView } from '../PWView'
+import { AutoCreatedContainerContext } from '../PWBottomSheet/autoCreatedContainerContext'
 import { useStyles } from './styles'
 
 import type { ReactNode } from 'react'
@@ -30,8 +31,19 @@ export type PWSheetLayoutProps = {
      * body scrolls beneath it. Omit for sheets without a toolbar.
      */
     header?: ReactNode
-    /** Scrollable body, including any CTA at its end. */
+    /** Scrollable body. */
     children: ReactNode
+    /**
+     * Fixed footer pinned below the scroll (e.g. a CTA). Stays visible while
+     * the body scrolls and rises with the keyboard. Omit to keep any CTA at the
+     * end of the scrollable body instead.
+     */
+    footer?: ReactNode
+    /**
+     * Body horizontal padding. `'xl'` (default, 24) or `'none'` for full-bleed
+     * content (e.g. edge-to-edge rows or dividers that manage their own gutter).
+     */
+    horizontalPadding?: 'xl' | 'none'
     /** Extra style merged onto the body's padding wrapper. */
     bodyStyle?: StyleProp<ViewStyle>
     /**
@@ -42,22 +54,37 @@ export type PWSheetLayoutProps = {
 }
 
 /**
- * Bottom-sheet body: a sticky toolbar above a scrolling column, both inside one
- * scroll so the sheet sizes to its full content (host `size='auto'`) and the
- * body scrolls under the pinned header once the content outgrows the sheet.
- * CTAs live at the end of the body.
+ * Bottom-sheet skeleton: a sticky toolbar above a scrolling body, with an
+ * optional fixed footer pinned below. Pages inject content into the `header`,
+ * `children` (body) and `footer` slots; the skeleton owns scroll, sticky-header
+ * behaviour and the visual gaps, while the bottom safe-area inset is owned
+ * centrally by `PWBottomSheet`'s `innerContainer`. CTAs can either live at the
+ * end of the body or in the pinned `footer`.
  */
 export const PWSheetLayout = ({
     header,
     children,
+    footer,
+    horizontalPadding = 'xl',
     bodyStyle,
     onScroll,
     testID,
 }: PWSheetLayoutProps) => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles({ bottomInset: insets.bottom })
+    const styles = useStyles({ horizontalPadding })
+    const isInAutoCreatedContainer = useContext(AutoCreatedContainerContext)
 
-    return (
+    useEffect(() => {
+        if (__DEV__ && isInAutoCreatedContainer) {
+            // eslint-disable-next-line no-console
+            console.error(
+                'PWSheetLayout is nested inside PWBottomSheet’s auto-created ' +
+                    'BottomSheetView and will not scroll. Open the sheet with ' +
+                    '`autoCreateContainer={false}`.',
+            )
+        }
+    }, [isInAutoCreatedContainer])
+
+    const scrollable = (
         <BottomSheetScrollView
             style={styles.scrollView}
             stickyHeaderIndices={header != null ? [0] : undefined}
@@ -73,5 +100,19 @@ export const PWSheetLayout = ({
                 {children}
             </PWView>
         </BottomSheetScrollView>
+    )
+
+    // No footer: the scroll fills the sheet exactly as before.
+    if (footer == null) {
+        return scrollable
+    }
+
+    // With a footer: a column lets the scroll shrink so the footer stays pinned
+    // below it (above the host's safe-area inset).
+    return (
+        <PWView style={styles.root}>
+            {scrollable}
+            <PWView style={styles.footer}>{footer}</PWView>
+        </PWView>
     )
 }

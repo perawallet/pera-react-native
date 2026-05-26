@@ -13,7 +13,6 @@
 import React, { forwardRef, useImperativeHandle, useRef } from 'react'
 import { LegendList, LegendListProps, LegendListRef } from '@legendapp/list'
 import { useBottomSheetScrollableCreator } from '@gorhom/bottom-sheet'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useStyles } from './styles'
 
 export type PWFlatListRef = {
@@ -50,10 +49,7 @@ export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
         },
         ref,
     ) => {
-        const insets = useSafeAreaInsets()
-        const styles = useStyles({
-            bottomInset: inBottomSheet ? insets.bottom : 0,
-        })
+        const styles = useStyles()
         const innerRef = useRef<LegendListRef>(null)
         const BottomSheetScrollable = useBottomSheetScrollableCreator()
 

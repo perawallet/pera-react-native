@@ -35,16 +35,22 @@ const { resolve, dismiss } = useBottomSheetResult<'confirm' | 'cancel'>()
     Live data is read inside the sheet via hooks (Zustand stores / TanStack
     Query). Props captured at `request()` time never update.
 
-2. **Bottom safe-area handling is automatic.** `PWBottomSheet` passes
-   `bottomInset` to the underlying gorhom modal for correct snap-point
-   calculation, and `PWSheetLayout` adds the proper safe-area padding to
-   scrollable content (24px visual gap + home-indicator inset).
-    - Use `PWSheetLayout` for standard sheets with sticky headers — it handles
-      bottom insets automatically.
-    - Custom content using raw `BottomSheetScrollView` should add its own
-      bottom padding (`paddingBottom: insets.bottom + theme.spacing.xl`).
-    - Never add bottom safe-area padding to non-scrollable sheets that don't
-      need it (e.g., fixed confirmation dialogs).
+2. **Bottom safe-area handling is automatic and centralized.** `PWBottomSheet`
+   draws **edge-to-edge** (`bottomInset={0}` — the background extends under the
+   home indicator / nav bar) and its `innerContainer` adds the bottom safe-area
+   inset **once**, for every sheet (scroll, plain, and fixed-footer).
+    - **Never** add `insets.bottom` in sheet content — don't read
+      `useSafeAreaInsets().bottom` for bottom padding. Content adds only its own
+      visual gap (e.g. `paddingBottom: theme.spacing.xl`); the host clears the
+      nav bar.
+    - Prefer **`PWSheetLayout`** — the sheet skeleton with `header` (sticky),
+      `children` (scroll body) and optional `footer` (pinned CTA) slots, plus a
+      `horizontalPadding` prop. Open such sheets with `autoCreateContainer={false}`
+      (it owns its own scroll); a dev warning fires otherwise.
+    - `PWFlatList` / `PWScrollView` with `inBottomSheet` add only a visual gap;
+      the inset comes from the host.
+    - Exception: `ModelViewerBottomSheet` is a direct `BottomSheetModal` (not
+      `PWBottomSheet`), so it owns its own inset.
 
 3. **Use named exports** and **`makeStyles` from `@rneui/themed`** as per
    the project-wide convention.

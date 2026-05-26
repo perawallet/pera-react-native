@@ -25,6 +25,7 @@ import {
     useRef,
 } from 'react'
 import { useStyles } from './styles'
+import { AutoCreatedContainerContext } from './autoCreatedContainerContext'
 import {
     Keyboard,
     StyleProp,
@@ -191,10 +192,11 @@ export const PWBottomSheet = ({
             // would otherwise push it past the configured snap point. Skip
             // for `full`-size sheets which intentionally cover everything.
             topInset={size === 'full' ? 0 : insets.top}
-            // Pass bottom inset to gorhom so it calculates snap points correctly
-            // and positions the sheet above the home indicator. Content padding
-            // is handled by PWSheetLayout or individual content components.
-            bottomInset={size === 'full' ? 0 : insets.bottom}
+            // Draw edge-to-edge: the sheet background extends under the home
+            // indicator / nav bar to the screen bottom (no gorhom lift). The
+            // bottom safe-area inset is owned centrally by `innerContainer`
+            // (see styles) so content still clears the indicator.
+            bottomInset={0}
             backdropComponent={renderBackdrop}
             onDismiss={handleDismiss}
             onAnimate={handleAnimate}
@@ -238,7 +240,9 @@ export const PWBottomSheet = ({
                             style={[styles.innerContainer, innerContainerStyle]}
                             testID={testID}
                         >
-                            {children}
+                            <AutoCreatedContainerContext.Provider value={true}>
+                                {children}
+                            </AutoCreatedContainerContext.Provider>
                         </BottomSheetView>
                     ) : (
                         <PWView
