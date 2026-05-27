@@ -392,9 +392,7 @@ describe('useSearchAccountsScreen', () => {
             type: AccountTypes.hdWallet,
         }
         mockDiscoverAccounts.mockResolvedValue([singleAccount])
-        mockBuildHdWalletAccount.mockRejectedValue(
-            new Error('Creation failed'),
-        )
+        mockBuildHdWalletAccount.mockRejectedValue(new Error('Creation failed'))
 
         renderHook(() => useSearchAccountsScreen())
 
