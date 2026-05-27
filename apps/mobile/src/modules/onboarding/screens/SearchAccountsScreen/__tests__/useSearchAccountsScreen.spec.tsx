@@ -106,7 +106,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
         setSelectedAccountAddress: mockSetSelectedAccountAddress,
     }),
     useCreateAccount: () => ({
-        createHdWalletAccount: mockBuildHdWalletAccount,
+        buildHdWalletAccount: mockBuildHdWalletAccount,
     }),
     useAllAccounts: () => mockAllAccounts.current,
 }))
