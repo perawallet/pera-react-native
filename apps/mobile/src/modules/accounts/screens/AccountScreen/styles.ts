@@ -41,5 +41,8 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
             flexDirection: 'row',
             gap: theme.spacing.lg,
         },
+        accountSelectionToolbar: {
+            alignSelf: 'stretch',
+        },
     }
 })

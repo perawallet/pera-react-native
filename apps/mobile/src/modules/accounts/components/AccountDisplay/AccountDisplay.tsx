@@ -100,7 +100,7 @@ export const AccountDisplay = ({
                         style={textProps?.style ?? styles.text}
                         variant={textProps?.variant ?? 'h4'}
                         numberOfLines={1}
-                        ellipsizeMode='tail'
+                        ellipsizeMode='middle'
                     >
                         {displayName}
                     </PWText>
