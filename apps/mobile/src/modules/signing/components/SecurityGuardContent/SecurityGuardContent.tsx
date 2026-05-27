@@ -91,7 +91,7 @@ export const SecurityGuardContent = ({
             }
             confirmValue={isSupportEnabled ? 'confirm' : 'go-to-settings'}
             cancelLabel={t('common.cancel.label')}
-            buttonPaddingStyle='dense'
+            buttonPaddingStyle='normal'
         />
     )
 }

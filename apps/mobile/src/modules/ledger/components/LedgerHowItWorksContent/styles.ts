@@ -18,7 +18,7 @@ export const useStyles = makeStyles(theme => ({
     },
     item: {
         flexDirection: 'row',
-        alignItems: 'flex-start',
+        alignItems: 'center',
         gap: theme.spacing.md,
     },
     bullet: {

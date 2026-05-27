@@ -98,7 +98,6 @@ export const BeforeYouCreateContent = () => {
                     variant='primary'
                     title={t('multisig.before_you_create.proceed')}
                     onPress={() => resolve('proceed')}
-                    paddingStyle='dense'
                     testID='before_create_proceed_button'
                 />
 
@@ -106,7 +105,6 @@ export const BeforeYouCreateContent = () => {
                     variant='secondary'
                     title={t('multisig.before_you_create.go_back')}
                     onPress={dismiss}
-                    paddingStyle='dense'
                     testID='before_create_go_back_button'
                 />
             </PWView>

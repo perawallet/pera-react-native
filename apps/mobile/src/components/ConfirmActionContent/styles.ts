@@ -44,7 +44,7 @@ export const useStyles = makeStyles(
             width: '100%',
             paddingHorizontal: theme.spacing.lg,
             paddingTop: theme.spacing.md,
-            paddingBottom: theme.spacing.xl + bottomInset,
+            paddingBottom: bottomInset,
             gap: theme.spacing.md,
         },
     }),
