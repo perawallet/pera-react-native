@@ -108,7 +108,7 @@ export const AccountMenu = (props: AccountMenuProps) => {
                             />
                         </PWTouchableOpacity>
                     )}
-                    estimatedItemSize={64}
+                    ItemSeparatorComponent={ListSeparator}
                     showsVerticalScrollIndicator={false}
                     onScroll={handleListScroll}
                     scrollEventThrottle={16}
@@ -117,4 +117,10 @@ export const AccountMenu = (props: AccountMenuProps) => {
             </PWView>
         </PWView>
     )
+}
+
+const ListSeparator = () => {
+    const styles = useStyles()
+
+    return <PWView style={styles.listSeparator} />
 }

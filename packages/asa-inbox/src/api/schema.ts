@@ -103,6 +103,7 @@ export type Arc59AssetRequest = {
     /** Total amount across all senders, in base units */
     totalAmount: Decimal
     asset: PeraAsset
+    usdValue: Nullable<Decimal>
     /** ALGO gain on claim, in microAlgos (base units) */
     microAlgoGainOnClaim: Decimal
     /** ALGO gain on reject, in microAlgos (base units) */
@@ -148,6 +149,7 @@ export const mapArc59AssetRequest = (
         creator: { address: raw.asset.creator.address },
         totalSupply: new Decimal(0),
     },
+    usdValue: raw.asset.usd_value ? new Decimal(raw.asset.usd_value) : null,
     microAlgoGainOnClaim: new Decimal(raw.algo_gain_on_claim),
     microAlgoGainOnReject: new Decimal(raw.algo_gain_on_reject),
     senders: {

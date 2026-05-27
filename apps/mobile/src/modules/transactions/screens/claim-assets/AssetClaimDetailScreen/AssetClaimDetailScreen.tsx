@@ -116,6 +116,7 @@ export const AssetClaimDetailScreen = () => {
                     precision={DEFAULT_PRECISION}
                     showSymbol
                     style={styles.usdText}
+                    usdPrice={request.usdValue ?? undefined}
                 />
             </PWView>
 

@@ -13,6 +13,7 @@
 import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useGroupDetailScreen } from '../useGroupDetailScreen'
+import type { SingleTransactionItem } from '@perawallet/wallet-core-signing'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 
 const mockNavigate = vi.fn()
@@ -30,18 +31,51 @@ vi.mock('@react-navigation/native', () => ({
 const mockTx1 = { id: 'tx-1', sender: 'ADDR1' } as PeraDisplayableTransaction
 const mockTx2 = { id: 'tx-2', sender: 'ADDR1' } as PeraDisplayableTransaction
 
+const mockItem1: SingleTransactionItem = {
+    type: 'transaction',
+    transaction: mockTx1,
+    groupIndex: 1,
+    isExternal: false,
+}
+
+const mockItem2: SingleTransactionItem = {
+    type: 'transaction',
+    transaction: mockTx2,
+    groupIndex: 2,
+    isExternal: false,
+}
+
+const mockItemExternal: SingleTransactionItem = {
+    type: 'transaction',
+    transaction: mockTx1,
+    groupIndex: 1,
+    isExternal: true,
+}
+
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningPipeline: vi.fn(() => ({
         listItems: [
-            { type: 'transaction', transaction: { id: 'tx-0' } },
+            {
+                type: 'transaction',
+                transaction: { id: 'tx-0' },
+                groupIndex: 0,
+                isExternal: false,
+            },
             {
                 type: 'group',
-                transactions: [mockTx1, mockTx2],
+                transactions: [mockItem1, mockItem2],
                 groupIndex: 0,
             },
             {
                 type: 'group',
-                transactions: [{ id: 'tx-3' }],
+                transactions: [
+                    {
+                        type: 'transaction',
+                        transaction: { id: 'tx-3' },
+                        groupIndex: 3,
+                        isExternal: false,
+                    },
+                ],
                 groupIndex: 1,
             },
         ],
@@ -58,8 +92,8 @@ describe('useGroupDetailScreen', () => {
         const { result } = renderHook(() => useGroupDetailScreen())
 
         expect(result.current.transactions).toHaveLength(2)
-        expect(result.current.transactions[0]?.id).toBe('tx-1')
-        expect(result.current.transactions[1]?.id).toBe('tx-2')
+        expect(result.current.transactions[0]?.transaction.id).toBe('tx-1')
+        expect(result.current.transactions[1]?.transaction.id).toBe('tx-2')
     })
 
     it('returns empty array when group is not found', () => {
@@ -73,31 +107,44 @@ describe('useGroupDetailScreen', () => {
     it('navigates to TransactionDetails on transaction press', () => {
         const { result } = renderHook(() => useGroupDetailScreen())
 
-        result.current.handleTransactionPress(mockTx1)
+        result.current.handleTransactionPress(mockItem1)
 
         expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
             transaction: mockTx1,
+            isExternal: false,
+        })
+    })
+
+    it('propagates isExternal: true into the navigation call', () => {
+        const { result } = renderHook(() => useGroupDetailScreen())
+
+        result.current.handleTransactionPress(mockItemExternal)
+
+        expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
+            transaction: mockTx1,
+            isExternal: true,
         })
     })
 
     it('generates correct key for transaction with id', () => {
         const { result } = renderHook(() => useGroupDetailScreen())
 
-        const key = result.current.keyExtractor(
-            { id: 'tx-123' } as PeraDisplayableTransaction,
-            0,
-        )
+        const key = result.current.keyExtractor(mockItem1, 0)
 
-        expect(key).toBe('tx-123')
+        expect(key).toBe('tx-1')
     })
 
     it('generates fallback key for transaction without id', () => {
         const { result } = renderHook(() => useGroupDetailScreen())
 
-        const key = result.current.keyExtractor(
-            {} as PeraDisplayableTransaction,
-            5,
-        )
+        const itemWithoutId: SingleTransactionItem = {
+            type: 'transaction',
+            transaction: {} as PeraDisplayableTransaction,
+            groupIndex: 0,
+            isExternal: false,
+        }
+
+        const key = result.current.keyExtractor(itemWithoutId, 5)
 
         expect(key).toBe('tx-5')
     })
@@ -108,6 +155,6 @@ describe('useGroupDetailScreen', () => {
         const { result } = renderHook(() => useGroupDetailScreen())
 
         expect(result.current.transactions).toHaveLength(1)
-        expect(result.current.transactions[0]?.id).toBe('tx-3')
+        expect(result.current.transactions[0]?.transaction.id).toBe('tx-3')
     })
 })

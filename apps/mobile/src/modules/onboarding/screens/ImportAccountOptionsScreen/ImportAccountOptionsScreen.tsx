@@ -56,6 +56,7 @@ export const ImportAccountOptionsScreen = () => {
                 onClose={handleCloseQRScanner}
                 onSuccess={handleQRScannerSuccess}
                 animationType='slide'
+                skipDeepLinkHandler
             />
 
             <PWLoadingOverlay

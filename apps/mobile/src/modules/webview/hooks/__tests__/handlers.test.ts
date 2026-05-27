@@ -12,11 +12,13 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
+    BROWSER_FAVORITE_ACTION,
     isSafeBrowserUrl,
     isSafeRelativePath,
     isTrustedWebviewOrigin,
     JsonRpcErrorCode,
     requireSecure,
+    sendActionToWebview,
     sendNotificationToWebview,
 } from '../handlers'
 
@@ -79,6 +81,44 @@ describe('sendNotificationToWebview', () => {
                 { contexts: [] },
                 null,
             ),
+        ).not.toThrow()
+    })
+})
+
+describe('sendActionToWebview', () => {
+    const mockInjectJavaScript = vi.fn()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const mockWebview = { injectJavaScript: mockInjectJavaScript } as any
+
+    beforeEach(() => {
+        mockInjectJavaScript.mockClear()
+    })
+
+    it('posts event.data as a JSON string of { action, payload }', () => {
+        const payload = {
+            name: 'Tinyman',
+            url: 'https://tinyman.org',
+            logo: null,
+        }
+
+        sendActionToWebview(BROWSER_FAVORITE_ACTION, payload, mockWebview)
+
+        const injected = mockInjectJavaScript.mock.calls[0][0] as string
+        // Outer parse unwraps the string literal; the web app then JSON.parses
+        // event.data, so the unwrapped value must itself be a JSON string.
+        const eventData = JSON.parse(
+            injected.replace(/^window\.postMessage\(/, '').replace(/\);$/, ''),
+        )
+        expect(typeof eventData).toBe('string')
+        expect(JSON.parse(eventData)).toEqual({
+            action: 'handleBrowserFavoriteButtonClick',
+            payload,
+        })
+    })
+
+    it('does not throw when webview is null', () => {
+        expect(() =>
+            sendActionToWebview(BROWSER_FAVORITE_ACTION, {}, null),
         ).not.toThrow()
     })
 })

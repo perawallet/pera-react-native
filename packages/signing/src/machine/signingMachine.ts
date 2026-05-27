@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { setup, assign } from 'xstate'
+import { setup, assign, sendTo } from 'xstate'
 import {
     toError,
     assertDefined,
@@ -30,11 +30,13 @@ import type {
     TransportResult,
 } from '../pipeline/types'
 import { analyzerActor } from './actors/analyzerActor'
+// Local-key and multisig are simple fromPromise actors. Hardware needs a
+// child machine instead (own retry/error lifecycle, parent-forwarded events).
 import { localKeySignerActor } from './actors/signers/localKeySignerActor'
-import { hardwareSignerActor } from './actors/signers/hardwareSignerActor'
 import { multisigSignerActor } from './actors/signers/multisigSignerActor'
 import { transportActor } from './actors/transports/transportActor'
-import { LedgerUserRejectedError } from '@perawallet/wallet-core-ledger'
+import { hardwareSigningMachine } from './children/hardwareSigningMachine'
+import type { HardwareSigningOutput } from './children/hardwareSigningMachine.context'
 import { resolveInitialContext, makeFailedContext } from './actions'
 import { SigningError } from '../pipeline/errors'
 
@@ -70,6 +72,29 @@ const getAnalyzedGroupsForSignerType = (
 }
 
 /**
+ * Resolves the human-readable device name for the first group's signer
+ * account so the hardware child can display it in the overlay immediately.
+ * Reads `hardwareDetails` directly rather than relying on the account-type
+ * guard so this stays a leaf utility (no @perawallet/wallet-core-accounts
+ * dependency).
+ */
+const resolveHardwareDeviceName = (
+    context: SigningMachineContext,
+    groups: AnalyzedSignableGroup[],
+): string | null => {
+    const firstGroup = groups[0]
+    if (!firstGroup) return null
+    const account = context.allAccounts.find(
+        a => a.address === firstGroup.signerAddress,
+    )
+    if (!account) return null
+    return (
+        (account as { hardwareDetails?: { deviceName?: string } })
+            .hardwareDetails?.deviceName ?? null
+    )
+}
+
+/**
  * Core signing state machine.
  *
  * States:
@@ -91,7 +116,7 @@ export const signingMachine = setup({
     actors: {
         analyzerActor,
         localKeySignerActor,
-        hardwareSignerActor,
+        hardwareSigningMachine,
         multisigSignerActor,
         transportActor,
     },
@@ -108,8 +133,6 @@ export const signingMachine = setup({
         isNextSignerMultisig: ({ context }) =>
             getNextPendingSignerType(context) === 'multisig',
         isRetryable: ({ context }) => isRetryableError(context.error),
-        isUserRejected: ({ context }) =>
-            context.error instanceof LedgerUserRejectedError,
         canRetryValidating: ({ context }) =>
             isRetryableError(context.error) &&
             context.failedDuringState === 'validating',
@@ -150,16 +173,39 @@ export const signingMachine = setup({
                 'localKey' as const,
             ],
         }),
-        appendHardwareResults: assign({
-            // event.output is the resolved value of the hardwareSignerActor Promise
+        appendHardwareChildResults: assign({
+            // event.output is the hardware child machine's `success` output.
+            // The success guard on `onDone` runs before this action.
             signingResults: ({ context, event }) => [
                 ...(context.signingResults ?? []),
-                ...(event as unknown as { output: SigningResult[] }).output,
+                ...(
+                    event as unknown as {
+                        output: Extract<
+                            HardwareSigningOutput,
+                            { kind: 'success' }
+                        >
+                    }
+                ).output.results,
             ],
             completedSignerTypes: ({ context }) => [
                 ...context.completedSignerTypes,
                 'hardware' as const,
             ],
+        }),
+        setHardwareChildError: assign({
+            error: ({ event }) => {
+                const out = (
+                    event as unknown as {
+                        output: Extract<
+                            HardwareSigningOutput,
+                            { kind: 'error' }
+                        >
+                    }
+                ).output
+                const cause: unknown = out.error.cause
+                return cause instanceof Error ? cause : new Error(String(cause))
+            },
+            failedDuringState: () => 'signing' as const,
         }),
         appendMultisigResults: assign({
             // event.output is the resolved value of the multisigSignerActor Promise
@@ -333,33 +379,81 @@ export const signingMachine = setup({
 
                 hardware: {
                     invoke: {
-                        src: 'hardwareSignerActor',
-                        input: ({ context }) => ({
-                            groups: getAnalyzedGroupsForSignerType(
+                        id: 'hardwareChild',
+                        src: 'hardwareSigningMachine',
+                        input: ({ context }) => {
+                            const groups = getAnalyzedGroupsForSignerType(
                                 context,
                                 'hardware',
-                            ),
-                            allAccounts: context.allAccounts,
-                            hardwareWalletRegistry:
-                                context.deps.hardwareWalletRegistry!,
-                            encodeTransaction: context.deps.encodeTransaction,
-                            callbacks: context.deps.signingCallbacks,
-                        }),
-                        onDone: {
-                            target: 'dispatching',
-                            actions: 'appendHardwareResults',
+                            )
+                            return {
+                                groups,
+                                allAccounts: context.allAccounts,
+                                hardwareWalletRegistry: assertDefined(
+                                    context.deps.hardwareWalletRegistry,
+                                    'hardwareWalletRegistry',
+                                ),
+                                encodeTransaction:
+                                    context.deps.encodeTransaction,
+                                totalTxs: groups.reduce(
+                                    (sum, g) =>
+                                        sum +
+                                        (g.data.type === 'transactions'
+                                            ? g.data.transactions.length
+                                            : 1),
+                                    0,
+                                ),
+                                deviceName: resolveHardwareDeviceName(
+                                    context,
+                                    groups,
+                                ),
+                                // First group determines the operation kind
+                                // (cosign requests don't mix arc60 + tx). The
+                                // overlay reads this to pick context-aware copy.
+                                operation:
+                                    groups[0]?.data.type === 'arc60' ||
+                                    groups[0]?.data.type === 'arbitrary-data'
+                                        ? ('data' as const)
+                                        : ('transaction' as const),
+                            }
                         },
-                        onError: [
+                        onDone: [
                             {
-                                guard: 'isUserRejected',
+                                guard: ({ event }) =>
+                                    (event.output as HardwareSigningOutput)
+                                        .kind === 'rejected',
                                 target: '#signingMachine.rejected',
-                                actions: 'setSigningError',
                             },
                             {
+                                guard: ({ event }) =>
+                                    (event.output as HardwareSigningOutput)
+                                        .kind === 'error',
                                 target: '#signingMachine.failed',
-                                actions: 'setSigningError',
+                                actions: 'setHardwareChildError',
+                            },
+                            {
+                                target: 'dispatching',
+                                actions: 'appendHardwareChildResults',
                             },
                         ],
+                    },
+                    on: {
+                        // UI sends these to the parent; parent forwards to the
+                        // child. The child owns its own error/retry lifecycle
+                        // so the parent never observes intermediate failures.
+                        USER_REJECTED: {
+                            actions: sendTo('hardwareChild', {
+                                type: 'USER_REJECTED_ON_DEVICE',
+                            }),
+                        },
+                        RETRY_HARDWARE: {
+                            actions: sendTo('hardwareChild', { type: 'RETRY' }),
+                        },
+                        ACKNOWLEDGE_HARDWARE_ERROR: {
+                            actions: sendTo('hardwareChild', {
+                                type: 'ACKNOWLEDGE_ERROR',
+                            }),
+                        },
                     },
                 },
 
@@ -378,7 +472,6 @@ export const signingMachine = setup({
                             encodeTransaction: context.deps.encodeTransaction,
                             hardwareWalletRegistry:
                                 context.deps.hardwareWalletRegistry,
-                            signingCallbacks: context.deps.signingCallbacks,
                         }),
                         onDone: {
                             target: 'dispatching',

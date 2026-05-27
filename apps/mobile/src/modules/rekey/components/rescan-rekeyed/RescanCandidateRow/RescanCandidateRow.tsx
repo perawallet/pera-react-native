@@ -44,6 +44,7 @@ const RescanCandidateRowComponent = ({
             <PWCheckbox
                 checked={isSelected}
                 containerStyle={styles.checkboxContainer}
+                testID={`rescan-rekeyed-row-checkbox-${address}`}
             />
         </PWTouchableOpacity>
     )

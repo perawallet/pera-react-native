@@ -13,7 +13,8 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    root: {
+    container: {
+        flex: 1,
         backgroundColor: theme.colors.layerGrayLightest,
         borderRadius: theme.spacing.md,
     },

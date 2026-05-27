@@ -28,11 +28,6 @@ import {
 import { ensureConnectorReady } from '../connection'
 import { useWalletConnectStore } from '../store'
 import {
-    PeraSignedTransaction,
-    useTransactionEncoder,
-    validateArc0001SignTxnParams,
-} from '@perawallet/wallet-core-blockchain'
-import {
     type ArbitraryDataSignRequest,
     type Arc60Metadata,
     type Arc60SignRequest,
@@ -40,8 +35,8 @@ import {
     type PeraArbitraryDataMessage,
     type PeraArbitraryDataSignResult,
     type RejectReason,
-    type TransactionSignRequest,
-    resolveSignableTransactions,
+    useArc0001Resolver,
+    useEnqueueArc0001SignRequest,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
 import WalletConnect from '@walletconnect/client'
@@ -56,9 +51,7 @@ import { arc60PayloadSchema } from '../schema'
 import {
     canSignArbitraryData,
     canSignArc60,
-    isMultisigAccount,
     useAllAccounts,
-    useSigningAccounts,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 
@@ -286,12 +279,10 @@ export const useWalletConnectHandlers = () => {
     const connections = useWalletConnectStore(
         state => state.walletConnectConnections,
     )
-    const { addSignRequest, removeSignRequest, clearLastFailedRequest } =
-        useSigningRequest()
-    const { encodeSignedTransactions, decodeTransactions } =
-        useTransactionEncoder()
+    const { addSignRequest, removeSignRequest } = useSigningRequest()
     const accounts = useAllAccounts()
-    const signingAccounts = useSigningAccounts()
+    const resolveArc0001 = useArc0001Resolver()
+    const enqueueSignRequest = useEnqueueArc0001SignRequest()
 
     const handleArc60SignData = useCallback(
         (
@@ -357,21 +348,15 @@ export const useWalletConnectHandlers = () => {
                             new WalletConnectSignRequestError(err.message),
                         )
                     // The WC error bottom sheet is the only surface here;
-                    // clearing the failed-request flag suppresses the
-                    // signing pipeline's full-screen "Signing Failed" view.
-                    clearLastFailedRequest()
+                    // SignRequestView already returns null for walletconnect
+                    // sources when a failed event arrives, so removing the
+                    // request from the queue is sufficient cleanup.
                     removeSignRequest(signRequest)
                 },
             } as Arc60SignRequest
             addSignRequest(signRequest)
         },
-        [
-            connections,
-            accounts,
-            addSignRequest,
-            removeSignRequest,
-            clearLastFailedRequest,
-        ],
+        [connections, accounts, addSignRequest, removeSignRequest],
     )
 
     const handleSignData = useCallback(
@@ -458,7 +443,6 @@ export const useWalletConnectHandlers = () => {
                         .setConnectionError(
                             new WalletConnectSignRequestError(error.message),
                         )
-                    clearLastFailedRequest()
                     removeSignRequest(signRequest)
                 },
             } as ArbitraryDataSignRequest
@@ -469,7 +453,6 @@ export const useWalletConnectHandlers = () => {
             accounts,
             addSignRequest,
             removeSignRequest,
-            clearLastFailedRequest,
             handleArc60SignData,
         ],
     )
@@ -482,7 +465,12 @@ export const useWalletConnectHandlers = () => {
             payload: Nullable<WalletConnectTransactionPayload>,
         ) => {
             logger.debug('handleSignTransaction', { payload, network })
-            validateRequest(connector, connections, network, error)
+            const foundSession = validateRequest(
+                connector,
+                connections,
+                network,
+                error,
+            )
             const paramOne = payload?.params?.at(0)
             if (!payload || !paramOne) {
                 throw new WalletConnectSignRequestError(
@@ -490,148 +478,49 @@ export const useWalletConnectHandlers = () => {
                 )
             }
 
-            // ARC-0001: reject malformed address fields (bad authAddr / signers)
-            // before decoding so the user sees a wallet-side error instead of
-            // the signing sheet for txns the node would reject anyway.
-            // (Group ID integrity is validated downstream by the signing
-            // pipeline analyzer, since it applies to every signing source.)
-            const arc0001Error = validateArc0001SignTxnParams(paramOne)
-            if (arc0001Error) {
-                throw new WalletConnectSignRequestError(arc0001Error.message)
-            }
-
-            // Decode all transactions upfront so we can inspect senders
-            const allTxnObjects = decodeTransactions(
-                paramOne.map(p => decodeFromBase64(p.txn)),
+            // authorizedAddresses binds this WC session to its approved
+            // accounts — prevents a session for A being used to sign for B.
+            const resolved = resolveArc0001(
+                { transactions: paramOne },
+                {
+                    authorizedAddresses: new Set(
+                        foundSession.session?.accounts ?? [],
+                    ),
+                },
             )
 
-            // ARC-0001: determine which transactions this wallet should sign
-            const signableAddresses = new Set(
-                signingAccounts.map(a => a.address),
-            )
-            const multisigAddresses = new Set(
-                accounts.filter(isMultisigAccount).map(a => a.address),
-            )
-            const { indicesToSign, signerOverrides } =
-                resolveSignableTransactions(
-                    paramOne,
-                    allTxnObjects.map(tx => tx.sender.toString()),
-                    signableAddresses,
-                    multisigAddresses,
-                )
-
-            // If no transactions need signing, approve with all-null array.
-            // Fire-and-forget: this delivers outside the signing machine
-            // (no review/retry UI), so a delivery failure is logged, not
-            // surfaced.
-            if (indicesToSign.length === 0) {
-                const allNullResult = new Array(paramOne.length).fill(null)
-                void deliverApprove(
-                    connector.clientId,
-                    payload.id,
-                    allNullResult,
-                ).catch(error => {
-                    logger.error(
-                        'WC: failed to deliver all-null sign response',
-                        { error, clientId: connector.clientId },
-                    )
-                })
-                return
-            }
-
-            const signableTxns = indicesToSign.map(i => allTxnObjects[i])
-            const signableRawTxns = indicesToSign.map(i => paramOne[i].txn)
-
-            const signRequest: TransactionSignRequest = {
-                id: generateOrderedUniqueId(),
-                type: 'transactions',
-                transport: 'callback',
+            enqueueSignRequest(resolved, {
                 sourceType: 'walletconnect',
                 transportId: connector.clientId,
-                txs: signableTxns,
-                // Carry the full pre-filter payload so the signing pipeline
-                // can validate atomic-group integrity. `txs` only holds this
-                // wallet's signable subset and can't recompute the group
-                // hash on its own (e.g. express-send shape: each side sees
-                // only half the group).
-                groupContext: allTxnObjects,
-                rawTransactionsBase64: signableRawTxns,
-                signerOverrides:
-                    signerOverrides.size > 0 ? signerOverrides : undefined,
-                sourceMetadata: connector.session?.peerMeta,
-                approve: async (signed: Nullable<PeraSignedTransaction>[]) => {
-                    // Reconstruct full-length response with null at skipped positions
-                    const result: Nullable<string>[] = new Array(
-                        paramOne.length,
-                    ).fill(null)
-                    signed.forEach((tx, i) => {
-                        if (tx) {
-                            const [encoded] = encodeSignedTransactions([tx])
-                            result[indicesToSign[i]] = encodeToBase64(encoded)
-                        }
-                    })
-                    await deliverApprove(connector.clientId, payload.id, result)
-                },
-                reject: async (reason: RejectReason = { kind: 'user' }) => {
-                    if (reason.kind === 'softReject') {
-                        // Propose handoff succeeded; reject the WC peer
-                        // cleanly without raising the connection-error banner.
-                        await deliverReject(
-                            connector.clientId,
-                            payload.id,
-                            reason.error,
-                        )
-                        removeSignRequest(signRequest)
-                        return
-                    }
+                sourceMetadata: connector.session?.peerMeta ?? undefined,
+                // deliverApprove guards the WC v1 dead-socket case: the
+                // bridge can silently drop our response once the app has
+                // been backgrounded. ensureConnectorReady revives it (or
+                // throws a retryable timeout). Same goes for deliverReject.
+                respondWithResult: result =>
+                    deliverApprove(connector.clientId, payload.id, result),
+                respondWithReject: () =>
                     connector.rejectRequest({
                         id: payload.id,
                         error: new Error('User rejected'),
-                    })
-                },
-                error: async (error: Error) => {
-                    if (isConnectionTimeout(error)) {
-                        return
-                    }
-                    connector.rejectRequest({
-                        id: payload.id,
-                        error,
-                    })
+                    }),
+                // softReject: the multisig propose handoff succeeded, so
+                // we tell the dApp peer the request was rejected without
+                // raising the connection-error banner on our side.
+                respondWithSoftReject: error =>
+                    deliverReject(connector.clientId, payload.id, error),
+                respondWithError: error => {
+                    if (isConnectionTimeout(error)) return
+                    connector.rejectRequest({ id: payload.id, error })
                     useWalletConnectStore
                         .getState()
                         .setConnectionError(
                             new WalletConnectSignRequestError(error.message),
                         )
-                    clearLastFailedRequest()
-                    removeSignRequest(signRequest)
                 },
-                // Sync-flow multisig success delivery: encodes the
-                // assembled multisig bytes verbatim (no algosdk
-                // decode/re-encode, so participant signatures still verify
-                // on algod) into the original request positions via
-                // `indicesToSign`.
-                approveSignedBytes: async (signedBytes: Uint8Array[]) => {
-                    const result: Nullable<string>[] = new Array(
-                        paramOne.length,
-                    ).fill(null)
-                    signedBytes.forEach((bytes, i) => {
-                        const idx = indicesToSign[i]
-                        if (idx === undefined) return
-                        result[idx] = encodeToBase64(bytes)
-                    })
-                    await deliverApprove(connector.clientId, payload.id, result)
-                },
-            } as TransactionSignRequest
-            addSignRequest(signRequest)
+            })
         },
-        [
-            connections,
-            accounts,
-            addSignRequest,
-            removeSignRequest,
-            clearLastFailedRequest,
-            signingAccounts,
-        ],
+        [connections, enqueueSignRequest, resolveArc0001],
     )
 
     return {

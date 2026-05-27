@@ -10,7 +10,13 @@
  limitations under the License
  */
 
-import { SignRequest, useSigningRequest } from '@perawallet/wallet-core-signing'
+import {
+    type SignRequest,
+    useLastSigningEvent,
+    useSigningPipeline,
+    useSigningRequest,
+    type SigningLifecycleEvent,
+} from '@perawallet/wallet-core-signing'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { SigningRoutes } from '@modules/signing/routes'
@@ -68,8 +74,13 @@ const SignRequestErrorFallback = ({
 export const SignRequestView = ({ request }: SignRequestViewProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const { lastFailedRequest, clearLastFailedRequest, removeSignRequest } =
-        useSigningRequest()
+    const { removeSignRequest } = useSigningRequest()
+    const { resolved } = useSigningPipeline()
+    const failedEvent = useLastSigningEvent(
+        (e): e is Extract<SigningLifecycleEvent, { type: 'failed' }> =>
+            e.type === 'failed',
+        request.id,
+    )
 
     const isSupported =
         request.type === 'transactions' ||
@@ -86,28 +97,24 @@ export const SignRequestView = ({ request }: SignRequestViewProps) => {
     }
 
     // Render-time error boundaries don't catch the XState actor's async
-    // failures, so we key off lastFailedRequest (published to the store
-    // from useSigningActorLifecycle) to swap the signing routes for an
-    // inline error view. Dismiss stops the actor and clears the store.
-    const failureForThisRequest =
-        lastFailedRequest?.request.id === request.id ? lastFailedRequest : null
-
-    if (failureForThisRequest) {
+    // failures, so we key off the most-recent `failed` event for this
+    // request (retained per-request-id by the signing event bus) to swap
+    // the signing routes for an inline error view. Dismiss stops the actor.
+    if (failedEvent) {
         // WalletConnect requests surface failures through the WC error
         // bottom sheet (driven by the request's `error` callback), and the
         // callback also dismisses the sign request. Don't double-show the
         // full-screen failed view here — render nothing while the queue
         // settles.
-        if (request.sourceType === 'walletconnect') {
+        if (resolved?.source.kind === 'walletconnect') {
             return null
         }
 
         const body =
-            config.debugEnabled && failureForThisRequest.error.message
-                ? failureForThisRequest.error.message
+            config.debugEnabled && failedEvent.error.message
+                ? failedEvent.error.message
                 : t('signing.signing_failed.body')
         const handleDismiss = () => {
-            clearLastFailedRequest()
             removeSignRequest(request)
         }
         return (
@@ -126,7 +133,7 @@ export const SignRequestView = ({ request }: SignRequestViewProps) => {
         )
     }
 
-    const isMultisigCosign = request.sourceType === 'multisig-cosign'
+    const isMultisigCosign = resolved?.source.kind === 'multisig-cosign'
     const handleClose = () => {
         removeSignRequest(request)
     }

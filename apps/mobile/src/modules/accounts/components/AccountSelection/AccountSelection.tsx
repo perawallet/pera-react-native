@@ -56,6 +56,7 @@ export const AccountSelection = ({
 
     const openAccountMenu = useCallback(async () => {
         const result = await requestBottomSheet<AccountMenuContentResult>({
+            id: 'account-selection-menu',
             contents: (
                 <AccountMenuContent
                     headerContent={headerContent}

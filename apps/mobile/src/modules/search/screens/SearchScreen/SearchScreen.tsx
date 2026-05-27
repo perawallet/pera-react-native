@@ -32,7 +32,6 @@ import { useStyles } from './styles'
 import { useSearchScreen, type SearchRow } from './useSearchScreen'
 
 const SKELETON_ROW_COUNT = 5
-const ESTIMATED_ROW_SIZE = 64
 
 export const SearchScreen = () => {
     const styles = useStyles()
@@ -135,6 +134,11 @@ export const SearchScreen = () => {
                                     count: item.hiddenCount,
                                 })}
                             </PWText>
+                            <PWIcon
+                                name='chevron-right'
+                                variant='link'
+                                size='sm'
+                            />
                         </PWTouchableOpacity>
                     )
             }
@@ -174,7 +178,6 @@ export const SearchScreen = () => {
                 data={rows}
                 renderItem={renderItem}
                 keyExtractor={keyExtractor}
-                estimatedItemSize={ESTIMATED_ROW_SIZE}
                 style={styles.list}
                 ListEmptyComponent={
                     showNoResults ? (

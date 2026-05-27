@@ -23,8 +23,6 @@ import { NotificationItem } from '@modules/messages/components/NotificationItem/
 import { useStyles } from './styles'
 import { useNotificationsScreen } from './useNotificationsScreen'
 
-const ESTIMATED_NOTIFICATION_ITEM_SIZE = 72
-
 const renderItem = ({ item }: { item: PeraNotification }) => {
     return <NotificationItem item={item} />
 }
@@ -51,8 +49,6 @@ export const NotificationsScreen = () => {
                 renderItem={renderItem}
                 onEndReached={loadMoreItems}
                 onEndReachedThreshold={0.1}
-                estimatedItemSize={ESTIMATED_NOTIFICATION_ITEM_SIZE}
-                waitForInitialLayout
                 keyExtractor={keyExtractor}
                 ItemSeparatorComponent={ListItemDivider}
                 ListHeaderComponent={<PWView style={styles.listEdgeSpacer} />}

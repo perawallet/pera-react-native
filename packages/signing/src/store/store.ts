@@ -13,13 +13,11 @@
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { PersistStorage } from 'zustand/middleware'
-import type { FailedSignRequest, SigningStore, SignRequest } from '../models'
-import type { TransportResult } from '../pipeline/types'
+import type { SigningStore, SignRequest } from '../models'
 import {
     generateOrderedUniqueId,
     registerStore,
     type WithPersist,
-    type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
@@ -56,9 +54,6 @@ const STORE_NAME = 'signing-store'
 
 const initialState = {
     pendingSignRequests: [] as SignRequest[],
-    lastCompletedRequest: null as Nullable<SignRequest>,
-    lastFailedRequest: null as Nullable<FailedSignRequest>,
-    lastTransportResult: null as Nullable<TransportResult>,
 }
 
 export const useSigningStore: UseBoundStore<
@@ -88,15 +83,6 @@ export const useSigningStore: UseBoundStore<
                 }
                 return remaining.length != existing.length
             },
-            setLastCompletedRequest: (request: Nullable<SignRequest>) => {
-                set({ lastCompletedRequest: request })
-            },
-            setLastFailedRequest: (failed: FailedSignRequest | null) => {
-                set({ lastFailedRequest: failed })
-            },
-            setLastTransportResult: (result: Nullable<TransportResult>) => {
-                set({ lastTransportResult: result })
-            },
             resetState: () => set(initialState),
         }),
         {
@@ -117,19 +103,10 @@ export const useSigningStore: UseBoundStore<
                         r.sourceType !== 'deeplink',
                 ),
             }),
-            // Belt-and-suspenders: these fields aren't in `partialize`, but a
-            // prior store version (or a future migration regression) could
-            // still leave them in storage. Always boot with a clean
-            // last-completed/last-failed slate so a stale id doesn't ghost
-            // the next request through SignRequestView's id-equality guard.
-            // Also strip any rehydrated deeplink request — covers the case
-            // where an older partialize persisted them, and matches the
+            // Strip any rehydrated deeplink request — matches the
             // partialize filter above so the two stay in lockstep.
             onRehydrateStorage: () => state => {
                 if (state) {
-                    state.lastCompletedRequest = null
-                    state.lastFailedRequest = null
-                    state.lastTransportResult = null
                     state.pendingSignRequests = (
                         state.pendingSignRequests ?? []
                     ).filter(r => r.sourceType !== 'deeplink')

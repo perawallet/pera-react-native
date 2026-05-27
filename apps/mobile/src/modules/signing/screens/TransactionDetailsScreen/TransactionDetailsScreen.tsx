@@ -30,6 +30,7 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import { TransactionDisplay } from '@modules/transactions/components/TransactionDisplay'
 import { GroupTransactionsPanel } from '@modules/transactions/components/transaction-details'
+import { ExternalTransactionCallout } from '@modules/signing/components/ExternalTransactionCallout'
 import type { SigningStackParamList } from '@modules/signing/routes'
 
 type NavigationProp = StackNavigationProp<
@@ -51,6 +52,7 @@ export const TransactionDetailsScreen = () => {
         transaction: paramTransaction,
         transactionId,
         groupId,
+        isExternal,
     } = route.params
 
     const { data: fetchedTransaction, isLoading } = useTransactionDetailQuery({
@@ -78,6 +80,7 @@ export const TransactionDetailsScreen = () => {
                     transaction={transaction}
                     onInnerTransactionsPress={handleTransactionPress}
                 />
+                {isExternal && <ExternalTransactionCallout />}
                 {groupTransactions.length > 1 && (
                     <GroupTransactionsPanel
                         groupTransactions={groupTransactions}

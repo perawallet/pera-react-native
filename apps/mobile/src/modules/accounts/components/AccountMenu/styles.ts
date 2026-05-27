@@ -17,6 +17,9 @@ export const useStyles = makeStyles(theme => {
         portfolioContainer: {
             paddingTop: theme.spacing.md,
         },
+        listSeparator: {
+            height: theme.spacing.md,
+        },
         container: {
             padding: 0,
             margin: 0,

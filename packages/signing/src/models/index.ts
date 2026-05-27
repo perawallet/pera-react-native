@@ -67,6 +67,13 @@ export type TransactionSignRequest = {
      * Populated from ARC-0001 `signers` field in WalletConnect requests.
      */
     signerOverrides?: Map<number, string>
+    /**
+     * Indices into `groupContext` (the full pre-filter payload) that
+     * correspond to entries in `txs`. Populated when `groupContext`
+     * differs from `txs` so the signing UI can render the full atomic
+     * group while marking which slots the wallet will actually sign.
+     */
+    signableIndices?: number[]
     rawTransactionsBase64?: string[]
     approve?: (signedTxs: PeraSignedTransaction[]) => Promise<void>
     reject?: (reason?: RejectReason) => Promise<void>
@@ -131,25 +138,8 @@ export type FailedSignRequest = {
 
 export type SigningStore = BaseStoreState & {
     pendingSignRequests: SignRequest[]
-    lastCompletedRequest: SignRequest | null
-    lastFailedRequest: FailedSignRequest | null
-    /**
-     * Most recent transport result, set on every completed actor transition
-     * regardless of source. Drives propose/cosign completion listeners
-     * (PendingSignatures auto-open, TransactionProcessingScreen exit) that
-     * can't rely on the `useSigningPipeline({ onEvent })` actor subscription
-     * — that subscription doesn't reliably establish in time for headless
-     * propose requests because the lifecycle's actor lives in a non-reactive
-     * module-level Map. Consumers should dedupe via a ref-tracked previous
-     * reference; the lifecycle creates a fresh `TransportResult` object per
-     * completion so reference equality is a safe change signal.
-     */
-    lastTransportResult: TransportResult | null
     addSignRequest: (request: SignRequest) => boolean
     removeSignRequest: (request: SignRequest) => boolean
-    setLastCompletedRequest: (request: Nullable<SignRequest>) => void
-    setLastFailedRequest: (failed: Nullable<FailedSignRequest>) => void
-    setLastTransportResult: (result: Nullable<TransportResult>) => void
 }
 
 export type TransactionWarning = {

@@ -101,6 +101,7 @@ export const ConnectionView = ({
         <>
             <PWFlatList
                 style={styles.container}
+                contentContainerStyle={styles.contentContainer}
                 data={accounts}
                 renderItem={renderAccountRow}
                 extraData={{ selectedAccounts }}

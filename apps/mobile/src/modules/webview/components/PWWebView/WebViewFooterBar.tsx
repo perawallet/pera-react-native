@@ -10,71 +10,41 @@
  limitations under the License
  */
 
-import {
-    RefObject,
-    useCallback,
-    useLayoutEffect,
-    useMemo,
-    useState,
-} from 'react'
+import { RefObject } from 'react'
 import { PWView } from '@components/core/PWView'
-import { useStyles } from './styles'
 import { PWIcon } from '@components/core/PWIcon'
 import WebView from 'react-native-webview'
 import { WebViewNativeEvent } from 'react-native-webview/lib/RNCWebViewNativeComponent'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { WebViewFavorite } from '@modules/webview/hooks'
+import { useStyles } from './styles'
+import { useWebViewFooterBar } from './useWebViewFooterBar'
 
 export type WebViewFooterBarProps = {
     webview: RefObject<Nullable<WebView<unknown>>>
     homeUrl?: string
     navigationState?: WebViewNativeEvent
+    favorite?: WebViewFavorite
 }
 
 export const WebViewFooterBar = ({
     webview,
     homeUrl,
     navigationState,
+    favorite,
 }: WebViewFooterBarProps) => {
     const styles = useStyles()
-    const [returningHome, setReturningHome] = useState(false)
-
-    const isHome = useMemo(() => {
-        return !navigationState || navigationState.url === homeUrl
-    }, [navigationState, homeUrl])
-
-    //HACK: this is a little messy - there's no way seemingly to navigate directly to a URL, so we just
-    //go back all the way through the history
-    useLayoutEffect(() => {
-        if (returningHome) {
-            if (navigationState?.canGoBack) {
-                webview.current?.goBack()
-            } else {
-                setReturningHome(false)
-            }
-        }
-    }, [returningHome, webview, navigationState])
-
-    const onBackRequested = useCallback(() => {
-        if (navigationState?.canGoBack) {
-            webview.current?.goBack()
-        }
-    }, [webview, navigationState])
-
-    const onForwardRequested = useCallback(() => {
-        if (navigationState?.canGoForward) {
-            webview.current?.goForward()
-        }
-    }, [webview, navigationState])
-
-    const onHomeRequested = useCallback(() => {
-        if (navigationState && !isHome) {
-            setReturningHome(true)
-        }
-    }, [webview, navigationState, isHome])
-
-    const onFavoriteRequested = useCallback(() => {
-        // TODO: Implement favorite
-    }, [webview])
+    const {
+        isHome,
+        canGoBack,
+        canGoForward,
+        showFavorite,
+        isFavorite,
+        onBackRequested,
+        onForwardRequested,
+        onHomeRequested,
+        onFavoriteRequested,
+    } = useWebViewFooterBar({ webview, homeUrl, navigationState, favorite })
 
     return (
         <PWView style={styles.footerBar}>
@@ -82,13 +52,13 @@ export const WebViewFooterBar = ({
                 name='chevron-left'
                 onPress={onBackRequested}
                 variant='primary'
-                disabled={!navigationState?.canGoBack}
+                disabled={!canGoBack}
             />
             <PWIcon
                 name='chevron-right'
                 onPress={onForwardRequested}
                 variant='primary'
-                disabled={!navigationState?.canGoForward}
+                disabled={!canGoForward}
             />
             <PWIcon
                 name='house'
@@ -96,11 +66,15 @@ export const WebViewFooterBar = ({
                 variant='primary'
                 disabled={isHome}
             />
-            <PWIcon
-                name='star'
-                onPress={onFavoriteRequested}
-                variant='primary'
-            />
+            {showFavorite ? (
+                <PWIcon
+                    name={isFavorite ? 'star-filled' : 'star'}
+                    onPress={onFavoriteRequested}
+                    variant={isFavorite ? 'favorite' : 'primary'}
+                />
+            ) : (
+                <PWView />
+            )}
         </PWView>
     )
 }

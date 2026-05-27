@@ -23,10 +23,10 @@ export const useStyles = makeStyles(theme => {
         },
         dataContainer: {
             flexDirection: 'row',
-            justifyContent: 'space-between',
             alignItems: 'center',
             flex: 1,
             minWidth: 0,
+            gap: theme.spacing.md,
         },
         unitContainer: {
             flex: 1,

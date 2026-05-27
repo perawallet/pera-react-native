@@ -23,18 +23,18 @@
     "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
   },
   "dependencies": {
+    "@perawallet/wallet-extension-platform": "workspace:*",
     "decimal.js": "catalog:",
-    "drizzle-orm": "catalog:",
-    "@perawallet/wallet-extension-platform": "workspace:*"
+    "drizzle-orm": "catalog:"
   },
   "devDependencies": {
-    "better-sqlite3": "^12.9.0",
+    "@perawallet/wallet-core-devtools": "workspace:*",
     "@types/better-sqlite3": "^7.6.0",
+    "better-sqlite3": "^12.10.0",
     "drizzle-kit": "^0.31.10",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plugin-dts": "catalog:",
-    "vitest": "catalog:",
-    "@perawallet/wallet-core-devtools": "workspace:*"
+    "vitest": "catalog:"
   }
 }

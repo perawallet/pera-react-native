@@ -42,7 +42,7 @@ export interface GetSigningStrategyOptions {
     /** Arbitrary-data signing function from useArbitraryDataSigner */
     signArbitraryData: LocalArbitrarySigningFunction
 
-    /** ARC-60 signing function from useArc60Signer */
+    /** ARC-60 signing function from useLocalKeyArc60Signer */
     signArc60: LocalArc60SigningFunction
 
     /** Get local participants for a multisig account */

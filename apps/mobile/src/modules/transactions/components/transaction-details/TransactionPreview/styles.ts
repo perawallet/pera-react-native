@@ -36,6 +36,19 @@ export const useStyles = makeStyles(theme => {
         rightContent: {
             flexDirection: 'row',
             alignItems: 'center',
+            gap: theme.spacing.sm,
+        },
+        externalPill: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: theme.spacing.xxs,
+            paddingHorizontal: theme.spacing.sm,
+            paddingVertical: theme.spacing.xs,
+            borderRadius: theme.borderRadius.sm,
+        },
+        externalPillText: {
+            color: theme.colors.textMain,
+            maxWidth: theme.spacing.xxl,
         },
         primaryText: {
             color: theme.colors.textMain,

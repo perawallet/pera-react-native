@@ -1727,6 +1727,14 @@
             "details": "Transaction Details",
             "signing_with": "Signing Account"
         },
+        "external_transaction": {
+            "pill_label": "Signed",
+            "sheet_title": "Other signer",
+            "sheet_body": "This transaction has already been signed or will be signed by another party. It's shown here only for completeness.",
+            "sheet_dismiss": "Got it",
+            "detail_callout_title": "Other signer",
+            "detail_callout_body": "This transaction has already been signed or will be signed by another party. It's shown here only for completeness."
+        },
         "unknown_request_type": {
             "title": "Unknown Request Type",
             "body": "The request type is unknown."

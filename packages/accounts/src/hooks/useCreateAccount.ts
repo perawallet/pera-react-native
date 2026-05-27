@@ -29,6 +29,10 @@ import {
 import { NoHDWalletError } from '../errors'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import {
+    setPendingAccountRollback,
+    clearPendingAccountRollback,
+} from '../store/pendingAccountCreation'
 
 export type Algo25SeedReference = {
     /** Keystore id of the algo25 seed entry. */
@@ -43,14 +47,20 @@ export const useCreateAccount = () => {
     const setAccounts = useAccountsStore(state => state.setAccounts)
     const deviceInfo = getProvider().deviceInfo
     const { mutateAsync: updateDeviceOnBackend } = useUpdateDeviceMutation()
-    const { getKey, createHDWalletKey, createAlgo25Key, getDerivedPublicKey } =
-        useKMS()
+    const {
+        getKey,
+        createHDWalletKey,
+        createAlgo25Key,
+        getDerivedPublicKey,
+        removeKeyAndChildren,
+    } = useKMS()
 
     const saveAndUpdateAccounts = async (newAccount: WalletAccount) => {
         // We get the state fresh to avoid stale captures
         const currentAccounts = useAccountsStore.getState().accounts
         const nextAccounts = [...currentAccounts, newAccount]
         setAccounts(nextAccounts)
+        clearPendingAccountRollback()
 
         if (deviceID) {
             try {
@@ -67,7 +77,7 @@ export const useCreateAccount = () => {
         }
     }
 
-    const createHdWalletAccount = async ({
+    const buildHdWalletAccount = async ({
         walletId,
         account,
         keyIndex,
@@ -75,92 +85,140 @@ export const useCreateAccount = () => {
         walletId?: string
         account: number
         keyIndex: number
-    }) => {
+    }): Promise<WalletAccount> => {
         const rootWalletId = walletId ?? generateOrderedUniqueId()
         let seedKeyId: string | undefined = getKey(rootWalletId)?.id
+        let createdNewSeed = false
 
-        if (!seedKeyId) {
-            const result = await createHDWalletKey({ id: rootWalletId })
-            seedKeyId = result.seedKey.id
-        }
+        try {
+            if (!seedKeyId) {
+                const result = await createHDWalletKey({ id: rootWalletId })
+                seedKeyId = result.seedKey.id
+                createdNewSeed = true
+            }
 
-        if (!seedKeyId) {
-            throw new NoHDWalletError(rootWalletId)
-        }
+            if (!seedKeyId) throw new NoHDWalletError(rootWalletId)
 
-        const derivationType = BIP32DerivationType.Peikert
-        const publicKey = await getDerivedPublicKey(
-            seedKeyId,
-            account,
-            keyIndex,
-            derivationType,
-        )
-
-        if (!publicKey) {
-            throw new NoHDWalletError(rootWalletId)
-        }
-
-        const newAccount: WalletAccount = {
-            id: generateOrderedUniqueId(),
-            address: encodeAlgorandAddress(publicKey),
-            type: AccountTypes.hdWallet,
-            hdWalletDetails: {
-                account,
-                change: 0,
-                keyIndex,
-                derivationType,
-            },
-            keyPairId: hdDerivedKeyId(
+            const derivationType = BIP32DerivationType.Peikert
+            const publicKey = await getDerivedPublicKey(
                 seedKeyId,
                 account,
                 keyIndex,
                 derivationType,
-            ),
-        }
+            )
 
-        await saveAndUpdateAccounts(newAccount)
-        return newAccount
+            if (!publicKey) throw new NoHDWalletError(rootWalletId)
+
+            const newAccount: WalletAccount = {
+                id: generateOrderedUniqueId(),
+                address: encodeAlgorandAddress(publicKey),
+                type: AccountTypes.hdWallet,
+                hdWalletDetails: {
+                    account,
+                    change: 0,
+                    keyIndex,
+                    derivationType,
+                },
+                keyPairId: hdDerivedKeyId(
+                    seedKeyId,
+                    account,
+                    keyIndex,
+                    derivationType,
+                ),
+            }
+
+            if (createdNewSeed) {
+                setPendingAccountRollback(() =>
+                    removeKeyAndChildren(rootWalletId),
+                )
+            }
+
+            return newAccount
+        } catch (error) {
+            if (createdNewSeed) {
+                await removeKeyAndChildren(rootWalletId).catch(() => {})
+            }
+            throw error
+        }
     }
 
-    const createAlgo25WalletAccount = async ({
+    const buildAlgo25WalletAccount = async ({
         seed,
         id,
     }: {
         seed?: Algo25SeedReference
         id?: string
-    }) => {
+    }): Promise<WalletAccount> => {
         let resolved: Algo25SeedReference | null = seed ?? null
+        let createdNewKey = false
+        let createdKeyId: string | undefined
 
-        if (!resolved) {
-            const keyId = id ?? generateOrderedUniqueId()
-            const existing = getKey(keyId)
-            if (existing) {
-                resolved = {
-                    seedKeyId: existing.id,
-                    address: encodeAlgorandAddress(
-                        existing.publicKey ?? new Uint8Array(),
-                    ),
-                }
-            } else {
-                const result = await createAlgo25Key({ id: keyId })
-                resolved = {
-                    seedKeyId: result.seedKey.id,
-                    address: result.address,
+        try {
+            if (!resolved) {
+                const keyId = id ?? generateOrderedUniqueId()
+                const existing = getKey(keyId)
+                if (existing) {
+                    resolved = {
+                        seedKeyId: existing.id,
+                        address: encodeAlgorandAddress(
+                            existing.publicKey ?? new Uint8Array(),
+                        ),
+                    }
+                } else {
+                    const result = await createAlgo25Key({ id: keyId })
+                    resolved = {
+                        seedKeyId: result.seedKey.id,
+                        address: result.address,
+                    }
+                    createdNewKey = true
+                    createdKeyId = result.seedKey.id
                 }
             }
-        }
 
-        if (!resolved?.seedKeyId) {
-            throw new KeyNotFoundError(id ?? '')
-        }
+            if (!resolved?.seedKeyId) throw new KeyNotFoundError(id ?? '')
 
-        const newAccount: WalletAccount = {
-            id: generateOrderedUniqueId(),
-            address: resolved.address,
-            type: AccountTypes.algo25,
-            keyPairId: algo25SignKeyId(resolved.seedKeyId),
-        }
+            const newAccount: WalletAccount = {
+                id: generateOrderedUniqueId(),
+                address: resolved.address,
+                type: AccountTypes.algo25,
+                keyPairId: algo25SignKeyId(resolved.seedKeyId),
+            }
 
+            if (createdNewKey && createdKeyId) {
+                const keyToRemove = createdKeyId
+                setPendingAccountRollback(() =>
+                    removeKeyAndChildren(keyToRemove),
+                )
+            }
+
+            return newAccount
+        } catch (error) {
+            if (createdNewKey && createdKeyId) {
+                await removeKeyAndChildren(createdKeyId).catch(() => {})
+            }
+            throw error
+        }
+    }
+
+    const saveAccount = async (account: WalletAccount) => {
+        await saveAndUpdateAccounts(account)
+    }
+
+    const createHdWalletAccount = async (params: {
+        walletId?: string
+        account: number
+        keyIndex: number
+    }) => {
+        const newAccount = await buildHdWalletAccount(params)
+        await saveAndUpdateAccounts(newAccount)
+        return newAccount
+    }
+
+    const createAlgo25WalletAccount = async (params: {
+        seed?: Algo25SeedReference
+        id?: string
+    }) => {
+        const newAccount = await buildAlgo25WalletAccount(params)
         await saveAndUpdateAccounts(newAccount)
         return newAccount
     }
@@ -168,5 +226,8 @@ export const useCreateAccount = () => {
     return {
         createHdWalletAccount,
         createAlgo25WalletAccount,
+        buildHdWalletAccount,
+        buildAlgo25WalletAccount,
+        saveAccount,
     }
 }

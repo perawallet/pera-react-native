@@ -38,7 +38,7 @@ export const useSelectHDWalletScreen = (): UseSelectHDWalletScreenResult => {
     const { t } = useLanguage()
     const { showToast } = useToast()
     const { hdWalletGroups } = useHDWalletGroups()
-    const { createHdWalletAccount } = useCreateAccount()
+    const { buildHdWalletAccount } = useCreateAccount()
     const [isCreatingWallet, setIsCreatingWallet] = useState(false)
 
     const allGroupAccounts = useMemo(
@@ -62,21 +62,21 @@ export const useSelectHDWalletScreen = (): UseSelectHDWalletScreenResult => {
                           ),
                       ) + 1
                     : 0
-            const newAccount = await createHdWalletAccount({
+            const newAccount = await buildHdWalletAccount({
                 walletId: group.seedKeyId,
                 account: 0,
                 keyIndex: nextKeyIndex,
             })
             navigation.replace('NameAccount', { account: newAccount })
         },
-        [createHdWalletAccount, navigation],
+        [buildHdWalletAccount, navigation],
     )
 
     const handleCreateNewWallet = useCallback(() => {
         setIsCreatingWallet(true)
         deferToNextCycle(async () => {
             try {
-                const newAccount = await createHdWalletAccount({
+                const newAccount = await buildHdWalletAccount({
                     account: 0,
                     keyIndex: 0,
                 })
@@ -94,7 +94,7 @@ export const useSelectHDWalletScreen = (): UseSelectHDWalletScreenResult => {
                 setIsCreatingWallet(false)
             }
         })
-    }, [createHdWalletAccount, navigation, showToast, t])
+    }, [buildHdWalletAccount, navigation, showToast, t])
 
     const handleGoBack = useCallback(() => {
         navigation.goBack()

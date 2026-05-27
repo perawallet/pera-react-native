@@ -51,6 +51,7 @@ import { WebViewFooterBar } from './WebViewFooterBar'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebViewStore } from '../../hooks'
+import type { WebViewFavorite } from '../../hooks'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
 
 export type PWWebViewProps = {
@@ -64,6 +65,7 @@ export type PWWebViewProps = {
     customJavaScript?: string
     onCustomMessage?: (data: unknown) => void
     webviewRef?: React.RefObject<Nullable<WebView>>
+    favorite?: WebViewFavorite
 } & WebViewProps
 
 const updateTheme = (mode: 'light' | 'dark') => {
@@ -83,6 +85,7 @@ export const PWWebView = (props: PWWebViewProps) => {
         customJavaScript,
         onCustomMessage,
         webviewRef,
+        favorite,
         ...rest
     } = props
     const { theme } = useTheme()
@@ -338,6 +341,7 @@ export const PWWebView = (props: PWWebViewProps) => {
                     webview={webview}
                     homeUrl={url}
                     navigationState={navigationState}
+                    favorite={favorite}
                 />
             )}
         </PWView>

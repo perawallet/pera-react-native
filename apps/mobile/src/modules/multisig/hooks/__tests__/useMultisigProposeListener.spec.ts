@@ -12,15 +12,10 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import type { TransportResult } from '@perawallet/wallet-core-signing'
-
-const { lastTransportResultMock } = vi.hoisted(() => ({
-    lastTransportResultMock: { current: null as TransportResult | null },
-}))
-
-vi.mock('@perawallet/wallet-core-signing', () => ({
-    useLastTransportResult: () => lastTransportResultMock.current,
-}))
+import {
+    signingEventBus,
+    type TransportResult,
+} from '@perawallet/wallet-core-signing'
 
 const openSheetMock = vi.fn()
 vi.mock('../../stores/usePendingSignaturesSheetStore', () => ({
@@ -37,6 +32,9 @@ vi.mock('@perawallet/wallet-core-messages', () => ({
 import { useMultisigProposeListener } from '../useMultisigProposeListener'
 
 const SIGN_REQUEST_ID = 'sr-1'
+
+const fakeRequest = (id: string = SIGN_REQUEST_ID) =>
+    ({ id, type: 'transactions' }) as never
 
 const proposedResult = (
     overrides: Partial<Extract<TransportResult, { type: 'proposed' }>> = {},
@@ -59,18 +57,28 @@ const signaturesAddedResult = (
     ...overrides,
 })
 
+const publishTransportResult = (
+    result: TransportResult,
+    requestId: string = SIGN_REQUEST_ID,
+) => {
+    signingEventBus.publish({
+        type: 'transport-result',
+        request: fakeRequest(requestId),
+        result,
+    })
+}
+
 describe('useMultisigProposeListener', () => {
     beforeEach(() => {
-        lastTransportResultMock.current = null
+        signingEventBus.__resetForTests()
         openSheetMock.mockClear()
         invalidateInboxMock.mockClear()
     })
 
-    it('opens the sheet and invalidates inbox when lastTransportResult transitions to a `proposed` non-confirmed result', () => {
-        const { rerender } = renderHook(() => useMultisigProposeListener())
+    it('opens the sheet and invalidates inbox when a `proposed` non-confirmed transport-result event is published', () => {
+        renderHook(() => useMultisigProposeListener())
 
-        lastTransportResultMock.current = proposedResult()
-        rerender()
+        publishTransportResult(proposedResult())
 
         expect(openSheetMock).toHaveBeenCalledTimes(1)
         expect(openSheetMock).toHaveBeenCalledWith(SIGN_REQUEST_ID)
@@ -78,10 +86,9 @@ describe('useMultisigProposeListener', () => {
     })
 
     it('opens the sheet and invalidates inbox on `signatures-added` non-confirmed result', () => {
-        const { rerender } = renderHook(() => useMultisigProposeListener())
+        renderHook(() => useMultisigProposeListener())
 
-        lastTransportResultMock.current = signaturesAddedResult()
-        rerender()
+        publishTransportResult(signaturesAddedResult())
 
         expect(openSheetMock).toHaveBeenCalledTimes(1)
         expect(openSheetMock).toHaveBeenCalledWith(SIGN_REQUEST_ID)
@@ -89,42 +96,34 @@ describe('useMultisigProposeListener', () => {
     })
 
     it('invalidates inbox but does not open the sheet on confirmed status', () => {
-        const { rerender } = renderHook(() => useMultisigProposeListener())
+        renderHook(() => useMultisigProposeListener())
 
-        lastTransportResultMock.current = proposedResult({
-            status: 'confirmed',
-        })
-        rerender()
+        publishTransportResult(proposedResult({ status: 'confirmed' }))
 
         expect(openSheetMock).not.toHaveBeenCalled()
         expect(invalidateInboxMock).toHaveBeenCalledTimes(1)
     })
 
     it('ignores unrelated transport result types like `submitted` and `callback-sent`', () => {
-        const { rerender } = renderHook(() => useMultisigProposeListener())
+        renderHook(() => useMultisigProposeListener())
 
-        lastTransportResultMock.current = {
+        publishTransportResult({
             type: 'submitted',
             txIds: ['tx-1'],
-        } as TransportResult
-        rerender()
-
-        lastTransportResultMock.current = {
+        } as TransportResult)
+        publishTransportResult({
             type: 'callback-sent',
             requestId: 'wc-1',
-        } as TransportResult
-        rerender()
+        } as TransportResult)
 
         expect(openSheetMock).not.toHaveBeenCalled()
         expect(invalidateInboxMock).not.toHaveBeenCalled()
     })
 
-    it('does not re-fire when the same transport result reference is observed again', () => {
+    it('fires once per published event (no duplicate side effects on rerender)', () => {
         const { rerender } = renderHook(() => useMultisigProposeListener())
 
-        const result = proposedResult()
-        lastTransportResultMock.current = result
-        rerender()
+        publishTransportResult(proposedResult())
         rerender()
         rerender()
 
@@ -132,26 +131,22 @@ describe('useMultisigProposeListener', () => {
         expect(invalidateInboxMock).toHaveBeenCalledTimes(1)
     })
 
-    it('fires again when a fresh transport result reference appears', () => {
-        const { rerender } = renderHook(() => useMultisigProposeListener())
+    it('fires again when a fresh transport result for a different request is published', () => {
+        renderHook(() => useMultisigProposeListener())
 
-        lastTransportResultMock.current = proposedResult()
-        rerender()
-        // New propose with a different sign request — fresh object reference.
-        lastTransportResultMock.current = proposedResult({
-            signRequestId: 'sr-2',
-        })
-        rerender()
+        publishTransportResult(proposedResult())
+        publishTransportResult(
+            proposedResult({ signRequestId: 'sr-2' }),
+            'req-2',
+        )
 
         expect(openSheetMock).toHaveBeenCalledTimes(2)
         expect(openSheetMock).toHaveBeenNthCalledWith(1, SIGN_REQUEST_ID)
         expect(openSheetMock).toHaveBeenNthCalledWith(2, 'sr-2')
     })
 
-    it('skips a stale transport result that is already present at mount', () => {
-        // Stale value from a prior in-session propose — mount should NOT
-        // re-open the sheet for it.
-        lastTransportResultMock.current = proposedResult()
+    it('does not replay events published before mount (no replay option)', () => {
+        publishTransportResult(proposedResult())
         renderHook(() => useMultisigProposeListener())
 
         expect(openSheetMock).not.toHaveBeenCalled()

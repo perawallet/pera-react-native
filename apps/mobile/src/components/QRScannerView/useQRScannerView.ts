@@ -30,12 +30,14 @@ export type UseQRScannerViewProps = {
      * are obscured by the Modal's native window while it's open.
      */
     onClose?: () => void
+    skipDeepLinkHandler?: boolean
 }
 
 export const useQRScannerView = ({
     isVisible,
     onSuccess,
     onClose,
+    skipDeepLinkHandler = false,
 }: UseQRScannerViewProps) => {
     const device = useCameraDevice('back')
     const { hasPermission, requestPermission } = useCameraPermission()
@@ -80,6 +82,13 @@ export const useQRScannerView = ({
                 // Take the lock before doing anything that could re-enter.
                 handlingRef.current = true
                 setScanningEnabled(false)
+                if (skipDeepLinkHandler) {
+                    onSuccess(url, () => {
+                        handlingRef.current = false
+                        setScanningEnabled(true)
+                    })
+                    return
+                }
                 // Push, don't replace: the QR modal dismisses itself via
                 // `onSuccess`, so the underlying nav already advances. Using
                 // `replace` here would discard the screen the user was on,

@@ -88,6 +88,7 @@ const WebViewSheetContents = ({ view, onClose }: WebViewSheetContentsProps) => (
         url={view.url}
         enablePeraConnect={view.enablePeraConnect ?? false}
         showControls
+        favorite={view.favorite}
         onBack={view.onBackRequested}
         onClose={onClose}
         inBottomSheet

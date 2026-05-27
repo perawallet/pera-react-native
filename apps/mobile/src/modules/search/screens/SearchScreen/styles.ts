@@ -23,6 +23,9 @@ export const useStyles = makeStyles(theme => ({
     list: {
         flex: 1,
     },
+    contentContainer: {
+        flexGrow: 1,
+    },
     sectionHeader: {
         marginTop: theme.spacing.lg,
     },
@@ -30,6 +33,7 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.md,
+        paddingVertical: theme.spacing.sm,
     },
     assetRow: {
         paddingVertical: theme.spacing.sm,
@@ -39,9 +43,12 @@ export const useStyles = makeStyles(theme => ({
     },
     showMore: {
         paddingVertical: theme.spacing.sm,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xs,
     },
     showMoreText: {
-        color: theme.colors.textGray,
+        color: theme.colors.linkPrimary,
     },
     skeletonContainer: {
         paddingTop: theme.spacing.lg,

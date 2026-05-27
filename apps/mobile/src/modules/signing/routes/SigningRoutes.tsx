@@ -10,15 +10,14 @@
  limitations under the License
  */
 
-import type {
-    SignRequest,
-    TransactionSignRequest,
+import {
+    type SignRequest,
+    useSigningPipeline,
 } from '@perawallet/wallet-core-signing'
 import {
     createStackNavigator,
     type StackHeaderProps,
 } from '@react-navigation/stack'
-import { useMemo } from 'react'
 import type { SigningStackParamList } from './types'
 import {
     SingleTransactionScreen,
@@ -42,36 +41,31 @@ type SigningRoutesProps = {
 const Stack = createStackNavigator<SigningStackParamList>()
 
 type InitialRouteConfig = {
-    name: keyof SigningStackParamList
+    initialRoute: keyof SigningStackParamList
 }
 
-const getInitialRouteConfig = (request: SignRequest): InitialRouteConfig => {
-    if (request.type === 'arbitrary-data') {
-        return { name: 'ArbitraryDataSigning' }
+const useInitialRouteConfig = (): InitialRouteConfig | null => {
+    const { resolved } = useSigningPipeline()
+    if (!resolved) return null
+    switch (resolved.kind.type) {
+        case 'arbitrary-data':
+            return { initialRoute: 'ArbitraryDataSigning' }
+        case 'arc60':
+            return { initialRoute: 'Arc60Signing' }
+        case 'transactions':
+            return resolved.kind.hasMultiple
+                ? { initialRoute: 'TransactionList' }
+                : { initialRoute: 'SingleTransaction' }
     }
-
-    if (request.type === 'arc60') {
-        return { name: 'Arc60Signing' }
-    }
-
-    const txRequest = request as TransactionSignRequest
-    const isSingleTransaction = txRequest.txs.length === 1
-
-    if (isSingleTransaction) {
-        return { name: 'SingleTransaction' }
-    }
-    return { name: 'TransactionList' }
 }
 
-export const SigningRoutes = ({ request }: SigningRoutesProps) => {
-    const initialRouteConfig = useMemo(
-        () => getInitialRouteConfig(request),
-        [request],
-    )
+export const SigningRoutes = ({ request: _request }: SigningRoutesProps) => {
+    const initialRouteConfig = useInitialRouteConfig()
     const styles = useStyles()
+    if (!initialRouteConfig) return null
     return (
         <Stack.Navigator
-            initialRouteName={initialRouteConfig.name}
+            initialRouteName={initialRouteConfig.initialRoute}
             detachInactiveScreens={false}
             screenOptions={{
                 headerShown: true,

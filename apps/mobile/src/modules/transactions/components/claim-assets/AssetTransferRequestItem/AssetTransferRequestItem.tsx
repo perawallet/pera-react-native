@@ -19,7 +19,10 @@ import { useStyles } from './styles'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { AssetIcon, AssetNameBadge } from '@modules/assets/components'
 import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
-import { toWholeUnits } from '@perawallet/wallet-core-assets'
+import {
+    useSingleAssetDetailsQuery,
+    toWholeUnits,
+} from '@perawallet/wallet-core-assets'
 import { useMemo } from 'react'
 
 export type AssetTransferRequestItemProps = {
@@ -33,7 +36,9 @@ export const AssetTransferRequestItem = ({
 }: AssetTransferRequestItemProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { asset, senders, totalAmount } = item
+    const { asset, senders, totalAmount, usdValue } = item
+    const { data: fullAsset } = useSingleAssetDetailsQuery(asset.assetId)
+    const resolvedAsset = fullAsset ?? asset
 
     const firstSender = senders.results[0]
     const remainingCount = senders.count - 1
@@ -54,7 +59,7 @@ export const AssetTransferRequestItem = ({
         >
             <PWView style={styles.iconContainer}>
                 <AssetIcon
-                    asset={asset}
+                    asset={resolvedAsset}
                     size='xl'
                 />
             </PWView>
@@ -98,6 +103,7 @@ export const AssetTransferRequestItem = ({
                         sourceAssetId={asset?.assetId}
                         precision={DEFAULT_PRECISION}
                         showSymbol
+                        usdPrice={usdValue ?? undefined}
                     />
                 </PWView>
             </PWView>

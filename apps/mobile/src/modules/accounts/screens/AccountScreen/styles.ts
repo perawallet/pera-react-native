@@ -55,5 +55,8 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
             marginTop: theme.spacing.xs,
             minHeight: 0,
         },
+        accountSelectionToolbar: {
+            alignSelf: 'stretch',
+        },
     }
 })

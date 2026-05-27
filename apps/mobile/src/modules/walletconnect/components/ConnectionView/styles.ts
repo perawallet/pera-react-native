@@ -18,6 +18,9 @@ export const useStyles = makeStyles(theme => {
             flex: 1,
             padding: theme.spacing.xl,
         },
+        contentContainer: {
+            paddingBottom: theme.spacing.xl,
+        },
         icon: {
             width: theme.spacing['4xl'],
             height: theme.spacing['4xl'],
@@ -88,6 +91,7 @@ export const useStyles = makeStyles(theme => {
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: theme.spacing.sm,
+            paddingVertical: theme.spacing.sm,
         },
     }
 })

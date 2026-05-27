@@ -83,7 +83,4 @@ export const useStyles = makeStyles(theme => ({
     layoutToggleButtonActive: {
         backgroundColor: theme.colors.layerGrayLighter,
     },
-    gridRow: {
-        gap: theme.spacing.sm,
-    },
 }))

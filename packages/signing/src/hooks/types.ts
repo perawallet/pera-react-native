@@ -12,8 +12,16 @@
 
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { Decimal } from 'decimal.js'
+import type { SnapshotFrom } from 'xstate'
 
-import type { SigningMachineContext } from '../machine/context'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+
+import type {
+    SigningMachineContext,
+    ResolvedSignerType,
+} from '../machine/context'
+import type { hardwareSigningMachine } from '../machine/children/hardwareSigningMachine'
 import type {
     PipelineStage,
     SigningPipelineEvent,
@@ -24,7 +32,7 @@ import type {
     RequestStructure,
     TransactionListItem,
 } from '../utils/classification'
-import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import type { parseArc60ForDisplay } from '../utils/parseArc60ForDisplay'
 
 /**
  * Configuration passed to useSigningPipeline.
@@ -61,6 +69,12 @@ export type SigningPipeline = {
     allTransactions: PeraDisplayableTransaction[]
     listItems: TransactionListItem[]
     signableAddresses: Set<string>
+    /**
+     * Indices into `allTransactions` the wallet will actually sign. The UI
+     * uses this to label slots the wallet skips (other-party-signed atomic
+     * group members, `signers: []` entries). Empty set when no request.
+     */
+    signableIndices: Set<number>
     totalFee: Decimal
     warnings: TransactionWarning[]
     distinctWarnings: TransactionWarning[]
@@ -78,10 +92,77 @@ export type SigningPipeline = {
 
     /** Retry after a retryable failure (sends RETRY). No-op when not retryable. */
     retry: () => void
+
+    /** Resolved state derived from machine context. Null when the queue is empty. */
+    resolved: Nullable<ResolvedSignRequest>
+
+    /** Sends RETRY_HARDWARE to retry hardware connection after a BLE-class error. */
+    retryHardware: () => void
+
+    /** Sends ACKNOWLEDGE_HARDWARE_ERROR to release the hardware error state, marking failure. */
+    acknowledgeHardwareError: () => void
 }
 
 export type MachineSnapshot = {
     value: unknown
     context: SigningMachineContext
     matches: (stateValue: string) => boolean
+}
+
+// =============================================================================
+// Resolved request types
+// =============================================================================
+
+type Arc60ParsedForDisplay = ReturnType<typeof parseArc60ForDisplay>
+
+export type SourceKind =
+    | 'local'
+    | 'walletconnect'
+    | 'webview'
+    | 'multisig-cosign'
+    | 'deeplink'
+    | 'gift-card'
+    | 'arc60'
+
+export type TransportKind =
+    | 'algod'
+    | 'callback'
+    | 'multisig-propose'
+    | 'multisig-cosign'
+
+export type ResolvedRequestKind =
+    | {
+          type: 'transactions'
+          isMultisigCosign: boolean
+          cosignSignerAddress: Nullable<string>
+          hasMultiple: boolean
+      }
+    | { type: 'arbitrary-data'; isSingle: boolean }
+    | { type: 'arc60'; parsed: Arc60ParsedForDisplay }
+
+export type HardwareChildSnapshot = SnapshotFrom<typeof hardwareSigningMachine>
+
+export type { HardwareSigningOperation } from '../machine/children/hardwareSigningMachine.context'
+
+/**
+ * Snapshot of the currently-invoked signer child machine, exposed via
+ * `ResolvedSignRequest.activeChild`. Null when no child is in flight.
+ *
+ * Today only the hardware variant is wired up; multisig will be added in a
+ * follow-up task once `multisigSigningMachine` is invoked as a child.
+ */
+export type ActiveSigningChild = {
+    kind: 'hardware'
+    snapshot: HardwareChildSnapshot
+} | null
+
+export type ResolvedSignRequest = {
+    signerType: ResolvedSignerType
+    signerAccount: WalletAccount
+    groupSignerTypes: ReadonlyMap<string, ResolvedSignerType>
+    source: { kind: SourceKind; isInteractive: boolean }
+    transport: { kind: TransportKind }
+    kind: ResolvedRequestKind
+    /** Snapshot of the active signer child machine, or null if no child is running. */
+    activeChild: ActiveSigningChild
 }

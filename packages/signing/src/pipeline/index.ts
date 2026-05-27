@@ -13,6 +13,11 @@
 // Core types
 export * from './types'
 
+// Signing event bus — published by useSigningActorLifecycle, consumed via
+// useSigningEvent / useLastSigningEvent (or direct subscribe for tests).
+export * from './signingEventBus'
+export * from './signingEvents'
+
 // Errors
 export * from './errors'
 

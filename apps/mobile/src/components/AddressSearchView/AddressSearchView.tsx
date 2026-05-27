@@ -22,7 +22,6 @@ import {
 } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { AddressDisplay } from '@components/AddressDisplay'
-import { ListItemDivider } from '@components/ListItemDivider'
 import { SearchableList } from '@components/SearchableList'
 import { useLanguage } from '@hooks/useLanguage'
 import { AccountResultRow } from './AccountResultRow'
@@ -159,6 +158,11 @@ export const AddressSearchView = ({
         [onSelected, styles, t, showAccountBalance, showAddIcon],
     )
 
+    const renderSeparator = useCallback(
+        () => <PWView style={styles.listSeparator} />,
+        [styles],
+    )
+
     const keyExtractor = useCallback((item: AddressSearchItem) => item.key, [])
 
     const emptyComponent = useCallback(
@@ -192,8 +196,8 @@ export const AddressSearchView = ({
                     data={hasResults ? matchingItems : []}
                     renderItem={renderItem}
                     keyExtractor={keyExtractor}
-                    ItemSeparatorComponent={ListItemDivider}
                     ListEmptyComponent={listEmptyComponent}
+                    ItemSeparatorComponent={renderSeparator}
                     inBottomSheet
                     style={styles.list}
                 />
@@ -211,8 +215,8 @@ export const AddressSearchView = ({
                 searchPlaceholder={t('address_entry.search_placeholder')}
                 onSearchChange={setValue}
                 SearchInputComponent={AddressSearchInput}
-                ItemSeparatorComponent={ListItemDivider}
                 ListEmptyComponent={listEmptyComponent}
+                ItemSeparatorComponent={renderSeparator}
                 style={styles.list}
             />
         </PWView>

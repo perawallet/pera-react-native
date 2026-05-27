@@ -222,4 +222,21 @@ describe('buildGroupSignerTypeMap', () => {
             expect(map.get(PARTICIPANT)).toBe('localKey')
         })
     })
+
+    describe('error paths', () => {
+        it('throws CannotSignError when signerAddress is not in allAccounts', () => {
+            // Direct call to buildGroupSignerTypeMap with a group whose
+            // signerAddress is not in the wallet — verifies the explicit
+            // "signer account not found in wallet" branch (the resolveInitialContext
+            // path silently skips unknown signers before reaching here).
+            const group = buildGroup({
+                signerAddress: 'STRANGER',
+                source: { type: 'local' },
+            })
+
+            expect(() => buildGroupSignerTypeMap([group], [])).toThrow(
+                /signer account not found/,
+            )
+        })
+    })
 })

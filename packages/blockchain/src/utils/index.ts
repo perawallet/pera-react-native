@@ -25,7 +25,6 @@ export * from './transactions'
 export * from './json'
 export * from './multisig'
 export * from './assembleSignedMultisigTransactions'
-export * from './arc0001'
 
 /**
  * Converts an amount from base units (smallest indivisible unit) to display units.

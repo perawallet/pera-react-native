@@ -102,6 +102,14 @@ vi.mock('@rneui/themed', () => {
     }
 })
 
+vi.mock('@assets/images/asset-inbox-send-light.svg', () => ({
+    default: 'LightHeaderImage',
+}))
+
+vi.mock('@assets/images/asset-inbox-send-dark.svg', () => ({
+    default: 'DarkHeaderImage',
+}))
+
 vi.mock('@modules/transactions/hooks', () => ({
     useSendFunds: vi.fn(),
 }))
@@ -164,8 +172,8 @@ describe('useARC59SendSummaryScreen', () => {
         expect(mockNavigate).not.toHaveBeenCalled()
     })
 
-    it('navigates to TransactionProcessing when warning is confirmed', async () => {
-        mockRequestBottomSheet.mockResolvedValueOnce(true)
+    it("navigates to TransactionProcessing when warning resolves with 'confirm'", async () => {
+        mockRequestBottomSheet.mockResolvedValueOnce('confirm')
         const { result } = renderHook(() => useARC59SendSummaryScreen())
 
         await act(async () => {

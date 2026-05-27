@@ -33,3 +33,44 @@ export function getTestProps(id?: string, suffix?: string) {
         accessible: true,
     }
 }
+
+/**
+ * Screen/list wrappers: keep testID for automation without grouping
+ * child elements on iOS.
+ */
+export function getContainerTestProps(id?: string) {
+    if (!id) {
+        return {}
+    }
+
+    return {
+        testID: id,
+        accessibilityIdentifier: id,
+        accessible: false,
+    }
+}
+
+/** Shared checkbox semantics for VoiceOver / TalkBack / Appium. */
+export function getCheckboxAccessibilityProps(
+    checked: boolean,
+    disabled?: boolean,
+) {
+    return {
+        accessibilityRole: 'checkbox' as const,
+        accessibilityState: { checked, disabled: !!disabled },
+    }
+}
+
+/**
+ * Checkbox automation props for Appium on iOS and Android.
+ */
+export function getCheckboxTestProps(
+    id: string,
+    checked: boolean,
+    disabled?: boolean,
+) {
+    return {
+        ...getTestProps(id),
+        ...getCheckboxAccessibilityProps(checked, disabled),
+    }
+}

@@ -34,7 +34,7 @@ vi.mock('@hooks/useToast', () => ({
     }),
 }))
 
-const mockCreateHdWalletAccount = vi.fn()
+const mockBuildHdWalletAccount = vi.fn()
 
 const mockHDWalletGroups: HDWalletGroup[] = [
     {
@@ -113,7 +113,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
         }),
         useAllAccounts: () => [],
         useCreateAccount: () => ({
-            createHdWalletAccount: mockCreateHdWalletAccount,
+            buildHdWalletAccount: mockBuildHdWalletAccount,
         }),
         useAccountBalancesQuery: () => ({
             accountBalances: new Map(),
@@ -164,7 +164,7 @@ describe('useSelectHDWalletScreen', () => {
             address: 'HD_NEW',
             type: 'hdWallet' as const,
         }
-        mockCreateHdWalletAccount.mockResolvedValue(mockNewAccount)
+        mockBuildHdWalletAccount.mockResolvedValue(mockNewAccount)
 
         const { result } = renderHook(() => useSelectHDWalletScreen())
 
@@ -189,7 +189,7 @@ describe('useSelectHDWalletScreen', () => {
 
     it('sets isCreatingWallet to true while creating a new wallet', async () => {
         let resolveCreate!: (value: unknown) => void
-        mockCreateHdWalletAccount.mockReturnValue(
+        mockBuildHdWalletAccount.mockReturnValue(
             new Promise(resolve => {
                 resolveCreate = resolve
             }),
@@ -216,7 +216,7 @@ describe('useSelectHDWalletScreen', () => {
             address: 'NEW_ADDRESS',
             type: 'hdWallet' as const,
         }
-        mockCreateHdWalletAccount.mockResolvedValue(newAccount)
+        mockBuildHdWalletAccount.mockResolvedValue(newAccount)
 
         const { result } = renderHook(() => useSelectHDWalletScreen())
 
@@ -224,7 +224,7 @@ describe('useSelectHDWalletScreen', () => {
             result.current.handleCreateNewWallet()
         })
 
-        expect(mockCreateHdWalletAccount).toHaveBeenCalledWith({
+        expect(mockBuildHdWalletAccount).toHaveBeenCalledWith({
             account: 0,
             keyIndex: 0,
         })
@@ -236,7 +236,7 @@ describe('useSelectHDWalletScreen', () => {
             address: 'NEW_ADDRESS',
             type: 'hdWallet' as const,
         }
-        mockCreateHdWalletAccount.mockResolvedValue(newAccount)
+        mockBuildHdWalletAccount.mockResolvedValue(newAccount)
 
         const { result } = renderHook(() => useSelectHDWalletScreen())
 
@@ -250,9 +250,7 @@ describe('useSelectHDWalletScreen', () => {
     })
 
     it('shows error toast when wallet creation fails', async () => {
-        mockCreateHdWalletAccount.mockRejectedValue(
-            new Error('Creation failed'),
-        )
+        mockBuildHdWalletAccount.mockRejectedValue(new Error('Creation failed'))
 
         const { result } = renderHook(() => useSelectHDWalletScreen())
 
@@ -266,9 +264,7 @@ describe('useSelectHDWalletScreen', () => {
     })
 
     it('resets isCreatingWallet after wallet creation fails', async () => {
-        mockCreateHdWalletAccount.mockRejectedValue(
-            new Error('Creation failed'),
-        )
+        mockBuildHdWalletAccount.mockRejectedValue(new Error('Creation failed'))
 
         const { result } = renderHook(() => useSelectHDWalletScreen())
 
@@ -280,9 +276,7 @@ describe('useSelectHDWalletScreen', () => {
     })
 
     it('does not navigate when wallet creation fails', async () => {
-        mockCreateHdWalletAccount.mockRejectedValue(
-            new Error('Creation failed'),
-        )
+        mockBuildHdWalletAccount.mockRejectedValue(new Error('Creation failed'))
 
         const { result } = renderHook(() => useSelectHDWalletScreen())
 
