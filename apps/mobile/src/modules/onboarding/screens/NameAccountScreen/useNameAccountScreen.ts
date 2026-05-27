@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useState, useMemo } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import {
     useAllAccounts,
     getAccountDisplayName,
@@ -20,6 +20,8 @@ import {
     isHDWalletAccount,
     useUpdateAccount,
     useAccountsStore,
+    consumePendingAccountRollback,
+    clearPendingAccountRollback,
 } from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useLanguage } from '@hooks/useLanguage'
@@ -51,7 +53,7 @@ export const useNameAccountScreen = () => {
     const { seedIdOf } = useKMS()
 
     const routeAccount = route.params?.account
-
+    const didFinishRef = useRef(false)
     const [account] = useState<Optional<WalletAccount>>(routeAccount)
 
     const numWallets = useMemo(() => {
@@ -86,6 +88,16 @@ export const useNameAccountScreen = () => {
         setWalletDisplay(value)
     }
 
+    useEffect(() => {
+        return () => {
+            if (didFinishRef.current) {
+                clearPendingAccountRollback()
+            } else {
+                void consumePendingAccountRollback()
+            }
+        }
+    }, [])
+
     const handleFinish = async () => {
         if (isCreating) return
 
@@ -117,6 +129,7 @@ export const useNameAccountScreen = () => {
             // Set confetti state - AccountScreen will read this and play the animation
             setShouldPlayConfetti(true)
 
+            didFinishRef.current = true
             exitAccountFlow()
         } catch (error) {
             // guardrails-ignore-next-line no-error-toast-in-catch reason: localized create_account.error_message wraps the raw error; preserved verbatim

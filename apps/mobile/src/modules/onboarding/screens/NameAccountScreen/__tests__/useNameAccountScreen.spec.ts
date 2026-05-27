@@ -47,6 +47,8 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         saveAccount: mockSaveAccount,
     }),
     useUpdateAccount: () => mockUpdateAccount,
+    consumePendingAccountRollback: vi.fn(),
+    clearPendingAccountRollback: vi.fn(),
     useAccountsStore: Object.assign(
         vi.fn(() => ({})),
         {
