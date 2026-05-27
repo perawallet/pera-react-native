@@ -92,7 +92,10 @@ export const MultisigInvitationDetailContent = ({
                     {renderedInvitation.participantAddresses.map(
                         (address, index, arr) => (
                             <AddressDisplay
-                                key={address}
+                                // A multisig can list the same address as more
+                                // than one participant, so address alone isn't
+                                // a unique key.
+                                key={`${address}-${index}`}
                                 address={address}
                                 forceShowIcon
                                 contactAvatarVariant='highlighted'
@@ -102,7 +105,7 @@ export const MultisigInvitationDetailContent = ({
                                     index === arr.length - 1 &&
                                         styles.participantRowLast,
                                 ]}
-                                testID={`participant_row_${address}`}
+                                testID={`participant_row_${address}_${index}`}
                             />
                         ),
                     )}

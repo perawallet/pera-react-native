@@ -177,9 +177,12 @@ export const PendingSignaturesContent = () => {
 
                 {!!signRequest && (
                     <PWView style={styles.signersList}>
-                        {signers.map(signer => (
+                        {signers.map((signer, index) => (
                             <SignerStatusListItem
-                                key={signer.address}
+                                // A multisig can include the same address as
+                                // more than one signer, so address alone isn't
+                                // a unique key.
+                                key={`${signer.address}-${index}`}
                                 address={signer.address}
                                 status={signer.status}
                                 action={getSignerAction(signer)}
