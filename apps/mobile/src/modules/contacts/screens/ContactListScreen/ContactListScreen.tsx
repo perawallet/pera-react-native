@@ -21,6 +21,7 @@ import {
     PWView,
 } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
+import { ListItemDivider } from '@components/ListItemDivider'
 import { SearchInput } from '@components/SearchInput'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
@@ -107,8 +108,8 @@ export const ContactListScreen = () => {
             <PWFlatList
                 data={contacts}
                 keyExtractor={keyExtractor}
-                contentContainerStyle={styles.listContent}
                 renderItem={renderItem}
+                ItemSeparatorComponent={ListItemDivider}
                 ListEmptyComponent={
                     <EmptyView
                         title={t('contacts.list.no_matching_title')}

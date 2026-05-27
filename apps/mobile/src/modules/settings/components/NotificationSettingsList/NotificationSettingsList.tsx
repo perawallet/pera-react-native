@@ -21,6 +21,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useSettingsNotificationsScreen } from '@modules/settings/screens/SettingsNotificationsScreen/useSettingsNotificationsScreen'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { EmptyView } from '@components/EmptyView'
+import { ListItemDivider } from '@components/ListItemDivider'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { useMemo } from 'react'
 import { AccountIconProps } from '@modules/accounts/components/AccountIcon'
@@ -106,6 +107,7 @@ export const NotificationSettingsList = ({
             inBottomSheet={inBottomSheet}
             contentContainerStyle={contentContainerStyle}
             testID={testID}
+            ItemSeparatorComponent={ListItemDivider}
             ListEmptyComponent={
                 <EmptyView
                     title={t('settings.notifications.no_accounts')}

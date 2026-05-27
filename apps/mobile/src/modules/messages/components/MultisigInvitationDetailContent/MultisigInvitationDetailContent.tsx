@@ -119,7 +119,6 @@ export const MultisigInvitationDetailContent = ({
                     onPress={handleIgnore}
                     isLoading={isIgnoring}
                     isDisabled={isIgnoring}
-                    paddingStyle='dense'
                     style={styles.ignoreButton}
                     testID='multisig_invitation_ignore_button'
                 />
@@ -128,7 +127,6 @@ export const MultisigInvitationDetailContent = ({
                     title={t('multisig.invitation.add_to_accounts')}
                     onPress={handleAccept}
                     isDisabled={isIgnoring}
-                    paddingStyle='dense'
                     style={styles.acceptButton}
                     testID='multisig_invitation_accept_button'
                 />

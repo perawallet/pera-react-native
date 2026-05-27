@@ -15,13 +15,24 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     container: {
         flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        textAlign: 'center',
-        gap: theme.spacing.xl,
         paddingHorizontal: theme.spacing.xl,
         width: '100%',
         minWidth: 0,
+    },
+    // Icon + text, centered in the space above the pinned footer.
+    content: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: theme.spacing.xl,
+        width: '100%',
+        minWidth: 0,
+    },
+    // Full-width CTA pinned to the bottom; `SafeAreaView edges={['bottom']}`
+    // adds the bottom inset on top of this base gap.
+    footer: {
+        width: '100%',
+        paddingBottom: theme.spacing.md,
     },
     iconContainer: {
         width: theme.spacing['4xl'],

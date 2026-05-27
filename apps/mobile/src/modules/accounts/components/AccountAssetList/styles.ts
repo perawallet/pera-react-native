@@ -47,14 +47,14 @@ export const useStyles = makeStyles(theme => ({
     titleBarButtonContainer: {
         flexDirection: 'row',
         gap: theme.spacing.sm,
-        alignItems: 'center',
     },
     manageButton: {
+        paddingHorizontal: theme.spacing.md,
         flexShrink: 0,
     },
-    // Stays full-size (overrides PWButton's default flexShrink:1); the title
-    // truncates instead when the row is tight.
     addAssetButton: {
+        paddingVertical: theme.spacing.sm,
+        paddingHorizontal: theme.spacing.md,
         flexShrink: 0,
     },
     loading: {

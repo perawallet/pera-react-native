@@ -18,6 +18,7 @@ import {
     PWCheckbox,
     PWFlatList,
 } from '@components/core'
+import { ListItemDivider } from '@components/ListItemDivider'
 import { ScreenHeader } from '@components/ScreenHeader'
 import type { LedgerSelectableAccount } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
@@ -144,6 +145,7 @@ export const LedgerSelectAccountsScreen = () => {
                 }
                 extraData={selectedAddresses}
                 showsVerticalScrollIndicator={false}
+                ItemSeparatorComponent={ListItemDivider}
                 ListFooterComponent={renderFooter}
             />
         </PWScreen>

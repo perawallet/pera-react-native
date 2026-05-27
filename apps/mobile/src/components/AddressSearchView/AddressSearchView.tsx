@@ -22,6 +22,7 @@ import {
 } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { AddressDisplay } from '@components/AddressDisplay'
+import { ListItemDivider } from '@components/ListItemDivider'
 import { SearchableList } from '@components/SearchableList'
 import { useLanguage } from '@hooks/useLanguage'
 import { AccountResultRow } from './AccountResultRow'
@@ -191,6 +192,7 @@ export const AddressSearchView = ({
                     data={hasResults ? matchingItems : []}
                     renderItem={renderItem}
                     keyExtractor={keyExtractor}
+                    ItemSeparatorComponent={ListItemDivider}
                     ListEmptyComponent={listEmptyComponent}
                     inBottomSheet
                     style={styles.list}
@@ -209,6 +211,7 @@ export const AddressSearchView = ({
                 searchPlaceholder={t('address_entry.search_placeholder')}
                 onSearchChange={setValue}
                 SearchInputComponent={AddressSearchInput}
+                ItemSeparatorComponent={ListItemDivider}
                 ListEmptyComponent={listEmptyComponent}
                 style={styles.list}
             />

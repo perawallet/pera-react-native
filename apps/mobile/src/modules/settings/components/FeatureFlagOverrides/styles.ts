@@ -36,6 +36,13 @@ export const useStyles = makeStyles(theme => {
             flexDirection: 'row',
             justifyContent: 'space-between',
             alignItems: 'center',
+            gap: theme.spacing.md,
+        },
+        // Takes the remaining width so a long title wraps instead of pushing
+        // the switch off the right edge.
+        textColumn: {
+            flex: 1,
+            minWidth: 0,
         },
         flagTitle,
         flagCaption,

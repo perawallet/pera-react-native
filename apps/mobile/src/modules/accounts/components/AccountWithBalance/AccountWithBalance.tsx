@@ -50,6 +50,7 @@ export const AccountWithBalance = ({
                     currency='ALGO'
                     value={accountBalances.get(account.address)?.algoValue}
                     precision={ALGO_ASSET.decimals}
+                    maxPrecision={2}
                     minPrecision={2}
                     variant='bodyCompact'
                 />

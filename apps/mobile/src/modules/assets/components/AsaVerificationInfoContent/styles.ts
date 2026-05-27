@@ -12,28 +12,16 @@
 
 import { makeStyles } from '@rneui/themed'
 
-type StyleProps = { bottomInset: number }
-
-export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
-    container: {
-        flex: 1,
-    },
-    closeButton: {
-        position: 'absolute',
-        top: theme.spacing.md,
-        left: theme.spacing.md,
-        zIndex: 1,
+export const useStyles = makeStyles(theme => ({
+    body: {
+        paddingTop: 0,
     },
     heroImage: {
         width: '100%',
         aspectRatio: 16 / 9,
     },
-    scrollContent: {
-        flex: 1,
-    },
     content: {
         paddingHorizontal: theme.spacing.lg,
-        paddingTop: theme.spacing.xl,
     },
     title: {
         marginVertical: theme.spacing.xl,
@@ -41,11 +29,5 @@ export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
     paragraph: {
         color: theme.colors.textGray,
         marginBottom: theme.spacing.xl,
-    },
-    // Fixed footer outside the scroll: owns the bottom safe-area inset so the
-    // CTA clears the nav bar / home indicator (the sheet draws edge-to-edge).
-    footer: {
-        paddingHorizontal: theme.spacing.lg,
-        paddingBottom: theme.spacing.xl + bottomInset,
     },
 }))

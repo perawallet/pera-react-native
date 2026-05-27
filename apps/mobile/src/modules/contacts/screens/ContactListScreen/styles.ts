@@ -15,11 +15,8 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => {
     return {
         searchWrapper: {
-            paddingTop: theme.spacing.xl,
+            paddingTop: theme.spacing.sm,
             paddingBottom: theme.spacing.sm,
-        },
-        listContent: {
-            paddingVertical: theme.spacing.xl,
         },
         contactContainer: {
             flexDirection: 'row',

@@ -69,6 +69,7 @@ export const AssetTransferRequestItem = ({
                         value={amount}
                         currency={asset?.unitName ?? ''}
                         precision={asset?.decimals}
+                        maxPrecision={DEFAULT_PRECISION}
                         minPrecision={DEFAULT_PRECISION}
                         variant='h4'
                     />

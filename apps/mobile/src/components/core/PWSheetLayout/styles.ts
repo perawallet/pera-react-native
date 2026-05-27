@@ -46,17 +46,20 @@ export const useStyles = makeStyles(
         body: {
             paddingHorizontal:
                 horizontalPadding === 'none' ? 0 : theme.spacing.xl,
-            paddingTop: theme.spacing.sm,
+            paddingTop: theme.spacing.xl,
         },
         // Bottom of the scroll body. With no footer the safe-area inset lives
         // here, INSIDE the scroll, so the last item clears the nav bar / home
         // indicator (gorhom draws the sheet edge-to-edge). With a footer it is
-        // just a visual gap — the footer owns the inset. Applied after
-        // `bodyStyle` so callers can't accidentally drop it.
+        // just a visual gap — the footer owns the inset. When the keyboard is
+        // open it covers the home indicator, so the inset is dropped for a flat
+        // 24 gap above the keyboard. Applied after `bodyStyle` so callers can't
+        // accidentally drop it.
         bodyBottom: {
-            paddingBottom: hasFooter
-                ? theme.spacing.xl
-                : theme.spacing.xl + bottomInset,
+            paddingBottom:
+                hasFooter || isKeyboardVisible
+                    ? theme.spacing.xl
+                    : theme.spacing.xl + bottomInset,
         },
         // Fixed footer pinned below the scroll. Owns the bottom safe-area inset
         // (12 visual gap + nav-bar inset) since it is the bottom-most element.

@@ -12,7 +12,6 @@
 
 import { useCallback } from 'react'
 import { Trans } from 'react-i18next'
-import { useTheme } from '@rneui/themed'
 import { Currency } from '@perawallet/wallet-core-currencies'
 
 import {
@@ -20,19 +19,13 @@ import {
     PWRadioButton,
     PWFlatList,
     PWView,
-    PWDivider,
     PWText,
 } from '@components/core'
+import { ListItemDivider } from '@components/ListItemDivider'
 import { SearchInput } from '@components/SearchInput'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSettingsCurrencyScreen } from './useSettingsCurrencyScreen'
 import { useStyles } from './styles'
-
-const ItemSeparator = () => {
-    const { theme } = useTheme()
-
-    return <PWDivider color={theme.colors.layerGrayLighter} />
-}
 
 export const SettingsCurrencyScreen = () => {
     const styles = useStyles()
@@ -112,7 +105,7 @@ export const SettingsCurrencyScreen = () => {
                     renderItem={renderItem}
                     keyExtractor={keyExtractor}
                     extraData={preferredCurrency}
-                    ItemSeparatorComponent={ItemSeparator}
+                    ItemSeparatorComponent={ListItemDivider}
                     testID='settings_currency_list'
                 />
             </PWView>

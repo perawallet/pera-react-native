@@ -10,11 +10,4 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => ({
-    optionsContainer: {
-        marginTop: theme.spacing.lg,
-        paddingBottom: theme.spacing['4xl'],
-    },
-}))
+export { ListItemDivider } from './ListItemDivider'

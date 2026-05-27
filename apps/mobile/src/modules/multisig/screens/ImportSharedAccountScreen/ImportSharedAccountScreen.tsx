@@ -100,6 +100,14 @@ export const ImportSharedAccountScreen = () => {
             <PWScreen
                 scroll={false}
                 testID='import-shared-account-screen'
+                footer={
+                    <PWButton
+                        variant='secondary'
+                        title={t('multisig.import.retry')}
+                        onPress={handleRetry}
+                        testID='import-shared-account-retry'
+                    />
+                }
             >
                 <PWView style={styles.centerState}>
                     <PWText variant='h4'>
@@ -108,12 +116,6 @@ export const ImportSharedAccountScreen = () => {
                     <PWText style={styles.stateBody}>
                         {t('multisig.import.error_body')}
                     </PWText>
-                    <PWButton
-                        variant='secondary'
-                        title={t('multisig.import.retry')}
-                        onPress={handleRetry}
-                        testID='import-shared-account-retry'
-                    />
                 </PWView>
             </PWScreen>
         )

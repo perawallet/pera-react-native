@@ -374,7 +374,11 @@ export const getSheetSections = (): GallerySection[] => [
                                 <AsaVerificationInfoContent />
                             </GallerySheetBoundary>
                         ),
-                        options: { size: 'modal', enablePanDownToClose: true },
+                        options: {
+                            size: 'modal',
+                            enablePanDownToClose: true,
+                            autoCreateContainer: false,
+                        },
                     }),
                 },
             },

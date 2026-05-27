@@ -13,16 +13,13 @@
 import { useCallback } from 'react'
 import {
     PWButton,
-    PWIcon,
     PWImage,
-    PWScrollView,
+    PWSheetLayout,
     PWText,
-    PWTouchableOpacity,
     PWView,
 } from '@components/core'
 import { useTheme } from '@rneui/themed'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { SheetHeader } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
@@ -36,12 +33,10 @@ export type AsaVerificationInfoContentProps = Record<string, never>
 export const AsaVerificationInfoContent = (
     _: AsaVerificationInfoContentProps = {},
 ) => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles({ bottomInset: insets.bottom })
+    const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
-    const { dismiss } = useBottomSheetResult<void>()
 
     const heroImage =
         theme.mode === 'dark' ? verificationBadgeDark : verificationBadgeLight
@@ -51,54 +46,42 @@ export const AsaVerificationInfoContent = (
     }, [pushWebView])
 
     return (
-        <PWView style={styles.container}>
-            <PWTouchableOpacity
-                style={styles.closeButton}
-                onPress={dismiss}
-            >
-                <PWIcon
-                    name='cross'
-                    size='md'
-                />
-            </PWTouchableOpacity>
-
-            <PWScrollView
-                inBottomSheet
-                style={styles.scrollContent}
-            >
-                <PWImage
-                    source={heroImage}
-                    style={styles.heroImage}
-                    resizeMode='cover'
-                />
-
-                <PWView style={styles.content}>
-                    <PWText
-                        variant='h2'
-                        style={styles.title}
-                    >
-                        {t('asa_verification_info.title')}
-                    </PWText>
-
-                    <PWText style={styles.paragraph}>
-                        {t('asa_verification_info.body_1')}
-                    </PWText>
-                    <PWText style={styles.paragraph}>
-                        {t('asa_verification_info.body_2')}
-                    </PWText>
-                    <PWText style={styles.paragraph}>
-                        {t('asa_verification_info.body_3')}
-                    </PWText>
-                </PWView>
-            </PWScrollView>
-
-            <PWView style={styles.footer}>
+        <PWSheetLayout
+            header={<SheetHeader title='' />}
+            horizontalPadding='none'
+            bodyStyle={styles.body}
+            footer={
                 <PWButton
                     title={t('asa_verification_info.learn_more')}
                     variant='secondary'
                     onPress={handleLearnMore}
                 />
+            }
+        >
+            <PWImage
+                source={heroImage}
+                style={styles.heroImage}
+                resizeMode='cover'
+            />
+
+            <PWView style={styles.content}>
+                <PWText
+                    variant='h2'
+                    style={styles.title}
+                >
+                    {t('asa_verification_info.title')}
+                </PWText>
+
+                <PWText style={styles.paragraph}>
+                    {t('asa_verification_info.body_1')}
+                </PWText>
+                <PWText style={styles.paragraph}>
+                    {t('asa_verification_info.body_2')}
+                </PWText>
+                <PWText style={styles.paragraph}>
+                    {t('asa_verification_info.body_3')}
+                </PWText>
             </PWView>
-        </PWView>
+        </PWSheetLayout>
     )
 }

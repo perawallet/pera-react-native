@@ -32,11 +32,14 @@ export const useStyles = makeStyles(theme => {
             flex: 1,
             minWidth: 0,
         },
+        // The amount wins the row's width tug-of-war: it sizes to its content
+        // and does not shrink, so the full value shows; the name column
+        // (`unitContainer`, flex: 1) truncates instead. Capped so a very long
+        // amount can't swallow the name entirely.
         amountContainer: {
             alignItems: 'flex-end',
-            flexShrink: 1,
-            minWidth: 0,
-            maxWidth: '45%',
+            flexShrink: 0,
+            maxWidth: '60%',
         },
         suspiciousName: {
             color: theme.colors.error,

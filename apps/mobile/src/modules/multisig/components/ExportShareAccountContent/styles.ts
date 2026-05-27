@@ -31,6 +31,5 @@ export const useStyles = makeStyles(theme => ({
     },
     actions: {
         gap: theme.spacing.md,
-        marginTop: theme.spacing.xl,
     },
 }))

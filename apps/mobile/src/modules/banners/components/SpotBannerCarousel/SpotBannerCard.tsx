@@ -54,7 +54,6 @@ export const SpotBannerCard = ({
                 <PWText
                     style={styles.text}
                     numberOfLines={2}
-                    ellipsizeMode='tail'
                 >
                     {banner.text}
                 </PWText>

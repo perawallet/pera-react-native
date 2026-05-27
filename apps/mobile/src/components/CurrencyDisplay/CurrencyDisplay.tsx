@@ -56,8 +56,17 @@ export const getAlgoSymbolWeight = (
 export type CurrencyDisplayProps = {
     currency: string
     value: Maybe<Decimal>
+    /** Number of decimals the value is rounded to (its natural precision). */
     precision: number
+    /** Floor for trailing-zero trimming — never show fewer decimals than this. */
     minPrecision?: number
+    /**
+     * Caps the displayed decimals (e.g. `2` for compact list rows that would
+     * otherwise overflow with a high-decimal asset). Omit to show `precision`
+     * as-is — the default for detail/confirmation surfaces where the exact
+     * amount matters.
+     */
+    maxPrecision?: number
     prefix?: string
     alignRight?: boolean
     showSymbol?: boolean
@@ -84,6 +93,7 @@ export const CurrencyDisplay = (props: CurrencyDisplayProps) => {
         symbolPosition = 'start',
         isLoading = false,
         minPrecision,
+        maxPrecision,
         rawValue,
         ignorePrivacyMode = false,
         variant = 'body',
@@ -109,11 +119,14 @@ export const CurrencyDisplay = (props: CurrencyDisplayProps) => {
             return '---'
         }
 
+        const effectivePrecision =
+            maxPrecision != null ? Math.min(precision, maxPrecision) : precision
+
         return privacyMode
             ? '****'
             : formatCurrency(
                   value,
-                  precision,
+                  effectivePrecision,
                   currency,
                   deviceInfo.getDeviceLocale(),
                   shouldShowSymbolInFormat,
@@ -123,6 +136,7 @@ export const CurrencyDisplay = (props: CurrencyDisplayProps) => {
     }, [
         value,
         precision,
+        maxPrecision,
         currency,
         deviceInfo,
         shouldShowSymbolInFormat,

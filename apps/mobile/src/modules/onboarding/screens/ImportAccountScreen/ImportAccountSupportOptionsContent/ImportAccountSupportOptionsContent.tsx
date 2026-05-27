@@ -11,10 +11,9 @@
  */
 
 import React from 'react'
-import { PWListItem, PWSheetLayout, PWView } from '@components/core'
+import { PWListItem, PWSheetLayout } from '@components/core'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useTranslation } from 'react-i18next'
-import { useStyles } from './styles'
 
 export type ImportAccountSupportOptionsContentResult =
     | 'paste'
@@ -24,7 +23,6 @@ export type ImportAccountSupportOptionsContentResult =
 export type ImportAccountSupportOptionsContentProps = Record<string, never>
 
 export const ImportAccountSupportOptionsContent = () => {
-    const styles = useStyles()
     const { t } = useTranslation()
     const { resolve } =
         useBottomSheetResult<ImportAccountSupportOptionsContentResult>()
@@ -37,29 +35,25 @@ export const ImportAccountSupportOptionsContent = () => {
                 />
             }
         >
-            <PWView style={styles.optionsContainer}>
-                <PWListItem
-                    icon='text-document'
-                    title={t(
-                        'onboarding.import_account.support_options.paste_passphrase',
-                    )}
-                    onPress={() => resolve('paste')}
-                />
-                <PWListItem
-                    icon='camera'
-                    title={t(
-                        'onboarding.import_account.support_options.scan_qr',
-                    )}
-                    onPress={() => resolve('scan')}
-                />
-                <PWListItem
-                    icon='info'
-                    title={t(
-                        'onboarding.import_account.support_options.learn_more',
-                    )}
-                    onPress={() => resolve('learn-more')}
-                />
-            </PWView>
+            <PWListItem
+                icon='text-document'
+                title={t(
+                    'onboarding.import_account.support_options.paste_passphrase',
+                )}
+                onPress={() => resolve('paste')}
+            />
+            <PWListItem
+                icon='camera'
+                title={t('onboarding.import_account.support_options.scan_qr')}
+                onPress={() => resolve('scan')}
+            />
+            <PWListItem
+                icon='info'
+                title={t(
+                    'onboarding.import_account.support_options.learn_more',
+                )}
+                onPress={() => resolve('learn-more')}
+            />
         </PWSheetLayout>
     )
 }

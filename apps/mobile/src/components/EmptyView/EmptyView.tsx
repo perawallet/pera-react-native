@@ -11,6 +11,7 @@
  */
 
 import { ReactNode } from 'react'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { PWIcon, IconName } from '@components/core/PWIcon'
 import { PWText } from '@components/core/PWText'
 import { PWView, PWViewProps } from '@components/core/PWView'
@@ -61,33 +62,45 @@ export const EmptyView = (props: EmptyViewProps) => {
             {...rest}
             style={[styles.container, style]}
         >
-            {!!icon && (
-                <PWView style={styles.iconContainer}>
-                    <PWIcon
-                        name={icon}
-                        variant='secondary'
-                        size='xl'
-                    />
-                </PWView>
-            )}
-            {!!title && (
+            <PWView style={styles.content}>
+                {!!icon && (
+                    <PWView style={styles.iconContainer}>
+                        <PWIcon
+                            name={icon}
+                            variant='secondary'
+                            size='xl'
+                        />
+                    </PWView>
+                )}
+                {!!title && (
+                    <PWText
+                        variant='h3'
+                        style={styles.titleText}
+                        numberOfLines={2}
+                        truncate
+                    >
+                        {title}
+                    </PWText>
+                )}
                 <PWText
-                    variant='h3'
-                    style={styles.titleText}
-                    numberOfLines={2}
+                    style={styles.text}
+                    numberOfLines={3}
                     truncate
                 >
-                    {title}
+                    {body}
                 </PWText>
+            </PWView>
+            {/* The CTA is pinned full-width at the bottom (clearing the nav bar
+                via the safe-area inset) rather than floating under the centered
+                text, so terminal empty/error states read like other screens. */}
+            {button && (
+                <SafeAreaView
+                    edges={['bottom']}
+                    style={styles.footer}
+                >
+                    {button}
+                </SafeAreaView>
             )}
-            <PWText
-                style={styles.text}
-                numberOfLines={3}
-                truncate
-            >
-                {body}
-            </PWText>
-            {button}
         </PWView>
     )
 }

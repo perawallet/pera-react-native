@@ -115,7 +115,7 @@ export const AccountAssetList = ({
                                 <PWButton
                                     icon='sliders'
                                     variant='helper'
-                                    paddingStyle='dense'
+                                    paddingStyle='none'
                                     onPress={handleOpenManage}
                                     style={styles.manageButton}
                                 />
@@ -125,7 +125,7 @@ export const AccountAssetList = ({
                                         'account_details.assets.add_asset',
                                     )}
                                     variant='helper'
-                                    paddingStyle='dense'
+                                    paddingStyle='none'
                                     onPress={handleOpenAddAsset}
                                     style={styles.addAssetButton}
                                 />

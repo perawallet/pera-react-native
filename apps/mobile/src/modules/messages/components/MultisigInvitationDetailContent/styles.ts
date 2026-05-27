@@ -50,9 +50,7 @@ export const useStyles = makeStyles(theme => ({
     bottomBar: {
         flexDirection: 'row',
         gap: theme.spacing.md,
-        paddingHorizontal: theme.spacing.xl,
-        paddingTop: theme.spacing.md,
-        paddingBottom: theme.spacing.md,
+        paddingHorizontal: theme.spacing.lg,
     },
     ignoreButton: {
         flex: 1,

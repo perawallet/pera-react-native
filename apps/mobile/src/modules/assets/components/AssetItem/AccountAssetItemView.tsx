@@ -210,6 +210,7 @@ export const AccountAssetItemView = ({
                             currency={asset.unitName ?? ''}
                             value={accountBalance.amount}
                             precision={asset.decimals}
+                            maxPrecision={2}
                             minPrecision={2}
                             showSymbol
                             numberOfLines={1}

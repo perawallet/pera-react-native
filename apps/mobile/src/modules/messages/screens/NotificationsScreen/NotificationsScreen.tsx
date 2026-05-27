@@ -15,6 +15,7 @@ import { PeraNotification } from '@perawallet/wallet-core-messages'
 import { RefreshControl } from 'react-native-gesture-handler'
 
 import { EmptyView } from '@components/EmptyView'
+import { ListItemDivider } from '@components/ListItemDivider'
 import { LoadingView } from '@components/LoadingView'
 import { PWFlatList, PWScreen, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
@@ -53,6 +54,7 @@ export const NotificationsScreen = () => {
                 estimatedItemSize={ESTIMATED_NOTIFICATION_ITEM_SIZE}
                 waitForInitialLayout
                 keyExtractor={keyExtractor}
+                ItemSeparatorComponent={ListItemDivider}
                 ListHeaderComponent={<PWView style={styles.listEdgeSpacer} />}
                 ListEmptyComponent={
                     <EmptyView

@@ -67,7 +67,7 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
 
     const paddingStyles = {
         normal: {
-            paddingHorizontal: theme.spacing.xxl,
+            paddingHorizontal: theme.spacing.lg,
             paddingVertical: theme.spacing.md,
             minWidth: undefined as Optional<number>,
         },

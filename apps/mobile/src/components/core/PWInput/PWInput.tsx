@@ -72,6 +72,8 @@ export const PWInput = forwardRef<PWInputRef, PWInputProps>(
             testID,
             adjustsFontSizeToFit,
             minimumFontScale,
+            multiline = false,
+            numberOfLines,
             ...props
         },
         ref,
@@ -102,6 +104,10 @@ export const PWInput = forwardRef<PWInputRef, PWInputProps>(
                 ref={inputRef as any}
                 {...getTestProps(testID)}
                 {...props}
+                multiline={multiline}
+                // Single-line inputs cap at one line so a long placeholder never
+                // wraps; multiline callers keep their own line count.
+                numberOfLines={numberOfLines ?? (multiline ? undefined : 1)}
                 {...{
                     adjustsFontSizeToFit,
                     minimumFontScale: resolvedMinimumFontScale,

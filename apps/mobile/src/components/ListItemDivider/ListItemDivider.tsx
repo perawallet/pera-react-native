@@ -10,28 +10,16 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
+import { useTheme } from '@rneui/themed'
+import { PWDivider } from '@components/core'
 
-export const useStyles = makeStyles(theme => ({
-    content: {
-        flex: 1,
-    },
-    headerRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
-    headerCount: {
-        color: theme.colors.textGray,
-        flexShrink: 1,
-        marginRight: theme.spacing.md,
-    },
-    selectAll: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.sm,
-    },
-    selectAllText: {
-        color: theme.colors.textMain,
-    },
-}))
+/**
+ * Hairline separator for plain-row lists, themed to the standard list divider
+ * color. Pass directly as a FlatList `ItemSeparatorComponent` so row lists
+ * (contacts, address pickers, message lists, …) read consistently.
+ */
+export const ListItemDivider = () => {
+    const { theme } = useTheme()
+
+    return <PWDivider color={theme.colors.layerGrayLighter} />
+}

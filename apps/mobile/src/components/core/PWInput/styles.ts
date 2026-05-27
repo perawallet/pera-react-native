@@ -21,10 +21,14 @@ export const useStyles = makeStyles((theme, { variant }: PWInputStyleProps) => {
     const input = {
         ...getTypography(theme, variant),
         lineHeight: undefined,
-        // Pad the text instead of relying on RNEInput's fixed minHeight (40),
-        // so the field grows with the font (e.g. larger Dynamic Type sizes)
-        // while keeping a constant gap above and below the text.
-        paddingVertical: theme.spacing.md,
+        // Fill the row so the placeholder has the full width and never wraps to
+        // a second line (RN TextInput has no maxLines for placeholders).
+        flex: 1,
+        // No vertical padding: the field's min height centers the single line,
+        // so the placeholder/value never looks top-aligned. `textAlignVertical`
+        // pins it centered on Android too.
+        paddingVertical: 0,
+        textAlignVertical: 'center' as const,
     }
     return {
         // RNEInput defaults its outer container to paddingHorizontal: 10, which

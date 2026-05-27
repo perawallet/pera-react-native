@@ -25,9 +25,10 @@ export const useStyles = makeStyles(theme => ({
         justifyContent: 'flex-start',
         alignItems: 'flex-start',
         paddingHorizontal: theme.spacing.xl,
-        paddingTop: theme.spacing.xl,
+        paddingTop: theme.spacing.md,
         gap: theme.spacing.lg,
     },
+
     title: {
         textAlign: 'center',
     },
@@ -36,8 +37,11 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textGray,
     },
     footer: {
+        // `SafeAreaView edges={['bottom']}` adds the bottom inset on top of this
+        // base, so the CTA clears the nav bar / home indicator under enforced
+        // edge-to-edge instead of relying on a static gap.
         padding: theme.spacing.xl,
-        paddingBottom: theme.spacing.xxl,
+        paddingBottom: theme.spacing.md,
         gap: theme.spacing.lg,
     },
 }))

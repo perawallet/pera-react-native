@@ -11,7 +11,8 @@
  */
 
 import { render } from '@test-utils/render'
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
+import { formatCurrency } from '@perawallet/wallet-core-shared'
 import { CurrencyDisplay, getAlgoSymbolWeight } from '../CurrencyDisplay'
 import { Decimal } from 'decimal.js'
 import type { TypographyVariant } from '@theme/typography'
@@ -61,6 +62,32 @@ describe('CurrencyDisplay', () => {
         )
         // U+00A6 is the Algo mark in the bundled DMSans font.
         expect(container.textContent).toContain('¦')
+    })
+
+    it('clamps the precision handed to the formatter to maxPrecision', () => {
+        vi.mocked(formatCurrency).mockClear()
+        render(
+            <CurrencyDisplay
+                value={new Decimal('8.817812345')}
+                currency='USD'
+                precision={6}
+                maxPrecision={2}
+            />,
+        )
+        // formatCurrency(value, precision, currency, ...) — precision is arg 1.
+        expect(vi.mocked(formatCurrency).mock.calls[0][1]).toBe(2)
+    })
+
+    it('passes precision through unchanged when maxPrecision is omitted', () => {
+        vi.mocked(formatCurrency).mockClear()
+        render(
+            <CurrencyDisplay
+                value={new Decimal('8.817812345')}
+                currency='USD'
+                precision={6}
+            />,
+        )
+        expect(vi.mocked(formatCurrency).mock.calls[0][1]).toBe(6)
     })
 })
 

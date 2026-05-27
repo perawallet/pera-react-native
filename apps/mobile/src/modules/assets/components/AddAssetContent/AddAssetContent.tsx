@@ -38,7 +38,11 @@ export const AddAssetContent = ({
     const handleOpenVerificationInfo = () => {
         void requestBottomSheet<void>({
             contents: <AsaVerificationInfoContent />,
-            options: { size: 'modal', enablePanDownToClose: true },
+            options: {
+                size: 'modal',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
         })
     }
 

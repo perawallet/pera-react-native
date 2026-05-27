@@ -72,7 +72,7 @@ export const RekeyToLedgerConfirmScreen = () => {
                             currency='ALGO'
                             value={feeAlgos}
                             precision={ALGO_ASSET.decimals}
-                            minPrecision={3}
+                            minPrecision={2}
                             variant='bodyLarge'
                         />
                     </PWView>
