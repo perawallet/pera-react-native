@@ -10,8 +10,4 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(() => ({
-    // Default styles
-}))
+export { RekeyConfirmView } from './RekeyConfirmView'

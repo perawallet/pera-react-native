@@ -14,9 +14,9 @@ import { z } from 'zod'
 
 const nonEmptyString = z.string().trim().min(1)
 
-export const stakingTypeSchema = z.enum(['liquid', 'pools', 'delegated'])
+const stakingTypeSchema = z.enum(['liquid', 'pools', 'delegated'])
 
-export const stakingProjectInfoSchema = z.object({
+const stakingProjectInfoSchema = z.object({
     id: nonEmptyString,
     title: nonEmptyString,
     description: nonEmptyString,

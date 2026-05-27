@@ -27,6 +27,7 @@ import { useKMS } from '@perawallet/wallet-core-kms'
 import { deferToNextCycle, logger } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useAddressSelection } from '@hooks/useAddressSelection'
 import { useExitAccountFlow } from '@modules/onboarding/hooks'
 import { OnboardingStackParamList } from '../../routes/types'
 
@@ -78,39 +79,22 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
         )
     }, [accounts, alreadyImportedAddresses])
 
-    const [selectedAddresses, setSelectedAddresses] = useState<Set<string>>(
-        () => new Set(newAccounts.length > 0 ? [newAccounts[0].address] : []),
+    const selectableAddresses = useMemo(
+        () => newAccounts.map(acc => acc.address),
+        [newAccounts],
     )
+
+    const {
+        selectedAddresses,
+        isAllSelected,
+        toggle: toggleSelection,
+        toggleSelectAll,
+    } = useAddressSelection(selectableAddresses, {
+        initial: newAccounts.length > 0 ? [newAccounts[0].address] : [],
+        disabledAddresses: alreadyImportedAddresses,
+    })
     const [isProcessing, setIsProcessing] = useState(false)
     const hasCommittedRef = useRef(false)
-
-    const isAllSelected =
-        newAccounts.length > 0 && selectedAddresses.size === newAccounts.length
-
-    const toggleSelection = useCallback(
-        (address: string) => {
-            if (alreadyImportedAddresses.has(address)) return
-
-            setSelectedAddresses(prev => {
-                const next = new Set(prev)
-                if (next.has(address)) {
-                    next.delete(address)
-                } else {
-                    next.add(address)
-                }
-                return next
-            })
-        },
-        [alreadyImportedAddresses],
-    )
-
-    const toggleSelectAll = useCallback(() => {
-        if (isAllSelected) {
-            setSelectedAddresses(new Set())
-        } else {
-            setSelectedAddresses(new Set(newAccounts.map(acc => acc.address)))
-        }
-    }, [isAllSelected, newAccounts])
 
     const handleContinue = useCallback(async () => {
         setIsProcessing(true)

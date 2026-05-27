@@ -15,7 +15,5 @@ import {
     type UseRekeySuccessScreenResult,
 } from '../../../components/RekeySuccessScreen/useRekeySuccessScreen'
 
-export type UseRekeyToSharedSuccessScreenResult = UseRekeySuccessScreenResult
-
 export const useRekeyToSharedSuccessScreen = (): UseRekeySuccessScreenResult =>
     useRekeySuccessScreen()

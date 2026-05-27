@@ -10,26 +10,9 @@
  limitations under the License
  */
 
-import { useEffect } from 'react'
 import { logger } from '@perawallet/wallet-core-shared'
-import { upsertTransactions, getTransactionHistory } from '../db'
+import { upsertTransactions } from '../db'
 import type { TransactionHistoryItem } from '../models/types'
-
-export const getTransactionHistoryFromDb = async (params: {
-    accountAddress: string
-    network: string
-    assetId?: string
-    limit?: number
-}): Promise<TransactionHistoryItem[]> => {
-    try {
-        return await getTransactionHistory(params)
-    } catch (error) {
-        logger.warn('Failed to read cached transactions from database', {
-            error,
-        })
-        return []
-    }
-}
 
 export const persistTransactionsToDb = async (
     items: TransactionHistoryItem[],
@@ -41,17 +24,4 @@ export const persistTransactionsToDb = async (
     } catch (error) {
         logger.warn('Failed to persist transactions to database', { error })
     }
-}
-
-export const useTransactionsDbSync = (
-    transactions: TransactionHistoryItem[],
-    isFetched: boolean,
-    accountAddress: string,
-    network: string,
-): void => {
-    useEffect(() => {
-        if (isFetched && transactions.length > 0) {
-            void persistTransactionsToDb(transactions, accountAddress, network)
-        }
-    }, [transactions, isFetched, accountAddress, network])
 }

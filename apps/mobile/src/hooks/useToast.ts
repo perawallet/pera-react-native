@@ -23,7 +23,7 @@ import {
     LONG_PROMPT_DISPLAY_DELAY,
 } from '@constants/ui'
 
-export interface ToastMessage {
+interface ToastMessage {
     title: string
     body: string
     type: 'error' | 'warning' | 'info' | 'success'

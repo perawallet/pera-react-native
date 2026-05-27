@@ -10,18 +10,4 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => ({
-    bottomSheetActions: {
-        gap: theme.spacing.md,
-        width: '100%',
-    },
-    bottomSheetMessage: {
-        textAlign: 'center',
-        marginBottom: theme.spacing.md,
-    },
-    bottomSheetIcon: {
-        marginVertical: theme.spacing.md,
-    },
-}))
+export { BalanceLineChart } from './BalanceLineChart'

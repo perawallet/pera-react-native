@@ -12,7 +12,7 @@
 
 import { useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { AppStackParamList } from '@routes/types'
+import type { AppStackParamList } from '@routes/types'
 
 export type AppNavigationProp = NativeStackNavigationProp<AppStackParamList>
 

@@ -19,6 +19,7 @@ import {
     decodeFromBase64,
 } from '@perawallet/wallet-core-shared'
 import { parseSiwa } from './siwa'
+import { Arc60BadJsonError } from './arc60-errors'
 import type { Arc60Metadata, Arc60StdSigData } from '../pipeline/types'
 
 /**
@@ -106,21 +107,9 @@ export class Arc60MissingAuthDataError extends AppError {
     }
 }
 
-/** ERROR_BAD_JSON — AUTH-scope payload is not valid / canonical SIWA JSON. */
-export class Arc60BadJsonError extends AppError {
-    constructor(reason: string, originalError?: Error) {
-        super(
-            `ARC-60 AUTH payload is not a valid canonical SIWA JSON: ${reason}`,
-            {
-                severity: ErrorSeverity.MEDIUM,
-                category: ErrorCategory.VALIDATION,
-                recoverable: false,
-                params: { reason },
-            },
-            originalError,
-        )
-    }
-}
+// Arc60BadJsonError lives in ./arc60-errors (shared with siwa.ts to avoid an
+// import cycle); re-exported here so existing importers keep working.
+export { Arc60BadJsonError }
 
 /** ERROR_FAILED_DOMAIN_AUTH — `authenticatorData[0:32]` ≠ sha256(domain). */
 export class Arc60DomainMismatchError extends AppError {

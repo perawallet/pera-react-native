@@ -1,5 +1,7 @@
-import { readFile } from 'node:fs/promises'
+import { existsSync } from 'node:fs'
+import { readFile, readdir } from 'node:fs/promises'
 import { performance } from 'node:perf_hooks'
+import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
 import { filterSuppressed } from './utils/suppressions.js'
 import type {
@@ -116,4 +118,37 @@ export async function runChecksAgainstPaths(
 
     const violations = filterSuppressed(raw, sources)
     return { violations, timings, parseMs, walkMs }
+}
+
+function isCheck(value: unknown): value is Check {
+    if (value === null || typeof value !== 'object') return false
+    const candidate = value as { id?: unknown; visitors?: unknown }
+    return (
+        typeof candidate.id === 'string' &&
+        typeof candidate.visitors === 'object' &&
+        candidate.visitors !== null
+    )
+}
+
+export async function loadChecks(checksDirUrl: URL): Promise<Check[]> {
+    const dirPath = fileURLToPath(checksDirUrl)
+    if (!existsSync(dirPath)) return []
+
+    const entries = await readdir(dirPath)
+    const checkFiles = entries.filter(name => name.endsWith('.check.ts'))
+    if (checkFiles.length === 0) return []
+
+    const modules = await Promise.all(
+        checkFiles.map(async file => {
+            const href = new URL(file, checksDirUrl).href
+            const mod = (await import(href)) as { default?: unknown }
+            if (!isCheck(mod.default)) {
+                throw new Error(
+                    `guardrails: check file "${file}" must have a default export implementing the Check interface (id, visitors)`,
+                )
+            }
+            return mod.default
+        }),
+    )
+    return modules
 }

@@ -11,16 +11,6 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { getSelectTargetScreenStyles } from '../../../utils/selectTargetScreenStyles'
 
-export const useStyles = makeStyles((theme, bottomPadding: number) => ({
-    container: {
-        flex: 1,
-        backgroundColor: theme.colors.background,
-    },
-    list: {
-        flexGrow: 1,
-        gap: theme.spacing.sm,
-        paddingHorizontal: theme.spacing.xl,
-        paddingBottom: bottomPadding,
-    },
-}))
+export const useStyles = makeStyles(getSelectTargetScreenStyles)

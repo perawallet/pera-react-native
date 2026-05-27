@@ -27,7 +27,6 @@ import { SettingsThemeScreen } from '@modules/settings/screens/SettingsThemeScre
 import { SettingsDeveloperScreen } from '@modules/settings/screens/developer/SettingsDeveloperScreen'
 import { fullScreenLayout } from '@layouts/index'
 import { SettingsDeveloperNodeSettingsScreen } from '@modules/settings/screens/developer/SettingsDeveloperNodeSettingsScreen/SettingsDeveloperNodeSettingsScreen'
-import { SettingsDeveloperDispenserScreen } from '@modules/settings/screens/developer/SettingsDeveloperDispenserScreen/SettingsDeveloperDispenserScreen'
 import { NavigatorScreenParams } from '@react-navigation/native'
 import { WalletConnectConnection } from '@perawallet/wallet-core-walletconnect'
 import { SettingsWalletConnectDetailsScreen } from '@modules/settings/screens/SettingsWalletConnectDetailsScreen/SettingsWalletConnectDetailsScreen'
@@ -38,7 +37,6 @@ import { SettingsDeveloperManageCacheScreen } from '../screens/developer/Setting
 export type DeveloperSettingsStackParamsList = {
     DeveloperSettingsHome: undefined
     NodeSettings: undefined
-    DispenserSettings: undefined
     DevMenu: undefined
     FeatureFlags: undefined
     ManageCache: undefined
@@ -76,13 +74,6 @@ const DeveloperSettingsStackNavigator = () => {
                 component={SettingsDeveloperNodeSettingsScreen}
             />
             <DeveloperSettingsStack.Screen
-                name='DispenserSettings'
-                options={{
-                    title: 'screens.dispenser',
-                }}
-                component={SettingsDeveloperDispenserScreen}
-            />
-            <DeveloperSettingsStack.Screen
                 name='DevMenu'
                 options={{
                     title: 'screens.developer_menu',
@@ -115,7 +106,7 @@ export type WalletConnectSettingsStackParamsList = {
 const WalletConnectSettingsStack =
     createNativeStackNavigator<WalletConnectSettingsStackParamsList>()
 
-export const WalletConnectSettingsStackNavigator = () => {
+const WalletConnectSettingsStackNavigator = () => {
     return (
         <WalletConnectSettingsStack.Navigator
             initialRouteName='WalletConnectSettingsHome'
@@ -158,7 +149,7 @@ export type SettingsStackParamsList = {
     DeveloperSettings: NavigatorScreenParams<DeveloperSettingsStackParamsList>
 }
 
-export const SettingsStack = createNativeStackNavigator()
+const SettingsStack = createNativeStackNavigator()
 
 export const SettingsStackNavigator = () => {
     return (

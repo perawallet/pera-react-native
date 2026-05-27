@@ -147,9 +147,3 @@ export const peraConnectJS = `
         processModals();
     })();
 `
-
-export const navigationJS = `
-!function(t){function e(t){setTimeout((function(){window.ReactNativeWebView.postMessage(t)}),0)}\
-function n(n){return function(){return e("other"),n.apply(t,arguments)}}t.pushState=n(t.pushState),t.replaceState=\
-n(t.replaceState),window.addEventListener("popstate",(function(){e("backforward")}))}(window.history);
-`

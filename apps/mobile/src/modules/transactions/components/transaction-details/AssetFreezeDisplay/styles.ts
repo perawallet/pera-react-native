@@ -11,30 +11,10 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { getTransactionDetailStyles } from '../transactionDetailStyles'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: theme.spacing.lg,
-        paddingVertical: theme.spacing.lg,
-    },
-    detailRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.md,
-        overflow: 'hidden',
-        flexWrap: 'nowrap',
-        flexShrink: 1,
-    },
-    detailContainer: {
-        paddingHorizontal: theme.spacing.sm,
-        gap: theme.spacing.lg,
-    },
-    divider: {
-        marginTop: theme.spacing.xs,
-        width: '100%',
-    },
+    ...getTransactionDetailStyles(theme),
     frozenStatus: {
         color: theme.colors.alertNegative,
     },

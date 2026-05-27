@@ -10,43 +10,19 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
 import { useRoute } from '@react-navigation/native'
-import {
-    getAccountDisplayName,
-    isRekeyedAccount,
-    useFindAccountByAddress,
-} from '@perawallet/wallet-core-accounts'
 import { config } from '@perawallet/wallet-core-config'
-import {
-    useRekeyTransactionFeeQuery,
-    useSubmitRekeyMutation,
-} from '@perawallet/wallet-core-transactions'
-import { useBottomSheet } from '@modules/bottom-sheet'
-import { useWebView } from '@modules/webview'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { useLanguage } from '@hooks/useLanguage'
-import { useHandleRekeyError } from '../../../hooks/useHandleRekeyError'
-import { PreviousRekeyWarningSheet } from '../../../components/PreviousRekeyWarningSheet'
+import {
+    useRekeyConfirmScreen,
+    type UseRekeyConfirmScreenResult,
+} from '../../../hooks/useRekeyConfirmScreen'
 
-import type { Decimal } from 'decimal.js'
 import type { RouteProp } from '@react-navigation/native'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { RekeyToSharedStackParamList } from '../../../routes/rekey-to-shared/types'
 
-export type UseRekeyToSharedConfirmScreenResult = {
-    source: WalletAccount | null
-    target: WalletAccount | null
-    currentAuth: WalletAccount | null
-    feeAlgos: Decimal | undefined
-    feePending: boolean
-    hasPreviousRekey: boolean
-    isSubmitting: boolean
-    handleConfirmPress: () => void
-}
-
 export const useRekeyToSharedConfirmScreen =
-    (): UseRekeyToSharedConfirmScreenResult => {
+    (): UseRekeyConfirmScreenResult => {
         const navigation = useAppNavigation()
         const route =
             useRoute<
@@ -54,96 +30,16 @@ export const useRekeyToSharedConfirmScreen =
             >()
         const { sourceAddress, targetAddress } = route.params
 
-        const source = useFindAccountByAddress(sourceAddress)
-        const target = useFindAccountByAddress(targetAddress)
-        const currentAuth = useFindAccountByAddress(source?.rekeyAddress ?? '')
-
-        const { t } = useLanguage()
-        const handleRekeyError = useHandleRekeyError()
-        const { pushWebView } = useWebView()
-        const { request: requestBottomSheet } = useBottomSheet()
-        const { submitAsync, isPending: isSubmitting } = useSubmitRekeyMutation(
-            {
-                signingMetadata: {
-                    name: t('rekey.signing.source_name'),
-                    description: t('rekey.signing.source_description'),
-                },
-            },
-        )
-        const { feeAlgos, isPending: feePending } = useRekeyTransactionFeeQuery(
+        return useRekeyConfirmScreen({
             sourceAddress,
             targetAddress,
-        )
-
-        const hasPreviousRekey = isRekeyedAccount(source)
-
-        const submit = useCallback(async () => {
-            if (!source || !target) {
-                // The CTA is disabled in this state, but guard anyway — a
-                // dead confirm screen with no feedback is worse than a toast.
-                handleRekeyError(
-                    new Error('Rekey source or target could not be resolved'),
-                )
-                navigation.goBack()
-                return
-            }
-
-            try {
-                await submitAsync({
-                    sourceAddress: source.address,
-                    rekeyToAddress: target.address,
-                })
+            supportUrl: config.rekeyToSharedSupportUrl,
+            warningI18nPrefix: 'rekey.to_shared.confirm.replace_warning',
+            warningTestID: 'rekey-to-shared-previous-rekey-warning-sheet',
+            onSubmitSuccess: sourceAddr =>
                 navigation.navigate('RekeyToShared', {
                     screen: 'RekeyToSharedSuccess',
-                    params: { sourceAddress: source.address },
-                })
-            } catch (error) {
-                handleRekeyError(error)
-            }
-        }, [submitAsync, navigation, handleRekeyError, source, target])
-
-        const handleLearnMore = useCallback(() => {
-            pushWebView({ url: config.rekeyToSharedSupportUrl })
-        }, [pushWebView])
-
-        const handleConfirmPress = useCallback(async () => {
-            if (hasPreviousRekey) {
-                const sourceName = source ? getAccountDisplayName(source) : ''
-                const currentAuthName = currentAuth
-                    ? getAccountDisplayName(currentAuth)
-                    : ''
-                const confirmed = await requestBottomSheet<boolean>({
-                    contents: (
-                        <PreviousRekeyWarningSheet
-                            i18nPrefix='rekey.to_shared.confirm.replace_warning'
-                            testID='rekey-to-shared-previous-rekey-warning-sheet'
-                            currentAuthName={currentAuthName}
-                            sourceName={sourceName}
-                            onLearnMore={handleLearnMore}
-                        />
-                    ),
-                    options: { size: 'auto', enablePanDownToClose: true },
-                })
-                if (!confirmed) return
-            }
-            await submit()
-        }, [
-            hasPreviousRekey,
-            source,
-            currentAuth,
-            requestBottomSheet,
-            handleLearnMore,
-            submit,
-        ])
-
-        return {
-            source: source ?? null,
-            target: target ?? null,
-            currentAuth: currentAuth ?? null,
-            feeAlgos,
-            feePending,
-            hasPreviousRekey,
-            isSubmitting,
-            handleConfirmPress,
-        }
+                    params: { sourceAddress: sourceAddr },
+                }),
+        })
     }

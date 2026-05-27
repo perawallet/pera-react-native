@@ -21,7 +21,6 @@ import { screenListeners } from '@routes/listeners'
 import { SearchScreen } from '@modules/search/screens/SearchScreen'
 
 import { SearchStackParamsList } from './types'
-export type { SearchStackParamsList } from './types'
 
 const SearchStack = createNativeStackNavigator<SearchStackParamsList>()
 

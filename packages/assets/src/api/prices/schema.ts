@@ -12,7 +12,7 @@
 
 import { z } from 'zod'
 
-export const assetPriceResponseSchema = z.object({
+const assetPriceResponseSchema = z.object({
     asset_id: z.number().or(z.string()),
     usd_value: z.string().optional().nullable(),
 })
@@ -23,7 +23,7 @@ export const assetPricesResponseSchema = z.object({
     previous: z.string().nullable().optional(),
 })
 
-export const assetPriceHistoryResponseItemSchema = z.object({
+const assetPriceHistoryResponseItemSchema = z.object({
     datetime: z.string(),
     price: z.number(),
 })

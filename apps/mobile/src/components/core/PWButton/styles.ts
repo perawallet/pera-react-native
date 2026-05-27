@@ -12,7 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 import { TextStyle } from 'react-native'
-import { PWButtonProps } from './PWButton'
+import type { PWButtonProps } from './PWButton'
 import { Optional } from '@perawallet/wallet-core-shared'
 
 const TITLE_LINE_HEIGHT = 15

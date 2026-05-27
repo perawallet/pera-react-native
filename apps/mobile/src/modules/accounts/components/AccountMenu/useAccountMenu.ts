@@ -19,7 +19,7 @@ import {
     useSortedAccounts,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { AccountMenuProps } from './AccountMenu'
+import type { AccountMenuProps } from './AccountMenu'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseAccountMenuResult = {
