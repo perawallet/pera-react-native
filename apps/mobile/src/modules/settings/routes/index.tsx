@@ -38,7 +38,6 @@ import { SettingsDeveloperManageCacheScreen } from '../screens/developer/Setting
 export type DeveloperSettingsStackParamsList = {
     DeveloperSettingsHome: undefined
     NodeSettings: undefined
-    DispenserSettings: undefined
     DevMenu: undefined
     FeatureFlags: undefined
     ManageCache: undefined
@@ -74,13 +73,6 @@ const DeveloperSettingsStackNavigator = () => {
                     title: 'screens.node_settings',
                 }}
                 component={SettingsDeveloperNodeSettingsScreen}
-            />
-            <DeveloperSettingsStack.Screen
-                name='DispenserSettings'
-                options={{
-                    title: 'screens.dispenser',
-                }}
-                component={SettingsDeveloperDispenserScreen}
             />
             <DeveloperSettingsStack.Screen
                 name='DevMenu'
