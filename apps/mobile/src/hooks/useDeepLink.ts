@@ -46,7 +46,6 @@ import {
 import { useDeeplinkErrorHandler } from './deeplink/handlers/useDeeplinkErrorHandler'
 import { withTimeout } from './deeplink/handlers/timeout'
 
-
 /**
  * Subscribe to the WalletConnect store and resolve `true` as soon as a
  * session_request lands whose `clientId` wasn't in `beforeIds`. Resolves

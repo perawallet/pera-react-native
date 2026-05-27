@@ -27,9 +27,7 @@ import {
     type ImportFlowStack,
 } from './shared-screens'
 
-export type {
-    OnboardingStackParamList,
-} from './types'
+export type { OnboardingStackParamList } from './types'
 export { AddAccountStackNavigator } from './add-account'
 
 const OnboardingScreenWithErrorBoundary =

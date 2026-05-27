@@ -27,7 +27,6 @@ import { useStyles } from './styles'
 
 import type { IconName } from '@components/core'
 
-
 export const SettingsScreen = () => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)

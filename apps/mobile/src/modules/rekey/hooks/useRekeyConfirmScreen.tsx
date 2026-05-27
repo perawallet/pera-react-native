@@ -105,7 +105,14 @@ export const useRekeyConfirmScreen = ({
         } catch (error) {
             handleRekeyError(error)
         }
-    }, [submitAsync, navigation, handleRekeyError, source, target, onSubmitSuccess])
+    }, [
+        submitAsync,
+        navigation,
+        handleRekeyError,
+        source,
+        target,
+        onSubmitSuccess,
+    ])
 
     const handleLearnMore = useCallback(() => {
         pushWebView({ url: supportUrl })

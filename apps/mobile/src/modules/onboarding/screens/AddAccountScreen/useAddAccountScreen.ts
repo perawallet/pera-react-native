@@ -140,7 +140,9 @@ export const useAddAccountScreen = () => {
     )
 
     const handleCreateUniversalWallet = useCallback(() => {
-        runCreateAccount(() => createHdWalletAccount({ account: 0, keyIndex: 0 }))
+        runCreateAccount(() =>
+            createHdWalletAccount({ account: 0, keyIndex: 0 }),
+        )
     }, [createHdWalletAccount, runCreateAccount])
 
     const handleCreateAlgo25 = useCallback(() => {

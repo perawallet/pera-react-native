@@ -22,6 +22,5 @@ const STANDARD_INTRO_NAV = {
     supportUrl: config.rekeyToStandardSupportUrl,
 } as const
 
-
 export const useRekeyToStandardIntroScreen = (): UseRekeyIntroScreenResult =>
     useRekeyIntroScreen(STANDARD_INTRO_NAV)

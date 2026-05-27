@@ -46,7 +46,9 @@ type AlgorandURI = PaymentTx | KeyRegTx | NoopTx | AppQuery | AssetQuery
 
 const ALGORAND_URI_PREFIX = `${ALGORAND_SCHEME}://`
 
-const parseQueryParams = (query: string | undefined): Record<string, string> => {
+const parseQueryParams = (
+    query: string | undefined,
+): Record<string, string> => {
     const params: Record<string, string> = {}
     if (query) {
         query.split('&').forEach(kv => {

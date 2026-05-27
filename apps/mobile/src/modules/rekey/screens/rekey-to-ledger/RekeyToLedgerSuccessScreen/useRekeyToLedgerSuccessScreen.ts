@@ -15,6 +15,5 @@ import {
     type UseRekeySuccessScreenResult,
 } from '../../../components/RekeySuccessScreen/useRekeySuccessScreen'
 
-
 export const useRekeyToLedgerSuccessScreen = (): UseRekeySuccessScreenResult =>
     useRekeySuccessScreen()

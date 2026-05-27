@@ -18,7 +18,10 @@ import type { ViewStyle } from 'react-native'
 // and adds the keys unique to that transaction type.
 export const getTransactionDetailStyles = (
     theme: Theme,
-): Record<'container' | 'detailRow' | 'detailContainer' | 'divider', ViewStyle> => ({
+): Record<
+    'container' | 'detailRow' | 'detailContainer' | 'divider',
+    ViewStyle
+> => ({
     container: {
         alignItems: 'center',
         justifyContent: 'center',

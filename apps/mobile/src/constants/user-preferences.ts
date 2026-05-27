@@ -30,8 +30,7 @@ export const UserPreferences = {
     _securityPinSetupPrompt: 'security_pin_setup_prompt',
 } as const
 
-type UserPreferences =
-    (typeof UserPreferences)[keyof typeof UserPreferences]
+type UserPreferences = (typeof UserPreferences)[keyof typeof UserPreferences]
 
 // Preferences that gate first-run prompts, disclaimers, or one-shot warnings.
 // The developer "Clear one-time flags" action iterates this list — add new
