@@ -53,7 +53,6 @@ type UseSearchableListParams<T> = {
     data: readonly T[] | null | undefined
     keyExtractor?: (item: T, index: number) => string
     snapThreshold: number
-    itemHeightEstimate?: number
     onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void
     onScrollEndDrag?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void
 }
@@ -84,7 +83,6 @@ export const useSearchableList = <T>({
     data,
     keyExtractor,
     snapThreshold,
-    itemHeightEstimate = DEFAULT_ITEM_HEIGHT_ESTIMATE,
     onScroll,
     onScrollEndDrag,
 }: UseSearchableListParams<T>): UseSearchableListResult<T> => {
@@ -126,22 +124,16 @@ export const useSearchableList = <T>({
         let natural =
             naturalContentSize > 0
                 ? naturalContentSize
-                : headerHeight + itemCount * itemHeightEstimate
+                : headerHeight + itemCount * DEFAULT_ITEM_HEIGHT_ESTIMATE
 
         const previousItemCount = previousItemCountRef.current
         if (itemCount < previousItemCount) {
             const expectedLoss =
-                (previousItemCount - itemCount) * itemHeightEstimate
+                (previousItemCount - itemCount) * DEFAULT_ITEM_HEIGHT_ESTIMATE
             natural = Math.max(0, natural - expectedLoss)
         }
         return Math.max(0, listLayoutHeight + headerHeight - natural)
-    }, [
-        listLayoutHeight,
-        headerHeight,
-        naturalContentSize,
-        itemCount,
-        itemHeightEstimate,
-    ])
+    }, [listLayoutHeight, headerHeight, naturalContentSize, itemCount])
 
     // Mirror searchFooterHeight into a ref so handleContentSizeChange can
     // recover the natural size without depending on render closures.

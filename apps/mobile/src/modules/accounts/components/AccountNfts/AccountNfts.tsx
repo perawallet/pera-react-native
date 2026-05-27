@@ -34,8 +34,6 @@ import { CollectibleDisplayItem } from '@modules/assets/types/collectible'
 
 const GRID_COLUMNS = 2
 const SKELETON_COUNT = 6
-const COLLECTIBLE_GRID_ITEM_SIZE = 200
-const COLLECTIBLE_LIST_ITEM_SIZE = 72
 
 const renderLoadingSkeleton = () => {
     return (
@@ -180,11 +178,6 @@ export const AccountNfts = () => {
                         renderItem={renderItem}
                         numColumns={isGrid ? GRID_COLUMNS : 1}
                         keyExtractor={item => item.assetId}
-                        estimatedItemSize={
-                            isGrid
-                                ? COLLECTIBLE_GRID_ITEM_SIZE
-                                : COLLECTIBLE_LIST_ITEM_SIZE
-                        }
                         contentContainerStyle={styles.contentContainer}
                         ListEmptyComponent={
                             <EmptyView

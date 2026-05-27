@@ -48,7 +48,6 @@ export const GroupDetailScreen = () => {
                     renderItem={renderItem}
                     keyExtractor={keyExtractor}
                     ItemSeparatorComponent={ItemSeparator}
-                    recycleItems
                 />
             </PWView>
         </PWView>

@@ -22,8 +22,6 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNotificationsScreen } from './useNotificationsScreen'
 
-const ESTIMATED_NOTIFICATION_ITEM_SIZE = 72
-
 const renderItem = ({ item }: { item: PeraNotification }) => {
     return <NotificationItem item={item} />
 }
@@ -52,8 +50,6 @@ export const NotificationsScreen = () => {
             contentContainerStyle={styles.messageContainer}
             onEndReached={loadMoreItems}
             onEndReachedThreshold={0.1}
-            estimatedItemSize={ESTIMATED_NOTIFICATION_ITEM_SIZE}
-            waitForInitialLayout
             keyExtractor={keyExtractor}
             ListHeaderComponent={<PWView style={styles.listEdgeSpacer} />}
             ListEmptyComponent={

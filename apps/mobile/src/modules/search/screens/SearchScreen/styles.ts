@@ -26,7 +26,6 @@ export const useStyles = makeStyles(theme => ({
     },
     contentContainer: {
         flexGrow: 1,
-        gap: theme.spacing.sm,
     },
     sectionHeader: {
         marginTop: theme.spacing.lg,
@@ -35,6 +34,7 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.md,
+        paddingVertical: theme.spacing.sm,
     },
     assetRow: {
         paddingVertical: theme.spacing.sm,

@@ -11,7 +11,6 @@
  */
 
 import { useCallback } from 'react'
-import { useTheme } from '@rneui/themed'
 import type { Arc59AssetRequest } from '@perawallet/wallet-core-asa-inbox'
 import { PWDivider, PWFlatList, PWText } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
@@ -24,7 +23,6 @@ import { InfoButton } from '@components/InfoButton'
 
 export const AssetTransferRequestsScreen = () => {
     const styles = useStyles()
-    const { theme } = useTheme()
     const { t } = useLanguage()
     const { assetRequests, isPending, handleItemPress } =
         useAssetTransferRequestsScreen()
@@ -80,7 +78,6 @@ export const AssetTransferRequestsScreen = () => {
                     body={t('arc59.requests.empty_body')}
                 />
             }
-            estimatedItemSize={theme.spacing.xxl}
         />
     )
 }

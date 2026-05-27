@@ -32,9 +32,11 @@ export const useStyles = makeStyles(theme => {
             marginTop: theme.spacing.lg,
         },
         contentContainer: {
-            gap: theme.spacing.lg,
             flexGrow: 1,
             paddingBottom: theme.spacing.xl,
+        },
+        listSeparator: {
+            height: theme.spacing.lg,
         },
         accountDisplay: {
             flexDirection: 'row',

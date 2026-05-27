@@ -158,6 +158,11 @@ export const AddressSearchView = ({
         [onSelected, styles, t, showAccountBalance, showAddIcon],
     )
 
+    const renderSeparator = useCallback(
+        () => <PWView style={styles.listSeparator} />,
+        [styles],
+    )
+
     const keyExtractor = useCallback((item: AddressSearchItem) => item.key, [])
 
     const emptyComponent = useCallback(
@@ -192,6 +197,7 @@ export const AddressSearchView = ({
                     renderItem={renderItem}
                     keyExtractor={keyExtractor}
                     ListEmptyComponent={listEmptyComponent}
+                    ItemSeparatorComponent={renderSeparator}
                     inBottomSheet
                     keyboardShouldPersistTaps='handled'
                     style={styles.list}
@@ -212,6 +218,7 @@ export const AddressSearchView = ({
                 onSearchChange={setValue}
                 SearchInputComponent={AddressSearchInput}
                 ListEmptyComponent={listEmptyComponent}
+                ItemSeparatorComponent={renderSeparator}
                 style={styles.list}
                 contentContainerStyle={styles.contentContainer}
             />
