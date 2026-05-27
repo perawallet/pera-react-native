@@ -21,7 +21,7 @@ catalog:
   "@testing-library/react": 16.3.2
   "@types/node": ^20.19.39
   "@types/react": ~19.2.14
-  "@vitejs/plugin-react": 6.0.1
+  "@vitejs/plugin-react": 6.0.2
   "@vitest/coverage-v8": ^4.1.4
   "@xstate/react": ^6.1.0
   before-after-hook: ^4.0.0
@@ -32,14 +32,14 @@ catalog:
   fast-glob: ^3.3.2
   globals: 17.6.0
   oxfmt: ^0.45.0
-  react: 19.2.6
-  react-dom: 19.2.6
-  tsx: ^4.19.2
+  react: 19.2.3
+  react-dom: 19.2.3
+  tsx: ^4.22.3
   typescript: ^5.9.3
   typescript-eslint: 8.59.4
   util: ^0.12.5
   uuid: 14.0.0
-  msw: ^2.12.4
+  msw: ^2.14.6
   vite: ^8.0.8
   vite-plugin-dts: ^5.0.0
   vitest: ^4.1.4
@@ -63,7 +63,7 @@ onlyBuiltDependencies:
 
 overrides:
   "@algorandfoundation/keystore": 1.0.0-canary.16
-  "@expo/dom-webview": ^55.0.5
+  "@expo/dom-webview": ^56.0.5
   "@xmldom/xmldom": 0.8.13
   bn.js@4: 4.12.3
   brace-expansion@1: 1.1.13
@@ -86,9 +86,11 @@ overrides:
   picomatch@3: 3.0.1
   picomatch@4: 4.0.4
   protobufjs@7: 7.5.5
-  react-dom: 19.2.6
-  react-native: 0.83.9
-  react-native-nitro-modules: 0.35.0
+  react: 19.2.3
+  react-dom: 19.2.3
+  react-native: 0.85.3
+  "@react-native/metro-config": 0.85.3
+  react-native-nitro-modules: 0.35.7
   react-native-quick-crypto: ^1.0.17
   react-native-quick-base64: ^3.0.0
   uuid@<14: 14.0.0
@@ -115,6 +117,11 @@ minimumReleaseAge: 10080
 # @algorandfoundation/keystore + @algorandfoundation/react-native-keystore:
 # in-progress upstream canary releases consumed during the keystore upgrade
 # work; pinned to specific canary versions in the catalog above.
+# expo / expo-* / @expo/* / @react-native/* / react-native / react-native-nitro-modules:
+# temporary exemption for the SDK 55 → 56 upgrade. Expo SDK 56.0.0 shipped
+# 2026-05-20 and has not yet aged through the 7-day gate. These entries
+# should be removed once the SDK 56 release has aged past the window
+# (around 2026-06-03).
 minimumReleaseAgeExclude:
   - protobufjs
   - "@xmldom/xmldom"
@@ -123,3 +130,12 @@ minimumReleaseAgeExclude:
   - "@algorandfoundation/keystore"
   - "@algorandfoundation/react-native-keystore"
   - ws
+  - expo
+  - "expo-*"
+  - "@expo/*"
+  - babel-preset-expo
+  - react-native
+  - "@react-native/*"
+  - react-native-nitro-modules
+  - react-native-screens
+  - react-native-svg

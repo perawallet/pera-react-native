@@ -39,8 +39,8 @@
     "msw": "catalog:",
     "oxfmt": "catalog:",
     "oxlint": "^1.59.0",
-    "oxlint-tsgolint": "^0.22.1",
-    "turbo": "^2.7.2",
+    "oxlint-tsgolint": "^0.23.0",
+    "turbo": "^2.9.14",
     "util": "catalog:",
     "vitest": "catalog:"
   },
@@ -50,13 +50,10 @@
     "onlyBuiltDependencies": [
       "better-sqlite3"
     ],
-    "patchedDependencies": {
-      "expo-sqlite@14.0.6": "patches/expo-sqlite@14.0.6.patch"
-    },
     "overrides": {
       "@algorandfoundation/keystore": "1.0.0-canary.16",
       "@babel/plugin-transform-modules-systemjs@>=7.12.0 <7.29.4": ">=7.29.4",
-      "@expo/dom-webview": "^55.0.5",
+      "@expo/dom-webview": "^56.0.5",
       "@xmldom/xmldom": "0.8.13",
       "bn.js@4": "4.12.3",
       "brace-expansion@1": "1.1.13",
@@ -80,9 +77,11 @@
       "picomatch@3": "3.0.1",
       "picomatch@4": "4.0.4",
       "protobufjs@7": "7.5.8",
-      "react-dom": "19.2.6",
-      "react-native": "0.83.4",
-      "react-native-nitro-modules": "0.35.0",
+      "react": "19.2.3",
+      "react-dom": "19.2.3",
+      "react-native": "0.85.3",
+      "@react-native/metro-config": "0.85.3",
+      "react-native-nitro-modules": "0.35.7",
       "react-native-quick-crypto": "^1.0.17",
       "react-native-quick-base64": "^3.0.0",
       "uuid@<14": "14.0.0",
