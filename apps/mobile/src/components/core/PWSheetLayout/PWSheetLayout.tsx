@@ -10,12 +10,10 @@
  limitations under the License
  */
 
-import { useContext, useEffect } from 'react'
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { getTestProps } from '@utils/test-id-helper'
 import { PWView } from '../PWView'
-import { AutoCreatedContainerContext } from '../PWBottomSheet/autoCreatedContainerContext'
 import { useStyles } from './styles'
 
 import type { ReactNode } from 'react'
@@ -78,18 +76,6 @@ export const PWSheetLayout = ({
         bottomInset: insets.bottom,
         hasFooter: footer != null,
     })
-    const isInAutoCreatedContainer = useContext(AutoCreatedContainerContext)
-
-    useEffect(() => {
-        if (__DEV__ && isInAutoCreatedContainer) {
-            // eslint-disable-next-line no-console
-            console.error(
-                'PWSheetLayout is nested inside PWBottomSheet’s auto-created ' +
-                    'BottomSheetView and will not scroll. Open the sheet with ' +
-                    '`autoCreateContainer={false}`.',
-            )
-        }
-    }, [isInAutoCreatedContainer])
 
     const scrollable = (
         <BottomSheetScrollView

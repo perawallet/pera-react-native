@@ -25,7 +25,6 @@ import {
     useRef,
 } from 'react'
 import { useStyles } from './styles'
-import { AutoCreatedContainerContext } from './autoCreatedContainerContext'
 import {
     Keyboard,
     StyleProp,
@@ -240,9 +239,7 @@ export const PWBottomSheet = ({
                             style={[styles.innerContainer, innerContainerStyle]}
                             testID={testID}
                         >
-                            <AutoCreatedContainerContext.Provider value={true}>
-                                {children}
-                            </AutoCreatedContainerContext.Provider>
+                            {children}
                         </BottomSheetView>
                     ) : (
                         <PWView
