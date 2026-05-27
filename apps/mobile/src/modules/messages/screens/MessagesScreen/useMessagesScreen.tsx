@@ -16,7 +16,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { useInboxStatus } from '@perawallet/wallet-core-messages'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { NotificationSettingsContent } from '@modules/messages/components/NotificationSettingsContent'
-import { MessagesTabsParamsList } from './MessagesScreen'
+import type { MessagesTabsParamsList } from './MessagesScreen'
 
 export const useMessagesScreen = () => {
     const route = useRoute<RouteProp<MessagesStackParamList, 'MessagesHome'>>()

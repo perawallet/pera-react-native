@@ -80,6 +80,15 @@
     // broke `pnpm build`. Dependency hygiene must be verified manually + by build,
     // not from these findings. Re-enable only once the resolver gap is understood.
     "unused-dependencies": "off",
-    "unused-dev-dependencies": "off"
+    "unused-dev-dependencies": "off",
+    // Disabled: false positives in this codebase. duplicate-exports fires on the
+    // `useStyles` styles.ts convention and RN platform variants (.ios/.android
+    // legitimately export the same names). class/enum-member checks miss
+    // interface-mandated members, runtime property access (e.g. error `.tag`),
+    // and cross-package enum usage (flagged `ErrorCategory.TRANSACTIONS`/`STAKING`
+    // which ARE used).
+    "duplicate-exports": "off",
+    "unused-class-members": "off",
+    "unused-enum-members": "off"
   }
 }
