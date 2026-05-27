@@ -125,6 +125,3 @@ export const startApiReplay = async (): Promise<void> => {
     ensurePatched()
     mode = 'replay'
 }
-
-/** Number of captured endpoints — for surfacing capture progress. */
-export const getRecordedCount = (): number => Object.keys(dump).length
