@@ -22,13 +22,13 @@ import {
 import { PanelButton } from '@components/PanelButton'
 import { useOnboardingScreen } from './useOnboardingScreen'
 
-import welcomeBackground from '@assets/images/welcome-background.webp'
+import welcomeBackground from '@assets/images/welcome-background.png'
 import { useLanguage } from '@hooks/useLanguage'
 import { Trans } from 'react-i18next'
 import { useWindowDimensions } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-// Intrinsic dimensions of welcome-background.webp (344×544); hardcoded so we
+// Intrinsic dimensions of welcome-background.png (344×544); hardcoded so we
 // don't import react-native's Image just for resolveAssetSource.
 const imageAspectRatio = 344 / 544
 

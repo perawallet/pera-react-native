@@ -45,6 +45,7 @@ export const MultisigIntroductionDialog = ({
         <PWDialog
             isVisible={isVisible}
             onBackdropPress={onDismiss}
+            maxHeightRatio={0.75}
             testID='multisig_introduction_dialog'
             footer={
                 <PWButton

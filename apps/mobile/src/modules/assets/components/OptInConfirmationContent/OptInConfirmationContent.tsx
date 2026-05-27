@@ -119,6 +119,7 @@ export const OptInConfirmationContent = ({
                     <AddressDisplay
                         address={accountAddress}
                         showCopy={false}
+                        style={styles.rowAddressContainer}
                         textProps={{ style: styles.rowAddress }}
                     />
                 </PWView>

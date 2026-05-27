@@ -47,8 +47,6 @@ export const useStyles = makeStyles(theme => ({
         flex: 1,
     },
     actions: {
-        width: '100%',
-        paddingTop: theme.spacing.xl,
         gap: theme.spacing.sm,
     },
 }))

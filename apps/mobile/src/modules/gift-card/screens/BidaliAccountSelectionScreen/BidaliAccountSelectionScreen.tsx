@@ -63,6 +63,7 @@ export const BidaliAccountSelectionScreen = () => {
                 data={accounts}
                 renderItem={renderItem}
                 keyExtractor={keyExtractor}
+                cardLayout
             />
         </PWScreen>
     )

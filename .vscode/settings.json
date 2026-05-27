@@ -3,5 +3,12 @@
     {
       "mode": "auto"
     }
+  ],
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "java.import.exclusions": [
+    "**/node_modules/**",
+    "**/.metadata/**",
+    "**/archetype-resources/**",
+    "**/META-INF/maven/**"
   ]
 }

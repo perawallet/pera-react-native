@@ -115,6 +115,7 @@ export const SwapToAssetSelectionList = ({
             <PWFlatList
                 data={listData}
                 renderItem={renderItem}
+                cardLayout
                 inBottomSheet={inBottomSheet}
                 keyExtractor={item =>
                     isSkeletonItem(item) ? item.id : item.dexAsset.assetId

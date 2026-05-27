@@ -34,7 +34,7 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingVertical: theme.spacing.sm,
+        paddingVertical: theme.spacing.lg,
         width: '100%',
         minWidth: 0,
         gap: theme.spacing.md,

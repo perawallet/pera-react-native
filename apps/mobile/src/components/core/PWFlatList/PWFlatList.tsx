@@ -14,6 +14,9 @@ import React, { forwardRef, useImperativeHandle, useRef } from 'react'
 import { FlashList, FlashListProps, FlashListRef } from '@shopify/flash-list'
 import { useBottomSheetScrollableCreator } from '@gorhom/bottom-sheet'
 
+import { PWView } from '../PWView'
+import { useStyles } from './styles'
+
 export type PWFlatListRef = {
     scrollToOffset: (params: { offset: number; animated?: boolean }) => void
     scrollToIndex: (params: {
@@ -27,11 +30,36 @@ export type PWFlatListRef = {
 
 export type PWFlatListProps<T> = FlashListProps<T> & {
     inBottomSheet?: boolean
+    /**
+     * Layout preset for lists of self-contained cards (account pickers, rekey
+     * targets, …): adds a gap between items and vertical padding around the
+     * list so the cards don't pinch. A caller-supplied `ItemSeparatorComponent`
+     * or `contentContainerStyle` still takes precedence.
+     */
+    cardLayout?: boolean
+}
+
+const CardSeparator = () => {
+    const styles = useStyles()
+
+    return <PWView style={styles.cardSeparator} />
 }
 
 export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
-    ({ inBottomSheet, ...props }, ref) => {
+    (
+        {
+            inBottomSheet,
+            cardLayout,
+            ItemSeparatorComponent,
+            contentContainerStyle,
+            showsVerticalScrollIndicator = false,
+            showsHorizontalScrollIndicator = false,
+            ...props
+        },
+        ref,
+    ) => {
         const innerRef = useRef<FlashListRef<unknown>>(null)
+        const styles = useStyles()
         const BottomSheetScrollable = useBottomSheetScrollableCreator()
 
         useImperativeHandle(ref, () => ({
@@ -42,22 +70,48 @@ export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
             scrollToEnd: options => innerRef.current?.scrollToEnd(options),
         }))
 
+        // Let a ListEmptyComponent fill the list so it can center itself —
+        // only while empty, so populated lists (and their footers) are
+        // untouched.
+        const fillEmpty =
+            (props.data?.length ?? 0) === 0 && props.ListEmptyComponent != null
+
+        const flashProps: FlashListProps<unknown> = {
+            ...props,
+            showsVerticalScrollIndicator,
+            showsHorizontalScrollIndicator,
+            ItemSeparatorComponent: cardLayout
+                ? (ItemSeparatorComponent ?? CardSeparator)
+                : ItemSeparatorComponent,
+            contentContainerStyle: {
+                // Default trailing gap so the last row never pinches the
+                // footer/screen edge. Vertical, populated lists only; callers
+                // override via contentContainerStyle.
+                ...(props.horizontal === true || fillEmpty
+                    ? null
+                    : styles.content),
+                ...(cardLayout ? styles.cardContent : null),
+                ...(fillEmpty ? styles.fillEmpty : null),
+                ...contentContainerStyle,
+            },
+        }
+
         if (inBottomSheet) {
             return (
                 <FlashList
-                    {...(props ?? {})}
+                    {...flashProps}
                     ref={innerRef}
                     renderScrollComponent={BottomSheetScrollable}
                 />
             )
-        } else {
-            return (
-                <FlashList
-                    {...(props ?? {})}
-                    ref={innerRef}
-                />
-            )
         }
+
+        return (
+            <FlashList
+                {...flashProps}
+                ref={innerRef}
+            />
+        )
     },
 ) as <T>(
     props: PWFlatListProps<T> & React.RefAttributes<PWFlatListRef>,

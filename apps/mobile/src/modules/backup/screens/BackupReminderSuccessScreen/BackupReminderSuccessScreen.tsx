@@ -13,15 +13,12 @@
 import { useCallback } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { useTheme } from '@rneui/themed'
 import ShieldCheckImage from '@assets/icons/shield-check.svg'
 import { PWInfoView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { ILLUSTRATION_SIZE } from '../../constants'
 import type { BackupStackParamList } from '../../routes/types'
 
 export const BackupReminderSuccessScreen = () => {
-    const { theme } = useTheme()
     const { t } = useLanguage()
     const navigation =
         useNavigation<
@@ -39,13 +36,7 @@ export const BackupReminderSuccessScreen = () => {
 
     return (
         <PWInfoView
-            illustration={
-                <ShieldCheckImage
-                    width={ILLUSTRATION_SIZE}
-                    height={ILLUSTRATION_SIZE}
-                    color={theme.colors.textMain}
-                />
-            }
+            illustration={ShieldCheckImage}
             title={t('backup.success.title')}
             body={t('backup.success.body')}
             primaryAction={{

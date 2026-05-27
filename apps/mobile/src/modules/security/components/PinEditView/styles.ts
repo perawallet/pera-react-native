@@ -18,7 +18,7 @@ export const useStyles = makeStyles(
         innerContainer: {
             flexGrow: 1,
             minHeight: height,
-            paddingVertical: theme.spacing.xl,
+            paddingTop: insets.top + theme.spacing.xl,
             paddingBottom: insets.bottom,
             backgroundColor: theme.colors.background,
         },

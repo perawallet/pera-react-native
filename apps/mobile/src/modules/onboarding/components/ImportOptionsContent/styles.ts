@@ -15,8 +15,6 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     optionsContainer: {
         gap: theme.spacing.md,
-        marginTop: theme.spacing.lg,
-        paddingBottom: theme.spacing.lg,
         width: '100%',
     },
     optionBox: {

@@ -73,21 +73,23 @@ export const RekeyConfirmView = ({
             style={styles.container}
             testID={`${testIDPrefix}-confirm-screen`}
         >
-            <ScreenHeader
-                title={t(`${i18nPrefix}.title`)}
-                description={
-                    <>
-                        {t(`${i18nPrefix}.body`)}{' '}
-                        <PWText
-                            variant='bodyLarge'
-                            style={styles.learnMore}
-                            onPress={handleLearnMore}
-                        >
-                            {t(`${i18nPrefix}.learn_more`)}
-                        </PWText>
-                    </>
-                }
-            />
+            <PWView style={styles.header}>
+                <ScreenHeader
+                    title={t(`${i18nPrefix}.title`)}
+                    description={
+                        <>
+                            {t(`${i18nPrefix}.body`)}{' '}
+                            <PWText
+                                variant='bodyLarge'
+                                style={styles.learnMore}
+                                onPress={handleLearnMore}
+                            >
+                                {t(`${i18nPrefix}.learn_more`)}
+                            </PWText>
+                        </>
+                    }
+                />
+            </PWView>
             <PWScrollView contentContainerStyle={styles.scrollContent}>
                 <PWView style={styles.summarySection}>
                     <PWText

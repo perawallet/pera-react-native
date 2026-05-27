@@ -48,6 +48,7 @@ export const ImportRekeyedAddressesScreen = () => {
                 }
             >
                 <PWFlatList
+                    cardLayout
                     style={styles.list}
                     contentContainerStyle={styles.listContent}
                     showsVerticalScrollIndicator={false}

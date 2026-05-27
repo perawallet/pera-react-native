@@ -10,13 +10,27 @@
  limitations under the License
  */
 
-import type { ReactNode } from 'react'
+import type { ComponentType, ReactNode } from 'react'
+import { useTheme } from '@rneui/themed'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { PWButton } from '@components/core/PWButton'
 import { PWScrollView } from '@components/core/PWScrollView'
 import { PWText } from '@components/core/PWText'
 import { PWView } from '@components/core/PWView'
 import { useStyles } from './styles'
+
+/** Default illustration size; callers pass the icon and PWInfoView sizes it. */
+const ILLUSTRATION_SIZE = 160
+
+/**
+ * Illustration contract: an SVG icon (or image wrapper) accepting a size and
+ * optional tint. PWInfoView renders it at the default size, tinted `textMain`.
+ */
+export type PWInfoViewIllustration = ComponentType<{
+    width: number
+    height: number
+    color?: string
+}>
 
 export type PWInfoViewAction = {
     label: string
@@ -27,7 +41,7 @@ export type PWInfoViewAction = {
 }
 
 export type PWInfoViewProps = {
-    illustration?: ReactNode
+    illustration?: PWInfoViewIllustration
     title: string
     body: string
     /**
@@ -42,7 +56,7 @@ export type PWInfoViewProps = {
 }
 
 export const PWInfoView = ({
-    illustration,
+    illustration: Illustration,
     title,
     body,
     footerExtras,
@@ -51,6 +65,7 @@ export const PWInfoView = ({
     testID = 'pw-info-view',
 }: PWInfoViewProps) => {
     const styles = useStyles()
+    const { theme } = useTheme()
 
     return (
         <PWView
@@ -61,13 +76,14 @@ export const PWInfoView = ({
                 style={styles.scroll}
                 contentContainerStyle={styles.content}
             >
-                {illustration}
-                <PWText
-                    variant='h1'
-                    style={styles.title}
-                >
-                    {title}
-                </PWText>
+                {Illustration ? (
+                    <Illustration
+                        width={ILLUSTRATION_SIZE}
+                        height={ILLUSTRATION_SIZE}
+                        color={theme.colors.textMain}
+                    />
+                ) : null}
+                <PWText variant='h1'>{title}</PWText>
                 <PWText
                     variant='h4'
                     style={styles.description}

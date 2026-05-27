@@ -56,6 +56,7 @@ export const RekeyToStandardSelectTargetScreen = () => {
                 data={targets}
                 renderItem={renderItem}
                 keyExtractor={keyExtractor}
+                cardLayout
                 ListEmptyComponent={renderEmpty}
             />
         </PWScreen>

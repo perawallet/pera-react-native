@@ -1261,7 +1261,8 @@
             },
             "confirm": {
                 "title": "Confirm rekeying",
-                "body": "You are about to rekey this account to another authorized address. The new address will be able to sign transactions on its behalf. <0>Learn more</0>",
+                "body": "You are about to rekey this account to another authorized address. The new address will be able to sign transactions on its behalf.",
+                "learn_more": "Learn more",
                 "summary_label": "Summary of rekey",
                 "current_auth_label": "Currently rekeyed to",
                 "fee_label": "Transaction Fee",
@@ -1297,7 +1298,8 @@
             },
             "confirm": {
                 "title": "Confirm rekeying",
-                "body": "You are about to rekey this shared account to another shared account. <0>Learn more</0>",
+                "body": "You are about to rekey this shared account to another shared account.",
+                "learn_more": "Learn more",
                 "summary_label": "Summary of rekey",
                 "current_auth_label": "Currently rekeyed to",
                 "fee_label": "Transaction Fee",

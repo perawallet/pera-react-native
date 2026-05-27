@@ -179,6 +179,7 @@ export const SearchScreen = () => {
                 renderItem={renderItem}
                 keyExtractor={keyExtractor}
                 style={styles.list}
+                contentContainerStyle={styles.contentContainer}
                 ListEmptyComponent={
                     showNoResults ? (
                         <EmptyView

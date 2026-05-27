@@ -54,6 +54,12 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textMain,
         flexShrink: 0,
     },
+    rowAddressContainer: {
+        flexGrow: 0,
+        flexShrink: 1,
+        flexBasis: 'auto',
+        justifyContent: 'flex-end',
+    },
     rowAddress: {
         flex: 1,
         textAlign: 'right',

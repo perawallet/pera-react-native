@@ -133,6 +133,8 @@ export const PWScreen = ({
                 styles.scrollContent,
                 contentContainerStyle,
             ]}
+            showsVerticalScrollIndicator={false}
+            showsHorizontalScrollIndicator={false}
             keyboardShouldPersistTaps='handled'
             keyboardDismissMode='interactive'
             enabled={keyboardEnabled}

@@ -150,6 +150,7 @@ export const ImportSelectAddressesScreen = () => {
                                 renderItem={renderItem}
                                 keyExtractor={item => item.address}
                                 extraData={selectedAddresses}
+                                cardLayout
                                 showsVerticalScrollIndicator={false}
                             />
                         </>

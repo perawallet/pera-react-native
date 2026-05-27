@@ -54,6 +54,23 @@ export const PassphraseAcknowledgeContent = ({
                 <SheetHeader title={t('view_passphrase.acknowledge.title')} />
             }
             bodyStyle={styles.body}
+            footer={
+                <PWView style={styles.actions}>
+                    <PWButton
+                        variant='primary'
+                        title={t('view_passphrase.acknowledge.cta_reveal')}
+                        onPress={() => resolve('confirm')}
+                        isDisabled={!allChecked}
+                        testID={`${testID}_reveal`}
+                    />
+                    <PWButton
+                        variant='secondary'
+                        title={t('view_passphrase.acknowledge.cta_cancel')}
+                        onPress={dismiss}
+                        testID={`${testID}_cancel`}
+                    />
+                </PWView>
+            }
             testID={testID}
         >
             <PWIcon
@@ -91,21 +108,6 @@ export const PassphraseAcknowledgeContent = ({
                         />
                     </PWTouchableOpacity>
                 ))}
-            </PWView>
-            <PWView style={styles.actions}>
-                <PWButton
-                    variant='primary'
-                    title={t('view_passphrase.acknowledge.cta_reveal')}
-                    onPress={() => resolve('confirm')}
-                    isDisabled={!allChecked}
-                    testID={`${testID}_reveal`}
-                />
-                <PWButton
-                    variant='secondary'
-                    title={t('view_passphrase.acknowledge.cta_cancel')}
-                    onPress={dismiss}
-                    testID={`${testID}_cancel`}
-                />
             </PWView>
         </PWSheetLayout>
     )

@@ -16,8 +16,8 @@ import { usePinSecurityPrompt } from './usePinSecurityPrompt'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { PromptViewProps } from '@modules/prompts/models'
-import { PWImage, PWInfoView, PWTouchableOpacity } from '@components/core'
-import lockImage from '@assets/images/lock.webp'
+import { PWInfoView, PWTouchableOpacity } from '@components/core'
+import LockImage from '@assets/icons/lock.svg'
 
 export const PinSecurityPrompt = (props: PromptViewProps) => {
     const styles = useStyles()
@@ -39,13 +39,7 @@ export const PinSecurityPrompt = (props: PromptViewProps) => {
             </PWView>
 
             <PWInfoView
-                illustration={
-                    <PWImage
-                        source={lockImage}
-                        width={150}
-                        height={175}
-                    />
-                }
+                illustration={LockImage}
                 title={t('prompts.security.pin_title')}
                 body={t('prompts.security.pin_description')}
                 primaryAction={{

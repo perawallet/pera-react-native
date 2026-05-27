@@ -62,15 +62,15 @@ export const useStyles = makeStyles(
                     : theme.spacing.xl + bottomInset,
         },
         // Fixed footer pinned below the scroll. Owns the bottom safe-area inset
-        // (12 visual gap + nav-bar inset) since it is the bottom-most element.
-        // When the keyboard is open it covers the home indicator, so the inset
-        // is dropped for a flat 24 gap above the keyboard instead.
+        // (a visual gap matching the body's bottom + nav-bar inset) since it is
+        // the bottom-most element. When the keyboard is open it covers the home
+        // indicator, so the inset is dropped for a flat gap above the keyboard.
         footer: {
             paddingHorizontal: theme.spacing.xl,
             paddingTop: theme.spacing.lg,
             paddingBottom: isKeyboardVisible
                 ? theme.spacing.xl
-                : theme.spacing.md + bottomInset,
+                : theme.spacing.xl + bottomInset,
         },
     }),
 )

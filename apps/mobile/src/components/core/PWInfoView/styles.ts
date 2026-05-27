@@ -29,9 +29,6 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.lg,
     },
 
-    title: {
-        textAlign: 'center',
-    },
     description: {
         textAlign: 'left',
         color: theme.colors.textGray,

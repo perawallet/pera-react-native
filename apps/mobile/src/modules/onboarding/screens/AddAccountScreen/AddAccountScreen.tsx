@@ -30,7 +30,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { Trans } from 'react-i18next'
 import { MultisigIntroductionDialog } from '@modules/multisig/components/MultisigIntroductionDialog'
 
-import welcomeBackground from '@assets/images/welcome-background.webp'
+import welcomeBackground from '@assets/images/welcome-background.png'
 
 export const AddAccountScreen = () => {
     const styles = useStyles()

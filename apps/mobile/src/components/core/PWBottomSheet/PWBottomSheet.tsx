@@ -32,7 +32,7 @@ import {
     ViewStyle,
 } from 'react-native'
 import { NotifierRoot, NotifierWrapper } from 'react-native-notifier'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export const bottomSheetNotifier = createRef<Nullable<NotifierRoot>>()
@@ -214,6 +214,7 @@ export const PWBottomSheet = ({
             <NotifierWrapper
                 omitGlobalMethodsHookup
                 ref={bottomSheetNotifier}
+                componentProps={{ ContainerComponent: SafeAreaView }}
             >
                 <PWView style={styles.contentWrapper}>
                     {autoCreateContainer ? (

@@ -14,7 +14,7 @@ import React, { useState } from 'react'
 import { Platform } from 'react-native'
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import DateTimePicker, {
-    DateTimePickerEvent,
+    DateTimePickerChangeEvent,
 } from '@react-native-community/datetimepicker'
 
 import { useBottomSheetResult } from '@modules/bottom-sheet'
@@ -114,11 +114,13 @@ export const TransactionsFilterContent = ({
         setIsPickerVisible(true)
     }
 
-    const handleDateChange = (event: DateTimePickerEvent, date?: Date) => {
+    const handleDateValueChange = (
+        _event: DateTimePickerChangeEvent,
+        date: Date,
+    ) => {
         if (Platform.OS === 'android') {
             setIsPickerVisible(false)
         }
-        if (event.type === 'dismissed' || !date) return
 
         setCustomRange(prev => {
             const next = { ...prev, [activeDateInput]: date }
@@ -131,6 +133,10 @@ export const TransactionsFilterContent = ({
             }
             return next
         })
+    }
+
+    const handlePickerDismiss = () => {
+        setIsPickerVisible(false)
     }
 
     const handleApplyCustomRange = () => {
@@ -324,7 +330,8 @@ export const TransactionsFilterContent = ({
                         }
                         mode='date'
                         display={Platform.OS === 'ios' ? 'inline' : 'default'}
-                        onChange={handleDateChange}
+                        onValueChange={handleDateValueChange}
+                        onDismiss={handlePickerDismiss}
                         themeVariant={isDarkMode ? 'dark' : 'light'}
                     />
                 )}

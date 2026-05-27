@@ -10,29 +10,20 @@
  limitations under the License
  */
 
-import { useTheme } from '@rneui/themed'
 import EditPenImage from '@assets/icons/edit-pen.svg'
 import { PWIcon, PWInfoView, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { ILLUSTRATION_SIZE } from '../../constants'
 import { useBackupReminderWriteDownScreen } from './useBackupReminderWriteDownScreen'
 import { useStyles } from './styles'
 
 export const BackupReminderWriteDownScreen = () => {
     const styles = useStyles()
-    const { theme } = useTheme()
     const { t } = useLanguage()
     const { onContinue } = useBackupReminderWriteDownScreen()
 
     return (
         <PWInfoView
-            illustration={
-                <EditPenImage
-                    width={ILLUSTRATION_SIZE}
-                    height={ILLUSTRATION_SIZE}
-                    color={theme.colors.textMain}
-                />
-            }
+            illustration={EditPenImage}
             title={t('backup.write_down.title')}
             body={t('backup.write_down.body')}
             footerExtras={

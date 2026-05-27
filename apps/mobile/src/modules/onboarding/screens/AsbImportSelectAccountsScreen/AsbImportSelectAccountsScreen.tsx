@@ -127,6 +127,7 @@ export const AsbImportSelectAccountsScreen = () => {
                         renderItem={renderItem}
                         keyExtractor={item => item.address}
                         extraData={selectedAddresses}
+                        cardLayout
                         showsVerticalScrollIndicator={false}
                     />
                 </PWView>

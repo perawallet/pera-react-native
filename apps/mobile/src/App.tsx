@@ -52,7 +52,7 @@ import {
     PeraWalletProvider,
     usePeraProvider,
 } from '@perawallet/wallet-extension-provider'
-import { SafeAreaProvider } from 'react-native-safe-area-context'
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { RootComponent } from '@components/RootComponent'
 // Side-effect: binds every entry in the bottom-sheet manager's typed
 // registry (see modules/bottom-sheet/registrations.ts) before anything in
@@ -165,7 +165,11 @@ const AppContent = () => {
                 {bootstrapped && persister && (
                     <GestureHandlerRootView>
                         <KeyboardProvider>
-                            <NotifierWrapper>
+                            <NotifierWrapper
+                                componentProps={{
+                                    ContainerComponent: SafeAreaView,
+                                }}
+                            >
                                 <QueryProvider persister={persister}>
                                     <RootComponent fcmToken={fcmToken} />
                                 </QueryProvider>

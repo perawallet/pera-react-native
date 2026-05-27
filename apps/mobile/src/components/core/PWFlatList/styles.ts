@@ -13,7 +13,18 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    listContent: {
-        paddingTop: theme.spacing.lg,
+    content: {
+        paddingBottom: theme.spacing.xl,
+    },
+    cardContent: {
+        paddingVertical: theme.spacing.xl,
+    },
+    cardSeparator: {
+        height: theme.spacing.md,
+    },
+    // Lets a ListEmptyComponent fill the list height so it can center itself,
+    // applied only while the list is actually empty (no effect on content).
+    fillEmpty: {
+        flexGrow: 1,
     },
 }))

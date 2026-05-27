@@ -18,13 +18,11 @@ import { PWFlatList } from '@components/core'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { SelectableAccountRow } from '@modules/accounts/components/SelectableAccountRow'
 import { useReceiveFunds } from '@modules/transactions/hooks'
-import { useStyles } from './styles'
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ReceiveFundsStackParamList } from '../../../routes/receive-funds/types'
 
 export const AccountSelectionScreen = () => {
-    const styles = useStyles()
     const accounts = useAllAccounts()
     const { setSelectedAccount } = useReceiveFunds()
     const navigation =
@@ -53,10 +51,10 @@ export const AccountSelectionScreen = () => {
     return (
         <PWFlatList
             inBottomSheet
+            cardLayout
             data={accounts}
             renderItem={renderItem}
             keyExtractor={keyExtractor}
-            contentContainerStyle={styles.listContent}
         />
     )
 }
