@@ -16,7 +16,7 @@
  */
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { withPodfile } = require('@expo/config-plugins');
+const { withPodfile } = require('expo/config-plugins');
 
 const withPodfileModifications = (config) => {
   return withPodfile(config, async (podfileConfig) => {
