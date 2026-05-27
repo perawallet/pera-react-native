@@ -43,8 +43,10 @@ import {
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
 import {
+    BROWSER_FAVORITE_ACTION,
     JsonRpcErrorCode,
     requireSecure,
+    sendActionToWebview,
     sendErrorToWebview,
     sendMessageToWebview,
 } from './handlers'
@@ -171,12 +173,38 @@ export const usePeraWebviewInterface = (
                     if (!hadRequiredParams(['url'], message)) {
                         return
                     }
+                    const url = message.params!.url as string
+                    const title = message.params?.title as string | undefined
+                    const isFavorite = message.params?.isFavorite
+
+                    // The host (Discover) sends `isFavorite` only for pages that
+                    // support favoriting; without it the footer shows no star.
+                    // onToggle asks the source webview — where favorites
+                    // persistence lives — to flip the page's favorite state.
+                    const favorite =
+                        typeof isFavorite === 'boolean'
+                            ? {
+                                  initialIsFavorite: isFavorite,
+                                  onToggle: () =>
+                                      sendActionToWebview(
+                                          BROWSER_FAVORITE_ACTION,
+                                          {
+                                              name: title ?? '',
+                                              url,
+                                              logo: null,
+                                          },
+                                          webview,
+                                      ),
+                              }
+                            : undefined
+
                     pushWebViewContext({
-                        url: message.params!.url as string,
+                        url,
                         onCloseRequested,
                         onBackRequested,
                         id: message.id,
                         enablePeraConnect: true,
+                        favorite,
                     })
                 },
             )
