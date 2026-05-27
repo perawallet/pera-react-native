@@ -27,7 +27,7 @@
     "@walletconnect/types": "1.8.0",
     "@walletconnect/utils": "1.8.0",
     "react": "catalog:",
-    "react-native": "catalog:",
+    "react-native": "0.85.3",
     "zod": "catalog:",
     "zustand": "catalog:"
   },

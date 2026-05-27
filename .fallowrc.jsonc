@@ -9,7 +9,9 @@
     // Custom Metro transformer wired into metro.config.js by path.
     "apps/mobile/metro-raw-transformer.js",
     // Guardrail checks are discovered at runtime via fast-glob, not imported.
-    "packages/devtools/guardrails/checks/**"
+    "packages/devtools/guardrails/checks/**",
+    // Worker entry spawned at runtime via `new Worker(URL)`, not a static import.
+    "packages/devtools/guardrails/worker-entry.mjs"
   ],
 
   // Test infrastructure the runner (vitest) resolves by convention, never imported.
@@ -28,7 +30,10 @@
     // by the component convention). Treating them as entry points stops flagging the
     // barrels themselves and their `Component`/`XxxProps` re-exports as unused, while
     // genuinely-dead exports in source files are still reported.
-    "**/index.ts"
+    "**/index.ts",
+    // React Native platform-base file: Metro resolves the `.ios`/`.android` variant
+    // at runtime, but TypeScript resolves this base `.ts`, so it is not dead.
+    "apps/mobile/src/hooks/useKeyboardHeight.ts"
   ],
 
   // Native modules (React Native autolinking) and build/polyfill packages consumed
@@ -89,6 +94,12 @@
     // which ARE used).
     "duplicate-exports": "off",
     "unused-class-members": "off",
-    "unused-enum-members": "off"
+    "unused-enum-members": "off",
+    // Disabled: every finding is a test-only false positive. fallow resolves
+    // modules via tsconfig, but vitest adds aliases (@test-utils, @/...), .svg
+    // transforms, and mocks of native libs (react-native-tab-view, vector-icons)
+    // it cannot see — producing phantom unresolved/unlisted findings in test files.
+    "unresolved-imports": "off",
+    "unlisted-dependencies": "off"
   }
 }

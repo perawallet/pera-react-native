@@ -24,7 +24,7 @@ import { useKMS } from '@perawallet/wallet-core-kms'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useRoute, RouteProp } from '@react-navigation/native'
-import { OnboardingStackParamList } from '../../routes'
+import type { OnboardingStackParamList } from '../../routes'
 import {
     useShouldPlayConfetti,
     useExitAccountFlow,

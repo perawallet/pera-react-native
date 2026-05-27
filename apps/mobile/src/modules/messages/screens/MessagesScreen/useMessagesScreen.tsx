@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { MessagesStackParamList } from '@modules/messages/routes'
+import type { MessagesStackParamList } from '@modules/messages/routes'
 import { RouteProp, useFocusEffect, useRoute } from '@react-navigation/native'
 import { useCallback, useMemo, useState } from 'react'
 import { useInboxStatus } from '@perawallet/wallet-core-messages'

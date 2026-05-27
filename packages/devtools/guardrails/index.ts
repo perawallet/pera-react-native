@@ -1,6 +1,4 @@
 #!/usr/bin/env tsx
-import { existsSync } from 'node:fs'
-import { readdir } from 'node:fs/promises'
 import { cpus } from 'node:os'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { performance } from 'node:perf_hooks'
@@ -8,7 +6,11 @@ import { isMainThread, Worker } from 'node:worker_threads'
 import { parseArgs } from './utils/args.js'
 import { discoverFilePaths, findRepoRoot } from './utils/discovery.js'
 import { formatHuman, formatJson, type RunSummary } from './utils/output.js'
-import { runChecksAgainstPaths, type ChunkResult } from './execute.js'
+import {
+    loadChecks,
+    runChecksAgainstPaths,
+    type ChunkResult,
+} from './execute.js'
 export type { RunSummary } from './utils/output.js'
 import {
     IN_PROCESS_THRESHOLD,
@@ -17,16 +19,6 @@ import {
     shouldForceWorkers,
 } from './constants.js'
 import type { Check, Violation } from './types.js'
-
-function isCheck(value: unknown): value is Check {
-    if (value === null || typeof value !== 'object') return false
-    const candidate = value as { id?: unknown; visitors?: unknown }
-    return (
-        typeof candidate.id === 'string' &&
-        typeof candidate.visitors === 'object' &&
-        candidate.visitors !== null
-    )
-}
 
 function compareViolations(a: Violation, b: Violation): number {
     if (a.ruleId !== b.ruleId) return a.ruleId < b.ruleId ? -1 : 1
@@ -39,29 +31,6 @@ function roundTimings(timings: Record<string, number>): Record<string, number> {
     const out: Record<string, number> = {}
     for (const [id, ms] of Object.entries(timings)) out[id] = Math.round(ms)
     return out
-}
-
-export async function loadChecks(checksDirUrl: URL): Promise<Check[]> {
-    const dirPath = fileURLToPath(checksDirUrl)
-    if (!existsSync(dirPath)) return []
-
-    const entries = await readdir(dirPath)
-    const checkFiles = entries.filter(name => name.endsWith('.check.ts'))
-    if (checkFiles.length === 0) return []
-
-    const modules = await Promise.all(
-        checkFiles.map(async file => {
-            const href = new URL(file, checksDirUrl).href
-            const mod = (await import(href)) as { default?: unknown }
-            if (!isCheck(mod.default)) {
-                throw new Error(
-                    `guardrails: check file "${file}" must have a default export implementing the Check interface (id, visitors)`,
-                )
-            }
-            return mod.default
-        }),
-    )
-    return modules
 }
 
 interface AggregateResult extends ChunkResult {
