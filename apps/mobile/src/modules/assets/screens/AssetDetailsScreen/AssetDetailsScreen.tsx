@@ -34,7 +34,7 @@ export type AssetDetailsScreenProps = NativeStackScreenProps<
     'AssetDetails'
 >
 
-export type AssetDetailsTabParamsList = {
+type AssetDetailsTabParamsList = {
     Holdings: undefined
     Markets: undefined
 }

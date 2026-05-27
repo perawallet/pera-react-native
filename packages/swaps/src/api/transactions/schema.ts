@@ -33,7 +33,6 @@ export const prepareTransactionsResponseSchema = z.object({
 export type PrepareTransactionsRequest = z.infer<
     typeof prepareTransactionsRequestSchema
 >
-export type TransactionGroupApiResponse = z.infer<typeof transactionGroupSchema>
 export type PrepareTransactionsApiResponse = z.infer<
     typeof prepareTransactionsResponseSchema
 >

@@ -30,7 +30,7 @@ import { useBiometrics } from './useBiometrics'
 import { useKMSService, zeroBytes } from '@perawallet/wallet-core-kms'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
-export type VerifyPinResult =
+type VerifyPinResult =
     | { kind: 'ok' }
     | { kind: 'duress' }
     | { kind: 'fail' }

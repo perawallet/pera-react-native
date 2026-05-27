@@ -30,7 +30,7 @@ export const UserPreferences = {
     _securityPinSetupPrompt: 'security_pin_setup_prompt',
 } as const
 
-export type UserPreferences =
+type UserPreferences =
     (typeof UserPreferences)[keyof typeof UserPreferences]
 
 // Preferences that gate first-run prompts, disclaimers, or one-shot warnings.

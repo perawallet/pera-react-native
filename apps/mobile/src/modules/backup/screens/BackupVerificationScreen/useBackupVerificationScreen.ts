@@ -46,11 +46,6 @@ export type UseBackupVerificationScreenResult = {
 }
 
 // Exposed for tests to bypass the KMS fetch.
-export type BackupQuizPreloadedPicks = {
-    picks: { index: number; word: string }[]
-    isLoading: boolean
-    error: Error | null
-}
 
 export const useBackupVerificationScreen =
     (): UseBackupVerificationScreenResult => {

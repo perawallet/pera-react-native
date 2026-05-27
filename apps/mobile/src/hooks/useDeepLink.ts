@@ -46,7 +46,6 @@ import {
 import { useDeeplinkErrorHandler } from './deeplink/handlers/useDeeplinkErrorHandler'
 import { withTimeout } from './deeplink/handlers/timeout'
 
-export type { BuildDeeplinkInput } from './deeplink/builders'
 
 /**
  * Subscribe to the WalletConnect store and resolve `true` as soon as a

@@ -37,7 +37,7 @@ type WebViewState = {
     openWebViews: WebViewRequest[]
 }
 
-export type WebViewActions = {
+type WebViewActions = {
     pushWebView: (view: Omit<WebViewRequest, 'id'> & { id?: string }) => void
     popWebView: () => void
     removeWebView: (id: string) => void

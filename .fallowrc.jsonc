@@ -41,7 +41,16 @@
     "readable-stream", // stream polyfill wired via shim.js / metro
     "sharp", // build-time image processing, not app runtime
     "expo-build-properties", // Expo config plugin (app.config.js), no JS import
-    "expo-dev-client" // dev launcher, no app-code import
+    "expo-dev-client", // dev launcher, no app-code import
+    // Native modules that must stay DIRECT deps for autolinking even though no JS
+    // imports them in their declaring package — removing them breaks the native
+    // build (uncaught by typecheck or tests, only by `expo prebuild`).
+    "expo-font",
+    "expo-local-authentication",
+    "expo-sqlite",
+    "expo-status-bar",
+    "@algorandfoundation/react-native-keystore",
+    "react-native-quick-base64"
   ],
 
   "duplicates": {
@@ -64,5 +73,13 @@
   // advisory (non-blocking); individual rules will be flipped to "error" with a
   // baseline once the legacy findings are triaged. Architecture boundaries are
   // intentionally not configured — they are covered by the in-house guardrails.
-  "rules": {}
+  "rules": {
+    // Disabled: fallow's workspace-dependency resolution produces false positives
+    // in this monorepo — it flagged deps that ARE imported (e.g.
+    // @perawallet/wallet-core-shared in wallet-core-device), and removing them
+    // broke `pnpm build`. Dependency hygiene must be verified manually + by build,
+    // not from these findings. Re-enable only once the resolver gap is understood.
+    "unused-dependencies": "off",
+    "unused-dev-dependencies": "off"
+  }
 }

@@ -251,13 +251,13 @@ const toClassifiedError = (error: unknown): Error => {
     )
 }
 
-export type SignTransactionsOnHardwareWalletOptions = {
+type SignTransactionsOnHardwareWalletOptions = {
     registry?: HardwareWalletRegistry
     encodeTransaction: EncodeTransactionFunction
     callbacks?: SigningCallbacks
 }
 
-export type SignArc60OnHardwareWalletOptions = Omit<
+type SignArc60OnHardwareWalletOptions = Omit<
     SignTransactionsOnHardwareWalletOptions,
     'encodeTransaction'
 >

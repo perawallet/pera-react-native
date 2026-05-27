@@ -29,7 +29,6 @@ import {
 
 export type {
     OnboardingStackParamList,
-    AddAccountStackParamList,
 } from './types'
 export { AddAccountStackNavigator } from './add-account'
 

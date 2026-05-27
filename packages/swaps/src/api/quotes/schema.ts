@@ -92,5 +92,4 @@ export type CalculateSwapAmountApiResponse = z.infer<
     typeof calculateSwapAmountResponseSchema
 >
 export type CreateQuotesRequest = z.infer<typeof createQuotesRequestSchema>
-export type QuoteApiResponse = z.infer<typeof quoteSchema>
 export type CreateQuotesApiResponse = z.infer<typeof createQuotesResponseSchema>

@@ -22,7 +22,6 @@ const SHARED_INTRO_NAV = {
     supportUrl: config.rekeyToSharedSupportUrl,
 } as const
 
-export type UseRekeyToSharedIntroScreenResult = UseRekeyIntroScreenResult
 
 export const useRekeyToSharedIntroScreen = (): UseRekeyIntroScreenResult =>
     useRekeyIntroScreen(SHARED_INTRO_NAV)

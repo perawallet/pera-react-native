@@ -22,7 +22,6 @@ const LEDGER_INTRO_NAV = {
     supportUrl: config.rekeyToLedgerSupportUrl,
 } as const
 
-export type UseRekeyToLedgerIntroScreenResult = UseRekeyIntroScreenResult
 
 export const useRekeyToLedgerIntroScreen = (): UseRekeyIntroScreenResult =>
     useRekeyIntroScreen(LEDGER_INTRO_NAV)
