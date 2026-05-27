@@ -45,7 +45,6 @@ export const AccountSortContent = (_: AccountSortContentProps = {}) => {
                         paddingStyle='none'
                     />
                 }
-                style={styles.toolbar}
             />
 
             <PWView style={styles.contentContainer}>

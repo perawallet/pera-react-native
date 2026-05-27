@@ -13,12 +13,10 @@
 import { PWButton, PWRadioButton, PWSheetLayout } from '@components/core'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useAssetSortContent } from './useAssetSortContent'
-import { useStyles } from './styles'
 
 export type AssetSortContentProps = Record<string, never>
 
 export const AssetSortContent = (_: AssetSortContentProps = {}) => {
-    const styles = useStyles()
     const { dismiss } = useBottomSheetResult<void>()
     const { sortOptions, assetSortMode, handleSortModeChange, t } =
         useAssetSortContent()
@@ -36,7 +34,6 @@ export const AssetSortContent = (_: AssetSortContentProps = {}) => {
                             paddingStyle='none'
                         />
                     }
-                    style={styles.toolbar}
                 />
             }
         >

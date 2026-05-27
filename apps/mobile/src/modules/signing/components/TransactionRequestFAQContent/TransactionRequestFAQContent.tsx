@@ -30,7 +30,10 @@ export const TransactionRequestFAQContent = (
                 size='xl'
                 style={styles.icon}
             />
-            <PWText variant='h3'>
+            <PWText
+                variant='h3'
+                style={styles.title}
+            >
                 {t('signing.transaction_request_faq.title')}
             </PWText>
             <PWText style={styles.message}>

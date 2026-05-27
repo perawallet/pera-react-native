@@ -102,11 +102,11 @@ export const useARC59SendSummaryScreen =
             : null
 
         const showWarningSheet = useCallback(async () => {
-            const result = await requestBottomSheet<'confirm'>({
+            const confirmed = await requestBottomSheet<boolean>({
                 contents: <ARC59WarningContent />,
                 options: { size: 'auto', enablePanDownToClose: true },
             })
-            if (result === 'confirm') {
+            if (confirmed) {
                 navigation.navigate('TransactionProcessing')
             }
         }, [requestBottomSheet, navigation])

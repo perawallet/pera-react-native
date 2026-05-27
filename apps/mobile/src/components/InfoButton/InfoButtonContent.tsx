@@ -11,8 +11,7 @@
  */
 
 import { ReactNode } from 'react'
-import { PWText, PWView } from '@components/core'
-import { useContentStyles } from './styles'
+import { ConfirmActionContent } from '@components/ConfirmActionContent'
 
 export type InfoButtonContentProps = {
     title?: string
@@ -22,21 +21,9 @@ export type InfoButtonContentProps = {
 export const InfoButtonContent = ({
     title,
     children,
-}: InfoButtonContentProps) => {
-    const styles = useContentStyles()
-
-    return (
-        <PWView style={styles.container}>
-            {!!title && (
-                <PWText
-                    variant='h3'
-                    style={styles.title}
-                    truncate
-                >
-                    {title}
-                </PWText>
-            )}
-            <PWView style={styles.contentContainer}>{children}</PWView>
-        </PWView>
-    )
-}
+}: InfoButtonContentProps) => (
+    <ConfirmActionContent
+        title={title}
+        message={children}
+    />
+)

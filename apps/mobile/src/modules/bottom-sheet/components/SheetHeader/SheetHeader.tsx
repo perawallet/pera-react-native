@@ -11,7 +11,7 @@
  */
 
 import type { ReactNode } from 'react'
-import { PWIcon, PWText, PWToolbar } from '@components/core'
+import { PWIcon, PWText, PWToolbar, PWView } from '@components/core'
 import { useBottomSheetResult } from '../../hooks/useBottomSheetResult'
 import { useBottomSheetPanDownEnabled } from '../../hooks/useBottomSheetPanDownEnabled'
 import { useBottomSheetSize } from '../../hooks/useBottomSheetSize'
@@ -27,6 +27,11 @@ export type SheetHeaderProps = {
     titleVariant?: TypographyVariant
     /** Overrides the font weight applied to a string title. */
     titleWeight?: FontWeight
+    /**
+     * Optional secondary line shown beneath a string `title` (e.g. a truncated
+     * address). Rendered in the footnote/gray style. Ignored for node titles.
+     */
+    subtitle?: string
     /** Optional element shown in the toolbar's right slot. */
     rightAction?: ReactNode
     /** Override the default close behaviour (which calls `dismiss()`). */
@@ -54,6 +59,7 @@ export const SheetHeader = ({
     title,
     titleVariant = 'h4',
     titleWeight,
+    subtitle,
     rightAction,
     onClose,
     paddingStyle = 'dense',
@@ -77,14 +83,37 @@ export const SheetHeader = ({
                 showClose ? (
                     <PWIcon
                         name='cross'
-                        variant='secondary'
+                        variant='primary'
                         onPress={handleClose}
                         testID={testID ? `${testID}-close` : undefined}
                     />
                 ) : undefined
             }
             center={
-                typeof title === 'string' ? (
+                typeof title !== 'string' ? (
+                    title
+                ) : subtitle ? (
+                    <PWView style={styles.titleColumn}>
+                        <PWText
+                            variant={titleVariant}
+                            weight={titleWeight}
+                            truncate
+                            style={styles.title}
+                            testID={testID ? `${testID}-title` : undefined}
+                        >
+                            {title}
+                        </PWText>
+                        <PWText
+                            variant='footnoteMedium'
+                            weight={400}
+                            truncate
+                            style={styles.subtitle}
+                            testID={testID ? `${testID}-subtitle` : undefined}
+                        >
+                            {subtitle}
+                        </PWText>
+                    </PWView>
+                ) : (
                     <PWText
                         variant={titleVariant}
                         weight={titleWeight}
@@ -94,13 +123,11 @@ export const SheetHeader = ({
                     >
                         {title}
                     </PWText>
-                ) : (
-                    title
                 )
             }
             right={rightAction}
             paddingStyle={paddingStyle}
-            style={style}
+            style={[styles.toolbar, style]}
             testID={testID}
         />
     )

@@ -14,13 +14,11 @@ import { PWButton, PWSheetLayout } from '@components/core'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { FilterRow } from './FilterRow'
-import { useStyles } from './styles'
 import { useAssetFilterContent } from './useAssetFilterContent'
 
 export type AssetFilterContentProps = Record<string, never>
 
 export const AssetFilterContent = (_: AssetFilterContentProps = {}) => {
-    const styles = useStyles()
     const { t } = useLanguage()
     const { dismiss } = useBottomSheetResult<void>()
     const {
@@ -45,7 +43,6 @@ export const AssetFilterContent = (_: AssetFilterContentProps = {}) => {
                             paddingStyle='none'
                         />
                     }
-                    style={styles.toolbar}
                 />
             }
         >

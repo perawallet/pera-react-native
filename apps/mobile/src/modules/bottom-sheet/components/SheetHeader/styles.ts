@@ -12,9 +12,25 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(() => ({
+export const useStyles = makeStyles(theme => ({
+    // Standard sheet-header gutter — matches the sheet body's horizontal
+    // padding (lg) so the header lines up with the content beneath it. Callers
+    // pass `style` to override (e.g. full-bleed headers using 0).
+    toolbar: {
+        paddingHorizontal: theme.spacing.lg,
+    },
     title: {
         width: '100%',
         textAlign: 'center',
+    },
+    // Title + subtitle stack (e.g. account name over its truncated address).
+    titleColumn: {
+        width: '100%',
+        alignItems: 'center',
+    },
+    subtitle: {
+        width: '100%',
+        textAlign: 'center',
+        color: theme.colors.textGrayLighter,
     },
 }))

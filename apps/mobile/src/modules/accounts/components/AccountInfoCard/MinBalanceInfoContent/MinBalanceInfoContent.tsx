@@ -10,27 +10,18 @@
  limitations under the License
  */
 
-import { PWText } from '@components/core'
+import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useLanguage } from '@hooks/useLanguage'
-import { useStyles } from './styles'
 
 export type MinBalanceInfoContentProps = Record<string, never>
 
 export const MinBalanceInfoContent = (_: MinBalanceInfoContentProps = {}) => {
-    const styles = useStyles()
     const { t } = useLanguage()
 
     return (
-        <>
-            <PWText
-                variant='h3'
-                style={styles.title}
-            >
-                {t('min_balance_info.title')}
-            </PWText>
-            <PWText style={styles.description}>
-                {t('min_balance_info.description')}
-            </PWText>
-        </>
+        <ConfirmActionContent
+            title={t('min_balance_info.title')}
+            message={t('min_balance_info.description')}
+        />
     )
 }

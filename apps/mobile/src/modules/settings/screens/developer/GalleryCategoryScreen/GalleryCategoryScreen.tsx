@@ -13,9 +13,10 @@
 import { Fragment, useEffect } from 'react'
 import { useNavigation } from '@react-navigation/native'
 
-import { PWListItem, PWScreen, PWText } from '@components/core'
+import { PWScreen, PWText } from '@components/core'
 
 import { useGalleryCategoryScreen } from './useGalleryCategoryScreen'
+import { GalleryItemRow } from './GalleryItemRow'
 import { useStyles } from './styles'
 
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
@@ -41,12 +42,10 @@ export const GalleryCategoryScreen = () => {
                         {section.title}
                     </PWText>
                     {section.items.map(item => (
-                        <PWListItem
+                        <GalleryItemRow
                             key={item.id}
-                            icon='globe'
-                            title={item.label}
-                            onPress={() => onItemPress(item)}
-                            testID={`gallery_item_${item.id}`}
+                            item={item}
+                            onPress={onItemPress}
                         />
                     ))}
                 </Fragment>

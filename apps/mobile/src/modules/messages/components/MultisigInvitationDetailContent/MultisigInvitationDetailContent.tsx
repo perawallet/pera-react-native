@@ -64,7 +64,7 @@ export const MultisigInvitationDetailContent = ({
                         {t('multisig.invitation.sheet_title')}
                     </PWText>
                     <PWText
-                        style={styles.headerAddress}
+                        style={styles.headerSubtitle}
                         testID='multisig_invitation_sheet_address'
                     >
                         {truncateAlgorandAddress(renderedInvitation.address)}

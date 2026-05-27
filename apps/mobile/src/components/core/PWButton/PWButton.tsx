@@ -45,6 +45,16 @@ export type PWButtonProps = TouchableOpacityProps & {
     paddingStyle?: 'none' | 'dense' | 'normal'
 }
 
+// Borderless text buttons (toolbar actions, inline links) render their title
+// at Body/Medium (weight 500) per the design spec; filled buttons keep the
+// heavier h4 (600) title.
+const TEXT_BUTTON_VARIANTS = new Set<PWButtonProps['variant']>([
+    'link',
+    'linkNeutral',
+    'linkPositive',
+    'errorLink',
+])
+
 const ICON_VARIANT_MAP: Record<string, PWIconVariant> = {
     primary: 'buttonPrimary',
     secondary: 'primary',
@@ -84,6 +94,7 @@ export const PWButton = ({
     })
 
     const iconVariant = ICON_VARIANT_MAP[variant]
+    const isTextButton = TEXT_BUTTON_VARIANTS.has(variant)
 
     return (
         <PWTouchableOpacity
@@ -108,6 +119,7 @@ export const PWButton = ({
                 <PWView style={styles.titleContainer}>
                     <PWText
                         variant='h4'
+                        weight={isTextButton ? 500 : undefined}
                         style={styles.titleStyle}
                         truncate
                     >

@@ -47,7 +47,7 @@ export const MultisigInfoCard = ({
         >
             <PWView style={styles.row}>
                 <PWView style={styles.rowLabels}>
-                    <PWText variant='h4'>
+                    <PWText variant='bodyLarge'>
                         {t('multisig.info_card.number_of_accounts')}
                     </PWText>
                     {isUserIncluded && (
@@ -63,7 +63,7 @@ export const MultisigInfoCard = ({
             </PWView>
             <PWView style={styles.row}>
                 <PWView style={styles.rowLabels}>
-                    <PWText variant='h4'>
+                    <PWText variant='bodyLarge'>
                         {t('multisig.info_card.threshold')}
                     </PWText>
                     <PWText style={styles.rowSubLabel}>

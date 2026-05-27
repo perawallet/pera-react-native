@@ -11,10 +11,11 @@
  */
 
 import {
-    PWBadge,
+    PWChip,
     PWIcon,
     PWSheetLayout,
     PWText,
+    PWTouchableOpacity,
     PWView,
 } from '@components/core'
 import { SheetHeader } from '@modules/bottom-sheet'
@@ -68,26 +69,36 @@ export const ViewTextDetailsContent = ({
                         }
                     />
                     <PWView style={styles.buttonContainer}>
-                        <PWBadge
-                            variant={mode === 'text' ? 'primary' : 'secondary'}
-                            value={t('common.text.label')}
-                            textStyle={styles.buttonText}
-                            onPress={() => setMode('text')}
-                        />
-                        <PWBadge
-                            variant={mode === 'hex' ? 'primary' : 'secondary'}
-                            value={t('common.hex.label')}
-                            textStyle={styles.buttonText}
-                            onPress={() => setMode('hex')}
-                        />
-                        <PWBadge
-                            variant={
-                                mode === 'base64' ? 'primary' : 'secondary'
-                            }
-                            value={t('common.base64.label')}
-                            textStyle={styles.buttonText}
-                            onPress={() => setMode('base64')}
-                        />
+                        <PWTouchableOpacity onPress={() => setMode('text')}>
+                            <PWChip
+                                title={t('common.text.label')}
+                                variant={
+                                    mode === 'text' ? 'secondary' : 'outline'
+                                }
+                                forceUppercase={false}
+                                paddingStyle='normal'
+                            />
+                        </PWTouchableOpacity>
+                        <PWTouchableOpacity onPress={() => setMode('hex')}>
+                            <PWChip
+                                title={t('common.hex.label')}
+                                variant={
+                                    mode === 'hex' ? 'secondary' : 'outline'
+                                }
+                                forceUppercase={false}
+                                paddingStyle='normal'
+                            />
+                        </PWTouchableOpacity>
+                        <PWTouchableOpacity onPress={() => setMode('base64')}>
+                            <PWChip
+                                title={t('common.base64.label')}
+                                variant={
+                                    mode === 'base64' ? 'secondary' : 'outline'
+                                }
+                                forceUppercase={false}
+                                paddingStyle='normal'
+                            />
+                        </PWTouchableOpacity>
                     </PWView>
                 </>
             }

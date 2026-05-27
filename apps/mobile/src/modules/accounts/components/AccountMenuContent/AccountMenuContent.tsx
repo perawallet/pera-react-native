@@ -60,8 +60,6 @@ export const AccountMenuContent = ({
             <PWToolbar
                 left={closeIcon}
                 right={searchIcon}
-                paddingStyle='none'
-                style={styles.toolbar}
             />
             <AccountMenu
                 onSelected={account => resolve({ kind: 'selected', account })}

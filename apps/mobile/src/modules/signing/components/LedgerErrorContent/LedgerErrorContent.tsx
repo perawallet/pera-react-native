@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import React from 'react'
-import { PWButton, PWText, PWTouchableOpacity, PWView } from '@components/core'
+import { PWText, PWTouchableOpacity, PWView } from '@components/core'
+import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useLanguage } from '@hooks/useLanguage'
 import type { LedgerErrorPreset } from '@modules/ledger/utils/ledgerErrorPresets'
 import { useStyles } from './styles'
@@ -33,38 +33,42 @@ export const LedgerErrorContent = ({
     const { t } = useLanguage()
 
     return (
-        <PWView style={styles.container}>
-            <PWText style={styles.title}>{error.title}</PWText>
-            <PWText style={styles.body}>{error.body}</PWText>
-
-            {error.isTroubleshootable && (
-                <PWTouchableOpacity
-                    onPress={onOpenTroubleshooting}
-                    testID='ledger-error-troubleshoot'
-                >
-                    <PWText style={styles.troubleshootLink}>
-                        {t('ledger.errors.troubleshooting_link')}
+        <ConfirmActionContent
+            title={error.title}
+            message={
+                <PWView style={styles.body}>
+                    <PWText
+                        variant='body'
+                        style={styles.bodyText}
+                    >
+                        {error.body}
                     </PWText>
-                </PWTouchableOpacity>
-            )}
-
-            <PWView style={styles.actions}>
-                {error.isRetryable && (
-                    <PWButton
-                        variant='primary'
-                        title={t('ledger.signing.retry')}
-                        onPress={onRetry}
-                        style={styles.retryButton}
-                        testID='ledger-error-retry'
-                    />
-                )}
-                <PWButton
-                    variant='secondary'
-                    title={t('ledger.signing.cancel')}
-                    onPress={onClose}
-                    testID='ledger-error-close'
-                />
-            </PWView>
-        </PWView>
+                    {error.isTroubleshootable && (
+                        <PWTouchableOpacity
+                            onPress={onOpenTroubleshooting}
+                            testID='ledger-error-troubleshoot'
+                        >
+                            <PWText
+                                variant='body'
+                                style={styles.troubleshootLink}
+                            >
+                                {t('ledger.errors.troubleshooting_link')}
+                            </PWText>
+                        </PWTouchableOpacity>
+                    )}
+                </PWView>
+            }
+            confirmLabel={
+                error.isRetryable
+                    ? t('ledger.signing.retry')
+                    : t('ledger.signing.cancel')
+            }
+            confirmVariant={error.isRetryable ? 'primary' : 'secondary'}
+            onConfirm={error.isRetryable ? onRetry : onClose}
+            cancelLabel={
+                error.isRetryable ? t('ledger.signing.cancel') : undefined
+            }
+            onCancel={onClose}
+        />
     )
 }

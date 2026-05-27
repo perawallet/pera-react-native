@@ -12,26 +12,8 @@
 
 import { makeStyles } from '@rneui/themed'
 
-type StyleProps = { bottomInset: number }
-
-export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
-    container: {
-        padding: theme.spacing.xl,
-        paddingBottom: theme.spacing.xl + bottomInset,
+export const useStyles = makeStyles(theme => ({
+    body: {
         gap: theme.spacing.lg,
-        alignItems: 'center',
-    },
-    icon: {
-        marginVertical: theme.spacing.md,
-    },
-    message: {
-        textAlign: 'center',
-    },
-    errorMessage: {
-        textAlign: 'center',
-    },
-    retryMessage: {
-        textAlign: 'center',
-        marginBottom: theme.spacing.md,
     },
 }))

@@ -10,13 +10,10 @@
  limitations under the License
  */
 
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { PWButton, PWIcon, PWText, PWView } from '@components/core'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useLanguage } from '@hooks/useLanguage'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
-import { useStyles } from './styles'
 
 export type GuardedWarningType = 'rekey' | 'asset-freeze'
 
@@ -69,55 +66,32 @@ export const SecurityGuardContent = ({
     warningType,
 }: SecurityGuardContentProps) => {
     const { t } = useLanguage()
-    const insets = useSafeAreaInsets()
-    const styles = useStyles({ bottomInset: insets.bottom })
     const { getPreference } = usePreferences()
-    const { resolve, dismiss } =
-        useBottomSheetResult<SecurityGuardContentResult>()
     const isSupportEnabled = !!getPreference(preferenceKeyMap[warningType])
     const keys = i18nKeyMap[warningType]
 
     return (
-        <>
-            <PWIcon
-                name='warning'
-                variant='error'
-                size='xxl'
-                style={styles.bottomSheetIcon}
-            />
-            <PWText variant='h3'>
-                {isSupportEnabled
+        <ConfirmActionContent<SecurityGuardContentResult>
+            icon='warning'
+            iconVariant='error'
+            title={
+                isSupportEnabled
                     ? t(keys.areYouSureTitle)
-                    : t(keys.confirmTitle)}
-            </PWText>
-            <PWText style={styles.bottomSheetMessage}>
-                {isSupportEnabled
+                    : t(keys.confirmTitle)
+            }
+            message={
+                isSupportEnabled
                     ? t(keys.areYouSureDescription)
-                    : t(keys.confirmDescription)}
-            </PWText>
-            <PWView style={styles.bottomSheetActions}>
-                {isSupportEnabled ? (
-                    <PWButton
-                        variant='primary'
-                        title={t(keys.areYouSureContinue)}
-                        onPress={() => resolve('confirm')}
-                        paddingStyle='dense'
-                    />
-                ) : (
-                    <PWButton
-                        variant='primary'
-                        title={t(keys.confirmGoToSettings)}
-                        onPress={() => resolve('go-to-settings')}
-                        paddingStyle='dense'
-                    />
-                )}
-                <PWButton
-                    variant='secondary'
-                    title={t('common.cancel.label')}
-                    onPress={dismiss}
-                    paddingStyle='dense'
-                />
-            </PWView>
-        </>
+                    : t(keys.confirmDescription)
+            }
+            confirmLabel={
+                isSupportEnabled
+                    ? t(keys.areYouSureContinue)
+                    : t(keys.confirmGoToSettings)
+            }
+            confirmValue={isSupportEnabled ? 'confirm' : 'go-to-settings'}
+            cancelLabel={t('common.cancel.label')}
+            buttonPaddingStyle='dense'
+        />
     )
 }

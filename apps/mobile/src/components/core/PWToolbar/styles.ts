@@ -61,8 +61,6 @@ export const useStyles = makeStyles(
                 alignSelf: 'center',
                 alignItems: 'center',
                 justifyContent: 'center',
-                // Takes all space the action slots leave and truncates within
-                // it, so a long title never pushes the buttons off screen.
                 flexGrow: 1,
                 flexShrink: 1,
                 flexBasis: 0,

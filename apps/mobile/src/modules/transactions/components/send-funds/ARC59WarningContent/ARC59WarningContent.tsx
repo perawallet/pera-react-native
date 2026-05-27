@@ -10,9 +10,8 @@
  limitations under the License
  */
 
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { PWButton, PWIcon, PWText, PWView } from '@components/core'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { PWIcon, PWText, PWView } from '@components/core'
+import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
@@ -42,54 +41,46 @@ const WARNING_ITEMS = [
 ]
 
 export const ARC59WarningContent = () => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles({ bottomInset: insets.bottom })
+    const styles = useStyles()
     const { t } = useLanguage()
-    const { resolve, dismiss } = useBottomSheetResult<'confirm'>()
 
     return (
-        <>
-            <PWIcon
-                name='warning'
-                variant='error'
-                size='xxl'
-                style={styles.icon}
-            />
-            <PWText variant='h3'>{t('send_funds.arc59_warning.title')}</PWText>
-
-            <PWText style={styles.message}>
-                {t('send_funds.arc59_warning.message')}
-            </PWText>
-            <PWView style={styles.warningItems}>
-                {WARNING_ITEMS.map((item, index) => (
-                    <PWView
-                        key={index}
-                        style={styles.warningItem}
+        <ConfirmActionContent
+            icon='warning'
+            iconVariant='error'
+            title={t('send_funds.arc59_warning.title')}
+            message={
+                <PWView style={styles.body}>
+                    <PWText
+                        variant='body'
+                        style={styles.intro}
                     >
-                        <PWIcon
-                            name={item.success ? 'check' : 'cross'}
-                            size='md'
-                            variant={item.success ? 'positive' : 'error'}
-                        />
-                        <PWText style={styles.message}>{t(item.title)}</PWText>
+                        {t('send_funds.arc59_warning.message')}
+                    </PWText>
+                    <PWView style={styles.warningItems}>
+                        {WARNING_ITEMS.map((item, index) => (
+                            <PWView
+                                key={index}
+                                style={styles.warningItem}
+                            >
+                                <PWIcon
+                                    name={item.success ? 'check' : 'cross'}
+                                    size='md'
+                                    variant={
+                                        item.success ? 'positive' : 'error'
+                                    }
+                                />
+                                <PWText style={styles.itemText}>
+                                    {t(item.title)}
+                                </PWText>
+                            </PWView>
+                        ))}
                     </PWView>
-                ))}
-            </PWView>
-
-            <PWView style={styles.actions}>
-                <PWButton
-                    variant='primary'
-                    title={t('send_funds.arc59_warning.confirm')}
-                    onPress={() => resolve('confirm')}
-                    paddingStyle='dense'
-                />
-                <PWButton
-                    variant='secondary'
-                    title={t('send_funds.arc59_warning.cancel')}
-                    onPress={dismiss}
-                    paddingStyle='dense'
-                />
-            </PWView>
-        </>
+                </PWView>
+            }
+            confirmLabel={t('send_funds.arc59_warning.confirm')}
+            cancelLabel={t('send_funds.arc59_warning.cancel')}
+            buttonPaddingStyle='dense'
+        />
     )
 }

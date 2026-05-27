@@ -116,12 +116,11 @@ export const OptInConfirmationContent = ({
                     >
                         {t('add_asset.confirmation.account_label')}
                     </PWText>
-                    <PWView style={styles.rowTrailing}>
-                        <AddressDisplay
-                            address={accountAddress}
-                            showCopy={false}
-                        />
-                    </PWView>
+                    <AddressDisplay
+                        address={accountAddress}
+                        showCopy={false}
+                        textProps={{ style: styles.rowAddress }}
+                    />
                 </PWView>
 
                 <PWView style={styles.divider} />

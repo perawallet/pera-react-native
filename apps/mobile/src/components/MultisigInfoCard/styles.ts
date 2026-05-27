@@ -16,7 +16,8 @@ export const useStyles = makeStyles(theme => ({
     container: {
         backgroundColor: theme.colors.layerGrayLighter,
         borderRadius: theme.borderRadius.lg,
-        padding: theme.spacing.md,
+        paddingHorizontal: theme.spacing.lg,
+        paddingVertical: theme.spacing.md,
         gap: theme.spacing.lg,
     },
     row: {

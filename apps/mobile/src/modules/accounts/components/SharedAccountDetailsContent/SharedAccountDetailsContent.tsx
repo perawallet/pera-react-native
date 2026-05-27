@@ -11,10 +11,11 @@
  */
 
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet'
-import { PWText, PWToolbar, PWTouchableIcon, PWView } from '@components/core'
+import { PWText, PWTouchableIcon, PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { MultisigInfoCard } from '@components/MultisigInfoCard'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
+import { SheetHeader } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useSharedAccountDetailsContent } from './useSharedAccountDetailsContent'
@@ -43,18 +44,14 @@ export const SharedAccountDetailsContent = ({
 
     return (
         <PWView style={styles.container}>
-            <PWToolbar
-                center={
-                    <PWView style={styles.headerTitle}>
-                        {!!details.name && (
-                            <PWText variant='h4'>{details.name}</PWText>
-                        )}
-                        <PWText style={styles.headerAddress}>
-                            {truncateAlgorandAddress(details.address)}
-                        </PWText>
-                    </PWView>
+            <SheetHeader
+                title={details.name || truncateAlgorandAddress(details.address)}
+                titleVariant='bodyLarge'
+                subtitle={
+                    details.name
+                        ? truncateAlgorandAddress(details.address)
+                        : undefined
                 }
-                paddingStyle='dense'
             />
             <BottomSheetScrollView
                 contentContainerStyle={styles.scrollContent}

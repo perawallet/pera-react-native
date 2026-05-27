@@ -20,24 +20,42 @@ import type { ReactNode } from 'react'
 import type { IconName, PWButtonProps, PWIconVariant } from '@components/core'
 
 /**
- * Generic confirmation bottom-sheet content. Callers supply labels and
- * — if they want one — an icon. The component resolves the host
- * bottom-sheet promise with `true` when the user confirms and dismisses
- * (resolving with `undefined`) when the user cancels or closes via the
- * backdrop / pan gesture. No default icon is rendered so the component
- * doesn't quietly assume a destructive context. Button variants default
- * to primary/secondary; override per callsite when the design diverges.
+ * Shared layout for icon + title + body + action(s) bottom-sheet content —
+ * the standard "result / warning / confirm / info" sheet. Owns the icon size,
+ * spacing, title (centered) and body (left-aligned) alignment, the bottom
+ * safe-area inset and full-width buttons so every sheet of this shape stays
+ * visually consistent. No default icon is rendered so the component doesn't
+ * quietly assume a destructive context.
  *
- * `message` accepts a plain string (rendered as centered body copy) or
- * any ReactNode for callers needing multi-line / interpolated content.
+ * `message` accepts a plain string (left-aligned body copy) or any ReactNode
+ * for callers needing multi-line / interpolated content.
+ *
+ * Buttons: the confirm button is always shown; the cancel button only renders
+ * when `cancelLabel` is supplied, so single-action sheets ("Ok" / "Done") use
+ * the same layout. By default confirm resolves the host bottom-sheet promise
+ * with `true` (override the value via `confirmValue` / the `TResult` generic,
+ * e.g. `'confirm' | 'go-to-settings'`) and cancel dismisses it. Callback-based
+ * sheets that don't drive the host promise supply `onConfirm` / `onCancel`.
  */
-export type ConfirmActionContentProps = {
+export type ConfirmActionContentProps<TResult = boolean> = {
     icon?: IconName
     iconVariant?: PWIconVariant
-    title: string
-    message: ReactNode
-    confirmLabel: string
-    cancelLabel: string
+    /** Optional heading. Omit for a body-only sheet. */
+    title?: string
+    /** Title alignment. Defaults to `center` (result/warning convention). */
+    titleAlign?: 'left' | 'center'
+    /** Optional body copy. Omit for a title-only sheet. */
+    message?: ReactNode
+    /** Omit to render an action-less sheet (e.g. an auto-dismissing result). */
+    confirmLabel?: string
+    /** Omit to render a single-action sheet (no cancel button). */
+    cancelLabel?: string
+    /** Value the host bottom-sheet promise resolves with on confirm. Defaults to `true`. */
+    confirmValue?: TResult
+    /** Override the confirm press (defaults to resolving the host promise). */
+    onConfirm?: () => void
+    /** Override the cancel press (defaults to dismissing the host sheet). */
+    onCancel?: () => void
     confirmVariant?: PWButtonProps['variant']
     cancelVariant?: PWButtonProps['variant']
     /** Forwarded to both action buttons. Defaults to PWButton's default. */
@@ -45,21 +63,32 @@ export type ConfirmActionContentProps = {
     testID?: string
 }
 
-export const ConfirmActionContent = ({
+export const ConfirmActionContent = <TResult = boolean,>({
     icon,
     iconVariant = 'primary',
     title,
+    titleAlign = 'center',
     message,
     confirmLabel,
     cancelLabel,
+    confirmValue = true as TResult,
+    onConfirm,
+    onCancel,
     confirmVariant = 'primary',
     cancelVariant = 'secondary',
     buttonPaddingStyle,
     testID,
-}: ConfirmActionContentProps) => {
+}: ConfirmActionContentProps<TResult>) => {
     const insets = useSafeAreaInsets()
-    const styles = useStyles({ bottomInset: insets.bottom })
-    const { resolve, dismiss } = useBottomSheetResult<boolean>()
+    const styles = useStyles({
+        bottomInset: insets.bottom,
+        titleAlign,
+        hasActions: !!confirmLabel,
+    })
+    const { resolve, dismiss } = useBottomSheetResult<TResult>()
+
+    const handleConfirm = onConfirm ?? (() => resolve(confirmValue))
+    const handleCancel = onCancel ?? dismiss
 
     return (
         <PWView
@@ -74,7 +103,14 @@ export const ConfirmActionContent = ({
                     style={styles.icon}
                 />
             )}
-            <PWText variant='h3'>{title}</PWText>
+            {!!title && (
+                <PWText
+                    variant='h3'
+                    style={styles.title}
+                >
+                    {title}
+                </PWText>
+            )}
             {typeof message === 'string' ? (
                 <PWText
                     variant='body'
@@ -83,22 +119,26 @@ export const ConfirmActionContent = ({
                     {message}
                 </PWText>
             ) : (
-                <PWView style={styles.message}>{message}</PWView>
+                !!message && <PWView style={styles.message}>{message}</PWView>
             )}
-            <PWView style={styles.actions}>
-                <PWButton
-                    variant={confirmVariant}
-                    title={confirmLabel}
-                    onPress={() => resolve(true)}
-                    paddingStyle={buttonPaddingStyle}
-                />
-                <PWButton
-                    variant={cancelVariant}
-                    title={cancelLabel}
-                    onPress={dismiss}
-                    paddingStyle={buttonPaddingStyle}
-                />
-            </PWView>
+            {!!confirmLabel && (
+                <PWView style={styles.actions}>
+                    <PWButton
+                        variant={confirmVariant}
+                        title={confirmLabel}
+                        onPress={handleConfirm}
+                        paddingStyle={buttonPaddingStyle}
+                    />
+                    {!!cancelLabel && (
+                        <PWButton
+                            variant={cancelVariant}
+                            title={cancelLabel}
+                            onPress={handleCancel}
+                            paddingStyle={buttonPaddingStyle}
+                        />
+                    )}
+                </PWView>
+            )}
         </PWView>
     )
 }

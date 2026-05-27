@@ -86,7 +86,19 @@ export const AccountSelection = ({
             case 'sort':
                 await requestBottomSheet<void>({
                     contents: <AccountSortContent />,
-                    options: { size: 'modal', enablePanDownToClose: true },
+                    // Full-screen so manual drag-to-reorder doesn't collide with
+                    // the sheet's pan/scroll gestures. `autoCreateContainer:
+                    // false` uses a plain flex container that fills the full
+                    // sheet and respects the top safe-area inset (gorhom's
+                    // default BottomSheetView is content-sized and would hug the
+                    // top, under the status bar). Pan-down-to-close is off so
+                    // dragging a row to reorder can't dismiss the sheet — the
+                    // header X / Done close it instead.
+                    options: {
+                        size: 'full',
+                        enablePanDownToClose: false,
+                        autoCreateContainer: false,
+                    },
                 })
                 // After sorting, reopen the account menu so the user can pick.
                 void openAccountMenu()

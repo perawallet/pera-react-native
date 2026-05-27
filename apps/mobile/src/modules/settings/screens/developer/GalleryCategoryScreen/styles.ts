@@ -18,4 +18,32 @@ export const useStyles = makeStyles(theme => ({
         marginTop: theme.spacing.lg,
         marginBottom: theme.spacing.sm,
     },
+    row: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.md,
+        paddingHorizontal: theme.spacing.sm,
+        paddingVertical: theme.spacing.lg,
+        borderRadius: theme.spacing.sm,
+    },
+    rowGood: {
+        backgroundColor: theme.colors.positiveLighter,
+    },
+    rowBroken: {
+        backgroundColor: theme.colors.negativeLighter,
+    },
+    labelArea: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.lg,
+    },
+    switchWrap: {
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    title: {
+        color: theme.colors.textMain,
+        flexShrink: 1,
+    },
 }))

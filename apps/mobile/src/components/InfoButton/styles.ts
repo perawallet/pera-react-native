@@ -25,20 +25,3 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.xs,
     },
 }))
-
-export const useContentStyles = makeStyles(theme => ({
-    container: {
-        padding: theme.spacing.xl,
-        width: '100%',
-        minWidth: 0,
-    },
-    contentContainer: {
-        width: '100%',
-        minWidth: 0,
-    },
-    title: {
-        textAlign: 'left',
-        flexShrink: 1,
-        minWidth: 0,
-    },
-}))

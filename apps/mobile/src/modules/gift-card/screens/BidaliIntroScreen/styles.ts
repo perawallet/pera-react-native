@@ -27,6 +27,7 @@ export const useStyles = makeStyles((theme, { insets }: StyleProps) => ({
     },
     toolbarTitle: {
         color: theme.colors.textMain,
+        textAlign: 'center',
     },
     heroImage: {
         backgroundColor: theme.colors.dappBidali,

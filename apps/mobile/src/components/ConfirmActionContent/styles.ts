@@ -12,27 +12,40 @@
 
 import { makeStyles } from '@rneui/themed'
 
-type StyleProps = { bottomInset: number }
+type StyleProps = {
+    bottomInset: number
+    titleAlign: 'left' | 'center'
+    hasActions: boolean
+}
 
-export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
-    container: {
-        paddingVertical: theme.spacing.lg,
-        alignItems: 'center',
-    },
-    icon: {
-        marginBottom: theme.spacing.lg,
-    },
-    message: {
-        textAlign: 'center',
-        paddingHorizontal: theme.spacing.lg,
-        paddingVertical: theme.spacing.lg,
-        color: theme.colors.textGray,
-    },
-    actions: {
-        width: '100%',
-        paddingHorizontal: theme.spacing.lg,
-        paddingTop: theme.spacing.md,
-        paddingBottom: theme.spacing.xl + bottomInset,
-        gap: theme.spacing.md,
-    },
-}))
+export const useStyles = makeStyles(
+    (theme, { bottomInset, titleAlign, hasActions }: StyleProps) => ({
+        container: {
+            paddingBottom: hasActions
+                ? theme.spacing.lg
+                : theme.spacing.lg + bottomInset,
+            alignItems: 'center',
+        },
+        icon: {
+            marginBottom: theme.spacing.lg,
+        },
+        title: {
+            alignSelf: 'stretch',
+            textAlign: titleAlign,
+            paddingHorizontal: theme.spacing.lg,
+        },
+        message: {
+            alignSelf: 'stretch',
+            textAlign: 'left',
+            padding: theme.spacing.xl,
+            color: theme.colors.textGray,
+        },
+        actions: {
+            width: '100%',
+            paddingHorizontal: theme.spacing.lg,
+            paddingTop: theme.spacing.md,
+            paddingBottom: theme.spacing.xl + bottomInset,
+            gap: theme.spacing.md,
+        },
+    }),
+)

@@ -10,10 +10,9 @@
  limitations under the License
  */
 
-import { PWIcon, PWText, PWView } from '@components/core'
+import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useLanguage } from '@hooks/useLanguage'
 import { WalletConnectSessionRequest } from '@perawallet/wallet-core-walletconnect'
-import { useStyles } from './styles'
 
 export type ConnectionSuccessContentProps = {
     request: WalletConnectSessionRequest
@@ -23,30 +22,18 @@ export const ConnectionSuccessContent = ({
     request,
 }: ConnectionSuccessContentProps) => {
     const { t } = useLanguage()
-    const styles = useStyles()
     const dAppName = request.peerMeta.name ?? ''
 
     return (
-        <PWView style={styles.container}>
-            <PWIcon
-                name='check'
-                variant='primary'
-                size='xl'
-                style={styles.icon}
-            />
-            <PWText
-                variant='h3'
-                style={styles.message}
-            >
-                {t('walletconnect.request.success_sheet_title', {
-                    name: dAppName,
-                })}
-            </PWText>
-            <PWText style={styles.message}>
-                {t('walletconnect.request.success_sheet_body', {
-                    name: dAppName,
-                })}
-            </PWText>
-        </PWView>
+        <ConfirmActionContent
+            icon='check'
+            iconVariant='primary'
+            title={t('walletconnect.request.success_sheet_title', {
+                name: dAppName,
+            })}
+            message={t('walletconnect.request.success_sheet_body', {
+                name: dAppName,
+            })}
+        />
     )
 }

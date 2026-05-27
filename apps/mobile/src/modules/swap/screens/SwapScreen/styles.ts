@@ -22,7 +22,7 @@ export const useStyles = makeStyles(theme => ({
     toolbar: {
         flexShrink: 0,
         width: '100%',
-        paddingHorizontal: theme.spacing.xl,
+        paddingHorizontal: theme.spacing.lg,
     },
     formWrapper: {
         flex: 1,

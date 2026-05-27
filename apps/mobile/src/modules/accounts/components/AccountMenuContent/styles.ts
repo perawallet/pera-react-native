@@ -19,9 +19,4 @@ export const useStyles = makeStyles(theme => ({
         minWidth: 0,
         overflow: 'hidden',
     },
-    toolbar: {
-        width: '100%',
-        paddingHorizontal: 0,
-        paddingBottom: theme.spacing.xl,
-    },
 }))

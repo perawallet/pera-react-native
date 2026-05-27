@@ -30,7 +30,7 @@ export const useStyles = makeStyles(theme => ({
     headerTitle: {
         textAlign: 'center',
     },
-    headerAddress: {
+    headerSubtitle: {
         color: theme.colors.textGray,
         textAlign: 'center',
     },

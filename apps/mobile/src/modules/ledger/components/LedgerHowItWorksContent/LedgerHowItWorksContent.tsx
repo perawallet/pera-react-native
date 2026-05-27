@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { PWIcon, PWScrollView, PWText, PWView } from '@components/core'
+import { PWIcon, PWSheetLayout, PWText, PWView } from '@components/core'
+import { SheetHeader } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
@@ -26,38 +27,31 @@ export const LedgerHowItWorksContent = () => {
     const { t } = useLanguage()
 
     return (
-        <PWView style={styles.container}>
-            <PWText
-                variant='h3'
-                style={styles.title}
-            >
-                {t('ledger.how_does_it_work.title')}
-            </PWText>
-
-            <PWScrollView inBottomSheet>
-                <PWView style={styles.list}>
-                    {STEP_KEYS.map(key => (
-                        <PWView
-                            key={key}
-                            style={styles.item}
-                        >
-                            <PWView style={styles.bullet}>
-                                <PWIcon
-                                    name='check'
-                                    size='xs'
-                                    variant='positive'
-                                />
-                            </PWView>
-                            <PWText
-                                variant='body'
-                                style={styles.itemText}
-                            >
-                                {t(key)}
-                            </PWText>
+        <PWSheetLayout
+            header={<SheetHeader title={t('ledger.how_does_it_work.title')} />}
+        >
+            <PWView style={styles.list}>
+                {STEP_KEYS.map(key => (
+                    <PWView
+                        key={key}
+                        style={styles.item}
+                    >
+                        <PWView style={styles.bullet}>
+                            <PWIcon
+                                name='check'
+                                size='xs'
+                                variant='positive'
+                            />
                         </PWView>
-                    ))}
-                </PWView>
-            </PWScrollView>
-        </PWView>
+                        <PWText
+                            variant='body'
+                            style={styles.itemText}
+                        >
+                            {t(key)}
+                        </PWText>
+                    </PWView>
+                ))}
+            </PWView>
+        </PWSheetLayout>
     )
 }

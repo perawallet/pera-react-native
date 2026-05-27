@@ -50,7 +50,7 @@ export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => {
             textAlign: 'center',
         },
         preamble: {
-            textAlign: 'center',
+            textAlign: 'left',
             color: theme.colors.textGray,
             marginVertical: theme.spacing.lg,
         },
@@ -64,7 +64,7 @@ export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => {
         tip: {
             flexDirection: 'row',
             gap: theme.spacing.lg,
-            alignItems: 'center',
+            alignItems: 'flex-start',
         },
         tipNumberContainer: {
             borderRadius: theme.spacing.xxl,

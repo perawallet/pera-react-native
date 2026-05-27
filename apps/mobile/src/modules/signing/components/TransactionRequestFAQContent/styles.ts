@@ -14,7 +14,8 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => {
     const warning = {
-        textAlign: 'center' as const,
+        alignSelf: 'stretch' as const,
+        textAlign: 'left' as const,
         fontWeight: 'bold' as const,
     }
     return {
@@ -26,8 +27,13 @@ export const useStyles = makeStyles(theme => {
         icon: {
             marginVertical: theme.spacing.md,
         },
+        title: {
+            alignSelf: 'stretch' as const,
+            textAlign: 'center' as const,
+        },
         message: {
-            textAlign: 'center',
+            alignSelf: 'stretch' as const,
+            textAlign: 'left' as const,
         },
         warning,
     }

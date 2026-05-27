@@ -48,7 +48,6 @@ import { SwapIntroductionContent } from '@modules/swap/components/SwapIntroducti
 import { SigningCompletedContent } from '@modules/signing/components/SigningCompletedContent'
 import { LedgerAwaitingApprovalContent } from '@modules/signing/components/LedgerAwaitingApprovalContent'
 import { LedgerErrorContent } from '@modules/signing/components/LedgerErrorContent'
-import { RekeyGuardContent } from '@modules/signing/components/RekeyGuardContent'
 import { SecurityGuardContent } from '@modules/signing/components/SecurityGuardContent'
 import { TransactionRequestFAQContent } from '@modules/signing/components/TransactionRequestFAQContent'
 import { LedgerAccountInfoContent } from '@modules/ledger/components/LedgerAccountInfoContent'
@@ -184,7 +183,11 @@ export const getSheetSections = (): GallerySection[] => [
                                 <AccountSortContent />
                             </GallerySheetBoundary>
                         ),
-                        options: { enablePanDownToClose: true },
+                        options: {
+                            size: 'full',
+                            enablePanDownToClose: false,
+                            autoCreateContainer: false,
+                        },
                     }),
                 },
             },
@@ -641,21 +644,6 @@ export const getSheetSections = (): GallerySection[] => [
                 },
             },
             {
-                id: 'sheet-rekey-guard',
-                label: 'Rekey guard',
-                launch: {
-                    kind: 'sheet',
-                    request: () => ({
-                        contents: (
-                            <GallerySheetBoundary>
-                                <RekeyGuardContent />
-                            </GallerySheetBoundary>
-                        ),
-                        options: { enablePanDownToClose: true },
-                    }),
-                },
-            },
-            {
                 id: 'sheet-security-guard-rekey',
                 label: 'Security guard (rekey)',
                 launch: {
@@ -752,7 +740,10 @@ export const getSheetSections = (): GallerySection[] => [
                                 <LedgerHowItWorksContent />
                             </GallerySheetBoundary>
                         ),
-                        options: { enablePanDownToClose: true },
+                        options: {
+                            enablePanDownToClose: true,
+                            autoCreateContainer: false,
+                        },
                     }),
                 },
             },
@@ -1215,7 +1206,7 @@ export const getSheetSections = (): GallerySection[] => [
                         contents: (
                             <GallerySheetBoundary>
                                 <PreviousRekeyWarningSheet
-                                    i18nPrefix='rekey.previous_rekey_warning'
+                                    i18nPrefix='rekey.to_ledger.confirm.replace_warning'
                                     testID='previous-rekey-warning-gallery'
                                     currentAuthName='Ledger Account'
                                     sourceName='Mock Account'

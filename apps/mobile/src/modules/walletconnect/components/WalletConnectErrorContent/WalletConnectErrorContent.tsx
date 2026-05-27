@@ -11,13 +11,13 @@
  */
 
 import { useMemo } from 'react'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { PWButton, PWIcon, PWText, PWView } from '@components/core'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { PWText, PWView } from '@components/core'
+import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useLanguage } from '@hooks/useLanguage'
 import { config } from '@perawallet/wallet-core-config'
-import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
+
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type WalletConnectErrorContentProps = {
     error: Nullable<Error>
@@ -27,9 +27,7 @@ export const WalletConnectErrorContent = ({
     error,
 }: WalletConnectErrorContentProps) => {
     const { t } = useLanguage()
-    const insets = useSafeAreaInsets()
-    const styles = useStyles({ bottomInset: insets.bottom })
-    const { dismiss } = useBottomSheetResult<void>()
+    const styles = useStyles()
 
     const errorMessage = useMemo(() => {
         let actualError = error?.message
@@ -45,28 +43,23 @@ export const WalletConnectErrorContent = ({
     }, [error])
 
     return (
-        <PWView style={styles.container}>
-            <PWIcon
-                name='warning'
-                variant='error'
-                size='xl'
-                style={styles.icon}
-            />
-            <PWText variant='h3'>
-                {t('walletconnect.request.error_sheet_title')}
-            </PWText>
-            <PWText style={styles.message}>
-                {t('walletconnect.request.error_sheet_body')}
-            </PWText>
-            <PWText style={styles.errorMessage}>{t(errorMessage)}</PWText>
-            <PWText style={styles.retryMessage}>
-                {t('walletconnect.request.error_sheet_retry')}
-            </PWText>
-            <PWButton
-                variant='secondary'
-                title={t('common.ok.label')}
-                onPress={dismiss}
-            />
-        </PWView>
+        <ConfirmActionContent
+            icon='warning'
+            iconVariant='error'
+            title={t('walletconnect.request.error_sheet_title')}
+            message={
+                <PWView style={styles.body}>
+                    <PWText variant='body'>
+                        {t('walletconnect.request.error_sheet_body')}
+                    </PWText>
+                    <PWText variant='body'>{t(errorMessage)}</PWText>
+                    <PWText variant='body'>
+                        {t('walletconnect.request.error_sheet_retry')}
+                    </PWText>
+                </PWView>
+            }
+            confirmLabel={t('common.ok.label')}
+            confirmVariant='secondary'
+        />
     )
 }

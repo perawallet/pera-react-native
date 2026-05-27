@@ -16,10 +16,19 @@ type StyleProps = {
     horizontalPadding: 'xl' | 'none'
     bottomInset: number
     hasFooter: boolean
+    isKeyboardVisible: boolean
 }
 
 export const useStyles = makeStyles(
-    (theme, { horizontalPadding, bottomInset, hasFooter }: StyleProps) => ({
+    (
+        theme,
+        {
+            horizontalPadding,
+            bottomInset,
+            hasFooter,
+            isKeyboardVisible,
+        }: StyleProps,
+    ) => ({
         // Column wrapper used only when a `footer` is present, so the scroll can
         // shrink and the footer stays pinned below it.
         root: {
@@ -37,7 +46,7 @@ export const useStyles = makeStyles(
         body: {
             paddingHorizontal:
                 horizontalPadding === 'none' ? 0 : theme.spacing.xl,
-            paddingTop: theme.spacing.xl,
+            paddingTop: theme.spacing.sm,
         },
         // Bottom of the scroll body. With no footer the safe-area inset lives
         // here, INSIDE the scroll, so the last item clears the nav bar / home
@@ -51,10 +60,14 @@ export const useStyles = makeStyles(
         },
         // Fixed footer pinned below the scroll. Owns the bottom safe-area inset
         // (12 visual gap + nav-bar inset) since it is the bottom-most element.
+        // When the keyboard is open it covers the home indicator, so the inset
+        // is dropped for a flat 24 gap above the keyboard instead.
         footer: {
             paddingHorizontal: theme.spacing.xl,
             paddingTop: theme.spacing.lg,
-            paddingBottom: theme.spacing.md + bottomInset,
+            paddingBottom: isKeyboardVisible
+                ? theme.spacing.xl
+                : theme.spacing.md + bottomInset,
         },
     }),
 )

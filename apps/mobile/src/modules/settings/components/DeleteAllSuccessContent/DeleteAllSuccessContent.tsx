@@ -10,29 +10,19 @@
  limitations under the License
  */
 
-import { PWIcon, PWText, PWView } from '@components/core'
+import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useLanguage } from '@hooks/useLanguage'
-import { useStyles } from './styles'
 
 export type DeleteAllSuccessContentProps = Record<string, never>
 
 export const DeleteAllSuccessContent = () => {
     const { t } = useLanguage()
-    const styles = useStyles()
 
     return (
-        <PWView style={styles.container}>
-            <PWIcon
-                name='check'
-                variant='positive'
-                size='xl'
-            />
-            <PWText
-                variant='h3'
-                style={styles.message}
-            >
-                {t('settings.main.remove_success_title')}
-            </PWText>
-        </PWView>
+        <ConfirmActionContent
+            icon='check'
+            iconVariant='positive'
+            title={t('settings.main.remove_success_title')}
+        />
     )
 }

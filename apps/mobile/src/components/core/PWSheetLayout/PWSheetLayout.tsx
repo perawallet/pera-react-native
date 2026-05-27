@@ -12,6 +12,7 @@
 
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useKeyboardState } from 'react-native-keyboard-controller'
 import { getTestProps } from '@utils/test-id-helper'
 import { PWView } from '../PWView'
 import { useStyles } from './styles'
@@ -71,10 +72,12 @@ export const PWSheetLayout = ({
     testID,
 }: PWSheetLayoutProps) => {
     const insets = useSafeAreaInsets()
+    const isKeyboardVisible = useKeyboardState(state => state.isVisible)
     const styles = useStyles({
         horizontalPadding,
         bottomInset: insets.bottom,
         hasFooter: footer != null,
+        isKeyboardVisible,
     })
 
     const scrollable = (

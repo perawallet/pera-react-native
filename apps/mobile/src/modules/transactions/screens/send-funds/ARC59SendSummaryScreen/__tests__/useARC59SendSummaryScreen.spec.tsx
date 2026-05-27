@@ -164,8 +164,8 @@ describe('useARC59SendSummaryScreen', () => {
         expect(mockNavigate).not.toHaveBeenCalled()
     })
 
-    it("navigates to TransactionProcessing when warning resolves with 'confirm'", async () => {
-        mockRequestBottomSheet.mockResolvedValueOnce('confirm')
+    it('navigates to TransactionProcessing when warning is confirmed', async () => {
+        mockRequestBottomSheet.mockResolvedValueOnce(true)
         const { result } = renderHook(() => useARC59SendSummaryScreen())
 
         await act(async () => {

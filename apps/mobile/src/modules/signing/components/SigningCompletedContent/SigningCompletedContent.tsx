@@ -10,12 +10,8 @@
  limitations under the License
  */
 
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-
-import { PWButton, PWIcon, PWText, PWView } from '@components/core'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useLanguage } from '@hooks/useLanguage'
-import { useStyles } from './styles'
 
 export type SigningCompletedContentProps = {
     /** Whether the completed request was a transaction (vs arbitrary-data). */
@@ -26,33 +22,22 @@ export const SigningCompletedContent = ({
     isTransaction,
 }: SigningCompletedContentProps) => {
     const { t } = useLanguage()
-    const insets = useSafeAreaInsets()
-    const styles = useStyles({ bottomInset: insets.bottom })
-    const { dismiss } = useBottomSheetResult<void>()
 
     return (
-        <PWView style={styles.container}>
-            <PWIcon
-                name={isTransaction ? 'info' : 'check'}
-                variant={isTransaction ? 'primary' : 'positive'}
-                size='xl'
-                style={styles.icon}
-            />
-            <PWText variant='h3'>
-                {isTransaction
+        <ConfirmActionContent
+            icon={isTransaction ? 'info' : 'check'}
+            iconVariant={isTransaction ? 'primary' : 'positive'}
+            title={
+                isTransaction
                     ? t('signing.signing_completed.transaction_title')
-                    : t('signing.signing_completed.data_title')}
-            </PWText>
-            <PWText style={styles.message}>
-                {isTransaction
+                    : t('signing.signing_completed.data_title')
+            }
+            message={
+                isTransaction
                     ? t('signing.signing_completed.transaction_body')
-                    : t('signing.signing_completed.data_body')}
-            </PWText>
-            <PWButton
-                variant='primary'
-                title={t('common.done')}
-                onPress={dismiss}
-            />
-        </PWView>
+                    : t('signing.signing_completed.data_body')
+            }
+            confirmLabel={t('common.done')}
+        />
     )
 }

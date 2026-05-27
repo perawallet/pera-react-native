@@ -28,13 +28,6 @@ export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
         gap: theme.spacing.lg,
         marginTop: theme.spacing.lg,
     },
-    headerTitle: {
-        alignItems: 'center',
-        gap: theme.spacing.xxs,
-    },
-    headerAddress: {
-        color: theme.colors.textGray,
-    },
     participants: {
         gap: theme.spacing.md,
         marginTop: theme.spacing.lg,

@@ -20,7 +20,7 @@ export const useStyles = makeStyles(theme => ({
     },
     header: {
         flexDirection: 'row',
-        alignItems: 'flex-start',
+        alignItems: 'center',
         gap: theme.spacing.md,
         minWidth: 0,
     },

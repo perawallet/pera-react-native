@@ -47,17 +47,16 @@ export const useStyles = makeStyles(theme => ({
     },
     rowLabel: {
         color: theme.colors.textGrayLighter,
-        flex: 1,
+        flexShrink: 1,
         minWidth: 0,
     },
     rowValue: {
         color: theme.colors.textMain,
         flexShrink: 0,
     },
-    rowTrailing: {
-        flexShrink: 0,
-        minWidth: 0,
-        maxWidth: '50%',
+    rowAddress: {
+        flex: 1,
+        textAlign: 'right',
     },
     description: {
         color: theme.colors.textMain,
