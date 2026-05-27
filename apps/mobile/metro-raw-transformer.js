@@ -14,8 +14,17 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 
 const fs = require('fs')
+const path = require('path')
 const svgTransformer = require('react-native-svg-transformer')
-const defaultTransformer = require('@expo/metro-config/babel-transformer')
+
+// Resolve @expo/metro-config from expo's package directory. pnpm only links
+// @expo/metro-config into apps/mobile/node_modules when it's a direct dep;
+// it's a transitive dep via expo, so resolving from here would otherwise
+// fail on a clean install (e.g. CI).
+const expoDir = path.dirname(require.resolve('expo/package.json'))
+const defaultTransformer = require(
+    require.resolve('@expo/metro-config/babel-transformer', { paths: [expoDir] })
+)
 
 /**
  * Metro transformer that handles raw file imports (.sql) and SVGs,

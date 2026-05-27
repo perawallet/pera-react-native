@@ -175,7 +175,6 @@ const config = {
     resolver: {
         ...defaultConfig.resolver,
         nodeModulesPaths,
-        unstable_enableSymlinks: true,
         assetExts: assetExts.filter((ext) => ext !== 'svg'),
         sourceExts: [...sourceExts, 'svg', 'sql'],
         resolveRequest: customResolveRequest,

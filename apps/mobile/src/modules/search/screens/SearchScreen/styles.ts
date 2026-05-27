@@ -44,9 +44,12 @@ export const useStyles = makeStyles(theme => ({
     },
     showMore: {
         paddingVertical: theme.spacing.sm,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xs,
     },
     showMoreText: {
-        color: theme.colors.textGray,
+        color: theme.colors.linkPrimary,
     },
     skeletonContainer: {
         paddingTop: theme.spacing.lg,

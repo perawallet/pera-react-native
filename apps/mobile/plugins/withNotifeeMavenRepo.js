@@ -11,10 +11,10 @@
  */
 
 /* eslint-disable @typescript-eslint/no-require-imports */
-const { withProjectBuildGradle } = require('@expo/config-plugins');
+const { withProjectBuildGradle } = require('expo/config-plugins');
 
 /**
- * @type {import('@expo/config-plugins').ConfigPlugin}
+ * @type {import('expo/config-plugins').ConfigPlugin}
  * 
  * Expo config plugin to add Notifee Maven repository to the project build.gradle.
  */

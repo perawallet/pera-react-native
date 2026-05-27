@@ -33,6 +33,8 @@
     "@vitest/coverage-v8": "catalog:",
     "jsdom": "^27.1.0",
     "oxfmt": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plugin-dts": "catalog:",

@@ -184,4 +184,72 @@ describe('fetchArc59AssetRequests', () => {
             fetchArc59AssetRequests('mainnet', 'ADDR1'),
         ).rejects.toThrow()
     })
+
+    test('maps collectible asset with primary_image', async () => {
+        ;(queryClient as Mock).mockResolvedValue({
+            data: {
+                results: [
+                    {
+                        ...validAssetRequest,
+                        asset: {
+                            ...validAssetRequest.asset,
+                            collectible: {
+                                title: 'Cool NFT',
+                                primary_image: 'https://example.com/nft.png',
+                            },
+                        },
+                    },
+                ],
+            },
+        })
+
+        const result = await fetchArc59AssetRequests('mainnet', 'ADDR1')
+
+        expect(result).toMatchObject([
+            {
+                asset: {
+                    peraMetadata: {
+                        collectible: {
+                            title: 'Cool NFT',
+                            primaryImage: 'https://example.com/nft.png',
+                        },
+                    },
+                },
+            },
+        ])
+    })
+
+    test('maps collectible with null primary_image to undefined', async () => {
+        ;(queryClient as Mock).mockResolvedValue({
+            data: {
+                results: [
+                    {
+                        ...validAssetRequest,
+                        asset: {
+                            ...validAssetRequest.asset,
+                            collectible: {
+                                title: 'Cool NFT',
+                                primary_image: null,
+                            },
+                        },
+                    },
+                ],
+            },
+        })
+
+        const result = await fetchArc59AssetRequests('mainnet', 'ADDR1')
+
+        expect(result).toMatchObject([
+            {
+                asset: {
+                    peraMetadata: {
+                        collectible: {
+                            title: 'Cool NFT',
+                            primaryImage: undefined,
+                        },
+                    },
+                },
+            },
+        ])
+    })
 })
