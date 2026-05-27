@@ -26,7 +26,7 @@ const {
     mockCancelImport,
     mockExitAccountFlow,
     mockSetSelectedAccountAddress,
-    mockCreateHdWalletAccount,
+    mockBuildHdWalletAccount,
     mockAllAccounts,
     mockRouteParams,
 } = vi.hoisted(() => ({
@@ -39,7 +39,7 @@ const {
     mockCancelImport: vi.fn(),
     mockExitAccountFlow: vi.fn(),
     mockSetSelectedAccountAddress: vi.fn(),
-    mockCreateHdWalletAccount: vi.fn(),
+    mockBuildHdWalletAccount: vi.fn(),
     mockAllAccounts: { current: [] as unknown[] },
     mockRouteParams: {
         current: {
@@ -106,7 +106,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
         setSelectedAccountAddress: mockSetSelectedAccountAddress,
     }),
     useCreateAccount: () => ({
-        createHdWalletAccount: mockCreateHdWalletAccount,
+        createHdWalletAccount: mockBuildHdWalletAccount,
     }),
     useAllAccounts: () => mockAllAccounts.current,
 }))
@@ -273,12 +273,12 @@ describe('useSearchAccountsScreen', () => {
             address: 'NEW_ADDRESS',
             type: 'hdWallet' as const,
         }
-        mockCreateHdWalletAccount.mockResolvedValue(newAccount)
+        mockBuildHdWalletAccount.mockResolvedValue(newAccount)
 
         renderHook(() => useSearchAccountsScreen())
 
         await waitFor(() => {
-            expect(mockCreateHdWalletAccount).toHaveBeenCalledWith({
+            expect(mockBuildHdWalletAccount).toHaveBeenCalledWith({
                 walletId: 'wallet-1',
                 account: 0,
                 keyIndex: 1,
@@ -316,7 +316,7 @@ describe('useSearchAccountsScreen', () => {
                 body: 'onboarding.searching_accounts.no_new_addresses_body',
             })
             expect(mockExitAccountFlow).toHaveBeenCalled()
-            expect(mockCreateHdWalletAccount).not.toHaveBeenCalled()
+            expect(mockBuildHdWalletAccount).not.toHaveBeenCalled()
             expect(mockReplace).not.toHaveBeenCalled()
         })
     })
@@ -392,7 +392,7 @@ describe('useSearchAccountsScreen', () => {
             type: AccountTypes.hdWallet,
         }
         mockDiscoverAccounts.mockResolvedValue([singleAccount])
-        mockCreateHdWalletAccount.mockRejectedValue(
+        mockBuildHdWalletAccount.mockRejectedValue(
             new Error('Creation failed'),
         )
 
