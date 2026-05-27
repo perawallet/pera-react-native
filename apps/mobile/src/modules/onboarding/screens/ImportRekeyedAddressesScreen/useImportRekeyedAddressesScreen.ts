@@ -19,6 +19,7 @@ import {
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
+import { useAddressSelection } from '@hooks/useAddressSelection'
 import { useExitAccountFlow } from '@modules/onboarding/hooks'
 import { deferToNextCycle } from '@perawallet/wallet-core-shared'
 
@@ -62,37 +63,19 @@ export function useImportRekeyedAddressesScreen(): UseImportRekeyedAddressesScre
         )
     }, [accounts, alreadyImportedAddresses])
 
-    const [selectedAddresses, setSelectedAddresses] = useState<Set<string>>(
-        () => new Set(),
+    const selectableAddresses = useMemo(
+        () => newAccounts.map(acc => acc.address),
+        [newAccounts],
     )
 
-    const isAllSelected =
-        newAccounts.length > 0 && selectedAddresses.size === newAccounts.length
-
-    const toggleSelection = useCallback(
-        (address: string) => {
-            if (alreadyImportedAddresses.has(address)) return
-
-            setSelectedAddresses(prev => {
-                const next = new Set(prev)
-                if (next.has(address)) {
-                    next.delete(address)
-                } else {
-                    next.add(address)
-                }
-                return next
-            })
-        },
-        [alreadyImportedAddresses],
-    )
-
-    const toggleSelectAll = useCallback(() => {
-        if (isAllSelected) {
-            setSelectedAddresses(new Set())
-        } else {
-            setSelectedAddresses(new Set(newAccounts.map(acc => acc.address)))
-        }
-    }, [isAllSelected, newAccounts])
+    const {
+        selectedAddresses,
+        isAllSelected,
+        toggle: toggleSelection,
+        toggleSelectAll,
+    } = useAddressSelection(selectableAddresses, {
+        disabledAddresses: alreadyImportedAddresses,
+    })
 
     const [isImporting, setIsImporting] = useState(false)
 

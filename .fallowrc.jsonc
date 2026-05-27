@@ -61,8 +61,11 @@
   "duplicates": {
     // Hide pair-only clones; focus on widespread copy-paste worth refactoring.
     "minOccurrences": 3,
-    // Duplication in test/integration/fixture/setup code is expected boilerplate.
-    // Scope duplication detection to product code.
+    // Import statements aren't meaningful duplication — sibling components
+    // legitimately import the same dependencies. Detect duplicated logic, not imports.
+    "ignoreImports": true,
+    // Duplication in test/integration/fixture/setup code and per-package build
+    // config (vite/vitest) is expected boilerplate — scope detection to product code.
     "ignore": [
       "**/__tests__/**",
       "**/*.test.*",
@@ -70,7 +73,9 @@
       "**/__integration__/**",
       "**/__fixtures__/**",
       "**/__mocks__/**",
-      "**/vitest.setup.*"
+      "**/vitest.setup.*",
+      "**/vite.config.ts",
+      "**/vitest.config.ts"
     ]
   },
 

@@ -1,4 +1,5 @@
 import ts from 'typescript'
+import type { CheckVisitor, EmitViolation } from '../types.js'
 
 export function getLineCol(
     sf: ts.SourceFile,
@@ -105,5 +106,28 @@ export function descendMakeStylesCall(
         if (!ts.isPropertyAssignment(prop)) continue
         const value = prop.initializer
         if (ts.isObjectLiteralExpression(value)) cb(value)
+    }
+}
+
+// Builds a CallExpression visitor that fires `onEntry` for every style object
+// inside a makeStyles(...) call. Shared by the makeStyles-linting checks
+// (no-empty-style-objects, no-numeric-sizes, no-typography-in-styles).
+export const createMakeStylesEntryVisitor = (
+    onEntry: (
+        styleEntry: ts.ObjectLiteralExpression,
+        sf: ts.SourceFile,
+        emit: EmitViolation,
+    ) => void,
+): CheckVisitor => {
+    return (node, sf, emit) => {
+        const call = node as ts.CallExpression
+        const binding = getMakeStylesBinding(sf)
+        if (!binding) return
+        if (
+            !ts.isIdentifier(call.expression) ||
+            call.expression.text !== binding
+        )
+            return
+        descendMakeStylesCall(call, styleEntry => onEntry(styleEntry, sf, emit))
     }
 }

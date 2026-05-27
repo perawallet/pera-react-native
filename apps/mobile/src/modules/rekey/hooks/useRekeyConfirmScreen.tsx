@@ -1,0 +1,156 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { useCallback } from 'react'
+import {
+    getAccountDisplayName,
+    isRekeyedAccount,
+    useFindAccountByAddress,
+} from '@perawallet/wallet-core-accounts'
+import {
+    useRekeyTransactionFeeQuery,
+    useSubmitRekeyMutation,
+} from '@perawallet/wallet-core-transactions'
+import { useBottomSheet } from '@modules/bottom-sheet'
+import { useWebView } from '@modules/webview'
+import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useLanguage } from '@hooks/useLanguage'
+import { useHandleRekeyError } from './useHandleRekeyError'
+import { PreviousRekeyWarningSheet } from '../components/PreviousRekeyWarningSheet'
+
+import type { Decimal } from 'decimal.js'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+
+// Shared by the rekey-to-{ledger,shared,standard} confirm screens, which differ
+// only in the target stack they navigate to, the support URL, and the warning
+// sheet's i18n prefix / testID.
+export type RekeyConfirmConfig = {
+    sourceAddress: string
+    targetAddress: string
+    supportUrl: string
+    warningI18nPrefix: string
+    warningTestID: string
+    /** Navigate to the variant's success screen after a confirmed rekey. */
+    onSubmitSuccess: (sourceAddress: string) => void
+}
+
+export type UseRekeyConfirmScreenResult = {
+    source: WalletAccount | null
+    target: WalletAccount | null
+    currentAuth: WalletAccount | null
+    feeAlgos: Decimal | undefined
+    feePending: boolean
+    hasPreviousRekey: boolean
+    isSubmitting: boolean
+    handleConfirmPress: () => void
+}
+
+export const useRekeyConfirmScreen = ({
+    sourceAddress,
+    targetAddress,
+    supportUrl,
+    warningI18nPrefix,
+    warningTestID,
+    onSubmitSuccess,
+}: RekeyConfirmConfig): UseRekeyConfirmScreenResult => {
+    const navigation = useAppNavigation()
+
+    const source = useFindAccountByAddress(sourceAddress)
+    const target = useFindAccountByAddress(targetAddress)
+    const currentAuth = useFindAccountByAddress(source?.rekeyAddress ?? '')
+
+    const { t } = useLanguage()
+    const handleRekeyError = useHandleRekeyError()
+    const { pushWebView } = useWebView()
+    const { request: requestBottomSheet } = useBottomSheet()
+    const { submitAsync, isPending: isSubmitting } = useSubmitRekeyMutation({
+        signingMetadata: {
+            name: t('rekey.signing.source_name'),
+            description: t('rekey.signing.source_description'),
+        },
+    })
+    const { feeAlgos, isPending: feePending } = useRekeyTransactionFeeQuery(
+        sourceAddress,
+        targetAddress,
+    )
+
+    const hasPreviousRekey = isRekeyedAccount(source)
+
+    const submit = useCallback(async () => {
+        if (!source || !target) {
+            // The CTA is disabled in this state, but guard anyway — a
+            // dead confirm screen with no feedback is worse than a toast.
+            handleRekeyError(
+                new Error('Rekey source or target could not be resolved'),
+            )
+            navigation.goBack()
+            return
+        }
+
+        try {
+            await submitAsync({
+                sourceAddress: source.address,
+                rekeyToAddress: target.address,
+            })
+            onSubmitSuccess(source.address)
+        } catch (error) {
+            handleRekeyError(error)
+        }
+    }, [submitAsync, navigation, handleRekeyError, source, target, onSubmitSuccess])
+
+    const handleLearnMore = useCallback(() => {
+        pushWebView({ url: supportUrl })
+    }, [pushWebView, supportUrl])
+
+    const handleConfirmPress = useCallback(async () => {
+        if (hasPreviousRekey) {
+            const sourceName = source ? getAccountDisplayName(source) : ''
+            const currentAuthName = currentAuth
+                ? getAccountDisplayName(currentAuth)
+                : ''
+            const confirmed = await requestBottomSheet<boolean>({
+                contents: (
+                    <PreviousRekeyWarningSheet
+                        i18nPrefix={warningI18nPrefix}
+                        testID={warningTestID}
+                        currentAuthName={currentAuthName}
+                        sourceName={sourceName}
+                        onLearnMore={handleLearnMore}
+                    />
+                ),
+                options: { size: 'auto', enablePanDownToClose: true },
+            })
+            if (!confirmed) return
+        }
+        await submit()
+    }, [
+        hasPreviousRekey,
+        source,
+        currentAuth,
+        requestBottomSheet,
+        handleLearnMore,
+        submit,
+        warningI18nPrefix,
+        warningTestID,
+    ])
+
+    return {
+        source: source ?? null,
+        target: target ?? null,
+        currentAuth: currentAuth ?? null,
+        feeAlgos,
+        feePending,
+        hasPreviousRekey,
+        isSubmitting,
+        handleConfirmPress,
+    }
+}

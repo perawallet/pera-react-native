@@ -1,9 +1,5 @@
 import ts from 'typescript'
-import {
-    descendMakeStylesCall,
-    getLineCol,
-    getMakeStylesBinding,
-} from '../utils/ast.js'
+import { createMakeStylesEntryVisitor, getLineCol } from '../utils/ast.js'
 import type { Check } from '../types.js'
 
 const RULE_ID = 'no-empty-style-objects'
@@ -23,16 +19,8 @@ const check: Check = {
     description:
         'Disallow empty style entries inside makeStyles. An empty {} produces no styles.',
     visitors: {
-        [ts.SyntaxKind.CallExpression]: (node, sf, emit) => {
-            const call = node as ts.CallExpression
-            const binding = getMakeStylesBinding(sf)
-            if (!binding) return
-            if (
-                !ts.isIdentifier(call.expression) ||
-                call.expression.text !== binding
-            )
-                return
-            descendMakeStylesCall(call, styleEntry => {
+        [ts.SyntaxKind.CallExpression]: createMakeStylesEntryVisitor(
+            (styleEntry, sf, emit) => {
                 if (styleEntry.properties.length > 0) return
                 const parent = styleEntry.parent
                 const keyName =
@@ -46,8 +34,8 @@ const check: Check = {
                     message: `style entry "${keyName}" has an empty body`,
                     remediation: REMEDIATION,
                 })
-            })
-        },
+            },
+        ),
     },
 }
 

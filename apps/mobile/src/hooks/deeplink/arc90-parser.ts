@@ -46,6 +46,17 @@ type AlgorandURI = PaymentTx | KeyRegTx | NoopTx | AppQuery | AssetQuery
 
 const ALGORAND_URI_PREFIX = `${ALGORAND_SCHEME}://`
 
+const parseQueryParams = (query: string | undefined): Record<string, string> => {
+    const params: Record<string, string> = {}
+    if (query) {
+        query.split('&').forEach(kv => {
+            const [k, v] = kv.split('=')
+            params[k] = v ? decodeURIComponent(v) : ''
+        })
+    }
+    return params
+}
+
 export function parseAlgorandURI(uri: string): Nullable<AlgorandURI> {
     try {
         if (!uri.startsWith(ALGORAND_URI_PREFIX)) return null
@@ -77,36 +88,18 @@ export function parseAlgorandURI(uri: string): Nullable<AlgorandURI> {
             // ARC-90: appid = 1*DIGIT
             if (!/^\d+$/.test(appId)) return null
 
-            const params: Record<string, string> = {}
-            if (query) {
-                query.split('&').forEach(kv => {
-                    const [k, v] = kv.split('=')
-                    params[k] = v ? decodeURIComponent(v) : ''
-                })
-            }
+            const params = parseQueryParams(query)
             return { type: 'appquery', network, appId, params }
         } else if (path.startsWith('asset/')) {
             const assetId = path.slice(6)
             // ARC-90: assetid = 1*DIGIT
             if (!/^\d+$/.test(assetId)) return null
 
-            const params: Record<string, string> = {}
-            if (query) {
-                query.split('&').forEach(kv => {
-                    const [k, v] = kv.split('=')
-                    params[k] = v ? decodeURIComponent(v) : ''
-                })
-            }
+            const params = parseQueryParams(query)
             return { type: 'assetquery', network, assetId, params }
         } else {
             const address = path
-            const params: Record<string, string> = {}
-            if (query) {
-                query.split('&').forEach(kv => {
-                    const [k, v] = kv.split('=')
-                    params[k] = v ? decodeURIComponent(v) : ''
-                })
-            }
+            const params = parseQueryParams(query)
 
             // Determine type by `type` param
             const typeParam = params['type']
