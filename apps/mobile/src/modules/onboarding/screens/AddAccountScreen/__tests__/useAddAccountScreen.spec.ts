@@ -33,9 +33,9 @@ vi.mock('@modules/multisig/hooks/useMultisigCreation', () => ({
         selector({ resetState: mockResetMultisigCreation }),
 }))
 
-const mockCreateHdWalletAccount = vi.fn()
-const mockCreateAlgo25WalletAccount = vi.fn()
-const mockCreateNextHDAccount = vi.fn()
+const mockBuildHdWalletAccount = vi.fn()
+const mockBuildAlgo25WalletAccount = vi.fn()
+const mockBuildNextHDAccount = vi.fn()
 const mockUseAllAccounts = vi.fn((): WalletAccount[] => [])
 
 const mockHasMultipleHDWallets = vi.fn(() => false)
@@ -47,12 +47,12 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     return {
         ...actual,
         useCreateAccount: () => ({
-            createHdWalletAccount: mockCreateHdWalletAccount,
-            createAlgo25WalletAccount: mockCreateAlgo25WalletAccount,
+            buildHdWalletAccount: mockBuildHdWalletAccount,
+            buildAlgo25WalletAccount: mockBuildAlgo25WalletAccount,
         }),
         useAllAccounts: () => mockUseAllAccounts(),
         useCreateNextHDAccount: () => ({
-            createNextHDAccount: mockCreateNextHDAccount,
+            buildNextHDAccount: mockBuildNextHDAccount,
             hasHDWallet: mockUseAllAccounts().some(
                 (a: WalletAccount) => a.type === 'hdWallet',
             ),
@@ -378,7 +378,7 @@ describe('useAddAccountScreen', () => {
             type: 'hdWallet' as const,
             canSign: true,
         }
-        mockCreateHdWalletAccount.mockResolvedValue(newAccount)
+        mockBuildHdWalletAccount.mockResolvedValue(newAccount)
 
         const { result } = renderHook(() => useAddAccountScreen())
 
@@ -390,7 +390,7 @@ describe('useAddAccountScreen', () => {
             universalOption.onPress()
         })
 
-        expect(mockCreateHdWalletAccount).toHaveBeenCalledWith({
+        expect(mockBuildHdWalletAccount).toHaveBeenCalledWith({
             account: 0,
             keyIndex: 0,
         })
@@ -400,9 +400,7 @@ describe('useAddAccountScreen', () => {
     })
 
     it('universal wallet option shows error toast on failure', async () => {
-        mockCreateHdWalletAccount.mockRejectedValue(
-            new Error('Creation failed'),
-        )
+        mockBuildHdWalletAccount.mockRejectedValue(new Error('Creation failed'))
 
         const { result } = renderHook(() => useAddAccountScreen())
 
@@ -428,7 +426,7 @@ describe('useAddAccountScreen', () => {
             type: 'hdWallet' as const,
             canSign: true,
         }
-        mockCreateHdWalletAccount.mockResolvedValue(newAccount)
+        mockBuildHdWalletAccount.mockResolvedValue(newAccount)
 
         const { result } = renderHook(() => useAddAccountScreen())
 
@@ -440,7 +438,7 @@ describe('useAddAccountScreen', () => {
             universalOption.onPress()
         })
 
-        expect(mockCreateHdWalletAccount).toHaveBeenCalledWith({
+        expect(mockBuildHdWalletAccount).toHaveBeenCalledWith({
             account: 0,
             keyIndex: 0,
         })
@@ -456,7 +454,7 @@ describe('useAddAccountScreen', () => {
             type: 'algo25' as const,
             canSign: true,
         }
-        mockCreateAlgo25WalletAccount.mockResolvedValue(newAccount)
+        mockBuildAlgo25WalletAccount.mockResolvedValue(newAccount)
 
         const { result } = renderHook(() => useAddAccountScreen())
 
@@ -468,14 +466,14 @@ describe('useAddAccountScreen', () => {
             algo25Option.onPress()
         })
 
-        expect(mockCreateAlgo25WalletAccount).toHaveBeenCalledWith({})
+        expect(mockBuildAlgo25WalletAccount).toHaveBeenCalledWith({})
         expect(mockPush).toHaveBeenCalledWith('NameAccount', {
             account: newAccount,
         })
     })
 
     it('algo25 option shows error toast on failure', async () => {
-        mockCreateAlgo25WalletAccount.mockRejectedValue(
+        mockBuildAlgo25WalletAccount.mockRejectedValue(
             new Error('Creation failed'),
         )
 
@@ -503,7 +501,7 @@ describe('useAddAccountScreen', () => {
             type: 'hdWallet' as const,
             canSign: true,
         }
-        mockCreateNextHDAccount.mockResolvedValue(newAccount)
+        mockBuildNextHDAccount.mockResolvedValue(newAccount)
 
         const { result } = renderHook(() => useAddAccountScreen())
 
@@ -515,7 +513,7 @@ describe('useAddAccountScreen', () => {
             addOption.onPress()
         })
 
-        expect(mockCreateNextHDAccount).toHaveBeenCalled()
+        expect(mockBuildNextHDAccount).toHaveBeenCalled()
         expect(mockPush).toHaveBeenCalledWith('NameAccount', {
             account: newAccount,
         })
@@ -530,14 +528,12 @@ describe('useAddAccountScreen', () => {
             o => o.testID === 'add_account_add_button',
         )
         expect(addOption).toBeUndefined()
-        expect(mockCreateNextHDAccount).not.toHaveBeenCalled()
+        expect(mockBuildNextHDAccount).not.toHaveBeenCalled()
     })
 
     it('add account option shows error toast on failure', async () => {
         mockUseAllAccounts.mockReturnValue([HD_ACCOUNT])
-        mockCreateNextHDAccount.mockRejectedValue(
-            new Error('Derivation failed'),
-        )
+        mockBuildNextHDAccount.mockRejectedValue(new Error('Derivation failed'))
 
         const { result } = renderHook(() => useAddAccountScreen())
 
@@ -556,7 +552,7 @@ describe('useAddAccountScreen', () => {
 
     it('isCreatingAccount reflects loading state during account creation', async () => {
         let resolveCreate: (value: unknown) => void
-        mockCreateHdWalletAccount.mockImplementation(
+        mockBuildHdWalletAccount.mockImplementation(
             () =>
                 new Promise(resolve => {
                     resolveCreate = resolve
@@ -651,7 +647,7 @@ describe('useAddAccountScreen', () => {
         })
 
         expect(mockPush).toHaveBeenCalledWith('SelectHDWallet')
-        expect(mockCreateNextHDAccount).not.toHaveBeenCalled()
+        expect(mockBuildNextHDAccount).not.toHaveBeenCalled()
     })
 
     it('add account does not navigate to SelectHDWallet when single HD wallet exists', async () => {
@@ -664,7 +660,7 @@ describe('useAddAccountScreen', () => {
             type: 'hdWallet' as const,
             canSign: true,
         }
-        mockCreateNextHDAccount.mockResolvedValue(newAccount)
+        mockBuildNextHDAccount.mockResolvedValue(newAccount)
 
         const { result } = renderHook(() => useAddAccountScreen())
 
@@ -677,7 +673,7 @@ describe('useAddAccountScreen', () => {
         })
 
         expect(mockPush).not.toHaveBeenCalledWith('SelectHDWallet')
-        expect(mockCreateNextHDAccount).toHaveBeenCalled()
+        expect(mockBuildNextHDAccount).toHaveBeenCalled()
         expect(mockPush).toHaveBeenCalledWith('NameAccount', {
             account: newAccount,
         })

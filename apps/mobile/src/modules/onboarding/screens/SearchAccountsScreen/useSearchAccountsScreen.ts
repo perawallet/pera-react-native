@@ -53,7 +53,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
     const { discoverImportAccounts, cancelImport } = useHDImportSession()
     const { exitAccountFlow } = useExitAccountFlow()
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
-    const { createHdWalletAccount } = useCreateAccount()
+    const { buildHdWalletAccount } = useCreateAccount()
     const allAccounts = useAllAccounts()
     const { seedIdOf } = useKMS()
 
@@ -162,7 +162,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                                   ) + 1
                                 : 0
 
-                        const newAccount = await createHdWalletAccount({
+                        const newAccount = await buildHdWalletAccount({
                             walletId: account.keyPairId,
                             account: 0,
                             keyIndex: nextKeyIndex,
@@ -251,7 +251,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
         showToast,
         exitAccountFlow,
         setSelectedAccountAddress,
-        createHdWalletAccount,
+        buildHdWalletAccount,
         allAccounts,
         seedIdOf,
     ])

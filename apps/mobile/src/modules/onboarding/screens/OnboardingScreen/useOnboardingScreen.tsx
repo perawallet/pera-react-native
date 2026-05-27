@@ -40,7 +40,7 @@ export const useOnboardingScreen = (): UseOnboardingScreenResult => {
         close: closeCreatingAccount,
     } = useModalState()
     const { setIsOnboarding } = useIsOnboarding()
-    const { createHdWalletAccount } = useCreateAccount()
+    const { buildHdWalletAccount } = useCreateAccount()
     const { showToast } = useToast()
     const { t } = useLanguage()
 
@@ -63,7 +63,7 @@ export const useOnboardingScreen = (): UseOnboardingScreenResult => {
         openCreatingAccount()
         deferToNextCycle(async () => {
             try {
-                const newAccount = await createHdWalletAccount({
+                const newAccount = await buildHdWalletAccount({
                     account: 0,
                     keyIndex: 0,
                 })
@@ -89,7 +89,7 @@ export const useOnboardingScreen = (): UseOnboardingScreenResult => {
         setIsOnboarding,
         openCreatingAccount,
         closeCreatingAccount,
-        createHdWalletAccount,
+        buildHdWalletAccount,
         navigation,
         showToast,
         t,

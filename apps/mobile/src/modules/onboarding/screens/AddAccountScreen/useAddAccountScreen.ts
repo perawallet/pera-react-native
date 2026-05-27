@@ -32,9 +32,9 @@ import { type AccountOption } from '@modules/onboarding/types'
 export const useAddAccountScreen = () => {
     const navigation = useAppNavigation()
     const isMounted = useIsMounted()
-    const { createHdWalletAccount, createAlgo25WalletAccount } =
+    const { buildHdWalletAccount, buildAlgo25WalletAccount } =
         useCreateAccount()
-    const { createNextHDAccount, hasHDWallet } = useCreateNextHDAccount()
+    const { buildNextHDAccount, hasHDWallet } = useCreateNextHDAccount()
     const { hasMultipleHDWallets } = useHDWalletGroups()
     const { showToast } = useToast()
     const { t } = useLanguage()
@@ -101,12 +101,12 @@ export const useAddAccountScreen = () => {
             return
         }
 
-        runCreateAccount(createNextHDAccount)
+        runCreateAccount(buildNextHDAccount)
     }, [
         hasHDWallet,
         hasMultipleHDWallets,
         navigation,
-        createNextHDAccount,
+        buildNextHDAccount,
         runCreateAccount,
     ])
 
@@ -141,13 +141,13 @@ export const useAddAccountScreen = () => {
 
     const handleCreateUniversalWallet = useCallback(() => {
         runCreateAccount(() =>
-            createHdWalletAccount({ account: 0, keyIndex: 0 }),
+            buildHdWalletAccount({ account: 0, keyIndex: 0 }),
         )
-    }, [createHdWalletAccount, runCreateAccount])
+    }, [buildHdWalletAccount, runCreateAccount])
 
     const handleCreateAlgo25 = useCallback(() => {
-        runCreateAccount(() => createAlgo25WalletAccount({}))
-    }, [createAlgo25WalletAccount, runCreateAccount])
+        runCreateAccount(() => buildAlgo25WalletAccount({}))
+    }, [buildAlgo25WalletAccount, runCreateAccount])
 
     const mainOptions: AccountOption[] = useMemo(
         () =>
