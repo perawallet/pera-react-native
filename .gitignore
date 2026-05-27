@@ -43,6 +43,9 @@ opencode.json
 .idea/
 .expo/
 
+# fallow incremental analysis cache
+.fallow/
+
 # Drizzle Kit snapshots
 **/migrations/meta/*_snapshot.json
 

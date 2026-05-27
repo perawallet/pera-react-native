@@ -27,7 +27,6 @@ import { SettingsThemeScreen } from '@modules/settings/screens/SettingsThemeScre
 import { SettingsDeveloperScreen } from '@modules/settings/screens/developer/SettingsDeveloperScreen'
 import { fullScreenLayout } from '@layouts/index'
 import { SettingsDeveloperNodeSettingsScreen } from '@modules/settings/screens/developer/SettingsDeveloperNodeSettingsScreen/SettingsDeveloperNodeSettingsScreen'
-import { SettingsDeveloperDispenserScreen } from '@modules/settings/screens/developer/SettingsDeveloperDispenserScreen/SettingsDeveloperDispenserScreen'
 import { NavigatorScreenParams } from '@react-navigation/native'
 import { WalletConnectConnection } from '@perawallet/wallet-core-walletconnect'
 import { SettingsWalletConnectDetailsScreen } from '@modules/settings/screens/SettingsWalletConnectDetailsScreen/SettingsWalletConnectDetailsScreen'

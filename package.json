@@ -27,7 +27,8 @@
     "generate:config": "bash tools/generate-config.sh",
     "bump-version": "bash tools/bump-version.sh",
     "audit": "pnpm audit --prod --audit-level=high",
-    "lint:bundle": "bash tools/check-prod-bundle.sh"
+    "lint:bundle": "bash tools/check-prod-bundle.sh",
+    "fallow": "fallow --skip health"
   },
   "devDependencies": {
     "@babel/runtime": "catalog:",
@@ -36,6 +37,7 @@
     "eslint": "catalog:",
     "eslint-plugin-react-native": "^5.0.0",
     "eslint-plugin-unused-imports": "catalog:",
+    "fallow": "2.76.0",
     "msw": "catalog:",
     "oxfmt": "catalog:",
     "oxlint": "^1.59.0",

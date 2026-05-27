@@ -118,6 +118,7 @@ See workspace definition in [`pnpm-workspace.yaml`](pnpm-workspace.yaml).
 - Task runner/cache: Turborepo (scripts in [`package.json`](package.json))
 - Formatting: Prettier
 - Linting: Oxlint via root config [`.oxlintrc.json`](.oxlintrc.json)
+- Dead code / cycles / duplication: fallow via [`.fallowrc.jsonc`](.fallowrc.jsonc)
 - TypeScript project references via [`packages/devtools/tsconfig`](packages/devtools/tsconfig)
 
 ## Common commands (root)
@@ -132,7 +133,14 @@ pnpm lint:fix       # auto-fix lint/type-aware issues
 pnpm lint:copyright # add/update necessary copyright headers
 pnpm lint:i18n      # report i18n errors
 pnpm format         # format files
+pnpm fallow         # report unused code, circular deps, duplication
 ```
+
+## Dead code, cycles & duplication (fallow)
+
+[fallow](https://github.com/fallow-rs/fallow) finds cross-module unused exports/files/types/dependencies, circular dependencies, and code duplication — gaps neither Oxlint nor `tsc` cover. Config lives in [`.fallowrc.jsonc`](.fallowrc.jsonc).
+
+It runs in CI as an **advisory, non-blocking** job (`Dead Code (advisory)` in [`pre-merge.yml`](.github/workflows/pre-merge.yml)) — findings appear in the job summary but never fail a PR. The plan is to triage the existing findings, then ratchet specific rules to blocking with a `--baseline` so only new findings fail. Removals should be done in reviewed PRs, not via `fallow fix`.
 
 ## Documentation
 

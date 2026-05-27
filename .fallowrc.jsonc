@@ -1,0 +1,50 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+
+  // Files loaded at runtime by string/convention rather than a static import, so
+  // fallow cannot see the reference and would otherwise report them as unused.
+  "dynamicallyLoaded": [
+    // Expo config plugins are referenced by path string in app.config.js, not imported.
+    "apps/mobile/plugins/**",
+    // Custom Metro transformer wired into metro.config.js by path.
+    "apps/mobile/metro-raw-transformer.js"
+  ],
+
+  // Test infrastructure the runner (vitest) resolves by convention, never imported.
+  "ignorePatterns": ["**/__mocks__/**"],
+
+  // Native modules (React Native autolinking) and build/polyfill packages consumed
+  // outside the JS import graph. fallow cannot observe their usage, so they are not
+  // dead — unlike a genuinely unused dependency, which we DO want reported.
+  "ignoreDependencies": [
+    "react-native-ble-plx", // Ledger BLE transport — autolinked native module
+    "@ledgerhq/react-native-hid", // Ledger HID transport — autolinked native module
+    "@craftzdog/react-native-buffer", // Buffer polyfill wired via shim.js / metro
+    "readable-stream", // stream polyfill wired via shim.js / metro
+    "sharp", // build-time image processing, not app runtime
+    "expo-build-properties", // Expo config plugin (app.config.js), no JS import
+    "expo-dev-client" // dev launcher, no app-code import
+  ],
+
+  "duplicates": {
+    // Hide pair-only clones; focus on widespread copy-paste worth refactoring.
+    "minOccurrences": 3,
+    // Duplication in test/integration/fixture/setup code is expected boilerplate.
+    // Scope duplication detection to product code.
+    "ignore": [
+      "**/__tests__/**",
+      "**/*.test.*",
+      "**/*.spec.*",
+      "**/__integration__/**",
+      "**/__fixtures__/**",
+      "**/__mocks__/**",
+      "**/vitest.setup.*"
+    ]
+  },
+
+  // Severities left at defaults during the report-only rollout. The CI job is
+  // advisory (non-blocking); individual rules will be flipped to "error" with a
+  // baseline once the legacy findings are triaged. Architecture boundaries are
+  // intentionally not configured — they are covered by the in-house guardrails.
+  "rules": {}
+}
