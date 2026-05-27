@@ -21,6 +21,7 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
     },
     scrollContent: {
         flex: 1,
+        paddingBottom: theme.spacing.xl,
     },
     amountSection: {
         flexGrow: 1,

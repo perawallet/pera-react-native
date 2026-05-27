@@ -46,7 +46,7 @@ export const ARC59WarningContent = () => {
     const { resolve, dismiss } = useBottomSheetResult<'confirm'>()
 
     return (
-        <>
+        <PWView style={styles.container}>
             <PWIcon
                 name='warning'
                 variant='error'
@@ -88,6 +88,6 @@ export const ARC59WarningContent = () => {
                     paddingStyle='dense'
                 />
             </PWView>
-        </>
+        </PWView>
     )
 }

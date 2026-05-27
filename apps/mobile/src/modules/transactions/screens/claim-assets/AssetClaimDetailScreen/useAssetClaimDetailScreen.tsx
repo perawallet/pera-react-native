@@ -51,7 +51,7 @@ export const useAssetClaimDetailScreen =
         const accounts = useAllAccounts()
         const { copyToClipboard } = useClipboard()
         const { request: requestBottomSheet } = useBottomSheet()
-        const { showToast } = useToast()
+        const { showToast, errorToast } = useToast()
         const { t } = useLanguage()
 
         const request = assetRequests[assetIndex] ?? null
@@ -86,6 +86,17 @@ export const useAssetClaimDetailScreen =
         const handleRejectPress = useCallback(async () => {
             if (!request) return
 
+            if (
+                request.insufficientAlgoForRejecting &&
+                !request.shouldUseFundsBeforeRejecting
+            ) {
+                errorToast(
+                    t('errors.transaction.title'),
+                    t('messages.claim.insufficient_algo_reject'),
+                )
+                return
+            }
+
             const algoDisplayAmount = formatCurrency(
                 baseUnitsToDisplayUnits(
                     request.microAlgoGainOnReject,
@@ -117,18 +128,6 @@ export const useAssetClaimDetailScreen =
             })
 
             if (!confirmed) return
-
-            if (
-                request.insufficientAlgoForRejecting &&
-                !request.shouldUseFundsBeforeRejecting
-            ) {
-                showToast({
-                    title: t('errors.transaction.title'),
-                    body: t('messages.claim.insufficient_algo_reject'),
-                    type: 'error',
-                })
-                return
-            }
 
             push('Messages', {
                 screen: 'ClaimProcessing',

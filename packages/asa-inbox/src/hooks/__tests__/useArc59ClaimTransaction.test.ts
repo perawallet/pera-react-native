@@ -281,6 +281,30 @@ describe('useArc59ClaimTransaction', () => {
 
             expect(mockComposer.build).toHaveBeenCalledTimes(1)
         })
+
+        test('treats accountInfo with no assets field as not opted in', async () => {
+            mockAccountInformation.mockResolvedValue({})
+
+            const { result } = renderHook(() => useArc59ClaimTransaction())
+
+            await act(async () => {
+                await result.current.buildClaimAssetTxs(baseClaimParams)
+            })
+
+            expect(mockComposer.addAssetOptIn).toHaveBeenCalled()
+        })
+
+        test('uses mainnet config when isMainnet is true', async () => {
+            ;(useNetwork as Mock).mockReturnValue({ isMainnet: true })
+
+            const { result } = renderHook(() => useArc59ClaimTransaction())
+
+            await act(async () => {
+                await result.current.buildClaimAssetTxs(baseClaimParams)
+            })
+
+            expect(mockParamsClaim).toHaveBeenCalled()
+        })
     })
 
     describe('buildRejectAssetTxs', () => {
@@ -380,6 +404,18 @@ describe('useArc59ClaimTransaction', () => {
             })
 
             expect(mockComposer.build).toHaveBeenCalledTimes(1)
+        })
+
+        test('uses mainnet config when isMainnet is true', async () => {
+            ;(useNetwork as Mock).mockReturnValue({ isMainnet: true })
+
+            const { result } = renderHook(() => useArc59ClaimTransaction())
+
+            await act(async () => {
+                await result.current.buildRejectAssetTxs(baseClaimParams)
+            })
+
+            expect(mockParamsReject).toHaveBeenCalled()
         })
     })
 })
