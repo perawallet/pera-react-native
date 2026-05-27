@@ -13,12 +13,24 @@
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import { create } from 'zustand'
 
+/**
+ * Favorite capability for a controlled WebView. Present only when the host
+ * (e.g. the Discover web app) opened this WebView with favorite support, which
+ * is what gates the footer's star button. `onToggle` asks the host to flip the
+ * page's favorite state; the host owns persistence.
+ */
+export type WebViewFavorite = {
+    initialIsFavorite: boolean
+    onToggle: () => void
+}
+
 export type WebViewRequest = {
     id: string
     url: string
     enablePeraConnect?: boolean
     onBackRequested?: () => void
     onCloseRequested?: () => void
+    favorite?: WebViewFavorite
 }
 
 type WebViewState = {

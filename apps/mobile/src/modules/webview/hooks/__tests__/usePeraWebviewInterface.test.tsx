@@ -366,6 +366,66 @@ describe('usePeraWebviewInterface', () => {
         )
     })
 
+    it('pushWebView omits favorite when isFavorite is absent', async () => {
+        const { result } = renderHook(() =>
+            usePeraWebviewInterface(mockWebview, true, null),
+        )
+
+        await act(async () => {
+            result.current.handleMessage({
+                id: 'pw-1',
+                jsonrpc: '2.0',
+                method: 'pushWebView',
+                params: { url: 'https://dapp.example' },
+            })
+        })
+
+        expect(mockPushWebView).toHaveBeenCalledWith(
+            expect.objectContaining({
+                url: 'https://dapp.example',
+                favorite: undefined,
+            }),
+        )
+    })
+
+    it('pushWebView seeds favorite and toggles via the source webview', async () => {
+        const { result } = renderHook(() =>
+            usePeraWebviewInterface(mockWebview, true, null),
+        )
+
+        await act(async () => {
+            result.current.handleMessage({
+                id: 'pw-2',
+                jsonrpc: '2.0',
+                method: 'pushWebView',
+                params: {
+                    url: 'https://dapp.example',
+                    title: 'Example Dapp',
+                    isFavorite: true,
+                },
+            })
+        })
+
+        const pushed = mockPushWebView.mock.calls.at(-1)?.[0]
+        expect(pushed.favorite.initialIsFavorite).toBe(true)
+
+        mockWebview.injectJavaScript.mockClear()
+        act(() => pushed.favorite.onToggle())
+
+        const injected = mockWebview.injectJavaScript.mock.calls[0][0] as string
+        const eventData = JSON.parse(
+            injected.replace(/^window\.postMessage\(/, '').replace(/\);$/, ''),
+        )
+        expect(JSON.parse(eventData)).toEqual({
+            action: 'handleBrowserFavoriteButtonClick',
+            payload: {
+                name: 'Example Dapp',
+                url: 'https://dapp.example',
+                logo: null,
+            },
+        })
+    })
+
     it('should handle openNativeURI action', async () => {
         const { result } = renderHook(() =>
             usePeraWebviewInterface(mockWebview, true, null),

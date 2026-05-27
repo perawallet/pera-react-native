@@ -144,6 +144,31 @@ export const sendNotificationToWebview = (
     webview?.injectJavaScript(message)
 }
 
+/**
+ * Action sent to the Discover web app to toggle the current page's favorite
+ * state. The web app owns favorites persistence (localStorage); the native
+ * side only mirrors the state for the star icon and asks the web app to toggle.
+ */
+export const BROWSER_FAVORITE_ACTION = 'handleBrowserFavoriteButtonClick'
+
+/**
+ * Sends an `{ action, payload }` message to the webview's `message` listener.
+ * Unlike {@link sendMessageToWebview} (which posts a JSON-RPC *object*), the
+ * Discover web app's favorite listener runs `JSON.parse(event.data)`, so
+ * `event.data` must be a JSON *string* — hence the double stringify (once for
+ * the data, once to embed it as a string literal in the injected call).
+ */
+export const sendActionToWebview = (
+    action: string,
+    payload: unknown,
+    webview: Nullable<WebView>,
+) => {
+    const data = JSON.stringify({ action, payload })
+    const message = `window.postMessage(${JSON.stringify(data)});`
+    logger.debug('Sending webview action', { action })
+    webview?.injectJavaScript(message)
+}
+
 export const sendErrorToWebview = (
     id: string,
     code: JsonRpcErrorCode,
