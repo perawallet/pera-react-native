@@ -14,13 +14,13 @@ import { useCallback } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import { useLanguage } from '@hooks/useLanguage'
 
-export const PAIRING_STEP_KEYS = [
+const PAIRING_STEP_KEYS = [
     'ledger.troubleshooting.pairing_step_1',
     'ledger.troubleshooting.pairing_step_2',
     'ledger.troubleshooting.pairing_step_3',
 ] as const
 
-export const COMMON_ISSUE_KEYS = [
+const COMMON_ISSUE_KEYS = [
     'ledger.troubleshooting.issue_unlocked',
     'ledger.troubleshooting.issue_bluetooth',
     'ledger.troubleshooting.issue_permissions',

@@ -11,7 +11,6 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { getConfirmScreenStyles } from '../../utils/confirmScreenStyles'
 
-export const useStyles = makeStyles(() => ({
-    // Default styles
-}))
+export const useStyles = makeStyles(getConfirmScreenStyles)

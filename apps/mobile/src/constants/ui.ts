@@ -16,22 +16,13 @@ export const CHART_FOCUS_DEBOUNCE_TIME = 200
 export const CHART_HEIGHT = 140
 export const CHART_ANIMATION_DURATION = 200
 
-export const TAB_ANIMATION_DURATION = 200
-export const TAB_ANIMATION_CONFIG = {
-    duration: TAB_ANIMATION_DURATION,
-    useNativeDriver: true,
-}
-
 export const BOTTOM_TAB_HEIGHT_IOS = 40
 export const BOTTOM_TAB_HEIGHT_ANDROID = 55
 export const BOTTOM_TAB_LABEL_FONT_SIZE = 11
 export const BOTTOM_TAB_LABEL_LINE_HEIGHT = 14
 
-export const SLIDE_ANIMATION_DURATION = 250
-export const BOTTOM_SHEET_TRANSITION_DURATION = 300
-
-export const SCREEN_ANIMATION_TYPE = 'default'
-export const SCREEN_ANIMATION_DURATION = 150
+const SCREEN_ANIMATION_TYPE = 'default'
+const SCREEN_ANIMATION_DURATION = 150
 export const SCREEN_ANIMATION_CONFIG: NativeStackNavigationOptions = {
     animation: SCREEN_ANIMATION_TYPE,
     animationDuration: SCREEN_ANIMATION_DURATION,

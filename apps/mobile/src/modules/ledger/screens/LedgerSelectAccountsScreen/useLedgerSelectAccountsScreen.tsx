@@ -35,6 +35,7 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsMounted } from '@hooks/useIsMounted'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
+import { useAddressSelection } from '@hooks/useAddressSelection'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { LedgerAccountInfoContent } from '@modules/ledger/components/LedgerAccountInfoContent'
 import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
@@ -85,9 +86,6 @@ export const useLedgerSelectAccountsScreen =
 
         const [accounts, setAccounts] = useState<LedgerAccount[]>(routeAccounts)
         const [isFetchingMore, setIsFetchingMore] = useState(false)
-        const [selectedAddresses, setSelectedAddresses] = useState<Set<string>>(
-            () => new Set(),
-        )
 
         const transportRef = useRef<Nullable<HardwareWalletTransport>>(null)
         const inFlightRef = useRef(false)
@@ -168,46 +166,22 @@ export const useLedgerSelectAccountsScreen =
             )
         }, [selectableAccounts, alreadyImportedAddresses])
 
-        const isAllSelected =
-            newAccounts.length > 0 &&
-            newAccounts.every(s =>
-                selectedAddresses.has(
+        const selectableAddresses = useMemo(
+            () =>
+                newAccounts.map(s =>
                     s.kind === 'derived' ? s.account.address : s.address,
                 ),
-            )
-
-        const toggleSelection = useCallback(
-            (address: string) => {
-                if (alreadyImportedAddresses.has(address)) return
-
-                setSelectedAddresses(prev => {
-                    const next = new Set(prev)
-                    if (next.has(address)) {
-                        next.delete(address)
-                    } else {
-                        next.add(address)
-                    }
-                    return next
-                })
-            },
-            [alreadyImportedAddresses],
+            [newAccounts],
         )
 
-        const toggleSelectAll = useCallback(() => {
-            if (isAllSelected) {
-                setSelectedAddresses(new Set())
-            } else {
-                setSelectedAddresses(
-                    new Set(
-                        newAccounts.map(s =>
-                            s.kind === 'derived'
-                                ? s.account.address
-                                : s.address,
-                        ),
-                    ),
-                )
-            }
-        }, [isAllSelected, newAccounts])
+        const {
+            selectedAddresses,
+            isAllSelected,
+            toggle: toggleSelection,
+            toggleSelectAll,
+        } = useAddressSelection(selectableAddresses, {
+            disabledAddresses: alreadyImportedAddresses,
+        })
 
         const handleContinue = useCallback(() => {
             const selected = selectableAccounts.filter(s =>

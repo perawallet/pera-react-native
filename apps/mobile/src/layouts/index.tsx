@@ -31,13 +31,4 @@ const fullScreenLayout = ({ children }: { children: React.ReactNode }) => {
     return <FullScreenLayout>{children}</FullScreenLayout>
 }
 
-export {
-    headeredLayout,
-    safeAreaLayout,
-    bottomSheetLayout,
-    fullScreenLayout,
-    FullScreenLayout,
-    HeaderedLayout,
-    SafeAreaLayout,
-    BottomSheetLayout,
-}
+export { headeredLayout, safeAreaLayout, bottomSheetLayout, fullScreenLayout }

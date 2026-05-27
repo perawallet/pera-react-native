@@ -22,6 +22,7 @@ import type { TextStyle, ViewStyle } from 'react-native'
 export const getConfirmScreenStyles = (
     theme: Theme,
 ): Record<
+    | 'container'
     | 'scrollContent'
     | 'summarySection'
     | 'spacer'
@@ -36,8 +37,14 @@ export const getConfirmScreenStyles = (
     | 'cta',
     ViewStyle | TextStyle
 > => ({
+    container: {
+        flex: 1,
+        backgroundColor: theme.colors.background,
+    },
     scrollContent: {
         flexGrow: 1,
+        paddingHorizontal: theme.spacing.xl,
+        paddingBottom: theme.spacing.xl,
         gap: theme.spacing.xl,
     },
     summarySection: {
@@ -75,6 +82,8 @@ export const getConfirmScreenStyles = (
         color: theme.colors.textGray,
     },
     footer: {
+        paddingHorizontal: theme.spacing.xl,
+        paddingTop: theme.spacing.lg,
         gap: theme.spacing.md,
     },
     cta: {

@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { TransactionSigningView } from './TransactionSigningView'
+export { BalanceLineChart } from './BalanceLineChart'

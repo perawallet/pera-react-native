@@ -1,0 +1,110 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+
+  // Files loaded at runtime by string/convention rather than a static import, so
+  // fallow cannot see the reference and would otherwise report them as unused.
+  "dynamicallyLoaded": [
+    // Expo config plugins are referenced by path string in app.config.js, not imported.
+    "apps/mobile/plugins/**",
+    // Custom Metro transformer wired into metro.config.js by path.
+    "apps/mobile/metro-raw-transformer.js",
+    // Guardrail checks are discovered at runtime via fast-glob, not imported.
+    "packages/devtools/guardrails/checks/**",
+    // Worker entry spawned at runtime via `new Worker(URL)`, not a static import.
+    "packages/devtools/guardrails/worker-entry.mjs"
+  ],
+
+  // Test infrastructure the runner (vitest) resolves by convention, never imported.
+  "ignorePatterns": ["**/__mocks__/**"],
+
+  // Entry points fallow's plugins don't infer on their own. Test files are runtime
+  // entries for the suite, and packages expose test-only API (MSW handlers, fixtures)
+  // via `exports` subpaths (e.g. `@perawallet/wallet-core-x/test-handlers`) that the
+  // import graph from production entries never reaches — so their closure is not dead.
+  "entry": [
+    "**/*.{test,spec}.{ts,tsx}",
+    "**/src/test-handlers.ts",
+    "**/msw-handlers.ts",
+    "**/test-utils/**",
+    // Component/module index.ts barrels are intentional public API surface (mandated
+    // by the component convention). Treating them as entry points stops flagging the
+    // barrels themselves and their `Component`/`XxxProps` re-exports as unused, while
+    // genuinely-dead exports in source files are still reported.
+    "**/index.ts",
+    // React Native platform-base file: Metro resolves the `.ios`/`.android` variant
+    // at runtime, but TypeScript resolves this base `.ts`, so it is not dead.
+    "apps/mobile/src/hooks/useKeyboardHeight.ts"
+  ],
+
+  // Native modules (React Native autolinking) and build/polyfill packages consumed
+  // outside the JS import graph. fallow cannot observe their usage, so they are not
+  // dead — unlike a genuinely unused dependency, which we DO want reported.
+  "ignoreDependencies": [
+    "react-native-ble-plx", // Ledger BLE transport — autolinked native module
+    "@ledgerhq/react-native-hid", // Ledger HID transport — autolinked native module
+    "@craftzdog/react-native-buffer", // Buffer polyfill wired via shim.js / metro
+    "readable-stream", // stream polyfill wired via shim.js / metro
+    "sharp", // build-time image processing, not app runtime
+    "expo-build-properties", // Expo config plugin (app.config.js), no JS import
+    "expo-dev-client", // dev launcher, no app-code import
+    // Native modules that must stay DIRECT deps for autolinking even though no JS
+    // imports them in their declaring package — removing them breaks the native
+    // build (uncaught by typecheck or tests, only by `expo prebuild`).
+    "expo-font",
+    "expo-local-authentication",
+    "expo-sqlite",
+    "expo-status-bar",
+    "@algorandfoundation/react-native-keystore",
+    "react-native-quick-base64"
+  ],
+
+  "duplicates": {
+    // Hide pair-only clones; focus on widespread copy-paste worth refactoring.
+    "minOccurrences": 3,
+    // Import statements aren't meaningful duplication — sibling components
+    // legitimately import the same dependencies. Detect duplicated logic, not imports.
+    "ignoreImports": true,
+    // Duplication in test/integration/fixture/setup code and per-package build
+    // config (vite/vitest) is expected boilerplate — scope detection to product code.
+    "ignore": [
+      "**/__tests__/**",
+      "**/*.test.*",
+      "**/*.spec.*",
+      "**/__integration__/**",
+      "**/__fixtures__/**",
+      "**/__mocks__/**",
+      "**/vitest.setup.*",
+      "**/vite.config.ts",
+      "**/vitest.config.ts"
+    ]
+  },
+
+  // Severities left at defaults during the report-only rollout. The CI job is
+  // advisory (non-blocking); individual rules will be flipped to "error" with a
+  // baseline once the legacy findings are triaged. Architecture boundaries are
+  // intentionally not configured — they are covered by the in-house guardrails.
+  "rules": {
+    // Disabled: fallow's workspace-dependency resolution produces false positives
+    // in this monorepo — it flagged deps that ARE imported (e.g.
+    // @perawallet/wallet-core-shared in wallet-core-device), and removing them
+    // broke `pnpm build`. Dependency hygiene must be verified manually + by build,
+    // not from these findings. Re-enable only once the resolver gap is understood.
+    "unused-dependencies": "off",
+    "unused-dev-dependencies": "off",
+    // Disabled: false positives in this codebase. duplicate-exports fires on the
+    // `useStyles` styles.ts convention and RN platform variants (.ios/.android
+    // legitimately export the same names). class/enum-member checks miss
+    // interface-mandated members, runtime property access (e.g. error `.tag`),
+    // and cross-package enum usage (flagged `ErrorCategory.TRANSACTIONS`/`STAKING`
+    // which ARE used).
+    "duplicate-exports": "off",
+    "unused-class-members": "off",
+    "unused-enum-members": "off",
+    // Disabled: every finding is a test-only false positive. fallow resolves
+    // modules via tsconfig, but vitest adds aliases (@test-utils, @/...), .svg
+    // transforms, and mocks of native libs (react-native-tab-view, vector-icons)
+    // it cannot see — producing phantom unresolved/unlisted findings in test files.
+    "unresolved-imports": "off",
+    "unlisted-dependencies": "off"
+  }
+}

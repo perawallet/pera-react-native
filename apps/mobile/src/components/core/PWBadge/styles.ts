@@ -11,7 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { PWBadgeProps } from './PWBadge'
+import type { PWBadgeProps } from './PWBadge'
 
 export const useStyles = makeStyles((theme, props: PWBadgeProps) => {
     const { variant } = props

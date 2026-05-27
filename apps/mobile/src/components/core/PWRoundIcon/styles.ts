@@ -12,7 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 
-import { PWRoundIconProps } from './PWRoundIcon'
+import type { PWRoundIconProps } from './PWRoundIcon'
 
 export const useStyles = makeStyles((theme, props: PWRoundIconProps) => {
     const { variant = 'secondary', size = 'lg' } = props

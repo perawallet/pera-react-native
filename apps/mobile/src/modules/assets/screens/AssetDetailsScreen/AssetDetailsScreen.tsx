@@ -24,7 +24,7 @@ import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
 import { LoadingView } from '@components/LoadingView'
 import { useLanguage } from '@hooks/useLanguage'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
-import { AccountStackParamsList } from '@modules/accounts/routes'
+import type { AccountStackParamsList } from '@modules/accounts/routes'
 import { PWScreen, PWText, PWView } from '@components/core'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { AccountHeaderMenu } from '@components/AccountHeaderMenu'
@@ -34,7 +34,7 @@ export type AssetDetailsScreenProps = NativeStackScreenProps<
     'AssetDetails'
 >
 
-export type AssetDetailsTabParamsList = {
+type AssetDetailsTabParamsList = {
     Holdings: undefined
     Markets: undefined
 }

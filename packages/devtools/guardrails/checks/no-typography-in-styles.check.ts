@@ -1,9 +1,5 @@
 import ts from 'typescript'
-import {
-    descendMakeStylesCall,
-    getLineCol,
-    getMakeStylesBinding,
-} from '../utils/ast.js'
+import { createMakeStylesEntryVisitor, getLineCol } from '../utils/ast.js'
 import type { Check } from '../types.js'
 
 const RULE_ID = 'no-typography-in-styles'
@@ -31,16 +27,8 @@ const check: Check = {
     description:
         'Disallow direct typography properties in makeStyles objects. Require getTypography().',
     visitors: {
-        [ts.SyntaxKind.CallExpression]: (node, sf, emit) => {
-            const call = node as ts.CallExpression
-            const binding = getMakeStylesBinding(sf)
-            if (!binding) return
-            if (
-                !ts.isIdentifier(call.expression) ||
-                call.expression.text !== binding
-            )
-                return
-            descendMakeStylesCall(call, styleEntry => {
+        [ts.SyntaxKind.CallExpression]: createMakeStylesEntryVisitor(
+            (styleEntry, sf, emit) => {
                 for (const prop of styleEntry.properties) {
                     if (!ts.isPropertyAssignment(prop)) continue
                     const name = getPropertyName(prop)
@@ -53,8 +41,8 @@ const check: Check = {
                         remediation: REMEDIATION,
                     })
                 }
-            })
-        },
+            },
+        ),
     },
 }
 

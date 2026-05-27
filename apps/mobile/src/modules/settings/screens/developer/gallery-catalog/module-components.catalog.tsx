@@ -19,9 +19,6 @@ import { PWView } from '@components/core'
 // ─── accounts module ──────────────────────────────────────────────────────────
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { AccountIcon } from '@modules/accounts/components/AccountIcon'
-import { CollectibleGridItem as AccountsCollectibleGridItem } from '@modules/accounts/components/CollectibleGridItem'
-import { CollectibleListItem as AccountsCollectibleListItem } from '@modules/accounts/components/CollectibleListItem'
-import { CollectibleThumbnail as AccountsCollectibleThumbnail } from '@modules/accounts/components/CollectibleThumbnail'
 import { ConfettiAnimation } from '@modules/accounts/components/ConfettiAnimation'
 import { NftEmptyState } from '@modules/accounts/components/NftEmptyState'
 import { SelectableAccountCheckboxRow } from '@modules/accounts/components/SelectableAccountCheckboxRow'
@@ -72,7 +69,6 @@ import { UnreadIndicator } from '@modules/messages/components/UnreadIndicator'
 // ─── ledger module ────────────────────────────────────────────────────────────
 import { LedgerCompositeIcon } from '@modules/ledger/components/LedgerCompositeIcon'
 import { LedgerDeviceItem } from '@modules/ledger/components/LedgerDeviceItem'
-import { LedgerStatusIndicator } from '@modules/ledger/components/LedgerStatusIndicator'
 
 // ─── banners module ───────────────────────────────────────────────────────────
 import { BannerCard } from '@modules/banners/components/BannerCard'
@@ -102,7 +98,6 @@ import { ProjectVerificationIcon } from '@modules/projects/components/ProjectVer
 import { MnemonicSuggestionBar } from '@modules/onboarding/components/MnemonicSuggestionBar'
 
 // ─── menu module ──────────────────────────────────────────────────────────────
-import { CardPanel } from '@modules/menu/components/CardPanel'
 
 // ─── backup module ────────────────────────────────────────────────────────────
 import { BackupQuizItem } from '@modules/backup/components/BackupQuizItem'
@@ -129,26 +124,6 @@ import type { GallerySection } from './types'
 const useThumbPreviewStyles = makeStyles(theme => ({
     thumb: { width: theme.spacing['4xl'], height: theme.spacing['4xl'] },
 }))
-
-const AccountsCollectibleThumbnailPreview = () => {
-    const styles = useThumbPreviewStyles()
-    return (
-        <PWView>
-            <AccountsCollectibleThumbnail
-                thumbnailUrl='https://perawallet.app/static/nft-thumb.png'
-                imageStyle={styles.thumb}
-                placeholderStyle={styles.thumb}
-                iconSize='md'
-            />
-            <AccountsCollectibleThumbnail
-                thumbnailUrl={null}
-                imageStyle={styles.thumb}
-                placeholderStyle={styles.thumb}
-                iconSize='md'
-            />
-        </PWView>
-    )
-}
 
 const AssetsCollectibleThumbnailPreview = () => {
     const styles = useThumbPreviewStyles()
@@ -201,33 +176,6 @@ registerPreview({
             />
         </PWView>
     ),
-})
-
-registerPreview({
-    id: 'comp-accounts-collectible-grid-item',
-    render: () => (
-        <AccountsCollectibleGridItem
-            asset={mockCollectible}
-            amount={new Decimal('1')}
-            onPress={() => undefined}
-        />
-    ),
-})
-
-registerPreview({
-    id: 'comp-accounts-collectible-list-item',
-    render: () => (
-        <AccountsCollectibleListItem
-            asset={mockCollectible}
-            amount={new Decimal('3')}
-            onPress={() => undefined}
-        />
-    ),
-})
-
-registerPreview({
-    id: 'comp-accounts-collectible-thumbnail',
-    render: () => <AccountsCollectibleThumbnailPreview />,
 })
 
 registerPreview({
@@ -713,18 +661,6 @@ registerPreview({
     ),
 })
 
-registerPreview({
-    id: 'comp-ledger-status-indicator',
-    render: () => (
-        <PWView>
-            <LedgerStatusIndicator status='disconnected' />
-            <LedgerStatusIndicator status='scanning' />
-            <LedgerStatusIndicator status='connected' />
-            <LedgerStatusIndicator status='ready' />
-        </PWView>
-    ),
-})
-
 // ─── Banners (module) ─────────────────────────────────────────────────────────
 
 const mockBanner: Banner = {
@@ -887,13 +823,6 @@ registerPreview({
     ),
 })
 
-// ─── Menu (module) ────────────────────────────────────────────────────────────
-
-registerPreview({
-    id: 'comp-card-panel',
-    render: () => <CardPanel />,
-})
-
 // ─── Backup (module) ──────────────────────────────────────────────────────────
 
 registerPreview({
@@ -966,21 +895,6 @@ export const getModuleComponentSections = (): GallerySection[] => [
                 id: 'comp-button-panel',
                 label: 'ButtonPanel (needs navigation context)',
                 launch: { kind: 'action', run: () => undefined },
-            },
-            {
-                id: 'comp-accounts-collectible-grid-item',
-                label: 'CollectibleGridItem (accounts)',
-                launch: { kind: 'preview' },
-            },
-            {
-                id: 'comp-accounts-collectible-list-item',
-                label: 'CollectibleListItem (accounts)',
-                launch: { kind: 'preview' },
-            },
-            {
-                id: 'comp-accounts-collectible-thumbnail',
-                label: 'CollectibleThumbnail (accounts)',
-                launch: { kind: 'preview' },
             },
             {
                 id: 'comp-confetti-animation',
@@ -1352,11 +1266,6 @@ export const getModuleComponentSections = (): GallerySection[] => [
                 label: 'LedgerDeviceItem',
                 launch: { kind: 'preview' },
             },
-            {
-                id: 'comp-ledger-status-indicator',
-                label: 'LedgerStatusIndicator',
-                launch: { kind: 'preview' },
-            },
         ],
     },
     {
@@ -1507,11 +1416,6 @@ export const getModuleComponentSections = (): GallerySection[] => [
     {
         title: 'Misc (module)',
         items: [
-            {
-                id: 'comp-card-panel',
-                label: 'CardPanel',
-                launch: { kind: 'preview' },
-            },
             {
                 id: 'comp-backup-quiz-item',
                 label: 'BackupQuizItem',

@@ -13,14 +13,14 @@
 import { z } from 'zod'
 import { swapStatusEnum } from '../history/schema'
 
-export const swapReasonEnum = z.enum([
+const swapReasonEnum = z.enum([
     'other',
     'user_cancelled',
     'invalid_submission',
     'blockchain_error',
 ])
 
-export const swapVersionEnum = z.enum(['v1', 'v2'])
+const swapVersionEnum = z.enum(['v1', 'v2'])
 
 export const swapStatusUpdateRequestSchema = z.object({
     status: swapStatusEnum,

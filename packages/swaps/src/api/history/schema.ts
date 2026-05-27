@@ -21,7 +21,7 @@ export const swapStatusEnum = z.enum([
     'cancelled',
 ])
 
-export const swapHistoryItemSchema = z.object({
+const swapHistoryItemSchema = z.object({
     id: z.number(),
     id_str: z.string().nullable().optional(),
     provider: z.string(),
@@ -42,7 +42,7 @@ export const swapHistoryResponseSchema = z.object({
     previous: z.string().nullable().optional(),
 })
 
-export const swapDistinctPairItemSchema = z.object({
+const swapDistinctPairItemSchema = z.object({
     asset_in: dexSwapAssetSchema,
     asset_out: dexSwapAssetSchema,
     swap_datetime: z.string(),

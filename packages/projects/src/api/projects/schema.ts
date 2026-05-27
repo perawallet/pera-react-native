@@ -12,7 +12,7 @@
 
 import { z } from 'zod'
 
-export const categorySimpleSchema = z.object({
+const categorySimpleSchema = z.object({
     id: z.string(),
     title: z.string().optional().nullable(),
     order: z.number().optional().nullable(),

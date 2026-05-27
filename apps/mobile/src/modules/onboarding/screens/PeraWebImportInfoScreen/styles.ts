@@ -11,10 +11,6 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { getImportInfoScreenStyles } from '../../utils/importInfoScreenStyles'
 
-export const useStyles = makeStyles(() => ({
-    content: {
-        flex: 1,
-        alignItems: 'flex-start',
-    },
-}))
+export const useStyles = makeStyles(getImportInfoScreenStyles)

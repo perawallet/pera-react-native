@@ -11,7 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { AccountDisplayProps } from './AccountDisplay'
+import type { AccountDisplayProps } from './AccountDisplay'
 
 export const useStyles = makeStyles(
     (theme, { noBorder }: AccountDisplayProps) => {

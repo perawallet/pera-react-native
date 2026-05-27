@@ -16,12 +16,12 @@ import { Accelerometer } from 'expo-sensors'
 type AccelerometerSubscription = ReturnType<typeof Accelerometer.addListener>
 
 // Threshold tuning. thresholdsa are reported in gravities (g).
-export const JERK_THRESHOLD_G = 2.5
-export const SHAKE_THRESHOLD_G = 1.7
-export const SHAKE_REVERSALS_REQUIRED = 3
-export const SHAKE_WINDOW_MS = 1000
+const JERK_THRESHOLD_G = 2.5
+const SHAKE_THRESHOLD_G = 1.7
+const SHAKE_REVERSALS_REQUIRED = 3
+const SHAKE_WINDOW_MS = 1000
 export const COOLDOWN_MS = 2000
-export const SAMPLE_INTERVAL_MS = 16 // ~60Hz
+const SAMPLE_INTERVAL_MS = 16 // ~60Hz
 
 type AccelerometerSample = {
     x: number

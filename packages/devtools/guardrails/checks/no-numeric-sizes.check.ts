@@ -1,10 +1,6 @@
 import ts from 'typescript'
-import {
-    descendMakeStylesCall,
-    getLineCol,
-    getMakeStylesBinding,
-} from '../utils/ast.js'
-import type { Check, EmitViolation } from '../types.js'
+import { createMakeStylesEntryVisitor, getLineCol } from '../utils/ast.js'
+import type { Check } from '../types.js'
 
 const RULE_ID = 'no-numeric-sizes'
 
@@ -73,71 +69,32 @@ function describeLiteralValue(expr: ts.Expression): string | null {
     return null
 }
 
-function checkStyleObject(
-    obj: ts.ObjectLiteralExpression,
-    sf: ts.SourceFile,
-    emit: EmitViolation,
-): void {
-    for (const prop of obj.properties) {
-        if (!ts.isPropertyAssignment(prop)) continue
-        const name = getPropertyName(prop)
-        if (name === null || !SPACING_PROPS.has(name)) continue
-        const value = describeLiteralValue(prop.initializer)
-        if (value === null) continue
-        const { line, column } = getLineCol(sf, prop.initializer.getStart(sf))
-        emit({
-            line,
-            column,
-            message: `numeric value ${value} for "${name}" — use a theme token`,
-            remediation: REMEDIATION,
-        })
-    }
-}
-
-/**
- * Object literals reachable from a JSX style prop value: `style={{ … }}` or
- * `style={[styles.x, { … }]}`. Identifiers / member expressions (makeStyles
- * references) are ignored — they're covered by the makeStyles path.
- */
-function inlineStyleObjects(expr: ts.Expression): ts.ObjectLiteralExpression[] {
-    if (ts.isObjectLiteralExpression(expr)) return [expr]
-    if (ts.isArrayLiteralExpression(expr)) {
-        return expr.elements.filter(ts.isObjectLiteralExpression)
-    }
-    return []
-}
-
 const check: Check = {
     id: RULE_ID,
     description:
-        'Disallow literal numeric spacing/sizing values in makeStyles objects and inline style props. Require theme tokens.',
+        'Disallow literal numeric spacing/sizing values in makeStyles objects. Require theme tokens.',
     visitors: {
-        [ts.SyntaxKind.CallExpression]: (node, sf, emit) => {
-            const call = node as ts.CallExpression
-            const binding = getMakeStylesBinding(sf)
-            if (!binding) return
-            if (
-                !ts.isIdentifier(call.expression) ||
-                call.expression.text !== binding
-            )
-                return
-            descendMakeStylesCall(call, styleEntry =>
-                checkStyleObject(styleEntry, sf, emit),
-            )
-        },
-        // Inline JSX style objects (`style={{ … }}` / `style={[styles.x, { … }]}`),
-        // which the makeStyles path above never sees.
-        [ts.SyntaxKind.JsxAttribute]: (node, sf, emit) => {
-            const attr = node as ts.JsxAttribute
-            if (!ts.isIdentifier(attr.name)) return
-            const attrName = attr.name.text
-            if (attrName !== 'style' && !attrName.endsWith('Style')) return
-            const init = attr.initializer
-            if (!init || !ts.isJsxExpression(init) || !init.expression) return
-            for (const obj of inlineStyleObjects(init.expression)) {
-                checkStyleObject(obj, sf, emit)
-            }
-        },
+        [ts.SyntaxKind.CallExpression]: createMakeStylesEntryVisitor(
+            (styleEntry, sf, emit) => {
+                for (const prop of styleEntry.properties) {
+                    if (!ts.isPropertyAssignment(prop)) continue
+                    const name = getPropertyName(prop)
+                    if (name === null || !SPACING_PROPS.has(name)) continue
+                    const value = describeLiteralValue(prop.initializer)
+                    if (value === null) continue
+                    const { line, column } = getLineCol(
+                        sf,
+                        prop.initializer.getStart(sf),
+                    )
+                    emit({
+                        line,
+                        column,
+                        message: `numeric value ${value} for "${name}" — use a theme token`,
+                        remediation: REMEDIATION,
+                    })
+                }
+            },
+        ),
     },
 }
 

@@ -12,7 +12,7 @@
 
 import { canonify } from 'canonify'
 import { z } from 'zod'
-import { Arc60BadJsonError } from './arc60'
+import { Arc60BadJsonError } from './arc60-errors'
 
 /**
  * SIWx chain id for Algorand. Equals the SLIP-0044 coin type (283) and is

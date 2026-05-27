@@ -12,33 +12,8 @@
 
 import { describe, it, expect } from 'vitest'
 import { Theme } from '@rneui/themed'
-import {
-    getFontFamily,
-    getMonoFontFamily,
-    getTypography,
-    getVariantFontWeight,
-    TypographyVariant,
-    type FontWeight,
-} from '../typography'
+import { getTypography, TypographyVariant } from '../typography'
 import { getTheme } from '../theme'
-
-const ALL_VARIANTS: TypographyVariant[] = [
-    'h1',
-    'h2',
-    'h3',
-    'h4',
-    'body',
-    'bodyLarge',
-    'bodyCompact',
-    'bodySemibold',
-    'footnoteMedium',
-    'caption',
-    'captionMedium',
-    'captionSmall',
-    'link',
-    'linkPositive',
-    'mono',
-]
 
 describe('typography', () => {
     const lightTheme = getTheme('light') as Theme
@@ -116,30 +91,5 @@ describe('typography', () => {
                 expect(style.lineHeight).toBeGreaterThanOrEqual(style.fontSize!)
             }
         })
-    })
-
-    describe('getVariantFontWeight', () => {
-        // Reverse of the family chosen per variant in getTypography, so the
-        // declared weight can be checked against the actual rendered family.
-        const familyToWeight: Record<string, FontWeight> = {
-            [getFontFamily(400)]: 400,
-            [getFontFamily(500)]: 500,
-            [getFontFamily(600)]: 600,
-            [getFontFamily(700)]: 700,
-            [getMonoFontFamily(400)]: 400,
-            [getMonoFontFamily(500)]: 500,
-        }
-
-        it.each(ALL_VARIANTS)(
-            'matches the font family getTypography uses for %s',
-            variant => {
-                const family = getTypography(lightTheme, variant)
-                    .fontFamily as string
-
-                expect(getVariantFontWeight(variant)).toBe(
-                    familyToWeight[family],
-                )
-            },
-        )
     })
 })

@@ -23,7 +23,7 @@ export type AccountTabNavigatorProps = {
     chartVisible: boolean
 }
 
-export type AccountTabsParamsList = {
+type AccountTabsParamsList = {
     Overview: undefined
     Nfts: undefined
     History: undefined

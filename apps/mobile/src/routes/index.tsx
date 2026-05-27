@@ -48,7 +48,6 @@ import { RescanRekeyedStackNavigator } from '@modules/rekey/routes/rescan-rekeye
 import { UndoRekeyStackNavigator } from '@modules/rekey/routes/undo-rekey'
 import { SearchStackNavigator } from '@modules/search'
 import { navigationRef } from './navigationRef'
-export type { RootStackParamList } from './types'
 
 const RootStack = createNativeStackNavigator<RootStackParamList>()
 

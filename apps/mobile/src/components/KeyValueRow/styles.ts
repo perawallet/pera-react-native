@@ -11,7 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { KeyValueRowProps } from './KeyValueRow'
+import type { KeyValueRowProps } from './KeyValueRow'
 
 export const useStyles = makeStyles((theme, props: KeyValueRowProps) => ({
     container: {

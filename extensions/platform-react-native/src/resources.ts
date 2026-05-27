@@ -27,7 +27,7 @@ import {
  * so they are safe to create at module scope. Async initialization
  * (Firebase, push notifications) happens separately via `initialize()`.
  */
-export const keyValueStorage = new RNKeyValueStorageService()
+const keyValueStorage = new RNKeyValueStorageService()
 const firebaseService = new RNFirebaseService()
 
 const hardwareWalletRegistry = createHardwareWalletRegistry()

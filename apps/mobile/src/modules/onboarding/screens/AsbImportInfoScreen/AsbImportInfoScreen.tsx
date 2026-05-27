@@ -11,36 +11,51 @@
  */
 
 import React from 'react'
-import { PWButton, PWScreen, PWView } from '@components/core'
-import { ScreenHeader } from '@components/ScreenHeader'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useTheme } from '@rneui/themed'
+import { PWButton, PWText, PWView } from '@components/core'
+import ShieldCheckImage from '@assets/icons/shield-check.svg'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useAsbImportInfoScreen } from './useAsbImportInfoScreen'
 
 export const AsbImportInfoScreen = () => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles(insets)
     const { t } = useLanguage()
+    const { theme } = useTheme()
     const { handleContinue } = useAsbImportInfoScreen()
 
     return (
-        <PWScreen
-            scroll={false}
-            footer={
+        <PWView style={styles.root}>
+            <PWView style={styles.content}>
+                <ShieldCheckImage
+                    width={theme.spacing.xxl * 4}
+                    height={theme.spacing.xxl * 4}
+                    color={theme.colors.textMain}
+                />
+                <PWText
+                    variant='h1'
+                    style={styles.title}
+                >
+                    {t('onboarding.asb_import.info.title')}
+                </PWText>
+                <PWText
+                    variant='h4'
+                    style={styles.description}
+                >
+                    {t('onboarding.asb_import.info.body')}
+                </PWText>
+            </PWView>
+
+            <PWView style={styles.footer}>
                 <PWButton
                     variant='primary'
                     title={t('onboarding.asb_import.info.continue')}
                     onPress={handleContinue}
                     testID='asb_import_info_continue_button'
                 />
-            }
-        >
-            <PWView style={styles.content}>
-                <ScreenHeader
-                    icon='shield-check'
-                    title={t('onboarding.asb_import.info.title')}
-                    description={t('onboarding.asb_import.info.body')}
-                />
             </PWView>
-        </PWScreen>
+        </PWView>
     )
 }

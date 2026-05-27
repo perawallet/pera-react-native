@@ -12,7 +12,7 @@
 
 import { z } from 'zod'
 
-export const collectibleSearchSchema = z.object({
+const collectibleSearchSchema = z.object({
     collection: z
         .object({
             collection_id: z.number().nullable().optional(),
@@ -24,7 +24,7 @@ export const collectibleSearchSchema = z.object({
     title: z.string().nullable().optional(),
 })
 
-export const assetSearchResultSchema = z.object({
+const assetSearchResultSchema = z.object({
     asset_id: z.number(),
     name: z.string().nullable().optional(),
     logo: z.string().nullable().optional(),

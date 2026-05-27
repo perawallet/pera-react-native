@@ -10,23 +10,24 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
+import type { Theme } from '@rneui/themed'
+import type { ViewStyle } from 'react-native'
 
-export const useStyles = makeStyles(theme => ({
-    row: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: theme.spacing.lg,
+// Shared layout for the rekey-to-{ledger,shared,standard} select-target screens.
+// Each screen wraps this in its own makeStyles so its style keys stay visible to
+// the no-unused-style-keys check.
+export const getSelectTargetScreenStyles = (
+    theme: Theme,
+    bottomPadding: number,
+): Record<'container' | 'list', ViewStyle> => ({
+    container: {
+        flex: 1,
+        backgroundColor: theme.colors.background,
+    },
+    list: {
+        flexGrow: 1,
+        gap: theme.spacing.sm,
         paddingHorizontal: theme.spacing.xl,
-        gap: theme.spacing.lg,
+        paddingBottom: bottomPadding,
     },
-    textContainer: {
-        flexDirection: 'column',
-    },
-    subtitle: {
-        color: theme.colors.textGray,
-    },
-    dangerText: {
-        color: theme.colors.negative,
-    },
-}))
+})

@@ -20,7 +20,7 @@ export const getFontFamily = (weight: FontWeight) => {
     return fontFamilies.DMSANS[weight]
 }
 
-export const getMonoFontFamily = (weight: 400 | 500) => {
+const getMonoFontFamily = (weight: 400 | 500) => {
     return fontFamilies.DMMONO[weight]
 }
 

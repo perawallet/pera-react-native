@@ -10,5 +10,4 @@
  limitations under the License
  */
 
-export { AccountOptionsRow } from './AccountOptionsRow'
-export type { AccountOptionsRowProps } from './AccountOptionsRow'
+export { RekeyConfirmView } from './RekeyConfirmView'
