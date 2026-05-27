@@ -7,11 +7,24 @@
     // Expo config plugins are referenced by path string in app.config.js, not imported.
     "apps/mobile/plugins/**",
     // Custom Metro transformer wired into metro.config.js by path.
-    "apps/mobile/metro-raw-transformer.js"
+    "apps/mobile/metro-raw-transformer.js",
+    // Guardrail checks are discovered at runtime via fast-glob, not imported.
+    "packages/devtools/guardrails/checks/**"
   ],
 
   // Test infrastructure the runner (vitest) resolves by convention, never imported.
   "ignorePatterns": ["**/__mocks__/**"],
+
+  // Entry points fallow's plugins don't infer on their own. Test files are runtime
+  // entries for the suite, and packages expose test-only API (MSW handlers, fixtures)
+  // via `exports` subpaths (e.g. `@perawallet/wallet-core-x/test-handlers`) that the
+  // import graph from production entries never reaches — so their closure is not dead.
+  "entry": [
+    "**/*.{test,spec}.{ts,tsx}",
+    "**/src/test-handlers.ts",
+    "**/msw-handlers.ts",
+    "**/test-utils/**"
+  ],
 
   // Native modules (React Native autolinking) and build/polyfill packages consumed
   // outside the JS import graph. fallow cannot observe their usage, so they are not
