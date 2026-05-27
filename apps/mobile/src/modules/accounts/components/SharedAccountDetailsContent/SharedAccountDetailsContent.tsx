@@ -86,7 +86,11 @@ export const SharedAccountDetailsContent = ({
                                     const isLast = index === arr.length - 1
                                     return (
                                         <AddressDisplay
-                                            key={participantAddress}
+                                            // A multisig can list the same
+                                            // address as more than one
+                                            // participant, so the address alone
+                                            // isn't a unique key.
+                                            key={`${participantAddress}-${index}`}
                                             address={participantAddress}
                                             forceShowIcon
                                             contactAvatarVariant='highlighted'
@@ -96,7 +100,7 @@ export const SharedAccountDetailsContent = ({
                                                 isLast &&
                                                     styles.participantLast,
                                             ]}
-                                            testID={`shared_account_participant_${participantAddress}`}
+                                            testID={`shared_account_participant_${participantAddress}_${index}`}
                                             trailing={
                                                 inWallet ? undefined : (
                                                     <PWTouchableIcon
@@ -108,7 +112,7 @@ export const SharedAccountDetailsContent = ({
                                                                 participantAddress,
                                                             )
                                                         }
-                                                        testID={`shared_account_participant_edit_${participantAddress}`}
+                                                        testID={`shared_account_participant_edit_${participantAddress}_${index}`}
                                                     />
                                                 )
                                             }
