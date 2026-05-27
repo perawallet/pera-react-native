@@ -67,7 +67,7 @@ export const useCreateAccount = () => {
         }
     }
 
-    const createHdWalletAccount = async ({
+    const buildHdWalletAccount = async ({
         walletId,
         account,
         keyIndex,
@@ -75,7 +75,7 @@ export const useCreateAccount = () => {
         walletId?: string
         account: number
         keyIndex: number
-    }) => {
+    }): Promise<WalletAccount> => {
         const rootWalletId = walletId ?? generateOrderedUniqueId()
         let seedKeyId: string | undefined = getKey(rootWalletId)?.id
 
@@ -100,35 +100,22 @@ export const useCreateAccount = () => {
             throw new NoHDWalletError(rootWalletId)
         }
 
-        const newAccount: WalletAccount = {
+        return {
             id: generateOrderedUniqueId(),
             address: encodeAlgorandAddress(publicKey),
             type: AccountTypes.hdWallet,
-            hdWalletDetails: {
-                account,
-                change: 0,
-                keyIndex,
-                derivationType,
-            },
-            keyPairId: hdDerivedKeyId(
-                seedKeyId,
-                account,
-                keyIndex,
-                derivationType,
-            ),
+            hdWalletDetails: { account, change: 0, keyIndex, derivationType },
+            keyPairId: hdDerivedKeyId(seedKeyId, account, keyIndex, derivationType),
         }
-
-        await saveAndUpdateAccounts(newAccount)
-        return newAccount
     }
 
-    const createAlgo25WalletAccount = async ({
+    const buildAlgo25WalletAccount = async ({
         seed,
         id,
     }: {
         seed?: Algo25SeedReference
         id?: string
-    }) => {
+    }): Promise<WalletAccount> => {
         let resolved: Algo25SeedReference | null = seed ?? null
 
         if (!resolved) {
@@ -137,16 +124,11 @@ export const useCreateAccount = () => {
             if (existing) {
                 resolved = {
                     seedKeyId: existing.id,
-                    address: encodeAlgorandAddress(
-                        existing.publicKey ?? new Uint8Array(),
-                    ),
+                    address: encodeAlgorandAddress(existing.publicKey ?? new Uint8Array()),
                 }
             } else {
                 const result = await createAlgo25Key({ id: keyId })
-                resolved = {
-                    seedKeyId: result.seedKey.id,
-                    address: result.address,
-                }
+                resolved = { seedKeyId: result.seedKey.id, address: result.address }
             }
         }
 
@@ -154,13 +136,33 @@ export const useCreateAccount = () => {
             throw new KeyNotFoundError(id ?? '')
         }
 
-        const newAccount: WalletAccount = {
+        return {
             id: generateOrderedUniqueId(),
             address: resolved.address,
             type: AccountTypes.algo25,
             keyPairId: algo25SignKeyId(resolved.seedKeyId),
         }
+    }
 
+    const saveAccount = async (account: WalletAccount) => {
+        await saveAndUpdateAccounts(account)
+    }
+
+    const createHdWalletAccount = async (params: {
+        walletId?: string
+        account: number
+        keyIndex: number
+    }) => {
+        const newAccount = await buildHdWalletAccount(params)
+        await saveAndUpdateAccounts(newAccount)
+        return newAccount
+    }
+
+    const createAlgo25WalletAccount = async (params: {
+        seed?: Algo25SeedReference
+        id?: string
+    }) => {
+        const newAccount = await buildAlgo25WalletAccount(params)
         await saveAndUpdateAccounts(newAccount)
         return newAccount
     }
@@ -168,5 +170,8 @@ export const useCreateAccount = () => {
     return {
         createHdWalletAccount,
         createAlgo25WalletAccount,
+        buildHdWalletAccount,
+        buildAlgo25WalletAccount,
+        saveAccount,
     }
 }

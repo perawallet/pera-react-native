@@ -19,12 +19,13 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseCreateNextHDAccountResult = {
     createNextHDAccount: () => Promise<Nullable<WalletAccount>>
+    buildNextHDAccount: () => Promise<Nullable<WalletAccount>>
     hasHDWallet: boolean
 }
 
 export const useCreateNextHDAccount = (): UseCreateNextHDAccountResult => {
     const accounts = useAllAccounts()
-    const { createHdWalletAccount } = useCreateAccount()
+    const { createHdWalletAccount, buildHdWalletAccount } = useCreateAccount()
     const { seedIdOf } = useKMS()
 
     const hdWalletAccounts = useMemo(
@@ -61,5 +62,21 @@ export const useCreateNextHDAccount = (): UseCreateNextHDAccountResult => {
         })
     }, [hdWalletAccounts, createHdWalletAccount, seedIdOf])
 
-    return { createNextHDAccount, hasHDWallet }
+    const buildNextHDAccount = useCallback(async () => {
+        if (hdWalletAccounts.length === 0) return null
+
+        const firstHDAccount = hdWalletAccounts[0]
+        const walletId = seedIdOf(firstHDAccount.keyPairId)
+        if (!walletId) return null
+
+        const sameWalletAccounts = hdWalletAccounts.filter(
+            a => seedIdOf(a.keyPairId) === walletId,
+        )
+        const nextAccountIndex =
+            Math.max(...sameWalletAccounts.map(a => a.hdWalletDetails.account)) + 1
+
+        return buildHdWalletAccount({ walletId, account: nextAccountIndex, keyIndex: 0 })
+    }, [hdWalletAccounts, buildHdWalletAccount, seedIdOf])
+
+    return { createNextHDAccount, buildNextHDAccount, hasHDWallet }
 }

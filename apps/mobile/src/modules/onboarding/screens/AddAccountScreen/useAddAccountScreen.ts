@@ -31,9 +31,8 @@ import { type AccountOption } from '@modules/onboarding/types'
 export const useAddAccountScreen = () => {
     const navigation = useAppNavigation()
     const isMounted = useIsMounted()
-    const { createHdWalletAccount, createAlgo25WalletAccount } =
-        useCreateAccount()
-    const { createNextHDAccount, hasHDWallet } = useCreateNextHDAccount()
+    const { buildHdWalletAccount, buildAlgo25WalletAccount } = useCreateAccount()
+    const { buildNextHDAccount, hasHDWallet } = useCreateNextHDAccount()
     const { hasMultipleHDWallets } = useHDWalletGroups()
     const { showToast } = useToast()
     const { t } = useLanguage()
@@ -66,7 +65,7 @@ export const useAddAccountScreen = () => {
         openCreatingAccount()
         deferToNextCycle(async () => {
             try {
-                const newAccount = await createNextHDAccount()
+                const newAccount = await buildNextHDAccount()
                 if (!isMounted()) return
                 if (newAccount) {
                     navigation.push('NameAccount', { account: newAccount })
@@ -89,7 +88,7 @@ export const useAddAccountScreen = () => {
         isMounted,
         hasHDWallet,
         hasMultipleHDWallets,
-        createNextHDAccount,
+        buildNextHDAccount,
         openCreatingAccount,
         closeCreatingAccount,
         navigation,
@@ -130,7 +129,7 @@ export const useAddAccountScreen = () => {
         openCreatingAccount()
         deferToNextCycle(async () => {
             try {
-                const newAccount = await createHdWalletAccount({
+                const newAccount = await buildHdWalletAccount({
                     account: 0,
                     keyIndex: 0,
                 })
@@ -154,7 +153,7 @@ export const useAddAccountScreen = () => {
         isMounted,
         openCreatingAccount,
         closeCreatingAccount,
-        createHdWalletAccount,
+        buildHdWalletAccount,
         navigation,
         showToast,
         t,
@@ -164,7 +163,7 @@ export const useAddAccountScreen = () => {
         openCreatingAccount()
         deferToNextCycle(async () => {
             try {
-                const newAccount = await createAlgo25WalletAccount({})
+                const newAccount = await buildAlgo25WalletAccount({})
                 if (!isMounted()) return
                 navigation.push('NameAccount', { account: newAccount })
             } catch (error) {
@@ -185,7 +184,7 @@ export const useAddAccountScreen = () => {
         isMounted,
         openCreatingAccount,
         closeCreatingAccount,
-        createAlgo25WalletAccount,
+        buildAlgo25WalletAccount,
         navigation,
         showToast,
         t,

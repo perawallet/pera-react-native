@@ -15,10 +15,11 @@ import {
     useAllAccounts,
     getAccountDisplayName,
     WalletAccount,
-    useUpdateAccount,
     useCreateAccount,
     useSelectedAccountAddress,
     isHDWalletAccount,
+    useUpdateAccount,
+    useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useLanguage } from '@hooks/useLanguage'
@@ -41,7 +42,7 @@ export const useNameAccountScreen = () => {
 
     const accounts = useAllAccounts()
     const updateAccount = useUpdateAccount()
-    const { createHdWalletAccount } = useCreateAccount()
+    const { buildHdWalletAccount, saveAccount } = useCreateAccount()
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
     const { t } = useLanguage()
     const { showToast } = useToast()
@@ -96,10 +97,17 @@ export const useNameAccountScreen = () => {
 
             const targetAccount: WalletAccount =
                 account ||
-                (await createHdWalletAccount({ account: 0, keyIndex: 0 }))
+                (await buildHdWalletAccount({ account: 0, keyIndex: 0 }))
 
-            targetAccount.name = walletDisplay
-            updateAccount(targetAccount)
+            const namedAccount = { ...targetAccount, name: walletDisplay }
+            const isAlreadyInStore = useAccountsStore.getState().accounts
+                .some(a => a.address === targetAccount.address)
+
+            if (isAlreadyInStore) {
+                updateAccount(namedAccount)
+            } else {
+                await saveAccount(namedAccount)
+            }
 
             // Explicitly select the new account to ensure it's ready for AccountScreen
             // This triggers navigation via useShowOnboarding(), which waits for selection

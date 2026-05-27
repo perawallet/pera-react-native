@@ -15,12 +15,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { useNameAccountScreen } from '../useNameAccountScreen'
 
-const mockUpdateAccount = vi.fn()
-const mockCreateHdWalletAccount = vi.fn()
+const mockBuildHdWalletAccount = vi.fn()
+const mockSaveAccount = vi.fn()
 const mockSetSelectedAccountAddress = vi.fn()
 const mockSetShouldPlayConfetti = vi.fn()
 const mockExitAccountFlow = vi.fn()
 const mockShowToast = vi.fn()
+const mockUpdateAccount = vi.fn()
 
 let mockRouteParams: Optional<{ account?: unknown }>
 
@@ -41,9 +42,13 @@ vi.mock('@hooks/useAppNavigation', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => [],
-    useUpdateAccount: () => mockUpdateAccount,
     useCreateAccount: () => ({
-        createHdWalletAccount: mockCreateHdWalletAccount,
+        buildHdWalletAccount: mockBuildHdWalletAccount,
+        saveAccount: mockSaveAccount,
+    }),
+    useUpdateAccount: () => mockUpdateAccount,
+    useAccountsStore: Object.assign(vi.fn(() => ({})), {
+        getState: vi.fn(() => ({ accounts: [] })),
     }),
     useSelectedAccountAddress: () => ({
         selectedAccountAddress: null,
@@ -152,17 +157,17 @@ describe('useNameAccountScreen', () => {
             await result.current.handleFinish()
         })
 
-        expect(mockUpdateAccount).toHaveBeenCalledWith(
+        expect(mockSaveAccount).toHaveBeenCalledWith(
             expect.objectContaining({ name: 'Renamed', address: 'ADDR' }),
         )
         expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith('ADDR')
         expect(mockSetShouldPlayConfetti).toHaveBeenCalledWith(true)
         expect(mockExitAccountFlow).toHaveBeenCalled()
-        expect(mockCreateHdWalletAccount).not.toHaveBeenCalled()
+        expect(mockBuildHdWalletAccount).not.toHaveBeenCalled()
     })
 
     it('handleFinish creates HD wallet account when no account is provided', async () => {
-        mockCreateHdWalletAccount.mockResolvedValue({
+        mockBuildHdWalletAccount.mockResolvedValue({
             address: 'NEW_ADDR',
             type: 'hdWallet',
         })
@@ -173,11 +178,11 @@ describe('useNameAccountScreen', () => {
             await result.current.handleFinish()
         })
 
-        expect(mockCreateHdWalletAccount).toHaveBeenCalledWith({
+        expect(mockBuildHdWalletAccount).toHaveBeenCalledWith({
             account: 0,
             keyIndex: 0,
         })
-        expect(mockUpdateAccount).toHaveBeenCalledWith(
+        expect(mockSaveAccount).toHaveBeenCalledWith(
             expect.objectContaining({ address: 'NEW_ADDR' }),
         )
         expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith('NEW_ADDR')
@@ -185,7 +190,7 @@ describe('useNameAccountScreen', () => {
     })
 
     it('handleFinish shows error toast on failure', async () => {
-        mockCreateHdWalletAccount.mockRejectedValue(
+        mockBuildHdWalletAccount.mockRejectedValue(
             new Error('Creation failed'),
         )
 
@@ -203,7 +208,7 @@ describe('useNameAccountScreen', () => {
     })
 
     it('handleFinish resets isCreating after completion', async () => {
-        mockCreateHdWalletAccount.mockResolvedValue({
+        mockBuildHdWalletAccount.mockResolvedValue({
             address: 'ADDR',
             type: 'hdWallet',
         })
