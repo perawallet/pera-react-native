@@ -12,7 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const TRACK_HEIGHT = 56
+const TRACK_HEIGHT = 56
 export const THUMB_SIZE = 64
 export const TRACK_INSET = 4
 

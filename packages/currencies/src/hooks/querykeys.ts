@@ -12,7 +12,7 @@
 
 import { Network } from '@perawallet/wallet-core-shared'
 
-export const MODULE_PREFIX = 'currencies'
+const MODULE_PREFIX = 'currencies'
 
 export const currencyQueryKeys = {
     all: [MODULE_PREFIX] as const,

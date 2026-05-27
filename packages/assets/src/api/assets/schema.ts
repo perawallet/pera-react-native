@@ -12,25 +12,25 @@
 
 import { z } from 'zod'
 
-export const collectibleTraitSchema = z.object({
+const collectibleTraitSchema = z.object({
     display_name: z.string().optional(),
     display_value: z.string(),
 })
 
-export const collectibleMediaSchema = z.object({
+const collectibleMediaSchema = z.object({
     type: z.enum(['image', 'video', 'audio', 'model', 'mixed', 'unknown']),
     download_url: z.string().optional(),
     preview_url: z.string().optional(),
     extension: z.string(),
 })
 
-export const collectibleCollectionSchema = z.object({
+const collectibleCollectionSchema = z.object({
     id: z.number().optional(),
     name: z.string(),
     description: z.string().optional(),
 })
 
-export const collectibleResponseSchema = z.object({
+const collectibleResponseSchema = z.object({
     title: z.string().optional(),
     standard: z.enum(['arc3', 'arc69']).optional(),
     primary_image: z.string().nullable().optional(),

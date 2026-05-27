@@ -144,7 +144,3 @@ export const hardwareSigningMachine = setup({
         },
     },
 })
-
-// Re-export BLE classification for callers that need to distinguish
-// (e.g., the troubleshooting sheet vs. inline error sheet).
-export { BLE_CLASS_ERROR_KINDS } from '../../types/ledgerErrorPresetKind'

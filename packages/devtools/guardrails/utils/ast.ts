@@ -26,7 +26,7 @@ function getNamedImports(node: ts.ImportDeclaration): ts.NamedImports | null {
 }
 
 /** Returns the local identifier bound to the given imported name from `moduleSpecifier`, or null if not imported. */
-export function resolveNamedImport(
+function resolveNamedImport(
     sf: ts.SourceFile,
     moduleSpecifier: string,
     importedName: string,
@@ -46,23 +46,6 @@ export function resolveNamedImport(
 }
 
 /** Returns a map of local-identifier → imported-name for all named imports from `moduleSpecifier`. */
-export function resolveModuleBindings(
-    sf: ts.SourceFile,
-    moduleSpecifier: string,
-): Map<string, string> {
-    const result = new Map<string, string>()
-    for (const statement of sf.statements) {
-        if (!isImportFromModule(statement, moduleSpecifier)) continue
-        const named = getNamedImports(statement)
-        if (!named) continue
-        for (const element of named.elements) {
-            const original = element.propertyName?.text ?? element.name.text
-            result.set(element.name.text, original)
-        }
-    }
-    return result
-}
-
 const makeStylesBindingCache = new WeakMap<ts.SourceFile, string | null>()
 
 /**

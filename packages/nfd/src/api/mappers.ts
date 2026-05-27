@@ -18,7 +18,7 @@ import type {
     NfdSearchApiResponse,
 } from './schema'
 
-export const transformNfdName = (response: NfdNameApiResponse): NfdName => ({
+const transformNfdName = (response: NfdNameApiResponse): NfdName => ({
     name: response.name,
     source: response.source,
     image: response.image,

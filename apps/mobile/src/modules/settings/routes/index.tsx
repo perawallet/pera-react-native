@@ -106,7 +106,7 @@ export type WalletConnectSettingsStackParamsList = {
 const WalletConnectSettingsStack =
     createNativeStackNavigator<WalletConnectSettingsStackParamsList>()
 
-export const WalletConnectSettingsStackNavigator = () => {
+const WalletConnectSettingsStackNavigator = () => {
     return (
         <WalletConnectSettingsStack.Navigator
             initialRouteName='WalletConnectSettingsHome'
@@ -149,7 +149,7 @@ export type SettingsStackParamsList = {
     DeveloperSettings: NavigatorScreenParams<DeveloperSettingsStackParamsList>
 }
 
-export const SettingsStack = createNativeStackNavigator()
+const SettingsStack = createNativeStackNavigator()
 
 export const SettingsStackNavigator = () => {
     return (

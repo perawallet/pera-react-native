@@ -13,7 +13,7 @@
 import { z } from 'zod'
 import { dexSwapAssetSchema } from '../available-assets/schema'
 
-export const providerItemSchema = z.object({
+const providerItemSchema = z.object({
     name: z.string(),
     display_name: z.string(),
     icon_url: z.string(),
@@ -23,7 +23,7 @@ export const providersResponseSchema = z.object({
     results: z.array(providerItemSchema),
 })
 
-export const topPairItemSchema = z.object({
+const topPairItemSchema = z.object({
     asset_a: dexSwapAssetSchema,
     asset_b: dexSwapAssetSchema,
     volume_24h_usd: z.string(),
