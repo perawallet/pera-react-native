@@ -26,9 +26,7 @@ import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { OnboardingScreen } from '@modules/onboarding/screens/OnboardingScreen/OnboardingScreen'
 import { NameAccountScreen } from '@modules/onboarding/screens/NameAccountScreen/NameAccountScreen'
-import {
-    useAccountsStore,
-} from '@perawallet/wallet-core-accounts'
+import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
 
 // Flow under test: the user lands on the Onboarding screen, taps "Create

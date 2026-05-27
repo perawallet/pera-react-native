@@ -31,7 +31,8 @@ import { type AccountOption } from '@modules/onboarding/types'
 export const useAddAccountScreen = () => {
     const navigation = useAppNavigation()
     const isMounted = useIsMounted()
-    const { buildHdWalletAccount, buildAlgo25WalletAccount } = useCreateAccount()
+    const { buildHdWalletAccount, buildAlgo25WalletAccount } =
+        useCreateAccount()
     const { buildNextHDAccount, hasHDWallet } = useCreateNextHDAccount()
     const { hasMultipleHDWallets } = useHDWalletGroups()
     const { showToast } = useToast()

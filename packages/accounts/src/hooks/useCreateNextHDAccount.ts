@@ -73,9 +73,15 @@ export const useCreateNextHDAccount = (): UseCreateNextHDAccountResult => {
             a => seedIdOf(a.keyPairId) === walletId,
         )
         const nextAccountIndex =
-            Math.max(...sameWalletAccounts.map(a => a.hdWalletDetails.account)) + 1
+            Math.max(
+                ...sameWalletAccounts.map(a => a.hdWalletDetails.account),
+            ) + 1
 
-        return buildHdWalletAccount({ walletId, account: nextAccountIndex, keyIndex: 0 })
+        return buildHdWalletAccount({
+            walletId,
+            account: nextAccountIndex,
+            keyIndex: 0,
+        })
     }, [hdWalletAccounts, buildHdWalletAccount, seedIdOf])
 
     return { createNextHDAccount, buildNextHDAccount, hasHDWallet }

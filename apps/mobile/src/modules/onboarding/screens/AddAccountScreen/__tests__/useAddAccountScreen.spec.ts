@@ -400,9 +400,7 @@ describe('useAddAccountScreen', () => {
     })
 
     it('universal wallet option shows error toast on failure', async () => {
-        mockBuildHdWalletAccount.mockRejectedValue(
-            new Error('Creation failed'),
-        )
+        mockBuildHdWalletAccount.mockRejectedValue(new Error('Creation failed'))
 
         const { result } = renderHook(() => useAddAccountScreen())
 
@@ -535,9 +533,7 @@ describe('useAddAccountScreen', () => {
 
     it('add account option shows error toast on failure', async () => {
         mockUseAllAccounts.mockReturnValue([HD_ACCOUNT])
-        mockBuildNextHDAccount.mockRejectedValue(
-            new Error('Derivation failed'),
-        )
+        mockBuildNextHDAccount.mockRejectedValue(new Error('Derivation failed'))
 
         const { result } = renderHook(() => useAddAccountScreen())
 

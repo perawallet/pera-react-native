@@ -47,9 +47,12 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         saveAccount: mockSaveAccount,
     }),
     useUpdateAccount: () => mockUpdateAccount,
-    useAccountsStore: Object.assign(vi.fn(() => ({})), {
-        getState: vi.fn(() => ({ accounts: [] })),
-    }),
+    useAccountsStore: Object.assign(
+        vi.fn(() => ({})),
+        {
+            getState: vi.fn(() => ({ accounts: [] })),
+        },
+    ),
     useSelectedAccountAddress: () => ({
         selectedAccountAddress: null,
         setSelectedAccountAddress: mockSetSelectedAccountAddress,
@@ -190,9 +193,7 @@ describe('useNameAccountScreen', () => {
     })
 
     it('handleFinish shows error toast on failure', async () => {
-        mockBuildHdWalletAccount.mockRejectedValue(
-            new Error('Creation failed'),
-        )
+        mockBuildHdWalletAccount.mockRejectedValue(new Error('Creation failed'))
 
         const { result } = renderHook(() => useNameAccountScreen())
 

@@ -250,9 +250,7 @@ describe('useSelectHDWalletScreen', () => {
     })
 
     it('shows error toast when wallet creation fails', async () => {
-        mockBuildHdWalletAccount.mockRejectedValue(
-            new Error('Creation failed'),
-        )
+        mockBuildHdWalletAccount.mockRejectedValue(new Error('Creation failed'))
 
         const { result } = renderHook(() => useSelectHDWalletScreen())
 
@@ -266,9 +264,7 @@ describe('useSelectHDWalletScreen', () => {
     })
 
     it('resets isCreatingWallet after wallet creation fails', async () => {
-        mockBuildHdWalletAccount.mockRejectedValue(
-            new Error('Creation failed'),
-        )
+        mockBuildHdWalletAccount.mockRejectedValue(new Error('Creation failed'))
 
         const { result } = renderHook(() => useSelectHDWalletScreen())
 
@@ -280,9 +276,7 @@ describe('useSelectHDWalletScreen', () => {
     })
 
     it('does not navigate when wallet creation fails', async () => {
-        mockBuildHdWalletAccount.mockRejectedValue(
-            new Error('Creation failed'),
-        )
+        mockBuildHdWalletAccount.mockRejectedValue(new Error('Creation failed'))
 
         const { result } = renderHook(() => useSelectHDWalletScreen())
 

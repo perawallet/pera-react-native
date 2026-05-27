@@ -100,8 +100,9 @@ export const useNameAccountScreen = () => {
                 (await buildHdWalletAccount({ account: 0, keyIndex: 0 }))
 
             const namedAccount = { ...targetAccount, name: walletDisplay }
-            const isAlreadyInStore = useAccountsStore.getState().accounts
-                .some(a => a.address === targetAccount.address)
+            const isAlreadyInStore = useAccountsStore
+                .getState()
+                .accounts.some(a => a.address === targetAccount.address)
 
             if (isAlreadyInStore) {
                 updateAccount(namedAccount)

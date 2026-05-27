@@ -105,7 +105,12 @@ export const useCreateAccount = () => {
             address: encodeAlgorandAddress(publicKey),
             type: AccountTypes.hdWallet,
             hdWalletDetails: { account, change: 0, keyIndex, derivationType },
-            keyPairId: hdDerivedKeyId(seedKeyId, account, keyIndex, derivationType),
+            keyPairId: hdDerivedKeyId(
+                seedKeyId,
+                account,
+                keyIndex,
+                derivationType,
+            ),
         }
     }
 
@@ -124,11 +129,16 @@ export const useCreateAccount = () => {
             if (existing) {
                 resolved = {
                     seedKeyId: existing.id,
-                    address: encodeAlgorandAddress(existing.publicKey ?? new Uint8Array()),
+                    address: encodeAlgorandAddress(
+                        existing.publicKey ?? new Uint8Array(),
+                    ),
                 }
             } else {
                 const result = await createAlgo25Key({ id: keyId })
-                resolved = { seedKeyId: result.seedKey.id, address: result.address }
+                resolved = {
+                    seedKeyId: result.seedKey.id,
+                    address: result.address,
+                }
             }
         }
 
