@@ -134,6 +134,11 @@ export const SearchScreen = () => {
                                     count: item.hiddenCount,
                                 })}
                             </PWText>
+                            <PWIcon
+                                name='chevron-right'
+                                variant='link'
+                                size='sm'
+                            />
                         </PWTouchableOpacity>
                     )
             }
