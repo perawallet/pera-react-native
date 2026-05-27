@@ -23,7 +23,12 @@
     "**/*.{test,spec}.{ts,tsx}",
     "**/src/test-handlers.ts",
     "**/msw-handlers.ts",
-    "**/test-utils/**"
+    "**/test-utils/**",
+    // Component/module index.ts barrels are intentional public API surface (mandated
+    // by the component convention). Treating them as entry points stops flagging the
+    // barrels themselves and their `Component`/`XxxProps` re-exports as unused, while
+    // genuinely-dead exports in source files are still reported.
+    "**/index.ts"
   ],
 
   // Native modules (React Native autolinking) and build/polyfill packages consumed
