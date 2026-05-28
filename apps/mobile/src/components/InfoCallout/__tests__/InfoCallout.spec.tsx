@@ -12,12 +12,12 @@
 
 import { render, screen } from '@test-utils/render'
 import { describe, it, expect } from 'vitest'
-import { PWCallout } from '../PWCallout'
+import { InfoCallout } from '../InfoCallout'
 
-describe('PWCallout', () => {
+describe('InfoCallout', () => {
     it('renders the title and body', () => {
         render(
-            <PWCallout
+            <InfoCallout
                 title='Strong biometric required'
                 body='Add a fingerprint or face unlock to use passkeys.'
             />,
@@ -33,7 +33,7 @@ describe('PWCallout', () => {
 
     it('defaults to the info icon', () => {
         render(
-            <PWCallout
+            <InfoCallout
                 title='Heads up'
                 body='Something to know.'
             />,
@@ -44,7 +44,7 @@ describe('PWCallout', () => {
 
     it('renders a caller-supplied icon instead of the default', () => {
         render(
-            <PWCallout
+            <InfoCallout
                 icon='trash'
                 title='Heads up'
                 body='Something to know.'
@@ -57,7 +57,7 @@ describe('PWCallout', () => {
 
     it('forwards the testID to the container so callers can target it', () => {
         render(
-            <PWCallout
+            <InfoCallout
                 title='Heads up'
                 body='Something to know.'
                 testID='my-callout'

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWCallout } from '@components/core'
+import { InfoCallout } from '@components/InfoCallout'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
@@ -19,7 +19,7 @@ export const ExternalTransactionCallout = () => {
     const { t } = useLanguage()
 
     return (
-        <PWCallout
+        <InfoCallout
             icon='info'
             iconSize='sm'
             titleVariant='bodySemibold'

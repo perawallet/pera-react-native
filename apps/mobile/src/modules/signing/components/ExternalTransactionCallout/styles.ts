@@ -12,7 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 
-// Density + placement overrides on top of PWCallout's base box (tighter
+// Density + placement overrides on top of InfoCallout's base box (tighter
 // padding than the default, plus bottom spacing for the details list).
 export const useStyles = makeStyles(theme => ({
     container: {

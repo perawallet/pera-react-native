@@ -12,7 +12,8 @@
 
 import type { ReactNode } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { PWCallout, PWIcon, PWView } from '@components/core'
+import { PWIcon, PWView } from '@components/core'
+import { InfoCallout } from '@components/InfoCallout'
 import { QRScannerView } from '@components/QRScannerView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
@@ -78,7 +79,7 @@ export const SettingsPasskeyScreen = () => {
             testID='settings_passkeys_screen'
         >
             {screen.notice === 'hd-wallet' && (
-                <PWCallout
+                <InfoCallout
                     title={t('settings.passkeys.hd_wallet_warning_title')}
                     body={t('settings.passkeys.hd_wallet_warning_body')}
                     style={styles.notice}
@@ -86,7 +87,7 @@ export const SettingsPasskeyScreen = () => {
                 />
             )}
             {screen.notice === 'biometric' && (
-                <PWCallout
+                <InfoCallout
                     title={t('settings.passkeys.biometric_warning_title')}
                     body={t('settings.passkeys.biometric_warning_body')}
                     style={styles.notice}

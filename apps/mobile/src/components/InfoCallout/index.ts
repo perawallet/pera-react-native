@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { PWCallout } from './PWCallout'
-export type { PWCalloutProps } from './PWCallout'
+export { InfoCallout } from './InfoCallout'
+export type { InfoCalloutProps } from './InfoCallout'
