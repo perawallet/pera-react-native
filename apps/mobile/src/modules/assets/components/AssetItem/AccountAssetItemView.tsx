@@ -57,7 +57,8 @@ export const AccountAssetItemView = ({
     // Use pre-fetched asset data when available to avoid N+1 queries.
     // Falls back to individual fetch for callers that don't populate accountBalance.asset.
     const assetIds = useMemo(
-        () => (skipFetch || accountBalance.asset ? [] : [accountBalance.assetId]),
+        () =>
+            skipFetch || accountBalance.asset ? [] : [accountBalance.assetId],
         [skipFetch, accountBalance.asset, accountBalance.assetId],
     )
     const { data: fetchedAssets } = useAssetsQuery(assetIds)
