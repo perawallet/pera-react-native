@@ -418,6 +418,7 @@ describe('useAccountOptions', () => {
             expect(arg.options).toEqual({
                 size: 'auto',
                 enablePanDownToClose: true,
+                autoCreateContainer: false,
             })
         })
 
@@ -786,6 +787,7 @@ describe('useAccountOptions', () => {
             expect(arg.options).toEqual({
                 size: 'auto',
                 enablePanDownToClose: true,
+                autoCreateContainer: false,
             })
         })
 
