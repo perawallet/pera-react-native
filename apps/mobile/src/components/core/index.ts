@@ -13,6 +13,7 @@
 export * from './PWBadge'
 export * from './PWBottomSheet'
 export * from './PWButton'
+export * from './PWCallout'
 export * from './PWCheckbox'
 export * from './PWChip'
 export * from './PWDialog'

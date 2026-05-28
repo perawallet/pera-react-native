@@ -405,6 +405,13 @@ vi.mock('@components/core', () => {
                     : title || children,
             ),
         PWCheckbox: createMockComponent('PWCheckbox'),
+        PWCallout: ({ title, body, testID }: any) =>
+            React.createElement(
+                'div',
+                { 'data-testid': testID || 'PWCallout' },
+                React.createElement('span', { key: 'title' }, title),
+                React.createElement('span', { key: 'body' }, body),
+            ),
         PWChip: ({ label, title, children, testID, ...props }: any) =>
             React.createElement(
                 'span',

@@ -10,23 +10,5 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => ({
-    container: {
-        flexDirection: 'row',
-        gap: theme.spacing.sm,
-        margin: theme.spacing.xl,
-        marginBottom: 0,
-        padding: theme.spacing.lg,
-        backgroundColor: theme.colors.layerGrayLighter,
-        borderRadius: theme.borderRadius.md,
-    },
-    textColumn: {
-        flex: 1,
-        gap: theme.spacing.xs,
-    },
-    body: {
-        color: theme.colors.textGray,
-    },
-}))
+export { PWCallout } from './PWCallout'
+export type { PWCalloutProps } from './PWCallout'

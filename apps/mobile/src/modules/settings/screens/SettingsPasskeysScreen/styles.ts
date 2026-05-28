@@ -12,8 +12,12 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(() => ({
+export const useStyles = makeStyles(theme => ({
     safeArea: {
         flex: 1,
+    },
+    notice: {
+        margin: theme.spacing.xl,
+        marginBottom: 0,
     },
 }))

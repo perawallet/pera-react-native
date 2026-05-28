@@ -12,11 +12,10 @@
 
 import type { ReactNode } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { PWIcon, PWView } from '@components/core'
+import { PWCallout, PWIcon, PWView } from '@components/core'
 import { QRScannerView } from '@components/QRScannerView'
+import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
-import { PasskeysBiometricNotice } from '../../components/PasskeysBiometricNotice'
-import { PasskeysHDWalletNotice } from '../../components/PasskeysHDWalletNotice'
 import { PasskeysDisabledState } from '../../components/PasskeysDisabledState'
 import { PasskeysEmptyState } from '../../components/PasskeysEmptyState'
 import { PasskeysErrorState } from '../../components/PasskeysErrorState'
@@ -27,6 +26,7 @@ import { useStyles } from './styles'
 
 export const SettingsPasskeyScreen = () => {
     const styles = useStyles()
+    const { t } = useLanguage()
     const screen = useSettingsPasskeysScreen()
 
     // Same QR entry point as the WalletConnect / home scanners — scanned
@@ -77,8 +77,22 @@ export const SettingsPasskeyScreen = () => {
             style={styles.safeArea}
             testID='settings_passkeys_screen'
         >
-            {screen.notice === 'hd-wallet' && <PasskeysHDWalletNotice />}
-            {screen.notice === 'biometric' && <PasskeysBiometricNotice />}
+            {screen.notice === 'hd-wallet' && (
+                <PWCallout
+                    title={t('settings.passkeys.hd_wallet_warning_title')}
+                    body={t('settings.passkeys.hd_wallet_warning_body')}
+                    style={styles.notice}
+                    testID='settings_passkeys_hd_wallet_notice'
+                />
+            )}
+            {screen.notice === 'biometric' && (
+                <PWCallout
+                    title={t('settings.passkeys.biometric_warning_title')}
+                    body={t('settings.passkeys.biometric_warning_body')}
+                    style={styles.notice}
+                    testID='settings_passkeys_biometric_notice'
+                />
+            )}
             {content}
             <QRScannerView
                 isVisible={screen.isScannerVisible}

@@ -12,12 +12,16 @@
 
 import { useCallback, useEffect } from 'react'
 import { AppState } from 'react-native'
+import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { useErrorToast } from '@hooks/useErrorToast'
+import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
 import { openCredentialProviderSettings } from './openCredentialProviderSettings'
 import {
     usePasskeyAutofillStatus,
     usePasskeysQuery,
+    useRemovePasskeyMutation,
     type Passkey,
 } from '@perawallet/wallet-core-passkeys'
 import { useBiometricSecurityLevel } from '@perawallet/wallet-core-security'
@@ -64,7 +68,10 @@ export const useSettingsPasskeysScreen =
         const list = usePasskeysQuery()
         const biometric = useBiometricSecurityLevel()
         const hasHDWallet = useHasHDWallet()
-        const { requestByType } = useBottomSheet()
+        const { request } = useBottomSheet()
+        const { removePasskey } = useRemovePasskeyMutation()
+        const { showError } = useErrorToast()
+        const { t } = useLanguage()
         const scanner = useModalState()
 
         // Re-check provider + biometric status when the app returns to the
@@ -84,10 +91,32 @@ export const useSettingsPasskeysScreen =
         }, [refreshStatus, refreshBiometric])
 
         const onRequestDelete = useCallback(
-            (passkey: Passkey) => {
-                requestByType('remove-passkey', { passkey })
+            async (passkey: Passkey) => {
+                const confirmed = await request<boolean>({
+                    contents: (
+                        <ConfirmActionContent
+                            icon='trash'
+                            iconVariant='error'
+                            title={t('settings.passkeys.remove_title')}
+                            message={t('settings.passkeys.remove_body')}
+                            confirmLabel={t('settings.passkeys.remove_confirm')}
+                            cancelLabel={t('settings.passkeys.remove_cancel')}
+                            confirmVariant='destructive'
+                            buttonPaddingStyle='dense'
+                        />
+                    ),
+                    options: { size: 'auto', enablePanDownToClose: true },
+                })
+                if (!confirmed) return
+                try {
+                    await removePasskey(passkey)
+                } catch (error) {
+                    // The sheet has already closed; surface the failure as a
+                    // toast so the user knows the passkey is still there.
+                    showError(error, t('settings.passkeys.error_title'))
+                }
             },
-            [requestByType],
+            [request, removePasskey, showError, t],
         )
 
         const onOpenProviderSettings = useCallback(async () => {

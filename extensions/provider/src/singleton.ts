@@ -14,7 +14,7 @@ import { Store } from '@tanstack/store'
 import Hook from 'before-after-hook'
 import type { HookCollection } from 'before-after-hook'
 import type { Key, KeyData, KeyStoreState } from '@algorandfoundation/keystore'
-import { addKey, initializeKeyStore } from '@algorandfoundation/keystore'
+import { initializeKeyStore } from '@algorandfoundation/keystore'
 import {
     clear as clearKeystoreStore,
     decode,
@@ -157,31 +157,32 @@ export const hydrateKeystore = async (): Promise<void> => {
 }
 
 /**
- * Merges keystore entries written to MMKV by an out-of-process writer into the
- * reactive store. The Android passkey credential provider runs in a separate
- * process and writes newly-registered `hd-derived-p256` keys straight to the
- * keystore MMKV namespace, so the in-process reactive store never learns about
- * them — a freshly-registered passkey stays invisible to the running app until
+ * Re-seeds the reactive store from the keystore MMKV namespace so the in-process
+ * store reflects writes made by an out-of-process writer. The Android passkey
+ * credential provider runs in a separate process and writes straight to the
+ * keystore MMKV namespace — both newly-registered `hd-derived-p256` keys AND
+ * metadata updates on existing keys (e.g. bumping `lastUsedAt`/`count` when a
+ * credential is used). The in-process reactive store learns about neither until
  * the next cold-start `hydrateKeystore`.
  *
  * Unlike {@link hydrateKeystore} this does NOT skip when the store is already
- * populated; it adds only the ids not already present, re-checking immediately
- * before each add so overlapping calls can't double-insert. Skips fetching the
- * master key entirely when there is nothing new to merge.
+ * populated: it re-reads every entry and re-initializes the store. Re-reading
+ * (rather than merging only the ids not yet present) is what surfaces metadata
+ * updates on keys that are already in the store — merging new ids alone would
+ * miss them. Skips fetching the master key only when MMKV is empty.
  */
 export const reconcileKeystore = async (): Promise<void> => {
-    const present = new Set(keystoreStore.state.keys.map(k => k.id))
-    const newIds = keystoreStorage.getAllKeys().filter(id => !present.has(id))
-    if (newIds.length === 0) return
+    const ids = keystoreStorage.getAllKeys()
+    if (ids.length === 0) return
 
     let masterKey: Buffer | null = null
     try {
         masterKey = await getMasterKey()
-        for (const id of newIds) {
-            if (keystoreStore.state.keys.some(k => k.id === id)) continue
-            const key = decodeKeyEntry(id, masterKey)
-            if (key) addKey(keystoreStore, key)
-        }
+        const mk = masterKey
+        const keys = ids
+            .map(id => decodeKeyEntry(id, mk))
+            .filter((key): key is Key => key !== null)
+        initializeKeyStore({ store: keystoreStore, keys })
     } finally {
         if (masterKey) masterKey.fill(0)
     }

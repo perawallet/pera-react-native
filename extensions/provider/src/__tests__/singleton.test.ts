@@ -283,35 +283,70 @@ describe('provider singleton', () => {
             store.state.keys = keys
         }
 
-        test('no-ops (without fetching the master key) when MMKV has no ids missing from the store', async () => {
+        test('no-ops (without fetching the master key) when MMKV has no entries', async () => {
             seedReactiveStore([{ id: 'a' }])
-            keystoreMocks.storageGetAllKeys.mockReturnValue(['a'])
+            keystoreMocks.storageGetAllKeys.mockReturnValue([])
 
             await reconcileKeystore()
 
             expect(keystoreMocks.getMasterKey).not.toHaveBeenCalled()
-            expect(keystoreMocks.addKey).not.toHaveBeenCalled()
+            expect(keystoreMocks.initializeKeyStore).not.toHaveBeenCalled()
         })
 
-        test('adds only the ids not already present in the reactive store', async () => {
-            seedReactiveStore([{ id: 'a' }])
+        test('re-seeds the store from MMKV, adding new keys and refreshing metadata on existing ones', async () => {
+            // 'a' is already in the reactive store but stale (no lastUsedAt);
+            // 'b' is new. The credential provider (separate process) just bumped
+            // 'a'.lastUsedAt in MMKV on use, so reconcile must surface both the
+            // new key and the refreshed metadata on the existing one.
+            seedReactiveStore([
+                {
+                    id: 'a',
+                    metadata: { origin: 'webauthn.io', userHandle: 'alice' },
+                },
+            ])
             keystoreMocks.storageGetAllKeys.mockReturnValue(['a', 'b'])
-            keystoreMocks.storageGetString.mockReturnValue('cipher-b')
+            keystoreMocks.storageGetString.mockImplementation(
+                (id: string) => `cipher-${id}`,
+            )
             const masterKey = Buffer.from([1, 2, 3])
             keystoreMocks.getMasterKey.mockResolvedValue(masterKey)
-            keystoreMocks.decryptData.mockReturnValue('decrypted-b')
-            keystoreMocks.decode.mockReturnValue({
-                id: 'b',
-                type: 'hd-derived-p256',
-                algorithm: 'P256',
-                metadata: { origin: 'webauthn.io', userHandle: 'alice' },
-            })
+            keystoreMocks.decryptData.mockImplementation(
+                (_mk: unknown, cipher: string) => `decrypted-${cipher}`,
+            )
+            keystoreMocks.decode.mockImplementation((decrypted: string) =>
+                decrypted === 'decrypted-cipher-a'
+                    ? {
+                          id: 'a',
+                          type: 'hd-derived-p256',
+                          algorithm: 'P256',
+                          metadata: {
+                              origin: 'webauthn.io',
+                              userHandle: 'alice',
+                              lastUsedAt: 1234,
+                          },
+                      }
+                    : {
+                          id: 'b',
+                          type: 'hd-derived-p256',
+                          algorithm: 'P256',
+                          metadata: {
+                              origin: 'example.com',
+                              userHandle: 'bob',
+                          },
+                      },
+            )
 
             await reconcileKeystore()
 
-            expect(keystoreMocks.addKey).toHaveBeenCalledTimes(1)
-            const addedKey = keystoreMocks.addKey.mock.calls[0][1]
-            expect(addedKey).toMatchObject({ id: 'b', type: 'hd-derived-p256' })
+            expect(keystoreMocks.initializeKeyStore).toHaveBeenCalledTimes(1)
+            const seededKeys = keystoreMocks.initializeKeyStore.mock.calls[0][0]
+                .keys as Array<{
+                id: string
+                metadata?: { lastUsedAt?: number }
+            }>
+            const refreshedA = seededKeys.find(k => k.id === 'a')
+            expect(refreshedA?.metadata?.lastUsedAt).toBe(1234)
+            expect(seededKeys.some(k => k.id === 'b')).toBe(true)
             // Master key copy was zeroed after use.
             expect(Array.from(masterKey)).toEqual([0, 0, 0])
         })

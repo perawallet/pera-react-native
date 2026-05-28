@@ -12,20 +12,11 @@
 
 import { makeStyles } from '@rneui/themed'
 
+// Density + placement overrides on top of PWCallout's base box (tighter
+// padding than the default, plus bottom spacing for the details list).
 export const useStyles = makeStyles(theme => ({
     container: {
-        flexDirection: 'row',
-        gap: theme.spacing.sm,
         padding: theme.spacing.md,
-        borderRadius: theme.borderRadius.md,
-        backgroundColor: theme.colors.layerGrayLighter,
         marginBottom: theme.spacing.md,
-    },
-    textColumn: {
-        flex: 1,
-        gap: theme.spacing.xs,
-    },
-    icon: {
-        marginTop: theme.spacing.xs,
     },
 }))

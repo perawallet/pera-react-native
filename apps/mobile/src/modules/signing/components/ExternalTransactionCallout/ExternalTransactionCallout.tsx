@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWIcon, PWText, PWView } from '@components/core'
+import { PWCallout } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
@@ -19,20 +19,13 @@ export const ExternalTransactionCallout = () => {
     const { t } = useLanguage()
 
     return (
-        <PWView style={styles.container}>
-            <PWIcon
-                name='info'
-                size='sm'
-                style={styles.icon}
-            />
-            <PWView style={styles.textColumn}>
-                <PWText variant='bodySemibold'>
-                    {t('signing.external_transaction.detail_callout_title')}
-                </PWText>
-                <PWText variant='caption'>
-                    {t('signing.external_transaction.detail_callout_body')}
-                </PWText>
-            </PWView>
-        </PWView>
+        <PWCallout
+            icon='info'
+            iconSize='sm'
+            titleVariant='bodySemibold'
+            title={t('signing.external_transaction.detail_callout_title')}
+            body={t('signing.external_transaction.detail_callout_body')}
+            style={styles.container}
+        />
     )
 }
