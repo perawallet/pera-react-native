@@ -13,7 +13,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Key } from '@algorandfoundation/keystore'
 import type { NativeStoredCredential } from '@perawallet/wallet-extension-passkey-autofill'
-import { credentialToPasskey, keyToPasskey } from '../passkey'
+import { credentialToPasskey, keyToPasskey, toUrlSafeBase64 } from '../passkey'
 
 const buildPasskeyKey = (metadata: Record<string, unknown>): Key =>
     ({
@@ -32,6 +32,20 @@ const buildNativeCredential = (
         userHandle: 'will-android-pera7',
         ...overrides,
     }) as NativeStoredCredential
+
+describe('toUrlSafeBase64', () => {
+    it('replaces + and / with url-safe characters and strips trailing padding', () => {
+        expect(toUrlSafeBase64('ab+/cd==')).toBe('ab-_cd')
+    })
+
+    it('leaves a fully padding-free string unchanged aside from char swaps', () => {
+        expect(toUrlSafeBase64('abcd')).toBe('abcd')
+    })
+
+    it('only strips trailing padding, not interior = characters', () => {
+        expect(toUrlSafeBase64('a=b=')).toBe('a=b')
+    })
+})
 
 describe('keyToPasskey', () => {
     it('uses the native userHandle (WebAuthn user.name) as the display name when no explicit name is stored', () => {

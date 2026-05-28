@@ -74,8 +74,13 @@ export const isPasskeyAlgorithm = (algorithm: string | undefined): boolean =>
 /**
  * Converts a standard base64 string to url-safe base64 (no padding).
  */
-export const toUrlSafeBase64 = (b64: string): string =>
-    b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+export const toUrlSafeBase64 = (b64: string): string => {
+    // Strip trailing '=' padding with a linear scan rather than a regex:
+    // /=+$/ backtracks polynomially on long runs of '=' (ReDoS).
+    let end = b64.length
+    while (end > 0 && b64.charCodeAt(end - 1) === 0x3d /* '=' */) end--
+    return b64.slice(0, end).replace(/\+/g, '-').replace(/\//g, '_')
+}
 
 const readString = (
     m: Record<string, unknown>,
