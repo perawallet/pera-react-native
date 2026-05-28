@@ -18,7 +18,7 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite build --watch",
-    "test": "vitest run",
+    "test": "bash ../../tools/rebuild-native.sh && vitest run",
     "db:generate": "drizzle-kit generate",
     "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
   },

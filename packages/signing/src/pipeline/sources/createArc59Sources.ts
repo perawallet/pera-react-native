@@ -97,6 +97,33 @@ export interface Arc59SourceDependencies {
     encodeTransaction: (tx: PeraTransaction) => Uint8Array
 }
 
+// The send/claim/reject sources share an identical shape: build the transaction
+// group, base64-encode each, and mark every index for the sender to sign.
+const createArc59TransactionSource = <P extends { sender: string }>(
+    buildTransactions: (params: P) => Promise<PeraTransaction[]>,
+    encodeTransaction: (transaction: PeraTransaction) => Uint8Array,
+): DataSource<P> =>
+    createLocalSource<P>(async params => {
+        const transactions = await buildTransactions(params)
+
+        const rawTransactionsBase64 = transactions.map(tx =>
+            encodeToBase64(encodeTransaction(tx)),
+        )
+
+        // All transactions in the group are signed by the sender
+        const indicesToSign = transactions.map((_, index) => index)
+
+        return {
+            data: {
+                type: 'transactions',
+                transactions,
+                rawTransactionsBase64,
+                indicesToSign,
+            },
+            signerAddress: params.sender,
+        }
+    })
+
 /**
  * Create a source for ARC59 send via inbox.
  *
@@ -116,28 +143,10 @@ export interface Arc59SourceDependencies {
 export const createArc59SendSource = (
     deps: Arc59SourceDependencies,
 ): DataSource<Arc59SendSourceParams> => {
-    const { buildSendViaInboxTransactions, encodeTransaction } = deps
-
-    return createLocalSource<Arc59SendSourceParams>(async params => {
-        const transactions = await buildSendViaInboxTransactions(params)
-
-        const rawTransactionsBase64 = transactions.map(tx =>
-            encodeToBase64(encodeTransaction(tx)),
-        )
-
-        // All transactions in the group are signed by the sender
-        const indicesToSign = transactions.map((_, index) => index)
-
-        return {
-            data: {
-                type: 'transactions',
-                transactions,
-                rawTransactionsBase64,
-                indicesToSign,
-            },
-            signerAddress: params.sender,
-        }
-    })
+    return createArc59TransactionSource(
+        deps.buildSendViaInboxTransactions,
+        deps.encodeTransaction,
+    )
 }
 
 /**
@@ -158,28 +167,10 @@ export const createArc59SendSource = (
 export const createArc59ClaimSource = (
     deps: Arc59SourceDependencies,
 ): DataSource<Arc59ClaimSourceParams> => {
-    const { buildClaimTransactions, encodeTransaction } = deps
-
-    return createLocalSource<Arc59ClaimSourceParams>(async params => {
-        const transactions = await buildClaimTransactions(params)
-
-        const rawTransactionsBase64 = transactions.map(tx =>
-            encodeToBase64(encodeTransaction(tx)),
-        )
-
-        // All transactions in the group are signed by the sender
-        const indicesToSign = transactions.map((_, index) => index)
-
-        return {
-            data: {
-                type: 'transactions',
-                transactions,
-                rawTransactionsBase64,
-                indicesToSign,
-            },
-            signerAddress: params.sender,
-        }
-    })
+    return createArc59TransactionSource(
+        deps.buildClaimTransactions,
+        deps.encodeTransaction,
+    )
 }
 
 /**
@@ -199,26 +190,8 @@ export const createArc59ClaimSource = (
 export const createArc59RejectSource = (
     deps: Arc59SourceDependencies,
 ): DataSource<Arc59RejectSourceParams> => {
-    const { buildRejectTransactions, encodeTransaction } = deps
-
-    return createLocalSource<Arc59RejectSourceParams>(async params => {
-        const transactions = await buildRejectTransactions(params)
-
-        const rawTransactionsBase64 = transactions.map(tx =>
-            encodeToBase64(encodeTransaction(tx)),
-        )
-
-        // All transactions in the group are signed by the sender
-        const indicesToSign = transactions.map((_, index) => index)
-
-        return {
-            data: {
-                type: 'transactions',
-                transactions,
-                rawTransactionsBase64,
-                indicesToSign,
-            },
-            signerAddress: params.sender,
-        }
-    })
+    return createArc59TransactionSource(
+        deps.buildRejectTransactions,
+        deps.encodeTransaction,
+    )
 }

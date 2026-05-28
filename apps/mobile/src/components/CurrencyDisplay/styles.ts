@@ -11,7 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { CurrencyDisplayProps } from './CurrencyDisplay'
+import type { CurrencyDisplayProps } from './CurrencyDisplay'
 
 const SKELETON_MAX_WIDTH = 150
 

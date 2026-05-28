@@ -11,7 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { PanelButtonProps } from './PanelButton'
+import type { PanelButtonProps } from './PanelButton'
 
 export const useStyles = makeStyles((theme, props: PanelButtonProps) => {
     let backgroundColor = theme.colors.layerGrayLighter

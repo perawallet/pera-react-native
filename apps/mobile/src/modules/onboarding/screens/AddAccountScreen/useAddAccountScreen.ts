@@ -17,11 +17,12 @@ import {
     useCreateAccount,
     useCreateNextHDAccount,
     useHDWalletGroups,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useModalState } from '@hooks/useModalState'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
-import { deferToNextCycle } from '@perawallet/wallet-core-shared'
+import { deferToNextCycle, type Nullable } from '@perawallet/wallet-core-shared'
 import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
 import { type IconName } from '@components/core'
@@ -31,9 +32,9 @@ import { type AccountOption } from '@modules/onboarding/types'
 export const useAddAccountScreen = () => {
     const navigation = useAppNavigation()
     const isMounted = useIsMounted()
-    const { createHdWalletAccount, createAlgo25WalletAccount } =
+    const { buildHdWalletAccount, buildAlgo25WalletAccount } =
         useCreateAccount()
-    const { createNextHDAccount, hasHDWallet } = useCreateNextHDAccount()
+    const { buildNextHDAccount, hasHDWallet } = useCreateNextHDAccount()
     const { hasMultipleHDWallets } = useHDWalletGroups()
     const { showToast } = useToast()
     const { t } = useLanguage()
@@ -55,6 +56,43 @@ export const useAddAccountScreen = () => {
     )
     const [isOtherOptionsVisible, setIsOtherOptionsVisible] = useState(false)
 
+    // Shared create-account flow: open the creating-account state, create on the
+    // next cycle, navigate to naming on success, toast on failure, always close.
+    const runCreateAccount = useCallback(
+        (create: () => Promise<Nullable<WalletAccount>>) => {
+            openCreatingAccount()
+            deferToNextCycle(async () => {
+                try {
+                    const newAccount = await create()
+                    if (!isMounted()) return
+                    if (newAccount) {
+                        navigation.push('NameAccount', { account: newAccount })
+                    }
+                } catch (error) {
+                    if (!isMounted()) return
+                    // guardrails-ignore-next-line no-error-toast-in-catch reason: localized create_account.error_message wraps the raw error; preserved verbatim
+                    showToast({
+                        title: t('onboarding.create_account.error_title'),
+                        body: t('onboarding.create_account.error_message', {
+                            error: `${error}`,
+                        }),
+                        type: 'error',
+                    })
+                } finally {
+                    if (isMounted()) closeCreatingAccount()
+                }
+            })
+        },
+        [
+            isMounted,
+            openCreatingAccount,
+            closeCreatingAccount,
+            navigation,
+            showToast,
+            t,
+        ],
+    )
+
     const handleAddAccount = useCallback(() => {
         if (!hasHDWallet) return
 
@@ -63,38 +101,13 @@ export const useAddAccountScreen = () => {
             return
         }
 
-        openCreatingAccount()
-        deferToNextCycle(async () => {
-            try {
-                const newAccount = await createNextHDAccount()
-                if (!isMounted()) return
-                if (newAccount) {
-                    navigation.push('NameAccount', { account: newAccount })
-                }
-            } catch (error) {
-                if (!isMounted()) return
-                // guardrails-ignore-next-line no-error-toast-in-catch reason: localized create_account.error_message wraps the raw error; preserved verbatim
-                showToast({
-                    title: t('onboarding.create_account.error_title'),
-                    body: t('onboarding.create_account.error_message', {
-                        error: `${error}`,
-                    }),
-                    type: 'error',
-                })
-            } finally {
-                if (isMounted()) closeCreatingAccount()
-            }
-        })
+        runCreateAccount(buildNextHDAccount)
     }, [
-        isMounted,
         hasHDWallet,
         hasMultipleHDWallets,
-        createNextHDAccount,
-        openCreatingAccount,
-        closeCreatingAccount,
         navigation,
-        showToast,
-        t,
+        buildNextHDAccount,
+        runCreateAccount,
     ])
 
     const handleOpenImportAccountOptions = useCallback(
@@ -127,69 +140,14 @@ export const useAddAccountScreen = () => {
     )
 
     const handleCreateUniversalWallet = useCallback(() => {
-        openCreatingAccount()
-        deferToNextCycle(async () => {
-            try {
-                const newAccount = await createHdWalletAccount({
-                    account: 0,
-                    keyIndex: 0,
-                })
-                if (!isMounted()) return
-                navigation.push('NameAccount', { account: newAccount })
-            } catch (error) {
-                if (!isMounted()) return
-                // guardrails-ignore-next-line no-error-toast-in-catch reason: localized create_account.error_message wraps the raw error; preserved verbatim
-                showToast({
-                    title: t('onboarding.create_account.error_title'),
-                    body: t('onboarding.create_account.error_message', {
-                        error: `${error}`,
-                    }),
-                    type: 'error',
-                })
-            } finally {
-                if (isMounted()) closeCreatingAccount()
-            }
-        })
-    }, [
-        isMounted,
-        openCreatingAccount,
-        closeCreatingAccount,
-        createHdWalletAccount,
-        navigation,
-        showToast,
-        t,
-    ])
+        runCreateAccount(() =>
+            buildHdWalletAccount({ account: 0, keyIndex: 0 }),
+        )
+    }, [buildHdWalletAccount, runCreateAccount])
 
     const handleCreateAlgo25 = useCallback(() => {
-        openCreatingAccount()
-        deferToNextCycle(async () => {
-            try {
-                const newAccount = await createAlgo25WalletAccount({})
-                if (!isMounted()) return
-                navigation.push('NameAccount', { account: newAccount })
-            } catch (error) {
-                if (!isMounted()) return
-                // guardrails-ignore-next-line no-error-toast-in-catch reason: localized create_account.error_message wraps the raw error; preserved verbatim
-                showToast({
-                    title: t('onboarding.create_account.error_title'),
-                    body: t('onboarding.create_account.error_message', {
-                        error: `${error}`,
-                    }),
-                    type: 'error',
-                })
-            } finally {
-                if (isMounted()) closeCreatingAccount()
-            }
-        })
-    }, [
-        isMounted,
-        openCreatingAccount,
-        closeCreatingAccount,
-        createAlgo25WalletAccount,
-        navigation,
-        showToast,
-        t,
-    ])
+        runCreateAccount(() => buildAlgo25WalletAccount({}))
+    }, [buildAlgo25WalletAccount, runCreateAccount])
 
     const mainOptions: AccountOption[] = useMemo(
         () =>

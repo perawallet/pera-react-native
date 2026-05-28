@@ -30,7 +30,7 @@ type UseSwapProviderContentParams = {
     selectedProviderName: Nullable<string>
 }
 
-export type SwapProviderRow = {
+type SwapProviderRow = {
     quote: SwapQuote
     iconUrl: Optional<string>
     displayName: string

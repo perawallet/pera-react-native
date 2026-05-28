@@ -29,7 +29,6 @@ import {
 // types from `createAlgodTransport`. The source of truth lives in
 // `../submission/types`.
 export type {
-    AlgodClientInterface,
     AlgokitClientInterface,
     EncodeSignedTransactionsFn,
 } from '../submission'

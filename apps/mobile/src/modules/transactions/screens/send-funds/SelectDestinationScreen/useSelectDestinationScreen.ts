@@ -11,7 +11,7 @@
  */
 
 import { useSendFunds } from '@modules/transactions/hooks'
-import { SendFundsStackParamList } from '@modules/transactions/routes/send-funds'
+import type { SendFundsStackParamList } from '@modules/transactions/routes/send-funds'
 import {
     canSignWith,
     useAccountBalancesQuery,

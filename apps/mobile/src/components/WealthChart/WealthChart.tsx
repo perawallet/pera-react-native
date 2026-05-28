@@ -10,28 +10,18 @@
  limitations under the License
  */
 
+import { useMemo } from 'react'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
-import { LineChart } from 'react-native-gifted-charts'
-
-import { PWView } from '@components/core'
+import { useChartPointerFocus } from '@hooks/useChartPointerFocus'
+import { BalanceLineChart } from '@components/BalanceLineChart'
 import { HistoryPeriod, type Nullable } from '@perawallet/wallet-core-shared'
-import { useCallback, useMemo, useState } from 'react'
-import { useTheme } from '@rneui/themed'
 import {
     AccountBalanceHistoryItem,
     useAccountBalancesHistoryQuery,
     useAllAccounts,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { EmptyView } from '../EmptyView'
-import { LoadingView } from '../LoadingView'
-import {
-    CHART_ANIMATION_DURATION,
-    CHART_FOCUS_DEBOUNCE_TIME,
-    CHART_HEIGHT,
-} from '@constants/ui'
-import { getChartYAxisRange } from '@utils/chart'
 
 export type WealthChartProps = {
     account?: WalletAccount
@@ -44,11 +34,8 @@ export const WealthChart = ({
     account,
     period,
 }: WealthChartProps) => {
-    const { theme } = useTheme()
     const themeStyle = useStyles()
     const { t } = useLanguage()
-    const [lastSentIndex, setLastSentIndex] = useState<number>()
-    const [lastSentTime, setLastSentTime] = useState<number>(Date.now())
 
     const accounts = useAllAccounts()
     const addresses = useMemo(
@@ -66,96 +53,22 @@ export const WealthChart = ({
 
     const dataPoints = useMemo(
         () =>
-            data?.map(p => {
-                return {
-                    datetime: p.datetime,
-                    value: p.preferredValue.toNumber(),
-                }
-            }) ?? [],
+            data?.map(p => ({
+                datetime: p.datetime,
+                value: p.preferredValue.toNumber(),
+            })) ?? [],
         [data],
     )
 
-    const yAxisRange = useMemo(
-        () => getChartYAxisRange(dataPoints),
-        [dataPoints],
-    )
-
-    const onFocus = useCallback(
-        ({
-            pointerIndex: index,
-            pointerX,
-        }: {
-            pointerIndex: number
-            pointerX: number
-        }) => {
-            if (Date.now() - lastSentTime > CHART_FOCUS_DEBOUNCE_TIME) {
-                if (pointerX > 0 && index >= 0 && index !== lastSentIndex) {
-                    const dataItem = data?.[index] ?? null
-                    onSelectionChanged(dataItem)
-                    setLastSentIndex(index)
-                } else if (pointerX === 0) {
-                    onSelectionChanged(null)
-                    setLastSentIndex(undefined)
-                }
-                setLastSentTime(Date.now())
-            }
-        },
-        [
-            data,
-            onSelectionChanged,
-            lastSentIndex,
-            lastSentTime,
-            setLastSentIndex,
-        ],
-    )
+    const getPointerProps = useChartPointerFocus(data, onSelectionChanged)
 
     return (
-        <PWView style={themeStyle.container}>
-            {isPending ? (
-                <LoadingView
-                    variant='circle'
-                    size='lg'
-                />
-            ) : !dataPoints?.length ? (
-                <EmptyView
-                    title=''
-                    body={t('common.wealth_chart.empty_body')}
-                />
-            ) : (
-                <LineChart
-                    data={dataPoints}
-                    hideAxesAndRules
-                    height={CHART_HEIGHT}
-                    color={theme.colors.positive}
-                    startFillColor='#28A79B'
-                    endFillColor='#28A79B'
-                    startOpacity={0.3}
-                    endOpacity={0.0}
-                    areaChart
-                    yAxisLabelWidth={1}
-                    hideYAxisText
-                    yAxisOffset={yAxisRange.yAxisOffset}
-                    maxValue={yAxisRange.maxValue}
-                    initialSpacing={0}
-                    endSpacing={0}
-                    showStripOnFocus
-                    showDataPointOnFocus
-                    animateOnDataChange
-                    animationDuration={CHART_ANIMATION_DURATION}
-                    onDataChangeAnimationDuration={CHART_ANIMATION_DURATION}
-                    pointerConfig={{
-                        showPointerStrip: true,
-                        pointerStripColor: theme.colors.textGrayLighter,
-                        pointerStripWidth: 1,
-                        pointerStripHeight: CHART_HEIGHT,
-                        pointerColor: theme.colors.positive,
-                        strokeDashArray: [6, 2],
-                    }}
-                    getPointerProps={onFocus}
-                    disableScroll
-                    adjustToWidth
-                />
-            )}
-        </PWView>
+        <BalanceLineChart
+            dataPoints={dataPoints}
+            isPending={isPending}
+            emptyBody={t('common.wealth_chart.empty_body')}
+            getPointerProps={getPointerProps}
+            style={themeStyle.container}
+        />
     )
 }

@@ -11,30 +11,6 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { EdgeInsets } from 'react-native-safe-area-context'
+import { getImportInfoScreenStyles } from '../../utils/importInfoScreenStyles'
 
-export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
-    root: {
-        flex: 1,
-        backgroundColor: theme.colors.background,
-        marginBottom: insets.bottom,
-    },
-    content: {
-        flex: 1,
-        alignItems: 'flex-start',
-        paddingHorizontal: theme.spacing.xl,
-        paddingTop: theme.spacing.xl,
-        gap: theme.spacing.lg,
-    },
-    title: {
-        textAlign: 'left',
-    },
-    description: {
-        textAlign: 'left',
-        color: theme.colors.textGray,
-    },
-    footer: {
-        padding: theme.spacing.xl,
-        paddingBottom: theme.spacing.xxl,
-    },
-}))
+export const useStyles = makeStyles(getImportInfoScreenStyles)

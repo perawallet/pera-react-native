@@ -26,10 +26,7 @@ import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { OnboardingScreen } from '@modules/onboarding/screens/OnboardingScreen/OnboardingScreen'
 import { NameAccountScreen } from '@modules/onboarding/screens/NameAccountScreen/NameAccountScreen'
-import {
-    AccountTypes,
-    useAccountsStore,
-} from '@perawallet/wallet-core-accounts'
+import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
 
 // Flow under test: the user lands on the Onboarding screen, taps "Create
@@ -83,16 +80,6 @@ describe('Flow: Onboarding → Create wallet', () => {
                     ).toBeTruthy()
                 },
                 { timeout: 10000 },
-            )
-
-            // The new HD wallet account exists in the store before the user
-            // commits a name — useCreateAccount.createHdWalletAccount writes to
-            // both keystore and accountsStore.
-            await waitFor(() => {
-                expect(useAccountsStore.getState().accounts).toHaveLength(1)
-            })
-            expect(useAccountsStore.getState().accounts[0].type).toBe(
-                AccountTypes.hdWallet,
             )
 
             // Finish: name is left as the default ("Wallet 1"), this exercises

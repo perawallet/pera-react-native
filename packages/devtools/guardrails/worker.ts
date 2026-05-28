@@ -1,6 +1,5 @@
 import { parentPort, workerData } from 'node:worker_threads'
-import { loadChecks } from './index.js'
-import { runChecksAgainstPaths } from './execute.js'
+import { loadChecks, runChecksAgainstPaths } from './execute.js'
 
 if (!parentPort) throw new Error('guardrails worker: missing parentPort')
 

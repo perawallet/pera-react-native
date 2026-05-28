@@ -12,7 +12,7 @@
 
 import React from 'react'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
-import { AccountStackParamsList } from '@modules/accounts/routes'
+import type { AccountStackParamsList } from '@modules/accounts/routes'
 import {
     PWButton,
     PWChip,

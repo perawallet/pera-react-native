@@ -28,7 +28,7 @@
  * the gate, the machine, and the store all agree on identity.
  */
 
-export type ApprovalResult = 'approved' | 'rejected' | 'cancelled'
+type ApprovalResult = 'approved' | 'rejected' | 'cancelled'
 
 type Deferred = {
     promise: Promise<ApprovalResult>

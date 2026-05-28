@@ -13,7 +13,7 @@
 import { z } from 'zod'
 import { dexSwapAssetSchema } from '../available-assets/schema'
 
-export const swapTypeEnum = z.enum(['fixed-input', 'fixed-output'])
+const swapTypeEnum = z.enum(['fixed-input', 'fixed-output'])
 
 export const calculatePeraFeeRequestSchema = z.object({
     asset_in_id: z.number(),
@@ -52,7 +52,7 @@ export const createQuotesRequestSchema = z.object({
     exclude_providers: z.array(z.string()).optional(),
 })
 
-export const quoteSchema = z.object({
+const quoteSchema = z.object({
     id: z.number().optional(),
     quote_id_str: z.string().optional(),
     provider: z.string().optional(),
@@ -92,5 +92,4 @@ export type CalculateSwapAmountApiResponse = z.infer<
     typeof calculateSwapAmountResponseSchema
 >
 export type CreateQuotesRequest = z.infer<typeof createQuotesRequestSchema>
-export type QuoteApiResponse = z.infer<typeof quoteSchema>
 export type CreateQuotesApiResponse = z.infer<typeof createQuotesResponseSchema>

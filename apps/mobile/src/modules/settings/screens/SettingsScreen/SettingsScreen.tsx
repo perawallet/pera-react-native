@@ -26,9 +26,6 @@ import { useSettingsScreen } from './useSettingsScreen'
 import { useStyles } from './styles'
 
 import type { IconName } from '@components/core'
-import type { SettingsStackParamsList } from '@modules/settings/routes'
-
-export type SettingsRouteName = keyof SettingsStackParamsList
 
 export const SettingsScreen = () => {
     const insets = useSafeAreaInsets()

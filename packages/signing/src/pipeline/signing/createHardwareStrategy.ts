@@ -251,13 +251,13 @@ const toClassifiedError = (error: unknown): Error => {
     )
 }
 
-export type SignTransactionsOnHardwareWalletOptions = {
+type SignTransactionsOnHardwareWalletOptions = {
     registry?: HardwareWalletRegistry
     encodeTransaction: EncodeTransactionFunction
     callbacks?: SigningCallbacks
 }
 
-export type SignArc60OnHardwareWalletOptions = Omit<
+type SignArc60OnHardwareWalletOptions = Omit<
     SignTransactionsOnHardwareWalletOptions,
     'encodeTransaction'
 >
@@ -271,7 +271,7 @@ export type SignArc60OnHardwareWalletOptions = Omit<
  * Used by the XState-based signing pipeline's hardware strategy. Local-key
  * accounts sign through `useLocalKeyTransactionSigner` and never reach here.
  */
-export const signTransactionsOnHardwareWallet = async (
+const signTransactionsOnHardwareWallet = async (
     hwAccount: HardwareWalletAccount,
     transactions: PeraTransaction[],
     indicesToSign: number[],

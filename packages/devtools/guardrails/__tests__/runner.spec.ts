@@ -14,8 +14,8 @@ import {
     it,
 } from 'vitest'
 import ts from 'typescript'
-import { loadChecks, runGuardrails } from '../index.js'
-import { sharedWalk } from '../execute.js'
+import { runGuardrails } from '../index.js'
+import { loadChecks, sharedWalk } from '../execute.js'
 import { findRepoRoot } from '../utils/discovery.js'
 import type { SourceMap, Violation } from '../types.js'
 
