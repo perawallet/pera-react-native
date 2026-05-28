@@ -141,6 +141,81 @@ describe('bootstrapPasskeyAutofill', () => {
         expect(service.setHdRootKeyId).not.toHaveBeenCalled()
     })
 
+    it('logs every failing native step but still completes when each call rejects', async () => {
+        const service = {
+            setMasterKey: vi.fn().mockRejectedValue(new Error('setMasterKey')),
+            setHdRootKeyId: vi
+                .fn()
+                .mockRejectedValue(new Error('setHdRootKeyId')),
+            setDerivedMainKey: vi
+                .fn()
+                .mockRejectedValue(new Error('setDerivedMainKey')),
+            configureIntentActions: vi
+                .fn()
+                .mockRejectedValue(new Error('configureIntentActions')),
+            refreshCredentialIdentities: vi
+                .fn()
+                .mockRejectedValue(new Error('refreshCredentialIdentities')),
+        }
+        mocks.getAllKeys.mockReturnValue(['hd'])
+        wireSecrets({
+            hd: {
+                id: 'root-id',
+                type: 'hd-root-key',
+                privateKey: new Uint8Array([1, 2, 3]),
+            } as unknown as KeyData,
+        })
+
+        await expect(
+            bootstrapPasskeyAutofill({
+                service: service as never,
+                intentActions,
+            }),
+        ).resolves.toBeUndefined()
+
+        const loggedSteps = mocks.error.mock.calls.map(call => call[1]?.step)
+        expect(loggedSteps).toEqual(
+            expect.arrayContaining([
+                'setMasterKey',
+                'setHdRootKeyId',
+                'setDerivedMainKey',
+                'configureIntentActions',
+                'refreshCredentialIdentities',
+            ]),
+        )
+    })
+
+    it('logs through the outer catch when fetching the master key throws', async () => {
+        const service = makeService()
+        mocks.getMasterKey.mockRejectedValue(new Error('keychain locked'))
+
+        await expect(
+            bootstrapPasskeyAutofill({
+                service: service as never,
+                intentActions,
+            }),
+        ).resolves.toBeUndefined()
+
+        expect(mocks.error).toHaveBeenCalledWith(expect.any(Error), {
+            step: 'bootstrapPasskeyAutofill',
+        })
+        expect(service.setMasterKey).not.toHaveBeenCalled()
+    })
+
+    it('treats an undecryptable secret as absent and warns', async () => {
+        const service = makeService()
+        mocks.getAllKeys.mockReturnValue(['hd'])
+        mocks.fetchSecret.mockRejectedValue(new Error('decrypt failed'))
+
+        await bootstrapPasskeyAutofill({
+            service: service as never,
+            intentActions,
+        })
+
+        expect(mocks.warn).toHaveBeenCalled()
+        expect(service.setHdRootKeyId).not.toHaveBeenCalled()
+    })
+
     it('coalesces overlapping calls into a single in-flight run', async () => {
         const service = makeService()
         mocks.getAllKeys.mockReturnValue([])
