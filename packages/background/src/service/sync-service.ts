@@ -91,7 +91,6 @@ export class SyncService {
 
             if (networksToSync.length > 0) {
                 await this.syncAll(networksToSync)
-                this.invalidateQueries()
             }
 
             // Reset interval on success
@@ -165,6 +164,9 @@ export class SyncService {
             if (this.hasRateLimitFailure(accountResults)) {
                 hasRateLimitError = true
             }
+            // Invalidate immediately so balances and holdings are visible
+            // before asset metadata and transactions finish loading.
+            invalidateAccountQueries(this.deps.queryClient)
 
             // 2. Collect all unique asset IDs from DB holdings
             const assetIds = await getAllAssetIdsForNetwork({ network })
@@ -185,6 +187,13 @@ export class SyncService {
             if (this.hasRateLimitFailure(assetResults)) {
                 hasRateLimitError = true
             }
+            // Invalidate so asset rows and prices appear as soon as metadata
+            // is ready, without waiting for transactions. Skip when every
+            // batch was rejected — invalidation forces a re-read from DB
+            // with no new data to surface.
+            if (assetResults.some(r => r.status === 'fulfilled')) {
+                invalidateAssetQueries(this.deps.queryClient)
+            }
 
             // 4. Sync recent transactions for each account
             const txResults = await Promise.allSettled(
@@ -200,6 +209,12 @@ export class SyncService {
             )
             if (this.hasRateLimitFailure(txResults)) {
                 hasRateLimitError = true
+            }
+            // Invalidate so the transaction list reflects the latest state.
+            // Skip when every account's fetch was rejected — invalidation
+            // forces a re-read from DB with no new data to surface.
+            if (txResults.some(r => r.status === 'fulfilled')) {
+                invalidateTransactionQueries(this.deps.queryClient)
             }
         }
 
