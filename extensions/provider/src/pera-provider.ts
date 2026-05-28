@@ -22,34 +22,46 @@ import {
 } from '@perawallet/wallet-extension-platform-driver'
 import { WithLedgerExtension } from '@perawallet/wallet-extension-ledger-react-native'
 import { WithLedgerUsbExtension } from '@perawallet/wallet-extension-ledger-react-native-usb'
+import {
+    WithPasskeyAutofill,
+    type PasskeyAutofillExtension,
+} from '@perawallet/wallet-extension-passkey-autofill'
 
 type PeraExtensions = readonly [
     typeof WithPlatformExtension,
     typeof WithLedgerExtension,
     typeof WithLedgerUsbExtension,
     typeof WithKeyStore,
+    typeof WithPasskeyAutofill,
 ]
 
 /**
- * The Pera Wallet Provider with platform services, Ledger hardware wallet, and keystore.
- * Instances include all platform service properties (analytics, keyValueStorage, etc.)
- * via the build-time resolved platform driver extension, the Ledger extension for
- * hardware wallet support, plus the keystore extension for cryptographic key management.
+ * The Pera Wallet Provider with platform services, Ledger hardware wallet,
+ * keystore, and passkey autofill. Instances include all platform service
+ * properties (analytics, keyValueStorage, etc.) via the build-time resolved
+ * platform driver extension, the Ledger extension for hardware wallet support,
+ * the keystore extension for cryptographic key management, plus the passkey
+ * autofill service exposed at `provider.passkeyAutofill`.
  */
 export const PeraProvider: {
     new (
         config: ProviderOptions,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         options?: any,
-    ): Provider<PeraExtensions> & PlatformExtension & KeyStoreExtension
+    ): Provider<PeraExtensions> &
+        PlatformExtension &
+        KeyStoreExtension &
+        PasskeyAutofillExtension
     EXTENSIONS: PeraExtensions
 } & typeof Provider = Provider.withExtensions([
     WithPlatformExtension,
     WithLedgerExtension,
     WithLedgerUsbExtension,
     WithKeyStore,
+    WithPasskeyAutofill,
 ] as const)
 
 export type PeraProvider = Provider<PeraExtensions> &
     PlatformExtension &
-    KeyStoreExtension
+    KeyStoreExtension &
+    PasskeyAutofillExtension

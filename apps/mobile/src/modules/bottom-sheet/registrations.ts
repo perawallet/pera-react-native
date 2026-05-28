@@ -32,11 +32,24 @@ import { OptInConfirmationContent } from '@modules/assets/components/OptInConfir
 import { AccountActionsContent } from '@modules/accounts/components/AccountActionsContent'
 import { SendFundsContent } from '@modules/transactions/components/send-funds/SendFundsContent'
 import { BidaliContent } from '@modules/gift-card/components/BidaliContent'
+import { RemovePasskeyConfirmContent } from '@modules/settings/components/RemovePasskeyConfirmContent'
+import { PasskeyBiometricRequiredContent } from '@modules/settings/components/PasskeyBiometricRequiredContent'
+import { PasskeyHDWalletRequiredContent } from '@modules/settings/components/PasskeyHDWalletRequiredContent'
+import type { Passkey } from '@perawallet/wallet-core-passkeys'
 
 registerBottomSheet('asset-opt-in', OptInConfirmationContent)
 registerBottomSheet('account-actions', AccountActionsContent)
 registerBottomSheet('send-funds', SendFundsContent)
 registerBottomSheet('bidali', BidaliContent)
+registerBottomSheet('remove-passkey', RemovePasskeyConfirmContent)
+registerBottomSheet(
+    'passkey-biometric-required',
+    PasskeyBiometricRequiredContent,
+)
+registerBottomSheet(
+    'passkey-hd-wallet-required',
+    PasskeyHDWalletRequiredContent,
+)
 
 declare module '@modules/bottom-sheet' {
     interface BottomSheetRegistry {
@@ -54,6 +67,12 @@ declare module '@modules/bottom-sheet' {
         // BidaliContent takes no props — it owns its own internal navigator
         // and account selection. Empty record keeps the registry typed.
         bidali: Record<string, never>
+        'remove-passkey': {
+            passkey: Passkey
+        }
+        // No props — the sheet is purely informational.
+        'passkey-biometric-required': Record<string, never>
+        'passkey-hd-wallet-required': Record<string, never>
     }
 }
 

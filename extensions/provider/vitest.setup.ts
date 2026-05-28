@@ -12,6 +12,12 @@
 
 import { vi } from 'vitest'
 
+// `expo-modules-core` references `__DEV__` at module-load time. The
+// passkey-autofill native module pulls in `expo`, so any import chain that
+// touches PeraProvider triggers this in jsdom. Mirror the apps/mobile setup
+// and stub the global so the import chain doesn't crash.
+;(globalThis as { __DEV__?: boolean }).__DEV__ = false
+
 const store = new Map<string, string>()
 
 const mockPlatformServices = {
@@ -116,4 +122,30 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
         }),
     }),
     getPlatformServices: () => mockPlatformServices,
+}))
+
+// The passkey autofill extension imports `react-native` (for `Platform.OS`)
+// in its service module. `react-native`'s root index uses Flow syntax, which
+// rolldown can't parse. Mock the extension entry point so PeraProvider can
+// compose `WithPasskeyAutofill` without pulling react-native into the test
+// graph.
+vi.mock('@perawallet/wallet-extension-passkey-autofill', () => ({
+    WithPasskeyAutofill: () => ({
+        passkeyAutofill: {
+            setMasterKey: vi.fn().mockResolvedValue(undefined),
+            setHdRootKeyId: vi.fn().mockResolvedValue(undefined),
+            setDerivedMainKey: vi.fn().mockResolvedValue(undefined),
+            configureIntentActions: vi.fn().mockResolvedValue(undefined),
+            clearCredentials: vi.fn().mockResolvedValue(undefined),
+            deleteCredential: vi.fn().mockResolvedValue(undefined),
+            getStoredCredentials: vi.fn().mockResolvedValue([]),
+            refreshCredentialIdentities: vi.fn().mockResolvedValue(undefined),
+            isProviderActive: vi.fn().mockResolvedValue(false),
+            openProviderSettings: vi.fn().mockResolvedValue(false),
+            onPasskeyAdded: vi.fn().mockReturnValue({ remove: vi.fn() }),
+            onPasskeyAuthenticated: vi
+                .fn()
+                .mockReturnValue({ remove: vi.fn() }),
+        },
+    }),
 }))

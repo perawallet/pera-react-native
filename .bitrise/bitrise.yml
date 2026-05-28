@@ -215,7 +215,6 @@ workflows:
     envs:
       - ENVIRONMENT: staging
       - BITRISE_SCHEME: "$BITRISE_SCHEME_STAGING"
-      - IOS_PROFILE_NAME: Pera React Native Staging
       - NOTIFICATION_TITLE_PREFIX: QA Build (Nightly)
       - USE_CACHE: "true"
       - PARENT_WORKFLOW: qa-build

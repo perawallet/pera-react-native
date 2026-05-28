@@ -1,0 +1,34 @@
+{
+  "name": "@perawallet/wallet-extension-passkey-autofill",
+  "version": "0.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "test": "vitest run",
+    "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
+  },
+  "dependencies": {
+    "@algorandfoundation/keystore": "catalog:",
+    "@algorandfoundation/react-native-passkey-autofill": "1.0.0-canary.16",
+    "@algorandfoundation/wallet-provider": "catalog:",
+    "@perawallet/wallet-core-shared": "workspace:*",
+    "react-native": "0.85.3"
+  },
+  "devDependencies": {
+    "@perawallet/wallet-core-devtools": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-dts": "catalog:",
+    "vitest": "catalog:"
+  }
+}

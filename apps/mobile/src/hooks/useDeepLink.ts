@@ -10,11 +10,13 @@
  limitations under the License
  */
 
+import { Linking } from 'react-native'
 import { useToast } from './useToast'
 import { logger } from '@perawallet/wallet-core-shared'
 import { parseDeeplink } from './deeplink/parser'
 import { DeeplinkType } from './deeplink/types'
 import {
+    AccountTypes,
     useAccountsStore,
     useSelectedAccountAddress,
 } from '@perawallet/wallet-core-accounts'
@@ -28,6 +30,7 @@ import {
     microAlgosToAlgos,
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useLanguage } from './useLanguage'
 import { navigateToScreen } from './deeplink/navigateToScreen'
 import {
@@ -412,6 +415,90 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         source,
                         replaceCurrentScreen,
                     })
+                    break
+
+                case DeeplinkType.LIQUID_AUTH:
+                    if (parsedData.variant === 'fido') {
+                        // A FIDO request derives its P256 key from the HD root,
+                        // so an HD account must exist — otherwise register has
+                        // nothing to derive from and assert has nothing to sign
+                        // with. Block the hand-off and explain rather than
+                        // dead-ending in the OS flow.
+                        const hasHDWallet = useAccountsStore
+                            .getState()
+                            .accounts.some(
+                                account =>
+                                    account.type === AccountTypes.hdWallet,
+                            )
+                        if (!hasHDWallet) {
+                            requestByType('passkey-hd-wallet-required', {})
+                            // Close the QR scanner (when present) so the sheet,
+                            // rendered at the root, becomes visible.
+                            onError?.()
+                            return
+                        }
+
+                        // A FIDO request (register or assert) needs a strong
+                        // biometric: the credential provider stores keys behind
+                        // a class-3 biometric and the OS prompt requires one to
+                        // verify the user. Without one the system flow dead-ends
+                        // (register saves an unprotected key, assert can't
+                        // satisfy the prompt), so block the hand-off and explain
+                        // the requirement instead of failing silently.
+                        let securityLevel: string = 'none'
+                        try {
+                            securityLevel =
+                                await getProvider().biometrics.getSecurityLevel()
+                        } catch (err) {
+                            logger.warn(
+                                'Failed to read biometric security level',
+                                {
+                                    error: err,
+                                },
+                            )
+                        }
+                        if (securityLevel !== 'strong') {
+                            requestByType('passkey-biometric-required', {})
+                            // Close the QR scanner (when present) so the sheet,
+                            // rendered at the root, becomes visible.
+                            onError?.()
+                            return
+                        }
+
+                        // Hand the fido:// URL back to the OS — iOS routes it
+                        // to the registered AutoFill Credential Provider
+                        // extension, Android to the Credential Manager.
+                        // Mirrors pera-ios's QRScannerViewController.liquidAuth.
+                        try {
+                            await Linking.openURL(parsedData.url)
+                        } catch (err) {
+                            logger.error('Failed to open FIDO URL', {
+                                error: err,
+                                url: parsedData.sourceUrl,
+                            })
+                            errorToast(
+                                t('errors.deeplink.invalid_url_title'),
+                                t('errors.deeplink.invalid_url_body'),
+                            )
+                            onError?.()
+                            return
+                        }
+                    } else {
+                        // TODO(liquid-auth): wire the comms-protocol handler
+                        // here once the signaling channel client lands. Until
+                        // then we just log so devs can see scans coming in.
+                        logger.info('liquid:// deeplink received', {
+                            url: parsedData.sourceUrl,
+                        })
+                        infoToast(
+                            t(
+                                'settings.passkeys.liquid_protocol_placeholder_title',
+                            ),
+                            t(
+                                'settings.passkeys.liquid_protocol_placeholder_body',
+                            ),
+                        )
+                    }
                     break
 
                 case DeeplinkType.HOME:

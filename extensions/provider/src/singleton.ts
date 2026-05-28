@@ -14,7 +14,7 @@ import { Store } from '@tanstack/store'
 import Hook from 'before-after-hook'
 import type { HookCollection } from 'before-after-hook'
 import type { Key, KeyData, KeyStoreState } from '@algorandfoundation/keystore'
-import { initializeKeyStore } from '@algorandfoundation/keystore'
+import { addKey, initializeKeyStore } from '@algorandfoundation/keystore'
 import {
     clear as clearKeystoreStore,
     decode,
@@ -94,6 +94,32 @@ export const clearKeystore = async (): Promise<void> => {
 }
 
 /**
+ * Decrypts a single keystore MMKV entry into its metadata-only {@link Key}.
+ * The `privateKey` / `seed` bytes are zeroed before returning. Returns `null`
+ * (and logs) when the entry is missing or fails to decode, so callers can skip
+ * it rather than aborting a whole hydration/reconcile pass.
+ */
+const decodeKeyEntry = (id: string, masterKey: Buffer): Key | null => {
+    const encrypted = keystoreStorage.getString(id)
+    if (!encrypted) return null
+
+    try {
+        const decrypted = decryptData(masterKey, encrypted)
+        const data = decode(decrypted) as KeyData & { seed?: Uint8Array }
+        if (data.privateKey instanceof Uint8Array) data.privateKey.fill(0)
+        if (data.seed instanceof Uint8Array) data.seed.fill(0)
+        const { privateKey: _pk, seed: _seed, ...meta } = data
+        return meta as Key
+    } catch (err) {
+        console.error(
+            `[provider] keystore decode: failed to decode entry ${id}`,
+            err,
+        )
+        return null
+    }
+}
+
+/**
  * Reads every entry out of the keystore's MMKV namespace, decrypts metadata,
  * and seeds the reactive store with the result. Must be called once during
  * app bootstrap — the underlying `react-native-keystore` package only mutates
@@ -120,34 +146,42 @@ export const hydrateKeystore = async (): Promise<void> => {
     let masterKey: Buffer | null = null
     try {
         masterKey = await getMasterKey()
-        const keys: Key[] = []
-
-        for (const id of ids) {
-            const encrypted = keystoreStorage.getString(id)
-            if (!encrypted) continue
-
-            try {
-                const decrypted = decryptData(masterKey, encrypted)
-                const data = decode(decrypted) as KeyData & {
-                    seed?: Uint8Array
-                }
-                if (data.privateKey instanceof Uint8Array) {
-                    data.privateKey.fill(0)
-                }
-                if (data.seed instanceof Uint8Array) {
-                    data.seed.fill(0)
-                }
-                const { privateKey: _pk, seed: _seed, ...meta } = data
-                keys.push(meta as Key)
-            } catch (err) {
-                console.error(
-                    `[provider] keystore hydration: failed to decode entry ${id}`,
-                    err,
-                )
-            }
-        }
-
+        const mk = masterKey
+        const keys = ids
+            .map(id => decodeKeyEntry(id, mk))
+            .filter((key): key is Key => key !== null)
         initializeKeyStore({ store: keystoreStore, keys })
+    } finally {
+        if (masterKey) masterKey.fill(0)
+    }
+}
+
+/**
+ * Merges keystore entries written to MMKV by an out-of-process writer into the
+ * reactive store. The Android passkey credential provider runs in a separate
+ * process and writes newly-registered `hd-derived-p256` keys straight to the
+ * keystore MMKV namespace, so the in-process reactive store never learns about
+ * them — a freshly-registered passkey stays invisible to the running app until
+ * the next cold-start `hydrateKeystore`.
+ *
+ * Unlike {@link hydrateKeystore} this does NOT skip when the store is already
+ * populated; it adds only the ids not already present, re-checking immediately
+ * before each add so overlapping calls can't double-insert. Skips fetching the
+ * master key entirely when there is nothing new to merge.
+ */
+export const reconcileKeystore = async (): Promise<void> => {
+    const present = new Set(keystoreStore.state.keys.map(k => k.id))
+    const newIds = keystoreStorage.getAllKeys().filter(id => !present.has(id))
+    if (newIds.length === 0) return
+
+    let masterKey: Buffer | null = null
+    try {
+        masterKey = await getMasterKey()
+        for (const id of newIds) {
+            if (keystoreStore.state.keys.some(k => k.id === id)) continue
+            const key = decodeKeyEntry(id, masterKey)
+            if (key) addKey(keystoreStore, key)
+        }
     } finally {
         if (masterKey) masterKey.fill(0)
     }

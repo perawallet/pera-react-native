@@ -20,6 +20,7 @@ const keystoreMocks = vi.hoisted(() => ({
     storageGetAllKeys: vi.fn(() => [] as string[]),
     storageGetString: vi.fn(),
     initializeKeyStore: vi.fn(),
+    addKey: vi.fn(),
 }))
 
 vi.mock('@algorandfoundation/react-native-keystore', () => ({
@@ -36,6 +37,7 @@ vi.mock('@algorandfoundation/react-native-keystore', () => ({
 
 vi.mock('@algorandfoundation/keystore', () => ({
     initializeKeyStore: keystoreMocks.initializeKeyStore,
+    addKey: keystoreMocks.addKey,
 }))
 
 vi.mock('@perawallet/wallet-extension-ledger-react-native', () => ({
@@ -82,6 +84,7 @@ import {
     resetProvider,
     clearKeystore,
     hydrateKeystore,
+    reconcileKeystore,
 } from '../singleton'
 import { PeraProvider } from '../pera-provider'
 
@@ -104,6 +107,7 @@ describe('provider singleton', () => {
         keystoreMocks.storageGetAllKeys.mockReset()
         keystoreMocks.storageGetString.mockReset()
         keystoreMocks.initializeKeyStore.mockReset()
+        keystoreMocks.addKey.mockReset()
         keystoreMocks.storageGetAllKeys.mockReturnValue([])
         resetKeystoreStateForTest()
     })
@@ -268,6 +272,48 @@ describe('provider singleton', () => {
 
             expect(Array.from(masterKey)).toEqual([0, 0, 0])
             consoleError.mockRestore()
+        })
+    })
+
+    describe('reconcileKeystore', () => {
+        const seedReactiveStore = (keys: { id: string }[]): void => {
+            const store = getKeystoreStore() as unknown as {
+                state: { keys: unknown[] }
+            }
+            store.state.keys = keys
+        }
+
+        test('no-ops (without fetching the master key) when MMKV has no ids missing from the store', async () => {
+            seedReactiveStore([{ id: 'a' }])
+            keystoreMocks.storageGetAllKeys.mockReturnValue(['a'])
+
+            await reconcileKeystore()
+
+            expect(keystoreMocks.getMasterKey).not.toHaveBeenCalled()
+            expect(keystoreMocks.addKey).not.toHaveBeenCalled()
+        })
+
+        test('adds only the ids not already present in the reactive store', async () => {
+            seedReactiveStore([{ id: 'a' }])
+            keystoreMocks.storageGetAllKeys.mockReturnValue(['a', 'b'])
+            keystoreMocks.storageGetString.mockReturnValue('cipher-b')
+            const masterKey = Buffer.from([1, 2, 3])
+            keystoreMocks.getMasterKey.mockResolvedValue(masterKey)
+            keystoreMocks.decryptData.mockReturnValue('decrypted-b')
+            keystoreMocks.decode.mockReturnValue({
+                id: 'b',
+                type: 'hd-derived-p256',
+                algorithm: 'P256',
+                metadata: { origin: 'webauthn.io', userHandle: 'alice' },
+            })
+
+            await reconcileKeystore()
+
+            expect(keystoreMocks.addKey).toHaveBeenCalledTimes(1)
+            const addedKey = keystoreMocks.addKey.mock.calls[0][1]
+            expect(addedKey).toMatchObject({ id: 'b', type: 'hd-derived-p256' })
+            // Master key copy was zeroed after use.
+            expect(Array.from(masterKey)).toEqual([0, 0, 0])
         })
     })
 })

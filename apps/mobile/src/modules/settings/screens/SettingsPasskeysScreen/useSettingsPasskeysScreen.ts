@@ -1,0 +1,145 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { useCallback, useEffect } from 'react'
+import { AppState } from 'react-native'
+import { useBottomSheet } from '@modules/bottom-sheet'
+import { useModalState } from '@hooks/useModalState'
+import { openCredentialProviderSettings } from './openCredentialProviderSettings'
+import {
+    usePasskeyAutofillStatus,
+    usePasskeysQuery,
+    type Passkey,
+} from '@perawallet/wallet-core-passkeys'
+import { useBiometricSecurityLevel } from '@perawallet/wallet-core-security'
+import { useHasHDWallet } from '@perawallet/wallet-core-accounts'
+
+export type SettingsPasskeysScreenState =
+    | 'loading'
+    | 'error'
+    | 'disabled'
+    | 'empty'
+    | 'populated'
+
+/**
+ * Which prerequisite notice to surface above the managed-passkey content, or
+ * `null` when all prerequisites are met. HD wallet takes precedence over
+ * biometric — without a wallet there's nothing to derive a passkey from, so
+ * it's the more fundamental gap to surface first.
+ */
+export type PasskeysNotice = 'hd-wallet' | 'biometric' | null
+
+export type UseSettingsPasskeysScreenResult = {
+    state: SettingsPasskeysScreenState
+    passkeys: Passkey[]
+    /** The prerequisite notice to render (empty / populated states only). */
+    notice: PasskeysNotice
+    /**
+     * Whether to offer the QR scanner entry point. Hidden while the screen is
+     * still resolving (loading) or errored, when there's no HD wallet to derive
+     * from, and when the device lacks a strong biometric — in each case a scan
+     * would just dead-end.
+     */
+    canScan: boolean
+    isScannerVisible: boolean
+    onOpenScanner: () => void
+    onCloseScanner: () => void
+    onRequestDelete: (passkey: Passkey) => void
+    onOpenProviderSettings: () => Promise<void>
+    onDismissError: () => void
+}
+
+export const useSettingsPasskeysScreen =
+    (): UseSettingsPasskeysScreenResult => {
+        const status = usePasskeyAutofillStatus()
+        const list = usePasskeysQuery()
+        const biometric = useBiometricSecurityLevel()
+        const hasHDWallet = useHasHDWallet()
+        const { requestByType } = useBottomSheet()
+        const scanner = useModalState()
+
+        // Re-check provider + biometric status when the app returns to the
+        // foreground — covers the user enabling Pera as the credential provider
+        // in system settings and coming back. (focusManager isn't wired to
+        // AppState, so React Query won't refetch on its own.)
+        const refreshStatus = status.refresh
+        const refreshBiometric = biometric.refresh
+        useEffect(() => {
+            const sub = AppState.addEventListener('change', state => {
+                if (state === 'active') {
+                    refreshStatus()
+                    refreshBiometric()
+                }
+            })
+            return () => sub.remove()
+        }, [refreshStatus, refreshBiometric])
+
+        const onRequestDelete = useCallback(
+            (passkey: Passkey) => {
+                requestByType('remove-passkey', { passkey })
+            },
+            [requestByType],
+        )
+
+        const onOpenProviderSettings = useCallback(async () => {
+            await openCredentialProviderSettings(status.openProviderSettings)
+        }, [status])
+
+        const onDismissError = useCallback(() => {
+            list.refetch()
+        }, [list])
+
+        const state = resolveState(status, list)
+        const lacksStrongBiometric =
+            !biometric.isLoading && !biometric.hasStrongBiometric
+        const isManaging = state === 'empty' || state === 'populated'
+
+        const notice: PasskeysNotice = !isManaging
+            ? null
+            : !hasHDWallet
+              ? 'hd-wallet'
+              : lacksStrongBiometric
+                ? 'biometric'
+                : null
+
+        return {
+            state,
+            passkeys: list.passkeys,
+            notice,
+            canScan:
+                state !== 'loading' &&
+                state !== 'error' &&
+                hasHDWallet &&
+                !lacksStrongBiometric,
+            isScannerVisible: scanner.isOpen,
+            onOpenScanner: scanner.open,
+            onCloseScanner: scanner.close,
+            onRequestDelete,
+            onOpenProviderSettings,
+            onDismissError,
+        }
+    }
+
+const resolveState = (
+    status: ReturnType<typeof usePasskeyAutofillStatus>,
+    list: ReturnType<typeof usePasskeysQuery>,
+): SettingsPasskeysScreenState => {
+    if (status.isLoading || list.isLoading) return 'loading'
+    if (list.isError) return 'error'
+    // Existing passkeys are proof the provider is/was working — never nag to
+    // enable it when there are credentials to show. (Android can't reliably
+    // read provider state until the service is first invoked, so this also
+    // avoids a false "disabled" once the user actually has passkeys.)
+    if (list.passkeys.length > 0) return 'populated'
+    if (!status.isProviderActive) return 'disabled'
+    return 'empty'
+}
