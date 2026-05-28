@@ -46,8 +46,8 @@ export type UseSettingsPasskeysScreenResult = {
     /**
      * Whether to offer the QR scanner entry point. Hidden while the screen is
      * still resolving (loading) or errored, when there's no HD wallet to derive
-     * from, and when the device lacks a strong biometric — in each case a scan
-     * would just dead-end.
+     * from, and when the device has no screen lock (no strong biometric and no
+     * device credential) — in each case a scan would just dead-end.
      */
     canScan: boolean
     isScannerVisible: boolean
@@ -99,15 +99,15 @@ export const useSettingsPasskeysScreen =
         }, [list])
 
         const state = resolveState(status, list)
-        const lacksStrongBiometric =
-            !biometric.isLoading && !biometric.hasStrongBiometric
+        const lacksDeviceAuthentication =
+            !biometric.isLoading && !biometric.hasStrongBiometricOrCredential
         const isManaging = state === 'empty' || state === 'populated'
 
         const notice: PasskeysNotice = !isManaging
             ? null
             : !hasHDWallet
               ? 'hd-wallet'
-              : lacksStrongBiometric
+              : lacksDeviceAuthentication
                 ? 'biometric'
                 : null
 
@@ -119,7 +119,7 @@ export const useSettingsPasskeysScreen =
                 state !== 'loading' &&
                 state !== 'error' &&
                 hasHDWallet &&
-                !lacksStrongBiometric,
+                !lacksDeviceAuthentication,
             isScannerVisible: scanner.isOpen,
             onOpenScanner: scanner.open,
             onCloseScanner: scanner.close,

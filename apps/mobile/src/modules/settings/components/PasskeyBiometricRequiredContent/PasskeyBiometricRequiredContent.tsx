@@ -17,8 +17,9 @@ import { useStyles } from './styles'
 
 /**
  * Shown from the deeplink handler when a FIDO request is scanned on a device
- * without a strong biometric. Blocks the hand-off to the OS credential flow —
- * which would otherwise dead-end — and explains the requirement.
+ * with no screen lock (no strong biometric and no device credential). Blocks the
+ * hand-off to the OS credential flow — which would otherwise dead-end — and
+ * explains the requirement.
  */
 export const PasskeyBiometricRequiredContent = () => {
     const styles = useStyles()

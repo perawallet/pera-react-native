@@ -31,12 +31,29 @@ export const getBiometricSecurityLevel =
         }
     }
 
+/**
+ * True when the device satisfies the passkey provider's `strongOrCredential`
+ * policy: a strong biometric, OR a device credential (PIN / pattern / password).
+ * A `'weak'` biometric also qualifies — Android requires a device credential to
+ * enrol any biometric, so those devices authenticate via the credential path at
+ * the OS prompt. Only `'none'` (no screen lock at all) fails.
+ */
+export const hasStrongBiometricOrCredential = (
+    level: BiometricSecurityLevel,
+): boolean => level !== 'none'
+
 export type UseBiometricSecurityLevelResult = {
     securityLevel: BiometricSecurityLevel
     /** True until the first read resolves. */
     isLoading: boolean
     /** Convenience flag: a class-3 biometric (fingerprint / 3D face) is enrolled. */
     hasStrongBiometric: boolean
+    /**
+     * Convenience flag: a strong biometric OR a device credential is available —
+     * the passkey provider's `strongOrCredential` policy. See
+     * {@link hasStrongBiometricOrCredential}.
+     */
+    hasStrongBiometricOrCredential: boolean
     refresh: () => void
 }
 
@@ -70,6 +87,8 @@ export const useBiometricSecurityLevel =
             securityLevel,
             isLoading,
             hasStrongBiometric: securityLevel === 'strong',
+            hasStrongBiometricOrCredential:
+                hasStrongBiometricOrCredential(securityLevel),
             refresh,
         }
     }

@@ -15,5 +15,6 @@ export { useBiometrics, type BiometricType } from './useBiometrics'
 export {
     useBiometricSecurityLevel,
     getBiometricSecurityLevel,
+    hasStrongBiometricOrCredential,
     type UseBiometricSecurityLevelResult,
 } from './useBiometricSecurityLevel'

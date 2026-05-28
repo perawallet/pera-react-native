@@ -27,8 +27,21 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
 
 import {
     getBiometricSecurityLevel,
+    hasStrongBiometricOrCredential,
     useBiometricSecurityLevel,
 } from '../useBiometricSecurityLevel'
+
+describe('hasStrongBiometricOrCredential', () => {
+    test('accepts strong, weak, and secret levels', () => {
+        expect(hasStrongBiometricOrCredential('strong')).toBe(true)
+        expect(hasStrongBiometricOrCredential('weak')).toBe(true)
+        expect(hasStrongBiometricOrCredential('secret')).toBe(true)
+    })
+
+    test('rejects only the none level', () => {
+        expect(hasStrongBiometricOrCredential('none')).toBe(false)
+    })
+})
 
 describe('getBiometricSecurityLevel', () => {
     beforeEach(() => mockGetSecurityLevel.mockReset())
@@ -58,5 +71,14 @@ describe('useBiometricSecurityLevel', () => {
         await waitFor(() => expect(result.current.isLoading).toBe(false))
         expect(result.current.securityLevel).toBe('weak')
         expect(result.current.hasStrongBiometric).toBe(false)
+    })
+
+    test('reports hasStrongBiometricOrCredential=true for a device-credential (secret) level', async () => {
+        mockGetSecurityLevel.mockResolvedValue('secret')
+        const { result } = renderHook(() => useBiometricSecurityLevel())
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
+        expect(result.current.hasStrongBiometric).toBe(false)
+        expect(result.current.hasStrongBiometricOrCredential).toBe(true)
     })
 })

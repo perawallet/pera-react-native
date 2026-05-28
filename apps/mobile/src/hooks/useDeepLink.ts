@@ -30,7 +30,10 @@ import {
     microAlgosToAlgos,
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
-import { getProvider } from '@perawallet/wallet-extension-provider'
+import {
+    getBiometricSecurityLevel,
+    hasStrongBiometricOrCredential,
+} from '@perawallet/wallet-core-security'
 import { useLanguage } from './useLanguage'
 import { navigateToScreen } from './deeplink/navigateToScreen'
 import {
@@ -438,26 +441,17 @@ export const useDeepLink = (): UseDeepLinkResult => {
                             return
                         }
 
-                        // A FIDO request (register or assert) needs a strong
-                        // biometric: the credential provider stores keys behind
-                        // a class-3 biometric and the OS prompt requires one to
-                        // verify the user. Without one the system flow dead-ends
-                        // (register saves an unprotected key, assert can't
-                        // satisfy the prompt), so block the hand-off and explain
-                        // the requirement instead of failing silently.
-                        let securityLevel: string = 'none'
-                        try {
-                            securityLevel =
-                                await getProvider().biometrics.getSecurityLevel()
-                        } catch (err) {
-                            logger.warn(
-                                'Failed to read biometric security level',
-                                {
-                                    error: err,
-                                },
-                            )
-                        }
-                        if (securityLevel !== 'strong') {
+                        // A FIDO request (register or assert) needs device
+                        // authentication the OS credential provider can use: a
+                        // strong biometric OR a device credential (PIN / pattern
+                        // / password). The provider is configured
+                        // `strongOrCredential`, so any enrolled lock works; only
+                        // a device with no screen lock at all dead-ends (register
+                        // saves an unprotected key, assert can't satisfy the
+                        // prompt). Block the hand-off and explain instead of
+                        // failing silently.
+                        const securityLevel = await getBiometricSecurityLevel()
+                        if (!hasStrongBiometricOrCredential(securityLevel)) {
                             requestByType('passkey-biometric-required', {})
                             // Close the QR scanner (when present) so the sheet,
                             // rendered at the root, becomes visible.

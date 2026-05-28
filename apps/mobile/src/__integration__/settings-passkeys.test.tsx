@@ -22,8 +22,8 @@
 //                                  isProviderActive() / getStoredCredentials()
 //                                  vi.fns are rewired per scenario below.
 //   - biometrics.getSecurityLevel() → the test platform driver returns
-//                                  'strong'; spied to 'weak' for the
-//                                  biometric-warning case.
+//                                  'strong'; spied to 'none' for the
+//                                  screen-lock-warning case.
 //   - useAccountsStore           → real Zustand store; seeded with an HD
 //                                  wallet account to satisfy the HD prereq.
 
@@ -227,8 +227,8 @@ describe('Flow: Settings → Passkeys', () => {
             expect(
                 screen.getByTestId('settings_passkeys_empty_state'),
             ).toBeTruthy()
-            // HD wallet is the more fundamental gap, so the biometric notice
-            // is suppressed even though a weak biometric would also qualify.
+            // HD wallet is the more fundamental gap, so the screen-lock notice
+            // is suppressed regardless of the device's authentication level.
             expect(
                 screen.queryByTestId('settings_passkeys_biometric_notice'),
             ).toBeFalsy()
@@ -237,11 +237,11 @@ describe('Flow: Settings → Passkeys', () => {
     )
 
     it(
-        'Given an HD wallet but no strong biometric, when the screen mounts, then the empty state shows the strong-biometric-required notice',
+        'Given an HD wallet but no screen lock, when the screen mounts, then the empty state shows the screen-lock-required notice',
         async () => {
             wireAutofill({ providerActive: true })
             seedHDWallet()
-            setBiometricLevel('weak')
+            setBiometricLevel('none')
 
             renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
 
@@ -255,6 +255,27 @@ describe('Flow: Settings → Passkeys', () => {
             ).toBeTruthy()
             expect(
                 screen.queryByTestId('settings_passkeys_hd_wallet_notice'),
+            ).toBeFalsy()
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given an HD wallet and only a device credential (no biometric), when the screen mounts, then no screen-lock notice appears',
+        async () => {
+            wireAutofill({ providerActive: true })
+            seedHDWallet()
+            setBiometricLevel('secret')
+
+            renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
+
+            await waitFor(() => {
+                expect(
+                    screen.getByTestId('settings_passkeys_empty_state'),
+                ).toBeTruthy()
+            })
+            expect(
+                screen.queryByTestId('settings_passkeys_biometric_notice'),
             ).toBeFalsy()
         },
         SLOW_TEST_TIMEOUT_MS,

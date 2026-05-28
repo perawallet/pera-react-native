@@ -20,6 +20,8 @@ export const useStyles = makeStyles(theme => ({
     contentContainer: {
         padding: theme.spacing.xl,
         paddingBottom: theme.spacing.xxl,
-        gap: theme.spacing.md,
+    },
+    separator: {
+        height: theme.spacing.md,
     },
 }))

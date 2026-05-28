@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWScrollView } from '@components/core'
+import { PWFlatList, PWView } from '@components/core'
 import type { Passkey } from '@perawallet/wallet-core-passkeys'
 import { PasskeyListItem } from '../PasskeyListItem'
 import { useStyles } from './styles'
@@ -20,6 +20,11 @@ export type PasskeysListProps = {
     onRequestDelete: (passkey: Passkey) => void
 }
 
+const ItemSeparator = () => {
+    const styles = useStyles()
+    return <PWView style={styles.separator} />
+}
+
 export const PasskeysList = ({
     passkeys,
     onRequestDelete,
@@ -27,18 +32,19 @@ export const PasskeysList = ({
     const styles = useStyles()
 
     return (
-        <PWScrollView
+        <PWFlatList
+            data={passkeys}
+            keyExtractor={passkey => passkey.id}
             style={styles.container}
             contentContainerStyle={styles.contentContainer}
-        >
-            {passkeys.map(passkey => (
+            ItemSeparatorComponent={ItemSeparator}
+            renderItem={({ item }) => (
                 <PasskeyListItem
-                    key={passkey.id}
-                    passkey={passkey}
+                    passkey={item}
                     onRemovePress={onRequestDelete}
-                    testID={`settings_passkeys_item_${passkey.id}`}
+                    testID={`settings_passkeys_item_${item.id}`}
                 />
-            ))}
-        </PWScrollView>
+            )}
+        />
     )
 }

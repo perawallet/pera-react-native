@@ -310,7 +310,8 @@ module.exports = {
         label: appNames[variant],
         appGroup: `group.${bundleIdentifiers[variant].ios}`,
         appleTeamId: process.env.IOS_TEAM_ID,
-        aaguid: '418a66da-f981-47e8-814f-19c97f97bd4d'
+        aaguid: '418a66da-f981-47e8-814f-19c97f97bd4d',
+        biometricRequirement: 'strongOrCredential'
       },
     ],
 
