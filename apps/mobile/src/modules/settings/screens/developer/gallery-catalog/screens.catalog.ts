@@ -1128,20 +1128,6 @@ export const getScreenSections = (): GallerySection[] => [
                 },
             },
             {
-                id: 'scr-dev-dispenser',
-                label: 'Dispenser',
-                launch: {
-                    kind: 'navigate',
-                    target: {
-                        name: 'Settings',
-                        params: {
-                            screen: 'DeveloperSettings',
-                            params: { screen: 'DispenserSettings' },
-                        },
-                    },
-                },
-            },
-            {
                 id: 'scr-dev-feature-flags',
                 label: 'Feature flags',
                 launch: {

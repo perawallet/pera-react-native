@@ -19,19 +19,10 @@
 
 import { Decimal } from 'decimal.js'
 
-import type {
-    Algo25Account,
-    HDWalletAccount,
-    WalletAccount,
-    WatchAccount,
-} from '@perawallet/wallet-core-accounts'
+import type { Algo25Account } from '@perawallet/wallet-core-accounts'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import type { Contact } from '@perawallet/wallet-core-contacts'
 import type { ASAInbox } from '@perawallet/wallet-core-messages'
-import type {
-    ArbitraryDataSignRequest,
-    PeraArbitraryDataMessage,
-} from '@perawallet/wallet-core-signing'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 
 // --- primitives ---
@@ -54,29 +45,6 @@ export const mockAlgo25Account: Algo25Account = {
     keyPairId: 'mock-keypair-algo25',
     name: 'Mock Algo25 account',
 }
-
-export const mockHdAccount: HDWalletAccount = {
-    id: 'mock-hd',
-    type: 'hdWallet',
-    address: MOCK_ADDRESS_2,
-    keyPairId: 'mock-keypair-hd',
-    name: 'Mock HD account',
-    hdWalletDetails: {
-        account: 0,
-        change: 0,
-        keyIndex: 0,
-        derivationType: 9,
-    },
-}
-
-export const mockWatchAccount: WatchAccount = {
-    id: 'mock-watch',
-    type: 'watch',
-    address: MOCK_ADDRESS,
-    name: 'Mock watch account',
-}
-
-export const mockAccounts: WalletAccount[] = [mockAlgo25Account, mockHdAccount]
 
 // --- contacts (20 items, store-seedable) ---
 
@@ -219,23 +187,6 @@ export const mockNotificationsResponse: MockNotificationsResponse = {
     })),
     next: null,
     previous: null,
-}
-
-// --- signing: arbitrary data (plain-object request, safely mockable) ---
-
-export const mockArbitraryDataMessage: PeraArbitraryDataMessage = {
-    signer: MOCK_ADDRESS,
-    // base64("Sign this message to review the arbitrary-data screen")
-    data: 'U2lnbiB0aGlzIG1lc3NhZ2UgdG8gcmV2aWV3',
-    message: 'Sign this message to review the arbitrary-data screen',
-    chainId: 416001,
-}
-
-export const mockArbitraryDataSignRequest: ArbitraryDataSignRequest = {
-    id: 'mock-arbitrary-sign-request',
-    type: 'arbitrary-data',
-    transport: 'algod',
-    data: [mockArbitraryDataMessage],
 }
 
 // --- assets ---

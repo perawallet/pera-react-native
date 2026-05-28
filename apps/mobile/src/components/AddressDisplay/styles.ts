@@ -15,7 +15,6 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => {
     const secondaryText = {
         color: theme.colors.textGray,
-        lineHeight: theme.spacing.lg,
     }
     return {
         addressValueContainer: {

@@ -176,7 +176,7 @@ export const useCollectibleDetail = (
             }
         } catch (err) {
             if (err instanceof UserRejectedSigningError) {
-                    return
+                return
             }
             showError(err, t('asset_opt_out.error'))
         }

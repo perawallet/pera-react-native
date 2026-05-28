@@ -14,6 +14,7 @@ import { useCallback, useContext, useEffect, useState } from 'react'
 import { Keyboard } from 'react-native'
 import { useTheme } from '@rneui/themed'
 import {
+    KeyboardAvoidingView,
     KeyboardAwareScrollView,
     KeyboardStickyView,
     useKeyboardState,
@@ -104,9 +105,19 @@ export const PWScreen = ({
             {children}
         </KeyboardAwareScrollView>
     ) : (
-        <PWView style={[styles.fixedBody, contentContainerStyle]}>
-            {children}
-        </PWView>
+        // A non-scroll body holds its own scroller (e.g. a FlashList), so the
+        // keyboard-controller provider neutralises native `adjustResize` and
+        // nothing shrinks the body on its own. Pad the body by the keyboard
+        // height so the inner list always sits above the keyboard.
+        <KeyboardAvoidingView
+            style={styles.body}
+            behavior='padding'
+            enabled={keyboardEnabled}
+        >
+            <PWView style={[styles.fixedBody, contentContainerStyle]}>
+                {children}
+            </PWView>
+        </KeyboardAvoidingView>
     )
 
     const renderedFooter =

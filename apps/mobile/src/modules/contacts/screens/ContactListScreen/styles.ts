@@ -24,6 +24,13 @@ export const useStyles = makeStyles(theme => {
             alignItems: 'center',
             paddingVertical: theme.spacing.lg,
         },
+        separator: {
+            height: theme.borders.sm,
+            backgroundColor: theme.colors.layerGrayLighter,
+            // Inset to align with the contact name past AddressDisplay's
+            // leading avatar (icon width xxl + row gap md).
+            marginLeft: theme.spacing.xxl + theme.spacing.md,
+        },
         emptyButton: {
             minHeight: theme.spacing['3xl'],
             borderRadius: theme.borderRadius.xs,

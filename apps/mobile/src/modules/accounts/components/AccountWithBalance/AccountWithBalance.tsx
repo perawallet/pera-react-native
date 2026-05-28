@@ -52,7 +52,8 @@ export const AccountWithBalance = ({
                     precision={ALGO_ASSET.decimals}
                     maxPrecision={2}
                     minPrecision={2}
-                    variant='bodyCompact'
+                    variant='bodyLarge'
+                    weight={500}
                 />
 
                 <PreferredCurrencyDisplay
@@ -62,7 +63,8 @@ export const AccountWithBalance = ({
                     }
                     precision={2}
                     minPrecision={2}
-                    variant='bodyCompact'
+                    variant='footnoteMedium'
+                    weight={400}
                     style={styles.fiatBalance}
                 />
             </PWView>

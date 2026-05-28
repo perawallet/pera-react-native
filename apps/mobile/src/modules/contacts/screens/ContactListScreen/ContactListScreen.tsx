@@ -21,7 +21,6 @@ import {
     PWView,
 } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
-import { ListItemDivider } from '@components/ListItemDivider'
 import { SearchInput } from '@components/SearchInput'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
@@ -78,6 +77,11 @@ export const ContactListScreen = () => {
 
     const keyExtractor = useCallback((c: Contact) => c.address, [])
 
+    const renderSeparator = useCallback(
+        () => <PWView style={styles.separator} />,
+        [styles.separator],
+    )
+
     if (isEmpty) {
         return (
             <EmptyView
@@ -109,7 +113,7 @@ export const ContactListScreen = () => {
                 data={contacts}
                 keyExtractor={keyExtractor}
                 renderItem={renderItem}
-                ItemSeparatorComponent={ListItemDivider}
+                ItemSeparatorComponent={renderSeparator}
                 ListEmptyComponent={
                     <EmptyView
                         title={t('contacts.list.no_matching_title')}

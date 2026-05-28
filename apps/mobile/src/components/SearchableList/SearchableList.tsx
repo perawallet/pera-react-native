@@ -17,12 +17,14 @@ import { PWFlatList, PWView } from '@components/core'
 import type { PWFlatListProps, PWFlatListRef } from '@components/core'
 import { SearchInput } from '@components/SearchInput'
 import {
+    isHeaderSentinel,
     isSearchSentinel,
     useSearchableList,
     type AugmentedItem,
 } from './useSearchableList'
 import { DEFAULT_SNAP_THRESHOLD, SCROLL_EVENT_THROTTLE } from '@constants/ui'
 import { Maybe } from '@perawallet/wallet-core-shared'
+import { useStyles } from './styles'
 
 type RenderItem<T> = (props: ListRenderItemInfo<T>) => React.ReactNode
 
@@ -109,14 +111,7 @@ const SearchableListInner = <T,>(
         onScrollEndDrag,
     })
 
-    const augmentedHeader = useMemo(
-        () => (
-            <PWView onLayout={handleHeaderLayout}>
-                {renderHeaderNode(ListHeaderComponent)}
-            </PWView>
-        ),
-        [ListHeaderComponent, handleHeaderLayout],
-    )
+    const styles = useStyles()
 
     const isListEmpty = (data?.length ?? 0) === 0
 
@@ -150,6 +145,13 @@ const SearchableListInner = <T,>(
 
     const augmentedRenderItem = useCallback<RenderItem<AugmentedItem<T>>>(
         info => {
+            if (isHeaderSentinel(info.item)) {
+                return (
+                    <PWView onLayout={handleHeaderLayout}>
+                        {renderHeaderNode(ListHeaderComponent)}
+                    </PWView>
+                )
+            }
             if (isSearchSentinel(info.item)) {
                 const searchProps = {
                     value: searchValue,
@@ -158,7 +160,11 @@ const SearchableListInner = <T,>(
                     onChangeText: onSearchChange,
                 }
 
-                return <SearchInputComponent {...searchProps} />
+                return (
+                    <PWView style={styles.searchSticky}>
+                        <SearchInputComponent {...searchProps} />
+                    </PWView>
+                )
             }
             return (
                 renderItem?.({
@@ -176,6 +182,9 @@ const SearchableListInner = <T,>(
             SearchInputComponent,
             handleSearchFocus,
             toUserIndex,
+            ListHeaderComponent,
+            handleHeaderLayout,
+            styles.searchSticky,
         ],
     )
 
@@ -192,6 +201,8 @@ const SearchableListInner = <T,>(
     // single `any` to bridge it; everything we *write* (data, renderItem,
     // keyExtractor, etc.) is properly typed above. FlashList enables
     // maintainVisibleContentPosition by default, so it isn't set explicitly.
+    // The list header and search ride as data items 0 and 1; the search pins
+    // (stickyHeaderIndices [1]) only once the header item scrolls past.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return createElement(PWFlatList as any, {
         ...listProps,
@@ -199,9 +210,15 @@ const SearchableListInner = <T,>(
         data: augmentedData,
         renderItem: augmentedRenderItem,
         keyExtractor: augmentedKeyExtractor,
-        ListHeaderComponent: augmentedHeader,
         ListFooterComponent: augmentedFooter,
-        stickyHeaderIndices: [0],
+        stickyHeaderIndices: [1],
+        // The header item owns the list's top spacing, so cancel PWFlatList's
+        // default content paddingTop — otherwise the sticky search would pin a
+        // gap above the in-flow header.
+        contentContainerStyle: [
+            listProps.contentContainerStyle,
+            styles.content,
+        ],
         extraData: augmentedExtraData,
         onLayout: handleListLayout,
         onContentSizeChange: handleContentSizeChange,

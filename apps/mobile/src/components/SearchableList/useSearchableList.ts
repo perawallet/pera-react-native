@@ -28,6 +28,7 @@ import type { PWFlatListRef } from '@components/core'
 import { Nullable } from '@perawallet/wallet-core-shared'
 
 const SEARCH_KEY = '__searchable_list_search__'
+const HEADER_KEY = '__searchable_list_header__'
 const DEFAULT_ITEM_HEIGHT_ESTIMATE = 56
 
 export type SearchSentinel = {
@@ -35,18 +36,34 @@ export type SearchSentinel = {
     readonly key: typeof SEARCH_KEY
 }
 
+export type HeaderSentinel = {
+    readonly __searchableListHeader: true
+    readonly key: typeof HEADER_KEY
+}
+
 const SEARCH_SENTINEL: SearchSentinel = {
     __searchableListSearch: true,
     key: SEARCH_KEY,
 }
 
-export type AugmentedItem<T> = T | SearchSentinel
+const HEADER_SENTINEL: HeaderSentinel = {
+    __searchableListHeader: true,
+    key: HEADER_KEY,
+}
+
+export type AugmentedItem<T> = T | SearchSentinel | HeaderSentinel
 
 export const isSearchSentinel = (item: unknown): item is SearchSentinel =>
     typeof item === 'object' &&
     item != null &&
     '__searchableListSearch' in item &&
     item.__searchableListSearch === true
+
+export const isHeaderSentinel = (item: unknown): item is HeaderSentinel =>
+    typeof item === 'object' &&
+    item != null &&
+    '__searchableListHeader' in item &&
+    item.__searchableListHeader === true
 
 type UseSearchableListParams<T> = {
     forwardedRef: React.ForwardedRef<PWFlatListRef>
@@ -221,19 +238,28 @@ export const useSearchableList = <T>({
         [onScrollEndDrag, snapThreshold],
     )
 
+    // The list header rides as the first data item (index 0) and the search
+    // bar as the second (index 1). FlashList pins a sticky item once its
+    // layout `y` scrolls under the top; keeping the search at index 1 means it
+    // only pins after the header item scrolls away (y === headerHeight), rather
+    // than from offset 0 — which is what produced a duplicated, always-pinned
+    // search bar above the in-flow one.
     const augmentedData = useMemo<AugmentedItem<T>[]>(
-        () => [SEARCH_SENTINEL, ...(data ?? [])],
+        () => [HEADER_SENTINEL, SEARCH_SENTINEL, ...(data ?? [])],
         [data],
     )
 
-    const toUserIndex = useCallback((index: number) => index - 1, [])
+    const toUserIndex = useCallback((index: number) => index - 2, [])
 
     const augmentedKeyExtractor = useCallback(
         (item: AugmentedItem<T>, index: number): string => {
+            if (isHeaderSentinel(item)) {
+                return HEADER_KEY
+            }
             if (isSearchSentinel(item)) {
                 return SEARCH_KEY
             }
-            return keyExtractor?.(item as T, index - 1) ?? String(index - 1)
+            return keyExtractor?.(item as T, index - 2) ?? String(index - 2)
         },
         [keyExtractor],
     )

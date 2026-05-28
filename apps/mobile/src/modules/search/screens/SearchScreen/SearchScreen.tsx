@@ -177,6 +177,8 @@ export const SearchScreen = () => {
                 ref={listRef}
                 data={rows}
                 renderItem={renderItem}
+                // Mixed rows incl. section headers / show-more — no blanket divider.
+                ItemSeparatorComponent={null}
                 keyExtractor={keyExtractor}
                 style={styles.list}
                 contentContainerStyle={styles.contentContainer}

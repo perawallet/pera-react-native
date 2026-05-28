@@ -103,7 +103,8 @@ export const AddressDisplay = ({
                 )}
                 <PWView style={styles.unifiedTextContainer}>
                     <PWText
-                        variant={textProps?.variant ?? 'h4'}
+                        variant={textProps?.variant ?? 'bodyLarge'}
+                        weight={textProps?.variant ? undefined : 500}
                         truncate
                         ellipsizeMode='middle'
                         {...textProps}
@@ -112,7 +113,8 @@ export const AddressDisplay = ({
                     </PWText>
                     {!!secondary && (
                         <PWText
-                            variant='caption'
+                            variant='footnoteMedium'
+                            weight={400}
                             style={styles.secondaryText}
                             truncate
                             ellipsizeMode='middle'
@@ -136,7 +138,8 @@ export const AddressDisplay = ({
         const primaryText = (
             <PWText
                 style={textProps?.style ?? styles.primaryText}
-                variant={textProps?.variant ?? 'h4'}
+                variant={textProps?.variant ?? 'bodyLarge'}
+                weight={textProps?.variant ? undefined : 500}
                 truncate
             >
                 {contact.name}
@@ -153,7 +156,8 @@ export const AddressDisplay = ({
                     <PWView style={styles.addressTextStack}>
                         {primaryText}
                         <PWText
-                            variant='caption'
+                            variant='footnoteMedium'
+                            weight={400}
                             style={styles.secondaryText}
                             truncate
                             ellipsizeMode='middle'
@@ -182,13 +186,16 @@ export const AddressDisplay = ({
                 {nfdName ? (
                     <PWView style={styles.addressTextStack}>
                         <PWText
+                            variant='bodyLarge'
+                            weight={500}
                             {...textProps}
                             truncate
                         >
                             {nfdName}
                         </PWText>
                         <PWText
-                            variant='caption'
+                            variant='footnoteMedium'
+                            weight={400}
                             style={styles.secondaryText}
                             truncate
                             ellipsizeMode='middle'
@@ -198,6 +205,8 @@ export const AddressDisplay = ({
                     </PWView>
                 ) : (
                     <PWText
+                        variant='bodyLarge'
+                        weight={500}
                         {...textProps}
                         truncate
                         ellipsizeMode='middle'

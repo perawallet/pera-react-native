@@ -98,7 +98,8 @@ export const AccountDisplay = ({
                 {!compact && (
                     <PWText
                         style={textProps?.style ?? styles.text}
-                        variant={textProps?.variant ?? 'h4'}
+                        variant={textProps?.variant ?? 'bodyLarge'}
+                        weight={textProps?.variant ? undefined : 500}
                         numberOfLines={1}
                         ellipsizeMode='middle'
                     >
@@ -108,7 +109,8 @@ export const AccountDisplay = ({
                 {(compact || renderSecondary) && (
                     <PWText
                         style={styles.addressText}
-                        variant='caption'
+                        variant='footnoteMedium'
+                        weight={400}
                         numberOfLines={1}
                         ellipsizeMode={showTypeAsSecondary ? 'tail' : 'middle'}
                     >

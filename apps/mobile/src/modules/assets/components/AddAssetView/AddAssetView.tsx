@@ -104,6 +104,8 @@ export const AddAssetView = ({ variant = 'asset' }: AddAssetScreenProps) => {
                 <PWFlatList
                     data={results}
                     renderItem={renderItem}
+                    // AssetSearchItem draws its own full-width separator.
+                    ItemSeparatorComponent={null}
                     keyExtractor={item => item.assetId}
                     onEndReached={handleEndReached}
                     onEndReachedThreshold={0.5}

@@ -11,8 +11,10 @@
  */
 
 import React, { forwardRef, useImperativeHandle, useRef } from 'react'
+import { StyleSheet } from 'react-native'
 import { FlashList, FlashListProps, FlashListRef } from '@shopify/flash-list'
 import { useBottomSheetScrollableCreator } from '@gorhom/bottom-sheet'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { PWView } from '../PWView'
 import { useStyles } from './styles'
@@ -30,10 +32,25 @@ export type PWFlatListRef = {
 
 export type PWFlatListProps<T> = FlashListProps<T> & {
     inBottomSheet?: boolean
-    /** Card-list preset: item gap + outer padding (caller separator/style wins). */
+    /**
+     * Card-list preset for lists of self-contained cards (account pickers,
+     * rekey targets, …): separates cards with a plain `md` gap instead of the
+     * default inset row divider.
+     */
     cardLayout?: boolean
 }
 
+/**
+ * Default separator for plain row lists: a hairline divider inset to the row
+ * content (past the leading icon) with `md` breathing room above and below.
+ */
+const ListSeparator = () => {
+    const styles = useStyles()
+
+    return <PWView style={styles.itemSeparator} />
+}
+
+/** Card-list separator: a plain `md` gap, no divider line. */
 const CardSeparator = () => {
     const styles = useStyles()
 
@@ -54,7 +71,21 @@ export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
         ref,
     ) => {
         const innerRef = useRef<FlashListRef<unknown>>(null)
-        const styles = useStyles()
+        const insets = useSafeAreaInsets()
+        // A caller's bottom padding becomes the gap *above* the safe-area inset
+        // for in-sheet lists (paddingVertical counts too, since it implies a
+        // bottom). Falls back to the `xl` default inside the style.
+        const flatContentStyle = StyleSheet.flatten(contentContainerStyle) ?? {}
+        const callerBottomGap =
+            typeof flatContentStyle.paddingBottom === 'number'
+                ? flatContentStyle.paddingBottom
+                : typeof flatContentStyle.paddingVertical === 'number'
+                  ? flatContentStyle.paddingVertical
+                  : undefined
+        const styles = useStyles({
+            bottomInset: insets.bottom,
+            bottomGap: callerBottomGap,
+        })
         const BottomSheetScrollable = useBottomSheetScrollableCreator()
 
         useImperativeHandle(ref, () => ({
@@ -68,18 +99,31 @@ export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
         const fillEmpty =
             (props.data?.length ?? 0) === 0 && props.ListEmptyComponent != null
 
+        // Vertical lists get a default separator: a plain gap for card lists,
+        // an inset row divider otherwise. A caller-supplied separator wins;
+        // pass `ItemSeparatorComponent={null}` for flush rows.
+        const defaultSeparator = cardLayout ? CardSeparator : ListSeparator
+        const resolvedSeparator =
+            props.horizontal === true
+                ? ItemSeparatorComponent
+                : ItemSeparatorComponent === undefined
+                  ? defaultSeparator
+                  : ItemSeparatorComponent
+
         const flashProps: FlashListProps<unknown> = {
             ...props,
             showsVerticalScrollIndicator,
             showsHorizontalScrollIndicator,
-            ItemSeparatorComponent: cardLayout
-                ? (ItemSeparatorComponent ?? CardSeparator)
-                : ItemSeparatorComponent,
+            ItemSeparatorComponent: resolvedSeparator,
             contentContainerStyle: [
                 props.horizontal === true || fillEmpty ? null : styles.content,
-                cardLayout ? styles.cardContent : null,
                 fillEmpty ? styles.fillEmpty : null,
                 contentContainerStyle,
+                // Owns the bottom safe-area inset for in-sheet scroll lists;
+                // appended last so it wins over a caller's paddingBottom.
+                inBottomSheet && !fillEmpty && props.horizontal !== true
+                    ? styles.sheetBottomInset
+                    : null,
             ],
         }
 

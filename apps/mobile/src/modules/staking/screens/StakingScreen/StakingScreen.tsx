@@ -154,6 +154,8 @@ export const StakingScreen = () => {
                     <PWFlatList
                         data={projects}
                         renderItem={renderProject}
+                        // StakingProjectCard draws its own bottom border.
+                        ItemSeparatorComponent={null}
                         keyExtractor={keyExtractor}
                         style={styles.list}
                         testID='staking-projects-list'

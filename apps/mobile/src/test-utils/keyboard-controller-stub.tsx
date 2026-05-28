@@ -65,6 +65,18 @@ export const KeyboardStickyView = ({
     style,
 }: KeyboardStickyViewProps) => <View style={style}>{children}</View>
 
+export type KeyboardAvoidingViewProps = ViewProps & {
+    behavior?: 'padding' | 'height' | 'position'
+    enabled?: boolean
+    children?: ReactNode
+    style?: StyleProp<ViewStyle>
+}
+
+export const KeyboardAvoidingView = ({
+    children,
+    style,
+}: KeyboardAvoidingViewProps) => <View style={style}>{children}</View>
+
 export const KeyboardController = {
     setInputMode: () => {},
     setDefaultMode: () => {},

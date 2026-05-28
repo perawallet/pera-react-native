@@ -13,10 +13,9 @@
 /**
  * The signing event bus decouples the signing actor lifecycle from any
  * particular React-side consumer. The lifecycle publishes lifecycle events
- * (analysis-ready, signing-started, completed, etc.) keyed by sign-request
- * id; consumers (hooks, drivers, listeners) subscribe — globally or per
- * request — and may replay retained events when they mount after the
- * lifecycle has already begun.
+ * (signing-started, completed, etc.) keyed by sign-request id; consumers
+ * (hooks, drivers, listeners) subscribe and may replay retained events when
+ * they mount after the lifecycle has already begun.
  *
  * Mirrors the `approvalGate` pattern: a `createSigningEventBus` factory for
  * tests + a module-level singleton (`signingEventBus`) for production
@@ -31,10 +30,6 @@ export type SigningEventHandler = (event: SigningLifecycleEvent) => void
 export type SigningEventBus = {
     publish: (event: SigningLifecycleEvent) => void
     subscribe: (handler: SigningEventHandler) => () => void
-    subscribeWithReplay: (
-        requestId: string,
-        handler: SigningEventHandler,
-    ) => () => void
     replay: (requestId: string) => SigningLifecycleEvent[]
     releaseRequest: (requestId: string) => void
     /** Test-only — clears all subscribers and retained events. */
@@ -65,24 +60,6 @@ export const createSigningEventBus = (): SigningEventBus => {
         }
     }
 
-    const subscribeWithReplay = (
-        requestId: string,
-        handler: SigningEventHandler,
-    ) => {
-        const history = retained.get(requestId)
-        if (history) {
-            for (const event of history) handler(event)
-        }
-        const wrapped: SigningEventHandler = event => {
-            if (event.request.id !== requestId) return
-            handler(event)
-        }
-        subscribers.add(wrapped)
-        return () => {
-            subscribers.delete(wrapped)
-        }
-    }
-
     const replay = (requestId: string): SigningLifecycleEvent[] => {
         return retained.get(requestId)?.slice() ?? []
     }
@@ -99,7 +76,6 @@ export const createSigningEventBus = (): SigningEventBus => {
     return {
         publish,
         subscribe,
-        subscribeWithReplay,
         replay,
         releaseRequest,
         __resetForTests,

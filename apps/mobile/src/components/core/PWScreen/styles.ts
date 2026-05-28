@@ -40,7 +40,12 @@ export const useStyles = makeStyles(
             fixedBody: {
                 flex: 1,
                 paddingHorizontal,
-                paddingBottom: theme.spacing.xl,
+                // Mirror the scroll body: when a footer owns the bottom inset
+                // the body just needs a gap, otherwise it carries the
+                // safe-area inset so a hosted scroller clears the home
+                // indicator (the migrated FlashList no longer does this
+                // natively the way RN's FlatList did).
+                paddingBottom: hasFooter ? theme.spacing.lg : bottomInset,
             },
             footer: {
                 // Bottom CTAs share one screen gutter (xl) regardless of the

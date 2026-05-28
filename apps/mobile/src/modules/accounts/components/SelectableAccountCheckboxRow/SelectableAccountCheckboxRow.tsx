@@ -57,7 +57,8 @@ export const SelectableAccountCheckboxRow = ({
 
     const titleText = (
         <PWText
-            variant='body'
+            variant='bodyLarge'
+            weight={500}
             style={styles.title}
             numberOfLines={1}
         >
@@ -87,7 +88,8 @@ export const SelectableAccountCheckboxRow = ({
                 </PWView>
                 {!!subtitle && (
                     <PWText
-                        variant='caption'
+                        variant='footnoteMedium'
+                        weight={400}
                         style={styles.subtitle}
                         numberOfLines={1}
                     >

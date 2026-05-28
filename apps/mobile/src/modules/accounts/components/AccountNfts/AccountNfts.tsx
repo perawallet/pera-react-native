@@ -181,6 +181,8 @@ export const AccountNfts = () => {
                         key={`${galleryLayout}:${sortMode}:${debouncedSearchFilter}`}
                         data={collectibles}
                         renderItem={renderItem}
+                        // Grid/list toggle — no inset row divider.
+                        ItemSeparatorComponent={null}
                         numColumns={isGrid ? GRID_COLUMNS : 1}
                         keyExtractor={item => item.assetId}
                         contentContainerStyle={styles.contentContainer}

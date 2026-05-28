@@ -12,12 +12,32 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
+type StyleProps = {
+    bottomInset?: number
+    bottomGap?: number
+}
+
+export const useStyles = makeStyles((theme, props: StyleProps = {}) => ({
     content: {
-        paddingBottom: theme.spacing.xl,
-    },
-    cardContent: {
         paddingVertical: theme.spacing.xl,
+    },
+    // In-sheet lists scroll edge-to-edge, so the content owns the bottom
+    // safe-area inset (the hosting sheets use autoCreateContainer:false, which
+    // means no inner-container inset). Appended last so it wins over a
+    // caller's contentContainerStyle paddingBottom — but it folds that
+    // caller value into the gap (defaulting to `xl`) instead of discarding it,
+    // so a caller can still ask for extra breathing room above the inset.
+    sheetBottomInset: {
+        paddingBottom:
+            (props.bottomInset ?? 0) + (props.bottomGap ?? theme.spacing.xl),
+    },
+    itemSeparator: {
+        marginVertical: theme.spacing.md,
+        height: theme.borders.sm,
+        backgroundColor: theme.colors.layerGrayLighter,
+        // Inset to align with row content past the standard leading icon
+        // (icon width xxl + row gap lg), matching AccountAssetList's divider.
+        marginLeft: theme.spacing.xxl + theme.spacing.lg,
     },
     cardSeparator: {
         height: theme.spacing.md,
