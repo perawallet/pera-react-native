@@ -29,22 +29,9 @@ import {
     type TypographyVariant,
 } from '@theme/typography'
 
-/**
- * Algo logo rendered as a text glyph. The bundled DMSans fonts map U+00A6 to
- * the Algo mark (the same custom fonts the native apps use), so showing it as
- * text scales with the font size and inherits color — no separate icon sizing
- * needed.
- */
 const ALGO_SYMBOL = '¦'
 
-/**
- * The Algo logo glyph (U+00A6) is only patched into DMSans weights 400/500/700.
- * DMSans-SemiBold (600) and the DMMono faces ship the stock two-bar `brokenbar`
- * glyph there instead, so the symbol must render in a patched DMSans weight:
- * weight 600 is bumped to 700, and passing any weight to {@link PWText} forces
- * the DMSans family (covering the `mono` variant). The amount text keeps its
- * own variant/weight — only the glyph is constrained.
- */
+/** U+00A6 Algo glyph is only patched in DMSans 400/500/700 — bump 600 → 700. */
 export const getAlgoSymbolWeight = (
     variant: TypographyVariant,
     weight?: FontWeight,
@@ -56,16 +43,8 @@ export const getAlgoSymbolWeight = (
 export type CurrencyDisplayProps = {
     currency: string
     value: Maybe<Decimal>
-    /** Number of decimals the value is rounded to (its natural precision). */
     precision: number
-    /** Floor for trailing-zero trimming — never show fewer decimals than this. */
     minPrecision?: number
-    /**
-     * Caps the displayed decimals (e.g. `2` for compact list rows that would
-     * otherwise overflow with a high-decimal asset). Omit to show `precision`
-     * as-is — the default for detail/confirmation surfaces where the exact
-     * amount matters.
-     */
     maxPrecision?: number
     prefix?: string
     alignRight?: boolean

@@ -15,10 +15,6 @@ import { makeStyles } from '@rneui/themed'
 type StyleProps = { bottomInset: number }
 
 export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
-    // Default bottom padding so scroll content clears the bottom edge. Mirrors
-    // PWFlatList; in a sheet it also adds the safe-area inset so content clears
-    // the nav bar (the sheet draws edge-to-edge). Callers opt out by setting
-    // their own bottom padding on `contentContainerStyle`.
     contentContainer: {
         paddingBottom: theme.spacing.xl + bottomInset,
     },

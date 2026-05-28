@@ -17,8 +17,6 @@ type StyleProps = { bottomInset: number }
 export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
     scrollContent: {
         flexGrow: 1,
-        // Visual gap + safe-area inset inside the scroll so content clears the
-        // nav bar (the sheet draws edge-to-edge).
         paddingBottom: theme.spacing.xl + bottomInset,
     },
     heroSection: {

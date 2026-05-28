@@ -78,6 +78,7 @@ export const ARC59WarningContent = () => {
                     </PWView>
                 </PWView>
             }
+            confirmValue='confirm'
             confirmLabel={t('send_funds.arc59_warning.confirm')}
             cancelLabel={t('send_funds.arc59_warning.cancel')}
             buttonPaddingStyle='dense'

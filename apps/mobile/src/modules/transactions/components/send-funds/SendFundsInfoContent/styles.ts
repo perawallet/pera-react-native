@@ -38,8 +38,6 @@ export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => {
         bodyContainer: {
             width: '100%',
         },
-        // Fixed footer outside the scroll: owns the bottom safe-area inset so
-        // the CTA clears the nav bar (the sheet draws edge-to-edge).
         footer: {
             paddingTop: theme.spacing.lg,
             paddingBottom: theme.spacing.xl + bottomInset,

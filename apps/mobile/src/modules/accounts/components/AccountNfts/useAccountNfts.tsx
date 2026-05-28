@@ -148,21 +148,33 @@ export const useAccountNfts = (): UseAccountNftsResult => {
     const openFilterSheet = useCallback(() => {
         void requestBottomSheet<void>({
             contents: <NftFilterContent />,
-            options: { size: 'auto', enablePanDownToClose: true },
+            options: {
+                size: 'auto',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
         })
     }, [requestBottomSheet])
 
     const openSortSheet = useCallback(() => {
         void requestBottomSheet<void>({
             contents: <NftSortContent />,
-            options: { size: 'auto', enablePanDownToClose: true },
+            options: {
+                size: 'auto',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
         })
     }, [requestBottomSheet])
 
     const openManageSheet = useCallback(async () => {
         const action = await requestBottomSheet<ManageNftsAction>({
             contents: <ManageNftsContent />,
-            options: { size: 'auto', enablePanDownToClose: true },
+            options: {
+                size: 'auto',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
         })
         if (action === 'sort') {
             openSortSheet()

@@ -30,12 +30,7 @@ export type PWFlatListRef = {
 
 export type PWFlatListProps<T> = FlashListProps<T> & {
     inBottomSheet?: boolean
-    /**
-     * Layout preset for lists of self-contained cards (account pickers, rekey
-     * targets, …): adds a gap between items and vertical padding around the
-     * list so the cards don't pinch. A caller-supplied `ItemSeparatorComponent`
-     * or `contentContainerStyle` still takes precedence.
-     */
+    /** Card-list preset: item gap + outer padding (caller separator/style wins). */
     cardLayout?: boolean
 }
 
@@ -70,9 +65,6 @@ export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
             scrollToEnd: options => innerRef.current?.scrollToEnd(options),
         }))
 
-        // Let a ListEmptyComponent fill the list so it can center itself —
-        // only while empty, so populated lists (and their footers) are
-        // untouched.
         const fillEmpty =
             (props.data?.length ?? 0) === 0 && props.ListEmptyComponent != null
 
@@ -83,17 +75,12 @@ export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
             ItemSeparatorComponent: cardLayout
                 ? (ItemSeparatorComponent ?? CardSeparator)
                 : ItemSeparatorComponent,
-            contentContainerStyle: {
-                // Default trailing gap so the last row never pinches the
-                // footer/screen edge. Vertical, populated lists only; callers
-                // override via contentContainerStyle.
-                ...(props.horizontal === true || fillEmpty
-                    ? null
-                    : styles.content),
-                ...(cardLayout ? styles.cardContent : null),
-                ...(fillEmpty ? styles.fillEmpty : null),
-                ...contentContainerStyle,
-            },
+            contentContainerStyle: [
+                props.horizontal === true || fillEmpty ? null : styles.content,
+                cardLayout ? styles.cardContent : null,
+                fillEmpty ? styles.fillEmpty : null,
+                contentContainerStyle,
+            ],
         }
 
         if (inBottomSheet) {

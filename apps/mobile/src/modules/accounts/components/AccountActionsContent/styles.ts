@@ -17,8 +17,6 @@ type StyleProps = { bottomInset: number }
 export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
     container: {
         paddingTop: theme.spacing.xl,
-        // Visual gap + safe-area inset inside the scroll so the last row clears
-        // the nav bar (the sheet draws edge-to-edge).
         paddingBottom: theme.spacing.xl + bottomInset,
     },
     addressCard: {

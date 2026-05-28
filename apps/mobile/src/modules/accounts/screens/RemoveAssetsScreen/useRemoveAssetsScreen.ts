@@ -163,7 +163,6 @@ export const useRemoveAssetsScreen = ({
             onAfterRemove?.()
         } catch (err) {
             if (err instanceof UserRejectedSigningError) {
-                // User dismissed the LedgerSigningContent sheet — sheet already went away; no toast.
                 return
             }
             showError(err, t('asset_opt_out.error'))

@@ -21,19 +21,9 @@ export type PWTextProps = {
     children?: React.ReactNode
     style?: StyleProp<TextStyle>
     variant?: TypographyVariant
-    /**
-     * Overrides the variant's font weight (and matching family). Use this
-     * instead of adding a dedicated `*Medium` / `*Semibold` sibling variant
-     * for one-off weight tweaks.
-     */
     weight?: FontWeight
     numberOfLines?: number
     ellipsizeMode?: TextProps['ellipsizeMode']
-    /**
-     * Single-line tail truncation that also shrinks within row layouts.
-     * Sets `numberOfLines=1` and `ellipsizeMode='tail'` (both still
-     * overridable) plus `flexShrink: 1` / `minWidth: 0`.
-     */
     truncate?: boolean
     adjustsFontSizeToFit?: TextProps['adjustsFontSizeToFit']
     minimumFontScale?: TextProps['minimumFontScale']

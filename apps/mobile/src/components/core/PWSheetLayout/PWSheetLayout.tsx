@@ -26,42 +26,16 @@ import type {
 } from 'react-native'
 
 export type PWSheetLayoutProps = {
-    /**
-     * Toolbar slot (typically `<SheetHeader />`). Pinned to the top while the
-     * body scrolls beneath it. Omit for sheets without a toolbar.
-     */
     header?: ReactNode
-    /** Scrollable body. */
     children: ReactNode
-    /**
-     * Fixed footer pinned below the scroll (e.g. a CTA). Stays visible while
-     * the body scrolls and rises with the keyboard. Omit to keep any CTA at the
-     * end of the scrollable body instead.
-     */
     footer?: ReactNode
-    /**
-     * Body horizontal padding. `'xl'` (default, 24) or `'none'` for full-bleed
-     * content (e.g. edge-to-edge rows or dividers that manage their own gutter).
-     */
     horizontalPadding?: 'xl' | 'none'
-    /** Extra style merged onto the body's padding wrapper. */
     bodyStyle?: StyleProp<ViewStyle>
-    /**
-     * Forwarded to the scroll view — e.g. to gate a CTA on scroll-to-bottom.
-     */
     onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void
     testID?: string
 }
 
-/**
- * Bottom-sheet skeleton: a sticky toolbar above a scrolling body, with an
- * optional fixed footer pinned below. Pages inject content into the `header`,
- * `children` (body) and `footer` slots; the skeleton owns scroll, sticky-header
- * behaviour, the visual gaps, and the bottom safe-area inset (placed inside the
- * scroll, or on the footer when present, so content clears the nav bar while
- * the sheet draws edge-to-edge). CTAs can live at the end of the body or in the
- * pinned `footer`.
- */
+/** Bottom-sheet skeleton: sticky header, scrolling body, optional footer. */
 export const PWSheetLayout = ({
     header,
     children,

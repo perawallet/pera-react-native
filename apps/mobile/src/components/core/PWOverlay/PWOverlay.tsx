@@ -25,12 +25,7 @@ export type PWOverlayProps = {
     fullScreen?: boolean
 }
 
-/**
- * Low-level centered overlay (scrim + centered box) wrapping `@rneui` `Overlay`.
- * It is the shared base for higher-level primitives — `PWDialog` (opinionated
- * centered dialogs) and `PWLoadingOverlay` (loading spinner). Prefer those:
- * reach for `PWOverlay` directly only when neither fits.
- */
+/** Low-level overlay; prefer `PWDialog` or `PWLoadingOverlay`. */
 export const PWOverlay = ({
     isVisible,
     onBackdropPress,

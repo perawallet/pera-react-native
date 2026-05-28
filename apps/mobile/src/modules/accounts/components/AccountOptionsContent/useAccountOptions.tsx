@@ -109,8 +109,6 @@ export const useAccountOptions = ({
     }, [onClose, onShowAddress])
 
     const handleViewPassphrase = useCallback(() => {
-        // Dismiss the options menu first so we don't end up with the menu
-        // sheet stacked under the PIN / acknowledge / display sheets.
         onClose()
         void openViewPassphraseFlow(account.address)
     }, [onClose, openViewPassphraseFlow, account.address])
@@ -153,7 +151,11 @@ export const useAccountOptions = ({
             contents: (
                 <ExportShareAccountContent accountAddress={account.address} />
             ),
-            options: { size: 'auto', enablePanDownToClose: true },
+            options: {
+                size: 'auto',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
         })
     }, [onClose, requestBottomSheet, account.address])
 
@@ -181,7 +183,11 @@ export const useAccountOptions = ({
         onClose()
         const newName = await requestBottomSheet<string>({
             contents: <RenameAccountContent accountAddress={account.address} />,
-            options: { size: 'auto', enablePanDownToClose: true },
+            options: {
+                size: 'auto',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
         })
         if (!newName) return
         updateAccount({ ...account, name: newName })
@@ -362,9 +368,6 @@ export const useAccountOptions = ({
         }
 
         if (isSharedAccount) {
-            // Rekeying needs a signature from the source account, so only
-            // offer it when this wallet can actually sign for the multisig.
-            // Export stays available regardless — it only reads metadata.
             if (canSign) {
                 items.push({
                     id: 'rekey-to-shared',

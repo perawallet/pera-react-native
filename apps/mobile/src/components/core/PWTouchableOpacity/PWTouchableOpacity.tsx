@@ -19,7 +19,10 @@ import {
 } from 'react-native'
 import { getTestProps } from '@utils/test-id-helper'
 
-export type PWTouchableOpacityProps = {} & TouchableOpacityProps
+export type PWTouchableOpacityProps = {
+    /** Dismiss keyboard after press (default true). */
+    dismissKeyboardOnPress?: boolean
+} & TouchableOpacityProps
 
 const DEFAULT_ACTIVE_OPACITY = 0.8
 
@@ -28,18 +31,18 @@ export const PWTouchableOpacity = ({
     activeOpacity,
     testID,
     onPress,
+    dismissKeyboardOnPress = true,
     ...rest
 }: PWTouchableOpacityProps) => {
-    // Fire onPress first, then dismiss the keyboard. Doing it the other
-    // way around races with libraries (e.g. @gorhom/bottom-sheet) whose
-    // open animations get cancelled mid-flight if the keyboard hide is
-    // already in motion when the action commits.
+    // onPress before Keyboard.dismiss — bottom-sheet open races if reversed.
     const handlePress = useCallback(
         (event: GestureResponderEvent) => {
             onPress?.(event)
-            Keyboard.dismiss()
+            if (dismissKeyboardOnPress) {
+                Keyboard.dismiss()
+            }
         },
-        [onPress],
+        [onPress, dismissKeyboardOnPress],
     )
 
     return (

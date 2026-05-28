@@ -41,7 +41,11 @@ export const TransactionNoteRow = ({
                     text={note}
                 />
             ),
-            options: { size: 'auto', enablePanDownToClose: true },
+            options: {
+                size: 'auto',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
         })
     }, [requestBottomSheet, note, t])
 

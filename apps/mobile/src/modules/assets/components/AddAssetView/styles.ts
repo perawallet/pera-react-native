@@ -16,7 +16,6 @@ export const useStyles = makeStyles(theme => ({
     container: {
         flexGrow: 1,
         backgroundColor: theme.colors.background,
-        // Safe-area inset is owned centrally by PWBottomSheet's innerContainer.
     },
     searchContainer: {
         paddingHorizontal: theme.spacing.md,

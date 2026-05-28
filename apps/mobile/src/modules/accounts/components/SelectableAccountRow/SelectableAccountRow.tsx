@@ -19,16 +19,10 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 export type SelectableAccountRowProps = {
     account: WalletAccount
     onSelect: (account: WalletAccount) => void
-    /** Renders the selected-state border on the underlying card. */
     isHighlighted?: boolean
     testID?: string
 }
 
-/**
- * Canonical tappable account row for single-select account pickers (receive,
- * gift card, rekey targets, …). Wraps the `AccountWithBalance` card in a
- * touchable so callers don't re-implement the press target + selected state.
- */
 const SelectableAccountRowComponent = ({
     account,
     onSelect,

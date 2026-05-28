@@ -55,7 +55,6 @@ type UseCollectibleDetailResult = {
     isReadOnly: boolean
     traits: CollectibleTrait[]
     media: CollectibleMedia[]
-    /** Whether there's an image to copy/save (image media or a primary image). */
     hasImage: boolean
     accountAddress: string
     accountName: string
@@ -153,7 +152,11 @@ export const useCollectibleDetail = (
                     accountAddress={account.address}
                 />
             ),
-            options: { size: 'auto', enablePanDownToClose: true },
+            options: {
+                size: 'auto',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
         })
         if (result !== 'confirm') return
 
@@ -173,8 +176,7 @@ export const useCollectibleDetail = (
             }
         } catch (err) {
             if (err instanceof UserRejectedSigningError) {
-                // User dismissed the LedgerSigningContent sheet — sheet already went away; no toast.
-                return
+                    return
             }
             showError(err, t('asset_opt_out.error'))
         }
@@ -328,10 +330,6 @@ export const useCollectibleDetail = (
                     options: {
                         size: 'full',
                         enablePanDownToClose: true,
-                        // The viewer owns a full-bleed PagerView that needs a
-                        // bounded height; the default gorhom `BottomSheetView`
-                        // is position-absolute / content-sized, which collapses
-                        // it. A plain flex container fills the `full` sheet.
                         autoCreateContainer: false,
                     },
                 })

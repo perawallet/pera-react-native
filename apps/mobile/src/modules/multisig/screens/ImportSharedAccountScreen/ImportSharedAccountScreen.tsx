@@ -52,9 +52,6 @@ export const ImportSharedAccountScreen = () => {
         ? 'accounts/dark/multisig-account'
         : 'accounts/light/multisig-account'
 
-    // Render the title + scanned address in the navigation toolbar with a
-    // back arrow. The screen is deeplink-entered, so there is no back stack
-    // for the default header button — the arrow leaves the import flow.
     useNavigationHeader({
         left: (
             <PWIcon
@@ -174,7 +171,7 @@ export const ImportSharedAccountScreen = () => {
             <PWView>
                 {participantAddresses.map((participant, index, arr) => (
                     <AddressDisplay
-                        key={participant}
+                        key={`${participant}-${index}`}
                         address={participant}
                         addressFormat='long'
                         iconName={participantIconName}

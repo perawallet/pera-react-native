@@ -23,38 +23,17 @@ import { useStyles } from './styles'
 
 export type SheetHeaderProps = {
     title: ReactNode
-    /** Typography variant applied to a string title. Defaults to `h4`. */
     titleVariant?: TypographyVariant
-    /** Overrides the font weight applied to a string title. */
     titleWeight?: FontWeight
-    /**
-     * Optional secondary line shown beneath a string `title` (e.g. a truncated
-     * address). Rendered in the footnote/gray style. Ignored for node titles.
-     */
     subtitle?: string
-    /** Optional element shown in the toolbar's right slot. */
     rightAction?: ReactNode
-    /** Override the default close behaviour (which calls `dismiss()`). */
     onClose?: () => void
     paddingStyle?: 'normal' | 'dense' | 'none'
-    /** Extra style forwarded to the underlying toolbar container. */
     style?: StyleProp<ViewStyle>
     testID?: string
 }
 
-/**
- * Standard header for managed bottom-sheet content. Wires the left close
- * icon to the host sheet's `dismiss()` so callers only need to supply a
- * title (and, optionally, a right-slot action). Designed for use inside
- * a sheet rendered by `BottomSheetManager` — must be mounted under a
- * `BottomSheetIdContext`.
- *
- * The close (X) is dropped only when the host sheet is *not* full-screen and
- * enables pan-down-to-close, since the drag handle then provides dismissal.
- * Full-screen sheets (`full` / `modal` — the 96–100% snap points) keep the X
- * because the drag handle is far away, and sheets without pan-down keep it so
- * they stay dismissable.
- */
+/** Bottom-sheet toolbar header; close icon wired to `dismiss()`. */
 export const SheetHeader = ({
     title,
     titleVariant = 'h4',
@@ -72,8 +51,6 @@ export const SheetHeader = ({
     const size = useBottomSheetSize()
     const handleClose = onClose ?? dismiss
 
-    // Full-screen sheets keep the X (the drag handle is too far to reach);
-    // smaller pan-down sheets drop it since swiping down dismisses them.
     const isFullScreen = size === 'full' || size === 'modal'
     const showClose = isFullScreen || !isPanDownEnabled
 

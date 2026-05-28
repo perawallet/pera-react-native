@@ -38,7 +38,11 @@ export const TransactionWarnings = ({
     const handleOpen = useCallback(() => {
         void requestBottomSheet({
             contents: <TransactionWarningsContent transaction={transaction} />,
-            options: { size: 'auto', enablePanDownToClose: true },
+            options: {
+                size: 'auto',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
         })
     }, [requestBottomSheet, transaction])
 

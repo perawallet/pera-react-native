@@ -30,60 +30,19 @@ import type { LayoutChangeEvent, StyleProp, ViewStyle } from 'react-native'
 
 export type PWScreenProps = {
     children: ReactNode
-    /**
-     * - `true` (default): wraps children in a `KeyboardAwareScrollView` that
-     *   auto-scrolls the focused input into view above the keyboard.
-     * - `false`: children fill a flex:1 view (use when children own their
-     *   own scrolling, e.g. PWFlatList). Keyboard auto-scroll does not apply.
-     */
     scroll?: boolean
-    /**
-     * Horizontal padding mode applied to the body and footer.
-     * Defaults to `'xl'` (theme.spacing.xl). Use `'none'` for full-bleed
-     * screens that manage padding internally.
-     */
     horizontalPadding?: HorizontalPaddingMode
-    /**
-     * Sticky footer rendered outside the scroll body. Rises with the keyboard
-     * via `KeyboardStickyView` so it stays pinned just above it. The footer is
-     * already wrapped in a padded container — pass multiple buttons directly
-     * (e.g. a fragment) and use `footerStyle` for gap/border, rather than
-     * adding another wrapper view.
-     */
     footer?: ReactNode
-    /**
-     * Extra style merged into the footer's padded wrapper (e.g. `gap`, a top
-     * border). Avoids the need for a redundant inner wrapper view.
-     */
     footerStyle?: StyleProp<ViewStyle>
-    /**
-     * Keyboard handling strategy.
-     * - `'avoid'` (default): the scroll body auto-scrolls the focused input
-     *   into view (`KeyboardAwareScrollView`) and the sticky footer rises with
-     *   the keyboard (`KeyboardStickyView`).
-     * - `'none'`: no keyboard handling (use for screens without inputs).
-     */
     keyboard?: 'avoid' | 'none'
-    /**
-     * Extra style applied to the content container — the scroll content
-     * container when `scroll` is `true`, or the fixed body when `false`.
-     */
     contentContainerStyle?: StyleProp<ViewStyle>
-    /** Extra style applied to the root flex:1 container. */
     style?: StyleProp<ViewStyle>
     testID?: string
 }
 
 /**
- * Canonical screen body: a keyboard-aware scrollable content area with an
- * optional sticky footer that rises with the keyboard, above the bottom safe
- * area.
- *
- * Safe-area ownership: PWScreen owns the BOTTOM inset (via `usePWScreenInsets`)
- * and the footer's safe area. It deliberately does NOT pad the TOP — the React
- * Navigation header owns the top safe area and the toolbar (the layout rules'
- * "Toolbar" / "TopSafeArea" zone). Screens without a native header should supply
- * their own toolbar/top inset rather than expecting PWScreen to add it.
+ * Screen body with optional sticky footer. Owns the bottom safe-area inset only
+ * (top inset is the navigation header's job).
  */
 export const PWScreen = ({
     children,

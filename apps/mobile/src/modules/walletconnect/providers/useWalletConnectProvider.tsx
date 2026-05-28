@@ -26,9 +26,6 @@ import { ConnectionSuccessContent } from '../components/ConnectionSuccessContent
 import { WalletConnectErrorContent } from '../components/WalletConnectErrorContent'
 
 export const useWalletConnectProvider = () => {
-    // Revive WalletConnect bridge sockets when the app returns to the
-    // foreground — without this a backgrounded session silently drops
-    // both outgoing signed responses and incoming dApp requests.
     useWalletConnectForegroundReconnect()
 
     const { sessionRequests, removeSessionRequest } =
@@ -85,7 +82,7 @@ export const useWalletConnectProvider = () => {
                 ),
                 options: {
                     size: 'modal',
-                    enablePanDownToClose: true,
+                    enableCloseOnBackdropPress: false,
                     autoCreateContainer: false,
                 },
             }).finally(() => {
@@ -96,11 +93,7 @@ export const useWalletConnectProvider = () => {
             connectionSheetIdRef.current = null
             dismiss(id)
         }
-        // ConnectionView's props are captured once at request-time per the
-        // bottom-sheet contract — re-running on every state change would
-        // re-open a stale sheet, so we only react to whether the sheet
-        // should be open.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- sheet open/close only
     }, [shouldShowConnection])
 
     useEffect(() => {

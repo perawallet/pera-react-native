@@ -15,13 +15,7 @@ import { useContext } from 'react'
 import { BottomSheetIdContext } from '../components/BottomSheetHost/BottomSheetIdContext'
 import { useBottomSheetStore } from '../store/bottomSheetStore'
 
-/**
- * Whether the host sheet was opened with `enablePanDownToClose`. When pan-down
- * is on, the drag handle is the dismissal affordance and a header close (X) is
- * redundant — `SheetHeader` uses this to drop its close icon. Sheets opened
- * without pan-down keep the X so they stay dismissable. Returns `false` outside
- * a managed sheet.
- */
+/** Whether the host sheet has `enablePanDownToClose` (see `SheetHeader`). */
 export const useBottomSheetPanDownEnabled = (): boolean => {
     const id = useContext(BottomSheetIdContext)
     return useBottomSheetStore(s =>

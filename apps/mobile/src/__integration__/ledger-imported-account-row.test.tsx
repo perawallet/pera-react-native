@@ -111,10 +111,6 @@ describe('Flow: Ledger imported account row checkbox', () => {
                 },
             )
 
-            // An already-imported account can't be re-selected: the row
-            // renders an "already imported" chip in place of the checkbox.
-            // (Integration tests run without i18n, so the chip renders the
-            // raw key.)
             await waitFor(
                 () =>
                     expect(

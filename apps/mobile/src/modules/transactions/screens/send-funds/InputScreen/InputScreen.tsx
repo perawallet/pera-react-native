@@ -59,7 +59,11 @@ export const InputScreen = () => {
     const openNote = useCallback(() => {
         void requestBottomSheet({
             contents: <AddNoteContent />,
-            options: { size: 'auto', enablePanDownToClose: true },
+            options: {
+                size: 'auto',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
         })
     }, [requestBottomSheet])
 

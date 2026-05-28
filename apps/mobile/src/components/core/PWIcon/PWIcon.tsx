@@ -21,6 +21,8 @@ export type PWIconProps = {
     name: IconName
     size?: PWIconSize
     variant?: PWIconVariant
+    /** Dismiss keyboard after press (default true). */
+    dismissKeyboardOnPress?: boolean
 } & Omit<SvgProps, 'color' | 'width' | 'height'>
 
 export const PWIcon = ({
@@ -28,19 +30,21 @@ export const PWIcon = ({
     size = 'md',
     variant = 'primary',
     onPress,
+    dismissKeyboardOnPress = true,
     ...rest
 }: PWIconProps) => {
     const { theme } = useTheme()
     const IconComponent = ICON_LIBRARY[name]
 
-    // SVG onPress bypasses PWTouchableOpacity. Fire onPress before
-    // Keyboard.dismiss so bottom-sheet open animations don't race.
+    // onPress before Keyboard.dismiss — bottom-sheet open races if reversed.
     const handlePress = useCallback(
         (event: GestureResponderEvent) => {
             onPress?.(event)
-            Keyboard.dismiss()
+            if (dismissKeyboardOnPress) {
+                Keyboard.dismiss()
+            }
         },
-        [onPress],
+        [onPress, dismissKeyboardOnPress],
     )
 
     const variantColors: Record<PWIconVariant, string> = useMemo(

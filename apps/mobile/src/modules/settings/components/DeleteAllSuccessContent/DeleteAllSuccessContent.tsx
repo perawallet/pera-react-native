@@ -23,6 +23,7 @@ export const DeleteAllSuccessContent = () => {
             icon='check'
             iconVariant='positive'
             title={t('settings.main.remove_success_title')}
+            confirmLabel={t('common.close.label')}
         />
     )
 }

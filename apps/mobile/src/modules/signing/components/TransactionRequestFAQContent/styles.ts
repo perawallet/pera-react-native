@@ -36,5 +36,8 @@ export const useStyles = makeStyles(theme => {
             textAlign: 'left' as const,
         },
         warning,
+        button: {
+            alignSelf: 'stretch' as const,
+        },
     }
 })

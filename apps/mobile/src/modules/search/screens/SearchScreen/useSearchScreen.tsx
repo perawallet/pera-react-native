@@ -87,7 +87,11 @@ export const useSearchScreen = (): UseSearchScreenResult => {
                     onToggleScope={toggleScope}
                 />
             ),
-            options: { size: 'auto', enablePanDownToClose: true },
+            options: {
+                size: 'auto',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
         })
     }, [requestBottomSheet, scopes, toggleScope])
 

@@ -98,10 +98,6 @@ export const PWBottomSheet = ({
     const { height: windowHeight } = useWindowDimensions()
     const defaults = DEFAULT_PROPS[size]
 
-    // `auto` sheets size to their content; cap at the shared ratio so a tall
-    // `auto` sheet shares `modal`'s ceiling and its content scrolls past it.
-    // `topInset` still prevents rising above the status bar; `bottomInset`
-    // (passed to gorhom) keeps it above the home indicator.
     const maxDynamicContentSize =
         size === 'auto' ? Math.round(windowHeight * SHEET_MAX_RATIO) : undefined
 
@@ -111,14 +107,8 @@ export const PWBottomSheet = ({
         maxDynamicContentSize,
     })
 
-    // Full-screen sheets (96–100% snap points) surface a header close (X)
-    // instead, so the drag-handle notch is dropped to avoid a redundant
-    // dismissal affordance.
     const isFullScreen = size === 'full' || size === 'modal'
 
-    // Sync isVisible prop with modal state. Dismiss the keyboard on the
-    // outgoing transition so a sheet that owns a focused input doesn't leave
-    // the keyboard stuck open over the rest of the app.
     useEffect(() => {
         if (isVisible) {
             bottomSheetModalRef.current?.present()
@@ -128,13 +118,7 @@ export const PWBottomSheet = ({
         }
     }, [isVisible])
 
-    // Gorhom's `BottomSheetModal` registers itself with the
-    // `BottomSheetModalProvider` on `present()` and does NOT auto-dismiss
-    // when the React component unmounts. If a controlled sheet is removed
-    // from the tree while still presented, its entry stays in the provider's
-    // stack and re-surfaces when the topmost sheet pops — visible as an
-    // orphan, content-empty modal you can't dismiss. Explicit cleanup
-    // dismisses the modal whenever the component unmounts.
+    // Gorhom keeps presented modals in the provider stack after unmount — dismiss on cleanup.
     useEffect(() => {
         return () => {
             bottomSheetModalRef.current?.dismiss()
@@ -156,26 +140,16 @@ export const PWBottomSheet = ({
         [styles.backdrop, enableCloseOnBackdropPress, onBackdropPress],
     )
 
-    // Gorhom fires this on actual dismissal completion (animation finished
-    // with status DISMISSED). `onBackdropPress` is intentionally NOT
-    // invoked here — that's reserved for the genuine backdrop-press
-    // gesture path. Fanning it out at dismiss caused a redundant
-    // `store.dismiss(...)` cycle that tore down the underlying sheet.
     const handleDismiss = useCallback(() => {
         onDismiss?.()
     }, [onDismiss])
 
-    // Pan-down / backdrop dismissals bypass the isVisible flow. Listen to the
-    // animation transitioning toward index -1 (closed) and dismiss the
-    // keyboard at the start of that animation so it doesn't linger after the
-    // sheet finishes closing.
     const handleAnimate = useCallback((_from: number, toIndex: number) => {
         if (toIndex === -1) {
             Keyboard.dismiss()
         }
     }, [])
 
-    // Merge background style with containerStyle for backward compatibility
     const mergedBackgroundStyle = containerStyle
         ? [styles.background, containerStyle]
         : styles.background
@@ -187,13 +161,7 @@ export const PWBottomSheet = ({
             enableDynamicSizing={defaults.enableDynamicSizing}
             maxDynamicContentSize={maxDynamicContentSize}
             stackBehavior='push'
-            // Never let the sheet rise above the status bar, even when its
-            // dynamically-sized content
             topInset={size === 'full' ? 0 : insets.top}
-            // Draw edge-to-edge: the sheet background extends under the home
-            // indicator / nav bar to the screen bottom (no gorhom lift). The
-            // bottom safe-area inset is owned centrally by `innerContainer`
-            // (see styles) so content still clears the indicator.
             bottomInset={0}
             backdropComponent={renderBackdrop}
             onDismiss={handleDismiss}

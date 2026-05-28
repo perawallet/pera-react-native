@@ -34,6 +34,7 @@ export const ConnectionSuccessContent = ({
             message={t('walletconnect.request.success_sheet_body', {
                 name: dAppName,
             })}
+            confirmLabel={t('common.close.label')}
         />
     )
 }

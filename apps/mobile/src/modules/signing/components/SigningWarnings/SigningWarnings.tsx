@@ -28,7 +28,11 @@ export const SigningWarnings = ({ isGroup = false }: { isGroup?: boolean }) => {
     const handleOpen = useCallback(() => {
         void requestBottomSheet({
             contents: <SigningWarningsContent isGroup={isGroup} />,
-            options: { size: 'auto', enablePanDownToClose: true },
+            options: {
+                size: 'auto',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
         })
     }, [requestBottomSheet, isGroup])
 

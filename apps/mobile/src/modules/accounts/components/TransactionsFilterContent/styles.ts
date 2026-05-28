@@ -32,8 +32,6 @@ export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => {
             width: theme.spacing.xl,
             flexShrink: 0,
         },
-        // Trailing spacer so the last filter row clears the nav bar (the sheet
-        // draws edge-to-edge). Avoids over-padding every row.
         bottomSpacer: {
             height: theme.spacing.xl + bottomInset,
         },

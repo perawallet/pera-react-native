@@ -24,16 +24,12 @@ import { useStyles } from './styles'
 
 export type SelectableAccountCheckboxRowProps = {
     title: string
-    /** When set, the title is wrapped in a CopyableText for the given value. */
     titleCopyValue?: string
     subtitle?: string
-    /** Inline badge rendered next to the title (e.g. a "rekeyed" chip). */
     badge?: ReactNode
-    /** Leading visual rendered before the text (e.g. an account icon). */
     leadingIcon?: ReactNode
     isSelected: boolean
     isImported?: boolean
-    /** Chip label shown in place of the checkbox when the account is imported. */
     importedLabel?: string
     onToggle: () => void
     onInfoPress?: () => void
