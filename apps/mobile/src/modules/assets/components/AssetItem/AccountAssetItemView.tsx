@@ -55,7 +55,11 @@ export const AccountAssetItemView = ({
     const { t } = useLanguage()
 
     // Use pre-fetched asset data when available to avoid N+1 queries.
-    // Falls back to individual fetch for callers that don't populate accountBalance.asset.
+    // Falls back to individual fetch for callers that don't populate
+    // accountBalance.asset. The main asset list passes skipFetch so all
+    // rows share a single empty-array query and don't create a separate
+    // RQ observer per row, which would saturate the JS thread on large
+    // watch accounts.
     const assetIds = useMemo(
         () =>
             skipFetch || accountBalance.asset ? [] : [accountBalance.assetId],

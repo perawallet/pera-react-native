@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { BatchQueue } from '@perawallet/wallet-core-background/queue'
+import { BatchQueue } from '@perawallet/wallet-core-shared/queue'
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import { fetchAndPersistNfds } from '../sync/nfd-syncer'
 import { getNfdsByAddresses } from '../db'

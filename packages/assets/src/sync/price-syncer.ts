@@ -17,6 +17,7 @@ import { Decimal } from 'decimal.js'
 import { partition, type Network } from '@perawallet/wallet-core-shared'
 
 const PRICE_BATCH_SIZE = 25
+const PRICE_FETCH_CONCURRENCY = 5
 
 export async function fetchAndPersistPrices(
     assetIds: string[],
@@ -27,15 +28,9 @@ export async function fetchAndPersistPrices(
     const nonAlgoIds = assetIds.filter(id => id !== ALGO_ASSET_ID)
     const batches = partition(nonAlgoIds, PRICE_BATCH_SIZE)
 
-    const results = await Promise.allSettled([
-        ...batches.map(async batch => {
-            const response = await fetchAssetPrices(batch, network)
-            const prices = response.results.map(r => ({
-                assetId: `${r.asset_id}`,
-                usdPrice: new Decimal(r.usd_value ?? '0'),
-            }))
-            await upsertAssetPrices({ prices, network })
-        }),
+    // ALGO uses a different endpoint, so it doesn't compete with the
+    // throttled batches for the bulk-assets endpoint.
+    const algoResult = await Promise.allSettled([
         (async () => {
             const algoDetails = await fetchPublicAssetDetails(
                 ALGO_ASSET_ID,
@@ -52,6 +47,26 @@ export async function fetchAndPersistPrices(
             })
         })(),
     ])
+
+    // Throttle PRICE_FETCH_CONCURRENCY at a time to avoid flooding the API
+    // when an account holds hundreds of assets on first load.
+    const batchResults: PromiseSettledResult<void>[] = []
+    for (let i = 0; i < batches.length; i += PRICE_FETCH_CONCURRENCY) {
+        const slice = batches.slice(i, i + PRICE_FETCH_CONCURRENCY)
+        const sliceResults = await Promise.allSettled(
+            slice.map(async batch => {
+                const response = await fetchAssetPrices(batch, network)
+                const prices = response.results.map(r => ({
+                    assetId: `${r.asset_id}`,
+                    usdPrice: new Decimal(r.usd_value ?? '0'),
+                }))
+                await upsertAssetPrices({ prices, network })
+            }),
+        )
+        batchResults.push(...sliceResults)
+    }
+
+    const results = [...algoResult, ...batchResults]
 
     // Re-throw if all batches failed
     const allFailed = results.every(r => r.status === 'rejected')

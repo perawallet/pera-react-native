@@ -37,7 +37,6 @@ export default defineConfig({
         lib: {
             entry: {
                 index: resolve(__dirname, 'src/index.ts'),
-                queue: resolve(__dirname, 'src/queue/index.ts'),
             },
             formats: ['es'],
         },

@@ -65,3 +65,9 @@ export function invalidateAssetQueries(queryClient: QueryClient): void {
         predicate: query => query.queryKey[0] === MODULE_PREFIX,
     })
 }
+
+export const getAssetByIdQueryKey = (assetId: string, network: Network) => [
+    MODULE_PREFIX,
+    'byId',
+    { assetId, network },
+]
