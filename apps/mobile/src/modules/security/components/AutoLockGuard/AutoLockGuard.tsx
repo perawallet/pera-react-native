@@ -13,7 +13,7 @@
 import React, { PropsWithChildren } from 'react'
 import { useAutoLockListener } from './useAutoLockListener'
 import { useStyles } from './AutoLockGuard.style'
-import { PWView } from '@components/core'
+import { PWView, PWLoadingOverlay } from '@components/core'
 import { PinEntry } from '../PinEntry'
 import { useLanguage } from '@hooks/useLanguage'
 import { LockoutView } from './LockoutView'
@@ -28,6 +28,7 @@ export const AutoLockGuard = ({ children }: PropsWithChildren) => {
         hasError,
         isLockedOut,
         remainingSeconds,
+        isDuressWipeInProgress,
         handlePinComplete,
         handleErrorAnimationComplete,
     } = useLockScreen({ onUnlock: unlock, isLocked })
@@ -73,6 +74,10 @@ export const AutoLockGuard = ({ children }: PropsWithChildren) => {
                     )}
                 </PWView>
             )}
+            <PWLoadingOverlay
+                isVisible={isDuressWipeInProgress}
+                title={t('security.pin.logging_in')}
+            />
         </>
     )
 }
