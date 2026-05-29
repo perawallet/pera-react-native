@@ -228,6 +228,10 @@ export interface LiquidAuthDeeplink extends ParsedDeeplink {
     variant: 'fido' | 'liquid'
     /** Original URL as scanned, preserved for system Linking and logging. */
     url: string
+    /** Signaling origin (https://<host>), present for the 'liquid' variant. */
+    host?: string
+    /** Liquid Auth request id, present for the 'liquid' variant. */
+    requestId?: string
 }
 
 export type AnyParsedDeeplink =

@@ -23,6 +23,45 @@ export default defineConfig({
     resolve: {
         alias: [
             {
+                // react-native-webrtc ships Flow-typed native ESM
+                // (`import typeof …`) that vitest can't transform, and WebRTC
+                // is meaningless under jsdom. The Liquid Auth extension's
+                // bootstrap imports `registerGlobals` from it, so it enters the
+                // graph as soon as the real provider barrel loads. Liquid Auth
+                // tests use a mocked transport, so a no-op stub suffices. MUST
+                // come before the `react-native` alias so it isn't shadowed.
+                find: 'react-native-webrtc',
+                replacement: path.resolve(
+                    __dirname,
+                    './src/test-utils/react-native-webrtc-stub.ts',
+                ),
+            },
+            {
+                // react-native-passkey is a native TurboModule that can't load
+                // under jsdom/vitest. App.tsx's Liquid Auth bootstrap imports
+                // `Passkey` from it, so it enters the graph once the integration
+                // setup loads the app bootstrap. Liquid Auth tests use a mocked
+                // credential mechanism, so an inert stub suffices. MUST come
+                // before the `react-native` alias so it isn't shadowed.
+                find: 'react-native-passkey',
+                replacement: path.resolve(
+                    __dirname,
+                    './src/test-utils/react-native-passkey-stub.ts',
+                ),
+            },
+            {
+                // @react-native-cookies/cookies is a native module that can't
+                // load under jsdom. The Liquid Auth session-cookie reader
+                // imports its default export, so it enters the graph once that
+                // code path is exercised. Swap it for an inert stub. MUST come
+                // before the `react-native` alias so it isn't shadowed.
+                find: '@react-native-cookies/cookies',
+                replacement: path.resolve(
+                    __dirname,
+                    './src/test-utils/react-native-cookies-stub.ts',
+                ),
+            },
+            {
                 find: 'react-native',
                 // Absolute path so the alias resolves identically when the
                 // import originates from another workspace package — those
@@ -452,6 +491,20 @@ export default defineConfig({
                 replacement: path.resolve(
                     __dirname,
                     '../../packages/notifications/src/index.ts',
+                ),
+            },
+            {
+                find: '@perawallet/wallet-extension-liquid-auth',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../extensions/liquid-auth/src/index.ts',
+                ),
+            },
+            {
+                find: '@perawallet/wallet-core-liquid-auth',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/liquid-auth/src/index.ts',
                 ),
             },
             {

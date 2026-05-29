@@ -76,6 +76,13 @@ paths = [
 ]
 
 [[allowlists]]
+description = "Public Liquid Auth client identifiers, not secrets: (1) LIQUID_AUTH_PROVIDER_ID — a fixed UUIDv4 advertised to dApps over ARC-0027 discover so they can key saved-provider lists on it (apps/mobile/.../liquid-auth/constants.ts); (2) the public shared Nodely/Algonode TURN credential used for WebRTC NAT traversal in dev (the same one Rocca / use-wallet's Liquid provider use; extensions/liquid-auth/src/constants.ts documents replacing it with Pera-operated TURN before production)."
+regexes = [
+    '''6f1b3c2a-9d4e-4f8a-bc12-7e0a5d3f9c21''',
+    '''sqmcP4MiTKMT4TGEDSk9jgHY''',
+]
+
+[[allowlists]]
 description = "Algorand addresses are public keys (58-char base32); they identify accounts but grant no authority and often appear in test fixtures and docs"
 regexes = [
     # Base32 Algorand account address (58 chars, A-Z 2-7)

@@ -125,6 +125,34 @@ describe('Deeplink Parser - Main Parser', () => {
     })
 })
 
+describe('liquid:// host + requestId parsing', () => {
+    it('extracts host and requestId from a query-param deeplink', () => {
+        const result = parseDeeplink(
+            'liquid://debug.liquidauth.com/?requestId=abc-123',
+        )
+        expect(result).toMatchObject({
+            type: DeeplinkType.LIQUID_AUTH,
+            variant: 'liquid',
+            host: 'https://debug.liquidauth.com',
+            requestId: 'abc-123',
+        })
+    })
+    it('extracts requestId from a single path segment', () => {
+        const result = parseDeeplink('liquid://debug.liquidauth.com/abc-123')
+        expect(result).toMatchObject({
+            host: 'https://debug.liquidauth.com',
+            requestId: 'abc-123',
+        })
+    })
+    it('still recognizes fido:// as the fido variant', () => {
+        const result = parseDeeplink('fido://example/x')
+        expect(result).toMatchObject({
+            type: DeeplinkType.LIQUID_AUTH,
+            variant: 'fido',
+        })
+    })
+})
+
 describe('Deeplink Parser - Edge Cases', () => {
     it('handles missing required parameters', () => {
         // Falls back to HOME via old parser

@@ -66,11 +66,40 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
         debug: vi.fn(),
         warn: vi.fn(),
         error: vi.fn(),
+        info: vi.fn(),
     },
     generateOrderedUniqueId: vi.fn(() => 'test-id'),
     decodeFromBase64: vi.fn((b64: string) =>
         Uint8Array.from(Buffer.from(b64, 'base64')),
     ),
+}))
+
+const { mockConnectLiquidAuth } = vi.hoisted(() => ({
+    mockConnectLiquidAuth: vi.fn(async () => undefined),
+}))
+
+// Stub out the Liquid Auth hooks so the remote-config + liquid-auth packages
+// (which call registerStore at module load time) are never pulled into the
+// unit test import graph. Feature-flag tests are covered in the liquid-auth
+// module's own spec suite.
+vi.mock('@modules/connections/liquid-auth/hooks/useLiquidAuthEnabled', () => ({
+    useLiquidAuthEnabled: vi.fn(() => false),
+}))
+
+vi.mock('@modules/connections/liquid-auth/hooks/useLiquidAuthConnect', () => ({
+    useLiquidAuthConnect: vi.fn(() => ({
+        connect: mockConnectLiquidAuth,
+        disconnect: vi.fn(),
+    })),
+}))
+
+vi.mock('@perawallet/wallet-core-liquid-auth', () => ({
+    useLiquidAuthStore: {
+        getState: vi.fn(() => ({
+            setConnectionError: vi.fn(),
+            setConnectRequest: vi.fn(),
+        })),
+    },
 }))
 
 // useDeepLink reads the device's biometric level to gate passkey deeplinks.

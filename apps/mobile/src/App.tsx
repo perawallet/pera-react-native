@@ -56,6 +56,10 @@ import {
     runPasskeyAutofillBootstrap,
     usePasskeyAutofillLifecycle,
 } from './bootstrap/passkey-autofill'
+import { runLiquidAuthBootstrap } from './bootstrap/liquid-auth'
+import { selectLiquidAuthCredentialMechanism } from '@modules/connections/liquid-auth/credentials'
+import { useLiquidAuthEnabled } from '@modules/connections/liquid-auth/hooks/useLiquidAuthEnabled'
+import { useLiquidAuthInAppAuthenticatorEnabled } from '@modules/connections/liquid-auth/hooks/useLiquidAuthInAppAuthenticatorEnabled'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { RootComponent } from '@components/RootComponent'
 // Side-effect: binds every entry in the bottom-sheet manager's typed
@@ -97,6 +101,8 @@ const AppContent = () => {
     const isDarkMode = useIsDarkMode()
     const theme = getTheme(isDarkMode ? 'dark' : 'light')
     const [initError, setInitError] = useState<boolean>(false)
+    const isLiquidAuthEnabled = useLiquidAuthEnabled()
+    const useInAppAuthenticator = useLiquidAuthInAppAuthenticatorEnabled()
 
     usePasskeyAutofillLifecycle()
 
@@ -128,6 +134,13 @@ const AppContent = () => {
                     }),
                 )
 
+                if (isLiquidAuthEnabled)
+                    runLiquidAuthBootstrap(
+                        selectLiquidAuthCredentialMechanism(
+                            useInAppAuthenticator,
+                        ),
+                    )
+
                 await initializeDatabase(provider.database)
                 await seedAlgoAsset(getDatabase())
 
@@ -154,7 +167,7 @@ const AppContent = () => {
                 }, 200)
             })
         }
-    }, [bootstrapped, provider])
+    }, [bootstrapped, provider, isLiquidAuthEnabled, useInAppAuthenticator])
 
     if (initError) {
         return (

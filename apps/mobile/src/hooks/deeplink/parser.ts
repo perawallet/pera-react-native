@@ -179,11 +179,27 @@ export const parseDeeplink = (url: string): Nullable<AnyParsedDeeplink> => {
     }
 
     if (normalizedUrl.startsWith(`${LIQUID_SCHEME}:`)) {
+        const httpsUrl = url
+            .replace(/^liquid:\/\//i, 'https://')
+            .replace(/^liquid:/i, 'https://')
+        let host: string | undefined
+        let requestId: string | undefined
+        try {
+            const parsed = new URL(httpsUrl)
+            host = `${parsed.protocol}//${parsed.host}`
+            requestId =
+                parsed.searchParams.get('requestId') ??
+                parsed.pathname.split('/').filter(Boolean)[0]
+        } catch {
+            // leave host/requestId undefined; the dispatcher guards on them
+        }
         return {
             type: DeeplinkType.LIQUID_AUTH,
             variant: 'liquid',
             sourceUrl: url,
             url,
+            host,
+            requestId,
         }
     }
 

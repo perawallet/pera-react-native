@@ -269,6 +269,9 @@ module.exports = {
         cameraPermission: 'Pera needs access to your camera.',
       },
     ],
+    // WebRTC native module for Liquid Auth (peer-to-peer signaling)
+    '@config-plugins/react-native-webrtc',
+
     // Note: The following packages are autolinked and don't require config plugins:
     // - expo-sqlite
     // - react-native-mmkv
@@ -280,6 +283,10 @@ module.exports = {
 
     // Custom plugin for Notifee local Maven repository (pnpm/monorepo fix)
     './plugins/withNotifeeMavenRepo',
+
+    // Custom plugin: rewrite the dead jcenter() repo to mavenCentral() in
+    // @react-native-cookies/cookies (Liquid Auth dep) so it builds on Gradle 9
+    './plugins/withCookiesJcenterFix',
 
     // Custom plugin for Ledger USB intent-filter (Android USB host)
     './plugins/withLedgerUsbAndroidManifest',

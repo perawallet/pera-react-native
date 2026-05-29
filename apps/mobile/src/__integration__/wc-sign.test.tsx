@@ -69,7 +69,7 @@ import {
     useSigningRequest,
     type TransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
-import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletConnectProvider'
+import { WalletConnectProvider } from '@modules/connections/walletconnect/providers/WalletConnectProvider'
 import { TransactionListScreen } from '@modules/signing/screens'
 
 import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'

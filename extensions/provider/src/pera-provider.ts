@@ -26,6 +26,10 @@ import {
     WithPasskeyAutofill,
     type PasskeyAutofillExtension,
 } from '@perawallet/wallet-extension-passkey-autofill'
+import {
+    WithLiquidAuth,
+    type LiquidAuthExtension,
+} from '@perawallet/wallet-extension-liquid-auth'
 
 type PeraExtensions = readonly [
     typeof WithPlatformExtension,
@@ -33,15 +37,17 @@ type PeraExtensions = readonly [
     typeof WithLedgerUsbExtension,
     typeof WithKeyStore,
     typeof WithPasskeyAutofill,
+    typeof WithLiquidAuth,
 ]
 
 /**
  * The Pera Wallet Provider with platform services, Ledger hardware wallet,
- * keystore, and passkey autofill. Instances include all platform service
- * properties (analytics, keyValueStorage, etc.) via the build-time resolved
- * platform driver extension, the Ledger extension for hardware wallet support,
- * the keystore extension for cryptographic key management, plus the passkey
- * autofill service exposed at `provider.passkeyAutofill`.
+ * keystore, passkey autofill, and Liquid Auth. Instances include all platform
+ * service properties (analytics, keyValueStorage, etc.) via the build-time
+ * resolved platform driver extension, the Ledger extension for hardware wallet
+ * support, the keystore extension for cryptographic key management, the passkey
+ * autofill service exposed at `provider.passkeyAutofill`, and the Liquid Auth
+ * service exposed at `provider.liquidAuth`.
  */
 export const PeraProvider: {
     new (
@@ -51,7 +57,8 @@ export const PeraProvider: {
     ): Provider<PeraExtensions> &
         PlatformExtension &
         KeyStoreExtension &
-        PasskeyAutofillExtension
+        PasskeyAutofillExtension &
+        LiquidAuthExtension
     EXTENSIONS: PeraExtensions
 } & typeof Provider = Provider.withExtensions([
     WithPlatformExtension,
@@ -59,9 +66,11 @@ export const PeraProvider: {
     WithLedgerUsbExtension,
     WithKeyStore,
     WithPasskeyAutofill,
+    WithLiquidAuth,
 ] as const)
 
 export type PeraProvider = Provider<PeraExtensions> &
     PlatformExtension &
     KeyStoreExtension &
-    PasskeyAutofillExtension
+    PasskeyAutofillExtension &
+    LiquidAuthExtension

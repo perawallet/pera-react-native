@@ -20,7 +20,8 @@ import { screenListeners } from '@routes/listeners'
 import { SettingsScreen } from '@modules/settings/screens/SettingsScreen'
 import { SettingsSecurityScreen } from '@modules/settings/screens/SettingsSecurityScreen/SettingsSecurityScreen'
 import { SettingsNotificationsScreen } from '@modules/settings/screens/SettingsNotificationsScreen/SettingsNotificationsScreen'
-import { SettingsWalletConnectScreen } from '@modules/settings/screens/SettingsWalletConnectScreen'
+import { SettingsConnectedAppsScreen } from '@modules/settings/screens/SettingsConnectedAppsScreen'
+import { SettingsConnectionDetailsScreen } from '@modules/settings/screens/SettingsConnectionDetailsScreen'
 import { SettingsPasskeyScreen } from '@modules/settings/screens/SettingsPasskeysScreen'
 import { SettingsCurrencyScreen } from '@modules/settings/screens/SettingsCurrencyScreen/SettingsCurrencyScreen'
 import { SettingsThemeScreen } from '@modules/settings/screens/SettingsThemeScreen/SettingsThemeScreen'
@@ -28,8 +29,6 @@ import { SettingsDeveloperScreen } from '@modules/settings/screens/developer/Set
 import { fullScreenLayout } from '@layouts/index'
 import { SettingsDeveloperNodeSettingsScreen } from '@modules/settings/screens/developer/SettingsDeveloperNodeSettingsScreen/SettingsDeveloperNodeSettingsScreen'
 import { NavigatorScreenParams } from '@react-navigation/native'
-import { WalletConnectConnection } from '@perawallet/wallet-core-walletconnect'
-import { SettingsWalletConnectDetailsScreen } from '@modules/settings/screens/SettingsWalletConnectDetailsScreen/SettingsWalletConnectDetailsScreen'
 import { SettingsDeveloperMenuScreen } from '../screens/developer/SettingsDeveloperMenuScreen/SettingsDeveloperMenuScreen'
 import { SettingsDeveloperFeatureFlagsScreen } from '../screens/developer/SettingsDeveloperFeatureFlagsScreen/SettingsDeveloperFeatureFlagsScreen'
 import { SettingsDeveloperManageCacheScreen } from '../screens/developer/SettingsDeveloperManageCacheScreen'
@@ -98,9 +97,16 @@ const DeveloperSettingsStackNavigator = () => {
     )
 }
 
+/** Per-protocol params for the unified connection details screen. */
+export type ConnectionDetailsParams =
+    | { type: 'walletconnect'; clientId: string }
+    | { type: 'liquidauth'; sessionId: string }
+
+// Stack name kept as `WalletConnectSettings*` to minimize navigation churn; its
+// home is now the unified Connected Apps list (WalletConnect + Liquid Auth).
 export type WalletConnectSettingsStackParamsList = {
     WalletConnectSettingsHome: undefined
-    WalletConnectSettingsDetails: { session: WalletConnectConnection }
+    ConnectionDetails: ConnectionDetailsParams
 }
 
 const WalletConnectSettingsStack =
@@ -123,16 +129,16 @@ const WalletConnectSettingsStackNavigator = () => {
             <WalletConnectSettingsStack.Screen
                 name='WalletConnectSettingsHome'
                 options={{
-                    title: 'screens.wallet_connect',
+                    title: 'screens.connected_apps',
                 }}
-                component={SettingsWalletConnectScreen}
+                component={SettingsConnectedAppsScreen}
             />
             <WalletConnectSettingsStack.Screen
-                name='WalletConnectSettingsDetails'
+                name='ConnectionDetails'
                 options={{
                     title: 'screens.wallet_connect_details',
                 }}
-                component={SettingsWalletConnectDetailsScreen}
+                component={SettingsConnectionDetailsScreen}
             />
         </WalletConnectSettingsStack.Navigator>
     )
@@ -189,7 +195,7 @@ export const SettingsStackNavigator = () => {
             <SettingsStack.Screen
                 name='WalletConnectSettings'
                 options={{
-                    title: 'screens.wallet_connect',
+                    title: 'screens.connected_apps',
                     headerShown: false,
                 }}
                 component={WalletConnectSettingsStackNavigator}

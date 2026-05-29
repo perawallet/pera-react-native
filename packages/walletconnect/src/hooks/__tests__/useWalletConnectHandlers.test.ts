@@ -201,7 +201,30 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 // Mocks the real `useArc0001Resolver` + `useEnqueueArc0001SignRequest` —
 // the enqueue stub mirrors the real hook (which has its own tests) so
 // these tests can keep asserting on the addSignRequest shape.
+// arc60PayloadSchema now lives in the signing package (shared with Liquid
+// Auth). This module mock replaces signing wholesale, so provide the real zod
+// schema here so handleArc60SignData's validation still runs.
+const { arc60PayloadSchema } = vi.hoisted(() => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { z } = require('zod')
+    return {
+        arc60PayloadSchema: z.object({
+            data: z.string(),
+            signer: z.string().min(1),
+            domain: z.string().min(1),
+            authenticatorData: z.string().min(1),
+            requestId: z.string().optional(),
+            hdPath: z.string().optional(),
+            metadata: z.object({
+                scope: z.number().int(),
+                encoding: z.string().min(1),
+            }),
+        }),
+    }
+})
+
 vi.mock('@perawallet/wallet-core-signing', () => ({
+    arc60PayloadSchema,
     useSigningRequest: vi.fn(),
     useArc0001Resolver:
         () =>

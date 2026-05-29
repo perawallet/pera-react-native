@@ -28,7 +28,8 @@ import { useNetworkStatus, useNetworkStatusListener } from '@modules/network'
 import { WebViewOverlay } from '@modules/webview'
 import { useCallback } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
-import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletConnectProvider'
+import { WalletConnectProvider } from '@modules/connections/walletconnect/providers/WalletConnectProvider'
+import { LiquidAuthProvider } from '@modules/connections/liquid-auth/providers/LiquidAuthProvider'
 import { useTokenListener } from '@modules/token'
 import { AutoLockGuard } from '@modules/security/components/AutoLockGuard/AutoLockGuard'
 import { SigningOverlays } from '@modules/signing/components/SigningOverlays'
@@ -175,7 +176,9 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
         <BottomSheetModalProvider>
             <AutoLockGuard>
                 <WalletConnectProvider>
-                    <RootContentContainer fcmToken={fcmToken} />
+                    <LiquidAuthProvider>
+                        <RootContentContainer fcmToken={fcmToken} />
+                    </LiquidAuthProvider>
                 </WalletConnectProvider>
                 <SigningOverlays />
                 <MultisigOverlays />

@@ -52,7 +52,7 @@ import {
     type WalletConnectSessionRequest,
 } from '@perawallet/wallet-core-walletconnect'
 import { Networks, type Optional } from '@perawallet/wallet-core-shared'
-import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletConnectProvider'
+import { WalletConnectProvider } from '@modules/connections/walletconnect/providers/WalletConnectProvider'
 import { BottomSheetManager } from '@modules/bottom-sheet'
 
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'

@@ -97,7 +97,7 @@ vi.mock('@react-navigation/native', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
-    logger: { debug: vi.fn(), warn: vi.fn(), error: vi.fn() },
+    logger: { debug: vi.fn(), warn: vi.fn(), error: vi.fn(), info: vi.fn() },
     generateOrderedUniqueId: vi.fn(() => 'test-id'),
     decodeFromBase64: vi.fn((b64: string) =>
         Uint8Array.from(Buffer.from(b64, 'base64')),
@@ -256,6 +256,26 @@ vi.mock('react-native', () => ({
     Linking: {
         getInitialURL: vi.fn(),
         addEventListener: vi.fn(() => ({ remove: vi.fn() })),
+    },
+}))
+
+// Stub Liquid Auth hooks so the remote-config + liquid-auth packages (which
+// call registerStore at module load time) are never pulled into this file's
+// import graph.
+vi.mock('@modules/connections/liquid-auth/hooks/useLiquidAuthEnabled', () => ({
+    useLiquidAuthEnabled: vi.fn(() => false),
+}))
+
+vi.mock('@modules/connections/liquid-auth/hooks/useLiquidAuthConnect', () => ({
+    useLiquidAuthConnect: vi.fn(() => ({
+        connect: vi.fn(async () => undefined),
+        disconnect: vi.fn(),
+    })),
+}))
+
+vi.mock('@perawallet/wallet-core-liquid-auth', () => ({
+    useLiquidAuthStore: {
+        getState: vi.fn(() => ({ setConnectionError: vi.fn() })),
     },
 }))
 

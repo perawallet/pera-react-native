@@ -107,6 +107,7 @@ export type SourceType =
     | 'multisig-cosign'
     | 'arc60'
     | 'gift-card'
+    | 'liquidauth'
 
 /**
  * Source types that the in-app standard review flow gates on. A request
@@ -127,6 +128,7 @@ export const INTERACTIVE_SOURCES = [
     'multisig-cosign',
     'arc60',
     'gift-card',
+    'liquidauth',
 ] as const satisfies readonly SourceType[]
 
 export const isInteractiveSource = (
@@ -149,6 +151,7 @@ export const EXTERNAL_CALLBACK_SOURCES = [
     'walletconnect',
     'webview',
     'deeplink',
+    'liquidauth',
 ] as const satisfies readonly SourceType[]
 
 export const isExternalCallbackSource = (

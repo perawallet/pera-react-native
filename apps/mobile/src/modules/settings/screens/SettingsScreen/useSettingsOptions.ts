@@ -36,7 +36,7 @@ export const useSettingsOptions = () => {
                     {
                         route: 'WalletConnectSettings' as keyof SettingsStackParamsList,
                         icon: 'wallet-connect',
-                        title: t('settings.main.wallet_connect_title'),
+                        title: t('settings.main.connected_apps_title'),
                     },
                     {
                         route: 'PasskeysSettings' as keyof SettingsStackParamsList,

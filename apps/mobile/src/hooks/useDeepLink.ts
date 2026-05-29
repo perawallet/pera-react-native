@@ -51,6 +51,8 @@ import {
 } from './deeplink/handlers'
 import { useDeeplinkErrorHandler } from './deeplink/handlers/useDeeplinkErrorHandler'
 import { withTimeout } from './deeplink/handlers/timeout'
+import { useLiquidAuthEnabled } from '@modules/connections/liquid-auth/hooks/useLiquidAuthEnabled'
+import { useLiquidAuthStore } from '@perawallet/wallet-core-liquid-auth'
 
 /**
  * Subscribe to the WalletConnect store and resolve `true` as soon as a
@@ -81,6 +83,16 @@ const waitForNewSessionRequest = (
         })
     })
 
+/**
+ * Delay before kicking off a Liquid Auth connection after a QR scan. The QR
+ * scanner is a native `Modal` (its own window, above the root tree); the
+ * "Connecting…" bottom sheet renders into the root tree, so it's hidden behind
+ * the Modal until it finishes dismissing. We wait out the dismiss animation so
+ * the sheet is actually presented. A single `InteractionManager` tick can fire
+ * before the ~300ms Modal close completes, which left the sheet swallowed.
+ */
+const QR_MODAL_DISMISS_DELAY_MS = 450
+
 type LinkSource = 'qr' | 'deeplink'
 
 type UseDeepLinkResult = {
@@ -104,6 +116,8 @@ export const useDeepLink = (): UseDeepLinkResult => {
     const { t } = useLanguage()
     const { connect } = useWalletConnect(network)
     const { requestByType } = useBottomSheetStore()
+
+    const isLiquidAuthEnabled = useLiquidAuthEnabled()
 
     const recoverAddress = useRecoverAddressDeeplink()
     const openSendFunds = useSendFundsDeeplink()
@@ -376,11 +390,6 @@ export const useDeepLink = (): UseDeepLinkResult => {
                     break
 
                 case DeeplinkType.SELL:
-                    // Native Sell flows route through the Bidali gift-card
-                    // marketplace (iOS BidaliFlowCoordinator, Android
-                    // navToBidaliNavigation). Open the same Bidali sheet
-                    // the Menu's "Buy Gift Card" panel button opens so we
-                    // inherit the bidaliProvider JS bridge wiring.
                     if (parsedData.address) {
                         setSelectedAccountAddress(parsedData.address)
                     }
@@ -420,11 +429,6 @@ export const useDeepLink = (): UseDeepLinkResult => {
 
                 case DeeplinkType.LIQUID_AUTH:
                     if (parsedData.variant === 'fido') {
-                        // A FIDO request derives its P256 key from the HD root,
-                        // so an HD account must exist — otherwise register has
-                        // nothing to derive from and assert has nothing to sign
-                        // with. Block the hand-off and explain rather than
-                        // dead-ending in the OS flow.
                         const hasHDWallet = useAccountsStore
                             .getState()
                             .accounts.some(
@@ -439,15 +443,6 @@ export const useDeepLink = (): UseDeepLinkResult => {
                             return
                         }
 
-                        // A FIDO request (register or assert) needs device
-                        // authentication the OS credential provider can use: a
-                        // strong biometric OR a device credential (PIN / pattern
-                        // / password). The provider is configured
-                        // `strongOrCredential`, so any enrolled lock works; only
-                        // a device with no screen lock at all dead-ends (register
-                        // saves an unprotected key, assert can't satisfy the
-                        // prompt). Block the hand-off and explain instead of
-                        // failing silently.
                         const securityLevel = await getBiometricSecurityLevel()
                         if (!hasStrongBiometricOrCredential(securityLevel)) {
                             requestByType('passkey-biometric-required', {})
@@ -457,10 +452,6 @@ export const useDeepLink = (): UseDeepLinkResult => {
                             return
                         }
 
-                        // Hand the fido:// URL back to the OS — iOS routes it
-                        // to the registered AutoFill Credential Provider
-                        // extension, Android to the Credential Manager.
-                        // Mirrors pera-ios's QRScannerViewController.liquidAuth.
                         try {
                             await Linking.openURL(parsedData.url)
                         } catch (err) {
@@ -476,20 +467,76 @@ export const useDeepLink = (): UseDeepLinkResult => {
                             return
                         }
                     } else {
-                        // TODO(liquid-auth): wire the comms-protocol handler
-                        // here once the signaling channel client lands. Until
-                        // then we just log so devs can see scans coming in.
-                        logger.info('liquid:// deeplink received', {
-                            url: parsedData.sourceUrl,
-                        })
-                        infoToast(
-                            t(
-                                'settings.passkeys.liquid_protocol_placeholder_title',
-                            ),
-                            t(
-                                'settings.passkeys.liquid_protocol_placeholder_body',
-                            ),
-                        )
+                        // liquid:// comms protocol — gated behind the feature flag.
+                        if (!isLiquidAuthEnabled) {
+                            logger.info(
+                                'liquid:// scanned but feature disabled',
+                                { url: parsedData.sourceUrl },
+                            )
+                            infoToast(
+                                t(
+                                    'settings.passkeys.liquid_protocol_placeholder_title',
+                                ),
+                                t(
+                                    'settings.passkeys.liquid_protocol_placeholder_body',
+                                ),
+                            )
+                            return
+                        }
+
+                        // Same prerequisites as the fido path: an HD wallet to
+                        // derive/sign with, and device auth for the passkey ceremony.
+                        const hasHDWalletForLiquid = useAccountsStore
+                            .getState()
+                            .accounts.some(
+                                account =>
+                                    account.type === AccountTypes.hdWallet,
+                            )
+                        if (!hasHDWalletForLiquid) {
+                            requestByType('passkey-hd-wallet-required', {})
+                            onError?.()
+                            return
+                        }
+                        const liquidSecurityLevel =
+                            await getBiometricSecurityLevel()
+                        if (
+                            !hasStrongBiometricOrCredential(liquidSecurityLevel)
+                        ) {
+                            requestByType('passkey-biometric-required', {})
+                            onError?.()
+                            return
+                        }
+
+                        if (!parsedData.host || !parsedData.requestId) {
+                            errorToast(
+                                t('errors.deeplink.invalid_url_title'),
+                                t('errors.deeplink.invalid_url_body'),
+                            )
+                            onError?.()
+                            return
+                        }
+
+                        // Enqueue the connect request and let the scanner
+                        // dismiss immediately (via the trailing onSuccess?.()
+                        // below). The Liquid Auth provider surfaces the approval
+                        // sheet for it; the user picks an account, and approval
+                        // runs the FIDO ceremony. Consent precedes the ceremony
+                        // because Liquid Auth binds the chosen account into the
+                        // credential.
+                        //
+                        // Defer until after the QR scanner's native Modal has
+                        // finished dismissing: the approval is a bottom sheet,
+                        // and a sheet requested while the camera Modal is still
+                        // on screen is swallowed (rendered behind the native
+                        // window, never presented). The timeout waits out the
+                        // Modal's dismiss animation (see QR_MODAL_DISMISS_DELAY_MS).
+                        const host = parsedData.host
+                        const requestId = parsedData.requestId
+                        globalThis.setTimeout(() => {
+                            useLiquidAuthStore
+                                .getState()
+                                .setConnectRequest({ host, requestId })
+                        }, QR_MODAL_DISMISS_DELAY_MS)
                     }
                     break
 
