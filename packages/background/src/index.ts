@@ -10,8 +10,6 @@
  limitations under the License
  */
 
-export { BatchQueue, type BatchExecutor } from './queue'
-
 import { SyncService } from './service'
 import type { SyncServiceDeps } from './models'
 import type { Nullable } from '@perawallet/wallet-core-shared'

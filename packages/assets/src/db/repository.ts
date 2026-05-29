@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { eq, and, inArray } from 'drizzle-orm'
+import { eq, and, inArray, gte } from 'drizzle-orm'
 import { Decimal } from 'decimal.js'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import {
@@ -411,4 +411,46 @@ export async function getAssetPricesByIds({
         assetId: r.assetId.toString(),
         usdPrice: r.usdPrice,
     }))
+}
+
+type GetStaleOrMissingAssetIdsParams = {
+    db?: Database
+    assetIds: string[]
+    network: string
+    ttlMs: number
+}
+
+/**
+ * Given a candidate set of asset IDs, returns those that are either not in
+ * the DB at all or older than `ttlMs`. Used by the syncer to skip work
+ * during steady-state polling.
+ *
+ * The freshness predicate is pushed into SQL so we only round-trip the
+ * matching IDs, not every cached row.
+ */
+export async function getStaleOrMissingAssetIds({
+    db = getDatabase(),
+    assetIds,
+    network,
+    ttlMs,
+}: GetStaleOrMissingAssetIdsParams): Promise<string[]> {
+    if (assetIds.length === 0) return []
+
+    const decimalIds = assetIds.map(id => new Decimal(id))
+    const freshThreshold = Date.now() - ttlMs
+
+    const freshRows = await db
+        .select({ assetId: AssetsNodeSchema.assetId })
+        .from(AssetsNodeSchema)
+        .where(
+            and(
+                inArray(AssetsNodeSchema.assetId, decimalIds),
+                eq(AssetsNodeSchema.network, network),
+                gte(AssetsNodeSchema.updatedAt, freshThreshold),
+            ),
+        )
+        .all()
+
+    const freshSet = new Set(freshRows.map(r => r.assetId.toString()))
+    return assetIds.filter(id => !freshSet.has(id))
 }

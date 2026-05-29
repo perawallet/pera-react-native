@@ -11,21 +11,32 @@
  */
 
 import { fetchAssets, transformAssetResponse } from '../api'
-import { upsertAssets } from '../db'
+import { upsertAssets, getStaleOrMissingAssetIds } from '../db'
 import { ALGO_ASSET_ID } from '../models'
+import { ASSET_BULK_CHUNK_SIZE, ASSET_CACHE_TTL_MS } from '../constants'
 import { partition, type Network } from '@perawallet/wallet-core-shared'
 
-const ASSET_BATCH_SIZE = 25
-
+/**
+ * Bulk-fetches asset metadata for the given IDs and persists them to the
+ * `assets_node` / `assets_pera` tables. Skips IDs that are already cached
+ * and still fresh, so calling this on every sync tick (or per-batch from
+ * the queue) is cheap in steady state.
+ */
 export async function fetchAndPersistAssets(
     assetIds: string[],
     network: Network,
 ): Promise<void> {
     const nonAlgoIds = assetIds.filter(id => id !== ALGO_ASSET_ID)
-
     if (nonAlgoIds.length === 0) return
 
-    const batches = partition(nonAlgoIds, ASSET_BATCH_SIZE)
+    const toFetch = await getStaleOrMissingAssetIds({
+        assetIds: nonAlgoIds,
+        network,
+        ttlMs: ASSET_CACHE_TTL_MS,
+    })
+    if (toFetch.length === 0) return
+
+    const batches = partition(toFetch, ASSET_BULK_CHUNK_SIZE)
 
     await Promise.allSettled(
         batches.map(async batch => {

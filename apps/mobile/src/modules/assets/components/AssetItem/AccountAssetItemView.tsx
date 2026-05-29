@@ -27,7 +27,7 @@ import { CopyableText } from '@components/CopyableText'
 import {
     ALGO_ASSET_ID,
     isCollectible,
-    useAssetsQuery,
+    useAssetByIdQuery,
 } from '@perawallet/wallet-core-assets'
 import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
@@ -55,19 +55,17 @@ export const AccountAssetItemView = ({
     const { t } = useLanguage()
 
     // Use pre-fetched asset data when available to avoid N+1 queries.
-    // Falls back to individual fetch for callers that don't populate accountBalance.asset.
-    const assetIds = useMemo(
-        () =>
-            skipFetch || accountBalance.asset ? [] : [accountBalance.assetId],
-        [skipFetch, accountBalance.asset, accountBalance.assetId],
-    )
-    const { data: fetchedAssets } = useAssetsQuery(assetIds)
+    // Falls back to the batch-queued asset lookup for callers that don't
+    // populate accountBalance.asset (e.g. LedgerAccountInfoContent).
+    const shouldFetch = !skipFetch && !accountBalance.asset
+    const { data: fetchedAsset } = useAssetByIdQuery(accountBalance.assetId, {
+        enabled: shouldFetch,
+    })
 
-    const asset = useMemo(() => {
-        return (
-            fetchedAssets?.get(accountBalance.assetId) ?? accountBalance.asset
-        )
-    }, [accountBalance.asset, fetchedAssets, accountBalance.assetId])
+    const asset = useMemo(
+        () => fetchedAsset ?? accountBalance.asset,
+        [fetchedAsset, accountBalance.asset],
+    )
 
     const isAlgo = useMemo(
         () => asset?.assetId === ALGO_ASSET_ID,

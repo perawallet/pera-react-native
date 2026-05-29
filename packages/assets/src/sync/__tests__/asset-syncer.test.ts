@@ -15,6 +15,9 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 const fetchAssetsMock = vi.hoisted(() => vi.fn())
 const transformAssetResponseMock = vi.hoisted(() => vi.fn(a => a))
 const upsertAssetsMock = vi.hoisted(() => vi.fn())
+const getStaleOrMissingAssetIdsMock = vi.hoisted(() =>
+    vi.fn(async ({ assetIds }: { assetIds: string[] }) => assetIds),
+)
 
 vi.mock('../../api', () => ({
     fetchAssets: fetchAssetsMock,
@@ -23,6 +26,7 @@ vi.mock('../../api', () => ({
 
 vi.mock('../../db', () => ({
     upsertAssets: upsertAssetsMock,
+    getStaleOrMissingAssetIds: getStaleOrMissingAssetIdsMock,
 }))
 
 import { fetchAndPersistAssets } from '../asset-syncer'
@@ -32,6 +36,10 @@ describe('fetchAndPersistAssets', () => {
         fetchAssetsMock.mockReset()
         upsertAssetsMock.mockReset()
         transformAssetResponseMock.mockClear()
+        getStaleOrMissingAssetIdsMock.mockReset()
+        getStaleOrMissingAssetIdsMock.mockImplementation(
+            async ({ assetIds }: { assetIds: string[] }) => assetIds,
+        )
     })
 
     test('filters out ALGO and short-circuits when the remaining list is empty', async () => {
@@ -60,5 +68,24 @@ describe('fetchAndPersistAssets', () => {
         await expect(
             fetchAndPersistAssets(['1', '2'], 'mainnet'),
         ).resolves.toBeUndefined()
+    })
+
+    test('short-circuits when all ids are already cached and fresh', async () => {
+        getStaleOrMissingAssetIdsMock.mockResolvedValueOnce([])
+
+        await fetchAndPersistAssets(['1', '2', '3'], 'mainnet')
+
+        expect(fetchAssetsMock).not.toHaveBeenCalled()
+        expect(upsertAssetsMock).not.toHaveBeenCalled()
+    })
+
+    test('only fetches the IDs returned by getStaleOrMissingAssetIds', async () => {
+        getStaleOrMissingAssetIdsMock.mockResolvedValueOnce(['2'])
+        fetchAssetsMock.mockResolvedValue({ results: [{ asset_id: 2 }] })
+
+        await fetchAndPersistAssets(['1', '2'], 'mainnet')
+
+        expect(fetchAssetsMock).toHaveBeenCalledTimes(1)
+        expect(fetchAssetsMock).toHaveBeenCalledWith(['2'], 'mainnet')
     })
 })
