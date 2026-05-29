@@ -46,6 +46,7 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textGray,
     },
     expandablePanelContent: {
+        marginVertical: theme.spacing.xl,
         gap: theme.spacing.xl,
     },
 }))

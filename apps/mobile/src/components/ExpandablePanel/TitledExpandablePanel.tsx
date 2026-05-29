@@ -12,7 +12,12 @@
 
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import React, { PropsWithChildren, useState } from 'react'
-import { StyleProp, ViewStyle, GestureResponderEvent } from 'react-native'
+import {
+    StyleProp,
+    ViewStyle,
+    GestureResponderEvent,
+    TextStyle,
+} from 'react-native'
 import Animated, { withTiming, useAnimatedStyle } from 'react-native-reanimated'
 import { useStyles } from './styles'
 import { EXPANDABLE_PANEL_ANIMATION_DURATION } from '@constants/ui'
@@ -23,16 +28,20 @@ export type TitledExpandablePanelProps = {
     iconPressed?: () => void
     containerStyle?: StyleProp<ViewStyle>
     contentStyle?: StyleProp<ViewStyle>
+    titleStyle?: StyleProp<TextStyle>
+    startExpanded?: boolean
 } & PropsWithChildren
 
 export const TitledExpandablePanel = ({
     title,
     containerStyle,
     contentStyle,
+    titleStyle,
+    startExpanded = false,
     children,
     iconPressed,
 }: TitledExpandablePanelProps) => {
-    const [expanded, setExpanded] = useState(false)
+    const [expanded, setExpanded] = useState(startExpanded)
     const styles = useStyles()
     const onPress = () => {
         setExpanded(!expanded)
@@ -62,7 +71,11 @@ export const TitledExpandablePanel = ({
                 onPress={onPress}
                 style={styles.header}
             >
-                {typeof title === 'string' ? <PWText>{title}</PWText> : title}
+                {typeof title === 'string' ? (
+                    <PWText style={titleStyle}>{title}</PWText>
+                ) : (
+                    title
+                )}
                 <PWTouchableOpacity onPress={handleIconPress}>
                     <Animated.View style={iconStyle}>
                         <PWIcon

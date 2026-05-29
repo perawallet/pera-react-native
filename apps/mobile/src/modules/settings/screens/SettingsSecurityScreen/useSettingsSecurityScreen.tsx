@@ -38,7 +38,6 @@ type UseSettingsSecurityScreenResult = {
     handlePinToggle: (value: boolean) => void
     handleBiometricToggle: (value: boolean) => Promise<boolean>
     handleChangePinPress: () => void
-    handleAdvancedSecurityToggle: (value: boolean) => void
     handleRekeyToggle: (value: boolean) => void
     handleAssetFreezeToggle: (value: boolean) => void
     handleShakeToLockToggle: (value: boolean) => void
@@ -169,28 +168,11 @@ export const useSettingsSecurityScreen =
             }
         }, [openPinSheet, onPinFlowSuccess])
 
-        const isAdvancedSecurityEnabled = !!getPreference(
-            UserPreferences.advancedSecurityEnabled,
-        )
         const isRekeySupportEnabled = !!getPreference(
             UserPreferences.rekeySupportEnabled,
         )
         const isAssetFreezeSupportEnabled = !!getPreference(
             UserPreferences.assetFreezeSupportEnabled,
-        )
-
-        const handleAdvancedSecurityToggle = useCallback(
-            (value: boolean) => {
-                setPreference(UserPreferences.advancedSecurityEnabled, value)
-                if (!value) {
-                    setPreference(UserPreferences.rekeySupportEnabled, false)
-                    setPreference(
-                        UserPreferences.assetFreezeSupportEnabled,
-                        false,
-                    )
-                }
-            },
-            [setPreference],
         )
 
         const handleRekeyToggle = useCallback(
@@ -275,6 +257,12 @@ export const useSettingsSecurityScreen =
             ],
         )
 
+        const isAdvancedSecurityEnabled =
+            isRekeySupportEnabled ||
+            isAssetFreezeSupportEnabled ||
+            isShakeToLockFeatureEnabled ||
+            isDuressPinFeatureEnabled
+
         return {
             isPinEnabled,
             isBiometricEnabled,
@@ -289,7 +277,6 @@ export const useSettingsSecurityScreen =
             handlePinToggle,
             handleBiometricToggle,
             handleChangePinPress,
-            handleAdvancedSecurityToggle,
             handleRekeyToggle,
             handleAssetFreezeToggle,
             handleShakeToLockToggle,
