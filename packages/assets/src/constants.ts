@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-export const ASSET_BULK_CHUNK_SIZE = 25 // matches the existing ASSET_BATCH_SIZE
+export const ASSET_BULK_CHUNK_SIZE = 100
 export const ASSET_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000 // 7 days — asset
 // metadata rarely
 // changes, so the
