@@ -27,7 +27,7 @@ import { CopyableText } from '@components/CopyableText'
 import {
     ALGO_ASSET_ID,
     isCollectible,
-    useAssetByIdQuery,
+    useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
 import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
@@ -55,17 +55,23 @@ export const AccountAssetItemView = ({
     const { t } = useLanguage()
 
     // Use pre-fetched asset data when available to avoid N+1 queries.
-    // Falls back to the batch-queued asset lookup for callers that don't
-    // populate accountBalance.asset (e.g. LedgerAccountInfoContent).
-    const shouldFetch = !skipFetch && !accountBalance.asset
-    const { data: fetchedAsset } = useAssetByIdQuery(accountBalance.assetId, {
-        enabled: shouldFetch,
-    })
-
-    const asset = useMemo(
-        () => fetchedAsset ?? accountBalance.asset,
-        [fetchedAsset, accountBalance.asset],
+    // Falls back to individual fetch for callers that don't populate
+    // accountBalance.asset. The main asset list passes skipFetch so all
+    // rows share a single empty-array query and don't create a separate
+    // RQ observer per row, which would saturate the JS thread on large
+    // watch accounts.
+    const assetIds = useMemo(
+        () =>
+            skipFetch || accountBalance.asset ? [] : [accountBalance.assetId],
+        [skipFetch, accountBalance.asset, accountBalance.assetId],
     )
+    const { data: fetchedAssets } = useAssetsQuery(assetIds)
+
+    const asset = useMemo(() => {
+        return (
+            fetchedAssets?.get(accountBalance.assetId) ?? accountBalance.asset
+        )
+    }, [accountBalance.asset, fetchedAssets, accountBalance.assetId])
 
     const isAlgo = useMemo(
         () => asset?.assetId === ALGO_ASSET_ID,

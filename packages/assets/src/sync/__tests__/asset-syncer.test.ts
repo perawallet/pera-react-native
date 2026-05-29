@@ -49,13 +49,13 @@ describe('fetchAndPersistAssets', () => {
         expect(upsertAssetsMock).not.toHaveBeenCalled()
     })
 
-    test('batches remaining ids into groups of 25 and upserts each batch', async () => {
-        const ids = Array.from({ length: 60 }, (_, i) => String(i + 1))
+    test('batches remaining ids into groups of ASSET_BULK_CHUNK_SIZE and upserts each batch', async () => {
+        const ids = Array.from({ length: 250 }, (_, i) => String(i + 1))
         fetchAssetsMock.mockResolvedValue({ results: [{ asset_id: 1 }] })
 
         await fetchAndPersistAssets(ids, 'mainnet')
 
-        // 60 ids / 25 per batch = 3 batches
+        // 250 ids / 100 per batch = 3 batches
         expect(fetchAssetsMock).toHaveBeenCalledTimes(3)
         expect(upsertAssetsMock).toHaveBeenCalledTimes(3)
     })
