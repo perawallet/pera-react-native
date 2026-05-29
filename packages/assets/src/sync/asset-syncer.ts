@@ -16,6 +16,8 @@ import { ALGO_ASSET_ID } from '../models'
 import { ASSET_BULK_CHUNK_SIZE, ASSET_CACHE_TTL_MS } from '../constants'
 import { partition, type Network } from '@perawallet/wallet-core-shared'
 
+const ASSET_FETCH_CONCURRENCY = 5
+
 /**
  * Bulk-fetches asset metadata for the given IDs and persists them to the
  * `assets_node` / `assets_pera` tables. Skips IDs that are already cached
@@ -38,11 +40,18 @@ export async function fetchAndPersistAssets(
 
     const batches = partition(toFetch, ASSET_BULK_CHUNK_SIZE)
 
-    await Promise.allSettled(
-        batches.map(async batch => {
-            const response = await fetchAssets(batch, network)
-            const assets = response.results.map(transformAssetResponse)
-            await upsertAssets({ items: assets, network })
-        }),
-    )
+    // Process batches ASSET_FETCH_CONCURRENCY at a time. Firing all batches
+    // at once can flood the API when an account holds hundreds of assets on
+    // first load (when nothing is cached yet and getStaleOrMissingAssetIds
+    // doesn't short-circuit anything).
+    for (let i = 0; i < batches.length; i += ASSET_FETCH_CONCURRENCY) {
+        const slice = batches.slice(i, i + ASSET_FETCH_CONCURRENCY)
+        await Promise.allSettled(
+            slice.map(async batch => {
+                const response = await fetchAssets(batch, network)
+                const assets = response.results.map(transformAssetResponse)
+                await upsertAssets({ items: assets, network })
+            }),
+        )
+    }
 }
