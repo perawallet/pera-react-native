@@ -131,6 +131,13 @@ export default defineConfig({
                 ),
             },
             {
+                find: '@perawallet/wallet-core-shared/queue',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/shared/src/queue/index.ts',
+                ),
+            },
+            {
                 find: '@perawallet/wallet-core-shared',
                 replacement: path.resolve(
                     __dirname,
