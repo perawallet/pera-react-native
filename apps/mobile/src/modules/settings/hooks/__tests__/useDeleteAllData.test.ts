@@ -83,6 +83,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 describe('useDeleteAllData', () => {
     const mockDeleteKey = vi.fn()
     const mockRemoveQueries = vi.fn()
+    const mockCancelQueries = vi.fn().mockResolvedValue(undefined)
     const mockDeleteDevices = vi.fn()
     const mockSavePin = vi.fn().mockResolvedValue(undefined)
 
@@ -100,6 +101,7 @@ describe('useDeleteAllData', () => {
         })
         ;(useQueryClient as Mock).mockReturnValue({
             removeQueries: mockRemoveQueries,
+            cancelQueries: mockCancelQueries,
         })
         ;(useDeleteDeviceMutation as Mock).mockReturnValue({
             mutateAsync: mockDeleteDevices.mockResolvedValue([]),
@@ -125,6 +127,26 @@ describe('useDeleteAllData', () => {
         expect(mockDeleteDatabase).toHaveBeenCalledTimes(1)
         expect(mockInitializeDatabase).toHaveBeenCalledTimes(1)
         expect(clearAllStores).toHaveBeenCalledWith()
+    })
+
+    it('cancels in-flight queries before teardown and removes the cache only after stores are cleared', async () => {
+        const { result } = renderHook(() => useDeleteAllData())
+
+        await act(async () => {
+            await result.current.deleteAllData()
+        })
+
+        expect(mockCancelQueries).toHaveBeenCalledTimes(1)
+        expect(mockRemoveQueries).toHaveBeenCalledTimes(1)
+
+        // Cancelling happens before stores are cleared (aborts in-flight
+        // fetches); the cache is removed only after, so React Query can't
+        // recreate and refetch an observed query against the deleted database.
+        const cancelOrder = mockCancelQueries.mock.invocationCallOrder[0]
+        const clearOrder = (clearAllStores as Mock).mock.invocationCallOrder[0]
+        const removeOrder = mockRemoveQueries.mock.invocationCallOrder[0]
+        expect(cancelOrder).toBeLessThan(clearOrder)
+        expect(removeOrder).toBeGreaterThan(clearOrder)
     })
 
     it('should clear accounts store when clearAccountsStore is called', () => {
@@ -187,6 +209,7 @@ describe('useDeleteAllData', () => {
             await result.current.deleteAllData()
         })
 
+        expect(mockCancelQueries).not.toHaveBeenCalled()
         expect(mockRemoveQueries).not.toHaveBeenCalled()
         expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
     })

@@ -55,11 +55,12 @@ export const useDeleteAllData = (): UseDeleteAllDataResult => {
     const { deleteAllSessions } = useWalletConnect(network)
 
     const wipeAllUserData = useCallback(async () => {
-        // 1. Clear React Query — both in-memory and persisted cache
+        // 1. Abort in-flight queries before we destroy their data sources.
+        // Cancellation reverts silently, so — unlike a failed refetch — it
+        // never reaches the QueryCache error handler.
         if (queryClient) {
-            queryClient.removeQueries()
+            await queryClient.cancelQueries()
         }
-        getProvider().keyValueStorage.removeItem(REACT_QUERY_PERSIST_KEY)
 
         // 2. Delete all cryptographic keys from keystore (this includes both
         // the regular PIN record and the duress PIN record, since both are
@@ -111,6 +112,14 @@ export const useDeleteAllData = (): UseDeleteAllDataResult => {
 
         // 8. Clear all registered stores (this will redirect to onboarding, then show the success popup)
         clearAllStores()
+
+        // 9. Drop the React Query cache last. With the active account gone,
+        // address-gated queries are disabled, so removing them can't make
+        // React Query recreate and refetch against the now-deleted database.
+        if (queryClient) {
+            queryClient.removeQueries()
+        }
+        getProvider().keyValueStorage.removeItem(REACT_QUERY_PERSIST_KEY)
     }, [
         queryClient,
         keys,

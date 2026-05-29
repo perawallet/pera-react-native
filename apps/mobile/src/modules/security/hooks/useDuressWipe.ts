@@ -12,10 +12,12 @@
 
 import { useCallback } from 'react'
 import { useCreateAccount } from '@perawallet/wallet-core-accounts'
+import { usePreferences } from '@perawallet/wallet-core-settings'
 import {
     clearAccountsStore,
     useDeleteAllData,
 } from '@modules/settings/hooks/useDeleteAllData'
+import { UserPreferences } from '@constants/user-preferences'
 
 type UseDuressWipeResult = {
     /**
@@ -38,6 +40,7 @@ type UseDuressWipeResult = {
 export const useDuressWipe = (): UseDuressWipeResult => {
     const { wipeAllUserData } = useDeleteAllData()
     const { createHdWalletAccount } = useCreateAccount()
+    const { setPreference } = usePreferences()
 
     const performDuressWipe = useCallback(async () => {
         try {
@@ -49,6 +52,13 @@ export const useDuressWipe = (): UseDuressWipeResult => {
             clearAccountsStore()
             return
         }
+
+        // Suppress the PIN-setup prompt BEFORE provisioning the decoy. The wipe
+        // cleared all preferences, and createHdWalletAccount flips `hasAccounts`
+        // true synchronously (mid-call, before its backend sync resolves) — which
+        // is the instant the home-screen prompt becomes eligible. Setting the flag
+        // first guarantees it's already true at that moment, closing the race.
+        setPreference(UserPreferences._securityPinSetupPrompt, true)
 
         // wipeAllUserData calls clearAllStores, which leaves the accounts
         // store empty. Provision a decoy by creating a brand-new HD wallet
@@ -63,7 +73,7 @@ export const useDuressWipe = (): UseDuressWipeResult => {
             // already empty post-wipe, but stay explicit.)
             clearAccountsStore()
         }
-    }, [wipeAllUserData, createHdWalletAccount])
+    }, [wipeAllUserData, createHdWalletAccount, setPreference])
 
     return { performDuressWipe }
 }
