@@ -48,7 +48,7 @@ export const useNotificationsScreen = (): UseNotificationsScreenResult => {
     const notifications = data ?? []
 
     useEffect(() => {
-        const unsubscribe = navigation.addListener('blur', () => {
+        const unsubscribe = navigation.addListener('focus', () => {
             if (notifications.length > 0 && hasUnreadNotifications) {
                 markAsRead(parseInt(notifications[0].id, 10))
             }
