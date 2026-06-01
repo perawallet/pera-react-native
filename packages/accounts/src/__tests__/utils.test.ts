@@ -14,6 +14,7 @@ import { describe, test, expect } from 'vitest'
 import {
     canSignArbitraryData,
     canSignArc60,
+    canSignViaParticipants,
     canSignWith,
     findAccountByKey,
     getAccountDisplayName,
@@ -52,6 +53,37 @@ vi.mock('tweetnacl', () => ({
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     encodeAlgorandAddress: vi.fn(() => 'TEST_ADDRESS'),
 }))
+
+describe('services/accounts/utils - canSignViaParticipants', () => {
+    const signable = {
+        address: 'P1',
+        type: AccountTypes.algo25,
+        keyPairId: 'kp',
+    } as WalletAccount
+    const watch = { address: 'P2', type: AccountTypes.watch } as WalletAccount
+    const hardware = {
+        address: 'P3',
+        type: AccountTypes.hardware,
+    } as WalletAccount
+
+    test('true when a held participant can sign with its own key', () => {
+        expect(canSignViaParticipants(['P1', 'P2'], [signable, watch])).toBe(
+            true,
+        )
+    })
+
+    test('true when a held participant is a hardware wallet', () => {
+        expect(canSignViaParticipants(['P3'], [hardware])).toBe(true)
+    })
+
+    test('false when the only held participant is watch-only', () => {
+        expect(canSignViaParticipants(['P2'], [watch])).toBe(false)
+    })
+
+    test('false when no participant address is held in the wallet', () => {
+        expect(canSignViaParticipants(['P1'], [])).toBe(false)
+    })
+})
 
 describe('services/accounts/utils - getAccountDisplayName', () => {
     test('returns account name when present', () => {

@@ -90,6 +90,22 @@ const canSignDirectly = (account: WalletAccount): boolean =>
     hasSigningKeys(account) || isHardwareWalletAccount(account)
 
 /**
+ * True iff `accounts` holds at least one of `participantAddresses` that can
+ * sign with its own key (own keypair or hardware). Multisig signing is
+ * propose-based, so one local signable participant is enough. A participant
+ * counts only with its OWN key — slots bind to the participant's pubkey, so
+ * rekey indirection is not followed and watch-only participants don't count.
+ */
+export const canSignViaParticipants = (
+    participantAddresses: string[],
+    accounts: WalletAccount[],
+): boolean =>
+    participantAddresses.some(addr => {
+        const participant = accounts.find(a => a.address === addr)
+        return !!participant && canSignDirectly(participant)
+    })
+
+/**
  * True iff `multisig` has at least one participant in `accounts` that can
  * sign with its own key. Multisig signing is propose-based, so a single
  * local signable participant is enough.
@@ -98,10 +114,7 @@ const canSignViaMultisig = (
     multisig: MultiSigAccount,
     accounts: WalletAccount[],
 ): boolean =>
-    multisig.multisigDetails.addresses.some(addr => {
-        const participant = accounts.find(a => a.address === addr)
-        return !!participant && canSignDirectly(participant)
-    })
+    canSignViaParticipants(multisig.multisigDetails.addresses, accounts)
 
 /**
  * Tagged resolution of the signer. Use `getSignerFor` / `canSignWith` when
