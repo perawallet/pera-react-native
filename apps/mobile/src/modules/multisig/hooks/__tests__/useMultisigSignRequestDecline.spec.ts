@@ -173,7 +173,7 @@ describe('useMultisigSignRequestDecline', () => {
             expect(result.current.canPerform).toBe(false)
         })
 
-        it('returns canPerform=false when the proposer has already responded', () => {
+        it('returns canPerform=true even after the proposer has already signed — the proposer can still cancel until the request is finalized', () => {
             useAllAccountsMock.mockReturnValue([buildAccount(PROPOSER)])
 
             const { result } = renderHook(() =>
@@ -198,7 +198,7 @@ describe('useMultisigSignRequestDecline', () => {
                 }),
             )
 
-            expect(result.current.canPerform).toBe(false)
+            expect(result.current.canPerform).toBe(true)
         })
 
         it('returns canPerform=true when proposer is local, status is pending, and proposer has not responded', () => {

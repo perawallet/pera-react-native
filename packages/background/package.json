@@ -8,10 +8,6 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    },
-    "./queue": {
-      "types": "./dist/queue/index.d.ts",
-      "default": "./dist/queue.js"
     }
   },
   "scripts": {

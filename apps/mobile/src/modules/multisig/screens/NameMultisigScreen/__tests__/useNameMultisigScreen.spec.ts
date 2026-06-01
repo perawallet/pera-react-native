@@ -160,7 +160,11 @@ describe('useNameMultisigScreen', () => {
                 address: 'M1',
                 name: 'Coffee fund',
                 type: 'multisig',
-                multisigDetails: { threshold: 2, addresses: ['A', 'B'] },
+                multisigDetails: {
+                    threshold: 2,
+                    addresses: ['A', 'B'],
+                    version: 1,
+                },
             } as WalletAccount,
         ])
 
@@ -246,6 +250,7 @@ describe('useNameMultisigScreen', () => {
                 multisigDetails: {
                     threshold: 2,
                     addresses: ['ADDR1', 'ADDR2'],
+                    version: 1,
                 },
             }),
         ])
@@ -270,6 +275,7 @@ describe('useNameMultisigScreen', () => {
                 multisigDetails: {
                     threshold: 2,
                     addresses: ['ADDR1', 'ADDR2'],
+                    version: 1,
                 },
             } as WalletAccount,
         ])
@@ -435,6 +441,7 @@ describe('useNameMultisigScreen', () => {
                     multisigDetails: {
                         threshold: 3,
                         addresses: ['IMP1', 'IMP2', 'IMP3'],
+                        version: 1,
                     },
                 }),
             ])
@@ -453,6 +460,7 @@ describe('useNameMultisigScreen', () => {
                     multisigDetails: {
                         threshold: 3,
                         addresses: ['IMP1', 'IMP2', 'IMP3'],
+                        version: 1,
                     },
                 } as WalletAccount,
             ])

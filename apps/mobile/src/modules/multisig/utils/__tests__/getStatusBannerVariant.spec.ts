@@ -30,10 +30,14 @@ describe('getStatusBannerVariant', () => {
         },
     )
 
-    it.each<SignRequestStatus>(['pending', 'ready', 'submitting'])(
-        'returns waiting for in-flight %s status',
+    it('returns waiting for pending status', () => {
+        expect(getStatusBannerVariant('pending')).toBe('waiting')
+    })
+
+    it.each<SignRequestStatus>(['ready', 'submitting'])(
+        'returns submitting for %s status (threshold met, on its way)',
         status => {
-            expect(getStatusBannerVariant(status)).toBe('waiting')
+            expect(getStatusBannerVariant(status)).toBe('submitting')
         },
     )
 })

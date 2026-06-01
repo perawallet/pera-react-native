@@ -24,11 +24,14 @@ import { useDeviceID } from '@perawallet/wallet-core-device'
 import {
     addSignature,
     getSignRequestDetailQueryKey,
+    isDraftSignRequestId,
     proposeSignRequest as proposeSignRequestApi,
+    useDraftSignRequestStore,
     type ProposeSignRequest,
 } from '@perawallet/wallet-core-multisig'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import type {
+    CreateDraftSignRequestFn,
     GetDeviceIdFn,
     GetMsigMetadataFn,
     MsigMetadata,
@@ -56,6 +59,14 @@ type UseMultisigTransportAdaptersResult = {
      * registered; the propose transport throws in that case.
      */
     getDeviceId: GetDeviceIdFn
+    /**
+     * Creates a local draft sign-request when the propose transport
+     * receives an empty signers array (the deferred-propose / hardware-only
+     * proposer case). The first per-row Sign tap in the pending sheet
+     * bootstraps the real backend propose via the cosign adapter's
+     * draft-prefix branch.
+     */
+    createDraftSignRequest: CreateDraftSignRequestFn
 }
 
 /**
@@ -201,9 +212,22 @@ export const useMultisigTransportAdapters =
                 // endpoint is unreliable on some environments, so an
                 // invalidation alone can leave the sheet stuck on its
                 // loading spinner.
+                //
+                // Defensively persist `proposer_address` from the request we
+                // just sent — the response schema declares it
+                // `.nullable().optional()` and some backend deployments
+                // return null in the echo. The proposer address is what
+                // gates the "Cancel transaction" button in
+                // PendingSignaturesContent (via canCancel /
+                // useMultisigSignRequestDecline), so losing it here would
+                // strip the user's ability to cancel their own proposal.
                 queryClient.setQueryData(
                     getSignRequestDetailQueryKey(network, signRequestId),
-                    latestResponse,
+                    {
+                        ...latestResponse,
+                        proposer_address:
+                            latestResponse.proposer_address ?? proposer.address,
+                    },
                 )
 
                 return { signRequestId, status: latestResponse.status }
@@ -213,6 +237,61 @@ export const useMultisigTransportAdapters =
 
         const addSignatures = useCallback<AddSignaturesFn>(
             async ({ signRequestId, signers }) => {
+                // Deferred-propose first-sig: the signRequestId is a local
+                // draft id (no backend record exists yet). Bootstrap the
+                // real propose using this single signer's signature, then
+                // hand the real id back to the transport so the sheet
+                // swaps from draft → real.
+                if (isDraftSignRequestId(signRequestId)) {
+                    const draft = useDraftSignRequestStore
+                        .getState()
+                        .getDraft(signRequestId)
+                    if (!draft) {
+                        throw new Error(
+                            `Draft sign request ${signRequestId} not found — it was already swapped or cleared`,
+                        )
+                    }
+                    const proposer = signers[0]
+                    if (!proposer) {
+                        throw new Error(
+                            'Draft propose bootstrap requires a signer',
+                        )
+                    }
+                    const proposeParams: ProposeSignRequest = {
+                        joint_account_address: draft.multisigAddress,
+                        proposer_address: proposer.address,
+                        type: draft.proposeType,
+                        raw_transaction_lists: [draft.rawTransactionsBase64],
+                        responses: buildResponses([proposer]),
+                    }
+                    const proposeResponse = await proposeSignRequestApi(
+                        network,
+                        proposeParams,
+                    )
+                    // See the normal propose path's setQueryData above for
+                    // why we backfill `proposer_address` from the request.
+                    queryClient.setQueryData(
+                        getSignRequestDetailQueryKey(
+                            network,
+                            proposeResponse.id,
+                        ),
+                        {
+                            ...proposeResponse,
+                            proposer_address:
+                                proposeResponse.proposer_address ??
+                                proposer.address,
+                        },
+                    )
+                    // The draft is deleted by `useMultisigProposeListener`
+                    // atomically with `openSheet(realId)` so the next render
+                    // observes both updates together (no draft-deleted →
+                    // real-not-set flicker).
+                    return {
+                        status: proposeResponse.status,
+                        resolvedSignRequestId: proposeResponse.id,
+                    }
+                }
+
                 const responses = buildResponses(signers)
                 const response = await addSignature(
                     network,
@@ -228,13 +307,56 @@ export const useMultisigTransportAdapters =
                 // `proposeSignRequestResponseSchema` and
                 // `signRequestDetailResponseSchema` alias the same
                 // `signRequestResponseSchema`.
-                queryClient.setQueryData(
-                    getSignRequestDetailQueryKey(network, signRequestId),
-                    response,
+                //
+                // Preserve `proposer_address` from whatever's already in the
+                // cache when the cosign response itself omits it (the
+                // backend's echo of `proposer_address` is optional per the
+                // schema, and some endpoints don't include it on
+                // addSignature). Without this, every cosign after the
+                // initial propose would wipe out the proposer pointer and
+                // strip the proposer's Cancel button.
+                const cacheKey = getSignRequestDetailQueryKey(
+                    network,
+                    signRequestId,
                 )
+                const previousCachedResponse =
+                    queryClient.getQueryData<typeof response>(cacheKey)
+                queryClient.setQueryData(cacheKey, {
+                    ...response,
+                    proposer_address:
+                        response.proposer_address ??
+                        previousCachedResponse?.proposer_address ??
+                        null,
+                })
                 return { status: response.status }
             },
             [network, queryClient],
+        )
+
+        const createDraftSignRequest = useCallback<CreateDraftSignRequestFn>(
+            input => {
+                const msig = msigByAddress.get(input.multisigAddress)
+                if (!msig) {
+                    throw new Error(
+                        `Multisig metadata not found for address ${input.multisigAddress}; cannot create draft sign request`,
+                    )
+                }
+                const rawTransactionsBase64 = input.signedTransactions.map(
+                    stx => encodeToBase64(encodeTransactionRaw(stx.txn)),
+                )
+                return useDraftSignRequestStore.getState().createDraft({
+                    network,
+                    multisigAddress: input.multisigAddress,
+                    multisigDetails: {
+                        threshold: msig.threshold,
+                        version: msig.version,
+                        participantAddresses: msig.addresses,
+                    },
+                    rawTransactionsBase64,
+                    proposeType: input.proposeType,
+                })
+            },
+            [encodeTransactionRaw, msigByAddress, network],
         )
 
         return {
@@ -242,5 +364,6 @@ export const useMultisigTransportAdapters =
             addSignatures,
             getMsigMetadata,
             getDeviceId,
+            createDraftSignRequest,
         }
     }

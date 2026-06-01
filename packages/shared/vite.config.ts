@@ -43,6 +43,7 @@ export default defineConfig({
                     __dirname,
                     'src/test-utils/index.ts',
                 ),
+                queue: resolve(__dirname, 'src/queue/index.ts'),
             },
             formats: ['es'],
         },

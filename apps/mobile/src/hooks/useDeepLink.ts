@@ -429,6 +429,11 @@ export const useDeepLink = (): UseDeepLinkResult => {
 
                 case DeeplinkType.LIQUID_AUTH:
                     if (parsedData.variant === 'fido') {
+                        // A FIDO request derives its P256 key from the HD root,
+                        // so an HD account must exist — otherwise register has
+                        // nothing to derive from and assert has nothing to sign
+                        // with. Block the hand-off and explain rather than
+                        // dead-ending in the OS flow.
                         const hasHDWallet = useAccountsStore
                             .getState()
                             .accounts.some(
@@ -443,6 +448,15 @@ export const useDeepLink = (): UseDeepLinkResult => {
                             return
                         }
 
+                        // A FIDO request (register or assert) needs device
+                        // authentication the OS credential provider can use: a
+                        // strong biometric OR a device credential (PIN / pattern
+                        // / password). The provider is configured
+                        // `strongOrCredential`, so any enrolled lock works; only
+                        // a device with no screen lock at all dead-ends (register
+                        // saves an unprotected key, assert can't satisfy the
+                        // prompt). Block the hand-off and explain instead of
+                        // failing silently.
                         const securityLevel = await getBiometricSecurityLevel()
                         if (!hasStrongBiometricOrCredential(securityLevel)) {
                             requestByType('passkey-biometric-required', {})
@@ -452,6 +466,10 @@ export const useDeepLink = (): UseDeepLinkResult => {
                             return
                         }
 
+                        // Hand the fido:// URL back to the OS — iOS routes it
+                        // to the registered AutoFill Credential Provider
+                        // extension, Android to the Credential Manager.
+                        // Mirrors pera-ios's QRScannerViewController.liquidAuth.
                         try {
                             await Linking.openURL(parsedData.url)
                         } catch (err) {

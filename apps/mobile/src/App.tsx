@@ -106,6 +106,8 @@ const AppContent = () => {
 
     usePasskeyAutofillLifecycle()
 
+    usePasskeyAutofillLifecycle()
+
     useEffect(() => {
         logger.setErrorReporter(
             createCrashReportingErrorReporter(provider.crashReporting),

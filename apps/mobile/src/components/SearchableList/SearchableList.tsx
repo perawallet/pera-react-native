@@ -201,7 +201,7 @@ const SearchableListInner = <T,>(
         keyExtractor: augmentedKeyExtractor,
         ListHeaderComponent: augmentedHeader,
         ListFooterComponent: augmentedFooter,
-        stickyHeaderIndices: [0],
+        stickyHeaderIndices: isListEmpty ? undefined : [0],
         extraData: augmentedExtraData,
         onLayout: handleListLayout,
         onContentSizeChange: handleContentSizeChange,

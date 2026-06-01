@@ -154,7 +154,11 @@ describe('useMultisigInvitationNameScreen', () => {
                 address: 'M1',
                 name: 'Coffee fund',
                 type: 'multisig',
-                multisigDetails: { threshold: 2, addresses: ['A', 'B'] },
+                multisigDetails: {
+                    threshold: 2,
+                    addresses: ['A', 'B'],
+                    version: 1,
+                },
             } as WalletAccount,
         ])
 
@@ -172,13 +176,21 @@ describe('useMultisigInvitationNameScreen', () => {
                 address: 'M1',
                 name: 'Shared Account #1',
                 type: 'multisig',
-                multisigDetails: { threshold: 2, addresses: ['A', 'B'] },
+                multisigDetails: {
+                    threshold: 2,
+                    addresses: ['A', 'B'],
+                    version: 1,
+                },
             } as WalletAccount,
             {
                 address: 'M2',
                 name: 'shared account #2',
                 type: 'multisig',
-                multisigDetails: { threshold: 2, addresses: ['C', 'D'] },
+                multisigDetails: {
+                    threshold: 2,
+                    addresses: ['C', 'D'],
+                    version: 1,
+                },
             } as WalletAccount,
         ])
 
@@ -213,6 +225,7 @@ describe('useMultisigInvitationNameScreen', () => {
                 multisigDetails: {
                     threshold: invitation.threshold,
                     addresses: invitation.participantAddresses,
+                    version: 1,
                 },
             } as WalletAccount,
         ])
@@ -257,6 +270,7 @@ describe('useMultisigInvitationNameScreen', () => {
                 multisigDetails: {
                     threshold: 2,
                     addresses: ['ADDR1', 'ADDR2', 'ADDR3'],
+                    version: 1,
                 },
             }),
         ])

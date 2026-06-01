@@ -17,12 +17,42 @@ import {
     type TransportResult,
 } from '@perawallet/wallet-core-signing'
 
-const openSheetMock = vi.fn()
-vi.mock('../../stores/usePendingSignaturesSheetStore', () => ({
-    usePendingSignaturesSheetStore: (
-        selector: (state: { openSheet: typeof openSheetMock }) => unknown,
-    ) => selector({ openSheet: openSheetMock }),
+const { sheetStateMock, openSheetMock } = vi.hoisted(() => ({
+    sheetStateMock: { current: { signRequestId: null as string | null } },
+    openSheetMock: vi.fn(),
 }))
+vi.mock('../../stores/usePendingSignaturesSheetStore', () => {
+    openSheetMock.mockImplementation((id: string) => {
+        sheetStateMock.current.signRequestId = id
+    })
+    const stub = ((
+        selector: (state: { openSheet: typeof openSheetMock }) => unknown,
+    ) => selector({ openSheet: openSheetMock })) as unknown as {
+        getState: () => { signRequestId: string | null }
+    }
+    stub.getState = () => ({
+        signRequestId: sheetStateMock.current.signRequestId,
+    })
+    return { usePendingSignaturesSheetStore: stub }
+})
+
+const { deleteDraftMock } = vi.hoisted(() => ({
+    deleteDraftMock: vi.fn(),
+}))
+vi.mock('@perawallet/wallet-core-multisig', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-multisig')
+        >()
+    const stub = (() => ({ deleteDraft: deleteDraftMock })) as unknown as {
+        getState: () => { deleteDraft: typeof deleteDraftMock }
+    }
+    stub.getState = () => ({ deleteDraft: deleteDraftMock })
+    return {
+        ...actual,
+        useDraftSignRequestStore: stub,
+    }
+})
 
 const invalidateInboxMock = vi.fn()
 vi.mock('@perawallet/wallet-core-messages', () => ({
@@ -71,8 +101,10 @@ const publishTransportResult = (
 describe('useMultisigProposeListener', () => {
     beforeEach(() => {
         signingEventBus.__resetForTests()
+        sheetStateMock.current.signRequestId = null
         openSheetMock.mockClear()
         invalidateInboxMock.mockClear()
+        deleteDraftMock.mockClear()
     })
 
     it('opens the sheet and invalidates inbox when a `proposed` non-confirmed transport-result event is published', () => {
@@ -151,5 +183,18 @@ describe('useMultisigProposeListener', () => {
 
         expect(openSheetMock).not.toHaveBeenCalled()
         expect(invalidateInboxMock).not.toHaveBeenCalled()
+    })
+
+    it('opens the sheet at the result signRequestId (draft reconciliation is owned by usePendingSignaturesSheet)', () => {
+        sheetStateMock.current.signRequestId = 'draft-abc'
+
+        renderHook(() => useMultisigProposeListener())
+
+        publishTransportResult(
+            signaturesAddedResult({ signRequestId: 'sr-real' }),
+        )
+
+        expect(openSheetMock).toHaveBeenCalledWith('sr-real')
+        expect(deleteDraftMock).toHaveBeenCalledWith('draft-abc')
     })
 })

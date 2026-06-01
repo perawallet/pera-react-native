@@ -12,7 +12,7 @@
 
 export type AccountStackParamsList = {
     AccountDetails?: { playConfetti?: boolean }
-    AssetDetails?: { assetId: string }
+    AssetDetails?: { assetId: string; isCollectible?: boolean }
     CollectibleDetails?: { assetId: string }
     RemoveAssets?: undefined
 }

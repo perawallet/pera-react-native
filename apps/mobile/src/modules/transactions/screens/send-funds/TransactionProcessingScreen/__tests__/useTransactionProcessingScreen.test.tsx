@@ -78,14 +78,7 @@ vi.mock('@modules/transactions/hooks', () => ({
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
-        t: (key: string) => {
-            const translations: Record<string, string> = {
-                'transactions.processing_error.title': 'Invalid transaction',
-                'transactions.processing_error.body':
-                    'Something appears to have gone wrong with this transaction.',
-            }
-            return translations[key] ?? key
-        },
+        t: (key: string) => key,
     }),
 }))
 

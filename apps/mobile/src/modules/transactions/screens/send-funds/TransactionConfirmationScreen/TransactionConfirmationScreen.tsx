@@ -19,6 +19,7 @@ import {
     PWView,
     PWScrollView,
 } from '@components/core'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 
 import { KeyValueRow } from '@components/KeyValueRow'
@@ -66,7 +67,10 @@ export const TransactionConfirmationScreen = () => {
 
     return (
         <PWView style={styles.container}>
-            <PWScrollView contentContainerStyle={styles.scrollContent}>
+            <PWScrollView
+                style={styles.scrollView}
+                contentContainerStyle={styles.scrollContent}
+            >
                 <KeyValueRow title={t('send_funds.confirmation.amount')}>
                     <CurrencyDisplay
                         variant='h3'
@@ -175,25 +179,26 @@ export const TransactionConfirmationScreen = () => {
                         </PWTouchableOpacity>
                     )}
                 </KeyValueRow>
-
-                <PWView style={styles.buttonContainer}>
-                    {isCloseAccount && <CloseAccountWarning />}
-                    {isRecipientBelowMbr && (
-                        <RecipientBelowMbrWarning
-                            minBalance={recipientMbrDisplay}
-                        />
-                    )}
-                    <PWSlideToConfirm
-                        title={t('common.slide_to_confirm.label')}
-                        onConfirm={handleConfirm}
-                        isLoading={isRecipientInfoPending || isSigning}
-                        isDisabled={
-                            isRecipientBelowMbr || isRecipientInfoPending
-                        }
-                        testID='send_confirm_button'
-                    />
-                </PWView>
             </PWScrollView>
+
+            <SafeAreaView
+                edges={['bottom']}
+                style={styles.footer}
+            >
+                {isCloseAccount && <CloseAccountWarning />}
+                {isRecipientBelowMbr && (
+                    <RecipientBelowMbrWarning
+                        minBalance={recipientMbrDisplay}
+                    />
+                )}
+                <PWSlideToConfirm
+                    title={t('common.slide_to_confirm.label')}
+                    onConfirm={handleConfirm}
+                    isLoading={isRecipientInfoPending || isSigning}
+                    isDisabled={isRecipientBelowMbr || isRecipientInfoPending}
+                    testID='send_confirm_button'
+                />
+            </SafeAreaView>
         </PWView>
     )
 }

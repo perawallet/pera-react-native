@@ -18,7 +18,7 @@ export const useStyles = makeStyles(theme => ({
         paddingHorizontal: theme.spacing.xl,
     },
     feeContainer: {
-        paddingVertical: theme.spacing.lg,
+        paddingVertical: theme.spacing.md,
     },
     contentContainer: {
         flexGrow: 1,
@@ -59,6 +59,6 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.lg,
     },
     footerContainer: {
-        paddingTop: theme.spacing.lg,
+        paddingTop: theme.spacing.sm,
     },
 }))

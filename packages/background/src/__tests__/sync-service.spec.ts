@@ -515,4 +515,81 @@ describe('SyncService', () => {
             Promise.resolve(),
         )
     })
+
+    it('invalidates account queries even when the sync cycle is rate-limited', async () => {
+        const { fetchAndPersistAccount, invalidateAccountQueries } =
+            await import('@perawallet/wallet-core-accounts')
+
+        vi.mocked(fetchAndPersistAccount).mockRejectedValue(
+            new Error('HTTP 429 Too Many Requests'),
+        )
+
+        service.start()
+        vi.useRealTimers()
+        await new Promise(resolve => setTimeout(resolve, 50))
+        vi.useFakeTimers()
+        service.stop()
+
+        // Per-phase invalidation: account cache is refreshed even when the
+        // sync cycle is rate-limited and syncAll throws at the end.
+        expect(invalidateAccountQueries).toHaveBeenCalledWith(queryClient)
+
+        vi.mocked(fetchAndPersistAccount).mockImplementation(() =>
+            Promise.resolve(),
+        )
+    })
+
+    it('does not invalidate asset queries when every asset and price batch fails', async () => {
+        const { fetchAndPersistAssets, invalidateAssetQueries } =
+            await import('@perawallet/wallet-core-assets')
+        const { fetchAndPersistPrices } =
+            await import('@perawallet/wallet-core-assets')
+
+        vi.mocked(fetchAndPersistAssets).mockRejectedValue(
+            new Error('asset fetch blew up'),
+        )
+        vi.mocked(fetchAndPersistPrices).mockRejectedValue(
+            new Error('price fetch blew up'),
+        )
+
+        service.start()
+        vi.useRealTimers()
+        await new Promise(resolve => setTimeout(resolve, 50))
+        vi.useFakeTimers()
+        service.stop()
+
+        // When every batch in the assets phase rejects, invalidation would
+        // force a re-read from DB with no new data — so we skip it.
+        expect(invalidateAssetQueries).not.toHaveBeenCalled()
+
+        vi.mocked(fetchAndPersistAssets).mockImplementation(() =>
+            Promise.resolve(),
+        )
+        vi.mocked(fetchAndPersistPrices).mockImplementation(() =>
+            Promise.resolve(),
+        )
+    })
+
+    it('does not invalidate transaction queries when every account transaction fetch fails', async () => {
+        const { fetchAndPersistTransactions, invalidateTransactionQueries } =
+            await import('@perawallet/wallet-core-transactions')
+
+        vi.mocked(fetchAndPersistTransactions).mockRejectedValue(
+            new Error('tx fetch blew up'),
+        )
+
+        service.start()
+        vi.useRealTimers()
+        await new Promise(resolve => setTimeout(resolve, 50))
+        vi.useFakeTimers()
+        service.stop()
+
+        // When every account's transaction fetch rejects, invalidation
+        // would force a re-read from DB with no new data — so we skip it.
+        expect(invalidateTransactionQueries).not.toHaveBeenCalled()
+
+        vi.mocked(fetchAndPersistTransactions).mockImplementation(() =>
+            Promise.resolve(),
+        )
+    })
 })

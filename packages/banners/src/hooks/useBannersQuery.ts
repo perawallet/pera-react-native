@@ -18,7 +18,6 @@ import { fetchBanners, type BannerListResponse } from '../api/banners'
 import { getBannersQueryKey } from './querykeys'
 import { hasRenderableContent, mapBannerResponse } from './mappers'
 import type { Banner } from '../models'
-import { logger } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
 
 export type UseBannersQueryResult = {
@@ -31,8 +30,6 @@ export type UseBannersQueryResult = {
 export const useBannersQuery = (): UseBannersQueryResult => {
     const { network } = useNetwork()
     const deviceID = useDeviceID(network)
-
-    logger.info('useBannersQuery', { network, deviceID })
 
     const query = useQuery({
         queryKey: getBannersQueryKey(network, deviceID ?? ''),

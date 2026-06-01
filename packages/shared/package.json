@@ -13,6 +13,10 @@
     "./test-utils": {
       "types": "./dist/test-utils/index.d.ts",
       "default": "./dist/test-utils/index.js"
+    },
+    "./queue": {
+        "types": "./dist/queue/index.d.ts",
+        "default": "./dist/queue.js"
     }
   },
   "scripts": {

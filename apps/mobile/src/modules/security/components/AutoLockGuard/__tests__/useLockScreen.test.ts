@@ -75,6 +75,7 @@ describe('useLockScreen', () => {
         expect(result.current.hasError).toBe(false)
         expect(result.current.isLockedOut).toBe(false)
         expect(result.current.remainingSeconds).toBe(0)
+        expect(result.current.isDuressWipeInProgress).toBe(false)
         expect(typeof result.current.handlePinComplete).toBe('function')
         expect(typeof result.current.handleErrorAnimationComplete).toBe(
             'function',
@@ -139,6 +140,64 @@ describe('useLockScreen', () => {
             expect(mockVerifyPin).toHaveBeenCalledWith('1234')
             expect(mockResetFailedAttempts).toHaveBeenCalled()
             expect(mockOnUnlock).toHaveBeenCalled()
+        })
+
+        it('flags a duress wipe in progress while wiping, then unlocks and clears it', async () => {
+            mockVerifyPin.mockResolvedValue({ kind: 'duress' })
+            let resolveWipe: (() => void) | undefined
+            mockPerformDuressWipe.mockReturnValue(
+                new Promise<void>(resolve => {
+                    resolveWipe = resolve
+                }),
+            )
+
+            const { result } = renderHook(() =>
+                useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
+            )
+
+            await act(async () => {
+                result.current.handlePinComplete('1234')
+                // Let verifyPin resolve so the duress branch sets its state.
+                await Promise.resolve()
+                await Promise.resolve()
+            })
+
+            // Overlay should be up while the (slow) wipe runs; not yet unlocked.
+            expect(result.current.isDuressWipeInProgress).toBe(true)
+            expect(mockPerformDuressWipe).toHaveBeenCalledTimes(1)
+            expect(mockOnUnlock).not.toHaveBeenCalled()
+
+            await act(async () => {
+                resolveWipe?.()
+                // Flush the finally block (onUnlock + clear the overlay flag).
+                await Promise.resolve()
+                await Promise.resolve()
+            })
+
+            expect(mockOnUnlock).toHaveBeenCalledTimes(1)
+            expect(result.current.isDuressWipeInProgress).toBe(false)
+        })
+
+        it('unlocks and clears the duress flag even if the wipe throws', async () => {
+            mockVerifyPin.mockResolvedValue({ kind: 'duress' })
+            mockPerformDuressWipe.mockRejectedValue(new Error('boom'))
+
+            const { result } = renderHook(() =>
+                useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
+            )
+
+            await act(async () => {
+                // The wipe rejecting must not stop the finally block from
+                // unlocking and clearing the overlay flag. handlePinComplete is
+                // typed fire-and-forget; adopt its underlying promise to absorb
+                // the rejection rather than leak an unhandled one.
+                await Promise.resolve(
+                    result.current.handlePinComplete('1234'),
+                ).catch(() => {})
+            })
+
+            expect(mockOnUnlock).toHaveBeenCalledTimes(1)
+            expect(result.current.isDuressWipeInProgress).toBe(false)
         })
 
         it('should handle failed attempt when PIN is invalid', async () => {

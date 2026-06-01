@@ -98,6 +98,7 @@ const multisigAccount: MultiSigAccount = {
     multisigDetails: {
         threshold: 2,
         addresses: ['ADDR_1', 'ADDR_2', 'ADDR_3'],
+        version: 1,
     },
 }
 

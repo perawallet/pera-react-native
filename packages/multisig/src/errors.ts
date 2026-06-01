@@ -1,0 +1,63 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import {
+    AppError,
+    ErrorCategory,
+    ErrorSeverity,
+} from '@perawallet/wallet-core-shared'
+
+export type MultisigValidationCode =
+    | 'participant_is_multisig'
+    | 'participant_is_watch'
+    | 'threshold_exceeds_participants'
+
+export class MultisigValidationError extends AppError {
+    public readonly code: MultisigValidationCode
+
+    constructor(code: MultisigValidationCode, message: string) {
+        super(message, {
+            severity: ErrorSeverity.LOW,
+            category: ErrorCategory.VALIDATION,
+            recoverable: true,
+            retryable: false,
+        })
+        this.code = code
+    }
+}
+
+export class ParticipantIsMultisigError extends MultisigValidationError {
+    constructor() {
+        super(
+            'participant_is_multisig',
+            'Cannot add a shared account as a participant.',
+        )
+    }
+}
+
+export class ParticipantIsWatchError extends MultisigValidationError {
+    constructor() {
+        super(
+            'participant_is_watch',
+            'Cannot add a watch account as a participant.',
+        )
+    }
+}
+
+export class ThresholdExceedsParticipantsError extends MultisigValidationError {
+    constructor(threshold: number, participantCount: number) {
+        super(
+            'threshold_exceeds_participants',
+            `Threshold (${threshold}) cannot exceed participant count (${participantCount}).`,
+        )
+    }
+}

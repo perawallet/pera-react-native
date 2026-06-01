@@ -119,6 +119,7 @@ const multisigAccount: WalletAccount = {
     multisigDetails: {
         threshold: 2,
         addresses: ['A', 'B', 'C'],
+        version: 1,
     },
 }
 

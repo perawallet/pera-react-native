@@ -67,6 +67,7 @@ const SwipeableAssetItemInner = ({
                 usdPrice={usdPrice}
                 style={styles.itemContainer}
                 onPress={handlePress}
+                skipFetch
             />
         )
     }
@@ -84,6 +85,7 @@ const SwipeableAssetItemInner = ({
                     usdPrice={usdPrice}
                     style={styles.itemContainer}
                     onPress={handlePress}
+                    skipFetch
                 />
             </PWView>
         </PWSwipeable>

@@ -21,8 +21,8 @@ import {
 import { useLanguage } from '@hooks/useLanguage'
 import { useSettingsSecurityScreen } from './useSettingsSecurityScreen'
 import { useStyles } from './styles'
-import { ExpandablePanel } from '@components/ExpandablePanel'
 import { InfoButton } from '@components/InfoButton'
+import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
 
 export const SettingsSecurityScreen = () => {
     const { t } = useLanguage()
@@ -32,8 +32,8 @@ export const SettingsSecurityScreen = () => {
         isPinEnabled,
         isBiometricEnabled,
         isBiometricsAvailable,
-        isAdvancedSecurityEnabled,
         isRekeySupportEnabled,
+        isAdvancedSecurityEnabled,
         isAssetFreezeSupportEnabled,
         isShakeToLockFeatureEnabled,
         isShakeToLockEnabled,
@@ -42,7 +42,6 @@ export const SettingsSecurityScreen = () => {
         handlePinToggle,
         handleBiometricToggle,
         handleChangePinPress,
-        handleAdvancedSecurityToggle,
         handleRekeyToggle,
         handleAssetFreezeToggle,
         handleShakeToLockToggle,
@@ -109,37 +108,11 @@ export const SettingsSecurityScreen = () => {
             </PWView>
 
             <PWView style={styles.section}>
-                <PWText
-                    variant='body'
-                    style={styles.sectionTitle}
+                <TitledExpandablePanel
+                    title={t('settings.security.advanced_security_settings')}
+                    titleStyle={styles.sectionTitle}
+                    startExpanded={isAdvancedSecurityEnabled}
                 >
-                    {t('settings.security.antispam_section')}
-                </PWText>
-
-                <PWView>
-                    <PWView style={styles.listItem}>
-                        <PWView style={styles.listItemContent}>
-                            <PWIcon name='shield-check' />
-                            <PWText>
-                                {t(
-                                    'settings.security.advanced_security_settings',
-                                )}
-                            </PWText>
-                        </PWView>
-                        <PWSwitch
-                            value={isAdvancedSecurityEnabled}
-                            onValueChange={handleAdvancedSecurityToggle}
-                            testID='settings_security_advanced_toggle'
-                        />
-                    </PWView>
-                    <PWText style={styles.listItemSubtitle}>
-                        {t(
-                            'settings.security.advanced_security_settings_description',
-                        )}
-                    </PWText>
-                </PWView>
-
-                <ExpandablePanel isExpanded={isAdvancedSecurityEnabled}>
                     <PWView style={styles.expandablePanelContent}>
                         <PWView>
                             <PWView style={styles.listItem}>
@@ -270,7 +243,7 @@ export const SettingsSecurityScreen = () => {
                             </PWView>
                         )}
                     </PWView>
-                </ExpandablePanel>
+                </TitledExpandablePanel>
             </PWView>
         </PWScrollView>
     )
