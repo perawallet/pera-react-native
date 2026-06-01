@@ -10,15 +10,9 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-assets'
-
-export * from './models'
-export * from './hooks'
-export * from './store'
-export * from './utils'
-export * from './db'
-export * from './api'
-export { fetchAndPersistAssets } from './sync/asset-syncer'
-export { fetchAndPersistPrices } from './sync/price-syncer'
-export { assetBatchQueue } from './services/assetBatchQueue'
-export { ASSET_BULK_CHUNK_SIZE, ASSET_CACHE_TTL_MS } from './constants'
+export const ASSET_BULK_CHUNK_SIZE = 100
+export const ASSET_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000 // 7 days — asset
+// metadata rarely
+// changes, so the
+// TTL can be longer
+// than NFD's

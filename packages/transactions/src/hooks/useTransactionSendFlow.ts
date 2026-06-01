@@ -58,7 +58,13 @@ type UseTransactionSendFlowParams = {
     params: Nullable<SendParams>
 }
 
-const SEND_SOURCE = {
+/**
+ * Source metadata for the in-app Send-funds flow. Exported so the signing
+ * completion-sheet driver can recognize send-funds among the other
+ * `sourceType: 'local'` internal flows (swap, opt-in/out) and surface the
+ * "transaction processing" sheet only for it.
+ */
+export const SEND_TRANSACTION_SOURCE = {
     name: 'send-transaction',
     description: 'Send transaction',
 }
@@ -197,7 +203,7 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                     })
                     const result = await submit({
                         unsignedTxs,
-                        source: SEND_SOURCE,
+                        source: SEND_TRANSACTION_SOURCE,
                     })
                     return result.txIds[result.txIds.length - 1]
                 }
@@ -214,7 +220,7 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                     })
                     const result = await submit({
                         unsignedTxs,
-                        source: SEND_SOURCE,
+                        source: SEND_TRANSACTION_SOURCE,
                     })
                     return result.txIds[result.txIds.length - 1]
                 }
@@ -222,7 +228,7 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                     const unsignedTxs = await buildNormalTxs(params)
                     const result = await submit({
                         unsignedTxs,
-                        source: SEND_SOURCE,
+                        source: SEND_TRANSACTION_SOURCE,
                     })
                     return result.txIds[0]
                 }
@@ -249,7 +255,7 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                 })
                 const result = await submit({
                     unsignedTxs,
-                    source: SEND_SOURCE,
+                    source: SEND_TRANSACTION_SOURCE,
                 })
                 return result.txIds[result.txIds.length - 1]
             } else {
@@ -260,7 +266,7 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                 })
                 const result = await submit({
                     unsignedTxs,
-                    source: SEND_SOURCE,
+                    source: SEND_TRANSACTION_SOURCE,
                 })
                 return result.txIds[result.txIds.length - 1]
             }

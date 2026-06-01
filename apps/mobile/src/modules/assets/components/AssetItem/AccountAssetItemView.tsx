@@ -44,6 +44,7 @@ export type AccountAssetItemViewProps = {
     logoUrl?: string
     /** When false, the balance/value column is omitted. Defaults to true. */
     showBalance?: boolean
+    skipFetch?: boolean
 } & PWTouchableOpacityProps
 
 export const AccountAssetItemView = ({
@@ -52,6 +53,7 @@ export const AccountAssetItemView = ({
     iconSize,
     logoUrl,
     showBalance = true,
+    skipFetch = false,
     onPress,
     ...rest
 }: AccountAssetItemViewProps) => {
@@ -59,10 +61,15 @@ export const AccountAssetItemView = ({
     const { t } = useLanguage()
 
     // Use pre-fetched asset data when available to avoid N+1 queries.
-    // Falls back to individual fetch for callers that don't populate accountBalance.asset.
+    // Falls back to individual fetch for callers that don't populate
+    // accountBalance.asset. The main asset list passes skipFetch so all
+    // rows share a single empty-array query and don't create a separate
+    // RQ observer per row, which would saturate the JS thread on large
+    // watch accounts.
     const assetIds = useMemo(
-        () => (accountBalance.asset ? [] : [accountBalance.assetId]),
-        [accountBalance.asset, accountBalance.assetId],
+        () =>
+            skipFetch || accountBalance.asset ? [] : [accountBalance.assetId],
+        [skipFetch, accountBalance.asset, accountBalance.assetId],
     )
     const { data: fetchedAssets } = useAssetsQuery(assetIds)
 

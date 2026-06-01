@@ -25,6 +25,7 @@ type UseLockScreenResult = {
     hasError: boolean
     isLockedOut: boolean
     remainingSeconds: number
+    isDuressWipeInProgress: boolean
     handlePinComplete: (pin: string) => void
     handleErrorAnimationComplete: () => void
 }
@@ -48,6 +49,7 @@ export const useLockScreen = ({
 
     const [hasError, setHasError] = useState(false)
     const [remainingSeconds, setRemainingSeconds] = useState(0)
+    const [isDuressWipeInProgress, setIsDuressWipeInProgress] = useState(false)
 
     useEffect(() => {
         if (!isLockedOut || !lockoutEndTime) {
@@ -135,10 +137,15 @@ export const useLockScreen = ({
                 // useDuressWipe wipes data, provisions a decoy account, and
                 // leaves us with a fresh "empty wallet" state. On any
                 // internal failure, the wipe path still drops to onboarding.
+                //
+                // The wipe is slow; show a "logging in" overlay so it reads as
+                // a normal (if sluggish) unlock rather than a frozen app.
+                setIsDuressWipeInProgress(true)
                 try {
                     await performDuressWipe()
                 } finally {
                     onUnlock()
+                    setIsDuressWipeInProgress(false)
                 }
                 return
             }
@@ -162,6 +169,7 @@ export const useLockScreen = ({
         hasError,
         isLockedOut,
         remainingSeconds,
+        isDuressWipeInProgress,
         handlePinComplete,
         handleErrorAnimationComplete,
     }

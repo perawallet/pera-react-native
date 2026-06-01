@@ -21,6 +21,7 @@ export {
     updateAssetPeraMetadata,
     upsertAssetPrices,
     getAssetPricesByIds,
+    getStaleOrMissingAssetIds,
     type AssetPriceRow,
 } from './repository'
 export { seedAlgoAsset } from './seed'

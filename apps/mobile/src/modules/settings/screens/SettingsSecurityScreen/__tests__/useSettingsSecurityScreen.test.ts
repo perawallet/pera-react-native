@@ -342,31 +342,4 @@ describe('useSettingsSecurityScreen', () => {
             )
         })
     })
-
-    describe('handleAdvancedSecurityToggle', () => {
-        it('should reset both rekey and asset freeze when advanced security is disabled', async () => {
-            const { result } = renderHook(() => useSettingsSecurityScreen())
-
-            await waitFor(() => {
-                expect(mockCheckPinEnabled).toHaveBeenCalled()
-            })
-
-            act(() => {
-                result.current.handleAdvancedSecurityToggle(false)
-            })
-
-            expect(mockSetPreference).toHaveBeenCalledWith(
-                'advanced-security-enabled',
-                false,
-            )
-            expect(mockSetPreference).toHaveBeenCalledWith(
-                'rekey-support-enabled',
-                false,
-            )
-            expect(mockSetPreference).toHaveBeenCalledWith(
-                'asset-freeze-support-enabled',
-                false,
-            )
-        })
-    })
 })

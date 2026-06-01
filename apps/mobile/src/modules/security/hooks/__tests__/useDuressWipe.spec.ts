@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
     wipeAllUserData: vi.fn(),
     createHdWalletAccount: vi.fn(),
     clearAccountsStore: vi.fn(),
+    setPreference: vi.fn(),
 }))
 
 vi.mock('@modules/settings/hooks/useDeleteAllData', () => ({
@@ -33,7 +34,12 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     }),
 }))
 
+vi.mock('@perawallet/wallet-core-settings', () => ({
+    usePreferences: () => ({ setPreference: mocks.setPreference }),
+}))
+
 import { useDuressWipe } from '../useDuressWipe'
+import { UserPreferences } from '@constants/user-preferences'
 
 describe('useDuressWipe', () => {
     beforeEach(() => {
@@ -55,6 +61,11 @@ describe('useDuressWipe', () => {
             account: 0,
             keyIndex: 0,
         })
+        // Suppress the PIN-setup prompt so the decoy wallet doesn't nag.
+        expect(mocks.setPreference).toHaveBeenCalledWith(
+            UserPreferences._securityPinSetupPrompt,
+            true,
+        )
     })
 
     test('on wipe failure drops the user to onboarding (no decoy)', async () => {
@@ -67,6 +78,7 @@ describe('useDuressWipe', () => {
 
         expect(mocks.clearAccountsStore).toHaveBeenCalled()
         expect(mocks.createHdWalletAccount).not.toHaveBeenCalled()
+        expect(mocks.setPreference).not.toHaveBeenCalled()
     })
 
     test('on decoy creation failure, falls through cleanly without rethrowing', async () => {
@@ -80,5 +92,13 @@ describe('useDuressWipe', () => {
                 })
             })(),
         ).resolves.toBeUndefined()
+
+        // The prompt-suppression flag is set before the decoy is provisioned
+        // (to close the hasAccounts/flag race), so it's set even when decoy
+        // creation later fails.
+        expect(mocks.setPreference).toHaveBeenCalledWith(
+            UserPreferences._securityPinSetupPrompt,
+            true,
+        )
     })
 })

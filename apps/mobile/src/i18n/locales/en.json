@@ -1459,7 +1459,8 @@
             "confirm_title": "Re-enter your\n6-digit PIN",
             "verify_title": "Enter your PIN",
             "unlock_title": "Enter your PIN",
-            "change_old_title": "Enter your old\n6-digit PIN"
+            "change_old_title": "Enter your old\n6-digit PIN",
+            "logging_in": "Logging in"
         },
         "lockout": {
             "title": "Pera Wallet app is locked",

@@ -25,6 +25,7 @@ import {
     upsertAssetPrices,
     getAssetPricesByIds,
     updateAssetPeraMetadata,
+    getStaleOrMissingAssetIds,
 } from '../repository'
 
 describe('asset repository', () => {
@@ -406,6 +407,88 @@ describe('asset repository', () => {
             })
 
             expect(result).toHaveLength(0)
+        })
+    })
+
+    describe('getStaleOrMissingAssetIds', () => {
+        it('returns empty for empty input', async () => {
+            const result = await getStaleOrMissingAssetIds({
+                db,
+                assetIds: [],
+                network: 'mainnet',
+                ttlMs: 60_000,
+            })
+            expect(result).toEqual([])
+        })
+
+        it('includes IDs that are not in the DB', async () => {
+            await upsertAssets({
+                db,
+                items: [makeAsset({ assetId: '1' })],
+                network: 'mainnet',
+            })
+
+            const result = await getStaleOrMissingAssetIds({
+                db,
+                assetIds: ['1', '2', '3'],
+                network: 'mainnet',
+                ttlMs: 60_000,
+            })
+
+            expect(new Set(result)).toEqual(new Set(['2', '3']))
+        })
+
+        it('excludes IDs whose row is younger than ttlMs', async () => {
+            await upsertAssets({
+                db,
+                items: [makeAsset({ assetId: '1' })],
+                network: 'mainnet',
+            })
+
+            const result = await getStaleOrMissingAssetIds({
+                db,
+                assetIds: ['1'],
+                network: 'mainnet',
+                ttlMs: 60_000,
+            })
+
+            expect(result).toEqual([])
+        })
+
+        it('includes IDs whose row is older than ttlMs', async () => {
+            await upsertAssets({
+                db,
+                items: [makeAsset({ assetId: '1' })],
+                network: 'mainnet',
+            })
+
+            // Use a negative ttl so any row is "older than" it — works without
+            // touching the row's stored timestamp.
+            const result = await getStaleOrMissingAssetIds({
+                db,
+                assetIds: ['1'],
+                network: 'mainnet',
+                ttlMs: -1,
+            })
+
+            expect(result).toEqual(['1'])
+        })
+
+        it('ignores rows belonging to a different network', async () => {
+            await upsertAssets({
+                db,
+                items: [makeAsset({ assetId: '1' })],
+                network: 'mainnet',
+            })
+
+            const result = await getStaleOrMissingAssetIds({
+                db,
+                assetIds: ['1'],
+                network: 'testnet',
+                ttlMs: 60_000,
+            })
+
+            expect(result).toEqual(['1'])
         })
     })
 })

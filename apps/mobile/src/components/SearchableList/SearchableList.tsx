@@ -245,7 +245,7 @@ const SearchableListInner = <T,>(
         keyExtractor: augmentedKeyExtractor,
         ItemSeparatorComponent: augmentedSeparator,
         ListFooterComponent: augmentedFooter,
-        stickyHeaderIndices: [1],
+        stickyHeaderIndices: isListEmpty ? undefined : [1],
         // The header item owns the list's top spacing, so cancel PWFlatList's
         // default content paddingTop — otherwise the sticky search would pin a
         // gap above the in-flow header.

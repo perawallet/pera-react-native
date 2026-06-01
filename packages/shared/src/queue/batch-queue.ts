@@ -9,7 +9,7 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
-import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '../utils/types'
 
 /**
  * Executes a coalesced batch of keys for a given partition. Implementations

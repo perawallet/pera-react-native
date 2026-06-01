@@ -23,16 +23,18 @@ export type TitledExpandablePanelProps = {
     iconPressed?: () => void
     containerStyle?: StyleProp<ViewStyle>
     contentStyle?: StyleProp<ViewStyle>
+    startExpanded?: boolean
 } & PropsWithChildren
 
 export const TitledExpandablePanel = ({
     title,
     containerStyle,
     contentStyle,
+    startExpanded = false,
     children,
     iconPressed,
 }: TitledExpandablePanelProps) => {
-    const [expanded, setExpanded] = useState(false)
+    const [expanded, setExpanded] = useState(startExpanded)
     const styles = useStyles()
     const onPress = () => {
         setExpanded(!expanded)

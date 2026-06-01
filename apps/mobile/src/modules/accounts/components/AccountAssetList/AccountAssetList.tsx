@@ -60,15 +60,31 @@ export const AccountAssetList = ({
         renderItemProps,
     } = useAccountAssetList({ account, t })
 
+    const lastScrolledAccountRef = useRef<string | null>(null)
+
     useEffect(() => {
-        // Defer scrolling so it runs after FlashList re-renders with the new
-        // sorted/account data; scrolling synchronously while the list is
-        // recycling cells preserves the previous offset.
+        // Only scroll once per account switch, after data first becomes available.
+        // Scrolling synchronously on address change happens before holdings load
+        // from DB; the subsequent FlashList re-population (combined with the
+        // sticky search bar at index 0) pushes the list past the header.
+        if (lastScrolledAccountRef.current === account.address) return
+        if (balances.length === 0) return
+
+        lastScrolledAccountRef.current = account.address
+        const handle = requestAnimationFrame(() => {
+            listRef.current?.scrollToOffset({ offset: 0, animated: false })
+        })
+        return () => cancelAnimationFrame(handle)
+    }, [account.address, balances.length])
+
+    // Reset scroll when sort changes within the same account.
+    useEffect(() => {
+        if (balances.length === 0) return
         const handle = requestAnimationFrame(() => {
             listRef.current?.scrollToOffset({ offset: 0, animated: true })
         })
         return () => cancelAnimationFrame(handle)
-    }, [account.address, assetSortMode])
+    }, [assetSortMode])
 
     const renderItem = useCallback(
         ({ item }: { item: AssetWithAccountBalance }) => {

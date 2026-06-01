@@ -41,8 +41,7 @@ export const PWScrollView = ({
 }: PWScrollViewProps) => {
     const insets = useSafeAreaInsets()
     const isInTabNavigator = useContext(BottomTabBarHeightContext) !== undefined
-    const bottomInset =
-        inBottomSheet || !isInTabNavigator ? insets.bottom : 0
+    const bottomInset = inBottomSheet || !isInTabNavigator ? insets.bottom : 0
     const styles = useStyles({ bottomInset })
 
     // Guarantee the content clears the bottom edge — but only when the caller

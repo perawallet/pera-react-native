@@ -15,16 +15,15 @@ import { logger } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import {
     isInteractiveSource,
-    useSigningEvent,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { LedgerConnectionIssueContent } from '../LedgerConnectionIssueContent'
 import { useLedgerSigningContent } from '../LedgerSigningContent/useLedgerSigningContent'
 import { SignRequestContent } from '../SignRequestContent'
-import { SigningCompletedContent } from '../SigningCompletedContent'
 import { TransactionRequestFAQContent } from '../TransactionRequestFAQContent'
 import { useLedgerSigningDriver } from './useLedgerSigningDriver'
+import { useSigningCompletedDriver } from './useSigningCompletedDriver'
 
 /**
  * Watches the signing queue for the next interactive sign request and
@@ -115,50 +114,6 @@ const useSignRequestDriver = () => {
             cancelled = true
         }
     }, [nextRequest, requestBottomSheet, dismiss])
-}
-
-/**
- * Subscribes to the signing event bus and shows the "signing completed"
- * sheet via the centralized bottom sheet manager when a request completes
- * with a non-proposed transport result.
- *
- * Multisig cosign and multisig propose completions are surfaced by
- * PendingSignaturesContent — skip the generic sheet for those.
- */
-const useSigningCompletedDriver = () => {
-    const { request: requestBottomSheet } = useBottomSheet()
-    const openIdRef = useRef<string | null>(null)
-
-    useSigningEvent(
-        event => event.type === 'completed',
-        event => {
-            if (event.type !== 'completed') return
-            const req = event.request
-
-            // Multisig cosign + multisig propose are surfaced by
-            // PendingSignaturesContent — skip the generic completion sheet.
-            if (req.sourceType === 'multisig-cosign') return
-            if (event.result.type === 'proposed') return
-
-            if (openIdRef.current === req.id) return
-            openIdRef.current = req.id
-
-            const isTransaction = req.type === 'transactions'
-            void (async () => {
-                await requestBottomSheet<void>({
-                    contents: (
-                        <SigningCompletedContent
-                            isTransaction={isTransaction}
-                        />
-                    ),
-                    options: { size: 'auto', enablePanDownToClose: true },
-                })
-                if (openIdRef.current === req.id) {
-                    openIdRef.current = null
-                }
-            })()
-        },
-    )
 }
 
 const FAQ_SEEN_KEY = 'hasSeenTransactionRequestFAQ'
