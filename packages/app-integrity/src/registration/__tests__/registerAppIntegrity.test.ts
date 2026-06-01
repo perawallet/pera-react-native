@@ -23,6 +23,7 @@ const providerMock = {
     deviceInfo: {
         getDeviceID: vi.fn().mockResolvedValue('device-1'),
         getDevicePlatform: vi.fn().mockReturnValue('android'),
+        getAppEnvironment: vi.fn().mockReturnValue('production'),
         isStoreBuild: vi.fn().mockReturnValue(true),
     },
     appIntegrity: {
@@ -53,6 +54,7 @@ describe('registerAppIntegrity', () => {
             expiresAt: '2026-07-01',
         })
         providerMock.deviceInfo.getDevicePlatform.mockReturnValue('android')
+        providerMock.deviceInfo.getAppEnvironment.mockReturnValue('production')
         providerMock.appIntegrity.isSupported.mockResolvedValue(true)
         providerMock.appIntegrity.attest
             .mockReset()
@@ -94,6 +96,22 @@ describe('registerAppIntegrity', () => {
             }),
         )
         expect(useAppIntegrityStore.getState().keyId).toBe('key-1')
+    })
+
+    it('skips on development builds without attesting', async () => {
+        providerMock.deviceInfo.getAppEnvironment.mockReturnValue('development')
+        const result = await registerAppIntegrity({ network: 'mainnet' })
+        expect(result.status).toBe('skipped')
+        expect(requestChallengeMock).not.toHaveBeenCalled()
+        expect(attestDeviceMock).not.toHaveBeenCalled()
+        expect(useAppIntegrityStore.getState().status).toBe('skipped')
+    })
+
+    it('attests on staging builds (production flow)', async () => {
+        providerMock.deviceInfo.getAppEnvironment.mockReturnValue('staging')
+        const result = await registerAppIntegrity({ network: 'mainnet' })
+        expect(result.status).toBe('success')
+        expect(attestDeviceMock).toHaveBeenCalled()
     })
 
     it('skips when attestation is unsupported', async () => {

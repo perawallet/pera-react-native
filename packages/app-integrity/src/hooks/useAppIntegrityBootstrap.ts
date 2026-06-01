@@ -11,7 +11,6 @@
  */
 
 import { useEffect, useRef } from 'react'
-import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { registerAppIntegrity } from '../registration/registerAppIntegrity'
 import { useAppIntegrityStore } from '../store'
@@ -28,8 +27,9 @@ const hasValidToken = (): boolean => {
 }
 
 /**
- * Fire-and-forget startup attestation. Runs only on store builds and never
- * blocks boot. No-op on non-production builds (use the dev test page there).
+ * Fire-and-forget startup attestation. Runs once on boot and never blocks it.
+ * Attestation proceeds on distributed (staging + production) builds;
+ * `registerAppIntegrity` no-ops with status `skipped` on development builds.
  */
 export const useAppIntegrityBootstrap = (): void => {
     const { network } = useNetwork()
@@ -39,10 +39,6 @@ export const useAppIntegrityBootstrap = (): void => {
         if (hasRun.current) return
         hasRun.current = true
 
-        if (!getProvider().deviceInfo.isStoreBuild()) {
-            useAppIntegrityStore.getState().setStatus('skipped')
-            return
-        }
         if (hasValidToken()) return
 
         void registerAppIntegrity({ network })

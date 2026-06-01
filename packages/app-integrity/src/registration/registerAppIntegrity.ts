@@ -33,6 +33,15 @@ export const registerAppIntegrity = async ({
     const store = useAppIntegrityStore.getState()
     const { deviceInfo, appIntegrity } = getProvider()
 
+    // App Attest only runs on distributed builds (staging + production), which
+    // always operate in Apple's production attestation environment. Local
+    // development builds emit sandbox attestations that the production-configured
+    // backend rejects, so attestation is skipped there entirely.
+    if (deviceInfo.getAppEnvironment() === 'development') {
+        store.setStatus('skipped')
+        return { status: 'skipped' }
+    }
+
     store.setStatus('registering')
     store.setLastAttemptAt(new Date().toISOString())
 

@@ -217,6 +217,12 @@ workflows:
     description: Build and deploy iOS Staging to TestFlight
     envs:
       - ENVIRONMENT: staging
+      # APP_ENV must be set at workflow level (not just inside individual
+      # steps) so every generate-config.sh run + Expo prebuild bakes the
+      # correct appEnvironment. Step-level `export`s don't persist across
+      # Bitrise steps, which previously let "Build packages" regenerate the
+      # config blank (appEnvironment fell back to development).
+      - APP_ENV: staging
       - BITRISE_SCHEME: "$BITRISE_SCHEME_STAGING"
       - NOTIFICATION_TITLE_PREFIX: QA Build (Nightly)
       - USE_CACHE: "true"
@@ -247,6 +253,8 @@ workflows:
     description: Build and deploy iOS Production to TestFlight
     envs:
       - ENVIRONMENT: production
+      # See ios-staging: APP_ENV must be a workflow-level env.
+      - APP_ENV: production
       - BITRISE_SCHEME: "$BITRISE_SCHEME_PRODUCTION"
       - IOS_PROFILE_NAME: Pera React Native Prod
       - NOTIFICATION_TITLE_PREFIX: Release Candidate
@@ -472,6 +480,8 @@ workflows:
     description: Build and deploy Android Staging to Firebase App Distribution
     envs:
       - ENVIRONMENT: staging
+      # See ios-staging: APP_ENV must be a workflow-level env.
+      - APP_ENV: staging
       - ANDROID_FLAVOR: staging
       - ANDROID_PACKAGE_NAME: com.algorand.perarn.staging
       - NOTIFICATION_TITLE_PREFIX: QA Build (Nightly)
@@ -502,6 +512,8 @@ workflows:
     description: Build and deploy Android Production to Play Store Internal
     envs:
       - ENVIRONMENT: production
+      # See ios-staging: APP_ENV must be a workflow-level env.
+      - APP_ENV: production
       - ANDROID_FLAVOR: production
       - ANDROID_PACKAGE_NAME: com.algorand.perarn
       - NOTIFICATION_TITLE_PREFIX: Release Candidate

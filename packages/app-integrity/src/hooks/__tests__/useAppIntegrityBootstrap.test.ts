@@ -18,10 +18,8 @@ vi.mock('../../registration/registerAppIntegrity', () => ({
     registerAppIntegrity: (...a: unknown[]) => registerMock(...a),
 }))
 
-const isStoreBuildMock = vi.fn()
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
-        deviceInfo: { isStoreBuild: isStoreBuildMock },
         // Importing the real store triggers zustand persist hydration via
         // getProvider().keyValueStorage, so this stub must exist.
         keyValueStorage: {
@@ -45,23 +43,12 @@ describe('useAppIntegrityBootstrap', () => {
         useAppIntegrityStore.getState().resetState()
     })
 
-    it('skips on non-store builds', async () => {
-        isStoreBuildMock.mockReturnValue(false)
-        renderHook(() => useAppIntegrityBootstrap())
-        await waitFor(() =>
-            expect(useAppIntegrityStore.getState().status).toBe('skipped'),
-        )
-        expect(registerMock).not.toHaveBeenCalled()
-    })
-
-    it('registers on store builds without a valid token', async () => {
-        isStoreBuildMock.mockReturnValue(true)
+    it('registers on boot when there is no valid token', async () => {
         renderHook(() => useAppIntegrityBootstrap())
         await waitFor(() => expect(registerMock).toHaveBeenCalledOnce())
     })
 
     it('does not re-register when an unexpired token exists', async () => {
-        isStoreBuildMock.mockReturnValue(true)
         useAppIntegrityStore.getState().setRegistration({
             integrityToken: 'jwt',
             expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
