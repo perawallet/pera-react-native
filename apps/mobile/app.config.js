@@ -58,6 +58,18 @@ const slugs = {
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const bootsplashManifest = require('./assets/bootsplash/manifest.json');
 
+// Passkey autofill (FIDO2) configuration. The site must serve a valid
+// /.well-known/apple-app-site-association linking back to this bundle.
+const PASSKEY_AUTOFILL_SITE =
+  process.env.PASSKEY_AUTOFILL_SITE || 'https://perawallet.app';
+const PASSKEY_AUTOFILL_HOST = (() => {
+  try {
+    return new URL(PASSKEY_AUTOFILL_SITE).host;
+  } catch {
+    return PASSKEY_AUTOFILL_SITE.replace(/^https?:\/\//, '').split('/')[0];
+  }
+})();
+
 module.exports = {
   name: appNames[variant],
   slug: slugs[variant],
@@ -100,7 +112,11 @@ module.exports = {
       ],
     },
     entitlements: {
-      'com.apple.developer.associated-domains': ['applinks:perawallet.app'],
+      'com.apple.developer.associated-domains': [
+        'applinks:perawallet.app',
+        `webcredentials:${PASSKEY_AUTOFILL_HOST}`,
+      ],
+      'com.apple.developer.authentication-services.autofill-credential-provider': true,
     },
     // Firebase config - stored in config/ directory (not in native folder)
     googleServicesFile: './config/GoogleService-Info.plist',
@@ -271,11 +287,39 @@ module.exports = {
     // Custom plugin for local.properties SDK path (machine-specific fix)
     './plugins/withAndroidLocalProperties',
 
+    // Wire release signing to the Bitrise-injected config/release.keystore
+    // (stock Expo template signs release with the debug keystore)
+    './plugins/withAndroidReleaseSigning',
+
     // Custom plugin for Podfile modifications (RCT-Folly fix for webassembly)
     './plugins/withPodfileModifications.js',
 
     // Custom plugin for Xcode 26+ Swift 6.2 import access levels (SE-0409)
     './plugins/withPublicSwiftImports.js',
+
+    // Custom plugin: one-time migration of MMKV stores from the pre-App-Group
+    // sandbox path into the App Group container, so existing iOS installs don't
+    // open an empty keystore after the passkey App Group is enabled.
+    './plugins/withMMKVAppGroupMigration.js',
+
+    // Passkey autofill (FIDO2) — system credential provider extension
+    [
+      '@algorandfoundation/react-native-passkey-autofill',
+      {
+        site: PASSKEY_AUTOFILL_SITE,
+        label: appNames[variant],
+        appGroup: `group.${bundleIdentifiers[variant].ios}`,
+        appleTeamId: process.env.IOS_TEAM_ID,
+        aaguid: '418a66da-f981-47e8-814f-19c97f97bd4d',
+        biometricRequirement: 'strongOrCredential'
+      },
+    ],
+
+    // Bundled local workarounds for the autofill plugin's WIP iOS/Android
+    // output (Android DP256 Maven repo, iOS unquoted DEVELOPMENT_TEAM, iOS
+    // missing extension target dependency + duplicate Sources). MUST run after
+    // the autofill plugin. Remove once the fixes land upstream.
+    './plugins/withPasskeyAutofillFixes',
   ],
 
   // Experiments (for bleeding edge features)

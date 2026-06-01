@@ -43,6 +43,7 @@ const Tab = createPWTabNavigator<AssetDetailsTabParamsList>()
 
 export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
     const assetId = route.params?.assetId
+    const isCollectible = route.params?.isCollectible ?? false
     const { t } = useLanguage()
 
     const styles = useStyles()
@@ -110,6 +111,7 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
                             account={account}
                             asset={asset}
                             onSwipeEnabledChange={setSwipeEnabled}
+                            isCollectible={isCollectible}
                         />
                     )}
                 </Tab.Screen>

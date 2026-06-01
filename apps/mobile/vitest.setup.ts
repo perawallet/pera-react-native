@@ -836,6 +836,34 @@ vi.mock('expo-screen-capture', () => ({
     removeScreenshotListener: vi.fn(),
 }))
 
+// The passkey-autofill extension eagerly imports the
+// `@algorandfoundation/react-native-passkey-autofill` Expo module, which
+// triggers `requireNativeModule` at import time. Under jsdom that drags in
+// `expo/src/winter/runtime` and crashes with `Cannot find module
+// './ImportMetaRegistry'`. Mock the workspace extension entry point so
+// none of those native imports run inside unit/integration tests.
+vi.mock('@perawallet/wallet-extension-passkey-autofill', () => {
+    const passkeyAutofill = {
+        setMasterKey: vi.fn().mockResolvedValue(undefined),
+        setHdRootKeyId: vi.fn().mockResolvedValue(undefined),
+        setDerivedMainKey: vi.fn().mockResolvedValue(undefined),
+        configureIntentActions: vi.fn().mockResolvedValue(undefined),
+        clearCredentials: vi.fn().mockResolvedValue(undefined),
+        deleteCredential: vi.fn().mockResolvedValue(undefined),
+        getStoredCredentials: vi.fn().mockResolvedValue([]),
+        refreshCredentialIdentities: vi.fn().mockResolvedValue(undefined),
+        isProviderActive: vi.fn().mockResolvedValue(false),
+        openProviderSettings: vi.fn().mockResolvedValue(false),
+        onPasskeyAdded: vi.fn().mockReturnValue({ remove: vi.fn() }),
+        onPasskeyAuthenticated: vi.fn().mockReturnValue({ remove: vi.fn() }),
+    }
+    return {
+        name: '@perawallet/wallet-extension-passkey-autofill',
+        WithPasskeyAutofill: () => ({ passkeyAutofill }),
+        PasskeyAutofillService: class {},
+    }
+})
+
 // `expo-file-system` transitively imports `expo-modules-core`, which probes
 // `__DEV__` at module init and crashes under jsdom. Stub the `File` class
 // to the surface the ASB import screen actually uses (the static picker +
@@ -874,6 +902,10 @@ vi.mock('expo-application', () => ({
     nativeBuildVersion: '1',
     getIosIdForVendorAsync: vi.fn(() => Promise.resolve('unique-device-id')),
     getAndroidId: vi.fn(() => 'unique-android-id'),
+}))
+
+vi.mock('expo-intent-launcher', () => ({
+    startActivityAsync: vi.fn().mockResolvedValue({ resultCode: -1 }),
 }))
 
 vi.mock('expo-device', () => ({

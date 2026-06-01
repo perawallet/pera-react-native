@@ -34,11 +34,13 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 export type AssetActionButtonsProps = {
     asset: PeraAsset
     assetHolding?: Nullable<AssetWithAccountBalance>
+    isCollectible?: boolean
 }
 //TODO hook up missing actions
 export const AssetActionButtons = ({
     asset,
     assetHolding,
+    isCollectible,
 }: AssetActionButtonsProps) => {
     const styles = useStyles()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
@@ -49,6 +51,8 @@ export const AssetActionButtons = ({
     const { setSelectedAssetId, setCanSelectAsset } = useSendFunds()
     const { copyToClipboard } = useClipboard()
     const { showToast } = useToast()
+
+    if (isCollectible) return null
 
     const openReceiveFunds = useCallback(() => {
         void requestBottomSheet({

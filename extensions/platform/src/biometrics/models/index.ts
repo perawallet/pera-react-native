@@ -12,6 +12,22 @@
 
 export type BiometricType = 'face' | 'fingerprint' | 'biometrics' | null
 
+/**
+ * The strongest authentication the device currently has enrolled.
+ *
+ * - `none`   — no screen lock at all.
+ * - `secret` — PIN / pattern / password only, no biometric.
+ * - `weak`   — class-2 biometric (e.g. 2D face unlock). Not sufficient for
+ *              hardware-backed credential providers that require
+ *              `BIOMETRIC_STRONG`.
+ * - `strong` — class-3 biometric (fingerprint / 3D face).
+ *
+ * Maps directly onto Android's `BiometricManager` strength classes. iOS only
+ * ever reports `none` / `secret` / `strong` (Face ID & Touch ID are strong;
+ * there is no weak tier).
+ */
+export type BiometricSecurityLevel = 'none' | 'secret' | 'weak' | 'strong'
+
 export type BiometricsAuthenticatePrompt = {
     title?: string
     description?: string
@@ -24,5 +40,12 @@ export type BiometricsAuthenticatePrompt = {
 export interface BiometricsService {
     getSupportedBiometricType(): Promise<BiometricType>
     checkBiometricsAvailable(): Promise<boolean>
+    /**
+     * The strongest enrolled authentication level. Distinct from
+     * {@link checkBiometricsAvailable}, which only reports whether *some*
+     * biometric exists — callers needing a hardware-backed (`strong`)
+     * authenticator, such as the passkey credential provider, must check this.
+     */
+    getSecurityLevel(): Promise<BiometricSecurityLevel>
     authenticate(prompt?: BiometricsAuthenticatePrompt): Promise<boolean>
 }

@@ -104,6 +104,14 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     ),
 }))
 
+// useDeepLink reads the device's biometric level to gate passkey deeplinks.
+// Stub the package so the real security store (with its module-load
+// registerStore call) isn't pulled into this unit test's import graph.
+vi.mock('@perawallet/wallet-core-security', () => ({
+    getBiometricSecurityLevel: vi.fn(async () => 'strong'),
+    hasStrongBiometricOrCredential: vi.fn(() => true),
+}))
+
 const mockImportAccount = vi.fn()
 const mockMarkBackupComplete = vi.fn()
 
