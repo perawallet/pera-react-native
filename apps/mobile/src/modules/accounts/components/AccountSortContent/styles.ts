@@ -20,8 +20,11 @@ export const useStyles = makeStyles(
             flex: 1,
         },
         contentContainer: {
+            flex: 1,
             paddingHorizontal: theme.spacing.lg,
-            paddingBottom: theme.spacing.xl + bottomInset,
+        },
+        listFill: {
+            flex: 1,
         },
         subtitle: {
             color: theme.colors.textGrayLighter,
@@ -40,7 +43,7 @@ export const useStyles = makeStyles(
             paddingLeft: theme.spacing.md,
         },
         listContent: {
-            paddingBottom: theme.spacing.xl,
+            paddingBottom: theme.spacing.xl + bottomInset,
         },
     }),
 )

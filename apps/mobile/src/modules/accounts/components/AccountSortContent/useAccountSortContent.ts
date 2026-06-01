@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import {
     AccountSortMode,
     AccountSortModes,
@@ -47,9 +47,9 @@ type UseAccountSortContentResult = {
     sortOptions: SortOption[]
     sortMode: AccountSortMode
     sortedAccounts: WalletAccount[]
-    manualAccountOrder: string[]
     handleSortModeChange: (mode: AccountSortMode) => void
     handleReorder: (orderedAddresses: string[]) => void
+    commitChanges: () => void
     t: (key: string) => string
 }
 
@@ -57,35 +57,42 @@ export const useAccountSortContent = (): UseAccountSortContentResult => {
     const { t } = useLanguage()
     const accounts = useAllAccounts()
     const { accountBalances } = useAccountBalancesQuery(accounts, true)
-    const {
-        sortedAccounts,
-        sortMode,
-        setSortMode,
-        manualAccountOrder,
-        setManualAccountOrder,
-    } = useSortedAccounts(accounts, accountBalances)
+    const { sortedAccounts, sortMode, setSortMode, setManualAccountOrder } =
+        useSortedAccounts(accounts, accountBalances)
 
-    const handleSortModeChange = useCallback(
-        (mode: AccountSortMode) => {
-            setSortMode(mode)
-        },
-        [setSortMode],
-    )
+    const [draftSortMode, setDraftSortMode] = useState(sortMode)
+    const [draftAccounts, setDraftAccounts] = useState(sortedAccounts)
+
+    const handleSortModeChange = useCallback((mode: AccountSortMode) => {
+        setDraftSortMode(mode)
+    }, [])
 
     const handleReorder = useCallback(
         (orderedAddresses: string[]) => {
-            setManualAccountOrder(orderedAddresses)
+            const byAddress = new Map(accounts.map(a => [a.address, a]))
+            setDraftAccounts(
+                orderedAddresses
+                    .map(address => byAddress.get(address))
+                    .filter((a): a is WalletAccount => a !== undefined),
+            )
         },
-        [setManualAccountOrder],
+        [accounts],
     )
+
+    const commitChanges = useCallback(() => {
+        setSortMode(draftSortMode)
+        if (draftSortMode === AccountSortModes.manual) {
+            setManualAccountOrder(draftAccounts.map(a => a.address))
+        }
+    }, [draftSortMode, draftAccounts, setSortMode, setManualAccountOrder])
 
     return {
         sortOptions: SORT_OPTIONS,
-        sortMode,
-        sortedAccounts,
-        manualAccountOrder,
+        sortMode: draftSortMode,
+        sortedAccounts: draftAccounts,
         handleSortModeChange,
         handleReorder,
+        commitChanges,
         t,
     }
 }

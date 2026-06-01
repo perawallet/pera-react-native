@@ -10,31 +10,24 @@
  limitations under the License
  */
 
-import React from 'react'
+import React, { useCallback } from 'react'
 import { PWButton, PWRadioButton, PWSheetLayout } from '@components/core'
-import {
-    useCollectiblePreferencesStore,
-    type CollectibleSortMode,
-} from '@perawallet/wallet-core-assets'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
+import { useNftSortContent } from './useNftSortContent'
 
 export type NftSortContentProps = Record<string, never>
 
 export const NftSortContent = (_: NftSortContentProps = {}) => {
     const { t } = useLanguage()
     const { dismiss } = useBottomSheetResult<void>()
+    const { sortMode, handleSortModeChange, commitChanges } =
+        useNftSortContent()
 
-    const sortMode = useCollectiblePreferencesStore(
-        state => state.collectibleSortMode,
-    )
-    const setSortMode = useCollectiblePreferencesStore(
-        state => state.setCollectibleSortMode,
-    )
-
-    const handleChange = (mode: CollectibleSortMode) => {
-        setSortMode(mode)
-    }
+    const handleDone = useCallback(() => {
+        commitChanges()
+        dismiss()
+    }, [commitChanges, dismiss])
 
     return (
         <PWSheetLayout
@@ -44,8 +37,8 @@ export const NftSortContent = (_: NftSortContentProps = {}) => {
                     rightAction={
                         <PWButton
                             variant='linkPositive'
-                            title={t('account_details.nfts.filter_done')}
-                            onPress={dismiss}
+                            title={t('common.apply')}
+                            onPress={handleDone}
                             paddingStyle='none'
                         />
                     }
@@ -55,22 +48,22 @@ export const NftSortContent = (_: NftSortContentProps = {}) => {
             <PWRadioButton
                 title={t('account_details.nfts.sort_newest_first')}
                 isSelected={sortMode === 'newestFirst'}
-                onPress={() => handleChange('newestFirst')}
+                onPress={() => handleSortModeChange('newestFirst')}
             />
             <PWRadioButton
                 title={t('account_details.nfts.sort_oldest_first')}
                 isSelected={sortMode === 'oldestFirst'}
-                onPress={() => handleChange('oldestFirst')}
+                onPress={() => handleSortModeChange('oldestFirst')}
             />
             <PWRadioButton
                 title={t('account_details.nfts.sort_title_asc')}
                 isSelected={sortMode === 'titleAsc'}
-                onPress={() => handleChange('titleAsc')}
+                onPress={() => handleSortModeChange('titleAsc')}
             />
             <PWRadioButton
                 title={t('account_details.nfts.sort_title_desc')}
                 isSelected={sortMode === 'titleDesc'}
-                onPress={() => handleChange('titleDesc')}
+                onPress={() => handleSortModeChange('titleDesc')}
             />
         </PWSheetLayout>
     )

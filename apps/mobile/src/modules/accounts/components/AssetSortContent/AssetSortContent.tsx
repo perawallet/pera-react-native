@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import { PWButton, PWRadioButton, PWSheetLayout } from '@components/core'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useAssetSortContent } from './useAssetSortContent'
@@ -18,8 +19,18 @@ export type AssetSortContentProps = Record<string, never>
 
 export const AssetSortContent = (_: AssetSortContentProps = {}) => {
     const { dismiss } = useBottomSheetResult<void>()
-    const { sortOptions, assetSortMode, handleSortModeChange, t } =
-        useAssetSortContent()
+    const {
+        sortOptions,
+        assetSortMode,
+        handleSortModeChange,
+        commitChanges,
+        t,
+    } = useAssetSortContent()
+
+    const handleDone = useCallback(() => {
+        commitChanges()
+        dismiss()
+    }, [commitChanges, dismiss])
 
     return (
         <PWSheetLayout
@@ -29,8 +40,8 @@ export const AssetSortContent = (_: AssetSortContentProps = {}) => {
                     rightAction={
                         <PWButton
                             variant='linkPositive'
-                            title={t('asset_sort.done')}
-                            onPress={dismiss}
+                            title={t('common.apply')}
+                            onPress={handleDone}
                             paddingStyle='none'
                         />
                     }

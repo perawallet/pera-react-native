@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import React from 'react'
+import React, { useCallback } from 'react'
 import {
     PWButton,
     PWSheetLayout,
@@ -18,31 +18,27 @@ import {
     PWText,
     PWView,
 } from '@components/core'
-import { useCollectiblePreferencesStore } from '@perawallet/wallet-core-assets'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
+import { useNftFilterContent } from './useNftFilterContent'
 import { useStyles } from './styles'
 
 export const NftFilterContent = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const { dismiss } = useBottomSheetResult<void>()
+    const {
+        showOptedIn,
+        showWatchAccounts,
+        handleToggleOptedIn,
+        handleToggleWatchAccounts,
+        commitChanges,
+    } = useNftFilterContent()
 
-    // Read the preference store directly so the sheet stays reactive — passing
-    // these in as props would snapshot them at open time and the switches would
-    // never update (the sheet content isn't re-rendered by its opener).
-    const showOptedIn = useCollectiblePreferencesStore(
-        state => state.showOptedIn,
-    )
-    const showWatchAccounts = useCollectiblePreferencesStore(
-        state => state.showWatchAccounts,
-    )
-    const onToggleOptedIn = useCollectiblePreferencesStore(
-        state => state.setShowOptedIn,
-    )
-    const onToggleWatchAccounts = useCollectiblePreferencesStore(
-        state => state.setShowWatchAccounts,
-    )
+    const handleDone = useCallback(() => {
+        commitChanges()
+        dismiss()
+    }, [commitChanges, dismiss])
 
     return (
         <PWSheetLayout
@@ -52,8 +48,8 @@ export const NftFilterContent = () => {
                     rightAction={
                         <PWButton
                             variant='linkPositive'
-                            title={t('account_details.nfts.filter_done')}
-                            onPress={dismiss}
+                            title={t('common.apply')}
+                            onPress={handleDone}
                             paddingStyle='none'
                         />
                     }
@@ -74,7 +70,7 @@ export const NftFilterContent = () => {
                 </PWView>
                 <PWSwitch
                     value={showOptedIn}
-                    onValueChange={onToggleOptedIn}
+                    onValueChange={handleToggleOptedIn}
                 />
             </PWView>
 
@@ -94,7 +90,7 @@ export const NftFilterContent = () => {
                 </PWView>
                 <PWSwitch
                     value={showWatchAccounts}
-                    onValueChange={onToggleWatchAccounts}
+                    onValueChange={handleToggleWatchAccounts}
                 />
             </PWView>
         </PWSheetLayout>

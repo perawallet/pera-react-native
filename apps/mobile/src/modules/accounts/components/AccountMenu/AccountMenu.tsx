@@ -44,6 +44,7 @@ export const AccountMenu = (props: AccountMenuProps) => {
         handleTap,
         isChartCollapsed,
         handleListScroll,
+        handleExpandChart,
     } = useAccountMenu(props)
     const { onAddAccount, onOpenSort, headerContent, hideDefaultHeader } = props
 
@@ -53,6 +54,7 @@ export const AccountMenu = (props: AccountMenuProps) => {
                 <PortfolioView
                     style={styles.portfolioContainer}
                     isCollapsed={isChartCollapsed}
+                    onExpandChart={handleExpandChart}
                 />
             )}
 

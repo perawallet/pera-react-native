@@ -19,7 +19,7 @@ export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
         alignItems: 'center',
         gap: theme.spacing.md,
         padding: theme.spacing.xl,
-        paddingBottom: theme.spacing['lg'] + bottomInset,
+        paddingBottom: theme.spacing.xl + bottomInset,
         width: '100%',
         minWidth: 0,
     },
@@ -28,7 +28,7 @@ export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
         justifyContent: 'center',
         alignItems: 'center',
         gap: theme.spacing['3xl'],
-        marginVertical: theme.spacing.xl,
+        marginTop: theme.spacing.xl,
         width: '100%',
     },
     bottomSheetMessage: {

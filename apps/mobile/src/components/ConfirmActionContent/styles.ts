@@ -21,9 +21,7 @@ type StyleProps = {
 export const useStyles = makeStyles(
     (theme, { bottomInset, titleAlign, hasActions }: StyleProps) => ({
         container: {
-            paddingBottom: hasActions
-                ? theme.spacing.lg
-                : theme.spacing.lg + bottomInset,
+            paddingBottom: hasActions ? theme.spacing.lg : bottomInset,
             alignItems: 'center',
         },
         icon: {

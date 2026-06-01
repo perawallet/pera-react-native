@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import { PWButton, PWSheetLayout } from '@components/core'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
@@ -28,7 +29,13 @@ export const AssetFilterContent = (_: AssetFilterContentProps = {}) => {
         handleToggleHideZeroBalance,
         handleToggleDisplayNfts,
         handleToggleDisplayOptedInNfts,
+        commitChanges,
     } = useAssetFilterContent()
+
+    const handleDone = useCallback(() => {
+        commitChanges()
+        dismiss()
+    }, [commitChanges, dismiss])
 
     return (
         <PWSheetLayout
@@ -38,8 +45,8 @@ export const AssetFilterContent = (_: AssetFilterContentProps = {}) => {
                     rightAction={
                         <PWButton
                             variant='linkPositive'
-                            title={t('asset_filter.done')}
-                            onPress={dismiss}
+                            title={t('common.apply')}
+                            onPress={handleDone}
                             paddingStyle='none'
                         />
                     }

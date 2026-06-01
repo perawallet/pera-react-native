@@ -7,7 +7,6 @@
     },
     "account_sort": {
         "title": "Sort",
-        "done": "Done",
         "alphabetical_asc": "Alphabetically A to Z",
         "alphabetical_desc": "Alphabetically Z to A",
         "balance_asc": "Lowest Value to Highest",
@@ -29,7 +28,6 @@
     },
     "asset_sort": {
         "title": "Sort",
-        "done": "Done",
         "balance_desc": "Highest Value to Lowest",
         "balance_asc": "Lowest Value to Highest",
         "alphabetical_asc": "Alphabetically A to Z",
@@ -37,7 +35,6 @@
     },
     "asset_filter": {
         "title": "Filter Assets",
-        "done": "Done",
         "hide_zero_balance": "Hide assets with no balance",
         "hide_zero_balance_description": "You can show/hide assets with zero balance",
         "display_nfts": "Display NFTs in asset list",
@@ -271,7 +268,6 @@
             "sort": "Sort",
             "filter_title": "Filter NFTs",
             "filter": "Filter",
-            "filter_done": "Done",
             "filter_opted_in": "Display opted-in NFTs",
             "filter_opted_in_description": "You can show/hide nfts that are opted-in but are not owned",
             "filter_watch_accounts": "Display NFTs from Watch Accounts",
@@ -544,6 +540,7 @@
         },
         "done": "Done",
         "save": "Save",
+        "apply": "Apply",
         "copy": "Copy",
         "copy_address": "Copy address",
         "send": "Send"

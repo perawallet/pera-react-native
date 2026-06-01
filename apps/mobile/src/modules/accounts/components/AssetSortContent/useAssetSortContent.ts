@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import {
     type AssetSortMode,
     AssetSortModes,
@@ -46,6 +46,7 @@ type UseAssetSortContentResult = {
     sortOptions: SortOption[]
     assetSortMode: AssetSortMode
     handleSortModeChange: (mode: AssetSortMode) => void
+    commitChanges: () => void
     t: (key: string) => string
 }
 
@@ -56,17 +57,21 @@ export const useAssetSortContent = (): UseAssetSortContentResult => {
         state => state.setAssetSortMode,
     )
 
-    const handleSortModeChange = useCallback(
-        (mode: AssetSortMode) => {
-            setAssetSortMode(mode)
-        },
-        [setAssetSortMode],
-    )
+    const [draftSortMode, setDraftSortMode] = useState(assetSortMode)
+
+    const handleSortModeChange = useCallback((mode: AssetSortMode) => {
+        setDraftSortMode(mode)
+    }, [])
+
+    const commitChanges = useCallback(() => {
+        setAssetSortMode(draftSortMode)
+    }, [draftSortMode, setAssetSortMode])
 
     return {
         sortOptions: SORT_OPTIONS,
-        assetSortMode,
+        assetSortMode: draftSortMode,
         handleSortModeChange,
+        commitChanges,
         t,
     }
 }

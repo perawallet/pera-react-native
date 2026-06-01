@@ -50,6 +50,7 @@ type UseAccountMenuResult = {
     handleTap: (acct: WalletAccount) => void
     isChartCollapsed: boolean
     handleListScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => void
+    handleExpandChart: () => void
 }
 
 export const useAccountMenu = (
@@ -90,6 +91,10 @@ export const useAccountMenu = (
         [],
     )
 
+    const handleExpandChart = useCallback(() => {
+        setIsChartCollapsed(false)
+    }, [])
+
     return {
         sortedAccounts,
         selectedAccountAddress,
@@ -97,5 +102,6 @@ export const useAccountMenu = (
         handleTap,
         isChartCollapsed,
         handleListScroll,
+        handleExpandChart,
     }
 }

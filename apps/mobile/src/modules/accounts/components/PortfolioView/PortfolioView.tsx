@@ -51,10 +51,12 @@ export type PortfolioViewProps = {
      * list is scrolled.
      */
     isCollapsed?: boolean
+    onExpandChart?: () => void
 } & PWViewProps
 
 export const PortfolioView = ({
     isCollapsed = false,
+    onExpandChart,
     ...props
 }: PortfolioViewProps) => {
     const styles = useStyles()
@@ -73,8 +75,14 @@ export const PortfolioView = ({
     const { getPreference, setPreference } = usePreferences()
 
     const chartVisible = !!getPreference(UserPreferences.chartVisible)
+    const isChartShown = chartVisible && !isCollapsed
     const toggleChartVisible = () => {
-        setPreference(UserPreferences.chartVisible, !chartVisible)
+        if (isChartShown) {
+            setPreference(UserPreferences.chartVisible, false)
+            return
+        }
+        setPreference(UserPreferences.chartVisible, true)
+        onExpandChart?.()
     }
 
     const addresses = useMemo(() => accounts.map(a => a.address), [accounts])
@@ -218,7 +226,7 @@ export const PortfolioView = ({
                     style={styles.chartToggleText}
                     truncate
                 >
-                    {chartVisible
+                    {isChartShown
                         ? t('portfolio.hide_chart')
                         : t('portfolio.show_chart')}
                 </PWText>
@@ -226,11 +234,11 @@ export const PortfolioView = ({
                     name='chevron-down'
                     variant='secondary'
                     size='xs'
-                    style={chartVisible ? styles.invertedIcon : undefined}
+                    style={isChartShown ? styles.invertedIcon : undefined}
                 />
             </PWTouchableOpacity>
 
-            <ExpandablePanel isExpanded={chartVisible && !isCollapsed}>
+            <ExpandablePanel isExpanded={isChartShown}>
                 <PWView style={styles.chartContainer}>
                     <WealthChart
                         period={period}

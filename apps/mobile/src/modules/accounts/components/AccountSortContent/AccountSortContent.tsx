@@ -10,10 +10,10 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import { PWButton, PWRadioButton, PWText, PWView } from '@components/core'
 import { AccountSortModes } from '@perawallet/wallet-core-accounts'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useAccountSortContent } from './useAccountSortContent'
 import { DraggableAccountList } from './DraggableAccountList'
 import { useStyles } from './styles'
@@ -21,8 +21,7 @@ import { useStyles } from './styles'
 export type AccountSortContentProps = Record<string, never>
 
 export const AccountSortContent = (_: AccountSortContentProps = {}) => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles({ bottomInset: insets.bottom })
+    const styles = useStyles()
     const { dismiss } = useBottomSheetResult<void>()
     const {
         sortOptions,
@@ -30,8 +29,14 @@ export const AccountSortContent = (_: AccountSortContentProps = {}) => {
         sortedAccounts,
         handleSortModeChange,
         handleReorder,
+        commitChanges,
         t,
     } = useAccountSortContent()
+
+    const handleDone = useCallback(() => {
+        commitChanges()
+        dismiss()
+    }, [commitChanges, dismiss])
 
     return (
         <>
@@ -40,8 +45,8 @@ export const AccountSortContent = (_: AccountSortContentProps = {}) => {
                 rightAction={
                     <PWButton
                         variant='linkPositive'
-                        title={t('account_sort.done')}
-                        onPress={dismiss}
+                        title={t('common.apply')}
+                        onPress={handleDone}
                         paddingStyle='none'
                     />
                 }

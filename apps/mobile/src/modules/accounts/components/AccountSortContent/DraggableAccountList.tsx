@@ -15,6 +15,7 @@ import DraggableFlatList, {
     RenderItemParams,
     ScaleDecorator,
 } from 'react-native-draggable-flatlist'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { PWIcon, PWTouchableOpacity, PWView } from '@components/core'
 import { AccountDisplay } from '../AccountDisplay'
@@ -29,7 +30,8 @@ export const DraggableAccountList = ({
     accounts,
     onReorder,
 }: DraggableAccountListProps) => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles({ bottomInset: insets.bottom })
 
     const renderItem = useCallback(
         ({ item, drag, isActive }: RenderItemParams<WalletAccount>) => (
@@ -76,6 +78,8 @@ export const DraggableAccountList = ({
             keyExtractor={keyExtractor}
             onDragEnd={handleDragEnd}
             activationDistance={10}
+            showsVerticalScrollIndicator={false}
+            containerStyle={styles.listFill}
             contentContainerStyle={styles.listContent}
         />
     )
