@@ -45,7 +45,9 @@ export const AssetTransferRequestItem = ({
             peraMetadata: {
                 ...fullAsset.peraMetadata,
                 logo: fullAsset.peraMetadata?.logo ?? asset.peraMetadata?.logo,
-                collectible: fullAsset.peraMetadata?.collectible ?? asset.peraMetadata?.collectible,
+                collectible:
+                    fullAsset.peraMetadata?.collectible ??
+                    asset.peraMetadata?.collectible,
             },
         }
     }, [fullAsset, asset])
