@@ -112,6 +112,7 @@ module.exports = {
       ],
     },
     entitlements: {
+      'aps-environment': 'development',
       'com.apple.developer.associated-domains': [
         'applinks:perawallet.app',
         `webcredentials:${PASSKEY_AUTOFILL_HOST}`,
