@@ -46,12 +46,14 @@ export type AssetHoldingsProps = {
     account: WalletAccount
     asset: PeraAsset
     onSwipeEnabledChange?: (enabled: boolean) => void
+    isCollectible?: boolean
 }
 
 export const AssetHoldings = ({
     account,
     asset,
     onSwipeEnabledChange,
+    isCollectible,
 }: AssetHoldingsProps) => {
     const styles = useStyles()
     const { data: assetDetails } = useSingleAssetDetailsQuery(asset.assetId)
@@ -163,6 +165,7 @@ export const AssetHoldings = ({
                 <AssetActionButtons
                     asset={asset}
                     assetHolding={assetHolding}
+                    isCollectible={isCollectible}
                 />
             </PWView>
         </AssetTransactionList>
