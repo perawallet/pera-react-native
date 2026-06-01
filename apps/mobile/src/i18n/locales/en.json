@@ -48,12 +48,9 @@
     "add_asset": {
         "title": "Opt-in to an Asset",
         "search_placeholder": "Search by name or asset ID",
-        "add": "Add",
-        "added": "Added",
         "no_results": "No assets found",
         "opt_in": {
             "failed_title": "Failed to opt-in",
-            "failed_body": "There was an error trying to add the asset to your account",
             "success_title": "Opt-in successful",
             "success_body": "{{assetName}} was successfully opted-in and added to your account",
             "success_body_generic": "Asset successfully opted-in and added to your account"
@@ -63,7 +60,6 @@
             "account_label": "Account",
             "fee_label": "Transaction Fee",
             "description": "Before interacting with an asset, you must opt-in to it from your account. This prevents unauthorized asset transactions to be sent to you.",
-            "approve": "Approve",
             "close": "Close",
             "copy_id": "Copy ID"
         },
@@ -82,10 +78,8 @@
         "title": "Remove Asset",
         "description": "You're about to remove and opt-out from the {{assetName}} asset with {{accountName}}. You'll be unable to transact with this asset from this account unless you opt-in to it again.",
         "fee_label": "Transaction Fee",
-        "remove": "Remove",
         "keep": "Keep it",
         "copy_id": "Copy ID",
-        "id_copied": "Asset ID copied",
         "account_label": "Account",
         "success": "Asset removed",
         "error": "Unable to remove asset",
@@ -95,13 +89,8 @@
         "title": "Remove Assets",
         "select_all": "Select All",
         "deselect_all": "Deselect All",
-        "remove_selected": "Remove Selected ({{count}})",
         "empty_title": "No Removable Assets",
-        "empty_body": "Only assets with a zero balance that you didn't create can be removed.",
-        "confirmation_title": "Remove {{count}} Assets?",
-        "confirmation_body": "This will opt you out of the selected assets. This action cannot be undone.",
-        "confirm": "Remove",
-        "cancel": "Cancel"
+        "empty_body": "Only assets with a zero balance that you didn't create can be removed."
     },
     "deeplink": {
         "error": {
@@ -116,10 +105,7 @@
             "body_recover": "We couldn't import the account from this QR.",
             "body_recover_duplicate": "This account is already in your wallet.",
             "title_timeout": "Took too long",
-            "body_timeout": "The request didn't complete in time. Check your network and try again.",
-            "show_details": "Show details",
-            "hide_details": "Hide details",
-            "copy_details": "Copy details"
+            "body_timeout": "The request didn't complete in time. Check your network and try again."
         }
     },
     "address_actions": {
@@ -152,12 +138,7 @@
             "info_title": "Asset Transfer Requests",
             "info_body": "This feature is an inbox for your account. Others can send you assets and NFTs, even if you have not explicitly opted in to receive them. From here, you can choose to accept or reject the asset transfer requests."
         },
-        "processing_error": {
-            "title": "Failed to process transaction",
-            "body": "There was an error trying to process your transaction request.  Please try again."
-        },
         "claim": {
-            "claim": "Claim",
             "reject": "Reject",
             "algo_gain": "You will receive {{amount}} ALGO in order to compensate the opt-in expenses."
         }
@@ -204,7 +185,6 @@
         },
         "transaction_list": {
             "title": "Transactions",
-            "empty_title": "No transactions",
             "empty_body": "No transactions found",
             "filter": "Filter",
             "csv": "CSV"
@@ -212,20 +192,11 @@
         "collectible": {
             "description": "Description",
             "properties": "Properties",
-            "collection": "Collection",
             "creator": "Creator account",
             "asset_id": "Asset ID",
             "total_supply": "Total Supply",
             "show_on": "Show on",
-            "standard": "Standard",
-            "media_type": "Media Type",
-            "external_links": "External Links",
             "explorer": "Pera Explorer",
-            "project_website": "Project Website",
-            "copy_asset_id": "Asset ID copied",
-            "copy_creator": "Creator address copied",
-            "send": "Send",
-            "no_description": "No description available",
             "share_message": "",
             "image_copied": "Image copied to clipboard",
             "image_saved": "Image saved to photo library",
@@ -256,7 +227,6 @@
             "nomatch_body": "No assets matched your search term"
         },
         "nfts": {
-            "title": "NFTs",
             "search_placeholder": "Search NFTs",
             "empty_title": "NFTs",
             "empty_body": "Welcome to your NFT Gallery! You don't have any NFTs yet. All the NFTs available in your wallet will be visible here.",
@@ -265,7 +235,6 @@
             "nomatch_body": "No NFTs matched your search term",
             "count": "{{count}} NFTs",
             "count_one": "{{count}} NFT",
-            "add_nft": "Add NFT",
             "manage": "Manage",
             "manage_title": "Manage NFTs",
             "sort": "Sort",
@@ -311,25 +280,20 @@
         "copy_address": "Copy Address",
         "shared_account_detail": "Shared Account Detail ({{count}})",
         "show_address": "Show Address",
-        "copy_auth_address": "Copy Auth Address",
         "view_passphrase_hd": "View root wallet passphrase",
         "view_passphrase_algo25": "View wallet passphrase",
         "undo_rekey": "Undo Rekey",
-        "undo_rekey_subtitle": "Rekeyed to {{authAccount}}",
         "rekeyed_to": "Rekeyed to",
         "rekey_to_ledger": "Rekey to Ledger Account",
         "rekey_to_standard": "Rekey to Standard Account",
         "rekey_to_shared": "Rekey to Shared Account",
         "export_share_account": "Export/Share Account",
-        "rescan_rekeyed": "Rescan Rekeyed Accounts",
-        "rescan_rekeyed_subtitle": "Import any rekeyed accounts",
         "rename_account": "Rename Account",
         "mute_notifications": "Mute Notifications",
         "unmute_notifications": "Unmute Notifications",
         "remove_account": "Remove Account",
         "rename_title": "Rename Account",
         "rename_label": "Account name",
-        "rename_placeholder": "",
         "rename_save": "Done",
         "rename_success": "Account renamed",
         "remove_title": "Remove Account",
@@ -391,8 +355,7 @@
     },
     "min_balance_info": {
         "title": "Minimum Balance",
-        "description": "Minimum balance is the minimum amount of Algo you have to keep in an account. It increases every time the account is opted in to a smart contract, ASA or NFT.",
-        "close": "Close"
+        "description": "Minimum balance is the minimum amount of Algo you have to keep in an account. It increases every time the account is opted in to a smart contract, ASA or NFT."
     },
     "view_passphrase": {
         "acknowledge": {
@@ -436,8 +399,7 @@
             "body": "Make sure to record these words in the correct order, using the corresponding numbers.",
             "cta_continue": "Next",
             "error_title": "Could not retrieve passphrase",
-            "error_body": "Something went wrong. Please try again.",
-            "error_cta": "Back"
+            "error_body": "Something went wrong. Please try again."
         },
         "verification": {
             "title": "Verify recovery passphrase backup",
@@ -504,12 +466,6 @@
         "connect": {
             "label": "Connect"
         },
-        "confirm": {
-            "label": "Confirm"
-        },
-        "confirm_all": {
-            "label": "Confirm All"
-        },
         "slide_to_confirm": {
             "label": "Slide To Confirm"
         },
@@ -546,7 +502,6 @@
         "done": "Done",
         "save": "Save",
         "copy": "Copy",
-        "copy_address": "Copy address",
         "send": "Send"
     },
     "contacts": {
@@ -568,8 +523,6 @@
         "view_contact": {
             "no_contact_title": "No contact found",
             "no_contact_body": "Something appears to have gone wrong.  Couldn't find the contact specified",
-            "name_label": "Name",
-            "address_label": "Address",
             "account_address": "Account Address",
             "nfd_label": "NFDomain"
         },
@@ -705,10 +658,8 @@
         }
     },
     "menu": {
-        "cards": "Cards",
         "title": "Menu",
         "staking": "Staking",
-        "nfts": "NFTs",
         "buy_gift_card": "Buy Gift Card",
         "receive": "Receive",
         "contacts": "Contacts",
@@ -744,7 +695,6 @@
             "empty_body": "You do not currently have any pending inbox messages",
             "asa_requests_one": "1 incoming asset",
             "asa_requests_other": "{{count}} incoming assets",
-            "multisig_import": "Shared Account Import Request",
             "multisig_sign": {
                 "title": "<0>Signature request</0> to sign for {{address}}",
                 "status_pending": "Pending transaction",
@@ -840,7 +790,6 @@
         "edit_participant": {
             "title": "Edit address",
             "nickname_label": "Nickname",
-            "nickname_placeholder": "Add a nickname",
             "address_label": "Account Address",
             "remove": "Remove Address",
             "done": "Done"
@@ -867,8 +816,6 @@
             "accounts_heading": "Accounts ({{count}})",
             "add_to_accounts": "Add to Accounts",
             "ignore": "Ignore",
-            "copy_address": "Copy address",
-            "copied": "Address copied",
             "ignore_error": "Could not ignore invitation. Please try again.",
             "accept_success": "Shared account added",
             "accept_error": "Could not add account. Please try again.",
@@ -1003,7 +950,6 @@
             "addresses_count": "{{count}} addresses",
             "select_all": "Select all",
             "already_imported": "already imported",
-            "continue": "Continue",
             "finish_button": "Finish Account Creation"
         },
         "import_rekeyed_addresses": {
@@ -1028,8 +974,6 @@
             "add_account_option_description": "Add a new account to your existing Universal Wallet",
             "import_account_option_title": "Import Account",
             "import_account_option_description": "Import an existing Algorand account with various methods",
-            "scan_qr_option_title": "Scan QR Code",
-            "scan_qr_option_description": "Import an account by scanning a QR code containing a recovery passphrase",
             "qr_scan_invalid_title": "Invalid QR Code",
             "qr_scan_invalid_body": "This QR code doesn't contain a valid account recovery link",
             "qr_scan_invalid_mnemonic_title": "Invalid Passphrase",
@@ -1041,8 +985,6 @@
             "create_algo25_option_title": "Create an Algo25 Account",
             "create_algo25_option_description": "Legacy format that is specific to Algorand",
             "terms_and_privacy": "By adding a wallet, you agree to Pera Wallet's <0>Terms and Conditions</0> and <1>Privacy Policy</1>",
-            "pair_ledger_option_title": "Pair Ledger Device",
-            "pair_ledger_option_description": "Connect a Ledger hardware wallet via Bluetooth to import accounts",
             "create_multisig_option_title": "Add Shared Account",
             "create_multisig_option_description": "Create a new shared account with enhanced security that requires multiple signers",
             "see_other_options": "See other options"
@@ -1152,8 +1094,7 @@
                 "title": "Import from Pera Web",
                 "body": "Open the Pera Web Wallet on your computer, go to Transfer Accounts, select the accounts you want to import, and scan the QR code that's generated.",
                 "scan_button": "Scan QR code",
-                "scanner_title": "Scan the QR code\non Pera Web",
-                "invalid_qr_title": "QR code could not be read"
+                "scanner_title": "Scan the QR code\non Pera Web"
             },
             "loading": {
                 "title": "Importing accounts from Pera Web…",
@@ -1178,15 +1119,6 @@
                 "failed_count_one": "{{count}} account could not be imported",
                 "failed_count_other": "{{count}} accounts could not be imported",
                 "done": "Done"
-            },
-            "errors": {
-                "malformed_qr": "This isn't a valid Pera Web QR code.",
-                "unsupported_version": "This QR code uses an unsupported version. Update Pera Web and try again.",
-                "unsupported_action": "This QR code is not an import code.",
-                "empty_content": "The backup is empty or has expired. Generate a new QR code on Pera Web.",
-                "decryption_failed": "We couldn't unlock this backup. Generate a new QR code on Pera Web and try again.",
-                "malformed_payload": "The backup did not contain any importable accounts.",
-                "network_failed": "We couldn't reach Pera Web. Check your connection and try again."
             }
         },
         "select_hd_wallet": {
@@ -1206,7 +1138,6 @@
             "description": "You are creating a read-only view of an Algorand account.",
             "address_placeholder": "Account address or short name",
             "watch_button": "Create a Watch Account",
-            "paste_button": "Paste",
             "invalid_address": "Please enter a valid Algorand address",
             "duplicate_address": "This address has already been added to your wallet"
         }
@@ -1416,7 +1347,6 @@
     },
     "screens": {
         "contacts": "Contacts",
-        "view_contact": "View Contact",
         "edit_contact": "Edit Contact",
         "add_contact": "Add New Contact",
         "settings": "Settings",
@@ -1430,7 +1360,6 @@
         "developer_settings": "Developer Settings",
         "node_settings": "Node Settings",
         "feature_flags": "Feature Flags",
-        "dispenser": "Dispenser",
         "developer_menu": "Developer Options",
         "manage_cache": "Manage Cache",
         "messages": "Messages"
@@ -1532,7 +1461,6 @@
             "fee": "Fee",
             "current_balance": "Current Balance",
             "note": "Note",
-            "confirm_button": "Confirm transfer",
             "recipient_below_mbr": {
                 "title": "Amount Below Recipient Minimum",
                 "body": "The recipient needs at least {{min}} ALGO after this transaction to meet the Algorand minimum balance requirement."
@@ -1576,8 +1504,7 @@
             "description": "The receiver is not opted into this asset. You can send it to their asset inbox instead.",
             "read_more": "Read more",
             "fees_label": "Protocol & minimum balance fees",
-            "disclaimer": "The fee above will be used to cover the minimum balance requirements of the receiver. If the receiver rejects the asset, you will not receive anything back.",
-            "send_button": "Send to Receiver"
+            "disclaimer": "The fee above will be used to cover the minimum balance requirements of the receiver. If the receiver rejects the asset, you will not receive anything back."
         },
         "arc59_warning": {
             "title": "Warning",
@@ -1675,7 +1602,6 @@
             "biometric_error_title": "Failed to authenticate.",
             "biometric_error_message": "We were unable to authenticate you.  Please try again.",
             "advanced_security_settings": "Advanced Security Settings",
-            "advanced_security_settings_description": "Enable advanced security options such as re-key support.",
             "enable_asset_freeze_support": "Enable Asset Freeze Support",
             "enable_asset_freeze_support_description": "Once you enable this, you can confirm transaction requests to freeze or unfreeze assets on accounts. This may prevent the target account from transacting with the specified asset.",
             "shake_to_lock": "Shake to Lock",
@@ -1731,14 +1657,12 @@
     "signing": {
         "view_details": "View Transaction Details",
         "arbitrary_data_view": {
-            "title": "Data Signing Request",
             "body": "Data Signing Request",
             "details_title": "Arbitrary Signing Details",
             "show_details": "Show Details",
             "on_behalf_of": "Signing On Behalf Of"
         },
         "arbitrary_data_details": {
-            "title": "{{name}} is asking you to sign some data.",
             "unnamed": "Someone",
             "description": "A data signing request is a request to sign arbitrary data. This is a commonly used by services to verify ownership of an account, but it does not incur any fees.",
             "from": "Signing With",
@@ -1751,8 +1675,7 @@
         "transaction_view": {
             "invalid_title": "Invalid Transaction",
             "invalid_body": "There does not appear to be a valid transaction",
-            "transaction_failed_title": "Signing Failed",
-            "transaction_failed_body": "The transaction failed to send. Please try again."
+            "transaction_failed_title": "Signing Failed"
         },
         "transactions": {
             "title": "Review Transactions",
@@ -1899,10 +1822,6 @@
         "unknown": {
             "title": "Unsupported Transaction Type",
             "body": "This transaction type is not supported."
-        },
-        "processing_error": {
-            "title": "The transaction is not valid",
-            "body": "The specified transaction appears to be invalid or could not be processed"
         },
         "asset_transfer": {
             "clawback_from": "Clawback From"
@@ -2073,7 +1992,6 @@
             "select_asset": "Select"
         },
         "asset_selection": {
-            "title": "Select asset",
             "swap_from_title": "Swap From",
             "swap_to_title": "Swap To",
             "search_placeholder": "Search by name or ID",
@@ -2092,9 +2010,7 @@
             "primary_currency": "Primary currency",
             "use_local_currency": "Use local currency",
             "custom": "Custom",
-            "max": "MAX",
-            "swap": "Swap",
-            "to": "TO"
+            "max": "MAX"
         },
         "quote": {
             "rate": "Rate",
@@ -2103,16 +2019,12 @@
             "pera_fee": "Pera Fee",
             "provider": "Provider",
             "minimum_received": "Minimum Received",
-            "review_swap": "Review Swap",
             "confirm_swap": "Confirm Swap",
             "slide_to_confirm": "Slide To Confirm",
             "high_price_impact_warning": "This swap has a high price impact. You may receive significantly fewer tokens than expected.",
             "quote_error": "Unable to get quotes. Please try again."
         },
         "execution": {
-            "signing": "Signing...",
-            "submitting": "Submitting...",
-            "finalizing": "Finalizing...",
             "error_title": "Swap Failed",
             "success_title": "Swap Complete",
             "success_body": "{{fromAsset}} to {{toAsset}} swap successfully completed",
@@ -2203,30 +2115,23 @@
             "description": "Select a Ledger device to connect to.",
             "retry": "Scan Again",
             "error": "Scan failed. Make sure Bluetooth is enabled and try again.",
-            "timeout": "Scan timed out. Make sure your device is on and nearby.",
             "grant_permission": "Grant Permission",
             "open_settings": "Open Settings"
         },
         "fetch_accounts": {
-            "title": "Searching Accounts",
             "connecting": "Connecting to {{deviceName}}...",
             "discovering": "Searching for accounts on your Ledger device...",
             "progress": "Checking account {{current}}...",
-            "error_title": "Connection Error",
-            "app_not_open": "Please open the Algorand app on your Ledger device and try again.",
             "retry": "Try Again"
         },
         "select_accounts": {
             "title_one": "{{count}} account found",
             "title_other": "{{count}} accounts found",
             "description": "This Ledger device can sign transactions for the following accounts. Select the accounts to add to your Pera Wallet.",
-            "account_subtitle": "Ledger Account",
             "select_all": "Select all",
             "already_imported": "Already imported",
             "cta_one": "Verify selected account",
             "cta_other": "Verify selected accounts",
-            "address_sheet_title": "Account address",
-            "no_new_accounts": "All accounts on this device are already imported.",
             "find_another_wallet": "Find another account",
             "rekeyed_label": "Rekeyed",
             "rekeyed_account_title": "Rekeyed account",
@@ -2236,7 +2141,6 @@
             "account_details": "Account details",
             "assets": "Assets",
             "default_title": "Ledger #{{index}}",
-            "ledger_account_label": "Ledger Account",
             "can_be_signed_by": "Can be signed by",
             "can_sign_for": "Can sign for these",
             "error": "Couldn't load account information.",
@@ -2248,25 +2152,12 @@
             "awaiting": "Awaiting Verification",
             "verified": "Account Verified",
             "add_accounts_one": "Add Verified Account",
-            "add_accounts_other": "Add Verified Accounts",
-            "error_title": "Verification Failed",
-            "rejected": "Address verification was rejected on the device.",
-            "retry": "Try Again"
+            "add_accounts_other": "Add Verified Accounts"
         },
         "signing": {
             "cancel": "Cancel",
             "retry": "Retry",
             "footnote": "Verification will continue on Ledger. To cancel verification, cancel from Ledger.",
-            "awaitingApproval": {
-                "title": "Ledger Approval",
-                "body": "Please review and sign the transaction on your Ledger device {{deviceName}}.",
-                "body_noDevice": "Please review and sign the transaction on your Ledger device."
-            },
-            "awaitingApprovalData": {
-                "title": "Approve on your Ledger",
-                "body": "Review and approve the signature request on your Ledger device {{deviceName}}.",
-                "body_noDevice": "Review and approve the signature request on your Ledger device."
-            },
             "progress": {
                 "label": "Signing {{current}} out of {{total}}…"
             }
@@ -2328,14 +2219,6 @@
         },
         "scan_header": {
             "having_issues": "Having issues?"
-        },
-        "status": {
-            "disconnected": "Disconnected",
-            "scanning": "Scanning",
-            "connecting": "Connecting",
-            "connected": "Connected",
-            "app_not_open": "App Not Open",
-            "ready": "Ready"
         }
     }
 }
