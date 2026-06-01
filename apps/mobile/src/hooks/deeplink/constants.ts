@@ -21,6 +21,21 @@ export const PERAWALLET_WC_SCHEME = 'perawallet-wc'
 export const WC_SCHEME = 'wc'
 export const ALGORAND_SCHEME = 'algorand'
 export const ALGO_SCHEME = 'algo'
+/**
+ * FIDO2 / WebAuthn URI scheme used by Liquid Auth. The OS routes opens of
+ * `fido://…` URLs to the registered credential provider extension, so the
+ * app's job is just to recognize the scheme and hand the URL back to the OS.
+ */
+export const FIDO_SCHEME = 'fido'
+
+/**
+ * Liquid Auth comms-protocol URI scheme. Reserved for the upcoming in-app
+ * Liquid Auth flow (signaling channel + WebAuthn assertion handoff) — the
+ * parser recognises the scheme today so QR / deeplink callers don't fall
+ * through to "invalid URL", but the dispatcher only logs a placeholder until
+ * the protocol implementation lands.
+ */
+export const LIQUID_SCHEME = 'liquid'
 
 /**
  * Universal-link base for QR-share URLs that mirror native scheme handlers.

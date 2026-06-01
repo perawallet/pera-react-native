@@ -101,6 +101,28 @@ describe('Deeplink Parser - Main Parser', () => {
         const result = parseDeeplink(`algorand://${TEST_ADDRESS}`)
         expect(result?.type).toBe(DeeplinkType.ADDRESS_ACTIONS)
     })
+
+    it('parses fido:// URLs as LIQUID_AUTH with fido variant', () => {
+        const url = 'fido://example.com/auth?challenge=abc'
+        const result = parseDeeplink(url)
+        expect(result?.type).toBe(DeeplinkType.LIQUID_AUTH)
+        if (result?.type === DeeplinkType.LIQUID_AUTH) {
+            expect(result.variant).toBe('fido')
+            expect(result.url).toBe(url)
+            expect(result.sourceUrl).toBe(url)
+        }
+    })
+
+    it('parses liquid:// URLs as LIQUID_AUTH with liquid variant', () => {
+        const url = 'liquid://example.com/session?id=abc'
+        const result = parseDeeplink(url)
+        expect(result?.type).toBe(DeeplinkType.LIQUID_AUTH)
+        if (result?.type === DeeplinkType.LIQUID_AUTH) {
+            expect(result.variant).toBe('liquid')
+            expect(result.url).toBe(url)
+            expect(result.sourceUrl).toBe(url)
+        }
+    })
 })
 
 describe('Deeplink Parser - Edge Cases', () => {

@@ -51,6 +51,9 @@ const buildServices = (): PlatformServices => {
         async checkBiometricsAvailable() {
             return true
         },
+        async getSecurityLevel() {
+            return 'strong'
+        },
         async authenticate() {
             return true
         },

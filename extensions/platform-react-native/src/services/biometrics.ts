@@ -12,13 +12,16 @@
 
 import {
     AuthenticationType,
+    SecurityLevel,
     authenticateAsync,
+    getEnrolledLevelAsync,
     hasHardwareAsync,
     isEnrolledAsync,
     supportedAuthenticationTypesAsync,
 } from 'expo-local-authentication'
 import { logger } from '@perawallet/wallet-core-shared'
 import type {
+    BiometricSecurityLevel,
     BiometricsAuthenticatePrompt,
     BiometricsService,
     BiometricType,
@@ -48,6 +51,32 @@ export class RNBiometricsService implements BiometricsService {
 
     async checkBiometricsAvailable(): Promise<boolean> {
         return (await this.getSupportedBiometricType()) !== null
+    }
+
+    async getSecurityLevel(): Promise<BiometricSecurityLevel> {
+        try {
+            const level = await getEnrolledLevelAsync()
+            switch (level) {
+                case SecurityLevel.BIOMETRIC_STRONG:
+                    return 'strong'
+                // BIOMETRIC_WEAK shares its numeric value with the deprecated
+                // `BIOMETRIC` member, so this also covers legacy reports.
+                case SecurityLevel.BIOMETRIC_WEAK:
+                    return 'weak'
+                case SecurityLevel.SECRET:
+                    return 'secret'
+                default:
+                    return 'none'
+            }
+        } catch (error) {
+            // Older OS versions / unsupported hardware can throw rather than
+            // reporting NONE. Treat as "can't confirm a strong biometric".
+            logger.warn('getEnrolledLevelAsync threw', {
+                source: LOG_SOURCE,
+                error,
+            })
+            return 'none'
+        }
     }
 
     async authenticate(

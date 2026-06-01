@@ -20,6 +20,7 @@ const keystoreMocks = vi.hoisted(() => ({
     storageGetAllKeys: vi.fn(() => [] as string[]),
     storageGetString: vi.fn(),
     initializeKeyStore: vi.fn(),
+    addKey: vi.fn(),
 }))
 
 vi.mock('@algorandfoundation/react-native-keystore', () => ({
@@ -36,6 +37,7 @@ vi.mock('@algorandfoundation/react-native-keystore', () => ({
 
 vi.mock('@algorandfoundation/keystore', () => ({
     initializeKeyStore: keystoreMocks.initializeKeyStore,
+    addKey: keystoreMocks.addKey,
 }))
 
 vi.mock('@perawallet/wallet-extension-ledger-react-native', () => ({
@@ -82,6 +84,7 @@ import {
     resetProvider,
     clearKeystore,
     hydrateKeystore,
+    reconcileKeystore,
 } from '../singleton'
 import { PeraProvider } from '../pera-provider'
 
@@ -104,6 +107,7 @@ describe('provider singleton', () => {
         keystoreMocks.storageGetAllKeys.mockReset()
         keystoreMocks.storageGetString.mockReset()
         keystoreMocks.initializeKeyStore.mockReset()
+        keystoreMocks.addKey.mockReset()
         keystoreMocks.storageGetAllKeys.mockReturnValue([])
         resetKeystoreStateForTest()
     })
@@ -268,6 +272,83 @@ describe('provider singleton', () => {
 
             expect(Array.from(masterKey)).toEqual([0, 0, 0])
             consoleError.mockRestore()
+        })
+    })
+
+    describe('reconcileKeystore', () => {
+        const seedReactiveStore = (keys: { id: string }[]): void => {
+            const store = getKeystoreStore() as unknown as {
+                state: { keys: unknown[] }
+            }
+            store.state.keys = keys
+        }
+
+        test('no-ops (without fetching the master key) when MMKV has no entries', async () => {
+            seedReactiveStore([{ id: 'a' }])
+            keystoreMocks.storageGetAllKeys.mockReturnValue([])
+
+            await reconcileKeystore()
+
+            expect(keystoreMocks.getMasterKey).not.toHaveBeenCalled()
+            expect(keystoreMocks.initializeKeyStore).not.toHaveBeenCalled()
+        })
+
+        test('re-seeds the store from MMKV, adding new keys and refreshing metadata on existing ones', async () => {
+            // 'a' is already in the reactive store but stale (no lastUsedAt);
+            // 'b' is new. The credential provider (separate process) just bumped
+            // 'a'.lastUsedAt in MMKV on use, so reconcile must surface both the
+            // new key and the refreshed metadata on the existing one.
+            seedReactiveStore([
+                {
+                    id: 'a',
+                    metadata: { origin: 'webauthn.io', userHandle: 'alice' },
+                },
+            ])
+            keystoreMocks.storageGetAllKeys.mockReturnValue(['a', 'b'])
+            keystoreMocks.storageGetString.mockImplementation(
+                (id: string) => `cipher-${id}`,
+            )
+            const masterKey = Buffer.from([1, 2, 3])
+            keystoreMocks.getMasterKey.mockResolvedValue(masterKey)
+            keystoreMocks.decryptData.mockImplementation(
+                (_mk: unknown, cipher: string) => `decrypted-${cipher}`,
+            )
+            keystoreMocks.decode.mockImplementation((decrypted: string) =>
+                decrypted === 'decrypted-cipher-a'
+                    ? {
+                          id: 'a',
+                          type: 'hd-derived-p256',
+                          algorithm: 'P256',
+                          metadata: {
+                              origin: 'webauthn.io',
+                              userHandle: 'alice',
+                              lastUsedAt: 1234,
+                          },
+                      }
+                    : {
+                          id: 'b',
+                          type: 'hd-derived-p256',
+                          algorithm: 'P256',
+                          metadata: {
+                              origin: 'example.com',
+                              userHandle: 'bob',
+                          },
+                      },
+            )
+
+            await reconcileKeystore()
+
+            expect(keystoreMocks.initializeKeyStore).toHaveBeenCalledTimes(1)
+            const seededKeys = keystoreMocks.initializeKeyStore.mock.calls[0][0]
+                .keys as Array<{
+                id: string
+                metadata?: { lastUsedAt?: number }
+            }>
+            const refreshedA = seededKeys.find(k => k.id === 'a')
+            expect(refreshedA?.metadata?.lastUsedAt).toBe(1234)
+            expect(seededKeys.some(k => k.id === 'b')).toBe(true)
+            // Master key copy was zeroed after use.
+            expect(Array.from(masterKey)).toEqual([0, 0, 0])
         })
     })
 })

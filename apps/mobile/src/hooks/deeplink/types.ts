@@ -36,6 +36,7 @@ export const DeeplinkType = {
     INTERNAL_BROWSER: 'INTERNAL_BROWSER',
     SHARED_ACCOUNT_IMPORT: 'SHARED_ACCOUNT_IMPORT',
     PERA_WEB_IMPORT: 'PERA_WEB_IMPORT',
+    LIQUID_AUTH: 'LIQUID_AUTH',
     HOME: 'HOME',
 } as const
 
@@ -212,6 +213,23 @@ export interface PeraWebImportDeeplink extends ParsedDeeplink {
     encryptionKey: Uint8Array
 }
 
+/**
+ * A scanned/inbound Liquid Auth URL.
+ *
+ * - `variant: 'fido'`   — A `fido://…` URL. The handler hands the URL back
+ *                        to the OS via Linking, which routes it to the
+ *                        registered credential provider extension.
+ * - `variant: 'liquid'` — A `liquid://…` URL for the Liquid Auth comms
+ *                        protocol. Recognised by the parser today; the
+ *                        protocol-side dispatch lands later.
+ */
+export interface LiquidAuthDeeplink extends ParsedDeeplink {
+    type: typeof DeeplinkType.LIQUID_AUTH
+    variant: 'fido' | 'liquid'
+    /** Original URL as scanned, preserved for system Linking and logging. */
+    url: string
+}
+
 export type AnyParsedDeeplink =
     | AddContactDeeplink
     | EditContactDeeplink
@@ -238,4 +256,5 @@ export type AnyParsedDeeplink =
     | InternalBrowserDeeplink
     | SharedAccountImportDeeplink
     | PeraWebImportDeeplink
+    | LiquidAuthDeeplink
     | HomeDeeplink

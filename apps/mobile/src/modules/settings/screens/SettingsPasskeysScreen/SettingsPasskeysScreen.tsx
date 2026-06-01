@@ -10,17 +10,97 @@
  limitations under the License
  */
 
-import { EmptyView } from '@components/EmptyView'
+import type { ReactNode } from 'react'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { PWIcon, PWView } from '@components/core'
+import { InfoCallout } from '@components/InfoCallout'
+import { QRScannerView } from '@components/QRScannerView'
 import { useLanguage } from '@hooks/useLanguage'
+import { useNavigationHeader } from '@hooks/useNavigationHeader'
+import { PasskeysDisabledState } from '../../components/PasskeysDisabledState'
+import { PasskeysEmptyState } from '../../components/PasskeysEmptyState'
+import { PasskeysErrorState } from '../../components/PasskeysErrorState'
+import { PasskeysList } from '../../components/PasskeysList'
+import { PasskeysLoadingState } from '../../components/PasskeysLoadingState'
+import { useSettingsPasskeysScreen } from './useSettingsPasskeysScreen'
+import { useStyles } from './styles'
 
 export const SettingsPasskeyScreen = () => {
+    const styles = useStyles()
     const { t } = useLanguage()
+    const screen = useSettingsPasskeysScreen()
+
+    // Same QR entry point as the WalletConnect / home scanners — scanned
+    // `fido://` (and reserved `liquid://`) codes route through the shared
+    // deeplink handler, so registration / assertion works identically here.
+    useNavigationHeader({
+        right: screen.canScan ? (
+            <PWView testID='passkeys_qr_scanner_button'>
+                <PWIcon
+                    name='camera'
+                    onPress={screen.onOpenScanner}
+                />
+            </PWView>
+        ) : null,
+    })
+
+    let content: ReactNode
+    switch (screen.state) {
+        case 'loading':
+            content = <PasskeysLoadingState />
+            break
+        case 'error':
+            content = <PasskeysErrorState onDismiss={screen.onDismissError} />
+            break
+        case 'disabled':
+            content = (
+                <PasskeysDisabledState
+                    onOpenSettings={screen.onOpenProviderSettings}
+                />
+            )
+            break
+        case 'empty':
+            content = <PasskeysEmptyState />
+            break
+        case 'populated':
+            content = (
+                <PasskeysList
+                    passkeys={screen.passkeys}
+                    onRequestDelete={screen.onRequestDelete}
+                />
+            )
+            break
+    }
+
     return (
-        <EmptyView
-            icon='person-key'
-            title={t('common.not_implemented.title')}
-            body={t('common.not_implemented.body')}
+        <SafeAreaView
+            edges={['bottom']}
+            style={styles.safeArea}
             testID='settings_passkeys_screen'
-        />
+        >
+            {screen.notice === 'hd-wallet' && (
+                <InfoCallout
+                    title={t('settings.passkeys.hd_wallet_warning_title')}
+                    body={t('settings.passkeys.hd_wallet_warning_body')}
+                    style={styles.notice}
+                    testID='settings_passkeys_hd_wallet_notice'
+                />
+            )}
+            {screen.notice === 'biometric' && (
+                <InfoCallout
+                    title={t('settings.passkeys.biometric_warning_title')}
+                    body={t('settings.passkeys.biometric_warning_body')}
+                    style={styles.notice}
+                    testID='settings_passkeys_biometric_notice'
+                />
+            )}
+            {content}
+            <QRScannerView
+                isVisible={screen.isScannerVisible}
+                onSuccess={screen.onCloseScanner}
+                onClose={screen.onCloseScanner}
+                animationType='slide'
+            />
+        </SafeAreaView>
     )
 }

@@ -25,6 +25,8 @@ import { parseCoinbaseFormat } from './coinbase-parser'
 import {
     ALGO_SCHEME,
     ALGORAND_SCHEME,
+    FIDO_SCHEME,
+    LIQUID_SCHEME,
     PERAWALLET_SCHEME,
     PERAWALLET_UNIVERSAL_LINK_HOST,
     PERAWALLET_WC_SCHEME,
@@ -166,6 +168,24 @@ export const parseDeeplink = (url: string): Nullable<AnyParsedDeeplink> => {
     if (jsonResult) return jsonResult
 
     const normalizedUrl = normalizeUrl(url)
+
+    if (normalizedUrl.startsWith(`${FIDO_SCHEME}:`)) {
+        return {
+            type: DeeplinkType.LIQUID_AUTH,
+            variant: 'fido',
+            sourceUrl: url,
+            url,
+        }
+    }
+
+    if (normalizedUrl.startsWith(`${LIQUID_SCHEME}:`)) {
+        return {
+            type: DeeplinkType.LIQUID_AUTH,
+            variant: 'liquid',
+            sourceUrl: url,
+            url,
+        }
+    }
 
     if (
         normalizedUrl.startsWith(`${WC_SCHEME}:`) ||

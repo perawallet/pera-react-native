@@ -52,6 +52,10 @@ import {
     PeraWalletProvider,
     usePeraProvider,
 } from '@perawallet/wallet-extension-provider'
+import {
+    runPasskeyAutofillBootstrap,
+    usePasskeyAutofillLifecycle,
+} from './bootstrap/passkey-autofill'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { RootComponent } from '@components/RootComponent'
 // Side-effect: binds every entry in the bottom-sheet manager's typed
@@ -94,6 +98,8 @@ const AppContent = () => {
     const theme = getTheme(isDarkMode ? 'dark' : 'light')
     const [initError, setInitError] = useState<boolean>(false)
 
+    usePasskeyAutofillLifecycle()
+
     useEffect(() => {
         logger.setErrorReporter(
             createCrashReportingErrorReporter(provider.crashReporting),
@@ -115,6 +121,12 @@ const AppContent = () => {
                     setInitError(true)
                     logger.error('Keystore hydration failed', { error: err })
                 }
+
+                await runPasskeyAutofillBootstrap().catch(err =>
+                    logger.error('Passkey autofill bootstrap failed', {
+                        error: err,
+                    }),
+                )
 
                 await initializeDatabase(provider.database)
                 await seedAlgoAsset(getDatabase())

@@ -113,6 +113,10 @@ minimumReleaseAge: 10080
 # @algorandfoundation/keystore + @algorandfoundation/react-native-keystore:
 # in-progress upstream canary releases consumed during the keystore upgrade
 # work; pinned to specific canary versions in the catalog above.
+# @algorandfoundation/react-native-passkey-autofill: in-progress first-party
+# canary releases consumed during the passkey support work; pinned to a
+# specific canary version in the app + extension package.json. Provenance
+# attestations and maintainer list verified against the prior canary.
 # expo / expo-* / @expo/* / @react-native/* / react-native / react-native-nitro-modules:
 # temporary exemption for the SDK 55 → 56 upgrade. Expo SDK 56.0.0 shipped
 # 2026-05-20 and has not yet aged through the 7-day gate. These entries
@@ -125,6 +129,7 @@ minimumReleaseAgeExclude:
   - fast-uri
   - "@algorandfoundation/keystore"
   - "@algorandfoundation/react-native-keystore"
+  - "@algorandfoundation/react-native-passkey-autofill"
   - ws
   - expo
   - "expo-*"

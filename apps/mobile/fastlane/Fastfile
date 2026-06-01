@@ -101,20 +101,48 @@ platform :ios do
     when "Pera7Production" then "com.algorandllc.perarn"
     else "com.algorandllc.perarn.staging"
     end
+    # AutoFill credential-provider extension (added by the passkey plugin).
+    extension_bundle_id = "#{bundle_id}.PasskeyAutofillCredentialProvider"
+
+    app_profile = ENV["IOS_PROVISIONING_PROFILE_NAME"]
+    extension_profile = ENV["IOS_AUTOFILL_PROVISIONING_PROFILE_NAME"]
 
     export_options = {}
-    if ENV["IOS_PROVISIONING_PROFILE_NAME"]
-      export_options[:provisioningProfiles] = {
-        bundle_id => ENV["IOS_PROVISIONING_PROFILE_NAME"]
-      }
-    end
-
-    # Construct xcargs for manual signing
     xcargs_list = ["CODE_SIGN_STYLE='Manual'"]
-    if ENV["IOS_PROVISIONING_PROFILE_NAME"]
-      xcargs_list << "PROVISIONING_PROFILE_SPECIFIER='#{ENV["IOS_PROVISIONING_PROFILE_NAME"]}'"
+
+    if app_profile
+      # Per-target profiles: a single global PROVISIONING_PROFILE_SPECIFIER
+      # xcarg would force the app profile onto the extension, so pin each
+      # target to its own profile on the project, then map both for export.
+      update_code_signing_settings(
+        path: get_xcodeproj_path,
+        use_automatic_signing: false,
+        team_id: ENV["IOS_TEAM_ID"],
+        code_sign_identity: "Apple Distribution",
+        targets: [options[:scheme]],
+        profile_name: app_profile
+      )
+      export_options[:provisioningProfiles] = { bundle_id => app_profile }
+
+      if extension_profile
+        update_code_signing_settings(
+          path: get_xcodeproj_path,
+          use_automatic_signing: false,
+          team_id: ENV["IOS_TEAM_ID"],
+          code_sign_identity: "Apple Distribution",
+          targets: ["PasskeyAutofillCredentialProvider"],
+          profile_name: extension_profile
+        )
+        export_options[:provisioningProfiles][extension_bundle_id] = extension_profile
+      else
+        UI.important("IOS_AUTOFILL_PROVISIONING_PROFILE_NAME not set — the AutoFill extension target won't be signed and the archive will fail.")
+      end
+
       xcargs_list << "CODE_SIGN_IDENTITY='Apple Distribution'"
     end
+
+    # `$(DEVELOPMENT_TEAM)` on the extension target resolves from this.
+    xcargs_list << "DEVELOPMENT_TEAM='#{ENV["IOS_TEAM_ID"]}'" if ENV["IOS_TEAM_ID"]
 
     gym(
       scheme: options[:scheme],

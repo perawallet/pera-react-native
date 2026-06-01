@@ -16,18 +16,27 @@ const hasHardwareAsyncMock = vi.hoisted(() => vi.fn())
 const isEnrolledAsyncMock = vi.hoisted(() => vi.fn())
 const supportedAuthenticationTypesAsyncMock = vi.hoisted(() => vi.fn())
 const authenticateAsyncMock = vi.hoisted(() => vi.fn())
+const getEnrolledLevelAsyncMock = vi.hoisted(() => vi.fn())
 
-// AuthenticationType numeric values match expo-local-authentication's enum.
+// AuthenticationType / SecurityLevel numeric values match
+// expo-local-authentication's enums.
 vi.mock('expo-local-authentication', () => ({
     AuthenticationType: {
         FINGERPRINT: 1,
         FACIAL_RECOGNITION: 2,
         IRIS: 3,
     },
+    SecurityLevel: {
+        NONE: 0,
+        SECRET: 1,
+        BIOMETRIC_WEAK: 2,
+        BIOMETRIC_STRONG: 3,
+    },
     hasHardwareAsync: hasHardwareAsyncMock,
     isEnrolledAsync: isEnrolledAsyncMock,
     supportedAuthenticationTypesAsync: supportedAuthenticationTypesAsyncMock,
     authenticateAsync: authenticateAsyncMock,
+    getEnrolledLevelAsync: getEnrolledLevelAsyncMock,
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
@@ -52,6 +61,36 @@ describe('RNBiometricsService', () => {
         isEnrolledAsyncMock.mockReset()
         supportedAuthenticationTypesAsyncMock.mockReset()
         authenticateAsyncMock.mockReset()
+        getEnrolledLevelAsyncMock.mockReset()
+    })
+
+    describe('getSecurityLevel', () => {
+        test('maps BIOMETRIC_STRONG to "strong"', async () => {
+            getEnrolledLevelAsyncMock.mockResolvedValue(3)
+            expect(await service.getSecurityLevel()).toBe('strong')
+        })
+
+        test('maps BIOMETRIC_WEAK to "weak"', async () => {
+            getEnrolledLevelAsyncMock.mockResolvedValue(2)
+            expect(await service.getSecurityLevel()).toBe('weak')
+        })
+
+        test('maps SECRET (PIN/pattern) to "secret"', async () => {
+            getEnrolledLevelAsyncMock.mockResolvedValue(1)
+            expect(await service.getSecurityLevel()).toBe('secret')
+        })
+
+        test('maps NONE to "none"', async () => {
+            getEnrolledLevelAsyncMock.mockResolvedValue(0)
+            expect(await service.getSecurityLevel()).toBe('none')
+        })
+
+        test('returns "none" when the platform call throws', async () => {
+            getEnrolledLevelAsyncMock.mockRejectedValue(
+                new Error('unsupported'),
+            )
+            expect(await service.getSecurityLevel()).toBe('none')
+        })
     })
 
     describe('getSupportedBiometricType', () => {
