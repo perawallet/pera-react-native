@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import { useTheme } from '@rneui/themed'
 import { PeraNotification } from '@perawallet/wallet-core-messages'
 import { RefreshControl } from 'react-native-gesture-handler'
@@ -22,10 +23,6 @@ import { useLanguage } from '@hooks/useLanguage'
 import { NotificationItem } from '@modules/messages/components/NotificationItem/NotificationItem'
 import { useStyles } from './styles'
 import { useNotificationsScreen } from './useNotificationsScreen'
-
-const renderItem = ({ item }: { item: PeraNotification }) => {
-    return <NotificationItem item={item} />
-}
 
 export const NotificationsScreen = () => {
     const styles = useStyles()
@@ -40,7 +37,18 @@ export const NotificationsScreen = () => {
         loadMoreItems,
         isFetchingNextPage,
         keyExtractor,
+        handleNotificationPress,
     } = useNotificationsScreen()
+
+    const renderItem = useCallback(
+        ({ item }: { item: PeraNotification }) => (
+            <NotificationItem
+                item={item}
+                onPress={handleNotificationPress}
+            />
+        ),
+        [handleNotificationPress],
+    )
 
     return (
         <PWScreen scroll={false}>

@@ -14,7 +14,7 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     feeContainer: {
-        paddingVertical: theme.spacing.lg,
+        paddingVertical: theme.spacing.md,
     },
     listHeader: {
         alignItems: 'center',
@@ -49,6 +49,6 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.lg,
     },
     footerContainer: {
-        paddingTop: theme.spacing.lg,
+        paddingTop: theme.spacing.sm,
     },
 }))

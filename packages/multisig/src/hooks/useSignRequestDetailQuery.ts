@@ -11,11 +11,15 @@
  */
 
 import { useCallback } from 'react'
-import { useQuery, type UseQueryResult } from '@tanstack/react-query'
+import {
+    useQuery,
+    useQueryClient,
+    type UseQueryResult,
+} from '@tanstack/react-query'
 import type { Network } from '@perawallet/wallet-core-shared'
 import type { MultisigSignRequest } from '../models'
-import { getSignRequestDetail } from '../api/endpoints'
-import { ACTIONABLE_SIGN_REQUEST_STATUSES } from '../constants'
+import { getSignRequestDetail, type SignRequestDetailResponse } from '../api'
+import { IN_FLIGHT_SIGN_REQUEST_STATUSES } from '../constants'
 import { mapSignRequest } from '../mappers'
 import { getSignRequestDetailQueryKey } from './querykeys'
 
@@ -39,15 +43,38 @@ export const useSignRequestDetailQuery = ({
     MultisigSignRequest,
     Error
 > => {
+    const queryClient = useQueryClient()
+    const queryKey = getSignRequestDetailQueryKey(network, signRequestId)
+
     return useQuery({
-        queryKey: getSignRequestDetailQueryKey(network, signRequestId),
-        queryFn: () => getSignRequestDetail(network, deviceId, signRequestId),
+        queryKey,
+        // Backfill `proposer_address` from the previous cached value when
+        // the search endpoint that backs `getSignRequestDetail` omits it
+        // (the field is `.nullable().optional()` in the response schema
+        // and some backend deployments only include it on the propose /
+        // cosign POST responses, not on subsequent reads). Losing it
+        // mid-poll strips the proposer's Cancel button from the pending
+        // signatures sheet — see `useMultisigSignRequestDecline`. This is
+        // the read-path counterpart to the write-path preservation in
+        // `useMultisigTransportAdapters`.
+        queryFn: async () => {
+            const fresh = await getSignRequestDetail(
+                network,
+                deviceId,
+                signRequestId,
+            )
+            if (fresh.proposer_address != null) return fresh
+            const previous =
+                queryClient.getQueryData<SignRequestDetailResponse>(queryKey)
+            if (!previous?.proposer_address) return fresh
+            return { ...fresh, proposer_address: previous.proposer_address }
+        },
         enabled: enabled && !!signRequestId && !!deviceId,
         select: useCallback(mapSignRequest, []),
         refetchInterval: pollWhilePending
             ? data => {
                   const status = data.state.data?.status
-                  if (status && ACTIONABLE_SIGN_REQUEST_STATUSES.has(status)) {
+                  if (status && IN_FLIGHT_SIGN_REQUEST_STATUSES.has(status)) {
                       return PENDING_POLL_INTERVAL
                   }
                   return false

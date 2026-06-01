@@ -52,4 +52,18 @@ describe('ContactAvatar', () => {
         // source is supplied we should NOT fall through to the placeholder.
         expect(screen.queryByTestId('icon-person')).toBeNull()
     })
+
+    it('renders the person placeholder when the highlighted variant is set without a contact', () => {
+        // `variant` only changes the container background colour and the
+        // placeholder icon's colour variant — both are styling, which the
+        // PWIcon test mock drops and CLAUDE.md excludes from assertions.
+        // A render smoke test is the meaningful coverage here.
+        render(
+            <ContactAvatar
+                size='md'
+                variant='highlighted'
+            />,
+        )
+        expect(screen.getByTestId('icon-person')).toBeTruthy()
+    })
 })

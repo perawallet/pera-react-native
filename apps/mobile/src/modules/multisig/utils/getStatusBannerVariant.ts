@@ -15,7 +15,11 @@ import {
     type SignRequestStatus,
 } from '@perawallet/wallet-core-multisig'
 
-export type StatusBannerVariant = 'waiting' | 'success' | 'failure'
+export type StatusBannerVariant =
+    | 'waiting'
+    | 'submitting'
+    | 'success'
+    | 'failure'
 
 export const getStatusBannerVariant = (
     status: SignRequestStatus | null,
@@ -23,5 +27,9 @@ export const getStatusBannerVariant = (
     if (!status) return 'waiting'
     if (status === 'confirmed') return 'success'
     if (FAILURE_SIGN_REQUEST_STATUSES.has(status)) return 'failure'
+    // `ready` (threshold met, awaiting backend submission) and `submitting`
+    // (in-flight) collapse into the same intermediate banner — distinguishes
+    // "all sigs collected, on its way" from "still collecting".
+    if (status === 'ready' || status === 'submitting') return 'submitting'
     return 'waiting'
 }

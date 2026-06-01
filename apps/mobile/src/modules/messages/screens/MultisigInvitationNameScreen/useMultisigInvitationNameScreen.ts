@@ -139,6 +139,7 @@ export const useMultisigInvitationNameScreen =
                     multisigDetails: {
                         threshold: invitation.threshold,
                         addresses: invitation.participantAddresses,
+                        version: invitation.version,
                     },
                 }
 
@@ -166,6 +167,7 @@ export const useMultisigInvitationNameScreen =
             invitation.address,
             invitation.threshold,
             invitation.participantAddresses,
+            invitation.version,
             trimmedName,
             deleteImportInboxMutation,
             setAccounts,

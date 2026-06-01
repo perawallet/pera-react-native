@@ -14,6 +14,7 @@ import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { useSigningActionButtons } from '../useSigningActionButtons'
 import {
+    isSignRequestMultisigUnsignable,
     useSigningPipeline,
     useSigningRequest,
     type TransactionWarning,
@@ -27,6 +28,11 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningPipeline: vi.fn(),
     useSigningRequest: vi.fn(),
+    isSignRequestMultisigUnsignable: vi.fn(() => false),
+}))
+
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    useAllAccounts: vi.fn(() => []),
 }))
 
 vi.mock('@perawallet/wallet-core-settings', () => ({
@@ -292,6 +298,52 @@ describe('useSigningActionButtons', () => {
             })
 
             expect(showError).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('unsignable multisig', () => {
+        // The predicate itself (cosign exclusion, signer resolution, etc.) is
+        // covered by isSignRequestMultisigUnsignable's own spec; here we only
+        // check the hook wires it up and blocks the send when it's true.
+        const request = { id: 'r1' }
+
+        it('blocks an unsignable multisig and does not advance the pipeline', () => {
+            ;(isSignRequestMultisigUnsignable as Mock).mockReturnValue(true)
+            ;(useSigningRequest as Mock).mockReturnValue({
+                currentRequest: request,
+            })
+
+            const { result } = renderHook(() => useSigningActionButtons())
+
+            expect(result.current.isMultisigUnsignable).toBe(true)
+
+            act(() => {
+                result.current.handleSignAndSend()
+            })
+
+            expect(mockNext).not.toHaveBeenCalled()
+        })
+
+        it('does not block when the request is signable', () => {
+            ;(isSignRequestMultisigUnsignable as Mock).mockReturnValue(false)
+            ;(useSigningRequest as Mock).mockReturnValue({
+                currentRequest: request,
+            })
+
+            const { result } = renderHook(() => useSigningActionButtons())
+
+            expect(result.current.isMultisigUnsignable).toBe(false)
+        })
+
+        it('reports false when there is no current request', () => {
+            ;(isSignRequestMultisigUnsignable as Mock).mockReturnValue(true)
+            ;(useSigningRequest as Mock).mockReturnValue({
+                currentRequest: undefined,
+            })
+
+            const { result } = renderHook(() => useSigningActionButtons())
+
+            expect(result.current.isMultisigUnsignable).toBe(false)
         })
     })
 })

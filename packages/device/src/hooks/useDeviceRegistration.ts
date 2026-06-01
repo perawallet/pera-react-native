@@ -10,49 +10,43 @@
  limitations under the License
  */
 
-import { useEffect, useRef } from 'react'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useEffect } from 'react'
+import {
+    useNetwork,
+    useOnNetworkSwitch,
+} from '@perawallet/wallet-core-blockchain'
 import { logger } from '@perawallet/wallet-core-shared'
 
 import { useDevice } from './useDevice'
 
 /**
- * Drives device registration as a side-effect of network and account changes.
- *
- * On a real network switch, detaches the push token from the previous
- * network's device first so the server stops pushing to a node we've moved
- * away from, then re-registers on the new network. Mirrors Android's
- * `DeviceRegistrationUseCase` orchestration.
- *
- * Failures are logged but never thrown — registration is best-effort, and
- * the next render or app foreground naturally retries.
- *
- * `addresses` must be a stable reference across renders when its contents
- * are unchanged (memoize at the call site); otherwise the effect refires
- * on every render.
+ * Drives best-effort device registration off network and account changes.
+ * Mirrors Android's `DeviceRegistrationUseCase`; failures are logged, never
+ * thrown. `addresses` must be a stable reference when unchanged (memoize at
+ * the call site) so the effect doesn't refire every render.
  */
 export const useDeviceRegistration = (addresses: string[]): void => {
     const { network } = useNetwork()
     const { registerDevice, clearDevicePushToken } = useDevice()
-    const previousNetworkRef = useRef(network)
 
+    // Stop the server pushing to the network we just left.
+    useOnNetworkSwitch(previousNetwork => {
+        clearDevicePushToken(previousNetwork).catch(error => {
+            logger.warn('Device push-token cleanup failed', {
+                source: 'useDeviceRegistration',
+                error,
+            })
+        })
+    })
+
+    // (Re)register on mount, when the account set changes, and on the new
+    // network after a switch.
     useEffect(() => {
-        const previousNetwork = previousNetworkRef.current
-        const isNetworkSwitch = previousNetwork !== network
-        previousNetworkRef.current = network
-
-        const run = async () => {
-            if (isNetworkSwitch) {
-                await clearDevicePushToken(previousNetwork)
-            }
-            await registerDevice(addresses)
-        }
-
-        run().catch(error => {
+        registerDevice(addresses).catch(error => {
             logger.warn('Device registration failed', {
                 source: 'useDeviceRegistration',
                 error,
             })
         })
-    }, [addresses, network, registerDevice, clearDevicePushToken])
+    }, [addresses, network, registerDevice])
 }

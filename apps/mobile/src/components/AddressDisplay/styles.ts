@@ -15,6 +15,10 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => {
     const secondaryText = {
         color: theme.colors.textGray,
+        // No dedicated line-height token exists; theme.spacing.lg (16) is
+        // reused as the caption line height to keep pixel-parity with the
+        // secondary text in AccountDisplay/styles.ts.
+        lineHeight: theme.spacing.lg,
     }
     return {
         addressValueContainer: {
@@ -53,14 +57,5 @@ export const useStyles = makeStyles(theme => {
             color: theme.colors.textMain,
         },
         secondaryText,
-        foreignAvatar: {
-            width: theme.spacing.xxl,
-            height: theme.spacing.xxl,
-            borderRadius: theme.spacing.xxl,
-            backgroundColor: theme.colors.wallet1Icon,
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-        },
     }
 })

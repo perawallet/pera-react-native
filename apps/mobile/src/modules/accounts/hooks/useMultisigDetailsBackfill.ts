@@ -57,6 +57,7 @@ export const useMultisigDetailsBackfill = (
             multisigDetails: {
                 threshold: data.threshold,
                 addresses: data.participantAddresses,
+                version: data.version,
             },
         })
     }, [account, data, updateAccount])

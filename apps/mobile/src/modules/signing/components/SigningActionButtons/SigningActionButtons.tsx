@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWButton, PWSlideToConfirm, PWView } from '@components/core'
+import { PWButton, PWSlideToConfirm, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { MultisigDeclineButton } from '@modules/multisig/components/MultisigDeclineButton'
 import { useStyles } from './styles'
@@ -25,17 +25,32 @@ export const SigningActionButtons = () => {
         isLoading,
         currentRequest,
         isMultisigCosign,
+        isMultisigUnsignable,
         cosignSignerAddress,
     } = useSigningActionButtons()
 
     return (
         <PWView style={styles.container}>
-            <PWSlideToConfirm
-                title={t('common.slide_to_confirm.label')}
-                onConfirm={handleSignAndSend}
-                isLoading={isLoading}
-                testID='signing-confirm-slide'
-            />
+            {isMultisigUnsignable ? (
+                <PWView
+                    style={styles.cannotSignNotice}
+                    testID='signing-cannot-sign'
+                >
+                    <PWText variant='h4'>
+                        {t('signing.cannot_sign.title')}
+                    </PWText>
+                    <PWText style={styles.cannotSignBody}>
+                        {t('signing.cannot_sign.body')}
+                    </PWText>
+                </PWView>
+            ) : (
+                <PWSlideToConfirm
+                    title={t('common.slide_to_confirm.label')}
+                    onConfirm={handleSignAndSend}
+                    isLoading={isLoading}
+                    testID='signing-confirm-slide'
+                />
+            )}
             {isMultisigCosign && currentRequest && cosignSignerAddress ? (
                 <MultisigDeclineButton
                     request={currentRequest}

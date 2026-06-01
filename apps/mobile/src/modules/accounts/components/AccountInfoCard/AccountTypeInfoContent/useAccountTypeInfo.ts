@@ -75,6 +75,11 @@ const REKEYED_SIGNABLE_I18N = {
     description: 'account_type_info.rekeyed_standard_description',
 }
 
+const MULTISIG_UNSIGNABLE_I18N = {
+    title: 'account_type_info.no_auth_title',
+    description: 'account_type_info.multisig_no_auth_description',
+}
+
 export const useAccountTypeInfo = ({
     account,
 }: UseAccountTypeInfoParams): UseAccountTypeInfoResult => {
@@ -104,6 +109,14 @@ export const useAccountTypeInfo = ({
                 title: t(i18n.title),
                 titleQualifier: null,
                 description: t(i18n.description),
+            }
+        }
+
+        if (account.type === AccountTypes.multisig && !canSign) {
+            return {
+                title: t(MULTISIG_UNSIGNABLE_I18N.title),
+                titleQualifier: null,
+                description: t(MULTISIG_UNSIGNABLE_I18N.description),
             }
         }
 

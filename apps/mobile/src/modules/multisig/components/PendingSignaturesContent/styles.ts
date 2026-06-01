@@ -13,14 +13,29 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
+    layout: {
+        flex: 1,
+    },
+    header: {
+        paddingHorizontal: theme.spacing.lg,
+        paddingTop: theme.spacing.md,
+        paddingBottom: theme.spacing.lg,
+        gap: theme.spacing.lg,
+    },
+    scrollView: {
+        flex: 1,
+    },
     scrollContent: {
         paddingHorizontal: theme.spacing.lg,
         paddingBottom: theme.spacing.lg,
         gap: theme.spacing.lg,
     },
+    footer: {
+        paddingHorizontal: theme.spacing.lg,
+        paddingTop: theme.spacing.md,
+    },
     title: {
         textAlign: 'center',
-        marginTop: theme.spacing.md,
     },
     badgesRow: {
         flexDirection: 'row',
@@ -66,6 +81,20 @@ export const useStyles = makeStyles(theme => ({
     successBannerText: {
         color: theme.colors.positive,
     },
+    submittingBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.sm,
+        paddingHorizontal: theme.spacing.md,
+        paddingVertical: theme.spacing.sm,
+        borderRadius: theme.spacing.xl,
+        backgroundColor: theme.colors.layerGrayLighter,
+        alignSelf: 'center',
+    },
+    submittingBannerText: {
+        color: theme.colors.textMain,
+        flexShrink: 1,
+    },
     loadingContainer: {
         alignItems: 'center',
         justifyContent: 'center',
@@ -80,13 +109,9 @@ export const useStyles = makeStyles(theme => ({
     signersList: {
         gap: theme.spacing.sm,
     },
-    closeButton: {
-        marginTop: theme.spacing.md,
-    },
     actionsRow: {
         flexDirection: 'row',
         gap: theme.spacing.sm,
-        marginTop: theme.spacing.md,
     },
     actionButton: {
         flex: 1,

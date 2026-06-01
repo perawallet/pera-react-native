@@ -140,11 +140,13 @@ export const PWButton = ({
             )}
 
             {isLoading && (
-                <ActivityIndicator
-                    testID='activity-indicator'
-                    size='small'
-                    color={styles.loadingStyle.color}
-                />
+                <PWView style={styles.loadingContainer}>
+                    <ActivityIndicator
+                        testID='activity-indicator'
+                        size='small'
+                        color={styles.loadingStyle.color}
+                    />
+                </PWView>
             )}
         </PWTouchableOpacity>
     )

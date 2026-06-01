@@ -38,4 +38,34 @@ describe('MultisigInfoCard', () => {
 
         expect(screen.queryByText('multisig.info_card.you_included')).toBeNull()
     })
+
+    it('shows the cannot-sign warning when the user cannot sign', () => {
+        render(
+            <MultisigInfoCard
+                totalParticipants={3}
+                threshold={2}
+                isUserIncluded={false}
+                canUserSign={false}
+            />,
+        )
+
+        expect(
+            screen.getByText('multisig.info_card.cannot_sign_warning'),
+        ).toBeTruthy()
+    })
+
+    it('hides the cannot-sign warning when the user can sign', () => {
+        render(
+            <MultisigInfoCard
+                totalParticipants={3}
+                threshold={2}
+                isUserIncluded
+                canUserSign
+            />,
+        )
+
+        expect(
+            screen.queryByText('multisig.info_card.cannot_sign_warning'),
+        ).toBeNull()
+    })
 })

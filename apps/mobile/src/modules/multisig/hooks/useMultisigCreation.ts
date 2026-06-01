@@ -47,6 +47,11 @@ export const useMultisigCreationStore = create<MultisigCreationStore>(set => ({
         set(state => ({
             participants: [...state.participants, participant],
         })),
+    // The same address may legitimately occupy multiple multisig slots, so the
+    // two mutators below are keyed differently on purpose:
+    // - removeParticipant is index-keyed — it drops exactly one slot.
+    // - updateParticipant is address-keyed — a name follows the contact
+    //   identity, so a rename propagates to every slot sharing that address.
     removeParticipant: (index: number) =>
         set(state => ({
             participants: state.participants.filter((_, i) => i !== index),

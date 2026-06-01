@@ -90,7 +90,7 @@ describe('useCreateMultisigScreen', () => {
     })
 
     it('adds a participant when the add-participant sheet resolves with an address', async () => {
-        mockRequestBottomSheet.mockResolvedValueOnce('ADDR1')
+        mockRequestBottomSheet.mockResolvedValueOnce({ address: 'ADDR1' })
         const { result } = renderHook(() => useCreateMultisigScreen())
 
         await act(async () => {
@@ -104,8 +104,8 @@ describe('useCreateMultisigScreen', () => {
 
     it('enables continue with 2 or more participants', async () => {
         mockRequestBottomSheet
-            .mockResolvedValueOnce('ADDR1')
-            .mockResolvedValueOnce('ADDR2')
+            .mockResolvedValueOnce({ address: 'ADDR1' })
+            .mockResolvedValueOnce({ address: 'ADDR2' })
         const { result } = renderHook(() => useCreateMultisigScreen())
 
         await act(async () => {
@@ -122,8 +122,8 @@ describe('useCreateMultisigScreen', () => {
 
     it('allows duplicate addresses', async () => {
         mockRequestBottomSheet
-            .mockResolvedValueOnce('ADDR1')
-            .mockResolvedValueOnce('ADDR1')
+            .mockResolvedValueOnce({ address: 'ADDR1' })
+            .mockResolvedValueOnce({ address: 'ADDR1' })
         const { result } = renderHook(() => useCreateMultisigScreen())
 
         await act(async () => {
@@ -141,10 +141,10 @@ describe('useCreateMultisigScreen', () => {
 
     it('preserves participant order across duplicate adds', async () => {
         mockRequestBottomSheet
-            .mockResolvedValueOnce('A')
-            .mockResolvedValueOnce('B')
-            .mockResolvedValueOnce('B')
-            .mockResolvedValueOnce('A')
+            .mockResolvedValueOnce({ address: 'A' })
+            .mockResolvedValueOnce({ address: 'B' })
+            .mockResolvedValueOnce({ address: 'B' })
+            .mockResolvedValueOnce({ address: 'A' })
         const { result } = renderHook(() => useCreateMultisigScreen())
 
         for (let i = 0; i < 4; i++) {
@@ -259,7 +259,7 @@ describe('useCreateMultisigScreen', () => {
         const ADDR = 'A'.repeat(58)
 
         it('auto-saves a new non-wallet address as a contact', async () => {
-            mockRequestBottomSheet.mockResolvedValueOnce(ADDR)
+            mockRequestBottomSheet.mockResolvedValueOnce({ address: ADDR })
             const { result } = renderHook(() => useCreateMultisigScreen())
 
             await act(async () => {
@@ -276,7 +276,7 @@ describe('useCreateMultisigScreen', () => {
 
         it('does not save a wallet account as a contact', async () => {
             mockAccounts.mockReturnValue([{ address: ADDR }])
-            mockRequestBottomSheet.mockResolvedValueOnce(ADDR)
+            mockRequestBottomSheet.mockResolvedValueOnce({ address: ADDR })
             const { result } = renderHook(() => useCreateMultisigScreen())
 
             await act(async () => {
@@ -289,7 +289,7 @@ describe('useCreateMultisigScreen', () => {
 
         it('skips an address already saved as a contact', async () => {
             mockContacts.mockReturnValue([{ address: ADDR, name: 'Alice' }])
-            mockRequestBottomSheet.mockResolvedValueOnce(ADDR)
+            mockRequestBottomSheet.mockResolvedValueOnce({ address: ADDR })
             const { result } = renderHook(() => useCreateMultisigScreen())
 
             await act(async () => {
@@ -303,8 +303,8 @@ describe('useCreateMultisigScreen', () => {
         it('hydrates name from an existing contact on duplicate adds', async () => {
             mockContacts.mockReturnValue([{ address: ADDR, name: 'Alice' }])
             mockRequestBottomSheet
-                .mockResolvedValueOnce(ADDR)
-                .mockResolvedValueOnce(ADDR)
+                .mockResolvedValueOnce({ address: ADDR })
+                .mockResolvedValueOnce({ address: ADDR })
             const { result } = renderHook(() => useCreateMultisigScreen())
 
             await act(async () => {
@@ -322,8 +322,8 @@ describe('useCreateMultisigScreen', () => {
 
         it('does not auto-save a contact a second time on duplicate add', async () => {
             mockRequestBottomSheet
-                .mockResolvedValueOnce(ADDR)
-                .mockResolvedValueOnce(ADDR)
+                .mockResolvedValueOnce({ address: ADDR })
+                .mockResolvedValueOnce({ address: ADDR })
             mockAddContact.mockImplementation(c => {
                 mockContacts.mockReturnValue([
                     { address: c.address, name: c.name },
@@ -346,7 +346,7 @@ describe('useCreateMultisigScreen', () => {
             mockAddContact.mockImplementationOnce(() => {
                 throw new DuplicateAddressError(ADDR)
             })
-            mockRequestBottomSheet.mockResolvedValueOnce(ADDR)
+            mockRequestBottomSheet.mockResolvedValueOnce({ address: ADDR })
             const { result } = renderHook(() => useCreateMultisigScreen())
 
             await act(async () => {
@@ -355,6 +355,59 @@ describe('useCreateMultisigScreen', () => {
 
             expect(mockAddContact).toHaveBeenCalledTimes(1)
             expect(result.current.participants).toHaveLength(1)
+        })
+    })
+
+    describe('NFD name', () => {
+        const ADDR = 'A'.repeat(58)
+        const NFD = 'alice.algo'
+
+        it('saves the auto-created contact under the NFD name', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce({
+                address: ADDR,
+                nfdName: NFD,
+            })
+            const { result } = renderHook(() => useCreateMultisigScreen())
+
+            await act(async () => {
+                await result.current.handleOpenAddParticipant()
+            })
+
+            expect(mockAddContact).toHaveBeenCalledWith({
+                address: ADDR,
+                name: NFD,
+                nfd: NFD,
+            })
+        })
+
+        it('names the participant with the NFD name', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce({
+                address: ADDR,
+                nfdName: NFD,
+            })
+            const { result } = renderHook(() => useCreateMultisigScreen())
+
+            await act(async () => {
+                await result.current.handleOpenAddParticipant()
+            })
+
+            expect(result.current.participants[0]?.name).toBe(NFD)
+        })
+
+        it('keeps an existing contact name over the NFD name', async () => {
+            mockContacts.mockReturnValue([{ address: ADDR, name: 'Alice' }])
+            mockRequestBottomSheet.mockResolvedValueOnce({
+                address: ADDR,
+                nfdName: NFD,
+            })
+            const { result } = renderHook(() => useCreateMultisigScreen())
+
+            await act(async () => {
+                await result.current.handleOpenAddParticipant()
+            })
+
+            expect(result.current.participants[0]?.name).toBe('Alice')
+            expect(mockAddContact).not.toHaveBeenCalled()
         })
     })
 })

@@ -63,7 +63,7 @@ const rekeyedAccount: WalletAccount = {
 const multisigAccount: MultiSigAccount = {
     type: 'multisig',
     address: 'MULTISIG_ADDR',
-    multisigDetails: { threshold: 2, addresses: ['A', 'B', 'C'] },
+    multisigDetails: { threshold: 2, addresses: ['A', 'B', 'C'], version: 1 },
 }
 
 describe('useAccountTypeLabel', () => {
@@ -98,13 +98,26 @@ describe('useAccountTypeLabel', () => {
         })
     })
 
-    it('uses a plain shared account label for a multisig account', () => {
+    it('uses a plain shared account label for a signable multisig account', () => {
+        mockUseCanSignWith.mockReturnValue(true)
         const { result } = renderHook(() =>
             useAccountTypeLabel(multisigAccount),
         )
         expect(result.current).toEqual({
             label: 'account_info.type_multisig',
             main: 'account_info.type_multisig',
+            qualifier: null,
+        })
+    })
+
+    it('renders the no-auth label for a multisig account when we cannot sign', () => {
+        mockUseCanSignWith.mockReturnValue(false)
+        const { result } = renderHook(() =>
+            useAccountTypeLabel(multisigAccount),
+        )
+        expect(result.current).toEqual({
+            label: 'account_info.type_no_auth',
+            main: 'account_info.type_no_auth',
             qualifier: null,
         })
     })

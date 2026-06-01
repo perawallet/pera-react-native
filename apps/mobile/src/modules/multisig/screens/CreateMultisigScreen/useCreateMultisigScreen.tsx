@@ -19,7 +19,10 @@ import {
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { AddParticipantContent } from '../../components/AddParticipantContent'
+import {
+    AddParticipantContent,
+    type AddParticipantResult,
+} from '../../components/AddParticipantContent'
 import {
     useMultisigCreationStore,
     type Participant,
@@ -56,15 +59,17 @@ export const useCreateMultisigScreen = (): UseCreateMultisigScreenResult => {
     )
 
     const handleAddAddress = useCallback(
-        (address: string) => {
+        (address: string, nfdName?: string) => {
             // Duplicates are intentionally allowed: the Algorand multisig
             // primitive treats the address list as ordered, distinct slots,
             // so [A, B, B, A] is a valid composition. Carry over an existing
-            // display name so the new row matches the others immediately.
+            // display name so the new row matches the others immediately,
+            // falling back to the NFD name when the address came from an
+            // NFD search result.
             const existingName =
                 participants.find(p => p.address === address)?.name ??
                 contacts.find(c => c.address === address)?.name
-            addParticipant({ address, name: existingName })
+            addParticipant({ address, name: existingName ?? nfdName })
 
             // Auto-save a non-wallet address as a contact so it gets a
             // friendly name and is reusable later. Skip wallet accounts and
@@ -74,7 +79,13 @@ export const useCreateMultisigScreen = (): UseCreateMultisigScreenResult => {
             if (isWalletAccount || isExistingContact) return
 
             try {
-                addContact({ name: truncateAlgorandAddress(address), address })
+                // Prefer the NFD name as the nickname; only an address
+                // typed/pasted without an NFD falls back to a truncation.
+                addContact({
+                    address,
+                    name: nfdName ?? truncateAlgorandAddress(address),
+                    ...(nfdName ? { nfd: nfdName } : {}),
+                })
             } catch (e) {
                 // Defensive: ignore a concurrent duplicate; rethrow anything
                 // else since that would be a real bug.
@@ -85,7 +96,7 @@ export const useCreateMultisigScreen = (): UseCreateMultisigScreenResult => {
     )
 
     const handleOpenAddParticipant = useCallback(async () => {
-        const address = await requestBottomSheet<string>({
+        const result = await requestBottomSheet<AddParticipantResult>({
             contents: <AddParticipantContent />,
             options: {
                 size: 'modal',
@@ -93,8 +104,8 @@ export const useCreateMultisigScreen = (): UseCreateMultisigScreenResult => {
                 autoCreateContainer: false,
             },
         })
-        if (!address) return
-        handleAddAddress(address)
+        if (!result) return
+        handleAddAddress(result.address, result.nfdName)
     }, [requestBottomSheet, handleAddAddress])
 
     const handleEditParticipant = useCallback(

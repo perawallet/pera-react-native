@@ -11,3 +11,7 @@
  */
 
 export { useNotificationPress } from './useNotificationPress'
+export {
+    useHandleInboxItemPress,
+    type UseHandleInboxItemPressResult,
+} from './useHandleInboxItemPress'

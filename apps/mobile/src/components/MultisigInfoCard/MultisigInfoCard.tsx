@@ -19,6 +19,13 @@ export type MultisigInfoCardProps = {
     totalParticipants: number
     threshold: number
     isUserIncluded: boolean
+    /**
+     * Whether the wallet holds a participant that can actually sign for this
+     * shared account. Defaults to `true` so call sites that don't compute
+     * signability render no warning; when `false`, a cannot-sign warning is
+     * shown.
+     */
+    canUserSign?: boolean
     testID?: string
     participantCountTestID?: string
     thresholdTestID?: string
@@ -33,6 +40,7 @@ export const MultisigInfoCard = ({
     totalParticipants,
     threshold,
     isUserIncluded,
+    canUserSign = true,
     testID,
     participantCountTestID,
     thresholdTestID,
@@ -53,6 +61,14 @@ export const MultisigInfoCard = ({
                     {isUserIncluded && (
                         <PWText style={styles.rowSubLabel}>
                             {t('multisig.info_card.you_included')}
+                        </PWText>
+                    )}
+                    {!canUserSign && (
+                        <PWText
+                            style={styles.rowWarningLabel}
+                            testID='multisig-info-card-cannot-sign-warning'
+                        >
+                            {t('multisig.info_card.cannot_sign_warning')}
                         </PWText>
                     )}
                 </PWView>

@@ -33,7 +33,7 @@ import {
 } from './useAddressSearchView'
 
 export type AddressSearchViewProps = {
-    onSelected: (address: string) => void
+    onSelected: (address: string, nfdName?: string) => void
     excludeAddress?: string
     excludeTypes?: AccountType[]
     showAllContactsWhenEmpty?: boolean
@@ -125,7 +125,9 @@ export const AddressSearchView = ({
                 case 'nfd':
                     return (
                         <PWTouchableOpacity
-                            onPress={() => onSelected(item.nfd.address)}
+                            onPress={() =>
+                                onSelected(item.nfd.address, item.nfd.name)
+                            }
                             style={
                                 showAddIcon ? styles.foreignRow : styles.nfdItem
                             }

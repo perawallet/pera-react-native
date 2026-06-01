@@ -24,9 +24,12 @@ const EXCLUDED_KEYS = [
     'transactions.type.unknown',
 ];
 
-// Prefix patterns for keys that are excluded from unused checks.
-// Error framework keys are used dynamically at runtime via the error class hierarchy.
+// Prefix patterns for keys that are excluded from the unused-key check.
+// These namespaces are resolved dynamically at runtime (template-literal keys
+// like t(`${prefix}.title`)), so the static literal-match scan below cannot see
+// them and would report false positives.
 const EXCLUDED_PREFIXES = [
+    // Error framework keys, resolved via the error class hierarchy.
     'errors.account.',
     'errors.blockchain.',
     'errors.network.',
@@ -37,6 +40,20 @@ const EXCLUDED_PREFIXES = [
     'errors.kms.',
     'errors.signing.',
     'errors.unknown',
+    // Algod error codes: t(`errors.algod.${algodError.code}.title`) in useAlgodErrorMessage.ts
+    'errors.algod.',
+    // Ledger error kinds: t(`ledger.errors.${kind}`) / t(`ledger.errors.${kind}_title`)
+    'ledger.errors.',
+    // ASB import error reasons: t(`onboarding.asb_import.backup.errors.${reason}`) and key.errors
+    'onboarding.asb_import.backup.errors.',
+    'onboarding.asb_import.key.errors.',
+    // Search section headers: t(`search.sections.${item.kind}`)
+    'search.sections.',
+    // Key-reg type: t(`transactions.key_reg.${keyRegType}`)
+    'transactions.key_reg.',
+    // Rekey screens build every key from i18nBaseKey/i18nPrefix props, e.g.
+    // t(`${i18nBaseKey}.expect_${index + 1}`) in RekeyIntroScreen.
+    'rekey.',
 ];
 
 // Colors for console output
@@ -315,6 +332,26 @@ function main() {
     }
 
     log('\nDone.', colors.blue);
+
+    // Fail the build on deterministic findings so CI actually gates on them.
+    // Hardcoded-string detection is a fuzzy heuristic (prone to false positives),
+    // so it stays advisory — reported above but never blocking.
+    const blockingIssues =
+        (consistencyIssues ? 1 : 0) +
+        errorKeysCount +
+        unusedKeysCount +
+        missingKeysCount;
+
+    if (blockingIssues > 0) {
+        error(
+            `i18n lint failed with ${blockingIssues} blocking issue(s): ` +
+                `${unusedKeysCount} unused key(s), ${missingKeysCount} missing key(s), ` +
+                `${errorKeysCount} error-key coverage gap(s), ` +
+                `${consistencyIssues ? 'locale inconsistencies' : 'no locale inconsistencies'}. ` +
+                `See warnings above.`,
+        );
+        process.exit(1);
+    }
 }
 
 main();

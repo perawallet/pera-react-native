@@ -175,13 +175,10 @@ export const AddressDisplay = ({
         content = (
             <PWView style={styles.contactContainer}>
                 {showAvatar && (
-                    <PWView style={styles.foreignAvatar}>
-                        <PWIcon
-                            name='person'
-                            size='md'
-                            variant='white'
-                        />
-                    </PWView>
+                    <ContactAvatar
+                        size='md'
+                        variant={contactAvatarVariant}
+                    />
                 )}
                 {nfdName ? (
                     <PWView style={styles.addressTextStack}>

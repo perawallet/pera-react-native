@@ -31,37 +31,39 @@ export const MultisigOverlays = () => {
     )
     const closeSheet = usePendingSignaturesSheetStore(state => state.closeSheet)
     const { request: requestBottomSheet } = useBottomSheet()
-    const openIdRef = useRef<string | null>(null)
+    // Track open-state, not the id, so a signRequestId change while the sheet
+    // is open re-renders its content instead of stacking a second sheet.
+    const isSheetOpenRef = useRef(false)
 
     useEffect(() => {
         if (!signRequestId) return
-        if (openIdRef.current === signRequestId) return
-        openIdRef.current = signRequestId
-        let cancelled = false
+        if (isSheetOpenRef.current) return
+        isSheetOpenRef.current = true
         void (async () => {
             await requestBottomSheet<void>({
                 contents: <PendingSignaturesContent />,
-                options: { size: 'auto', enablePanDownToClose: true },
+                options: {
+                    // Fixed snap point, not 'auto': the signers list is
+                    // `flex: 1` (0 natural height), so 'auto' would collapse
+                    // the sheet to header + footer.
+                    size: 'modal',
+                    enablePanDownToClose: true,
+                    autoCreateContainer: false,
+                },
             })
-            if (cancelled) return
-            openIdRef.current = null
-            // Ensure the store is cleared if the sheet was dismissed via gesture
-            // or backdrop press rather than handleClose.
+            // Dismissed — clear the open flag and the id; the next
+            // openSheet() re-fires this effect with a fresh value.
+            isSheetOpenRef.current = false
             closeSheet()
         })()
-        return () => {
-            cancelled = true
-        }
     }, [signRequestId, requestBottomSheet, closeSheet])
 
     return null
 }
 
 /**
- * Thin RN + i18n shell over the package-level
- * `useWalletConnectHandoffResolver`. Owns: pausing polling while the app is
- * backgrounded (a backgrounded poll would only fail and could not be
- * delivered), and building the localized message bag.
+ * RN + i18n shell over `useWalletConnectHandoffResolver`: pauses polling while
+ * the app is backgrounded and builds the localized message bag.
  */
 const useResolverWiring = (): void => {
     const { t } = useTranslation()

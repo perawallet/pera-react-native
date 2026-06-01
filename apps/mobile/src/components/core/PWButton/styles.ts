@@ -15,6 +15,8 @@ import { TextStyle } from 'react-native'
 import type { PWButtonProps } from './PWButton'
 import { Optional } from '@perawallet/wallet-core-shared'
 
+const TITLE_LINE_HEIGHT = 15
+
 export const useStyles = makeStyles((theme, props: PWButtonProps) => {
     const variantStyles = {
         primary: {
@@ -105,6 +107,15 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
     return {
         loadingStyle: {
             color,
+        },
+        // Match the title's line-height so the button doesn't grow when its
+        // content swaps from the title text to the ActivityIndicator (which
+        // is ~20px tall while the title sits at 15px).
+        loadingContainer: {
+            height: TITLE_LINE_HEIGHT,
+            width: TITLE_LINE_HEIGHT,
+            alignItems: 'center' as const,
+            justifyContent: 'center' as const,
         },
         buttonStyle: {
             flexDirection: 'row',

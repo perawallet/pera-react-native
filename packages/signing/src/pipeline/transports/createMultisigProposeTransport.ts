@@ -11,7 +11,11 @@
  */
 
 import { toError, type Network } from '@perawallet/wallet-core-shared'
-import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
+import {
+    useNetworkStore,
+    type PeraSignedTransaction,
+} from '@perawallet/wallet-core-blockchain'
+import type { MultisigProposeMode } from '@perawallet/wallet-core-multisig'
 import type {
     DataTransport,
     SigningResult,
@@ -33,8 +37,7 @@ export type ProposeSignRequestFn = (params: {
     multisigAddress: string
     signedData: SigningResult['signedData']
     signers: SigningResult['signers']
-    /** `'sync'` = wallet will deliver; `'async'` = backend handles it. */
-    type: 'sync' | 'async'
+    type: MultisigProposeMode
 }) => Promise<{ signRequestId: string; status: SignRequestStatus }>
 
 /** Multisig metadata needed by the resolver listener to build subsigs. */
@@ -54,6 +57,36 @@ export type GetMsigMetadataFn = (
  * device-id source the app uses.
  */
 export type GetDeviceIdFn = () => string | undefined
+
+/**
+ * Input passed to {@link CreateDraftSignRequestFn} when the propose flow
+ * needs to defer the backend call. Carries everything the per-row Sign
+ * tap will need later to bootstrap the real propose with one participant's
+ * signature.
+ */
+export type CreateDraftSignRequestInput = {
+    multisigAddress: string
+    /**
+     * Unsigned `PeraSignedTransaction[]` — `.txn` is populated, `sig`/`msig`
+     * are absent. The app-side createDraftSignRequest encodes these to the
+     * raw msgpack bytes (without the "TX" prefix) that the propose API
+     * expects, and persists them in the draft store.
+     */
+    signedTransactions: PeraSignedTransaction[]
+    proposeType: MultisigProposeMode
+    source: SourceMetadata
+}
+
+/**
+ * Creates a draft sign-request entry in a local store and returns its
+ * synthetic id (prefixed with `draft-`). Injected from the app side so the
+ * signing pkg doesn't depend on the mobile draft store directly. When
+ * absent, the transport falls back to the legacy behavior of throwing on
+ * empty signers (preserves current behavior for callers that don't opt in).
+ */
+export type CreateDraftSignRequestFn = (
+    input: CreateDraftSignRequestInput,
+) => string
 
 /**
  * Creates a transport that proposes a new multisig transaction to the backend.
@@ -80,6 +113,7 @@ export const createMultisigProposeTransport = (
     capturedNetwork: Network,
     getMsigMetadata: GetMsigMetadataFn,
     getDeviceId: GetDeviceIdFn,
+    createDraftSignRequest?: CreateDraftSignRequestFn,
 ): DataTransport => {
     return {
         send: async (
@@ -99,7 +133,43 @@ export const createMultisigProposeTransport = (
             }
 
             const isExternal = isExternalCallbackSource(source.type)
-            const proposeType: 'sync' | 'async' = isExternal ? 'sync' : 'async'
+            const proposeType: MultisigProposeMode = isExternal
+                ? 'sync'
+                : 'async'
+
+            // Deferred propose: hardware-only proposer. `multisigSignerActor`
+            // signaled by returning an empty `signers` array (see
+            // `shouldDeferPropose` / `buildDeferredProposeSigningResult`).
+            // Skip the backend call and create a local draft instead; the
+            // user's first per-row Sign in the pending sheet will bootstrap
+            // the real propose with that participant's signature.
+            if (result.signers.length === 0) {
+                if (!createDraftSignRequest) {
+                    throw new TransportError(
+                        'Multisig propose received empty signers but no draft creator was provided',
+                    )
+                }
+                if (result.signedData.type !== 'transactions') {
+                    throw new TransportError(
+                        'Deferred propose is only supported for transaction signing',
+                    )
+                }
+                const draftLocalId = createDraftSignRequest({
+                    multisigAddress,
+                    signedTransactions: result.signedData.signed,
+                    proposeType,
+                    source,
+                })
+                // Reuse the existing `'proposed'` transport result so the
+                // app-side listener (`useMultisigProposeListener`) opens the
+                // pending sheet without needing a new event type.
+                return {
+                    type: 'proposed',
+                    signRequestId: draftLocalId,
+                    status: 'pending',
+                    sourceType: source.type,
+                }
+            }
 
             try {
                 const response = await proposeSignRequest({

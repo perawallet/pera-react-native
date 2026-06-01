@@ -18,4 +18,8 @@ export type {
 } from './createHardwareStrategy'
 export { createMultisigStrategy } from './createMultisigStrategy'
 export { createSigningStrategySelector } from './getSigningStrategy'
-export { getLocalParticipants, canMeetThresholdLocally } from './utils'
+export {
+    getLocalParticipants,
+    getProposeParticipants,
+    canMeetThresholdLocally,
+} from './utils'
