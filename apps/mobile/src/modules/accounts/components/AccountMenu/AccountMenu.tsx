@@ -109,7 +109,6 @@ export const AccountMenu = (props: AccountMenuProps) => {
                         </PWTouchableOpacity>
                     )}
                     ItemSeparatorComponent={ListSeparator}
-                    contentContainerStyle={styles.accountContainer}
                     showsVerticalScrollIndicator={false}
                     onScroll={handleListScroll}
                     scrollEventThrottle={16}

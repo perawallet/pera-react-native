@@ -72,20 +72,7 @@ export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
     ) => {
         const innerRef = useRef<FlashListRef<unknown>>(null)
         const insets = useSafeAreaInsets()
-        // A caller's bottom padding becomes the gap *above* the safe-area inset
-        // for in-sheet lists (paddingVertical counts too, since it implies a
-        // bottom). Falls back to the `xl` default inside the style.
-        const flatContentStyle = StyleSheet.flatten(contentContainerStyle) ?? {}
-        const callerBottomGap =
-            typeof flatContentStyle.paddingBottom === 'number'
-                ? flatContentStyle.paddingBottom
-                : typeof flatContentStyle.paddingVertical === 'number'
-                  ? flatContentStyle.paddingVertical
-                  : undefined
-        const styles = useStyles({
-            bottomInset: insets.bottom,
-            bottomGap: callerBottomGap,
-        })
+        const styles = useStyles({ bottomInset: insets.bottom })
         const BottomSheetScrollable = useBottomSheetScrollableCreator()
 
         useImperativeHandle(ref, () => ({
@@ -96,35 +83,32 @@ export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
             scrollToEnd: options => innerRef.current?.scrollToEnd(options),
         }))
 
+        const isHorizontal = props.horizontal === true
         const fillEmpty =
             (props.data?.length ?? 0) === 0 && props.ListEmptyComponent != null
+        const isVerticalList = !isHorizontal && !fillEmpty
 
         // Vertical lists get a default separator: a plain gap for card lists,
         // an inset row divider otherwise. A caller-supplied separator wins;
         // pass `ItemSeparatorComponent={null}` for flush rows.
         const defaultSeparator = cardLayout ? CardSeparator : ListSeparator
-        const resolvedSeparator =
-            props.horizontal === true
-                ? ItemSeparatorComponent
-                : ItemSeparatorComponent === undefined
-                  ? defaultSeparator
-                  : ItemSeparatorComponent
+        const resolvedSeparator = isHorizontal
+            ? ItemSeparatorComponent
+            : ItemSeparatorComponent === undefined
+              ? defaultSeparator
+              : ItemSeparatorComponent
 
         const flashProps: FlashListProps<unknown> = {
             ...props,
             showsVerticalScrollIndicator,
             showsHorizontalScrollIndicator,
             ItemSeparatorComponent: resolvedSeparator,
-            contentContainerStyle: [
-                props.horizontal === true || fillEmpty ? null : styles.content,
-                fillEmpty ? styles.fillEmpty : null,
+            contentContainerStyle: StyleSheet.flatten([
+                isVerticalList && styles.content,
+                fillEmpty && styles.fillEmpty,
                 contentContainerStyle,
-                // Owns the bottom safe-area inset for in-sheet scroll lists;
-                // appended last so it wins over a caller's paddingBottom.
-                inBottomSheet && !fillEmpty && props.horizontal !== true
-                    ? styles.sheetBottomInset
-                    : null,
-            ],
+                inBottomSheet && isVerticalList && styles.sheetBottomInset,
+            ]),
         }
 
         if (inBottomSheet) {

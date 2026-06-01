@@ -65,6 +65,22 @@ export const isHeaderSentinel = (item: unknown): item is HeaderSentinel =>
     '__searchableListHeader' in item &&
     item.__searchableListHeader === true
 
+/**
+ * The injected header (item 0) and search (item 1) ride as data items so the
+ * search can pin only after the header scrolls away. FlashList draws the
+ * ItemSeparatorComponent between every adjacent pair, so a separator must be
+ * suppressed whenever either side of the gap is one of these sentinels —
+ * otherwise dividers appear around the header and the sticky search.
+ */
+export const isSeparatorSuppressed = (
+    leadingItem: unknown,
+    trailingItem: unknown,
+): boolean =>
+    isHeaderSentinel(leadingItem) ||
+    isSearchSentinel(leadingItem) ||
+    isHeaderSentinel(trailingItem) ||
+    isSearchSentinel(trailingItem)
+
 type UseSearchableListParams<T> = {
     forwardedRef: React.ForwardedRef<PWFlatListRef>
     data: readonly T[] | null | undefined

@@ -19,6 +19,7 @@ import { SearchInput } from '@components/SearchInput'
 import {
     isHeaderSentinel,
     isSearchSentinel,
+    isSeparatorSuppressed,
     useSearchableList,
     type AugmentedItem,
 } from './useSearchableList'
@@ -84,6 +85,7 @@ const SearchableListInner = <T,>(
         snapThreshold = DEFAULT_SNAP_THRESHOLD,
         onScroll,
         onScrollEndDrag,
+        ItemSeparatorComponent: CallerSeparator,
         // children is part of the React props type but not used by the list.
         children: _children,
         extraData: callerExtraData,
@@ -188,6 +190,37 @@ const SearchableListInner = <T,>(
         ],
     )
 
+    // The list header and search bar ride as data items 0 and 1, and FlashList
+    // draws ItemSeparatorComponent between *every* adjacent pair of items —
+    // including header↔search and search↔first-row. Wrap the caller's separator
+    // so it only renders between real rows, never adjacent to a sentinel. With
+    // no caller separator we draw nothing (PWFlatList's default divider would
+    // otherwise reappear around the sentinels).
+    const augmentedSeparator = useMemo(() => {
+        if (CallerSeparator == null) {
+            return null
+        }
+        const Separator = CallerSeparator
+        const WrappedSeparator = ({
+            leadingItem,
+            trailingItem,
+        }: {
+            leadingItem?: unknown
+            trailingItem?: unknown
+        }) => {
+            if (isSeparatorSuppressed(leadingItem, trailingItem)) {
+                return null
+            }
+            return (
+                <Separator
+                    leadingItem={leadingItem}
+                    trailingItem={trailingItem}
+                />
+            )
+        }
+        return WrappedSeparator
+    }, [CallerSeparator])
+
     const augmentedExtraData = useMemo(
         () =>
             callerExtraData !== undefined
@@ -210,6 +243,7 @@ const SearchableListInner = <T,>(
         data: augmentedData,
         renderItem: augmentedRenderItem,
         keyExtractor: augmentedKeyExtractor,
+        ItemSeparatorComponent: augmentedSeparator,
         ListFooterComponent: augmentedFooter,
         stickyHeaderIndices: [1],
         // The header item owns the list's top spacing, so cancel PWFlatList's

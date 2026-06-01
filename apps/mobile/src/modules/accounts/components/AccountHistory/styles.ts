@@ -76,7 +76,4 @@ export const useStyles = makeStyles(theme => ({
     transparentButton: {
         backgroundColor: 'transparent',
     },
-    footer: {
-        marginVertical: theme.spacing.md,
-    },
 }))

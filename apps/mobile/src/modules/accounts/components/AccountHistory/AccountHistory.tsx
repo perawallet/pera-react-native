@@ -72,8 +72,8 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
                 </PWView>
             )
         }
-        return <PWView style={styles.footer} />
-    }, [isFetchingNextPage, styles.loadingFooter, styles.footer])
+        return null
+    }, [isFetchingNextPage, styles.loadingFooter])
 
     const renderEmptyComponent = useCallback(() => {
         if (isLoading) {

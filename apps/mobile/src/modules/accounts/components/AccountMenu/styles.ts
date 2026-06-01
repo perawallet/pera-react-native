@@ -17,11 +17,6 @@ export const useStyles = makeStyles(theme => {
         portfolioContainer: {
             paddingTop: theme.spacing.md,
         },
-        // Extra breathing room below the last account so it clears the nav bar
-        // comfortably; PWFlatList folds this gap on top of the safe-area inset.
-        accountContainer: {
-            paddingBottom: theme.spacing['3xl'],
-        },
         listSeparator: {
             height: theme.spacing.md,
         },

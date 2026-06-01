@@ -10,10 +10,12 @@
  limitations under the License
  */
 
+import { useContext } from 'react'
 import { getTestProps } from '@utils/test-id-helper'
 import { ScrollViewProps, StyleSheet } from 'react-native'
 import { ScrollView } from 'react-native-gesture-handler'
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet'
+import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useStyles } from './styles'
 
@@ -38,7 +40,10 @@ export const PWScrollView = ({
     ...props
 }: PWScrollViewProps) => {
     const insets = useSafeAreaInsets()
-    const styles = useStyles({ bottomInset: inBottomSheet ? insets.bottom : 0 })
+    const isInTabNavigator = useContext(BottomTabBarHeightContext) !== undefined
+    const bottomInset =
+        inBottomSheet || !isInTabNavigator ? insets.bottom : 0
+    const styles = useStyles({ bottomInset })
 
     // Guarantee the content clears the bottom edge — but only when the caller
     // hasn't already set a bottom-affecting padding. RN edge-specificity makes

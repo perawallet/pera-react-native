@@ -13,23 +13,19 @@
 import { makeStyles } from '@rneui/themed'
 
 type StyleProps = {
-    bottomInset?: number
-    bottomGap?: number
+    bottomInset: number
 }
 
-export const useStyles = makeStyles((theme, props: StyleProps = {}) => ({
+export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
     content: {
         paddingVertical: theme.spacing.xl,
     },
     // In-sheet lists scroll edge-to-edge, so the content owns the bottom
     // safe-area inset (the hosting sheets use autoCreateContainer:false, which
-    // means no inner-container inset). Appended last so it wins over a
-    // caller's contentContainerStyle paddingBottom — but it folds that
-    // caller value into the gap (defaulting to `xl`) instead of discarding it,
-    // so a caller can still ask for extra breathing room above the inset.
+    // means no inner-container inset). Appended last so it wins over a caller's
+    // contentContainerStyle paddingBottom.
     sheetBottomInset: {
-        paddingBottom:
-            (props.bottomInset ?? 0) + (props.bottomGap ?? theme.spacing.xl),
+        paddingBottom: theme.spacing.xl + bottomInset,
     },
     itemSeparator: {
         marginVertical: theme.spacing.md,
