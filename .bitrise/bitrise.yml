@@ -386,6 +386,11 @@ workflows:
             - content: |
                 #!/usr/bin/env bash
                 set -ex
+                # build:packages re-runs generate-config.sh, which bakes
+                # appEnvironment from APP_ENV. Derive it from ENVIRONMENT here
+                # (step shells don't inherit prior steps' exports) or the
+                # bundled appEnvironment silently falls back to development.
+                export APP_ENV="${ENVIRONMENT:-development}"
                 pnpm run build:packages
       - script@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
@@ -645,6 +650,11 @@ workflows:
             - content: |
                 #!/usr/bin/env bash
                 set -ex
+                # build:packages re-runs generate-config.sh, which bakes
+                # appEnvironment from APP_ENV. Derive it from ENVIRONMENT here
+                # (step shells don't inherit prior steps' exports) or the
+                # bundled appEnvironment silently falls back to development.
+                export APP_ENV="${ENVIRONMENT:-development}"
                 pnpm run build:packages
       - script@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
