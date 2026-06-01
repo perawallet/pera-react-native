@@ -21,5 +21,7 @@ export const useCalculatePeraFeeMutation = () => {
     return useMutation({
         mutationFn: (data: CalculatePeraFeeRequest) =>
             calculatePeraFee(data, network),
+        // Handled by the caller — opt out of the global throwOnError default.
+        throwOnError: false,
     })
 }

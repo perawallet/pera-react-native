@@ -110,10 +110,9 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                     quote: quoteIdStr,
                 })
             } catch (e) {
-                const message =
-                    e instanceof Error
-                        ? e.message
-                        : 'Failed to prepare transactions'
+                // Map through getMessage like the submission phase so a
+                // backend 4xx surfaces a localized message, not a raw HTTP one.
+                const message = getMessage(e).body
                 setError({ phase: 'prepare', message })
                 setStatus('error')
                 return { kind: 'error', phase: 'prepare', message }
