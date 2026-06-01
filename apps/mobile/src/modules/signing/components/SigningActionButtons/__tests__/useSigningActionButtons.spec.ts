@@ -14,16 +14,12 @@ import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { useSigningActionButtons } from '../useSigningActionButtons'
 import {
-    isTransactionRequest,
+    isSignRequestMultisigUnsignable,
     useSigningPipeline,
     useSigningRequest,
     type TransactionWarning,
     type SigningPipelineEvent,
 } from '@perawallet/wallet-core-signing'
-import {
-    isMultisigUnsignable,
-    useAllAccounts,
-} from '@perawallet/wallet-core-accounts'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { useNavigation } from '@react-navigation/native'
 import { useErrorToast } from '@hooks/useErrorToast'
@@ -32,21 +28,11 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningPipeline: vi.fn(),
     useSigningRequest: vi.fn(),
-    isTransactionRequest: vi.fn(() => false),
-    resolveSignerAddress: vi.fn((req: { txs?: { sender?: unknown }[] }) => {
-        const sender = req?.txs?.[0]?.sender as
-            | { toString?: () => string }
-            | string
-            | undefined
-        if (!sender) return undefined
-        if (typeof sender === 'string') return sender
-        return sender.toString?.()
-    }),
+    isSignRequestMultisigUnsignable: vi.fn(() => false),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(() => []),
-    isMultisigUnsignable: vi.fn(() => false),
 }))
 
 vi.mock('@perawallet/wallet-core-settings', () => ({
@@ -316,32 +302,15 @@ describe('useSigningActionButtons', () => {
     })
 
     describe('unsignable multisig', () => {
-        const multisigAccount = {
-            type: 'multisig',
-            address: 'MS_ADDR',
-            multisigDetails: {
-                threshold: 2,
-                addresses: ['P1', 'P2'],
-                version: 1,
-            },
-        } as never
-
-        const txRequest = (overrides: object = {}) => ({
-            id: 'r1',
-            transport: 'algod',
-            txs: [{ sender: 'MS_ADDR' }],
-            ...overrides,
-        })
-
-        beforeEach(() => {
-            ;(isTransactionRequest as unknown as Mock).mockReturnValue(true)
-            ;(useAllAccounts as Mock).mockReturnValue([multisigAccount])
-        })
+        // The predicate itself (cosign exclusion, signer resolution, etc.) is
+        // covered by isSignRequestMultisigUnsignable's own spec; here we only
+        // check the hook wires it up and blocks the send when it's true.
+        const request = { id: 'r1' }
 
         it('blocks an unsignable multisig and does not advance the pipeline', () => {
-            ;(isMultisigUnsignable as Mock).mockReturnValue(true)
+            ;(isSignRequestMultisigUnsignable as Mock).mockReturnValue(true)
             ;(useSigningRequest as Mock).mockReturnValue({
-                currentRequest: txRequest(),
+                currentRequest: request,
             })
 
             const { result } = renderHook(() => useSigningActionButtons())
@@ -355,10 +324,10 @@ describe('useSigningActionButtons', () => {
             expect(mockNext).not.toHaveBeenCalled()
         })
 
-        it('does not block a multisig-cosign request', () => {
-            ;(isMultisigUnsignable as Mock).mockReturnValue(true)
+        it('does not block when the request is signable', () => {
+            ;(isSignRequestMultisigUnsignable as Mock).mockReturnValue(false)
             ;(useSigningRequest as Mock).mockReturnValue({
-                currentRequest: txRequest({ sourceType: 'multisig-cosign' }),
+                currentRequest: request,
             })
 
             const { result } = renderHook(() => useSigningActionButtons())
@@ -366,10 +335,10 @@ describe('useSigningActionButtons', () => {
             expect(result.current.isMultisigUnsignable).toBe(false)
         })
 
-        it('does not block when the signer is a signable account', () => {
-            ;(isMultisigUnsignable as Mock).mockReturnValue(false)
+        it('reports false when there is no current request', () => {
+            ;(isSignRequestMultisigUnsignable as Mock).mockReturnValue(true)
             ;(useSigningRequest as Mock).mockReturnValue({
-                currentRequest: txRequest(),
+                currentRequest: undefined,
             })
 
             const { result } = renderHook(() => useSigningActionButtons())
