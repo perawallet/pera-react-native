@@ -34,9 +34,26 @@ const {
     loggerMock: { warn: vi.fn(), error: vi.fn() },
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: () => ({ network: networkMock.current }),
-}))
+// Faithful re-implementation of the real useOnNetworkSwitch (effect-timed,
+// fires once per real switch) driven by the same mocked network value.
+vi.mock('@perawallet/wallet-core-blockchain', async () => {
+    const { useEffect, useRef } = await import('react')
+    return {
+        useNetwork: () => ({ network: networkMock.current }),
+        useOnNetworkSwitch: (handler: (from: Network, to: Network) => void) => {
+            const network = networkMock.current
+            const handlerRef = useRef(handler)
+            handlerRef.current = handler
+            const previousNetworkRef = useRef(network)
+            useEffect(() => {
+                const previousNetwork = previousNetworkRef.current
+                if (previousNetwork === network) return
+                previousNetworkRef.current = network
+                handlerRef.current(previousNetwork, network)
+            }, [network])
+        },
+    }
+})
 
 vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceID: () => deviceIdMock.current,

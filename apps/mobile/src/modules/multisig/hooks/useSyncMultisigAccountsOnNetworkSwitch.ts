@@ -16,7 +16,10 @@ import {
     useAllAccounts,
     type MultiSigAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import {
+    useNetwork,
+    useOnNetworkSwitch,
+} from '@perawallet/wallet-core-blockchain'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { createMultisigAccount } from '@perawallet/wallet-core-multisig'
 import {
@@ -26,21 +29,12 @@ import {
 } from '@perawallet/wallet-core-shared'
 
 /**
- * Re-registers every local multisig account on the Pera backend of the
- * newly-selected network whenever the user switches networks.
- *
- * The Pera backend is per-network: a multisig account is only known to the
- * backend of whichever network was active when it was created, so co-signing
- * and sign-requests 404 on the other network. This hook closes that gap by
- * re-issuing `createMultisigAccount` for the new network on every switch —
- * the create endpoint is idempotent for a (deterministic) multisig address.
- *
- * Ports pera-android's `SyncJointAccountsOnNetworkSwitchUseCase`. It is
- * deliberately a plain, best-effort `useEffect` rather than a React Query
- * mutation — mirroring `useDeviceRegistration`, the established pattern for
- * network-switch-driven backend registration. Failures are logged, never
- * thrown; the next switch retries. Runs on network switch only, never on the
- * initial mount.
+ * Re-registers every local multisig account on the new network's Pera backend
+ * after a switch. The backend is per-network, so an account created on one
+ * network 404s on the other; `createMultisigAccount` is idempotent for a
+ * (deterministic) address, so re-issuing it closes the gap. Best-effort:
+ * failures are logged, the next switch retries. Ports Android's
+ * `SyncJointAccountsOnNetworkSwitchUseCase`.
  */
 export const useSyncMultisigAccountsOnNetworkSwitch = (): void => {
     const { network } = useNetwork()
@@ -55,23 +49,17 @@ export const useSyncMultisigAccountsOnNetworkSwitch = (): void => {
         accountsRef.current = accounts
     }, [accounts])
 
-    const previousNetworkRef = useRef(network)
+    // Flag a pending sync on a real switch; the run waits for the new network's
+    // device id, which `useSwitchNetwork` registers just before the switch.
     const pendingNetworkRef = useRef<Nullable<Network>>(null)
+    useOnNetworkSwitch((_from, to) => {
+        pendingNetworkRef.current = to
+    })
 
     useEffect(() => {
-        // Flag a sync only on a real network switch — not on the initial
-        // mount (mirrors Android's `previousNode != null` gate).
-        if (previousNetworkRef.current !== network) {
-            previousNetworkRef.current = network
-            pendingNetworkRef.current = network
-        }
-
-        if (pendingNetworkRef.current !== network) return
-
-        // The new network's device must be registered first. `useSwitchNetwork`
-        // registers it before `setNetwork`, so the id is normally ready here;
-        // if not, bail — this effect re-runs once the id lands.
-        if (!deviceId) return
+        // Bail until the flagged switch's device id lands; this effect re-runs
+        // once `deviceId` updates.
+        if (pendingNetworkRef.current !== network || !deviceId) return
 
         pendingNetworkRef.current = null
 
