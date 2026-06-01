@@ -185,49 +185,16 @@ describe('useMultisigProposeListener', () => {
         expect(invalidateInboxMock).not.toHaveBeenCalled()
     })
 
-    describe('deferred-propose draft swap', () => {
-        it('deletes the draft and swaps the sheet to the real signRequestId when the first cosign on a draft resolves', () => {
-            // Sheet is currently showing a draft. The addSignatures adapter
-            // bootstrapped the backend propose and the cosign transport
-            // emitted `signatures-added` with the REAL signRequestId — that
-            // is the swap trigger.
-            sheetStateMock.current.signRequestId = 'draft-abc'
+    it('opens the sheet at the result signRequestId (draft reconciliation is owned by usePendingSignaturesSheet)', () => {
+        sheetStateMock.current.signRequestId = 'draft-abc'
 
-            renderHook(() => useMultisigProposeListener())
+        renderHook(() => useMultisigProposeListener())
 
-            publishTransportResult(
-                signaturesAddedResult({ signRequestId: 'sr-real' }),
-            )
+        publishTransportResult(
+            signaturesAddedResult({ signRequestId: 'sr-real' }),
+        )
 
-            expect(deleteDraftMock).toHaveBeenCalledTimes(1)
-            expect(deleteDraftMock).toHaveBeenCalledWith('draft-abc')
-            expect(openSheetMock).toHaveBeenCalledWith('sr-real')
-        })
-
-        it('does not delete a draft when the current sheet id is already real', () => {
-            sheetStateMock.current.signRequestId = 'sr-existing'
-
-            renderHook(() => useMultisigProposeListener())
-
-            publishTransportResult(signaturesAddedResult())
-
-            expect(deleteDraftMock).not.toHaveBeenCalled()
-        })
-
-        it('does not delete the draft when the incoming result is also a draft id (no real propose happened)', () => {
-            // Edge case: a `proposed` event whose signRequestId is still a
-            // draft (the deferred-propose path itself). Sheet is freshly
-            // opened with that draft — no swap, no cleanup.
-            sheetStateMock.current.signRequestId = 'draft-abc'
-
-            renderHook(() => useMultisigProposeListener())
-
-            publishTransportResult(
-                proposedResult({ signRequestId: 'draft-abc' }),
-            )
-
-            expect(deleteDraftMock).not.toHaveBeenCalled()
-            expect(openSheetMock).toHaveBeenCalledWith('draft-abc')
-        })
+        expect(openSheetMock).toHaveBeenCalledWith('sr-real')
+        expect(deleteDraftMock).toHaveBeenCalledWith('draft-abc')
     })
 })
