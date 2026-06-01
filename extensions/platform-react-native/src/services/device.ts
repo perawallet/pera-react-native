@@ -13,6 +13,7 @@
 import {
     type DeviceInfoService,
     type DevicePlatform,
+    type AppEnvironment,
 } from '@perawallet/wallet-extension-platform'
 import * as Application from 'expo-application'
 import * as Device from 'expo-device'
@@ -74,5 +75,11 @@ export class RNDeviceInfoStorageService implements DeviceInfoService {
     getDeviceCountry(): string {
         const locales = getLocales()
         return locales[0]?.regionCode ?? 'US'
+    }
+    getAppEnvironment(): AppEnvironment {
+        return config.appEnvironment
+    }
+    isStoreBuild(): boolean {
+        return config.appEnvironment === 'production'
     }
 }

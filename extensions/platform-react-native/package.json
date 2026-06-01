@@ -33,6 +33,8 @@
     "@notifee/react-native": "^9.1.8",
     "drizzle-orm": "catalog:",
     "expo-sqlite": "~56.0.4",
+    "@expo/app-integrity": "^56.0.3",
+    "@noble/hashes": "catalog:",
     "expo-application": "^56.0.3",
     "expo-device": "^56.0.4",
     "expo-local-authentication": "^56.0.4",
@@ -44,6 +46,7 @@
     "vite": "catalog:",
     "vite-plugin-dts": "catalog:",
     "vitest": "catalog:",
+    "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@testing-library/react": "catalog:",
     "@perawallet/wallet-core-devtools": "workspace:*"

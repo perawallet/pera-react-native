@@ -52,6 +52,7 @@ import {
     PeraWalletProvider,
     usePeraProvider,
 } from '@perawallet/wallet-extension-provider'
+import { useAppIntegrityBootstrap } from '@perawallet/wallet-core-app-integrity'
 import {
     runPasskeyAutofillBootstrap,
     usePasskeyAutofillLifecycle,
@@ -99,6 +100,7 @@ const AppContent = () => {
     const [initError, setInitError] = useState<boolean>(false)
 
     usePasskeyAutofillLifecycle()
+    useAppIntegrityBootstrap()
 
     useEffect(() => {
         logger.setErrorReporter(

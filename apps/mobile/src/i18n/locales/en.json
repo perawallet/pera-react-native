@@ -1428,6 +1428,7 @@
         "dispenser": "Dispenser",
         "developer_menu": "Developer Options",
         "manage_cache": "Manage Cache",
+        "app_integrity": "App Integrity",
         "messages": "Messages"
     },
     "search": {
@@ -1642,6 +1643,10 @@
             "debug_webview": "Test Webview API",
             "debug_dapp": "Test Dapp",
             "manage_cache": "Manage Cache",
+            "app_integrity": "App Integrity",
+            "app_integrity_run": "Run registration handshake",
+            "app_integrity_verify": "Verify token",
+            "app_integrity_clear": "Clear stored state",
             "refresh_cache": "Refresh full cache",
             "refresh_cache_success_title": "Cache refreshed",
             "refresh_cache_success_body": "All accounts refetched and queries invalidated.",

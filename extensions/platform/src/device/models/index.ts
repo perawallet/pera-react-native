@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+export type AppEnvironment = 'development' | 'staging' | 'production'
+
 export const DevicePlatforms = {
     ios: 'ios',
     android: 'android',
@@ -33,4 +35,6 @@ export interface DeviceInfoService {
     getDeviceCountry(): string
     getDeviceModelId(): string
     getUserAgent(): string
+    getAppEnvironment(): AppEnvironment
+    isStoreBuild(): boolean
 }

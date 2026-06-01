@@ -202,6 +202,9 @@ workflows:
             - content: |
                 #!/usr/bin/env bash
                 set -ex
+                # APP_ENV must be set here so generate-config.sh bakes
+                # appEnvironment into the bundled config (defaults to development).
+                export APP_ENV="${ENVIRONMENT:-development}"
                 pnpm run generate:config
       - script@1:
           title: Run Tests
@@ -364,6 +367,9 @@ workflows:
             - content: |
                 #!/usr/bin/env bash
                 set -ex
+                # APP_ENV must be set here so generate-config.sh bakes
+                # appEnvironment into the bundled config (defaults to development).
+                export APP_ENV="${ENVIRONMENT:-development}"
                 pnpm run generate:config
       - script@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
@@ -616,6 +622,9 @@ workflows:
             - content: |
                 #!/usr/bin/env bash
                 set -ex
+                # APP_ENV must be set here so generate-config.sh bakes
+                # appEnvironment into the bundled config (defaults to development).
+                export APP_ENV="${ENVIRONMENT:-development}"
                 pnpm run generate:config
       - script@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'

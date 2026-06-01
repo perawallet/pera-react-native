@@ -13,6 +13,7 @@
 import { Provider } from '@algorandfoundation/wallet-provider'
 import {
     AnalyticsService,
+    AppIntegrityService,
     BiometricsService,
     CrashReportingService,
     DatabaseService,
@@ -32,6 +33,7 @@ import { PeraProvider } from './pera-provider'
 
 export type TestPlatformOverrides = Partial<{
     analytics: AnalyticsService
+    appIntegrity: AppIntegrityService
     keyValueStorage: KeyValueStorageService
     biometrics: BiometricsService
     remoteConfig: RemoteConfigService
@@ -118,6 +120,12 @@ export const buildTestPlatform = (
         getDeviceOSVersion() {
             return 'testOsVersion'
         },
+        getAppEnvironment() {
+            return 'production'
+        },
+        isStoreBuild() {
+            return true
+        },
     }
 
     const defaultBiometrics: BiometricsService = {
@@ -132,6 +140,15 @@ export const buildTestPlatform = (
         },
         async authenticate() {
             return true
+        },
+    }
+
+    const defaultAppIntegrity: AppIntegrityService = {
+        async isSupported() {
+            return true
+        },
+        async attest() {
+            return { attestation: 'test-attestation', keyId: 'test-key-id' }
         },
     }
 
@@ -164,6 +181,7 @@ export const buildTestPlatform = (
         crashReporting: overrides.crashReporting ?? defaultCrash,
         database: overrides.database ?? new MemoryDatabaseService(),
         deviceInfo: overrides.deviceInfo ?? deviceInfo,
+        appIntegrity: overrides.appIntegrity ?? defaultAppIntegrity,
         hardwareWalletRegistry:
             overrides.hardwareWalletRegistry ?? defaultHardwareWalletRegistry,
     }

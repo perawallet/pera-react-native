@@ -72,6 +72,10 @@ append_config "INDEXER_API_KEY" "indexerApiKey" "string"
 
 # App Store ID
 append_config "APP_STORE_APP_ID" "appStoreAppID" "string"
+append_config "PLAY_INTEGRITY_CLOUD_PROJECT_NUMBER" "playIntegrityCloudProjectNumber" "string"
+
+# Build channel (development | staging | production)
+append_config "APP_ENV" "appEnvironment" "string"
 
 # Explorer URLs
 append_config "MAINNET_EXPLORER_URL" "mainnetExplorerUrl" "string"
