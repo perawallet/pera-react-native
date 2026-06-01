@@ -20,7 +20,7 @@ const CONTACT_ADDR = 'C'.repeat(58)
 const EXTERNAL_ADDR = 'E'.repeat(58)
 const MULTISIG_ADDR = 'M'.repeat(58)
 
-const { mockShowToast } = vi.hoisted(() => ({ mockShowToast: vi.fn() }))
+const { mockErrorToast } = vi.hoisted(() => ({ mockErrorToast: vi.fn() }))
 const { mockResolve } = vi.hoisted(() => ({ mockResolve: vi.fn() }))
 const { mockDismiss } = vi.hoisted(() => ({ mockDismiss: vi.fn() }))
 
@@ -34,7 +34,7 @@ vi.mock('@hooks/useLanguage', () => ({
 }))
 
 vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({ showToast: mockShowToast }),
+    useToast: () => ({ errorToast: mockErrorToast }),
 }))
 
 vi.mock('@modules/bottom-sheet', () => ({
@@ -95,7 +95,7 @@ describe('useAddParticipantContent', () => {
             address: LOCAL_ALGO_ADDR,
             nfdName: 'alice.algo',
         })
-        expect(mockShowToast).not.toHaveBeenCalled()
+        expect(mockErrorToast).not.toHaveBeenCalled()
     })
 
     it('shows a watch-account error toast and does not resolve when the user picks a local watch account', () => {
@@ -106,11 +106,10 @@ describe('useAddParticipantContent', () => {
         })
 
         expect(mockResolve).not.toHaveBeenCalled()
-        expect(mockShowToast).toHaveBeenCalledWith({
-            title: 'multisig.add_participant.cannot_add_watch_error',
-            body: 'multisig.add_participant.cannot_add_watch_error_body',
-            type: 'error',
-        })
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            'multisig.add_participant.cannot_add_watch_error',
+            'multisig.add_participant.cannot_add_watch_error_body',
+        )
     })
 
     it('resolves immediately when the user picks a contact', () => {
@@ -124,7 +123,7 @@ describe('useAddParticipantContent', () => {
             address: CONTACT_ADDR,
             nfdName: undefined,
         })
-        expect(mockShowToast).not.toHaveBeenCalled()
+        expect(mockErrorToast).not.toHaveBeenCalled()
     })
 
     it('resolves with an external address once the multisig check confirms it is not a shared account', async () => {
@@ -141,7 +140,7 @@ describe('useAddParticipantContent', () => {
                 nfdName: undefined,
             }),
         )
-        expect(mockShowToast).not.toHaveBeenCalled()
+        expect(mockErrorToast).not.toHaveBeenCalled()
     })
 
     it('shows a multisig-account error toast and does not resolve when the external address is a shared account', async () => {
@@ -153,11 +152,10 @@ describe('useAddParticipantContent', () => {
         })
 
         await waitFor(() =>
-            expect(mockShowToast).toHaveBeenCalledWith({
-                title: 'multisig.add_participant.cannot_add_multisig_error',
-                body: 'multisig.add_participant.cannot_add_multisig_error_body',
-                type: 'error',
-            }),
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'multisig.add_participant.cannot_add_multisig_error',
+                'multisig.add_participant.cannot_add_multisig_error_body',
+            ),
         )
         expect(mockResolve).not.toHaveBeenCalled()
     })

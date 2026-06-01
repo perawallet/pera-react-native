@@ -43,7 +43,7 @@ export type UseAddParticipantContentResult = {
 export const useAddParticipantContent = (): UseAddParticipantContentResult => {
     const { t } = useLanguage()
     const { network } = useNetwork()
-    const { showToast } = useToast()
+    const { errorToast } = useToast()
     const accounts = useAllAccounts()
     const { contacts } = useContacts()
     const [selectedAddress, setSelectedAddress] = useState('')
@@ -66,28 +66,22 @@ export const useAddParticipantContent = (): UseAddParticipantContentResult => {
     const showValidationError = useCallback(
         (error: MultisigValidationError) => {
             if (error.code === 'participant_is_multisig') {
-                showToast({
-                    title: t(
-                        'multisig.add_participant.cannot_add_multisig_error',
-                    ),
-                    body: t(
+                errorToast(
+                    t('multisig.add_participant.cannot_add_multisig_error'),
+                    t(
                         'multisig.add_participant.cannot_add_multisig_error_body',
                     ),
-                    type: 'error',
-                })
+                )
                 return
             }
             if (error.code === 'participant_is_watch') {
-                showToast({
-                    title: t('multisig.add_participant.cannot_add_watch_error'),
-                    body: t(
-                        'multisig.add_participant.cannot_add_watch_error_body',
-                    ),
-                    type: 'error',
-                })
+                errorToast(
+                    t('multisig.add_participant.cannot_add_watch_error'),
+                    t('multisig.add_participant.cannot_add_watch_error_body'),
+                )
             }
         },
-        [showToast, t],
+        [errorToast, t],
     )
 
     useEffect(() => {

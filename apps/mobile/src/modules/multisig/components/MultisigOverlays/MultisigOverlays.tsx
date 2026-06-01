@@ -31,10 +31,8 @@ export const MultisigOverlays = () => {
     )
     const closeSheet = usePendingSignaturesSheetStore(state => state.closeSheet)
     const { request: requestBottomSheet } = useBottomSheet()
-    // Track whether a sheet is currently presented (NOT which id) so a
-    // signRequestId change while the sheet is open (e.g. the deferred-propose
-    // draft → real swap) just re-renders the sheet's content in place
-    // instead of stacking a second gorhom modal on top.
+    // Track open-state, not the id, so a signRequestId change while the sheet
+    // is open re-renders its content instead of stacking a second sheet.
     const isSheetOpenRef = useRef(false)
 
     useEffect(() => {
@@ -45,25 +43,16 @@ export const MultisigOverlays = () => {
             await requestBottomSheet<void>({
                 contents: <PendingSignaturesContent />,
                 options: {
-                    // Fixed 90% snap point gives the flex layout a definite
-                    // height so the sticky footer pins below the scrollable
-                    // signers list. `size: 'auto'` would size the sheet to
-                    // content height, but our scroll view uses `flex: 1`
-                    // which contributes 0 to natural measurement — the sheet
-                    // would collapse to header + footer height. Same pattern
-                    // SigningOverlays uses for its review sheet.
+                    // Fixed snap point, not 'auto': the signers list is
+                    // `flex: 1` (0 natural height), so 'auto' would collapse
+                    // the sheet to header + footer.
                     size: 'lg',
                     enablePanDownToClose: true,
                     autoCreateContainer: false,
                 },
             })
-            // The user dismissed the visible sheet — reset both pieces of
-            // state. `signRequestId` may have changed mid-await (e.g. the
-            // deferred-propose draft → real swap), but it always represents
-            // "what the user is/was looking at", so clearing it on dismiss
-            // is correct regardless. The next `openSheet(...)` from any
-            // path (inbox tap, propose listener) flips Zustand to a fresh
-            // value and re-fires this effect.
+            // Dismissed — clear the open flag and the id; the next
+            // openSheet() re-fires this effect with a fresh value.
             isSheetOpenRef.current = false
             closeSheet()
         })()
@@ -73,10 +62,8 @@ export const MultisigOverlays = () => {
 }
 
 /**
- * Thin RN + i18n shell over the package-level
- * `useWalletConnectHandoffResolver`. Owns: pausing polling while the app is
- * backgrounded (a backgrounded poll would only fail and could not be
- * delivered), and building the localized message bag.
+ * RN + i18n shell over `useWalletConnectHandoffResolver`: pauses polling while
+ * the app is backgrounded and builds the localized message bag.
  */
 const useResolverWiring = (): void => {
     const { t } = useTranslation()
