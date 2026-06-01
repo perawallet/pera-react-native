@@ -51,7 +51,7 @@ const multisig = (address: string, addresses: string[] = []): WalletAccount =>
     ({
         type: 'multisig',
         address,
-        multisigDetails: { threshold: 1, addresses },
+        multisigDetails: { threshold: 1, addresses, version: 1 },
     }) as unknown as WalletAccount
 
 const buildGroup = (

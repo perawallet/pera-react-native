@@ -20,7 +20,10 @@ import { useDeviceID } from '@perawallet/wallet-core-device'
 import {
     ACTIONABLE_SIGN_REQUEST_STATUSES,
     FINALIZED_SIGN_REQUEST_STATUSES,
+    isDraftSignRequestId,
+    useDraftSignRequestStore,
     useSignRequestDetailQuery,
+    type DraftSignRequest,
     type MultisigSignRequest,
     type SignRequestStatus,
 } from '@perawallet/wallet-core-multisig'
@@ -66,6 +69,20 @@ export type UsePendingSignaturesContentResult = {
     canCancel: boolean
     isCancelling: boolean
     handleCancel: () => Promise<void>
+    /**
+     * True when the sheet is rendering a locally-created draft sign-request
+     * (no backend record yet). The first per-row Sign tap bootstraps the
+     * real backend propose; until that resolves, other rows are blocked so
+     * we don't race two propose calls on the same draft.
+     */
+    isDraft: boolean
+    /**
+     * True when a draft cosign is in flight and other per-row Sign buttons
+     * should render disabled. Mirrors the same race-prevention rule that
+     * {@link handleSignParticipant} enforces on tap — surfaced separately so
+     * the UI can grey out the non-signing rows.
+     */
+    disableOtherSignersForDraft: boolean
 }
 
 const FAILURE_BANNER_KEY_BY_STATUS: Partial<Record<SignRequestStatus, string>> =
@@ -92,14 +109,30 @@ export const usePendingSignaturesContent =
         const { dismiss } = useBottomSheetResult<void>()
         const { request: requestBottomSheet } = useBottomSheet()
 
+        // Draft-mode: the sheet was opened with a locally-created sign-request
+        // id (no backend record exists yet). This happens when the user sent a
+        // multisig transaction from an account whose only local participants
+        // are hardware wallets — the propose call is deferred until the user
+        // taps Sign on a Ledger row, which bootstraps the backend record.
+        const isDraft =
+            signRequestId !== null && isDraftSignRequestId(signRequestId)
+        const draft = useDraftSignRequestStore(state =>
+            isDraft && signRequestId ? state.drafts[signRequestId] : undefined,
+        )
+
         const { data: signRequestData, isLoading } = useSignRequestDetailQuery({
             network,
             deviceId,
             signRequestId: signRequestId ?? '',
-            enabled: signRequestId !== null && deviceId !== '',
+            // Disable the backend query in draft mode — there is no backend
+            // record to fetch yet. We synthesize the sign-request shape from
+            // the local draft below so the rest of the hook is unchanged.
+            enabled: signRequestId !== null && deviceId !== '' && !isDraft,
             pollWhilePending: true,
         })
-        const signRequest = signRequestData ?? null
+        const signRequest = isDraft
+            ? (synthesizeDraftSignRequest(draft) ?? null)
+            : (signRequestData ?? null)
 
         const status = signRequest?.status ?? null
 
@@ -158,6 +191,11 @@ export const usePendingSignaturesContent =
             })
         }, [signRequest, status, hardwareUnsignedSet, inFlightCosignAddresses])
 
+        // In draft mode the first per-row Sign bootstraps the backend propose.
+        // Lock other rows while it's in flight so two propose calls don't race.
+        const disableOtherSignersForDraft =
+            isDraft && signers.some(s => s.isSigning)
+
         const failureBannerKey =
             (status && FAILURE_BANNER_KEY_BY_STATUS[status]) ??
             'multisig.pending_signatures.failed_default'
@@ -197,6 +235,10 @@ export const usePendingSignaturesContent =
                     return
                 if (!hardwareUnsignedSet.has(address)) return
                 if (inFlightCosignAddresses.has(address)) return
+                // Draft mode: one per-row Sign at a time. The first tap
+                // bootstraps the real backend propose; allowing a parallel
+                // tap would race two propose calls on the same draft.
+                if (isDraft && inFlightCosignAddresses.size > 0) return
                 dispatchCosign(address)
             },
             [
@@ -205,6 +247,7 @@ export const usePendingSignaturesContent =
                 hardwareUnsignedSet,
                 inFlightCosignAddresses,
                 dispatchCosign,
+                isDraft,
             ],
         )
 
@@ -251,7 +294,10 @@ export const usePendingSignaturesContent =
             failureBannerKey,
             signedCount,
             threshold,
-            timeRemaining,
+            // Draft requests have no on-chain expiry yet (no backend record).
+            // Hide the time-remaining badge until propose lands and the
+            // sheet swaps to the real signRequestId.
+            timeRemaining: isDraft ? null : timeRemaining,
             failReason: signRequest?.failReasonDisplay ?? null,
             signers,
             handleClose,
@@ -261,5 +307,50 @@ export const usePendingSignaturesContent =
             canCancel,
             isCancelling,
             handleCancel,
+            isDraft,
+            disableOtherSignersForDraft,
         }
     }
+
+/**
+ * Builds a {@link MultisigSignRequest}-shaped object from a local draft so
+ * the rest of `usePendingSignaturesContent` (and the components downstream)
+ * can render the pending signatures sheet unchanged in draft mode. All
+ * participants render as pending — no responses exist until the user taps
+ * Sign on a Ledger row and the addSignatures adapter bootstraps the real
+ * backend propose with that participant's signature.
+ */
+const synthesizeDraftSignRequest = (
+    draft: DraftSignRequest | undefined,
+): MultisigSignRequest | null => {
+    if (!draft) return null
+    return {
+        id: draft.localId,
+        status: 'pending' as const,
+        type: draft.proposeType,
+        createdAt: draft.createdAt,
+        // Synthetic placeholder — never read in draft mode because
+        // `timeRemaining` is explicitly nulled out above.
+        expectedExpireDatetime: draft.createdAt,
+        failReasonDisplay: null,
+        proposerAddress: null,
+        multisigAccount: {
+            customId: draft.localId,
+            createdAt: draft.createdAt,
+            address: draft.multisigAddress,
+            version: draft.multisigDetails.version,
+            threshold: draft.multisigDetails.threshold,
+            participantAddresses: draft.multisigDetails.participantAddresses,
+        },
+        transactionLists: [
+            {
+                id: `${draft.localId}-txl-0`,
+                rawTransactions: draft.rawTransactionsBase64,
+                firstValidBlock: 0,
+                lastValidBlock: 0,
+                expectedExpireDatetime: draft.createdAt,
+                responses: [],
+            },
+        ],
+    }
+}

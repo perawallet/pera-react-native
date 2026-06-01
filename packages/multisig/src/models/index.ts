@@ -29,6 +29,16 @@ export type SignRequestStatus =
     | 'expired'
     | 'declined'
 
+/**
+ * How the backend should dispatch the multisig propose call:
+ *   - `'async'` — backend collects signatures and (eventually) broadcasts
+ *     to algod itself. Used for in-app Send flows.
+ *   - `'sync'` — wallet is responsible for delivering the assembled signed
+ *     bytes back to the dApp once threshold is met. Used for WalletConnect
+ *     / webview / deeplink handoffs.
+ */
+export type MultisigProposeMode = 'sync' | 'async'
+
 export interface SignerResponse {
     address: string
     response: 'signed' | 'declined'

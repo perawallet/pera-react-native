@@ -167,8 +167,8 @@ describe('multisig creation flow', () => {
         const createHook = renderHook(() => useCreateMultisigScreen())
 
         mockRequestBottomSheet
-            .mockResolvedValueOnce('ADDR_A')
-            .mockResolvedValueOnce('ADDR_B')
+            .mockResolvedValueOnce({ address: 'ADDR_A' })
+            .mockResolvedValueOnce({ address: 'ADDR_B' })
 
         await act(async () => {
             await createHook.result.current.handleOpenAddParticipant()
@@ -222,6 +222,7 @@ describe('multisig creation flow', () => {
                 multisigDetails: {
                     threshold: 2,
                     addresses: ['ADDR_A', 'ADDR_B'],
+                    version: 1,
                 },
             }),
         ])
@@ -242,8 +243,8 @@ describe('multisig creation flow', () => {
 
         const createHook = renderHook(() => useCreateMultisigScreen())
         mockRequestBottomSheet
-            .mockResolvedValueOnce('ADDR_A')
-            .mockResolvedValueOnce('ADDR_B')
+            .mockResolvedValueOnce({ address: 'ADDR_A' })
+            .mockResolvedValueOnce({ address: 'ADDR_B' })
         await act(async () => {
             await createHook.result.current.handleOpenAddParticipant()
         })
@@ -264,9 +265,9 @@ describe('multisig creation flow', () => {
     it('threshold increments/decrements stay within participant bounds', async () => {
         const createHook = renderHook(() => useCreateMultisigScreen())
         mockRequestBottomSheet
-            .mockResolvedValueOnce('ADDR_A')
-            .mockResolvedValueOnce('ADDR_B')
-            .mockResolvedValueOnce('ADDR_C')
+            .mockResolvedValueOnce({ address: 'ADDR_A' })
+            .mockResolvedValueOnce({ address: 'ADDR_B' })
+            .mockResolvedValueOnce({ address: 'ADDR_C' })
         await act(async () => {
             await createHook.result.current.handleOpenAddParticipant()
         })

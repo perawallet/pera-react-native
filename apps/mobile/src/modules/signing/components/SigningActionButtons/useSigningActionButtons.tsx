@@ -13,7 +13,9 @@
 import React, { useCallback, useMemo } from 'react'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
+import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import {
+    isSignRequestMultisigUnsignable,
     type SignRequest,
     type SigningPipelineEvent,
     useSigningPipeline,
@@ -40,6 +42,7 @@ export type UseSigningActionButtonsResult = {
     hasMultipleTransactions: boolean
     currentRequest: Optional<SignRequest>
     isMultisigCosign: boolean
+    isMultisigUnsignable: boolean
     cosignSignerAddress: string
 }
 
@@ -52,6 +55,7 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
     const { showError } = useErrorToast()
     const { t } = useLanguage()
     const { currentRequest } = useSigningRequest()
+    const allAccounts = useAllAccounts()
 
     const navigation =
         useNavigation<StackNavigationProp<SigningStackParamList>>()
@@ -105,7 +109,15 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
         return presentTypes[0]
     }, [warnings, getPreference])
 
+    const isMultisigUnsignable = useMemo(
+        () =>
+            !!currentRequest &&
+            isSignRequestMultisigUnsignable(currentRequest, allAccounts),
+        [currentRequest, allAccounts],
+    )
+
     const handleSignAndSend = useCallback(() => {
+        if (isMultisigUnsignable) return
         if (guardedWarningType !== null) {
             void (async () => {
                 const result =
@@ -129,7 +141,13 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
             return
         }
         pipeline.next()
-    }, [guardedWarningType, pipeline, requestBottomSheet, navigation])
+    }, [
+        isMultisigUnsignable,
+        guardedWarningType,
+        pipeline,
+        requestBottomSheet,
+        navigation,
+    ])
 
     const handleReject = useCallback(() => {
         pipeline.fail()
@@ -149,6 +167,7 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
         hasMultipleTransactions: allTransactions.length > 1,
         currentRequest,
         isMultisigCosign,
+        isMultisigUnsignable,
         cosignSignerAddress,
     }
 }

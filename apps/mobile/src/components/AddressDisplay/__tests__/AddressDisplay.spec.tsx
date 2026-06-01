@@ -12,7 +12,11 @@
 
 import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { type Optional } from '@perawallet/wallet-core-shared'
+import {
+    type Optional,
+    truncateAlgorandAddress,
+} from '@perawallet/wallet-core-shared'
+import { PWText } from '@components/core'
 import { AddressDisplay } from '../AddressDisplay'
 
 const mockUseAllAccounts = vi.fn(() => [] as unknown[])
@@ -161,6 +165,54 @@ describe('AddressDisplay', () => {
 
         const matches = screen.getAllByText(/DDD/)
         expect(matches).toHaveLength(1)
+    })
+
+    it('renders the contact name and the truncated address as two lines when they differ', () => {
+        const address = 'A'.repeat(58)
+        mockFindContacts.mockReturnValue([{ name: 'Alice', address }])
+
+        render(<AddressDisplay address={address} />)
+
+        expect(screen.getByText('Alice')).toBeTruthy()
+        expect(screen.getByText(/AAA/)).toBeTruthy()
+    })
+
+    it('renders only the contact name when it equals the truncated address', () => {
+        const address = 'A'.repeat(58)
+        const truncated = truncateAlgorandAddress(address)
+        mockFindContacts.mockReturnValue([{ name: truncated, address }])
+
+        render(<AddressDisplay address={address} />)
+
+        // showSecondary is false: the redundant second line is collapsed.
+        expect(screen.getAllByText(truncated)).toHaveLength(1)
+    })
+
+    it('renders the trailing node and not the copy icon, taking precedence over showCopy', () => {
+        render(
+            <AddressDisplay
+                address={'D'.repeat(58)}
+                showCopy
+                trailing={<PWText testID='trailing-slot'>edit</PWText>}
+            />,
+        )
+
+        expect(screen.getByTestId('trailing-slot')).toBeTruthy()
+        expect(screen.queryByTestId('icon-copy')).toBeNull()
+    })
+
+    it('forwards arbitrary textProps to the contact name text', () => {
+        const address = 'A'.repeat(58)
+        mockFindContacts.mockReturnValue([{ name: 'Alice', address }])
+
+        render(
+            <AddressDisplay
+                address={address}
+                textProps={{ testID: 'addr-primary' }}
+            />,
+        )
+
+        expect(screen.getByTestId('addr-primary')).toBeTruthy()
     })
 
     describe('unified layout', () => {

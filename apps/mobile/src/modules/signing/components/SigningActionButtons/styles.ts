@@ -14,8 +14,21 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
-        paddingBottom: theme.spacing.lg,
+        // No explicit bottom padding — the enclosing `TransactionListFooter`
+        // wraps this in a `SafeAreaView edges=['bottom']` that already
+        // supplies the safe-area inset. The extra `spacing.lg` here stacked
+        // on top of that inset and left a visible gap below the Cancel
+        // button on devices with a home indicator.
         gap: theme.spacing.xl,
         backgroundColor: theme.colors.background,
+    },
+    cannotSignNotice: {
+        gap: theme.spacing.xxs,
+        padding: theme.spacing.md,
+        borderRadius: theme.borderRadius.lg,
+        backgroundColor: theme.colors.negativeLighter,
+    },
+    cannotSignBody: {
+        color: theme.colors.textGray,
     },
 }))

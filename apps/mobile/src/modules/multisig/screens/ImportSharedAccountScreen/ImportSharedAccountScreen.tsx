@@ -13,7 +13,6 @@
 import { ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import {
-    IconName,
     PWButton,
     PWIcon,
     PWScrollView,
@@ -23,7 +22,6 @@ import {
 import { AddressDisplay } from '@components/AddressDisplay'
 import { MultisigInfoCard } from '@components/MultisigInfoCard'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
-import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { useImportSharedAccountScreen } from './useImportSharedAccountScreen'
@@ -32,7 +30,6 @@ import { useStyles } from './styles'
 export const ImportSharedAccountScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const isDarkMode = useIsDarkMode()
     const {
         address,
         isLoading,
@@ -41,6 +38,7 @@ export const ImportSharedAccountScreen = () => {
         participantAddresses,
         totalParticipants,
         isUserIncluded,
+        canUserSign,
         isAlreadyImported,
         isAddDisabled,
         handleAddAccount,
@@ -48,10 +46,6 @@ export const ImportSharedAccountScreen = () => {
         handleDismiss,
         handleIgnore,
     } = useImportSharedAccountScreen()
-
-    const participantIconName: IconName = isDarkMode
-        ? 'accounts/dark/multisig-account'
-        : 'accounts/light/multisig-account'
 
     // Render the title + scanned address in the navigation toolbar with a
     // back arrow. The screen is deeplink-entered, so there is no back stack
@@ -127,6 +121,7 @@ export const ImportSharedAccountScreen = () => {
                     totalParticipants={totalParticipants}
                     threshold={threshold}
                     isUserIncluded={isUserIncluded}
+                    canUserSign={canUserSign}
                     participantCountTestID='import-shared-account-participant-count'
                     thresholdTestID='import-shared-account-threshold'
                 />
@@ -141,18 +136,15 @@ export const ImportSharedAccountScreen = () => {
                 </PWText>
 
                 <PWView>
-                    {participantAddresses.map((participant, index, arr) => (
+                    {participantAddresses.map(participant => (
                         <AddressDisplay
                             key={participant}
                             address={participant}
-                            addressFormat='long'
-                            iconName={participantIconName}
-                            showSecondaryAddress
-                            style={[
-                                styles.participantRow,
-                                index === arr.length - 1 &&
-                                    styles.participantRowLast,
-                            ]}
+                            showCopy={false}
+                            forceShowIcon
+                            contactAvatarVariant='highlighted'
+                            textProps={{ variant: 'h4' }}
+                            style={styles.participantRow}
                             testID={`import-participant-row-${participant}`}
                         />
                     ))}

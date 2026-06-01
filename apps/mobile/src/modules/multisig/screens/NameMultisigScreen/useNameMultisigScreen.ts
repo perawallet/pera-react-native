@@ -150,6 +150,7 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
                 multisigDetails: {
                     threshold,
                     addresses,
+                    version,
                 },
             }
 

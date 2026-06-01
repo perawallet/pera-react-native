@@ -24,6 +24,7 @@ import { createWalletConnectTransport } from './createWalletConnectTransport'
 import { createCallbackTransport } from './createCallbackTransport'
 import {
     createMultisigProposeTransport,
+    type CreateDraftSignRequestFn,
     type GetDeviceIdFn,
     type GetMsigMetadataFn,
     type ProposeSignRequestFn,
@@ -71,6 +72,14 @@ export interface CreateTransportSelectorOptions {
      * required only when the propose transport handles an external source.
      */
     getDeviceId?: GetDeviceIdFn
+    /**
+     * Creates a local draft sign-request when the propose transport
+     * receives an empty signers array — the deferred-propose path for
+     * hardware-only proposers. Without this, the transport throws on
+     * empty signers (preserves legacy behavior for callers that don't
+     * opt into deferred propose).
+     */
+    createDraftSignRequest?: CreateDraftSignRequestFn
 }
 
 /**
@@ -131,6 +140,7 @@ export const createTransportSelector = (
                 options.network,
                 options.getMsigMetadata,
                 options.getDeviceId,
+                options.createDraftSignRequest,
             )
         }
 

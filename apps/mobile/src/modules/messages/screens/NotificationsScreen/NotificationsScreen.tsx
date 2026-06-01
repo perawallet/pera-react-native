@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import { useTheme } from '@rneui/themed'
 import { PeraNotification } from '@perawallet/wallet-core-messages'
 import { ActivityIndicator } from 'react-native'
@@ -21,10 +22,6 @@ import { RefreshControl } from 'react-native-gesture-handler'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNotificationsScreen } from './useNotificationsScreen'
-
-const renderItem = ({ item }: { item: PeraNotification }) => {
-    return <NotificationItem item={item} />
-}
 
 export const NotificationsScreen = () => {
     const insets = useSafeAreaInsets()
@@ -40,7 +37,18 @@ export const NotificationsScreen = () => {
         loadMoreItems,
         isFetchingNextPage,
         keyExtractor,
+        handleNotificationPress,
     } = useNotificationsScreen()
+
+    const renderItem = useCallback(
+        ({ item }: { item: PeraNotification }) => (
+            <NotificationItem
+                item={item}
+                onPress={handleNotificationPress}
+            />
+        ),
+        [handleNotificationPress],
+    )
 
     return (
         <PWFlatList
