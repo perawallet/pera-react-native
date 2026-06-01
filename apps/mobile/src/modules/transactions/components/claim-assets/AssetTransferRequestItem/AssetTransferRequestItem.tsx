@@ -38,7 +38,17 @@ export const AssetTransferRequestItem = ({
     const { t } = useLanguage()
     const { asset, senders, totalAmount, usdValue } = item
     const { data: fullAsset } = useSingleAssetDetailsQuery(asset.assetId)
-    const resolvedAsset = fullAsset ?? asset
+    const resolvedAsset = useMemo(() => {
+        if (!fullAsset) return asset
+        return {
+            ...fullAsset,
+            peraMetadata: {
+                ...fullAsset.peraMetadata,
+                logo: fullAsset.peraMetadata?.logo ?? asset.peraMetadata?.logo,
+                collectible: fullAsset.peraMetadata?.collectible ?? asset.peraMetadata?.collectible,
+            },
+        }
+    }, [fullAsset, asset])
 
     const firstSender = senders.results[0]
     const remainingCount = senders.count - 1
