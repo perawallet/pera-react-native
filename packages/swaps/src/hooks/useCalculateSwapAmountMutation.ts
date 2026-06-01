@@ -21,5 +21,7 @@ export const useCalculateSwapAmountMutation = () => {
     return useMutation({
         mutationFn: (data: CalculateSwapAmountRequest) =>
             calculateSwapAmount(data, network),
+        // Handled by the caller — opt out of the global throwOnError default.
+        throwOnError: false,
     })
 }
