@@ -185,6 +185,7 @@ export const AccountNfts = () => {
                         ItemSeparatorComponent={null}
                         numColumns={isGrid ? GRID_COLUMNS : 1}
                         keyExtractor={item => item.assetId}
+                        automaticallyAdjustKeyboardInsets
                         contentContainerStyle={styles.contentContainer}
                         ListEmptyComponent={
                             <EmptyView

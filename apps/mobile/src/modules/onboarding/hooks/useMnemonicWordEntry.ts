@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Keyboard } from 'react-native'
 
 import { MNEMONIC_WORDLIST } from '@perawallet/wallet-core-kms'
 
@@ -80,6 +81,8 @@ export const useMnemonicWordEntry = ({
             if (split.length > 1) {
                 if (split.length === wordCount) {
                     setWords(split)
+                    // Entry done: drop the keyboard so the submit button is reachable.
+                    Keyboard.dismiss()
                     return
                 }
 

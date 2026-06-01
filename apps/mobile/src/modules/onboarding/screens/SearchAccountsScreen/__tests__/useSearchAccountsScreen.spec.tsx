@@ -25,6 +25,7 @@ const {
     mockDiscoverImportAccounts,
     mockCancelImport,
     mockExitAccountFlow,
+    mockSetShouldPlayConfetti,
     mockSetSelectedAccountAddress,
     mockBuildHdWalletAccount,
     mockAllAccounts,
@@ -38,6 +39,7 @@ const {
     mockDiscoverImportAccounts: vi.fn(),
     mockCancelImport: vi.fn(),
     mockExitAccountFlow: vi.fn(),
+    mockSetShouldPlayConfetti: vi.fn(),
     mockSetSelectedAccountAddress: vi.fn(),
     mockBuildHdWalletAccount: vi.fn(),
     mockAllAccounts: { current: [] as unknown[] },
@@ -114,6 +116,9 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
 vi.mock('../../../hooks', () => ({
     useExitAccountFlow: () => ({
         exitAccountFlow: mockExitAccountFlow,
+    }),
+    useShouldPlayConfetti: () => ({
+        setShouldPlayConfetti: mockSetShouldPlayConfetti,
     }),
 }))
 
@@ -501,6 +506,7 @@ describe('useSearchAccountsScreen', () => {
             expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith(
                 'PARENT_ADDRESS',
             )
+            expect(mockSetShouldPlayConfetti).toHaveBeenCalledWith(true)
             expect(mockExitAccountFlow).toHaveBeenCalled()
             expect(mockReplace).not.toHaveBeenCalled()
         })
