@@ -11,6 +11,7 @@
  */
 
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
+import { getContainerTestProps } from '@utils/test-id-helper'
 import { useStyles } from './styles'
 
 import { PanelButton } from '@components/PanelButton'
@@ -76,7 +77,10 @@ export const MenuScreen = () => {
     }
 
     return (
-        <PWView style={styles.container}>
+        <PWView
+            style={styles.container}
+            {...getContainerTestProps('menu_screen')}
+        >
             <PWView style={styles.iconBar}>
                 <PWView style={styles.iconBarColumn} />
                 <PWText
