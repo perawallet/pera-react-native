@@ -11,30 +11,20 @@
  */
 
 import { Decimal } from 'decimal.js'
-import { AssetIcon } from '../AssetIcon'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 import {
-    PWIcon,
     PWIconSize,
     PWSkeleton,
-    PWText,
-    PWTouchableOpacity,
     PWTouchableOpacityProps,
     PWView,
 } from '@components/core'
-import { CopyableText } from '@components/CopyableText'
-import {
-    ALGO_ASSET_ID,
-    isCollectible,
-    useAssetsQuery,
-} from '@perawallet/wallet-core-assets'
+import { isCollectible, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
-import { useLanguage } from '@hooks/useLanguage'
-import { getVerificationIcon } from '@modules/assets/utils/verification'
 import { useStyles } from './styles'
 import { useMemo } from 'react'
 import { CollectibleListItem } from '../CollectibleListItem'
+import { AssetItemView } from './AssetItemView'
 
 export type AccountAssetItemViewProps = {
     accountBalance: AssetWithAccountBalance
@@ -58,7 +48,6 @@ export const AccountAssetItemView = ({
     ...rest
 }: AccountAssetItemViewProps) => {
     const styles = useStyles()
-    const { t } = useLanguage()
 
     // Use pre-fetched asset data when available to avoid N+1 queries.
     // Falls back to individual fetch for callers that don't populate
@@ -78,27 +67,6 @@ export const AccountAssetItemView = ({
             fetchedAssets?.get(accountBalance.assetId) ?? accountBalance.asset
         )
     }, [accountBalance.asset, fetchedAssets, accountBalance.assetId])
-
-    const isAlgo = useMemo(
-        () => asset?.assetId === ALGO_ASSET_ID,
-        [asset?.assetId],
-    )
-
-    const isSuspicious = useMemo(() => {
-        const tier = asset?.peraMetadata?.verificationTier
-        return tier === 'suspicious'
-    }, [asset?.peraMetadata?.verificationTier])
-
-    const verificationIconName = useMemo(() => {
-        if (isAlgo) {
-            return 'assets/trusted' as const
-        }
-        const tier = asset?.peraMetadata?.verificationTier
-        return tier ? getVerificationIcon(tier) : null
-    }, [asset, isAlgo])
-
-    const isFavorited = asset?.peraMetadata?.isFavorited ?? false
-    const isDeleted = asset?.peraMetadata?.isDeleted === true
 
     const item = useMemo(() => {
         if (asset && isCollectible(asset)) {
@@ -136,108 +104,40 @@ export const AccountAssetItemView = ({
         )
     }
 
-    const displayName = isAlgo
-        ? 'Algo'
-        : asset.name || `Asset #${asset.assetId}`
-    const secondaryText =
-        asset.assetId === ALGO_ASSET_ID
-            ? asset.unitName
-            : asset.unitName
-              ? `${asset.unitName} - ${asset.assetId}`
-              : asset.assetId
+    const balance = (
+        <PWView style={styles.amountContainer}>
+            <CurrencyDisplay
+                currency={asset.unitName ?? ''}
+                value={accountBalance.amount}
+                precision={asset.decimals}
+                minPrecision={2}
+                showSymbol
+                style={styles.primaryAmount}
+                numberOfLines={1}
+            />
+            <PreferredCurrencyDisplay
+                sourceAmount={accountBalance.amount}
+                sourceAssetId={accountBalance.assetId}
+                usdPrice={usdPrice}
+                precision={2}
+                minPrecision={2}
+                showSymbol
+                style={styles.secondaryAmount}
+            />
+        </PWView>
+    )
 
     return (
-        <PWTouchableOpacity
-            activeOpacity={onPress ? undefined : 1}
+        <AssetItemView
+            asset={asset}
+            right={showBalance ? balance : undefined}
+            logoUrl={logoUrl}
+            iconSize={iconSize}
+            showFavorite
+            showDeletedLabel
+            copyableAssetId
             onPress={onPress}
             {...rest}
-            style={[styles.container, rest.style]}
-        >
-            <AssetIcon
-                asset={asset}
-                logoUrl={logoUrl}
-                size={iconSize ?? 'lg'}
-            />
-            <PWView style={styles.dataContainer}>
-                <PWView style={styles.unitContainer}>
-                    <PWView style={styles.row}>
-                        <PWText
-                            variant='bodyLarge'
-                            weight={500}
-                            style={
-                                isSuspicious
-                                    ? styles.suspiciousName
-                                    : styles.primaryUnit
-                            }
-                            truncate
-                        >
-                            {displayName}
-                        </PWText>
-                        {isFavorited ? (
-                            <PWIcon
-                                name='star-filled'
-                                size='xs'
-                                variant='favorite'
-                                testID='favorite-star-icon'
-                            />
-                        ) : null}
-                        {verificationIconName ? (
-                            <PWIcon
-                                name={verificationIconName}
-                                size='xs'
-                            />
-                        ) : null}
-                    </PWView>
-                    {isDeleted ? (
-                        <PWText
-                            style={styles.deletedLabel}
-                            numberOfLines={1}
-                        >
-                            {t('asset.deleted_label')}
-                        </PWText>
-                    ) : (
-                        <CopyableText copyValue={String(asset.assetId)}>
-                            <PWText
-                                variant='footnoteMedium'
-                                weight={400}
-                                style={styles.secondaryUnit}
-                                truncate
-                                ellipsizeMode='middle'
-                            >
-                                {secondaryText}
-                            </PWText>
-                        </CopyableText>
-                    )}
-                </PWView>
-                {showBalance ? (
-                    <PWView style={styles.amountContainer}>
-                        <CurrencyDisplay
-                            variant='bodyLarge'
-                            weight={500}
-                            currency={asset.unitName ?? ''}
-                            value={accountBalance.amount}
-                            precision={asset.decimals}
-                            maxPrecision={2}
-                            minPrecision={2}
-                            showSymbol
-                            numberOfLines={1}
-                            style={styles.primaryAmount}
-                        />
-                        <PreferredCurrencyDisplay
-                            variant='footnoteMedium'
-                            weight={400}
-                            sourceAmount={accountBalance.amount}
-                            sourceAssetId={accountBalance.assetId}
-                            usdPrice={usdPrice}
-                            precision={2}
-                            minPrecision={2}
-                            showSymbol
-                            numberOfLines={1}
-                            style={styles.secondaryAmount}
-                        />
-                    </PWView>
-                ) : null}
-            </PWView>
-        </PWTouchableOpacity>
+        />
     )
 }

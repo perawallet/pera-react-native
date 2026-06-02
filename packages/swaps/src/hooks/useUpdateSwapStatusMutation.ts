@@ -26,5 +26,7 @@ export const useUpdateSwapStatusMutation = () => {
     return useMutation({
         mutationFn: ({ swapId, data }: UpdateSwapStatusParams) =>
             updateSwapStatus(swapId, data, network),
+        // Handled by the caller — opt out of the global throwOnError default.
+        throwOnError: false,
     })
 }

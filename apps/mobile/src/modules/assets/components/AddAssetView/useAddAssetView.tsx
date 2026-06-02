@@ -15,7 +15,7 @@ import {
     useAccountBalancesQuery,
     useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
-import type { AssetSearchItem } from '@perawallet/wallet-core-assets'
+import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
 import { useGlobalSearch } from '@perawallet/wallet-core-search'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { useAssetOptInMutation } from '@perawallet/wallet-core-transactions'
@@ -34,7 +34,7 @@ type UseAddAssetViewOptions = {
 type UseAddAssetViewResult = {
     searchQuery: string
     handleSearchChange: (text: string) => void
-    results: AssetSearchItem[]
+    results: DisplayableAsset[]
     isLoading: boolean
     isError: boolean
     isFetchingNextPage: boolean

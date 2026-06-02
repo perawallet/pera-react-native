@@ -36,5 +36,8 @@ export const useStyles = makeStyles(theme => {
             borderRadius: theme.borderRadius.xs,
             marginTop: theme.spacing.xl,
         },
+        emptyViewBody: {
+            paddingHorizontal: theme.spacing['3xl'],
+        },
     }
 })

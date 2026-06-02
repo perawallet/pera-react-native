@@ -86,6 +86,7 @@ export const MenuScreen = () => {
             scroll={false}
             keyboard='none'
             style={styles.container}
+            testID='menu_screen'
         >
             <PWView style={styles.iconBar}>
                 <PWView style={styles.iconBarSide} />

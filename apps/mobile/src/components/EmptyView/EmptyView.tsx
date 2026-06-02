@@ -16,7 +16,7 @@ import { PWText } from '@components/core/PWText'
 import { PWView, PWViewProps } from '@components/core/PWView'
 import { LoadingView } from '@components/LoadingView'
 import { useStyles } from './styles'
-import { ViewStyle } from 'react-native'
+import { TextStyle, ViewStyle } from 'react-native'
 
 export type EmptyViewProps = {
     title?: string
@@ -26,6 +26,7 @@ export type EmptyViewProps = {
     isLoading?: boolean
     loadingView?: ReactNode
     loadingStyle?: ViewStyle
+    bodyStyle?: TextStyle
 } & PWViewProps
 
 export const EmptyView = (props: EmptyViewProps) => {
@@ -39,6 +40,7 @@ export const EmptyView = (props: EmptyViewProps) => {
         isLoading,
         loadingView,
         loadingStyle,
+        bodyStyle,
         ...rest
     } = props
 
@@ -82,7 +84,7 @@ export const EmptyView = (props: EmptyViewProps) => {
                     </PWText>
                 )}
                 <PWText
-                    style={styles.text}
+                    style={[styles.text, bodyStyle]}
                     numberOfLines={3}
                     truncate
                 >

@@ -15,13 +15,13 @@ import { transformSearchResult } from '../mappers'
 import type { AssetSearchResultResponse } from '../../api/assets/search-schema'
 
 describe('transformSearchResult', () => {
-    test('maps a standard asset search result to camelCase with null fallbacks', () => {
+    test('maps a standard asset search result to a DisplayableAsset', () => {
         const input = {
             asset_id: 123,
             name: 'Test',
             unit_name: 'TST',
-            logo: null,
-            verification_tier: 'trusted',
+            logo: 'https://logo.png',
+            verification_tier: 'verified',
             usd_value: '1.5',
             type: 'standard_asset',
         } as AssetSearchResultResponse
@@ -32,17 +32,16 @@ describe('transformSearchResult', () => {
             assetId: '123',
             name: 'Test',
             unitName: 'TST',
-            logo: null,
-            verificationTier: 'trusted',
-            usdValue: '1.5',
-            type: 'standard_asset',
-            collectibleTitle: null,
-            collectibleImage: null,
-            collectionName: null,
+            peraMetadata: {
+                logo: 'https://logo.png',
+                verificationTier: 'verified',
+                type: 'standard_asset',
+                collectible: undefined,
+            },
         })
     })
 
-    test('maps collectible fields when present', () => {
+    test('maps collectible fields into peraMetadata.collectible', () => {
         const input = {
             asset_id: 456,
             name: null,
@@ -60,8 +59,11 @@ describe('transformSearchResult', () => {
 
         const result = transformSearchResult(input)
 
-        expect(result.collectibleTitle).toBe('Penguin #42')
-        expect(result.collectibleImage).toBe('https://example.com/p.jpg')
-        expect(result.collectionName).toBe('Penguins')
+        expect(result.peraMetadata?.type).toBe('collectible')
+        expect(result.peraMetadata?.collectible).toEqual({
+            title: 'Penguin #42',
+            primaryImage: 'https://example.com/p.jpg',
+            collection: { name: 'Penguins' },
+        })
     })
 })

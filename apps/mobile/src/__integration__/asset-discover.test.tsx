@@ -112,9 +112,15 @@ describe('Flow: Asset discovery (search)', () => {
             const byId = new Map(
                 result.current.results.map(r => [r.assetId, r]),
             )
-            expect(byId.get('31566704')?.verificationTier).toBe('verified')
-            expect(byId.get('12345')?.verificationTier).toBe('unverified')
-            expect(byId.get('99999')?.verificationTier).toBe('suspicious')
+            expect(byId.get('31566704')?.peraMetadata?.verificationTier).toBe(
+                'verified',
+            )
+            expect(byId.get('12345')?.peraMetadata?.verificationTier).toBe(
+                'unverified',
+            )
+            expect(byId.get('99999')?.peraMetadata?.verificationTier).toBe(
+                'suspicious',
+            )
 
             // Identity fields survive the snake_case → camelCase
             // mapping. unitName is what the AddAssetView displays as

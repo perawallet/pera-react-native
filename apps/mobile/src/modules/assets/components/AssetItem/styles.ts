@@ -18,62 +18,53 @@ export const useStyles = makeStyles(theme => {
             flexDirection: 'row',
             alignItems: 'center',
             gap: theme.spacing.lg,
-            width: '100%',
-            minWidth: 0,
         },
         dataContainer: {
             flexDirection: 'row',
             alignItems: 'center',
             flex: 1,
-            minWidth: 0,
             gap: theme.spacing.md,
         },
-        unitContainer: {
-            flex: 1,
-            minWidth: 0,
-        },
-        // The amount wins the row's width tug-of-war: it sizes to its content
-        // and does not shrink, so the full value shows; the name column
-        // (`unitContainer`, flex: 1) truncates instead. Capped so a very long
-        // amount can't swallow the name entirely.
         amountContainer: {
             alignItems: 'flex-end',
-            flexShrink: 0,
-            maxWidth: '60%',
-        },
-        suspiciousName: {
-            color: theme.colors.error,
-            flexShrink: 1,
         },
         deletedLabel: {
             color: theme.colors.negative,
         },
-        primaryUnit: {
-            flexShrink: 1,
-            minWidth: 0,
-        },
-        secondaryUnit: {
-            color: theme.colors.textGrayLighter,
-            flexShrink: 1,
-        },
         primaryAmount: {
             textAlign: 'right',
-            flexShrink: 1,
-            minWidth: 0,
         },
         secondaryAmount: {
             textAlign: 'right',
             color: theme.colors.textGray,
             alignSelf: 'flex-end',
-            flexShrink: 1,
-            minWidth: 0,
         },
-        row: {
+        itemContainer: {
             flexDirection: 'row',
-            gap: theme.spacing.xs,
             alignItems: 'center',
+            gap: theme.spacing.lg,
+        },
+        infoContainer: {
+            flex: 1,
+        },
+        titleRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: theme.spacing.xs,
             flexShrink: 1,
-            minWidth: 0,
+        },
+        titleText: {
+            flexShrink: 1,
+        },
+        suspiciousTitle: {
+            color: theme.colors.error,
+            flexShrink: 1,
+        },
+        subtitle: {
+            color: theme.colors.textGray,
+        },
+        rightSlot: {
+            marginLeft: theme.spacing.md,
         },
     }
 })

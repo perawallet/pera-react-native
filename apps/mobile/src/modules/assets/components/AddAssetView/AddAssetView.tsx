@@ -15,7 +15,7 @@ import { ActivityIndicator } from 'react-native'
 import { PWFlatList, PWIcon, PWText, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { AssetSearchItem } from '@modules/assets/components/AssetSearchItem'
-import type { AssetSearchItem as AssetSearchItemType } from '@perawallet/wallet-core-assets'
+import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
 import type { AddAssetContentVariant } from '@modules/assets/components/AddAssetContent'
 import { useAddAssetView } from './useAddAssetView'
 import { useStyles } from './styles'
@@ -44,7 +44,7 @@ export const AddAssetView = ({ variant = 'asset' }: AddAssetScreenProps) => {
     } = useAddAssetView({ variant })
 
     const renderItem = useCallback(
-        ({ item }: { item: AssetSearchItemType }) => (
+        ({ item }: { item: DisplayableAsset }) => (
             <AssetSearchItem
                 item={item}
                 isOptedIn={optedInAssetIds.has(item.assetId)}

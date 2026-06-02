@@ -1,0 +1,142 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { type ReactNode } from 'react'
+import {
+    PWIcon,
+    PWIconSize,
+    PWText,
+    PWTouchableOpacity,
+    PWTouchableOpacityProps,
+    PWView,
+} from '@components/core'
+import { CopyableText } from '@components/CopyableText'
+import { useLanguage } from '@hooks/useLanguage'
+import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
+import { AssetIcon } from '../AssetIcon'
+import { useAssetItemView } from './useAssetItemView'
+import { useStyles } from './styles'
+
+export type AssetItemViewProps = {
+    asset: DisplayableAsset
+    /** Right-hand content: balance display (account) or add button (search). */
+    right?: ReactNode
+    iconSize?: PWIconSize
+    /** Direct logo URL forwarded to the asset icon, bypassing Prism optimization. */
+    logoUrl?: string
+    /** Account-only decorations. Default off so search rows stay clean. */
+    showFavorite?: boolean
+    showDeletedLabel?: boolean
+    copyableAssetId?: boolean
+} & PWTouchableOpacityProps
+
+export const AssetItemView = ({
+    asset,
+    right,
+    iconSize = 'lg',
+    logoUrl,
+    showFavorite = false,
+    showDeletedLabel = false,
+    copyableAssetId = false,
+    onPress,
+    style,
+    ...rest
+}: AssetItemViewProps) => {
+    const styles = useStyles()
+    const { t } = useLanguage()
+    const {
+        isSuspicious,
+        isDeleted,
+        displayName,
+        secondaryText,
+        verificationIcon,
+        iconShape,
+    } = useAssetItemView(asset)
+
+    const isFavorited = showFavorite && asset.peraMetadata?.isFavorited === true
+    const showDeleted = showDeletedLabel && isDeleted
+
+    const subtitle = showDeleted ? (
+        <PWText
+            style={styles.deletedLabel}
+            numberOfLines={1}
+            testID='deleted-label'
+        >
+            {t('asset.deleted_label')}
+        </PWText>
+    ) : copyableAssetId ? (
+        <CopyableText copyValue={String(asset.assetId)}>
+            <PWText
+                style={styles.subtitle}
+                numberOfLines={1}
+            >
+                {secondaryText}
+            </PWText>
+        </CopyableText>
+    ) : (
+        <PWText
+            variant='caption'
+            style={styles.subtitle}
+            numberOfLines={1}
+        >
+            {secondaryText}
+        </PWText>
+    )
+
+    return (
+        <PWTouchableOpacity
+            activeOpacity={onPress ? undefined : 1}
+            onPress={onPress}
+            {...rest}
+            style={[styles.itemContainer, style]}
+        >
+            <AssetIcon
+                asset={asset}
+                logoUrl={logoUrl}
+                size={iconSize}
+                shape={iconShape}
+            />
+            <PWView style={styles.infoContainer}>
+                <PWView style={styles.titleRow}>
+                    <PWText
+                        variant='body'
+                        style={
+                            isSuspicious
+                                ? styles.suspiciousTitle
+                                : styles.titleText
+                        }
+                        ellipsizeMode='middle'
+                        numberOfLines={1}
+                    >
+                        {displayName}
+                    </PWText>
+                    {isFavorited ? (
+                        <PWIcon
+                            name='star-filled'
+                            size='xs'
+                            variant='favorite'
+                            testID='favorite-star-icon'
+                        />
+                    ) : null}
+                    {verificationIcon ? (
+                        <PWIcon
+                            name={verificationIcon}
+                            size='xs'
+                        />
+                    ) : null}
+                </PWView>
+                {subtitle}
+            </PWView>
+            {right ? <PWView style={styles.rightSlot}>{right}</PWView> : null}
+        </PWTouchableOpacity>
+    )
+}

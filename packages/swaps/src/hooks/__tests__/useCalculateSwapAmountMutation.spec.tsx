@@ -49,6 +49,19 @@ function createWrapper() {
         )
 }
 
+// Mirrors the app's QueryProvider default (mutations.throwOnError: true).
+function createThrowOnErrorWrapper() {
+    const queryClient = new QueryClient({
+        defaultOptions: { mutations: { throwOnError: true, retry: false } },
+    })
+    return ({ children }: { children: React.ReactNode }) =>
+        React.createElement(
+            QueryClientProvider,
+            { client: queryClient },
+            children,
+        )
+}
+
 describe('swaps/useCalculateSwapAmountMutation', () => {
     beforeEach(() => {
         vi.mocked(calculateSwapAmount).mockResolvedValue(mockResult)
@@ -67,5 +80,23 @@ describe('swaps/useCalculateSwapAmountMutation', () => {
 
         expect(calculateSwapAmount).toHaveBeenCalledWith(mockRequest, 'mainnet')
         expect(result.current.data).toEqual(mockResult)
+    })
+
+    test('flags isError without re-throwing under the global throwOnError default', async () => {
+        vi.mocked(calculateSwapAmount).mockRejectedValue(
+            new Error('Request failed with status code 400'),
+        )
+
+        const { result } = renderHook(() => useCalculateSwapAmountMutation(), {
+            wrapper: createThrowOnErrorWrapper(),
+        })
+
+        act(() => {
+            result.current.mutate(mockRequest)
+        })
+
+        // Reaching this assertion proves the failed mutation did not throw
+        // during render (which would crash to the app-root error boundary).
+        await waitFor(() => expect(result.current.isError).toBe(true))
     })
 })

@@ -29,8 +29,7 @@ vi.mock('@perawallet/wallet-core-security', () => ({
 
 const mockRemoveItem = vi.fn()
 const mockClearKeystore = vi.fn().mockResolvedValue(undefined)
-const mockDeleteDatabase = vi.fn().mockResolvedValue(undefined)
-const mockInitializeDatabase = vi.fn().mockResolvedValue(undefined)
+const mockClearDatabase = vi.fn().mockResolvedValue(undefined)
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     clearDataStores: vi.fn(),
@@ -42,8 +41,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-database', () => ({
-    deleteDatabase: (...args: unknown[]) => mockDeleteDatabase(...args),
-    initializeDatabase: (...args: unknown[]) => mockInitializeDatabase(...args),
+    clearDatabase: (...args: unknown[]) => mockClearDatabase(...args),
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
@@ -124,8 +122,10 @@ describe('useDeleteAllData', () => {
         expect(mockDeleteAllSessions).toHaveBeenCalledTimes(1)
         expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
         expect(mockSavePin).toHaveBeenCalledWith(null)
-        expect(mockDeleteDatabase).toHaveBeenCalledTimes(1)
-        expect(mockInitializeDatabase).toHaveBeenCalledTimes(1)
+        // Wipe must empty the live DB in place — never close/delete/reopen the
+        // connection, which would free the native handle out from under any
+        // in-flight statement and crash libexpo-sqlite.so [PERA crash fix].
+        expect(mockClearDatabase).toHaveBeenCalledTimes(1)
         expect(clearAllStores).toHaveBeenCalledWith()
     })
 
@@ -258,8 +258,8 @@ describe('useDeleteAllData', () => {
         expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
     })
 
-    it('should continue if database deletion fails', async () => {
-        mockDeleteDatabase.mockRejectedValueOnce(new Error('DB delete error'))
+    it('should continue if database clear fails', async () => {
+        mockClearDatabase.mockRejectedValueOnce(new Error('DB clear error'))
 
         const { result } = renderHook(() => useDeleteAllData())
 
@@ -267,7 +267,7 @@ describe('useDeleteAllData', () => {
             await result.current.deleteAllData()
         })
 
-        expect(mockDeleteDatabase).toHaveBeenCalledTimes(1)
+        expect(mockClearDatabase).toHaveBeenCalledTimes(1)
         expect(clearAllStores).toHaveBeenCalledWith()
     })
 })

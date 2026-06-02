@@ -16,41 +16,50 @@ import { makeStyles } from '@rneui/themed'
 // centered across every PWIconSize without per-size font tokens.
 const INITIALS_FONT_RATIO = 0.35
 
-export const useStyles = makeStyles((theme, resolvedSize: number) => {
-    const initialsText = {
-        color: theme.colors.textGray,
-        fontSize: resolvedSize * INITIALS_FONT_RATIO,
-    }
-    return {
-        container: {
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: resolvedSize,
-            height: resolvedSize,
-            overflow: 'hidden',
-            borderRadius: resolvedSize / 2,
-            borderWidth: theme.borders.sm,
-            borderColor: 'transparent',
-        },
-        imageIcon: {
-            width: resolvedSize,
-            height: resolvedSize,
-        },
-        icon: {
-            backgroundColor: theme.colors.background,
-            width: resolvedSize,
-            height: resolvedSize,
-        },
-        defaultAsset: {
-            backgroundColor: theme.colors.layerGrayLighter,
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: resolvedSize,
-            height: resolvedSize,
-            borderRadius: resolvedSize / 2,
-            borderWidth: theme.borders.sm,
-            borderColor: theme.colors.layerGrayLighter,
-        },
-        initialsText,
-    }
-})
+type StyleProps = {
+    resolvedSize: number
+    shape: 'circle' | 'square'
+}
+
+export const useStyles = makeStyles(
+    (theme, { resolvedSize, shape }: StyleProps) => {
+        const radius =
+            shape === 'square' ? theme.borderRadius.sm : resolvedSize / 2
+        const initialsText = {
+            color: theme.colors.textGray,
+            fontSize: resolvedSize * INITIALS_FONT_RATIO,
+        }
+        return {
+            container: {
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: resolvedSize,
+                height: resolvedSize,
+                overflow: 'hidden',
+                borderRadius: radius,
+                borderWidth: theme.borders.sm,
+                borderColor: 'transparent',
+            },
+            imageIcon: {
+                width: resolvedSize,
+                height: resolvedSize,
+            },
+            icon: {
+                backgroundColor: theme.colors.background,
+                width: resolvedSize,
+                height: resolvedSize,
+            },
+            defaultAsset: {
+                backgroundColor: theme.colors.layerGrayLighter,
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: resolvedSize,
+                height: resolvedSize,
+                borderRadius: radius,
+                borderWidth: theme.borders.sm,
+                borderColor: theme.colors.layerGrayLighter,
+            },
+            initialsText,
+        }
+    },
+)

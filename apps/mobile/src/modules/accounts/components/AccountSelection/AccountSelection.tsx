@@ -26,13 +26,14 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { StyleProp, TouchableOpacityProps, ViewStyle } from 'react-native'
 import { AccountDisplay } from '../AccountDisplay'
 import { AccountIconProps } from '../AccountIcon'
-import { PWTextProps, PWTouchableOpacity } from '@components/core'
+import { PWIconProps, PWTextProps, PWTouchableOpacity } from '@components/core'
 
 export type AccountSelectionProps = {
     onSelected?: (account: WalletAccount) => void
     headerContent?: ReactNode
     triggerStyle?: StyleProp<ViewStyle>
     triggerIconProps?: Omit<AccountIconProps, 'account'>
+    triggerChevronProps?: Partial<PWIconProps>
     triggerTextProps?: PWTextProps
     hideDefaultHeader?: boolean
     showSearch?: boolean
@@ -44,6 +45,7 @@ export const AccountSelection = ({
     headerContent,
     triggerStyle,
     triggerIconProps,
+    triggerChevronProps,
     triggerTextProps,
     hideDefaultHeader,
     accountFilter,
@@ -122,6 +124,7 @@ export const AccountSelection = ({
                 account={account ?? undefined}
                 style={[styles.container, triggerStyle]}
                 iconProps={triggerIconProps}
+                chevronProps={triggerChevronProps}
                 textProps={triggerTextProps}
                 noBorder
             />

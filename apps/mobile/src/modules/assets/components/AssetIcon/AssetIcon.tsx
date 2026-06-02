@@ -34,17 +34,19 @@ export type AssetIconProps = {
     /** Direct logo URL — used as-is, bypasses Prism optimization.
      *  Takes precedence over `asset.peraMetadata?.logo`. */
     logoUrl?: string
+    /** Icon outline shape. Defaults to 'circle'; collectibles use 'square'. */
+    shape?: 'circle' | 'square'
 } & SvgProps
 
 //TODO: we may want a few more "local" asset icons for popular icons (e.g. USDC, DEFLY, etc)
 export const AssetIcon = (props: AssetIconProps) => {
-    const { asset, size, style, logoUrl, ...rest } = props
+    const { asset, size, style, logoUrl, shape = 'circle', ...rest } = props
     const { theme } = useTheme()
     const [loadFailed, setLoadFailed] = useState(false)
 
     const iconSize = getIconPixelSize(theme, size ?? 'md')
 
-    const styles = useStyles(iconSize)
+    const styles = useStyles({ resolvedSize: iconSize, shape })
 
     useEffect(() => {
         setLoadFailed(false)

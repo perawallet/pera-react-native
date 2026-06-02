@@ -144,10 +144,11 @@ export const AddressDisplay = ({
         const showSecondary = contact.name !== truncatedAddress
         const primaryText = (
             <PWText
-                style={textProps?.style ?? styles.primaryText}
                 variant={textProps?.variant ?? 'bodyLarge'}
                 weight={textProps?.variant ? undefined : 500}
                 truncate
+                {...textProps}
+                style={textProps?.style ?? styles.primaryText}
             >
                 {contact.name}
             </PWText>

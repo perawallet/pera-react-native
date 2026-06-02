@@ -55,7 +55,10 @@ export const SettingsDeveloperNodeSettingsScreen = () => {
 
     return (
         <PWScreen>
-            <PWView style={styles.container}>
+            <PWView
+                style={styles.container}
+                testID='node_settings_screen'
+            >
                 <PWRadioButton
                     testID='node_settings_mainnet_radio'
                     title={t('settings.developer.node_settings.mainnet_label')}

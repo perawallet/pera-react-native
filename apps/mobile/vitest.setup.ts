@@ -811,6 +811,44 @@ vi.mock('expo-image', () => {
     }
 })
 
+// `expo-video` is a native module: importing it under jsdom drags in
+// `expo/src/winter/runtime` and crashes with `Cannot find module
+// './ImportMetaRegistry'`. Stub the hook + view to the surface VideoPlayer
+// uses (a settable player with play/pause and a placeholder view).
+vi.mock('expo-video', () => {
+    const React = require('react')
+    return {
+        useVideoPlayer: (
+            _source: unknown,
+            setup?: (player: Record<string, unknown>) => void,
+        ) => {
+            const player = {
+                loop: false,
+                muted: false,
+                play: vi.fn(),
+                pause: vi.fn(),
+                replace: vi.fn(),
+                release: vi.fn(),
+            }
+            setup?.(player)
+            return player
+        },
+        VideoView: (props: Record<string, unknown>) =>
+            React.createElement('video', {
+                'data-testid': props.testID || 'expo-video',
+            }),
+    }
+})
+
+// `expo-media-library/legacy` is a native module: importing it under jsdom
+// drags in `expo/src/winter/runtime` and crashes resolving
+// `./ImportMetaRegistry`. Stub the surface CollectibleDetail uses (permission
+// request + save). Defaults to granted so the save path can be exercised.
+vi.mock('expo-media-library/legacy', () => ({
+    requestPermissionsAsync: vi.fn().mockResolvedValue({ status: 'granted' }),
+    saveToLibraryAsync: vi.fn().mockResolvedValue(undefined),
+}))
+
 vi.mock('expo-clipboard', () => ({
     setStringAsync: vi.fn(),
     getStringAsync: vi.fn(),
@@ -2320,6 +2358,12 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
             verificationTier: 'verified',
             type: 'algo',
         },
+    },
+    PeraAssetType: {
+        algo: 'algo',
+        standard_asset: 'standard_asset',
+        dapp_asset: 'dapp_asset',
+        collectible: 'collectible',
     },
     PeraAssetVerificationTier: {
         verified: 'verified',

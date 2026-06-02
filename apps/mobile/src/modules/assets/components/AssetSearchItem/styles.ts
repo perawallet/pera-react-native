@@ -13,51 +13,13 @@
 import { makeStyles } from '@rneui/themed'
 import { ASSET_LIST_ITEM_MIN_HEIGHT } from '@constants/ui'
 
-const ICON_SIZE = 40
 const ACTION_SIZE = 36
 
 export const useStyles = makeStyles(theme => ({
     container: {
-        flexDirection: 'row',
-        alignItems: 'center',
         paddingVertical: theme.spacing.md,
         paddingHorizontal: theme.spacing.lg,
         minHeight: ASSET_LIST_ITEM_MIN_HEIGHT,
-    },
-    assetIcon: {
-        width: ICON_SIZE,
-        height: ICON_SIZE,
-        borderRadius: ICON_SIZE / 2,
-        backgroundColor: theme.colors.layerGrayLighter,
-        alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'hidden',
-    },
-    collectibleIcon: {
-        width: ICON_SIZE,
-        height: ICON_SIZE,
-        borderRadius: theme.borderRadius.sm,
-        backgroundColor: theme.colors.layerGrayLighter,
-        alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'hidden',
-    },
-    infoContainer: {
-        flex: 1,
-        marginLeft: theme.spacing.sm,
-    },
-    titleRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    titleText: {
-        flexShrink: 1,
-    },
-    verificationIcon: {
-        marginLeft: theme.spacing.xs,
-    },
-    subtitle: {
-        color: theme.colors.textGray,
     },
     actionButton: {
         width: ACTION_SIZE,
@@ -66,11 +28,11 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: theme.colors.layerGrayLighter,
-        marginLeft: theme.spacing.sm,
     },
     separator: {
         height: theme.borders.sm,
         backgroundColor: theme.colors.layerGrayLighter,
-        marginLeft: ICON_SIZE + theme.spacing.sm + theme.spacing.lg,
+        // Align under the text: row left-padding + AssetIcon 'lg' (xxl) + itemContainer gap (lg)
+        marginLeft: theme.spacing.lg + theme.spacing.xxl + theme.spacing.lg,
     },
 }))

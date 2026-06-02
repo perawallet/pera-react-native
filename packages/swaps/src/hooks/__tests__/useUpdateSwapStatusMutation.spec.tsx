@@ -39,6 +39,19 @@ function createWrapper() {
         )
 }
 
+// Mirrors the app's QueryProvider default (mutations.throwOnError: true).
+function createThrowOnErrorWrapper() {
+    const queryClient = new QueryClient({
+        defaultOptions: { mutations: { throwOnError: true, retry: false } },
+    })
+    return ({ children }: { children: React.ReactNode }) =>
+        React.createElement(
+            QueryClientProvider,
+            { client: queryClient },
+            children,
+        )
+}
+
 describe('swaps/useUpdateSwapStatusMutation', () => {
     beforeEach(() => {
         vi.mocked(updateSwapStatus).mockResolvedValue(mockResult)
@@ -80,6 +93,25 @@ describe('swaps/useUpdateSwapStatusMutation', () => {
             })
         })
 
+        await waitFor(() => expect(result.current.isError).toBe(true))
+    })
+
+    test('flags isError without re-throwing under the global throwOnError default', async () => {
+        vi.mocked(updateSwapStatus).mockRejectedValue(new Error('Server error'))
+
+        const { result } = renderHook(() => useUpdateSwapStatusMutation(), {
+            wrapper: createThrowOnErrorWrapper(),
+        })
+
+        act(() => {
+            result.current.mutate({
+                swapId: '42',
+                data: { status: 'failed' },
+            })
+        })
+
+        // Reaching this assertion proves the failed mutation did not throw
+        // during render (which would crash to the app-root error boundary).
         await waitFor(() => expect(result.current.isError).toBe(true))
     })
 })

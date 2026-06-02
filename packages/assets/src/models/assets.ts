@@ -52,11 +52,11 @@ export type MinimalAsset = {
     decimals?: number
 }
 
+// The minimal shape any asset-row UI needs to render. `PeraAsset` satisfies this
+// (its `peraMetadata: PeraAssetMetadata` is assignable to `Partial<…>`), and search
+// results are mapped onto it by `transformSearchResult`.
 export type DisplayableAsset = MinimalAsset & {
-    peraMetadata?: {
-        logo?: string | null
-        collectible?: { primaryImage?: string | null }
-    }
+    peraMetadata?: Partial<PeraAssetMetadata>
 }
 
 export type PeraAsset = MinimalAsset & {

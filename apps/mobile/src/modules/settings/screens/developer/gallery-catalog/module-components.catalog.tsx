@@ -329,13 +329,10 @@ registerPreview({
                 assetId: MOCK_ASSET_ID,
                 name: 'USD Coin',
                 unitName: 'USDC',
-                logo: 'https://perawallet.app/static/usdc-logo.png',
-                verificationTier: 'verified',
-                usdValue: '1.00',
-                type: 'standard_asset',
-                collectibleTitle: null,
-                collectibleImage: null,
-                collectionName: null,
+                peraMetadata: {
+                    logo: 'https://perawallet.app/static/usdc-logo.png',
+                    verificationTier: 'verified',
+                },
             }}
             isOptedIn={false}
             isOptingIn={false}
