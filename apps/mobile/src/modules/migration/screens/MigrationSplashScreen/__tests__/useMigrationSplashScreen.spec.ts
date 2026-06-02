@@ -44,11 +44,8 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({ migration: migrationService }),
 }))
 
-vi.mock('@migration/runMigration', () => ({
+vi.mock('@perawallet/wallet-core-migrate', () => ({
     runMigration: vi.fn(),
-}))
-
-vi.mock('../../../hooks', () => ({
     useNeedsMigration: () => ({
         isChecking: false,
         needsMigration: true,
@@ -58,7 +55,7 @@ vi.mock('../../../hooks', () => ({
 }))
 
 import { useMigrationSplashScreen } from '../useMigrationSplashScreen'
-import { runMigration } from '@migration/runMigration'
+import { runMigration } from '@perawallet/wallet-core-migrate'
 
 const successfulResult = {
     completed: true,

@@ -56,7 +56,8 @@ vi.mock('@perawallet/wallet-core-remote-config', () => ({
     },
 }))
 
-import { useNeedsMigration, useMigrationGateStore } from '../useNeedsMigration'
+import { useNeedsMigration } from '../useNeedsMigration'
+import { useMigrationGateStore } from '../../store'
 
 beforeEach(() => {
     hasLegacyDataMock.mockReset()

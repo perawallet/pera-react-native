@@ -24,9 +24,6 @@
       "@modules/*": [
         "./src/modules/*"
       ],
-      "@migration/*": [
-        "./src/migration/*"
-      ],
       "@assets/*": [
         "./assets/*"
       ],

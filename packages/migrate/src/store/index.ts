@@ -10,8 +10,4 @@
  limitations under the License
  */
 
-export {
-    useNeedsMigration,
-    useMigrationGateStore,
-    type UseNeedsMigrationResult,
-} from './useNeedsMigration'
+export { useMigrationGateStore } from './migrationGateStore'

@@ -35,7 +35,7 @@ import { TransactionDetailsScreen } from '@modules/signing/screens/TransactionDe
 import { GroupTransactionListScreen } from '@modules/transactions/screens/GroupTransactionListScreen'
 import { useHasAccounts } from '@perawallet/wallet-core-accounts'
 import { useIsOnboarding } from '@modules/onboarding/hooks'
-import { useNeedsMigration } from '@modules/migration/hooks'
+import { useNeedsMigration } from '@perawallet/wallet-core-migrate'
 import { MigrationSplashScreen } from '@modules/migration/screens/MigrationSplashScreen'
 
 import { RootStackParamList } from './types'
