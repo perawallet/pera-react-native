@@ -89,7 +89,9 @@ describe('useAssetSearchQuery', () => {
                 assetId: '123',
                 name: 'USDC',
                 unitName: 'USDC',
-                verificationTier: 'verified',
+                peraMetadata: expect.objectContaining({
+                    verificationTier: 'verified',
+                }),
             }),
         ])
         expect(result.current.isError).toBe(false)
@@ -270,10 +272,14 @@ describe('useAssetSearchQuery', () => {
         expect(result.current.results[0]).toEqual(
             expect.objectContaining({
                 assetId: '42',
-                type: 'collectible',
-                collectibleTitle: 'Pera #42',
-                collectibleImage: 'https://img/42.png',
-                collectionName: 'Pera Collection',
+                peraMetadata: expect.objectContaining({
+                    type: 'collectible',
+                    collectible: {
+                        title: 'Pera #42',
+                        primaryImage: 'https://img/42.png',
+                        collection: { name: 'Pera Collection' },
+                    },
+                }),
             }),
         )
     })

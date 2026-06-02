@@ -10,21 +10,16 @@
  limitations under the License
  */
 
-import React from 'react'
 import { ActivityIndicator } from 'react-native'
-import {
-    PWIcon,
-    PWImage,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
-import type { AssetSearchItem as AssetSearchItemType } from '@perawallet/wallet-core-assets'
-import { useAssetSearchItem } from './useAssetSearchItem'
+import { PWIcon, PWView } from '@components/core'
+import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
+// Import the leaf directly (not the AssetItem barrel) so the search row doesn't
+// drag in AccountAssetItemView -> CollectibleListItem -> CollectibleThumbnail.
+import { AssetItemView } from '@modules/assets/components/AssetItem/AssetItemView'
 import { useStyles } from './styles'
 
 type AssetSearchItemProps = {
-    item: AssetSearchItemType
+    item: DisplayableAsset
     isOptedIn: boolean
     isOptingIn: boolean
     onAdd: (assetId: string) => void
@@ -37,79 +32,36 @@ export const AssetSearchItem = ({
     onAdd,
 }: AssetSearchItemProps) => {
     const styles = useStyles()
-    const {
-        isCollectible,
-        thumbnailUri,
-        displayName,
-        subtitle,
-        fallbackInitial,
-        verificationIcon,
-    } = useAssetSearchItem(item)
 
-    const iconStyle = isCollectible ? styles.collectibleIcon : styles.assetIcon
+    const action = (
+        <PWView style={styles.actionButton}>
+            {isOptingIn ? (
+                <ActivityIndicator size='small' />
+            ) : isOptedIn ? (
+                <PWIcon
+                    name='check'
+                    size='sm'
+                    variant='positive'
+                />
+            ) : (
+                <PWIcon
+                    name='plus'
+                    size='sm'
+                    variant='primary'
+                />
+            )}
+        </PWView>
+    )
 
     return (
         <>
-            <PWTouchableOpacity
-                style={styles.container}
+            <AssetItemView
+                asset={item}
+                right={action}
                 onPress={() => onAdd(item.assetId)}
                 disabled={isOptedIn || isOptingIn}
-            >
-                <PWView style={iconStyle}>
-                    {thumbnailUri ? (
-                        <PWImage
-                            source={{ uri: thumbnailUri }}
-                            style={iconStyle}
-                        />
-                    ) : (
-                        <PWText variant='body'>{fallbackInitial}</PWText>
-                    )}
-                </PWView>
-
-                <PWView style={styles.infoContainer}>
-                    <PWView style={styles.titleRow}>
-                        <PWText
-                            variant='body'
-                            numberOfLines={1}
-                            style={styles.titleText}
-                        >
-                            {displayName}
-                        </PWText>
-                        {verificationIcon ? (
-                            <PWIcon
-                                name={verificationIcon}
-                                size='xs'
-                                style={styles.verificationIcon}
-                            />
-                        ) : null}
-                    </PWView>
-                    <PWText
-                        variant='caption'
-                        numberOfLines={1}
-                        style={styles.subtitle}
-                    >
-                        {subtitle}
-                    </PWText>
-                </PWView>
-
-                <PWView style={styles.actionButton}>
-                    {isOptingIn ? (
-                        <ActivityIndicator size='small' />
-                    ) : isOptedIn ? (
-                        <PWIcon
-                            name='check'
-                            size='sm'
-                            variant='positive'
-                        />
-                    ) : (
-                        <PWIcon
-                            name='plus'
-                            size='sm'
-                            variant='primary'
-                        />
-                    )}
-                </PWView>
-            </PWTouchableOpacity>
+                style={styles.container}
+            />
             <PWView style={styles.separator} />
         </>
     )

@@ -13,7 +13,7 @@
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { searchAssets } from '../api/assets/search-endpoints'
-import type { AssetSearchItem } from '../models/search'
+import type { DisplayableAsset } from '../models/assets'
 import { transformSearchResult } from './mappers'
 import { MODULE_PREFIX } from './querykeys'
 import type { Maybe, Optional } from '@perawallet/wallet-core-shared'
@@ -25,7 +25,7 @@ type UseAssetSearchQueryOptions = {
 }
 
 type UseAssetSearchQueryResult = {
-    results: AssetSearchItem[]
+    results: DisplayableAsset[]
     isLoading: boolean
     isError: boolean
     isFetchingNextPage: boolean
@@ -88,4 +88,4 @@ export const useAssetSearchQuery = (
     }
 }
 
-export type { AssetSearchItem, UseAssetSearchQueryResult }
+export type { UseAssetSearchQueryResult }
