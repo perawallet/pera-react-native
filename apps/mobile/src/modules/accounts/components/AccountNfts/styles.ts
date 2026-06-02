@@ -20,6 +20,26 @@ export const useStyles = makeStyles(theme => ({
     contentContainer: {
         paddingHorizontal: theme.spacing.xl,
     },
+    // Hairline row divider for list layout, inset past the 3xl thumbnail + md
+    // row gap to align with the row text, matching the accounts asset list.
+    listSeparator: {
+        height: theme.borders.sm,
+        backgroundColor: theme.colors.layerGrayLighter,
+        marginLeft: theme.spacing['3xl'] + theme.spacing.md,
+    },
+    // xl gap between grid rows. FlashList has no columnWrapperStyle, so all grid
+    // spacing rides on the cells here rather than on the card.
+    gridColumn: {
+        paddingBottom: theme.spacing.xl,
+    },
+    // Half of the inter-column gap on each cell's inner edge -> xl gap between
+    // grid columns while the outer edges stay flush with the xl content inset.
+    gridColumnLeft: {
+        paddingRight: theme.spacing.xl / 2,
+    },
+    gridColumnRight: {
+        paddingLeft: theme.spacing.xl / 2,
+    },
     headerContainer: {
         marginTop: theme.spacing.sm,
         marginBottom: theme.spacing.md,

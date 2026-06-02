@@ -13,7 +13,6 @@
 import React, { useCallback, useState } from 'react'
 import PagerView from 'react-native-pager-view'
 import { PWText, PWToolbar, PWTouchableIcon, PWView } from '@components/core'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ZoomableImage } from '@components/ZoomableImage'
 import { VideoPlayer } from '@components/VideoPlayer'
 import { AudioPlayer } from '@components/AudioPlayer'
@@ -26,17 +25,16 @@ export type FullScreenMediaItem = {
     posterUri?: string
 }
 
-export type FullScreenImageViewerProps = {
+export type FullScreenMediaViewerProps = {
     media: FullScreenMediaItem[]
     initialIndex?: number
 }
 
-export const FullScreenImageViewer = ({
+export const FullScreenMediaViewer = ({
     media,
     initialIndex = 0,
-}: FullScreenImageViewerProps) => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles(insets)
+}: FullScreenMediaViewerProps) => {
+    const styles = useStyles()
     const [activeIndex, setActiveIndex] = useState(initialIndex)
     const hasMultiple = media.length > 1
     const { dismiss } = useBottomSheetResult()
@@ -55,7 +53,7 @@ export const FullScreenImageViewer = ({
                     <PWTouchableIcon
                         name='cross'
                         size='md'
-                        variant='white'
+                        variant='primary'
                         onPress={dismiss}
                     />
                 }

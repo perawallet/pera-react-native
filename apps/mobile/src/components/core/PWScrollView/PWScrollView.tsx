@@ -17,6 +17,7 @@ import { ScrollView } from 'react-native-gesture-handler'
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet'
 import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { PWInBottomSheetContext } from '../PWBottomSheet/inSheetContext'
 import { useStyles } from './styles'
 
 export type PWScrollViewProps = ScrollViewProps & {
@@ -41,7 +42,12 @@ export const PWScrollView = ({
 }: PWScrollViewProps) => {
     const insets = useSafeAreaInsets()
     const isInTabNavigator = useContext(BottomTabBarHeightContext) !== undefined
-    const bottomInset = inBottomSheet || !isInTabNavigator ? insets.bottom : 0
+    // Auto-detect a surrounding PWBottomSheet (an explicit prop still wins) so a
+    // plain ScrollView never silently fails to scroll inside a sheet.
+    const isInSheet = useContext(PWInBottomSheetContext)
+    const isInBottomSheet = inBottomSheet ?? isInSheet
+    const bottomInset =
+        isInBottomSheet || !isInTabNavigator ? insets.bottom : 0
     const styles = useStyles({ bottomInset })
 
     // Guarantee the content clears the bottom edge — but only when the caller
@@ -57,7 +63,7 @@ export const PWScrollView = ({
         ? contentContainerStyle
         : [styles.contentContainer, contentContainerStyle]
 
-    if (inBottomSheet) {
+    if (isInBottomSheet) {
         return (
             <BottomSheetScrollView
                 keyboardShouldPersistTaps={

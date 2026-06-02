@@ -25,11 +25,11 @@ const CollectibleListItemBase = ({ item, onPress }: CollectibleItemProps) => {
         hasBalance,
         verificationIconName,
         title,
-        collectionName,
+        collectionLabel,
     } = useCollectibleItem({ item, onPress })
 
     const subtitle = [
-        collectionName ?? item.asset.unitName,
+        collectionLabel,
         showAmount ? `x${item.amount.toString()}` : null,
     ]
         .filter(Boolean)

@@ -13,10 +13,10 @@
 import { useCallback } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import { useAllAccounts, WalletAccount } from '@perawallet/wallet-core-accounts'
-import { PWFlatList, PWScreen } from '@components/core'
+import { PWScreen } from '@components/core'
 import { ScreenHeader } from '@components/ScreenHeader'
 import { useLanguage } from '@hooks/useLanguage'
-import { SelectableAccountRow } from '@modules/accounts/components/SelectableAccountRow'
+import { AccountPicker } from '@modules/accounts/components/AccountPicker'
 import { useBidali } from '../../hooks/useBidali'
 
 import type { StackNavigationProp } from '@react-navigation/stack'
@@ -37,18 +37,6 @@ export const BidaliAccountSelectionScreen = () => {
         [setSelectedAccount, navigation],
     )
 
-    const renderItem = useCallback(
-        ({ item }: { item: WalletAccount }) => (
-            <SelectableAccountRow
-                account={item}
-                onSelect={handleSelected}
-            />
-        ),
-        [handleSelected],
-    )
-
-    const keyExtractor = useCallback((item: WalletAccount) => item.address, [])
-
     return (
         <PWScreen
             scroll={false}
@@ -59,11 +47,9 @@ export const BidaliAccountSelectionScreen = () => {
                 description={t('giftCard.accountSelection.subtitle')}
             />
 
-            <PWFlatList
-                data={accounts}
-                renderItem={renderItem}
-                keyExtractor={keyExtractor}
-                cardLayout
+            <AccountPicker
+                accounts={accounts}
+                onSelect={handleSelected}
             />
         </PWScreen>
     )

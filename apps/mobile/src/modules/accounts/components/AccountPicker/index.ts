@@ -10,4 +10,5 @@
  limitations under the License
  */
 
-export { FullScreenImageViewer } from './FullScreenImageViewer'
+export { AccountPicker } from './AccountPicker'
+export type { AccountPickerProps } from './AccountPicker'

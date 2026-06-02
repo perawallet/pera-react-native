@@ -43,6 +43,8 @@ export type PWButtonProps = TouchableOpacityProps & {
     isLoading?: boolean
     rounded?: boolean
     paddingStyle?: 'none' | 'dense' | 'normal'
+    /** Opt out of the double-press guard for rapid-tap surfaces (e.g. steppers). */
+    allowRapidPress?: boolean
 }
 
 // Borderless text buttons (toolbar actions, inline links) render their title
@@ -79,6 +81,7 @@ export const PWButton = ({
     rounded,
     paddingStyle,
     testID,
+    allowRapidPress,
     ...props
 }: PWButtonProps) => {
     const styles = useStyles({
@@ -101,6 +104,7 @@ export const PWButton = ({
             style={[styles.buttonStyle, style]}
             onPress={onPress}
             disabled={isDisabled || isLoading}
+            allowRapidPress={allowRapidPress}
             {...getTestProps(testID)}
             {...props}
         >

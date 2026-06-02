@@ -20,7 +20,6 @@ export const useStyles = makeStyles(theme => {
         searchField: {
             borderRadius: theme.spacing.sm,
             paddingHorizontal: theme.spacing.sm,
-            marginBottom: theme.spacing.xs,
         },
         searchContainer: {
             backgroundColor: theme.colors.background,
@@ -28,15 +27,12 @@ export const useStyles = makeStyles(theme => {
         list: {
             flex: 1,
         },
-        sectionHeader: {
-            marginTop: theme.spacing.lg,
-        },
         contentContainer: {
             flexGrow: 1,
             paddingBottom: theme.spacing.xl,
         },
         listSeparator: {
-            height: theme.spacing.lg,
+            height: theme.spacing.md,
         },
         accountDisplay: {
             flexDirection: 'row',

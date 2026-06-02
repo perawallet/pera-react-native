@@ -44,6 +44,12 @@ const renderLoadingSkeleton = () => {
     )
 }
 
+const ListSeparator = () => {
+    const styles = useStyles()
+
+    return <PWView style={styles.listSeparator} />
+}
+
 export const AccountNfts = () => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -68,19 +74,30 @@ export const AccountNfts = () => {
     const isGrid = galleryLayout === 'grid'
 
     const renderItem = useCallback(
-        ({ item }: { item: CollectibleDisplayItem }) =>
+        ({ item, index }: { item: CollectibleDisplayItem; index: number }) =>
             isGrid ? (
-                <CollectibleGridItem
-                    item={item}
-                    onPress={() => handlePress(item)}
-                />
+                // FlashList has no columnWrapperStyle, so the inter-column
+                // gutter rides on the leading edge of each grid cell.
+                <PWView
+                    style={[
+                        styles.gridColumn,
+                        index % GRID_COLUMNS === 0
+                            ? styles.gridColumnLeft
+                            : styles.gridColumnRight,
+                    ]}
+                >
+                    <CollectibleGridItem
+                        item={item}
+                        onPress={() => handlePress(item)}
+                    />
+                </PWView>
             ) : (
                 <CollectibleListItem
                     item={item}
                     onPress={() => handlePress(item)}
                 />
             ),
-        [isGrid, handlePress],
+        [isGrid, handlePress, styles],
     )
 
     if (!hasAccount) {
@@ -181,8 +198,9 @@ export const AccountNfts = () => {
                         key={`${galleryLayout}:${sortMode}:${debouncedSearchFilter}`}
                         data={collectibles}
                         renderItem={renderItem}
-                        // Grid/list toggle — no inset row divider.
-                        ItemSeparatorComponent={null}
+                        // Grid cells own their spacing; list rows get the
+                        // accounts-style inset hairline divider.
+                        ItemSeparatorComponent={isGrid ? null : ListSeparator}
                         numColumns={isGrid ? GRID_COLUMNS : 1}
                         keyExtractor={item => item.assetId}
                         automaticallyAdjustKeyboardInsets

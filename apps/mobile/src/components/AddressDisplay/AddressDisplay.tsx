@@ -49,6 +49,12 @@ export type AddressDisplayProps = {
      * interactive. Takes precedence over `showCopy`.
      */
     trailing?: ReactNode
+    /**
+     * Hug the address content (copy/trailing sit right after the text) instead
+     * of filling the row and pushing them to the far right. The text still
+     * truncates so siblings never overflow.
+     */
+    hugContent?: boolean
 } & PWTouchableOpacityProps
 
 export const AddressDisplay = ({
@@ -63,9 +69,10 @@ export const AddressDisplay = ({
     iconProps,
     contactAvatarVariant = 'default',
     trailing,
+    hugContent = false,
     ...rest
 }: AddressDisplayProps) => {
-    const styles = useStyles()
+    const styles = useStyles({ hugContent })
     const {
         account,
         contact,

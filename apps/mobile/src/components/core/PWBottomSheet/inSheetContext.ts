@@ -10,19 +10,12 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
+import { createContext } from 'react'
 
-type StyleProps = {
-    width?: number
-    height?: number
-}
-
-export const useStyles = makeStyles((_theme, { width, height }: StyleProps) => {
-    const isFixed = width != null && height != null
-    return {
-        container: isFixed ? { width, height } : { flex: 1, width: '100%' },
-        video: isFixed
-            ? { width, height }
-            : { width: '100%', height: '100%' },
-    }
-})
+/**
+ * True for anything rendered inside a `PWBottomSheet`. Scrollable primitives
+ * (`PWFlatList`, `PWScrollView`) read it to auto-cooperate with the sheet pan
+ * gesture, so callers never have to remember an `inBottomSheet` flag — a missing
+ * flag silently breaks scrolling, which has bitten several sheets.
+ */
+export const PWInBottomSheetContext = createContext(false)

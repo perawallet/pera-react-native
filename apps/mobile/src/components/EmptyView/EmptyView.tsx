@@ -11,7 +11,6 @@
  */
 
 import { ReactNode } from 'react'
-import { SafeAreaView } from 'react-native-safe-area-context'
 import { PWIcon, IconName } from '@components/core/PWIcon'
 import { PWText } from '@components/core/PWText'
 import { PWView, PWViewProps } from '@components/core/PWView'
@@ -89,18 +88,8 @@ export const EmptyView = (props: EmptyViewProps) => {
                 >
                     {body}
                 </PWText>
+                {button}
             </PWView>
-            {/* The CTA is pinned full-width at the bottom (clearing the nav bar
-                via the safe-area inset) rather than floating under the centered
-                text, so terminal empty/error states read like other screens. */}
-            {button && (
-                <SafeAreaView
-                    edges={['bottom']}
-                    style={styles.footer}
-                >
-                    {button}
-                </SafeAreaView>
-            )}
         </PWView>
     )
 }

@@ -29,6 +29,37 @@ describe('PWTouchableOpacity', () => {
         expect(onPress).toHaveBeenCalledTimes(1)
     })
 
+    it('swallows a rapid second press (double-tap guard)', () => {
+        const onPress = vi.fn()
+        render(
+            <PWTouchableOpacity onPress={onPress}>
+                <Text>Tap</Text>
+            </PWTouchableOpacity>,
+        )
+
+        fireEvent.click(screen.getByText('Tap'))
+        fireEvent.click(screen.getByText('Tap'))
+
+        expect(onPress).toHaveBeenCalledTimes(1)
+    })
+
+    it('allows rapid repeats when allowRapidPress is set', () => {
+        const onPress = vi.fn()
+        render(
+            <PWTouchableOpacity
+                onPress={onPress}
+                allowRapidPress
+            >
+                <Text>Tap</Text>
+            </PWTouchableOpacity>,
+        )
+
+        fireEvent.click(screen.getByText('Tap'))
+        fireEvent.click(screen.getByText('Tap'))
+
+        expect(onPress).toHaveBeenCalledTimes(2)
+    })
+
     it('renders children correctly', () => {
         render(
             <PWTouchableOpacity>

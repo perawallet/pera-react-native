@@ -36,16 +36,16 @@ import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import * as Clipboard from 'expo-clipboard'
 import { File, Paths } from 'expo-file-system'
-import * as MediaLibrary from 'expo-media-library'
+import * as MediaLibrary from 'expo-media-library/legacy'
 import * as Haptics from 'expo-haptics'
 import { useModalState, type ModalState } from '@hooks/useModalState'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { OptOutConfirmationContent } from '@modules/accounts/components/AccountAssetList/OptOutConfirmationContent'
 import { SendFundsContent } from '@modules/transactions/components/send-funds/SendFundsContent'
 import {
-    FullScreenImageViewer,
+    FullScreenMediaViewer,
     type FullScreenMediaItem,
-} from '@modules/assets/screens/FullScreenImageViewer/FullScreenImageViewer'
+} from '@modules/assets/screens/FullScreenMediaViewer/FullScreenMediaViewer'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 type UseCollectibleDetailResult = {
@@ -56,6 +56,7 @@ type UseCollectibleDetailResult = {
     traits: CollectibleTrait[]
     media: CollectibleMedia[]
     hasImage: boolean
+    hasSaveableMedia: boolean
     accountAddress: string
     accountName: string
     assetAmount: Decimal
@@ -71,7 +72,8 @@ type UseCollectibleDetailResult = {
     handleSharePressed: () => void
     handleCopyImage: () => void
     handleSaveImage: () => void
-    handleMediaPress: (index: number) => void
+    handleModelPress: () => void
+    handleFullScreenPress: (index: number) => void
     hasExplorerUrl: boolean
     hasProjectUrl: boolean
 }
@@ -129,6 +131,24 @@ export const useCollectibleDetail = (
             undefined
         )
     }, [media, collectible?.primaryImage])
+
+    // Images and videos (incl. GIFs) can be saved to the library; Copy stays
+    // image-only since it writes a bitmap to the clipboard.
+    const saveableMedia = useMemo(
+        () =>
+            media.find(
+                m =>
+                    (m.type === 'image' || m.type === 'video') &&
+                    (m.downloadUrl != null || m.previewUrl != null),
+            ),
+        [media],
+    )
+    const saveableMediaUrl =
+        saveableMedia?.downloadUrl ??
+        saveableMedia?.previewUrl ??
+        collectible?.primaryImage ??
+        undefined
+    const hasSaveableMedia = saveableMediaUrl != null
 
     const handleSendPressed = useCallback(() => {
         void requestBottomSheet({
@@ -222,8 +242,7 @@ export const useCollectibleDetail = (
     }, [assetId, getImageUrl, showToast, t])
 
     const handleSaveImage = useCallback(async () => {
-        const imageUrl = getImageUrl()
-        if (!imageUrl) return
+        if (!saveableMediaUrl) return
 
         try {
             const { status } = await MediaLibrary.requestPermissionsAsync()
@@ -231,7 +250,7 @@ export const useCollectibleDetail = (
             if (status !== 'granted') {
                 showToast({
                     title: t(
-                        'asset_details.collectible.photo_permission_denied',
+                        'asset_details.collectible.media_permission_denied',
                     ),
                     body: '',
                     type: 'error',
@@ -239,32 +258,31 @@ export const useCollectibleDetail = (
                 return
             }
 
-            const extension =
-                media.find(m => m.type === 'image')?.extension ?? 'png'
+            const extension = saveableMedia?.extension ?? 'png'
             const dest = new File(
                 Paths.cache,
                 `collectible_${assetId}.${extension}`,
             )
-            const file = await File.downloadFileAsync(imageUrl, dest, {
+            const file = await File.downloadFileAsync(saveableMediaUrl, dest, {
                 idempotent: true,
             })
 
             await MediaLibrary.saveToLibraryAsync(file.uri)
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
             showToast({
-                title: t('asset_details.collectible.image_saved'),
+                title: t('asset_details.collectible.media_saved'),
                 body: '',
                 type: 'success',
             })
         } catch {
             // guardrails-ignore-next-line no-error-toast-in-catch reason: title-only collectible image-save error; bespoke localized title preserved
             showToast({
-                title: t('asset_details.collectible.image_save_failed'),
+                title: t('asset_details.collectible.media_save_failed'),
                 body: '',
                 type: 'error',
             })
         }
-    }, [assetId, getImageUrl, media, showToast, t])
+    }, [assetId, saveableMediaUrl, saveableMedia, showToast, t])
 
     const handleSharePressed = useCallback(() => {
         const networkConfig = getNetworkConfig(network)
@@ -277,6 +295,19 @@ export const useCollectibleDetail = (
             url,
         })
     }, [assetId, network, t])
+
+    // The swipeable carousel pages: visual media only (models are surfaced as a
+    // 3D badge, not a page). onFullScreenPress reports indices into THIS list.
+    const visualMedia = useMemo(
+        () =>
+            media.filter(
+                m =>
+                    m.type === 'image' ||
+                    m.type === 'video' ||
+                    m.type === 'audio',
+            ),
+        [media],
+    )
 
     const fullScreenMedia = useMemo<FullScreenMediaItem[]>(() => {
         const posterFallback =
@@ -308,34 +339,36 @@ export const useCollectibleDetail = (
         return items
     }, [media, collectible, asset])
 
-    const handleMediaPress = useCallback(
+    const handleModelPress = useCallback(() => {
+        // Only the downloadUrl is an actual 3D asset; a preview image can't be
+        // rendered by the model viewer, so there's nothing to open without it.
+        const modelUrl = media.find(m => m.type === 'model')?.downloadUrl
+        if (!modelUrl) return
+        setModelViewerUrl(modelUrl)
+        modelViewerModal.open()
+    }, [media, modelViewerModal])
+
+    const handleFullScreenPress = useCallback(
         (index: number) => {
-            const item = media[index]
-            if (item?.type === 'model') {
-                const url = item.downloadUrl ?? item.previewUrl
-                if (!url) return
-                setModelViewerUrl(url)
-                modelViewerModal.open()
-                return
-            }
-            if (fullScreenMedia.length > 0) {
-                const initialIndex = Math.min(index, fullScreenMedia.length - 1)
-                void requestBottomSheet({
-                    contents: (
-                        <FullScreenImageViewer
-                            media={fullScreenMedia}
-                            initialIndex={initialIndex}
-                        />
-                    ),
-                    options: {
-                        size: 'full',
-                        enablePanDownToClose: true,
-                        autoCreateContainer: false,
-                    },
-                })
-            }
+            if (fullScreenMedia.length === 0) return
+            const item = visualMedia[index]
+            const uri = item?.downloadUrl ?? item?.previewUrl
+            const matchIndex = fullScreenMedia.findIndex(m => m.uri === uri)
+            void requestBottomSheet({
+                contents: (
+                    <FullScreenMediaViewer
+                        media={fullScreenMedia}
+                        initialIndex={matchIndex >= 0 ? matchIndex : 0}
+                    />
+                ),
+                options: {
+                    size: 'full',
+                    enablePanDownToClose: true,
+                    autoCreateContainer: false,
+                },
+            })
         },
-        [media, fullScreenMedia, modelViewerModal, requestBottomSheet],
+        [visualMedia, fullScreenMedia, requestBottomSheet],
     )
 
     return {
@@ -346,6 +379,7 @@ export const useCollectibleDetail = (
         traits,
         media,
         hasImage,
+        hasSaveableMedia,
         accountAddress,
         accountName,
         assetAmount,
@@ -361,7 +395,8 @@ export const useCollectibleDetail = (
         handleSharePressed,
         handleCopyImage,
         handleSaveImage,
-        handleMediaPress,
+        handleModelPress,
+        handleFullScreenPress,
         hasExplorerUrl: !!explorerUrl,
         hasProjectUrl: !!projectUrl,
     }

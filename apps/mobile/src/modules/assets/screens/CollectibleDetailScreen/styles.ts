@@ -20,11 +20,10 @@ export const useStyles = makeStyles(theme => ({
         backgroundColor: theme.colors.background,
     },
     scrollContent: {
-        paddingBottom: theme.spacing.xxl,
+        paddingBottom: theme.spacing.xl,
     },
     contentContainer: {
-        paddingHorizontal: theme.spacing.lg,
-        paddingTop: theme.spacing.xl,
+        paddingHorizontal: theme.spacing.xl,
         gap: theme.spacing.xl,
     },
     titleSection: {
@@ -35,7 +34,6 @@ export const useStyles = makeStyles(theme => ({
     },
     collectionName: {
         color: theme.colors.textGray,
-        textAlign: 'center',
     },
     accountRow: {
         flexDirection: 'row',
@@ -47,7 +45,7 @@ export const useStyles = makeStyles(theme => ({
     },
     sectionTitle: {
         color: theme.colors.textMain,
-        marginBottom: theme.spacing.sm,
+        marginBottom: theme.spacing.md,
     },
     traitsContainer: {
         flexDirection: 'row',
@@ -58,7 +56,7 @@ export const useStyles = makeStyles(theme => ({
         backgroundColor: theme.colors.layerGrayLighter,
         borderRadius: theme.borderRadius.md,
         paddingHorizontal: theme.spacing.md,
-        paddingVertical: theme.spacing.sm,
+        paddingVertical: theme.spacing.xs,
     },
     traitLabel: {
         color: theme.colors.textGrayLighter,
@@ -124,6 +122,8 @@ export const useStyles = makeStyles(theme => ({
     quantityChip: {
         alignSelf: 'center',
         marginLeft: theme.spacing.sm,
+        // Never shrink/wrap — the address text yields instead.
+        flexShrink: 0,
     },
     mediaContainerDimmed: {
         opacity: 0.4,

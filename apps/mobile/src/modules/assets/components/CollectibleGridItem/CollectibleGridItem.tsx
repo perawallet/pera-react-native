@@ -25,7 +25,7 @@ const CollectibleGridItemBase = ({ item, onPress }: CollectibleItemProps) => {
         hasBalance,
         verificationIconName,
         title,
-        collectionName,
+        collectionLabel,
     } = useCollectibleItem({ item, onPress })
 
     return (
@@ -60,18 +60,18 @@ const CollectibleGridItemBase = ({ item, onPress }: CollectibleItemProps) => {
                 </PWView>
             </PWView>
             <PWView style={styles.infoContainer}>
-                {collectionName && (
+                {collectionLabel && (
                     <PWText
-                        variant='caption'
+                        variant='body'
                         style={styles.collectionName}
                         numberOfLines={1}
                     >
-                        {collectionName}
+                        {collectionLabel}
                     </PWText>
                 )}
                 <PWView style={styles.titleRow}>
                     <PWText
-                        variant='bodyCompact'
+                        variant='bodyLarge'
                         style={styles.title}
                         numberOfLines={2}
                     >

@@ -68,6 +68,7 @@ export const useStyles = makeStyles(theme => ({
     },
     continueButton: {
         alignSelf: 'stretch',
+        marginBottom: theme.spacing.md,
         width: '100%',
         minWidth: 0,
     },

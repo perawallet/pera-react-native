@@ -10,13 +10,19 @@
  limitations under the License
  */
 
-import React, { forwardRef, useImperativeHandle, useRef } from 'react'
+import React, {
+    forwardRef,
+    useContext,
+    useImperativeHandle,
+    useRef,
+} from 'react'
 import { StyleSheet } from 'react-native'
 import { FlashList, FlashListProps, FlashListRef } from '@shopify/flash-list'
 import { useBottomSheetScrollableCreator } from '@gorhom/bottom-sheet'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { PWView } from '../PWView'
+import { PWInBottomSheetContext } from '../PWBottomSheet/inSheetContext'
 import { useStyles } from './styles'
 
 export type PWFlatListRef = {
@@ -75,6 +81,12 @@ export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
         const styles = useStyles({ bottomInset: insets.bottom })
         const BottomSheetScrollable = useBottomSheetScrollableCreator()
 
+        // Auto-detect a surrounding PWBottomSheet so the scroll gesture always
+        // cooperates with the sheet pan — a missing manual flag silently breaks
+        // scrolling (the recurring footgun). An explicit prop still wins.
+        const isInSheet = useContext(PWInBottomSheetContext)
+        const isInBottomSheet = inBottomSheet ?? isInSheet
+
         useImperativeHandle(ref, () => ({
             scrollToOffset: params => innerRef.current?.scrollToOffset(params),
             scrollToIndex: params => {
@@ -107,11 +119,11 @@ export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
                 isVerticalList && styles.content,
                 fillEmpty && styles.fillEmpty,
                 contentContainerStyle,
-                inBottomSheet && isVerticalList && styles.sheetBottomInset,
+                isInBottomSheet && isVerticalList && styles.sheetBottomInset,
             ]),
         }
 
-        if (inBottomSheet) {
+        if (isInBottomSheet) {
             return (
                 <FlashList
                     {...flashProps}

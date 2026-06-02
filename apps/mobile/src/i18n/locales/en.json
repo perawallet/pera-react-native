@@ -196,11 +196,11 @@
             "explorer": "Pera Explorer",
             "share_message": "",
             "image_copied": "Image copied to clipboard",
-            "image_saved": "Image saved to photo library",
+            "media_saved": "Saved to your library",
             "model_3d_mode": "3D Mode",
-            "image_save_failed": "Unable to save image",
+            "media_save_failed": "Unable to save",
             "image_copy_failed": "Unable to copy image",
-            "photo_permission_denied": "Photo library access is required to save images",
+            "media_permission_denied": "Library access is required to save media",
             "not_owner_notice": "You are not the owner of this NFT yet, however you opted-in for it. You can now transfer it to your account."
         },
         "verification_card": {

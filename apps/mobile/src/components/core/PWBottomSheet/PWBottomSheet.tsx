@@ -33,6 +33,7 @@ import {
 } from 'react-native'
 import { NotifierRoot, NotifierWrapper } from 'react-native-notifier'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
+import { PWInBottomSheetContext } from './inSheetContext'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export const bottomSheetNotifier = createRef<Nullable<NotifierRoot>>()
@@ -184,23 +185,31 @@ export const PWBottomSheet = ({
                 ref={bottomSheetNotifier}
                 componentProps={{ ContainerComponent: SafeAreaView }}
             >
-                <PWView style={styles.contentWrapper}>
-                    {autoCreateContainer ? (
-                        <BottomSheetView
-                            style={[styles.innerContainer, innerContainerStyle]}
-                            testID={testID}
-                        >
-                            {children}
-                        </BottomSheetView>
-                    ) : (
-                        <PWView
-                            style={[styles.innerContainer, innerContainerStyle]}
-                            testID={testID}
-                        >
-                            {children}
-                        </PWView>
-                    )}
-                </PWView>
+                <PWInBottomSheetContext.Provider value={true}>
+                    <PWView style={styles.contentWrapper}>
+                        {autoCreateContainer ? (
+                            <BottomSheetView
+                                style={[
+                                    styles.innerContainer,
+                                    innerContainerStyle,
+                                ]}
+                                testID={testID}
+                            >
+                                {children}
+                            </BottomSheetView>
+                        ) : (
+                            <PWView
+                                style={[
+                                    styles.innerContainer,
+                                    innerContainerStyle,
+                                ]}
+                                testID={testID}
+                            >
+                                {children}
+                            </PWView>
+                        )}
+                    </PWView>
+                </PWInBottomSheetContext.Provider>
             </NotifierWrapper>
         </BottomSheetModal>
     )

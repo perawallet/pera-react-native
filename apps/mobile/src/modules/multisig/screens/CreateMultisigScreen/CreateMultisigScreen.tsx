@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWButton, PWScreen, PWText, PWView } from '@components/core'
+import { PWButton, PWScreen, PWScrollView, PWText } from '@components/core'
 import { ScreenHeader } from '@components/ScreenHeader'
 import { useLanguage } from '@hooks/useLanguage'
 import { ParticipantListItem } from '../../components/ParticipantListItem'
@@ -32,6 +32,7 @@ export const CreateMultisigScreen = () => {
 
     return (
         <PWScreen
+            scroll={false}
             footer={
                 <PWButton
                     variant='primary'
@@ -47,14 +48,18 @@ export const CreateMultisigScreen = () => {
                 description={t('multisig.create.description')}
             />
 
-            <PWText variant='h4'>
-                {t('multisig.create.accounts_section')}
-            </PWText>
-            <PWText style={styles.description}>
-                {t('multisig.create.accounts_subtitle')}
-            </PWText>
 
-            <PWView style={styles.scrollArea}>
+            <PWScrollView
+                style={styles.listFlex}
+                contentContainerStyle={styles.scrollArea}
+            >
+                <PWText variant='h4'>
+                    {t('multisig.create.accounts_section')}
+                </PWText>
+                <PWText style={styles.description}>
+                    {t('multisig.create.accounts_subtitle')}
+                </PWText>
+
                 {participants.map((participant, index) => (
                     <ParticipantListItem
                         key={`${index}-${participant.address}`}
@@ -74,7 +79,7 @@ export const CreateMultisigScreen = () => {
                     paddingStyle='none'
                     style={styles.addButton}
                 />
-            </PWView>
+            </PWScrollView>
         </PWScreen>
     )
 }

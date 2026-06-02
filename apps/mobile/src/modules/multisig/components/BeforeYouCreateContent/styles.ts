@@ -21,9 +21,7 @@ export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
         gap: theme.spacing.xl,
         alignItems: 'center',
     },
-    icon: {
-        marginVertical: theme.spacing.md,
-    },
+    
     title: {
         textAlign: 'center',
     },

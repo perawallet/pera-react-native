@@ -12,7 +12,14 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => {
+type StyleProps = {
+    // When true, the row hugs its content (sits right after the address) and
+    // only shrinks the text to truncate; otherwise it fills the row and pushes
+    // the copy icon to the far right.
+    hugContent: boolean
+}
+
+export const useStyles = makeStyles((theme, { hugContent }: StyleProps) => {
     const secondaryText = {
         color: theme.colors.textGray,
         // No dedicated line-height token exists; theme.spacing.lg (16) is
@@ -20,18 +27,19 @@ export const useStyles = makeStyles(theme => {
         // secondary text in AccountDisplay/styles.ts.
         lineHeight: theme.spacing.lg,
     }
+    const fillOrHug = hugContent ? { flexShrink: 1 } : { flex: 1 }
     return {
         addressValueContainer: {
             flexDirection: 'row',
             gap: theme.spacing.md,
             alignItems: 'center',
-            flex: 1,
             minWidth: 0,
+            ...fillOrHug,
         },
         contentContainer: {
-            flex: 1,
             minWidth: 0,
             overflow: 'hidden',
+            ...fillOrHug,
         },
         copyIconContainer: {
             flexShrink: 0,

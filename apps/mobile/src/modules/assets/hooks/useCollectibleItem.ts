@@ -24,6 +24,8 @@ type UseCollectibleItemResult = {
     verificationIconName: Nullable<IconName>
     title: string
     collectionName: Optional<string>
+    /** Collection name, falling back to the asset unit name when absent. */
+    collectionLabel: Optional<string>
 }
 
 export const useCollectibleItem = ({
@@ -35,6 +37,7 @@ export const useCollectibleItem = ({
     const showAmount = !isPureNft(asset) && !amount.isZero()
     const hasBalance = amount.greaterThan(0)
     const collectionName = collectible?.collection?.name
+    const collectionLabel = collectionName ?? asset.unitName
     const title = collectible?.title ?? asset.name ?? `#${asset.assetId}`
 
     const verificationIconName = useMemo<Nullable<IconName>>(() => {
@@ -49,5 +52,6 @@ export const useCollectibleItem = ({
         verificationIconName,
         title,
         collectionName,
+        collectionLabel,
     }
 }

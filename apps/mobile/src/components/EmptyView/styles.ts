@@ -19,7 +19,7 @@ export const useStyles = makeStyles(theme => ({
         width: '100%',
         minWidth: 0,
     },
-    // Icon + text, centered in the space above the pinned footer.
+    // Icon, text, and optional CTA, centered with xl spacing between each.
     content: {
         flex: 1,
         alignItems: 'center',
@@ -27,10 +27,6 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.xl,
         width: '100%',
         minWidth: 0,
-    },
-    footer: {
-        width: '100%',
-        paddingVertical: theme.spacing.md,
     },
     iconContainer: {
         width: theme.spacing['4xl'],

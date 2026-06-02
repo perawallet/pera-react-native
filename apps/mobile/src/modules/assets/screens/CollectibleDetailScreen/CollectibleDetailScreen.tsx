@@ -55,12 +55,14 @@ export const CollectibleDetailScreen = ({
         traits,
         media,
         hasImage,
+        hasSaveableMedia,
         accountAddress,
         assetAmount,
         isOptedInNotOwned,
         handleSendPressed,
         handleSharePressed,
-        handleMediaPress,
+        handleModelPress,
+        handleFullScreenPress,
         handleCopyImage,
         handleSaveImage,
         handleOptOutPressed,
@@ -92,6 +94,9 @@ export const CollectibleDetailScreen = ({
     }
 
     const displayTitle = collectible?.title ?? asset.name ?? `#${asset.assetId}`
+    // Collection name, falling back to the unit name so the secondary line
+    // isn't blank when the collection has no name (matches the list/grid items).
+    const collectionLabel = collectible?.collection?.name ?? asset.unitName
     const quantity = assetAmount.toNumber()
 
     return (
@@ -110,25 +115,29 @@ export const CollectibleDetailScreen = ({
                         >
                             {displayTitle}
                         </PWText>
-                        {collectible?.collection?.name && (
+                        {collectionLabel && (
                             <PWText
                                 variant='body'
                                 style={styles.collectionName}
                             >
-                                {collectible.collection.name}
+                                {collectionLabel}
                             </PWText>
                         )}
                     </PWView>
 
                     {accountAddress ? (
                         <PWView style={styles.accountRow}>
-                            <AddressDisplay address={accountAddress} />
+                            <AddressDisplay
+                                address={accountAddress}
+                                hugContent
+                            />
                             {quantity > 0 && (
                                 <PWChip
                                     title={`x${quantity}`}
                                     variant='outline'
                                     paddingStyle='dense'
                                     forceUppercase={false}
+                                    textVariant='footnoteMedium'
                                     style={styles.quantityChip}
                                 />
                             )}
@@ -149,8 +158,8 @@ export const CollectibleDetailScreen = ({
                             asset.peraMetadata?.logo ??
                             undefined
                         }
-                        onItemPress={handleMediaPress}
-                        onFullScreenPress={handleMediaPress}
+                        onModelPress={handleModelPress}
+                        onFullScreenPress={handleFullScreenPress}
                     />
                 </PWView>
 
@@ -165,22 +174,22 @@ export const CollectibleDetailScreen = ({
                                 onPress={handleSendPressed}
                             />
                             {hasImage && (
-                                <>
-                                    <RoundButton
-                                        title={t('common.copy')}
-                                        icon='copy'
-                                        variant='secondary'
-                                        size='md'
-                                        onPress={handleCopyImage}
-                                    />
-                                    <RoundButton
-                                        title={t('common.save')}
-                                        icon='save'
-                                        variant='secondary'
-                                        size='md'
-                                        onPress={handleSaveImage}
-                                    />
-                                </>
+                                <RoundButton
+                                    title={t('common.copy')}
+                                    icon='copy'
+                                    variant='secondary'
+                                    size='md'
+                                    onPress={handleCopyImage}
+                                />
+                            )}
+                            {hasSaveableMedia && (
+                                <RoundButton
+                                    title={t('common.save')}
+                                    icon='save'
+                                    variant='secondary'
+                                    size='md'
+                                    onPress={handleSaveImage}
+                                />
                             )}
                         </PWView>
                     )}

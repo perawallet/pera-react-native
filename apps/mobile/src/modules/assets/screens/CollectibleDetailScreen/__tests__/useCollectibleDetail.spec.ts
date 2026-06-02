@@ -32,9 +32,9 @@ vi.mock('@modules/bottom-sheet', () => ({
 }))
 
 vi.mock(
-    '@modules/assets/screens/FullScreenImageViewer/FullScreenImageViewer',
+    '@modules/assets/screens/FullScreenMediaViewer/FullScreenMediaViewer',
     () => ({
-        FullScreenImageViewer: () => null,
+        FullScreenMediaViewer: () => null,
     }),
 )
 
@@ -99,7 +99,7 @@ vi.mock('expo-file-system', () => ({
     },
 }))
 
-vi.mock('expo-media-library', () => ({
+vi.mock('expo-media-library/legacy', () => ({
     requestPermissionsAsync: vi.fn().mockResolvedValue({ status: 'granted' }),
     saveToLibraryAsync: vi.fn(),
 }))

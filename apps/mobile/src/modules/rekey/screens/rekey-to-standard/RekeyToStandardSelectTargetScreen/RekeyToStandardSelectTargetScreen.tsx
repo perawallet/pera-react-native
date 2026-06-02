@@ -10,37 +10,15 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
-import { PWFlatList, PWScreen } from '@components/core'
-import { EmptyView } from '@components/EmptyView'
+import { PWScreen } from '@components/core'
 import { ScreenHeader } from '@components/ScreenHeader'
 import { useLanguage } from '@hooks/useLanguage'
-import { SelectableAccountRow } from '@modules/accounts/components/SelectableAccountRow'
+import { AccountPicker } from '@modules/accounts/components/AccountPicker'
 import { useRekeyToStandardSelectTargetScreen } from './useRekeyToStandardSelectTargetScreen'
-
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-
-const keyExtractor = (account: WalletAccount) => account.address
 
 export const RekeyToStandardSelectTargetScreen = () => {
     const { t } = useLanguage()
     const { targets, handleSelect } = useRekeyToStandardSelectTargetScreen()
-
-    const renderItem = useCallback(
-        ({ item }: { item: WalletAccount }) => (
-            <SelectableAccountRow
-                account={item}
-                onSelect={handleSelect}
-                testID={`rekey-target-row-${item.address}`}
-            />
-        ),
-        [handleSelect],
-    )
-
-    const renderEmpty = useCallback(
-        () => <EmptyView body={t('rekey.to_standard.select.empty')} />,
-        [t],
-    )
 
     return (
         <PWScreen
@@ -52,12 +30,11 @@ export const RekeyToStandardSelectTargetScreen = () => {
                 description={t('rekey.to_standard.select.subtitle')}
             />
 
-            <PWFlatList
-                data={targets}
-                renderItem={renderItem}
-                keyExtractor={keyExtractor}
-                cardLayout
-                ListEmptyComponent={renderEmpty}
+            <AccountPicker
+                accounts={targets}
+                onSelect={handleSelect}
+                emptyBody={t('rekey.to_standard.select.empty')}
+                rowTestIDPrefix='rekey-target-row'
             />
         </PWScreen>
     )

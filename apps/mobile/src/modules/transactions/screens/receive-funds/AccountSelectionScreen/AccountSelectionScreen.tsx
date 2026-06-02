@@ -14,9 +14,8 @@ import { useCallback } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 
-import { PWFlatList } from '@components/core'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { SelectableAccountRow } from '@modules/accounts/components/SelectableAccountRow'
+import { AccountPicker } from '@modules/accounts/components/AccountPicker'
 import { useReceiveFunds } from '@modules/transactions/hooks'
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
@@ -36,25 +35,10 @@ export const AccountSelectionScreen = () => {
         [navigation, setSelectedAccount],
     )
 
-    const renderItem = useCallback(
-        ({ item }: { item: WalletAccount }) => (
-            <SelectableAccountRow
-                account={item}
-                onSelect={handleSelected}
-            />
-        ),
-        [handleSelected],
-    )
-
-    const keyExtractor = useCallback((item: WalletAccount) => item.address, [])
-
     return (
-        <PWFlatList
-            inBottomSheet
-            cardLayout
-            data={accounts}
-            renderItem={renderItem}
-            keyExtractor={keyExtractor}
+        <AccountPicker
+            accounts={accounts}
+            onSelect={handleSelected}
         />
     )
 }

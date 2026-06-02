@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useRef } from 'react'
 import {
     Keyboard,
     TouchableOpacity,
@@ -22,9 +22,15 @@ import { getTestProps } from '@utils/test-id-helper'
 export type PWTouchableOpacityProps = {
     /** Dismiss keyboard after press (default true). */
     dismissKeyboardOnPress?: boolean
+    /** Opt out of the double-press guard for rapid-tap surfaces (e.g. numpad). */
+    allowRapidPress?: boolean
 } & TouchableOpacityProps
 
 const DEFAULT_ACTIVE_OPACITY = 0.8
+
+// A repeat press of the same element within this window is swallowed, so a
+// double-tap can't fire onPress (and its navigation/submit) twice.
+const DOUBLE_PRESS_GUARD_MS = 500
 
 export const PWTouchableOpacity = ({
     children,
@@ -32,17 +38,25 @@ export const PWTouchableOpacity = ({
     testID,
     onPress,
     dismissKeyboardOnPress = true,
+    allowRapidPress = false,
     ...rest
 }: PWTouchableOpacityProps) => {
+    const lastPressAtRef = useRef(0)
+
     // onPress before Keyboard.dismiss — bottom-sheet open races if reversed.
     const handlePress = useCallback(
         (event: GestureResponderEvent) => {
+            if (!allowRapidPress) {
+                const now = Date.now()
+                if (now - lastPressAtRef.current < DOUBLE_PRESS_GUARD_MS) return
+                lastPressAtRef.current = now
+            }
             onPress?.(event)
             if (dismissKeyboardOnPress) {
                 Keyboard.dismiss()
             }
         },
-        [onPress, dismissKeyboardOnPress],
+        [onPress, dismissKeyboardOnPress, allowRapidPress],
     )
 
     return (
