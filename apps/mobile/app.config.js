@@ -321,6 +321,10 @@ module.exports = {
     // missing extension target dependency + duplicate Sources). MUST run after
     // the autofill plugin. Remove once the fixes land upstream.
     './plugins/withPasskeyAutofillFixes',
+
+    './plugins/withAndroidMigrationDependencies.js',
+    './plugins/withAndroidMigrationSources.js',
+    './plugins/withMainApplicationLegacyMigration.js',
   ],
 
   // Experiments (for bleeding edge features)
