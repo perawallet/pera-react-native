@@ -140,6 +140,7 @@ export const ContactListScreen = () => {
                     icon='contacts'
                     title={t('contacts.list.no_contacts_title')}
                     body={t('contacts.list.no_contacts_body')}
+                    bodyStyle={styles.emptyViewBody}
                     button={
                         <PWButton
                             title={t('contacts.list.add_contact')}
