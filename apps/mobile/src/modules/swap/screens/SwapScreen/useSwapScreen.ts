@@ -18,16 +18,26 @@ import {
     useSelectedAccountAddress,
     useSigningAccounts,
 } from '@perawallet/wallet-core-accounts'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { type Optional } from '@perawallet/wallet-core-shared'
 import { SwapScreenParams } from '@modules/swap/routes/types'
+import { useSeedSwapRouteAssets } from './useSeedSwapRouteAssets'
+import { resolveSwapRouteAssets } from './resolveSwapRouteAssets'
 
 export const useSwapScreen = () => {
     const route =
         useRoute<RouteProp<{ Swap: Optional<SwapScreenParams> }, 'Swap'>>()
+    const { network } = useNetwork()
     const { setFromAsset, setToAsset } = useSwaps()
     const selectedAccount = useSelectedAccount()
     const signingAccounts = useSigningAccounts()
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
+
+    const resolvedAssets = resolveSwapRouteAssets(route.params, network)
+    const assetInId = resolvedAssets?.assetInId
+    const assetOutId = resolvedAssets?.assetOutId
+
+    useSeedSwapRouteAssets({ assetInId, assetOutId })
 
     useEffect(() => {
         if (
@@ -40,10 +50,9 @@ export const useSwapScreen = () => {
     }, [selectedAccount, signingAccounts, setSelectedAccountAddress])
 
     useEffect(() => {
-        const params = route.params
-        if (!params?.assetInId && !params?.assetOutId) return
+        if (!assetInId || !assetOutId) return
 
-        if (params.assetInId) setFromAsset(params.assetInId)
-        if (params.assetOutId) setToAsset(params.assetOutId)
-    }, [route.params, setFromAsset, setToAsset])
+        setFromAsset(assetInId)
+        setToAsset(assetOutId)
+    }, [assetInId, assetOutId, setFromAsset, setToAsset])
 }
