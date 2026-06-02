@@ -18,22 +18,22 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import { concatBytes, decodeFromBase64 } from '@perawallet/wallet-core-shared'
 import {
-    useLiquidAuth,
-    useLiquidAuthStore,
-} from '@perawallet/wallet-core-liquid-auth'
-import { useSigningRequest } from '@perawallet/wallet-core-signing'
-import { buildArc60SignRequest } from '../buildArc60SignRequest'
-import { liquidAuthNetworksForCurrent } from '../networks'
-import {
+    buildArc60SignRequest,
     LIQUID_AUTH_PROVIDER_ID,
     LIQUID_AUTH_PROVIDER_NAME,
-} from '../constants'
+    liquidAuthNetworksForCurrent,
+    useLiquidAuth,
+    useLiquidAuthStore,
+    type DisplayIdentity,
+} from '@perawallet/wallet-core-liquid-auth'
+import { useSigningRequest } from '@perawallet/wallet-core-signing'
 
 export type UseLiquidAuthConnectResult = {
     connect: (input: {
         host: string
         requestId: string
         address: string
+        requestConfirmation: (identity: DisplayIdentity) => Promise<boolean>
     }) => Promise<void>
     disconnect: (sessionId: string) => void
 }

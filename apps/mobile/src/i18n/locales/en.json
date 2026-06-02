@@ -636,8 +636,7 @@
         "unknown": "An unknown error occurred.",
         "walletconnect": {
             "title": "An error occurred processing an app request",
-            "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists.",
-            "unknown": "An unknown error occurred when signing.  Check the dapp for more information."
+            "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists."
         },
         "signing": {
             "title": "An error occurred processing the signing request",
@@ -1352,7 +1351,6 @@
         "settings": "Settings",
         "security": "Security",
         "notifications": "Notifications",
-        "wallet_connect": "Wallet Connect",
         "connected_apps": "Connected Apps",
         "wallet_connect_details": "Connection Details",
         "passkeys": "Passkeys",
@@ -1534,7 +1532,6 @@
             "account_section": "Account",
             "security_title": "Security",
             "notifications_title": "Notifications",
-            "wallet_connect_title": "WalletConnect Sessions",
             "connected_apps_title": "Connected Apps",
             "passkeys_title": "Passkeys",
             "app_preferences_section": "App Preferences",
@@ -1914,33 +1911,24 @@
             "networks_testnet": "Testnet"
         },
         "settings": {
-            "empty_title": "No WalletConnect Sessions",
-            "empty_body": "You don't have any active WalletConnect sessions.",
-            "empty_button": "Scan QR",
             "last_active": "Last active on {{date}}",
             "created_at": "Connected on {{date}}",
             "connected": "Connected",
             "disconnected": "Disconnected",
-            "clear_all": "Delete All Sessions",
-            "delete_title": "Delete Session",
-            "delete_body": "Are you sure you want to delete this session?  This will remove your active session and disconnect you from the connected app.",
-            "delete_all_title": "Delete All Sessions",
-            "delete_all_body": "Are you sure you want to delete all sessions?  This will remove all your active sessions and disconnect you from all connected apps.",
-            "version": "This session is using WalletConnect V{{version}}",
-            "connected_accounts": "Connected with",
-            "permissions": "Advanced Permissions",
-            "permissions_info_title": "Advanced Permissions",
-            "permissions_info_body": "WalletConnect is a communications protocol for web3, enabling wallets and dApps to securely connect and interact. With each new version, WalletConnect introduces new ways to handle, sign and/or display transaction requests coming from third party projects."
+            "version": "This session is using WalletConnect V{{version}}"
         }
     },
     "liquidauth": {
         "request": {
-            "title": "Connect to your account",
+            "select_account_title": "Select Account to Connect",
             "host_label": "Connecting via {{host}}",
-            "accounts_title": "SELECT ACCOUNT",
-            "cancel": "Cancel",
+            "select": "Select",
             "connecting_title": "Connecting…",
             "connecting_body": "Establishing a secure connection to {{host}}."
+        },
+        "confirm": {
+            "selected_account": "Selected Account",
+            "claimed_origin": "{{origin}} · unverified"
         },
         "settings": {
             "version": "This session is using Liquid Auth"
@@ -1967,6 +1955,7 @@
     "connected_apps": {
         "badge_walletconnect": "WC",
         "badge_liquidauth": "Liquid",
+        "unknown_app": "Unknown app",
         "settings": {
             "empty_title": "No Connected Apps",
             "empty_body": "You don't have any connected apps. Connect to a dApp and it will appear here.",

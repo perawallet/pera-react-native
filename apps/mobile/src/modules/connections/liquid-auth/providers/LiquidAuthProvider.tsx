@@ -11,7 +11,7 @@
  */
 
 import { PropsWithChildren } from 'react'
-import { useLiquidAuthEnabled } from '@modules/connections/liquid-auth/hooks/useLiquidAuthEnabled'
+import { useLiquidAuthEnabled } from '@modules/connections/liquid-auth/hooks'
 import { useLiquidAuthProvider } from './useLiquidAuthProvider'
 
 export type LiquidAuthProviderProps = {} & PropsWithChildren

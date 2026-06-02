@@ -14,17 +14,21 @@ export const name = '@perawallet/wallet-core-liquid-auth'
 
 export * from './models'
 export * from './errors'
-export * from './arc0027/types'
-export { Arc0027Error } from './arc0027/errors'
+export type { DisplayIdentity } from '@perawallet/wallet-extension-liquid-auth'
+export { LIQUID_AUTH_PROVIDER_ID, LIQUID_AUTH_PROVIDER_NAME } from './constants'
 export {
-    createArc0027Dispatcher,
-    type Arc0027Handler,
-    type Arc0027Handlers,
-} from './arc0027/dispatcher'
+    buildArc60SignRequest,
+    type Arc60Callbacks,
+    type BuildArc60Input,
+} from './utils/buildArc60SignRequest'
+export {
+    ALGORAND_GENESIS,
+    liquidAuthNetworksForCurrent,
+} from './utils/networks'
 export { useLiquidAuthStore } from './store/store'
 export { useLiquidAuthRegistryStore } from './store/registryStore'
-export { findCredentialId } from './utils/findCredentialId'
-export { useLiquidAuthService } from './hooks/useLiquidAuthService'
+export { disconnectAllLiquidAuthSessions } from './disconnectAllSessions'
+export { getLiquidAuthService } from './hooks/getLiquidAuthService'
 export { useLiquidAuth } from './hooks/useLiquidAuth'
 export type {
     ConnectInput,

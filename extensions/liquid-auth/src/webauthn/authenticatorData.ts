@@ -12,6 +12,8 @@
 
 import { sha256 } from '@noble/hashes/sha256'
 
+import { concatBytes } from '../encoding/bytes'
+
 /** WebAuthn authenticator data flag bits. */
 const FLAG_UP = 0x01 // user present
 const FLAG_UV = 0x04 // user verified
@@ -94,13 +96,5 @@ export const buildAuthenticatorData = (
         )
     }
 
-    let total = 0
-    for (const chunk of chunks) total += chunk.length
-    const out = new Uint8Array(total)
-    let offset = 0
-    for (const chunk of chunks) {
-        out.set(chunk, offset)
-        offset += chunk.length
-    }
-    return out
+    return concatBytes(chunks)
 }

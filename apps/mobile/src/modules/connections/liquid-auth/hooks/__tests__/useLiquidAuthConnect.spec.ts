@@ -12,17 +12,26 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useLiquidAuth } from '@perawallet/wallet-core-liquid-auth'
-import { ALGORAND_GENESIS } from '../../networks'
+import {
+    ALGORAND_GENESIS,
+    useLiquidAuth,
+} from '@perawallet/wallet-core-liquid-auth'
 import { useLiquidAuthConnect } from '../useLiquidAuthConnect'
 
 const connectInternal = vi.fn()
 const disconnectInternal = vi.fn()
 
-vi.mock('@perawallet/wallet-core-liquid-auth', () => ({
-    useLiquidAuth: vi.fn(),
-    useLiquidAuthStore: { getState: () => ({ sessions: [] }) },
-}))
+vi.mock('@perawallet/wallet-core-liquid-auth', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-liquid-auth')
+        >()
+    return {
+        ...actual,
+        useLiquidAuth: vi.fn(),
+        useLiquidAuthStore: { getState: () => ({ sessions: [] }) },
+    }
+})
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => [],
@@ -66,12 +75,14 @@ describe('useLiquidAuthConnect', () => {
 
     it('forwards the caller-supplied account into the underlying connect', async () => {
         const { result } = renderHook(() => useLiquidAuthConnect())
+        const requestConfirmation = vi.fn().mockResolvedValue(true)
 
         await act(async () => {
             await result.current.connect({
                 host: 'https://debug.liquidauth.com',
                 requestId: 'req-1',
                 address: 'CHOSEN_ADDR',
+                requestConfirmation,
             })
         })
 
@@ -79,6 +90,7 @@ describe('useLiquidAuthConnect', () => {
             host: 'https://debug.liquidauth.com',
             requestId: 'req-1',
             address: 'CHOSEN_ADDR',
+            requestConfirmation,
         })
     })
 })

@@ -10,27 +10,12 @@
  limitations under the License
  */
 
-import { logger } from '@perawallet/wallet-core-shared'
 import type {
     IceServerConfig,
     LiquidAuthDataChannel,
     SignalClientLike,
 } from './types'
 import { DEFAULT_HEARTBEAT_INTERVAL_MS } from './constants'
-
-/**
- * Diagnostic view onto the vendored emitter/socket surfaces (eventemitter3 +
- * socket.io). Not part of the structural `SignalClientLike` contract — present
- * only on the real client — so we access them via optional chaining and
- * tolerate test mocks that omit them.
- */
-type DiagnosticUnderlying = {
-    on?: (event: string, listener: (...args: unknown[]) => void) => void
-    socket?: {
-        id?: string
-        on?: (event: string, listener: (...args: unknown[]) => void) => void
-    }
-}
 
 type MessageHandler = (data: string) => void
 type CloseHandler = () => void
@@ -58,6 +43,8 @@ export class LiquidAuthSignalClient {
     private messageHandler: MessageHandler | null = null
     private closeHandler: CloseHandler | null = null
     private heartbeat: ReturnType<typeof setInterval> | null = null
+    /** Set by close() so a connect() in flight discards its late channel. */
+    private closed = false
 
     constructor(
         private readonly underlying: SignalClientLike,
@@ -76,21 +63,20 @@ export class LiquidAuthSignalClient {
         // Tear down any existing channel/timers without closing the underlying
         // client — it will be reused for the new connection.
         this.teardownChannel()
-        logger.info('[liquid-auth] signal: connect() called', { requestId })
-        this.attachDiagnostics()
+        this.closed = false
         this.underlying.authenticated = true
         const channel = await this.underlying.peer(requestId, 'answer', {
             iceServers: this.options.iceServers,
         })
-        logger.info(
-            '[liquid-auth] signal: peer() resolved — data channel open',
-            { requestId },
-        )
+        // The caller may have closed us while the handshake was in flight (e.g.
+        // a connect-timeout race). Don't adopt the late channel — close it and
+        // stay torn down, otherwise it (and its heartbeat) would leak.
+        if (this.closed) {
+            channel.close()
+            return
+        }
         this.channel = channel
         channel.onmessage = event => {
-            logger.info('[liquid-auth] data channel message', {
-                length: event.data?.length,
-            })
             this.messageHandler?.(event.data)
         }
         channel.onclose = () => this.handleClose()
@@ -98,73 +84,12 @@ export class LiquidAuthSignalClient {
         this.startHeartbeat()
     }
 
-    /**
-     * Subscribes diagnostic listeners to the vendored emitter + raw socket so we
-     * can trace signaling without modifying the vendored file. Optional chaining
-     * guards both the real client (where these surfaces exist) and test mocks
-     * (where they don't), so missing methods simply no-op.
-     */
-    private attachDiagnostics(): void {
-        const u = this.underlying as unknown as DiagnosticUnderlying
-        u.on?.('connect', (...args) =>
-            logger.info('[liquid-auth] signal event: connect', {
-                socketId: u.socket?.id,
-                args: args.length,
-            }),
-        )
-        u.on?.('disconnect', () =>
-            logger.info('[liquid-auth] signal event: disconnect'),
-        )
-        u.on?.('link', () => logger.info('[liquid-auth] signal event: link'))
-        u.on?.('link-message', (data: unknown) =>
-            logger.info('[liquid-auth] signal event: link-message', { data }),
-        )
-        u.on?.('offer-description', (sdp: unknown) =>
-            logger.info('[liquid-auth] signal event: offer-description', {
-                length: typeof sdp === 'string' ? sdp.length : undefined,
-            }),
-        )
-        u.on?.('answer-description', (sdp: unknown) =>
-            logger.info('[liquid-auth] signal event: answer-description', {
-                length: typeof sdp === 'string' ? sdp.length : undefined,
-            }),
-        )
-        u.on?.('offer-candidate', () =>
-            logger.info('[liquid-auth] signal event: offer-candidate', {
-                received: true,
-            }),
-        )
-        u.on?.('answer-candidate', () =>
-            logger.info('[liquid-auth] signal event: answer-candidate', {
-                received: true,
-            }),
-        )
-        u.on?.('data-channel', () =>
-            logger.info('[liquid-auth] signal event: data-channel', {
-                message: 'data channel received',
-            }),
-        )
-        u.on?.('signal', () =>
-            logger.info('[liquid-auth] signal event: signal'),
-        )
-        u.socket?.on?.('connect', () =>
-            logger.info('[liquid-auth] socket connected', {
-                id: u.socket?.id,
-            }),
-        )
-        u.socket?.on?.('connect_error', (err: unknown) =>
-            logger.info('[liquid-auth] socket connect_error', {
-                message: (err as Error)?.message,
-            }),
-        )
-    }
-
     send(data: string): void {
         this.channel?.send(data)
     }
 
     close(): void {
-        logger.info('[liquid-auth] signal: close()')
+        this.closed = true
         this.teardownChannel()
         this.underlying.close()
     }
@@ -173,8 +98,19 @@ export class LiquidAuthSignalClient {
         const interval =
             this.options.heartbeatMs ?? DEFAULT_HEARTBEAT_INTERVAL_MS
         // Periodic no-op keepalive so the data channel survives long idle
-        // periods (the dApp sends nothing until the user acts).
-        this.heartbeat = setInterval(() => this.channel?.send(''), interval)
+        // periods (the dApp sends nothing until the user acts). Guarded: between
+        // ICE failure and the onclose event the channel may not be 'open', and
+        // RTCDataChannel.send throws InvalidStateError on a non-open channel.
+        this.heartbeat = setInterval(() => {
+            const channel = this.channel
+            if (!channel || channel.readyState !== 'open') return
+            try {
+                channel.send('')
+            } catch {
+                // Channel raced into a non-open state; onclose/onerror handles
+                // the real teardown.
+            }
+        }, interval)
     }
 
     private stopTimers(): void {

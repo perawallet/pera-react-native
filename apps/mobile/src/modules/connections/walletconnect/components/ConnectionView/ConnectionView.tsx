@@ -92,7 +92,6 @@ export const ConnectionView = ({
             onSubtitlePress={handlePressUrl}
             permissions={request.permissions as AlgorandPermission[]}
             accountsTitle={t('walletconnect.request.accounts_title')}
-            mode='multi'
             onApprove={handleConnect}
             onReject={handleCancel}
         />

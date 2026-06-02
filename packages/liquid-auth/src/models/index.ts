@@ -11,12 +11,12 @@
  */
 
 import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
-import type { LiquidAuthSignalClient } from '@perawallet/wallet-extension-liquid-auth'
+import type {
+    LiquidAuthNetwork,
+    LiquidAuthSignalClient,
+} from '@perawallet/wallet-extension-liquid-auth'
 
-export type LiquidAuthNetwork = {
-    genesisHash: string
-    genesisId: string
-}
+export type { LiquidAuthNetwork }
 
 export type LiquidAuthPeerMeta = {
     name: string
@@ -55,12 +55,6 @@ export type LiquidAuthConnectRequest = {
     requestId: string
 }
 
-/** An in-flight connect attempt (ceremony + transport), for the connecting sheet. */
-export type LiquidAuthPendingConnection = {
-    host: string
-    requestId: string
-}
-
 /**
  * A registered passkey for a host+account, persisted independently of sessions.
  * Outlives session deletion/expiry so reconnecting reuses the existing passkey
@@ -81,15 +75,11 @@ export type LiquidAuthStore = BaseStoreState & {
     credentials: LiquidAuthCredentialRecord[]
     connectRequest: Nullable<LiquidAuthConnectRequest>
     connectionError: Nullable<Error>
-    pendingConnection: Nullable<LiquidAuthPendingConnection>
     setSessions: (sessions: LiquidAuthSession[]) => void
     /** Upserts the credential for its host+address (replaces any prior). */
     recordCredential: (record: LiquidAuthCredentialRecord) => void
     setConnectRequest: (request: Nullable<LiquidAuthConnectRequest>) => void
     setConnectionError: (error: Nullable<Error>) => void
-    setPendingConnection: (
-        pending: Nullable<LiquidAuthPendingConnection>,
-    ) => void
     /** Removes sessions whose ttl has elapsed; returns nothing. */
     expireSessions: (now: number) => void
 }

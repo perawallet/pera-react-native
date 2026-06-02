@@ -10,9 +10,6 @@
  limitations under the License
  */
 
-import CookieManager from '@react-native-cookies/cookies'
-import { logger } from '@perawallet/wallet-core-shared'
-
 /**
  * Structural subset of `@react-native-cookies/cookies` get() used here. Declared
  * so tests can inject a fake reader without the native module.
@@ -50,21 +47,21 @@ export const readLiquidAuthSessionCookieWith = async (
             const only = cookies[names[0]]
             if (only?.value) header = `${names[0]}=${only.value}`
         }
-        logger.info('[liquid-auth] session cookie', {
-            hasConnectSid: !!sid,
-            names,
-            willSend: !!header,
-        })
         return header
-    } catch (error) {
-        logger.info('[liquid-auth] session cookie read failed', {
-            message: (error as Error)?.message,
-        })
+    } catch {
         return undefined
     }
 }
 
-export const readLiquidAuthSessionCookie = (
+export const readLiquidAuthSessionCookie = async (
     origin: string,
-): Promise<string | undefined> =>
-    readLiquidAuthSessionCookieWith(CookieManager as CookieReader, origin)
+): Promise<string | undefined> => {
+    // Lazy import so merely loading this module (e.g. via the package barrel
+    // in a jsdom test run) never touches the native cookie module.
+    const { default: cookieManager } =
+        await import('@react-native-cookies/cookies')
+    return readLiquidAuthSessionCookieWith(
+        cookieManager as CookieReader,
+        origin,
+    )
+}

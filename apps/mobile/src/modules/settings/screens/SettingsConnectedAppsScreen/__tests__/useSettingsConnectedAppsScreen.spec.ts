@@ -15,7 +15,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useWalletConnect } from '@perawallet/wallet-core-walletconnect'
-import { useLiquidAuthStore } from '@perawallet/wallet-core-liquid-auth'
+import {
+    disconnectAllLiquidAuthSessions,
+    useLiquidAuthStore,
+} from '@perawallet/wallet-core-liquid-auth'
 import { useLiquidAuthEnabled } from '@modules/connections/liquid-auth/hooks/useLiquidAuthEnabled'
 import { useSettingsConnectedAppsScreen } from '../useSettingsConnectedAppsScreen'
 
@@ -29,6 +32,7 @@ vi.mock('@perawallet/wallet-core-walletconnect', () => ({
 
 vi.mock('@perawallet/wallet-core-liquid-auth', () => ({
     useLiquidAuthStore: vi.fn(),
+    disconnectAllLiquidAuthSessions: vi.fn(),
 }))
 
 vi.mock('@modules/connections/liquid-auth/hooks/useLiquidAuthEnabled', () => ({
@@ -152,5 +156,21 @@ describe('useSettingsConnectedAppsScreen', () => {
         const { result } = renderHook(() => useSettingsConnectedAppsScreen())
 
         expect(result.current.hasConnections).toBe(false)
+    })
+
+    it('handleDeleteAll disconnects Liquid Auth sessions and deletes WC sessions', () => {
+        vi.mocked(useLiquidAuthEnabled).mockReturnValue(true)
+        const deleteAllSessions = vi.fn().mockResolvedValue(undefined)
+        vi.mocked(useWalletConnect).mockReturnValue({
+            connections: WC_CONNECTIONS as any,
+            deleteAllSessions,
+        } as any)
+
+        const { result } = renderHook(() => useSettingsConnectedAppsScreen())
+        result.current.handleDeleteAll()
+
+        // Liquid Auth disconnect closes live clients (not just clears records).
+        expect(disconnectAllLiquidAuthSessions).toHaveBeenCalledTimes(1)
+        expect(deleteAllSessions).toHaveBeenCalledTimes(1)
     })
 })

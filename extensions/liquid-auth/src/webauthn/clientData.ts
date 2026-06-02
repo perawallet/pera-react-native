@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { toBase64Url } from './base64url'
+import { toBase64Url } from '../encoding/base64'
 
 export type ClientDataType = 'webauthn.create' | 'webauthn.get'
 

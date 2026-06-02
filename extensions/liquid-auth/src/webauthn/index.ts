@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-export { fromBase64Url, toBase64Url } from './base64url'
+export { fromBase64Url, toBase64Url } from '../encoding/base64'
 export {
     cborEncode,
     cborEncodeMap,
@@ -18,7 +18,7 @@ export {
     type CborMap,
     type CborRaw,
     type CborValue,
-} from './cbor'
+} from '../encoding/cbor'
 export { coseP256PublicKey } from './cose'
 export {
     buildAuthenticatorData,

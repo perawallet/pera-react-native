@@ -262,11 +262,8 @@ vi.mock('react-native', () => ({
 // Stub Liquid Auth hooks so the remote-config + liquid-auth packages (which
 // call registerStore at module load time) are never pulled into this file's
 // import graph.
-vi.mock('@modules/connections/liquid-auth/hooks/useLiquidAuthEnabled', () => ({
+vi.mock('@modules/connections/liquid-auth/hooks', () => ({
     useLiquidAuthEnabled: vi.fn(() => false),
-}))
-
-vi.mock('@modules/connections/liquid-auth/hooks/useLiquidAuthConnect', () => ({
     useLiquidAuthConnect: vi.fn(() => ({
         connect: vi.fn(async () => undefined),
         disconnect: vi.fn(),

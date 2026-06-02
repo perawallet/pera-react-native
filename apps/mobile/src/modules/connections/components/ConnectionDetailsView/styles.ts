@@ -109,5 +109,8 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
             width: '100%',
             justifyContent: 'flex-end',
         },
+        deleteButtonTitle: {
+            color: theme.colors.alertNegative,
+        },
     }
 })

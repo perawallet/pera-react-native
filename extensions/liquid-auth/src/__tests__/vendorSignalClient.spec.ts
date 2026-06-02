@@ -93,7 +93,7 @@ describe('SignalClient (vendored)', () => {
         expect(client.authenticated).toBe(true)
     })
 
-    it('close() calls socket.removeAllListeners() and resets authenticated to false', () => {
+    it('close() fully tears down: drops listeners, disconnects, resets auth', () => {
         const client = new SignalClient('https://signal.example.com')
         // Manually set authenticated to simulate a prior link
         client.authenticated = true
@@ -101,15 +101,9 @@ describe('SignalClient (vendored)', () => {
         client.close()
 
         expect(fakeSocket.removeAllListeners).toHaveBeenCalled()
-        expect(client.authenticated).toBe(false)
-        expect(fakeSocket.disconnect).not.toHaveBeenCalled()
-    })
-
-    it('close(true) also calls socket.disconnect()', () => {
-        const client = new SignalClient('https://signal.example.com')
-        client.close(true)
-
-        expect(fakeSocket.removeAllListeners).toHaveBeenCalled()
+        // The socket is disconnected so it doesn't linger and auto-reconnect
+        // (re-polling with the session cookie) after the wallet is done.
         expect(fakeSocket.disconnect).toHaveBeenCalled()
+        expect(client.authenticated).toBe(false)
     })
 })

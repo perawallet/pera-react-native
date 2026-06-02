@@ -54,20 +54,6 @@ describe('useLiquidAuthStore', () => {
         expect(ids).toEqual(['fresh'])
     })
 
-    it('sets and clears the pending connection', () => {
-        useLiquidAuthStore.getState().setPendingConnection({
-            host: 'https://debug.liquidauth.com',
-            requestId: 'req-1',
-        })
-        expect(useLiquidAuthStore.getState().pendingConnection).toEqual({
-            host: 'https://debug.liquidauth.com',
-            requestId: 'req-1',
-        })
-
-        useLiquidAuthStore.getState().setPendingConnection(null)
-        expect(useLiquidAuthStore.getState().pendingConnection).toBeNull()
-    })
-
     it('recordCredential upserts by host+address (replaces the prior id)', () => {
         const base = {
             host: 'https://dapp.example',
@@ -119,10 +105,6 @@ describe('useLiquidAuthStore', () => {
             createdAt: 1,
         })
         useLiquidAuthStore.getState().setConnectionError(new Error('boom'))
-        useLiquidAuthStore.getState().setPendingConnection({
-            host: 'https://debug.liquidauth.com',
-            requestId: 'req-1',
-        })
         useLiquidAuthStore.getState().setConnectRequest({
             host: 'https://debug.liquidauth.com',
             requestId: 'req-1',
@@ -132,7 +114,6 @@ describe('useLiquidAuthStore', () => {
         expect(state.sessions).toEqual([])
         expect(state.credentials).toEqual([])
         expect(state.connectionError).toBeNull()
-        expect(state.pendingConnection).toBeNull()
         expect(state.connectRequest).toBeNull()
     })
 })

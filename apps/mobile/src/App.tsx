@@ -58,8 +58,10 @@ import {
 } from './bootstrap/passkey-autofill'
 import { runLiquidAuthBootstrap } from './bootstrap/liquid-auth'
 import { selectLiquidAuthCredentialMechanism } from '@modules/connections/liquid-auth/credentials'
-import { useLiquidAuthEnabled } from '@modules/connections/liquid-auth/hooks/useLiquidAuthEnabled'
-import { useLiquidAuthInAppAuthenticatorEnabled } from '@modules/connections/liquid-auth/hooks/useLiquidAuthInAppAuthenticatorEnabled'
+import {
+    useLiquidAuthEnabled,
+    useLiquidAuthInAppAuthenticatorEnabled,
+} from '@modules/connections/liquid-auth/hooks'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { RootComponent } from '@components/RootComponent'
 // Side-effect: binds every entry in the bottom-sheet manager's typed
@@ -106,8 +108,6 @@ const AppContent = () => {
 
     usePasskeyAutofillLifecycle()
 
-    usePasskeyAutofillLifecycle()
-
     useEffect(() => {
         logger.setErrorReporter(
             createCrashReportingErrorReporter(provider.crashReporting),
@@ -137,7 +137,7 @@ const AppContent = () => {
                 )
 
                 if (isLiquidAuthEnabled)
-                    runLiquidAuthBootstrap(
+                    await runLiquidAuthBootstrap(
                         selectLiquidAuthCredentialMechanism(
                             useInAppAuthenticator,
                         ),

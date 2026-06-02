@@ -11,10 +11,14 @@
  */
 
 import { useMemo, useState } from 'react'
+import { useLanguage } from '@hooks/useLanguage'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useWalletConnect } from '@perawallet/wallet-core-walletconnect'
-import { useLiquidAuthStore } from '@perawallet/wallet-core-liquid-auth'
-import { useLiquidAuthEnabled } from '@modules/connections/liquid-auth/hooks/useLiquidAuthEnabled'
+import {
+    disconnectAllLiquidAuthSessions,
+    useLiquidAuthStore,
+} from '@perawallet/wallet-core-liquid-auth'
+import { useLiquidAuthEnabled } from '@modules/connections/liquid-auth/hooks'
 import { useModalState } from '@hooks/useModalState'
 import {
     liquidAuthToSummary,
@@ -35,6 +39,7 @@ export type UseSettingsConnectedAppsScreenResult = {
 
 export const useSettingsConnectedAppsScreen =
     (): UseSettingsConnectedAppsScreenResult => {
+        const { t } = useLanguage()
         const { network } = useNetwork()
         const { connections, deleteAllSessions } = useWalletConnect(network)
         const isLiquidAuthEnabled = useLiquidAuthEnabled()
@@ -44,23 +49,27 @@ export const useSettingsConnectedAppsScreen =
         const [isDeleting, setIsDeleting] = useState(false)
 
         const summaries = useMemo<SessionSummary[]>(() => {
-            const walletConnectSummaries = connections.map(
-                walletConnectToSummary,
+            const fallbackName = t('connected_apps.unknown_app')
+            const walletConnectSummaries = connections.map(connection =>
+                walletConnectToSummary(connection, fallbackName),
             )
             if (!isLiquidAuthEnabled) {
                 return walletConnectSummaries
             }
             return [
                 ...walletConnectSummaries,
-                ...liquidSessions.map(liquidAuthToSummary),
+                ...liquidSessions.map(session =>
+                    liquidAuthToSummary(session, fallbackName),
+                ),
             ]
-        }, [connections, isLiquidAuthEnabled, liquidSessions])
+        }, [connections, isLiquidAuthEnabled, liquidSessions, t])
 
         const handleDeleteAll = () => {
             setIsDeleting(true)
-            // Clear BOTH protocols. Previously only WalletConnect sessions were
-            // removed, stranding Liquid Auth sessions in the list.
-            useLiquidAuthStore.getState().setSessions([])
+            // Clear BOTH protocols. Liquid Auth disconnect must also close the
+            // live WebRTC clients (not just drop the session records), otherwise
+            // dApps stay connected to a "disconnected" wallet.
+            disconnectAllLiquidAuthSessions()
             deleteAllSessions()
                 .then(() => {
                     deleteState.close()

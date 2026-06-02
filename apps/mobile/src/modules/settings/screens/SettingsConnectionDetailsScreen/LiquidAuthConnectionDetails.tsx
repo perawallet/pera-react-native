@@ -15,8 +15,9 @@ import {
     ConnectionDetailsView,
     type ConnectionNetwork,
 } from '@modules/connections/components/ConnectionDetailsView'
+import { ALGORAND_GENESIS } from '@perawallet/wallet-core-liquid-auth'
 import { LIQUID_AUTH_PERMISSIONS } from '@modules/connections/liquid-auth/constants'
-import { ALGORAND_GENESIS } from '@modules/connections/liquid-auth/networks'
+import { faviconUrlForOrigin } from '@modules/connections/liquid-auth/faviconUrl'
 import { useSettingsLiquidAuthDetailsScreen } from './useSettingsLiquidAuthDetailsScreen'
 
 export type LiquidAuthConnectionDetailsProps = {
@@ -47,13 +48,9 @@ export const LiquidAuthConnectionDetails = ({
 
     return (
         <ConnectionDetailsView
-            iconUri={
-                session?.host
-                    ? `${session.host.replace(/\/+$/, '')}/favicon.ico`
-                    : undefined
-            }
+            iconUri={faviconUrlForOrigin(session?.host)}
             fallbackIconName='globe'
-            name={hostnameOf(session?.host) ?? 'Unknown'}
+            name={hostnameOf(session?.host) ?? t('connected_apps.unknown_app')}
             subtitle={session?.host}
             onSubtitlePress={handleOpenLink}
             versionBadge={t('connected_apps.badge_liquidauth')}

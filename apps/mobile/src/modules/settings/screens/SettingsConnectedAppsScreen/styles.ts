@@ -83,5 +83,8 @@ export const useStyles = makeStyles((theme, insets?: EdgeInsets) => {
         chevron: {
             alignSelf: 'center',
         },
+        deleteButtonTitle: {
+            color: theme.colors.alertNegative,
+        },
     }
 })

@@ -13,15 +13,6 @@
 import { AlgorandPermission } from '@perawallet/wallet-core-walletconnect'
 
 /**
- * Stable provider identity advertised to dApps over ARC-0027 `discover`.
- * Fixed UUIDv4 literal so the same provider id persists across sessions and
- * app versions; dApps key their saved-provider lists on it.
- */
-export const LIQUID_AUTH_PROVIDER_ID = '6f1b3c2a-9d4e-4f8a-bc12-7e0a5d3f9c21'
-
-export const LIQUID_AUTH_PROVIDER_NAME = 'Pera Wallet'
-
-/**
  * The ARC-0027 capabilities the wallet grants a connected Liquid Auth dApp.
  * The Liquid Auth protocol doesn't negotiate per-connection permissions the
  * way WalletConnect does, so the approval/details UIs display the full

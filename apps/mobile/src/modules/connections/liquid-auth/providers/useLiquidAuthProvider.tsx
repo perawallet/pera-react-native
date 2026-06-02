@@ -10,124 +10,66 @@
  limitations under the License
  */
 
-import { useCallback, useState } from 'react'
+import { useState } from 'react'
 import {
     useLiquidAuthStore,
     type LiquidAuthConnectRequest,
-    type LiquidAuthPendingConnection,
 } from '@perawallet/wallet-core-liquid-auth'
-import { logger, type Nullable } from '@perawallet/wallet-core-shared'
+import { type Nullable } from '@perawallet/wallet-core-shared'
 import {
     useConnectionRequestSheet,
     useConnectionResultSheet,
 } from '@modules/connections/hooks'
-import { ConnectionView } from '@modules/connections/liquid-auth/components/ConnectionView'
 import { ConnectionSuccessSheet } from '@modules/connections/components/ConnectionSuccessSheet'
-import { LiquidAuthConnectingContent } from '@modules/connections/liquid-auth/components/LiquidAuthConnectingContent'
 import { ConnectionErrorSheet } from '@modules/connections/components/ConnectionErrorSheet'
-import { useLiquidAuthConnect } from '@modules/connections/liquid-auth/hooks/useLiquidAuthConnect'
+import { LiquidAuthConnectionSheet } from '@modules/connections/liquid-auth/components/LiquidAuthConnectionSheet'
 
 export type UseLiquidAuthProviderResult = {
     connectRequest: Nullable<LiquidAuthConnectRequest>
-    pendingConnection: Nullable<LiquidAuthPendingConnection>
     successHost: Nullable<string>
     connectionError: Nullable<Error>
 }
 
 /**
- * Effect-driven sheet management for Liquid Auth, anchored on the FIDO ceremony
- * (Liquid Auth binds the address server-side at FIDO time — there is no
- * ARC-0027 `enable` handshake to gate on):
- *
- *   scan → approval sheet (pick account) → on approve: ceremony + transport
- *   (connecting sheet) → success sheet. Errors surface an error sheet.
- *
- * Gated by `isEnabled` (the remote-config flag): the hook is always called to
- * satisfy rules-of-hooks, but every sheet stays closed while disabled.
+ * Effect-driven sheet management for Liquid Auth. A single bottom sheet renders
+ * `LiquidAuthConnectionSheet`, which owns the phase machine and morphs through
+ * select-account → connecting → confirm internally (the request sheet captures
+ * its contents element only once at open time, so the morphing must happen
+ * inside that captured component, not by swapping contents here). On success
+ * the component calls back with the dApp name → success sheet; the flow clears
+ * `connectRequest` → the request sheet dismisses. Errors surface the error
+ * sheet. Gated by `isEnabled` (the remote-config flag).
  */
 export const useLiquidAuthProvider = (
     isEnabled: boolean,
 ): UseLiquidAuthProviderResult => {
     const connectRequest = useLiquidAuthStore(state => state.connectRequest)
-    const pendingConnection = useLiquidAuthStore(
-        state => state.pendingConnection,
-    )
     const connectionError = useLiquidAuthStore(state => state.connectionError)
     const [successHost, setSuccessHost] = useState<Nullable<string>>(null)
 
-    const { connect } = useLiquidAuthConnect()
-
-    const handleApprove = useCallback(
-        async (request: LiquidAuthConnectRequest, address: string) => {
-            // Dismiss the approval sheet; connect() then drives the connecting
-            // status + (on success) session persistence.
-            useLiquidAuthStore.getState().setConnectRequest(null)
-            try {
-                await connect({
-                    host: request.host,
-                    requestId: request.requestId,
-                    address,
-                })
-                setSuccessHost(request.host)
-            } catch (error) {
-                logger.error('[liquid-auth] connect failed', { error })
-                useLiquidAuthStore.getState().setConnectionError(error as Error)
-            }
-        },
-        [connect],
-    )
-
-    const handleReject = useCallback((request: LiquidAuthConnectRequest) => {
-        logger.info('[liquid-auth] connect: rejected by user', {
-            host: request.host,
-        })
-        useLiquidAuthStore.getState().setConnectRequest(null)
-    }, [])
-
-    const handleCancelConnecting = useCallback(() => {
-        useLiquidAuthStore.getState().setPendingConnection(null)
-    }, [])
-
-    // Priority: error > approval > connecting > success. successHost gates the
-    // earlier sheets so a stale approval/connecting sheet can't reappear after
-    // a connect resolves.
-    const shouldShowApproval =
+    const shouldShow =
         isEnabled && !!connectRequest && !connectionError && !successHost
-    const shouldShowConnecting =
-        isEnabled &&
-        !!pendingConnection &&
-        !connectRequest &&
-        !connectionError &&
-        !successHost
 
     useConnectionRequestSheet({
-        shouldShow: shouldShowApproval,
-        // Capture this request: bottom-sheet props are fixed at request time,
-        // so the handlers must close over the request shown.
-        renderContents: () => {
-            const request = connectRequest!
-            return (
-                <ConnectionView
-                    host={request.host}
-                    onApprove={address => handleApprove(request, address)}
-                    onReject={() => handleReject(request)}
-                />
-            )
-        },
-    })
-
-    useConnectionRequestSheet({
-        shouldShow: shouldShowConnecting,
+        shouldShow,
         renderContents: () => (
-            <LiquidAuthConnectingContent
-                pending={pendingConnection!}
-                onCancel={handleCancelConnecting}
+            <LiquidAuthConnectionSheet
+                request={connectRequest!}
+                onConnected={setSuccessHost}
             />
         ),
+        // `lg` + `autoCreateContainer: false` matches the WalletConnect approval
+        // sheet: ConnectionApprovalSheet supplies its own in-sheet FlatList, so
+        // the account list scrolls internally and the action buttons stay
+        // visible. `size: 'auto'` would grow to the content and push the buttons
+        // off-screen. Pan-down AND backdrop dismissal stay disabled so the sheet
+        // isn't dismissed mid-connect — Cancel/Reject must resolve the flow, or
+        // a stray tap would strand the pending connectRequest until restart.
         options: {
-            size: 'auto',
-            enablePanDownToClose: false,
+            size: 'lg',
             autoCreateContainer: false,
+            enablePanDownToClose: false,
+            enableCloseOnBackdropPress: false,
         },
     })
 
@@ -143,10 +85,5 @@ export const useLiquidAuthProvider = (
         onClose: () => useLiquidAuthStore.getState().setConnectionError(null),
     })
 
-    return {
-        connectRequest,
-        pendingConnection,
-        successHost,
-        connectionError,
-    }
+    return { connectRequest, successHost, connectionError }
 }

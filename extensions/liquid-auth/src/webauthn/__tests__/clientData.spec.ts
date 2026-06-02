@@ -12,7 +12,7 @@
 
 import { describe, expect, it } from 'vitest'
 
-import { fromBase64Url } from '../base64url'
+import { fromBase64Url } from '../../encoding/base64'
 import { buildClientDataJSON } from '../clientData'
 
 describe('buildClientDataJSON', () => {

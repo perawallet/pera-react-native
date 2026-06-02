@@ -20,53 +20,6 @@ export const useStyles = makeStyles(theme => ({
     contentContainer: {
         paddingBottom: theme.spacing.xl,
     },
-    headerContainer: {
-        alignItems: 'center',
-        gap: theme.spacing.xl,
-    },
-    networksContainer: {
-        alignItems: 'center',
-        flexDirection: 'row',
-        gap: theme.spacing.sm,
-    },
-    permissionsContainer: {
-        backgroundColor: theme.colors.layerGrayLighter,
-        borderRadius: theme.spacing.lg,
-        paddingHorizontal: theme.spacing.lg,
-        paddingBottom: theme.spacing.lg,
-        width: '100%',
-    },
-    permissionsContent: {
-        gap: theme.spacing.md,
-        paddingTop: theme.spacing.md,
-    },
-    panelTitle: {
-        color: theme.colors.textGray,
-    },
-    icon: {
-        width: theme.spacing['4xl'],
-        height: theme.spacing['4xl'],
-        borderRadius: theme.spacing['4xl'],
-    },
-    iconContainer: {
-        width: theme.spacing['4xl'],
-        height: theme.spacing['4xl'],
-        borderRadius: theme.spacing['4xl'],
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: theme.colors.layerGrayLighter,
-    },
-    titleContainer: {
-        alignItems: 'center',
-        gap: theme.spacing.sm,
-    },
-    title: {
-        textAlign: 'center',
-    },
-    subtitle: {
-        textAlign: 'center',
-        color: theme.colors.textGray,
-    },
     accountSelectionContainer: {
         marginTop: theme.spacing.lg,
         alignSelf: 'flex-start',

@@ -46,12 +46,13 @@ const pickPreferredIcon = (icons?: string[]): string | undefined => {
 
 export const walletConnectToSummary = (
     connection: WalletConnectConnection,
+    fallbackName = 'Unknown',
 ): SessionSummary => {
     const peerMeta = connection.session?.peerMeta
     return {
         type: 'walletconnect',
         id: connection.clientId ?? '',
-        name: peerMeta?.name ?? 'Unknown',
+        name: peerMeta?.name ?? fallbackName,
         icon: pickPreferredIcon(peerMeta?.icons),
         origin: peerMeta?.url,
         accounts: connection.session?.accounts ?? [],
@@ -63,11 +64,12 @@ export const walletConnectToSummary = (
 
 export const liquidAuthToSummary = (
     session: LiquidAuthSession,
+    fallbackName = 'Unknown',
 ): SessionSummary => {
     return {
         type: 'liquidauth',
         id: session.sessionId,
-        name: session.peerMeta?.name ?? session.host ?? 'Unknown',
+        name: session.peerMeta?.name ?? session.host ?? fallbackName,
         icon: session.peerMeta?.icon,
         origin: session.peerMeta?.origin ?? session.host,
         accounts: session.accounts ?? [],

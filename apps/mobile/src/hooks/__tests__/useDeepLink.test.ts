@@ -82,11 +82,8 @@ const { mockConnectLiquidAuth } = vi.hoisted(() => ({
 // (which call registerStore at module load time) are never pulled into the
 // unit test import graph. Feature-flag tests are covered in the liquid-auth
 // module's own spec suite.
-vi.mock('@modules/connections/liquid-auth/hooks/useLiquidAuthEnabled', () => ({
+vi.mock('@modules/connections/liquid-auth/hooks', () => ({
     useLiquidAuthEnabled: vi.fn(() => false),
-}))
-
-vi.mock('@modules/connections/liquid-auth/hooks/useLiquidAuthConnect', () => ({
     useLiquidAuthConnect: vi.fn(() => ({
         connect: mockConnectLiquidAuth,
         disconnect: vi.fn(),

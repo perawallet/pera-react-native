@@ -11,15 +11,18 @@
  */
 
 import { create } from 'zustand'
+import { registerStore } from '@perawallet/wallet-core-shared'
 import type { LiquidAuthSignalClient } from '@perawallet/wallet-extension-liquid-auth'
 import type { LiquidAuthRegistryStore } from '../models'
+
+const STORE_NAME = 'liquid-auth-registry-store'
 
 const initialState = {
     clients: {} as Record<string, LiquidAuthSignalClient>,
 }
 
 export const useLiquidAuthRegistryStore = create<LiquidAuthRegistryStore>(
-    set => ({
+    (set, get) => ({
         ...initialState,
         registerClient: (sessionId, client) =>
             set(s => ({ clients: { ...s.clients, [sessionId]: client } })),
@@ -29,6 +32,22 @@ export const useLiquidAuthRegistryStore = create<LiquidAuthRegistryStore>(
                 delete clients[sessionId]
                 return { clients }
             }),
-        resetState: () => set({ clients: {} }),
+        // Closes every live client before dropping the handles. Reachable via
+        // clearAllStores() on wallet delete / duress wipe (see registerStore
+        // below) — without the close-all a "wiped" wallet would keep its
+        // WebRTC connections open and dApps could keep sending sign requests.
+        resetState: () => {
+            for (const client of Object.values(get().clients)) client.close()
+            set({ clients: {} })
+        },
     }),
 )
+
+// In-memory only (live client handles, never persisted), so clearStorage is a
+// no-op — but the store MUST be registered so clearAllStores() reaches its
+// resetState and tears the live connections down.
+registerStore({
+    name: STORE_NAME,
+    clearStorage: () => {},
+    resetState: () => useLiquidAuthRegistryStore.getState().resetState(),
+})

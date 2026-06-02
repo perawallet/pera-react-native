@@ -127,6 +127,53 @@ describe('LiquidAuthSignalClient', () => {
         expect(channel.send).toHaveBeenCalledWith('')
     })
 
+    it('does not heartbeat a non-open channel (avoids InvalidStateError)', async () => {
+        vi.useFakeTimers()
+        const channel = makeChannel()
+        const underlying = makeUnderlying(channel)
+        const client = new LiquidAuthSignalClient(underlying, {
+            iceServers: [],
+            heartbeatMs: 1_000,
+        })
+        await client.connect('req-hb')
+
+        // The channel races into a non-open state (ICE failure) before its
+        // onclose fires — the heartbeat must skip the send rather than throw.
+        channel.readyState = 'closing'
+        expect(() => vi.advanceTimersByTime(2_000)).not.toThrow()
+        expect(channel.send).not.toHaveBeenCalled()
+    })
+
+    it('discards a channel that resolves after close() (connect-timeout race)', async () => {
+        // connect() is in flight; the caller closes (e.g. connect timeout)
+        // before peer() resolves. The late channel must be closed, not adopted
+        // (which would leak it and its heartbeat).
+        const channel = makeChannel()
+        let resolvePeer: (c: LiquidAuthDataChannel) => void = () => {}
+        const underlying: SignalClientLike = {
+            authenticated: false,
+            peer: vi.fn().mockReturnValue(
+                new Promise<LiquidAuthDataChannel>(res => {
+                    resolvePeer = res
+                }),
+            ),
+            close: vi.fn(),
+        }
+        const client = new LiquidAuthSignalClient(underlying, {
+            iceServers: [],
+        })
+
+        const connecting = client.connect('req-race')
+        client.close()
+        resolvePeer(channel)
+        await connecting
+
+        expect(channel.close).toHaveBeenCalled()
+        // The late channel is not adopted, so send() is a no-op on it.
+        client.send('ping')
+        expect(channel.send).not.toHaveBeenCalled()
+    })
+
     it('tears down when the channel closes, notifying the close handler', async () => {
         const channel = makeChannel()
         const underlying = makeUnderlying(channel)

@@ -10,11 +10,12 @@
  limitations under the License
  */
 
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { useLiquidAuthRegistryStore } from '../store/registryStore'
 import type { LiquidAuthSignalClient } from '@perawallet/wallet-extension-liquid-auth'
 
-const fakeClient = () => ({}) as unknown as LiquidAuthSignalClient
+const fakeClient = () =>
+    ({ close: vi.fn() }) as unknown as LiquidAuthSignalClient
 
 describe('useLiquidAuthRegistryStore', () => {
     beforeEach(() => useLiquidAuthRegistryStore.getState().resetState())
@@ -28,9 +29,13 @@ describe('useLiquidAuthRegistryStore', () => {
         expect(useLiquidAuthRegistryStore.getState().clients.s1).toBeUndefined()
     })
 
-    it('resetState clears all clients', () => {
-        useLiquidAuthRegistryStore.getState().registerClient('s1', fakeClient())
+    it('resetState closes every live client before clearing (wallet-wipe path)', () => {
+        const client = fakeClient()
+        useLiquidAuthRegistryStore.getState().registerClient('s1', client)
         useLiquidAuthRegistryStore.getState().resetState()
+        // Closing on reset is what prevents a "wiped" wallet from leaving live
+        // WebRTC connections open.
+        expect(client.close).toHaveBeenCalledTimes(1)
         expect(useLiquidAuthRegistryStore.getState().clients).toEqual({})
     })
 })

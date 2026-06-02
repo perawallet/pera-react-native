@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { cborEncode, cborEncodeMap, cborRaw, type CborMap } from './cbor'
+import { cborEncodeMap, cborRaw, type CborMap } from '../encoding/cbor'
 
 /**
  * Build a WebAuthn attestation object using the "none" attestation format.
@@ -27,5 +27,5 @@ export const buildNoneAttestationObject = (
         ['attStmt', emptyAttStmt],
         ['authData', authData],
     ]
-    return cborEncode(entries)
+    return cborEncodeMap(entries)
 }

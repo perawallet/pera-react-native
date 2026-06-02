@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import { bootstrapLiquidAuth } from '@perawallet/wallet-extension-liquid-auth'
+import {
+    bootstrapLiquidAuth,
+    setLiquidAuthKeystoreHost,
+} from '@perawallet/wallet-extension-liquid-auth'
 import { logger } from '@perawallet/wallet-core-shared'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
@@ -20,9 +23,16 @@ import type { CredentialMechanism } from '@perawallet/wallet-extension-liquid-au
 
 vi.mock('@perawallet/wallet-extension-liquid-auth', () => ({
     bootstrapLiquidAuth: vi.fn(),
+    setLiquidAuthKeystoreHost: vi.fn(),
+}))
+
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({ key: { store: {} }, biometrics: {} }),
+    getKeystoreStore: () => ({ state: { keys: [] } }),
 }))
 
 const mockBootstrapLiquidAuth = vi.mocked(bootstrapLiquidAuth)
+const mockSetHost = vi.mocked(setLiquidAuthKeystoreHost)
 
 const createMechanism = (): CredentialMechanism => ({
     get: vi.fn(),
@@ -34,23 +44,22 @@ describe('runLiquidAuthBootstrap', () => {
         vi.clearAllMocks()
     })
 
-    it('bootstraps Liquid Auth with the provided credential mechanism', () => {
+    it('wires the keystore host then bootstraps with the credential mechanism', async () => {
         const mechanism = createMechanism()
 
-        runLiquidAuthBootstrap(mechanism)
+        await runLiquidAuthBootstrap(mechanism)
 
+        expect(mockSetHost).toHaveBeenCalledTimes(1)
         expect(mockBootstrapLiquidAuth).toHaveBeenCalledWith(mechanism)
     })
 
-    it('logs an error when bootstrap throws', () => {
+    it('logs an error when bootstrap throws', async () => {
         const loggerSpy = vi
             .spyOn(logger, 'error')
             .mockImplementation(() => undefined)
-        mockBootstrapLiquidAuth.mockImplementationOnce(() => {
-            throw new Error('boom')
-        })
+        mockBootstrapLiquidAuth.mockRejectedValueOnce(new Error('boom'))
 
-        runLiquidAuthBootstrap(createMechanism())
+        await runLiquidAuthBootstrap(createMechanism())
 
         expect(loggerSpy).toHaveBeenCalled()
         loggerSpy.mockRestore()

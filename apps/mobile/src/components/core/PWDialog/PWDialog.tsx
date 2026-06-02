@@ -46,6 +46,7 @@ const PWDialogTitle = ({
 }: {
     title: string
     titleStyle?: StyleProp<TextStyle>
+    testID?: string
 }) => {
     return (
         <RNEDialog.Title
@@ -69,17 +70,21 @@ const PWDialogButton = ({
     title,
     onPress,
     titleStyle,
+    disabled,
     ...props
 }: {
     title: string
     onPress?: () => void
     titleStyle?: StyleProp<TextStyle>
+    disabled?: boolean
+    testID?: string
 }) => {
     return (
         <RNEDialog.Button
             title={title}
             onPress={onPress}
             titleStyle={titleStyle}
+            disabled={disabled}
             {...props}
         />
     )

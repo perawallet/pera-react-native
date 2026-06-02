@@ -36,13 +36,12 @@ export default defineConfig({
         },
         rollupOptions: {
             external: [
-                'react-native',
                 'react-native-webrtc',
                 '@react-native-cookies/cookies',
                 '@algorandfoundation/keystore',
                 '@algorandfoundation/wallet-provider',
-                '@perawallet/wallet-core-shared',
-                '@perawallet/wallet-extension-provider',
+                '@noble/curves/p256',
+                '@noble/hashes/sha256',
                 'socket.io-client',
                 'eventemitter3',
                 'uuid',

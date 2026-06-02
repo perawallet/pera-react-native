@@ -44,3 +44,70 @@ export {
     createKeystoreCredentialMechanism,
     createKeystoreP256KeyAccess,
 } from './keystoreCredentialsAdapter'
+export {
+    setLiquidAuthKeystoreHost,
+    resetLiquidAuthKeystoreHost,
+    getLiquidAuthKeystoreHost,
+} from './keystoreHost'
+export type {
+    LiquidAuthKeystoreHost,
+    LiquidAuthKeyStore,
+    LiquidAuthBiometrics,
+} from './keystoreHost'
+
+// ARC-0027 wallet-RPC protocol (CBOR-over-data-channel wire, dispatcher,
+// method handlers).
+export {
+    ARC0027_NAMESPACE,
+    ARC0027_ERROR_CODES,
+    type Arc0027Method,
+    type Arc0027Reference,
+    type Arc0027RequestEnvelope,
+    type Arc0027ResponseEnvelope,
+    type Arc0027ErrorCode,
+    type LiquidAuthNetwork,
+} from './arc0027/types'
+export { Arc0027Error, toArc0027Error } from './arc0027/errors'
+export {
+    encodeFrame,
+    decodeFrame,
+    parseEnvelope,
+    parseReference,
+    buildResponse,
+    buildErrorResponse,
+} from './arc0027/codec'
+export {
+    createArc0027Dispatcher,
+    type Arc0027Handler,
+    type Arc0027Handlers,
+} from './arc0027/dispatcher'
+export { createDiscoverHandler, type DiscoverConfig } from './handlers/discover'
+export { createEnableHandler, type EnableConfig } from './handlers/enable'
+export { createDisableHandler } from './handlers/disable'
+export {
+    createSignTransactionsHandler,
+    type SignTransactionsConfig,
+} from './handlers/signTransactions'
+export {
+    createPostTransactionsHandler,
+    createSignAndPostTransactionsHandler,
+} from './handlers/postTransactions'
+export {
+    createSignMessageHandler,
+    type EnqueueArc60,
+} from './handlers/signMessage'
+
+// WalletConnect JSON-RPC routed over the Liquid Auth data channel.
+export {
+    createWalletConnectRoute,
+    type WalletConnectRouteConfig,
+} from './walletconnect/createWalletConnectRoute'
+export {
+    buildWcError,
+    buildWcResult,
+    parseWcRequest,
+    type WcRequest,
+} from './walletconnect/wcCodec'
+
+// Protocol negotiation (offer/select handshake preceding the wallet RPC).
+export * from './negotiate'

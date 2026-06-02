@@ -12,52 +12,50 @@
 
 import { ActivityIndicator } from 'react-native'
 import { useTheme } from '@rneui/themed'
-import type { LiquidAuthPendingConnection } from '@perawallet/wallet-core-liquid-auth'
 import { PWButton, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
 export type LiquidAuthConnectingContentProps = {
-    pending: LiquidAuthPendingConnection
-    onCancel: () => void
+    host: string
+    /** Omitted while finalizing (post-confirm), where cancelling is not allowed. */
+    onCancel?: () => void
 }
 
 export const LiquidAuthConnectingContent = ({
-    pending,
+    host,
     onCancel,
 }: LiquidAuthConnectingContentProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
     const { theme } = useTheme()
 
-    const title = t('liquidauth.request.connecting_title')
-    const body = t('liquidauth.request.connecting_body', { host: pending.host })
-
     return (
         <PWView style={styles.container}>
-            <ActivityIndicator
-                size='large'
-                color={theme.colors.buttonPrimaryBg}
-                style={styles.spinner}
-            />
-            <PWText
-                variant='h3'
-                style={styles.message}
-            >
-                {title}
-            </PWText>
-            <PWText style={styles.message}>{body}</PWText>
-            <PWText
-                variant='footnoteMedium'
-                style={styles.host}
-            >
-                {pending.host}
-            </PWText>
-            <PWButton
-                variant='secondary'
-                title={t('liquidauth.request.cancel')}
-                onPress={onCancel}
-            />
+            <PWView style={styles.center}>
+                <ActivityIndicator
+                    size='large'
+                    color={theme.colors.buttonPrimaryBg}
+                    style={styles.spinner}
+                />
+                <PWText
+                    variant='h3'
+                    style={styles.message}
+                >
+                    {t('liquidauth.request.connecting_title')}
+                </PWText>
+                <PWText style={styles.message}>
+                    {t('liquidauth.request.connecting_body', { host })}
+                </PWText>
+            </PWView>
+            {onCancel ? (
+                <PWButton
+                    variant='linkNeutral'
+                    title={t('common.cancel.label')}
+                    onPress={onCancel}
+                    style={styles.cancelButton}
+                />
+            ) : null}
         </PWView>
     )
 }

@@ -164,6 +164,42 @@ describe('runFidoCeremony (assertion failure fallback)', () => {
             'https://debug.liquidauth.com/attestation/request',
         )
     })
+
+    it('rethrows user cancellation instead of re-attesting a fresh credential', async () => {
+        // The assertion challenge is fetched, then the user declines the UV
+        // gate. This must surface the cancellation, NOT silently prompt again
+        // and register a brand-new credential.
+        const fetchMock = vi.fn().mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({ challenge: 'Y2hhbGxlbmdl' }),
+        })
+        const createCredential = vi.fn()
+        const cancel = new Error(
+            'keystoreCredentials: user verification failed',
+        )
+
+        await expect(
+            runFidoCeremony(
+                {
+                    origin: 'https://debug.liquidauth.com',
+                    requestId: 'req-cancel',
+                    address: 'ALGOADDR',
+                    keyId: 'key-1',
+                    deviceName: 'Pera',
+                    credentialId: 'existing-cred',
+                },
+                {
+                    fetch: fetchMock as unknown as typeof fetch,
+                    signChallenge: vi.fn().mockResolvedValue(toBytes('sig')),
+                    getCredential: vi.fn().mockRejectedValue(cancel),
+                    createCredential,
+                    hasCredentialForHost: async () => null,
+                },
+            ),
+        ).rejects.toThrow(/user verification failed/)
+
+        expect(createCredential).not.toHaveBeenCalled()
+    })
 })
 
 describe('runFidoCeremony (attestation path)', () => {

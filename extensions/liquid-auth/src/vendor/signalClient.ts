@@ -42,6 +42,11 @@ export class SignalClient extends EventEmitter {
     private requestId: string | undefined
     peerClient: RTCPeerConnection | undefined
     socket: Socket
+    /** The socket 'candidate' listener for the active peer, tracked so a
+     *  reconnect (or close) can detach it instead of stacking handlers. */
+    private candidateListener:
+        | { event: string; fn: (candidate: RTCIceCandidateInit) => void }
+        | undefined
 
     constructor(
         url: string,
@@ -61,6 +66,28 @@ export class SignalClient extends EventEmitter {
         return uuidv7()
     }
 
+    /**
+     * Tears down the current peer connection and its socket candidate listener.
+     * Called before establishing a fresh peer (reconnect) and on close, so we
+     * never leak an RTCPeerConnection (ICE agents, TURN allocations) or stack a
+     * second `*-candidate` handler feeding the stale peer.
+     */
+    private cleanupPeer(): void {
+        if (this.candidateListener) {
+            this.socket.off(
+                this.candidateListener.event,
+                this.candidateListener.fn,
+            )
+            this.candidateListener = undefined
+        }
+        if (this.peerClient) {
+            this.peerClient.onicecandidate = null
+            this.peerClient.ondatachannel = null
+            this.peerClient.close()
+            this.peerClient = undefined
+        }
+    }
+
     async peer(
         requestId: string | undefined,
         type: 'offer' | 'answer',
@@ -68,6 +95,10 @@ export class SignalClient extends EventEmitter {
     ): Promise<RTCDataChannel> {
         if (typeof this.requestId !== 'undefined')
             throw new Error(REQUEST_IN_PROCESS_MESSAGE)
+
+        // Reconnecting on the same client: drop the previous peer connection and
+        // its candidate listener before opening a new one.
+        this.cleanupPeer()
 
         // Sync executor wrapping an async IIFE: avoids the async-Promise-executor
         // anti-pattern and ensures a thrown link/signal/SDP error rejects the
@@ -94,19 +125,28 @@ export class SignalClient extends EventEmitter {
                         }
                     }
 
-                    this.socket.on(
-                        `${type}-candidate`,
-                        async (candidate: RTCIceCandidateInit) => {
-                            if (this.peerClient?.remoteDescription) {
-                                this.emit(`${type}-candidate`, candidate)
-                                await this.peerClient.addIceCandidate(
-                                    new RTCIceCandidate(candidate),
-                                )
-                            } else {
-                                candidatesBuffer.push(candidate)
-                            }
-                        },
-                    )
+                    const candidateEvent = `${type}-candidate`
+                    const candidateListener = (
+                        candidate: RTCIceCandidateInit,
+                    ): void => {
+                        if (this.peerClient?.remoteDescription) {
+                            this.emit(candidateEvent, candidate)
+                            // socket.io does not await listeners, so guard the
+                            // async add here — a rejected addIceCandidate (late
+                            // or malformed candidate) must not surface as an
+                            // unhandled rejection.
+                            void this.peerClient
+                                .addIceCandidate(new RTCIceCandidate(candidate))
+                                .catch(() => {})
+                        } else {
+                            candidatesBuffer.push(candidate)
+                        }
+                    }
+                    this.candidateListener = {
+                        event: candidateEvent,
+                        fn: candidateListener,
+                    }
+                    this.socket.on(candidateEvent, candidateListener)
 
                     this.peerClient.ondatachannel = event => {
                         this.emit('data-channel', event.channel)
@@ -197,11 +237,16 @@ export class SignalClient extends EventEmitter {
         })
     }
 
-    close(disconnect = false): void {
+    close(): void {
+        // Full teardown: close the peer connection (releases ICE agents / TURN
+        // allocations), drop socket listeners, and disconnect the socket so it
+        // does not linger and auto-reconnect (re-polling with the session
+        // cookie) after the wallet is done with this client.
+        this.cleanupPeer()
         this.socket.removeAllListeners()
         delete this.requestId
         this.authenticated = false
-        if (disconnect) this.socket.disconnect()
+        this.socket.disconnect()
         this.emit('close')
     }
 }

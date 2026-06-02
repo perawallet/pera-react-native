@@ -11,7 +11,6 @@
  */
 
 import { type ComponentProps, useState } from 'react'
-import { Dialog, useTheme } from '@rneui/themed'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { formatDatetime } from '@perawallet/wallet-core-shared'
 import type { AlgorandPermission } from '@perawallet/wallet-core-walletconnect'
@@ -19,6 +18,7 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     PWBadge,
     PWButton,
+    PWDialog,
     PWIcon,
     PWImage,
     PWScrollView,
@@ -94,7 +94,6 @@ export const ConnectionDetailsView = ({
     const { t } = useLanguage()
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
-    const { theme } = useTheme()
     const [iconFailed, setIconFailed] = useState(false)
 
     return (
@@ -215,28 +214,30 @@ export const ConnectionDetailsView = ({
                     testID={`${testIDPrefix}_delete_button`}
                 />
             </PWView>
-            <Dialog
+            <PWDialog
                 isVisible={deleteModalState.isOpen}
                 onBackdropPress={deleteModalState.close}
             >
-                <Dialog.Title title={t('connections.settings.delete_title')} />
+                <PWDialog.Title
+                    title={t('connections.settings.delete_title')}
+                />
                 <PWText>{t('connections.settings.delete_body')}</PWText>
-                <Dialog.Actions>
-                    <Dialog.Button
+                <PWDialog.Actions>
+                    <PWDialog.Button
                         title={t('common.delete.label')}
-                        titleStyle={{ color: theme.colors.alertNegative }}
+                        titleStyle={styles.deleteButtonTitle}
                         onPress={onDelete}
                         disabled={isDeleting}
                         testID={`${testIDPrefix}_confirm_delete_button`}
                     />
-                    <Dialog.Button
+                    <PWDialog.Button
                         title={t('common.cancel.label')}
                         onPress={deleteModalState.close}
                         disabled={isDeleting}
                         testID={`${testIDPrefix}_cancel_button`}
                     />
-                </Dialog.Actions>
-            </Dialog>
+                </PWDialog.Actions>
+            </PWDialog>
         </PWScrollView>
     )
 }

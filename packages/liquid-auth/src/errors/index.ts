@@ -25,3 +25,15 @@ export class LiquidAuthConnectionError extends Error {
         this.retryable = retryable
     }
 }
+
+/**
+ * Thrown by `connect` when the user rejects the connection at the confirm
+ * step. Distinct from `LiquidAuthConnectionError` so the UI dismisses silently
+ * (a user action, not a failure) — matching WalletConnect's reject behavior.
+ */
+export class LiquidAuthRejectedError extends Error {
+    constructor() {
+        super('Liquid Auth connection rejected by user')
+        this.name = 'LiquidAuthRejectedError'
+    }
+}

@@ -11,29 +11,29 @@
  */
 
 import { useCallback } from 'react'
-import { logger } from '@perawallet/wallet-core-shared'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import {
     useArc0001Resolver,
     useEnqueueArc0001SignRequest,
 } from '@perawallet/wallet-core-signing'
-import { useLiquidAuthService } from './useLiquidAuthService'
+import {
+    createNegotiator,
+    resolveDisplayIdentity,
+    type DisplayIdentity,
+    type EnqueueArc60,
+} from '@perawallet/wallet-extension-liquid-auth'
+import { getLiquidAuthService } from './getLiquidAuthService'
+import {
+    buildLiquidAuthDispatcher,
+    type LiquidAuthProviderConfig,
+} from './buildLiquidAuthDispatcher'
+import { createConfirmationGate, isDiscoverRequest } from './confirmationGate'
 import { useLiquidAuthRegistryStore } from '../store/registryStore'
 import { useLiquidAuthStore } from '../store/store'
-import { createArc0027Dispatcher } from '../arc0027/dispatcher'
-import { createDiscoverHandler } from '../handlers/discover'
-import { createEnableHandler } from '../handlers/enable'
-import { createDisableHandler } from '../handlers/disable'
-import { createSignTransactionsHandler } from '../handlers/signTransactions'
-import {
-    createPostTransactionsHandler,
-    createSignAndPostTransactionsHandler,
-} from '../handlers/postTransactions'
-import { createSignMessageHandler } from '../handlers/signMessage'
 import { resolveSigningKey } from '../utils/resolveSigningKey'
 import { findCredentialId } from '../utils/findCredentialId'
-import { LiquidAuthConnectionError } from '../errors'
-import type { EnqueueArc60 } from '../handlers/signMessage'
+import { withTimeout, withTimeoutFallback } from '../utils/withTimeout'
+import { LiquidAuthConnectionError, LiquidAuthRejectedError } from '../errors'
 import type { LiquidAuthNetwork, LiquidAuthSession } from '../models'
 
 /** 7 days. */
@@ -46,17 +46,23 @@ const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000
  */
 const CONNECT_TIMEOUT_MS = 30_000
 
+/** How long to wait for the dApp's negotiation identity before falling back to
+ *  a host-only identity in the confirm step. */
+const IDENTITY_WAIT_TIMEOUT_MS = 5_000
+
 export type ConnectInput = {
     host: string
     requestId: string
     address: string
+    /**
+     * Surfaces the resolved dApp identity to the UI and resolves `true` when
+     * the user taps Connect, `false` on Reject. Persistence is deferred until
+     * this resolves.
+     */
+    requestConfirmation: (identity: DisplayIdentity) => Promise<boolean>
 }
 
-export type UseLiquidAuthConfig = {
-    providerId: string
-    name: string
-    icon?: string
-    networks: LiquidAuthNetwork[]
+export type UseLiquidAuthConfig = LiquidAuthProviderConfig & {
     /** Surfaces an ARC-60 sign-data request to the signing pipeline. */
     enqueueArc60: EnqueueArc60
     /** Posts base64 msgpack signed txns to algod, returns txn ids. */
@@ -71,30 +77,33 @@ export type UseLiquidAuthResult = {
 export const useLiquidAuth = (
     config: UseLiquidAuthConfig,
 ): UseLiquidAuthResult => {
-    const service = useLiquidAuthService()
     const resolve = useArc0001Resolver()
     const enqueue = useEnqueueArc0001SignRequest()
     const registerClient = useLiquidAuthRegistryStore(s => s.registerClient)
     const forgetClient = useLiquidAuthRegistryStore(s => s.forgetClient)
 
-    const establishConnection = useCallback(
-        async ({ host, requestId, address }: ConnectInput) => {
-            logger.info('[liquid-auth] connect: start', {
-                host,
-                requestId,
-                address,
-            })
+    const connect = useCallback(
+        async ({
+            host,
+            requestId,
+            address,
+            requestConfirmation,
+        }: ConnectInput) => {
+            const service = getLiquidAuthService()
+            const sessionId = requestId
+
             const accounts = useAccountsStore.getState().accounts
             const keyId = resolveSigningKey(address, accounts)
-            logger.info('[liquid-auth] connect: keyId resolved', {
-                hasKey: !!keyId,
-            })
             if (!keyId) {
                 throw new LiquidAuthConnectionError(
                     `No signing key for address ${address}`,
                     false,
                 )
             }
+
+            // Sweep any expired sessions so Connected Apps doesn't accumulate
+            // stale entries (the TTL is otherwise never enforced).
+            useLiquidAuthStore.getState().expireSessions(Date.now())
 
             // Reuse a passkey already registered for this host+account so we
             // assert (not attest) — otherwise the OS creates a fresh passkey on
@@ -104,19 +113,24 @@ export const useLiquidAuth = (
                 host,
                 address,
             )
-            logger.info('[liquid-auth] connect: running FIDO ceremony', {
-                reusing: !!existingCredentialId,
-            })
             const { credentialId } = await service.runCeremony({
                 origin: host,
                 requestId,
                 address,
                 keyId,
-                deviceName: 'Pera Wallet',
+                deviceName: config.name,
                 credentialId: existingCredentialId,
             })
-            logger.info('[liquid-auth] connect: ceremony done', {
+            // Record the credential immediately: the ceremony has already
+            // registered the passkey (OS keychain + server), so persist which
+            // credentialId to reuse now, independent of whether the user goes on
+            // to approve the session. Otherwise a reject would strand the fresh
+            // passkey and the next attempt would attest yet another one.
+            useLiquidAuthStore.getState().recordCredential({
+                host,
+                address,
                 credentialId,
+                createdAt: Date.now(),
             })
 
             // Capture the session cookie AFTER the ceremony — the attestation
@@ -124,38 +138,34 @@ export const useLiquidAuth = (
             // signaling socket must carry it so the server joins it to the
             // dApp's session room (otherwise the answer never arrives).
             const cookie = await service.getSessionCookie(host)
-            logger.info('[liquid-auth] connect: session cookie', {
-                hasCookie: !!cookie,
-            })
             const client = service.createSignalClient(host, cookie)
-            logger.info('[liquid-auth] connect: signal client created')
-            const sessionId = requestId
 
-            const signTransactionsHandler = createSignTransactionsHandler({
-                resolve: resolve as never,
-                enqueue: enqueue as never,
-                authorizedAddresses: new Set([address]),
-                transportId: sessionId,
-            })
+            const gate = createConfirmationGate(data => client.send(data))
 
-            const dispatcher = createArc0027Dispatcher({
-                discover: createDiscoverHandler({
-                    providerId: config.providerId,
-                    name: config.name,
-                    icon: config.icon,
-                    networks: config.networks,
-                }),
-                // The address is already bound (and the session persisted)
-                // during the FIDO ceremony, so if a dApp does send `enable`
-                // we just return the bound account — no second approval.
-                enable: createEnableHandler({
-                    providerId: config.providerId,
-                    genesisHash: config.networks[0]?.genesisHash ?? '',
-                    genesisId: config.networks[0]?.genesisId ?? '',
-                    accounts: [address],
-                }),
-                disable: createDisableHandler({
+            const { dispatcher, walletConnectRoute } =
+                buildLiquidAuthDispatcher({
+                    config,
+                    address,
                     sessionId,
+                    signing: {
+                        // The dApp-supplied transactions arrive as ARC-0001 wallet
+                        // transactions on the wire; the resolver/enqueue types are
+                        // stricter than the transport's structural view, so adapt at
+                        // this single boundary (Parameters<> avoids importing the
+                        // signing package's internal request/result types here).
+                        resolve: (request, options) =>
+                            resolve(
+                                request as Parameters<typeof resolve>[0],
+                                options,
+                            ),
+                        enqueue: (resolved, transport) =>
+                            enqueue(
+                                resolved as Parameters<typeof enqueue>[0],
+                                transport as Parameters<typeof enqueue>[1],
+                            ),
+                        enqueueArc60: config.enqueueArc60,
+                        submitSignedTxns: config.submitSignedTxns,
+                    },
                     teardown: id => {
                         const c =
                             useLiquidAuthRegistryStore.getState().clients[id]
@@ -166,140 +176,95 @@ export const useLiquidAuth = (
                             store.sessions.filter(s => s.sessionId !== id),
                         )
                     },
-                }),
-                sign_transactions: signTransactionsHandler,
-                post_transactions: createPostTransactionsHandler({
-                    submit: config.submitSignedTxns,
-                }),
-                sign_and_post_transactions:
-                    createSignAndPostTransactionsHandler({
-                        sign: env =>
-                            signTransactionsHandler(env) as Promise<{
-                                stxns: (string | null)[]
-                            }>,
-                        submit: config.submitSignedTxns,
-                    }),
-                sign_message: createSignMessageHandler({
-                    enqueueArc60: config.enqueueArc60,
-                    transportId: sessionId,
-                }),
-            })
-
-            client.onMessage(async (data: string) => {
-                const response = await dispatcher(data)
-                if (response) client.send(response)
-            })
-            client.onClose(() => forgetClient(sessionId))
-
-            // Race the transport establishment against a timeout so a stalled
-            // WebRTC handshake (or an unreachable dApp) surfaces a retryable
-            // error instead of hanging forever. The timer is always cleared,
-            // whether connect resolves, rejects, or times out.
-            logger.info(
-                '[liquid-auth] connect: opening transport (peer/answer)…',
-            )
-            let timeoutId: ReturnType<typeof setTimeout> | undefined
-            try {
-                await new Promise<void>((resolve, reject) => {
-                    timeoutId = setTimeout(() => {
-                        logger.info(
-                            '[liquid-auth] connect: transport TIMEOUT after 30s',
-                        )
-                        reject(
-                            new LiquidAuthConnectionError(
-                                'The dApp did not respond. Please try again.',
-                                true,
-                            ),
-                        )
-                    }, CONNECT_TIMEOUT_MS)
-                    client.connect(requestId).then(resolve, reject)
                 })
+
+            let resolveIdentity: ((identity: DisplayIdentity) => void) | null =
+                null
+            const identityPromise = new Promise<DisplayIdentity>(res => {
+                resolveIdentity = res
+            })
+
+            const negotiator = createNegotiator({
+                walletProtocols: [
+                    { id: 'arc0027', versions: ['1.0'] },
+                    { id: 'walletconnect', versions: ['2.0'] },
+                ],
+                routes: {
+                    arc0027: gate.gate(dispatcher, isDiscoverRequest),
+                    walletconnect: gate.gate(walletConnectRoute),
+                },
+                send: (data: string) => client.send(data),
+                close: () => client.close(),
+                onIdentity: (peer, attestedOrigin) => {
+                    resolveIdentity?.(
+                        resolveDisplayIdentity(peer, attestedOrigin, host),
+                    )
+                    resolveIdentity = null
+                },
+                // Sourced from the signalling server once it emits an attested
+                // origin (upstream dependency); undefined keeps the self-asserted
+                // path until then.
+                serverAttestedOrigin: undefined,
+            })
+            client.onMessage((data: string) => {
+                void negotiator.handleMessage(data)
+            })
+            client.onClose(() => {
+                negotiator.dispose()
+                forgetClient(sessionId)
+            })
+
+            // Race transport establishment against a timeout so a stalled
+            // handshake (or unreachable dApp) surfaces a retryable error rather
+            // than hanging forever.
+            try {
+                await withTimeout(
+                    client.connect(requestId),
+                    CONNECT_TIMEOUT_MS,
+                    () =>
+                        new LiquidAuthConnectionError(
+                            'The dApp did not respond. Please try again.',
+                            true,
+                        ),
+                )
             } catch (error) {
-                if (timeoutId !== undefined) clearTimeout(timeoutId)
                 client.close()
+                forgetClient(sessionId)
                 throw error
             }
-            if (timeoutId !== undefined) clearTimeout(timeoutId)
 
-            logger.info('[liquid-auth] connect: transport open, registered', {
-                sessionId,
-            })
             registerClient(sessionId, client)
 
-            // Liquid Auth binds the address at the FIDO layer, so a verified
-            // ceremony + open transport IS the connection — there's no ARC-0027
-            // `enable` handshake to wait for. Persist the session now, keyed by
-            // host+account so a reconnect updates the single entry (and reuses
-            // its credentialId via findCredentialId) rather than duplicating.
-            const store = useLiquidAuthStore.getState()
-            const prior = store.sessions.find(
-                s => s.host === host && s.accounts.includes(address),
-            )
-            const now = Date.now()
-            const session: LiquidAuthSession = {
-                sessionId,
-                requestId,
-                host,
-                peerMeta: { name: host, origin: host },
-                accounts: [address],
-                genesisHash: config.networks[0]?.genesisHash ?? '',
-                networks: config.networks,
-                credentialId,
-                createdAt: prior?.createdAt ?? now,
-                lastActiveAt: now,
-                ttl: SESSION_TTL_MS,
-            }
-            store.setSessions([
-                ...store.sessions.filter(
-                    s => !(s.host === host && s.accounts.includes(address)),
-                ),
-                session,
-            ])
-            // Record the credential in the durable registry so a future
-            // reconnect (even after this session is deleted) asserts the same
-            // passkey instead of attesting a new one.
-            store.recordCredential({
-                host,
-                address,
-                credentialId,
-                createdAt: now,
-            })
-            logger.info('[liquid-auth] connect: session persisted', {
-                sessionId,
-            })
-            store.setPendingConnection(null)
-        },
-        [
-            service,
-            resolve,
-            enqueue,
-            registerClient,
-            forgetClient,
-            config,
-            config.enqueueArc60,
-            config.submitSignedTxns,
-        ],
-    )
-
-    const connect = useCallback(
-        async ({ host, requestId, address }: ConnectInput) => {
-            const setPendingConnection =
-                useLiquidAuthStore.getState().setPendingConnection
-            // Surface a "Connecting…" sheet immediately; cleared on any throw,
-            // and again by the enable handler once approval supersedes it.
-            logger.info('[liquid-auth] connect: status → connecting')
-            setPendingConnection({ host, requestId })
+            // Everything past the successful connect must close the client on
+            // any failure (reject, or a throw from the confirmation callback) —
+            // otherwise the live client + WebRTC connection leak.
             try {
-                await establishConnection({ host, requestId, address })
-            } catch (error) {
-                logger.info('[liquid-auth] connect: failed', {
-                    message: (error as Error)?.message,
+                const identity = await withTimeoutFallback(
+                    identityPromise,
+                    IDENTITY_WAIT_TIMEOUT_MS,
+                    () => resolveDisplayIdentity(undefined, undefined, host),
+                )
+
+                const approved = await requestConfirmation(identity)
+                if (!approved) throw new LiquidAuthRejectedError()
+
+                gate.markConfirmed()
+                persistSession({
+                    sessionId,
+                    requestId,
+                    host,
+                    identity,
+                    address,
+                    networks: config.networks,
+                    credentialId,
                 })
-                setPendingConnection(null)
+            } catch (error) {
+                client.close()
+                forgetClient(sessionId)
                 throw error
             }
         },
-        [establishConnection],
+        [resolve, enqueue, registerClient, forgetClient, config],
     )
 
     const disconnect = useCallback(
@@ -320,4 +285,64 @@ export const useLiquidAuth = (
     )
 
     return { connect, disconnect }
+}
+
+/**
+ * Persists (or replaces) the session for a host+account. Closes and forgets any
+ * prior live client for a replaced session so a reconnect doesn't orphan the
+ * previous WebRTC connection (which would otherwise stay open and unreachable
+ * once its session record is gone).
+ */
+const persistSession = ({
+    sessionId,
+    requestId,
+    host,
+    identity,
+    address,
+    networks,
+    credentialId,
+}: {
+    sessionId: string
+    requestId: string
+    host: string
+    identity: DisplayIdentity
+    address: string
+    networks: LiquidAuthNetwork[]
+    credentialId: string
+}): void => {
+    const store = useLiquidAuthStore.getState()
+    const registry = useLiquidAuthRegistryStore.getState()
+    const isReplaced = (session: LiquidAuthSession): boolean =>
+        session.host === host &&
+        session.accounts.includes(address) &&
+        session.sessionId !== sessionId
+
+    for (const prior of store.sessions.filter(isReplaced)) {
+        registry.clients[prior.sessionId]?.close()
+        registry.forgetClient(prior.sessionId)
+    }
+
+    const prior = store.sessions.find(
+        s => s.host === host && s.accounts.includes(address),
+    )
+    const now = Date.now()
+    const session: LiquidAuthSession = {
+        sessionId,
+        requestId,
+        host,
+        peerMeta: { name: identity.name, origin: identity.origin },
+        accounts: [address],
+        genesisHash: networks[0]?.genesisHash ?? '',
+        networks,
+        credentialId,
+        createdAt: prior?.createdAt ?? now,
+        lastActiveAt: now,
+        ttl: SESSION_TTL_MS,
+    }
+    store.setSessions([
+        ...store.sessions.filter(
+            s => !(s.host === host && s.accounts.includes(address)),
+        ),
+        session,
+    ])
 }

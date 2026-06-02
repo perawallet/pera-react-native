@@ -11,10 +11,7 @@
  */
 
 import type { Key } from '@algorandfoundation/keystore'
-import {
-    getKeystoreStore,
-    getProvider,
-} from '@perawallet/wallet-extension-provider'
+import { getLiquidAuthKeystoreHost } from './keystoreHost'
 import { toBase64Url } from './webauthn'
 import type { CredentialMechanism } from './bootstrap'
 import {
@@ -40,9 +37,9 @@ const credentialIdForKeyId = (keyId: string): string =>
     toBase64Url(new TextEncoder().encode(keyId))
 
 const findSeedKeyId = (): string => {
-    const seed = getKeystoreStore().state.keys.find(k =>
-        SEED_KEY_TYPES.has(k.type),
-    )
+    const seed = getLiquidAuthKeystoreHost()
+        .getKeys()
+        .find(k => SEED_KEY_TYPES.has(k.type))
     if (!seed) {
         throw new Error(
             'keystoreCredentials: no HD seed in keystore to derive a P256 credential from',
@@ -71,11 +68,11 @@ const rootKeyIdForSeed = (seedId: string): string =>
  * deterministic id, then derive the P256 key from it.
  */
 const ensureRootKeyId = async (seedId: string): Promise<string> => {
-    const keyStore = getProvider().key.store
+    const keyStore = getLiquidAuthKeystoreHost().getKeyStore()
     const rootKeyId = rootKeyIdForSeed(seedId)
-    const existing = getKeystoreStore().state.keys.find(
-        k => k.id === rootKeyId && k.type === 'hd-root-key',
-    )
+    const existing = getLiquidAuthKeystoreHost()
+        .getKeys()
+        .find(k => k.id === rootKeyId && k.type === 'hd-root-key')
     if (existing) return rootKeyId
     await keyStore.generate({
         type: 'hd-root-key',
@@ -93,7 +90,9 @@ const ensureRootKeyId = async (seedId: string): Promise<string> => {
  * `key.store.export`, which would also return the private seed material.
  */
 const readPublicKeyXY = (keyId: string): P256PublicKeyXY => {
-    const key = getKeystoreStore().state.keys.find(k => k.id === keyId)
+    const key = getLiquidAuthKeystoreHost()
+        .getKeys()
+        .find(k => k.id === keyId)
     const pk = key?.publicKey
     if (!pk || pk.length !== 64) {
         throw new Error(
@@ -111,7 +110,7 @@ const isP256Key = (key: Key): boolean => P256_KEY_TYPES.has(key.type)
  */
 export const createKeystoreP256KeyAccess = (): P256KeyAccess => ({
     deriveP256: async ({ origin, userHandle }) => {
-        const keyStore = getProvider().key.store
+        const keyStore = getLiquidAuthKeystoreHost().getKeyStore()
         if (!keyStore.generate) {
             throw new Error(
                 'keystoreCredentials: keystore backend does not implement generate',
@@ -149,9 +148,12 @@ export const createKeystoreP256KeyAccess = (): P256KeyAccess => ({
     },
 
     getP256: async credentialId => {
-        const match = getKeystoreStore().state.keys.find(
-            k => isP256Key(k) && credentialIdForKeyId(k.id) === credentialId,
-        )
+        const match = getLiquidAuthKeystoreHost()
+            .getKeys()
+            .find(
+                k =>
+                    isP256Key(k) && credentialIdForKeyId(k.id) === credentialId,
+            )
         if (!match) return null
         return {
             keyId: match.id,
@@ -163,7 +165,7 @@ export const createKeystoreP256KeyAccess = (): P256KeyAccess => ({
         // The keystore signs the bytes as-is (dp256 uses noble `prehash:false`),
         // returning a raw 64-byte r‖s signature — exactly what WebAuthn wants
         // once the caller has computed sha256(authData ‖ sha256(clientData)).
-        return getProvider().key.store.sign(keyId, bytes)
+        return getLiquidAuthKeystoreHost().getKeyStore().sign(keyId, bytes)
     },
 })
 
@@ -173,7 +175,7 @@ export const createKeystoreP256KeyAccess = (): P256KeyAccess => ({
  * not hard-blocked on devices without an enrolled biometric.
  */
 const defaultRequireUserVerification = async (): Promise<boolean> => {
-    const biometrics = getProvider().biometrics
+    const biometrics = getLiquidAuthKeystoreHost().getBiometrics()
     const available = await biometrics.checkBiometricsAvailable()
     if (!available) return true
     return biometrics.authenticate({

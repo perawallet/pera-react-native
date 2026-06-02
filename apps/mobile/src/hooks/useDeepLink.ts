@@ -51,7 +51,7 @@ import {
 } from './deeplink/handlers'
 import { useDeeplinkErrorHandler } from './deeplink/handlers/useDeeplinkErrorHandler'
 import { withTimeout } from './deeplink/handlers/timeout'
-import { useLiquidAuthEnabled } from '@modules/connections/liquid-auth/hooks/useLiquidAuthEnabled'
+import { useLiquidAuthEnabled } from '@modules/connections/liquid-auth/hooks'
 import { useLiquidAuthStore } from '@perawallet/wallet-core-liquid-auth'
 
 /**

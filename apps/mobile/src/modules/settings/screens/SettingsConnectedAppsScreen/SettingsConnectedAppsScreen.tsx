@@ -10,12 +10,18 @@
  limitations under the License
  */
 
-import { PWButton, PWFlatList, PWIcon, PWView } from '@components/core'
+import {
+    PWButton,
+    PWDialog,
+    PWFlatList,
+    PWIcon,
+    PWText,
+    PWView,
+} from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { QRScannerView } from '@components/QRScannerView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
-import { Dialog, Text, useTheme } from '@rneui/themed'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ConnectedAppItem } from './ConnectedAppItem'
 import { useSettingsConnectedAppsScreen } from './useSettingsConnectedAppsScreen'
@@ -30,7 +36,6 @@ export const SettingsConnectedAppsScreen = () => {
     const { t } = useLanguage()
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
-    const { theme } = useTheme()
     const {
         summaries,
         hasConnections,
@@ -99,28 +104,28 @@ export const SettingsConnectedAppsScreen = () => {
                 onClose={scannerState.close}
                 animationType='slide'
             />
-            <Dialog
+            <PWDialog
                 isVisible={deleteState.isOpen}
                 onBackdropPress={deleteState.close}
             >
-                <Dialog.Title
+                <PWDialog.Title
                     title={t('connected_apps.settings.delete_all_title')}
                 />
-                <Text>{t('connected_apps.settings.delete_all_body')}</Text>
-                <Dialog.Actions>
-                    <Dialog.Button
+                <PWText>{t('connected_apps.settings.delete_all_body')}</PWText>
+                <PWDialog.Actions>
+                    <PWDialog.Button
                         title={t('common.delete.label')}
-                        titleStyle={{ color: theme.colors.alertNegative }}
+                        titleStyle={styles.deleteButtonTitle}
                         onPress={handleDeleteAll}
                         disabled={isDeleting}
                     />
-                    <Dialog.Button
+                    <PWDialog.Button
                         title={t('common.cancel.label')}
                         onPress={deleteState.close}
                         disabled={isDeleting}
                     />
-                </Dialog.Actions>
-            </Dialog>
+                </PWDialog.Actions>
+            </PWDialog>
         </PWView>
     )
 }

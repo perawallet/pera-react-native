@@ -19,14 +19,12 @@
   "dependencies": {
     "@babel/runtime": "catalog:",
     "@perawallet/wallet-core-accounts": "workspace:*",
-    "@perawallet/wallet-core-blockchain": "workspace:*",
+    "@perawallet/wallet-core-config": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
     "@perawallet/wallet-core-signing": "workspace:*",
     "@perawallet/wallet-extension-liquid-auth": "workspace:*",
     "@perawallet/wallet-extension-provider": "workspace:*",
     "react": "catalog:",
-    "react-native": "0.85.3",
-    "zod": "catalog:",
     "zustand": "catalog:"
   },
   "devDependencies": {

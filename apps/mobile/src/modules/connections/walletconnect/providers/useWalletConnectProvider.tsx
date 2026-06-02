@@ -28,7 +28,15 @@ import { ConnectionView } from '../components/ConnectionView/ConnectionView'
 import { ConnectionSuccessSheet } from '@modules/connections/components/ConnectionSuccessSheet'
 import { ConnectionErrorSheet } from '@modules/connections/components/ConnectionErrorSheet'
 
-export const useWalletConnectProvider = () => {
+export type UseWalletConnectProviderResult = {
+    nextRequest: WalletConnectSessionRequest | undefined
+    successRequest: Nullable<WalletConnectSessionRequest>
+    connectionError: Nullable<Error>
+    handleConnectionError: (error?: Error) => void
+    handleSuccess: (request: WalletConnectSessionRequest) => void
+}
+
+export const useWalletConnectProvider = (): UseWalletConnectProviderResult => {
     // Revive WalletConnect bridge sockets when the app returns to the
     // foreground — without this a backgrounded session silently drops
     // both outgoing signed responses and incoming dApp requests.

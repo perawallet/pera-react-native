@@ -14,18 +14,23 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
+        flex: 1,
         padding: theme.spacing.xl,
-        gap: theme.spacing.lg,
+    },
+    center: {
+        flex: 1,
         alignItems: 'center',
+        justifyContent: 'center',
+        gap: theme.spacing.lg,
     },
     spinner: {
-        marginVertical: theme.spacing.md,
+        marginBottom: theme.spacing.sm,
     },
     message: {
         textAlign: 'center',
     },
-    host: {
-        textAlign: 'center',
-        color: theme.colors.textGray,
+    cancelButton: {
+        alignSelf: 'stretch',
+        marginBottom: theme.spacing.lg,
     },
 }))

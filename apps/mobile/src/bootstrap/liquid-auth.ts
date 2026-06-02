@@ -10,17 +10,37 @@
  limitations under the License
  */
 
-import { bootstrapLiquidAuth } from '@perawallet/wallet-extension-liquid-auth'
+import {
+    bootstrapLiquidAuth,
+    setLiquidAuthKeystoreHost,
+} from '@perawallet/wallet-extension-liquid-auth'
+import {
+    getKeystoreStore,
+    getProvider,
+} from '@perawallet/wallet-extension-provider'
 import { logger } from '@perawallet/wallet-core-shared'
 
 import type { CredentialMechanism } from '@perawallet/wallet-extension-liquid-auth'
 
-/** One-time Liquid Auth startup: registerGlobals + navigator.credentials polyfill. */
-export const runLiquidAuthBootstrap = (
+/**
+ * One-time Liquid Auth startup: wires the keystore host then registerGlobals +
+ * the navigator.credentials polyfill.
+ *
+ * The app is the only layer that depends on both the provider and the
+ * liquid-auth extension, so it injects the provider's keystore/biometrics into
+ * liquid-auth here. liquid-auth therefore never imports the provider (which
+ * composes it via `WithLiquidAuth`), avoiding a build-graph cycle.
+ */
+export const runLiquidAuthBootstrap = async (
     mechanism: CredentialMechanism,
-): void => {
+): Promise<void> => {
     try {
-        bootstrapLiquidAuth(mechanism)
+        setLiquidAuthKeystoreHost({
+            getKeyStore: () => getProvider().key.store,
+            getKeys: () => getKeystoreStore().state.keys,
+            getBiometrics: () => getProvider().biometrics,
+        })
+        await bootstrapLiquidAuth(mechanism)
     } catch (error) {
         logger.error('Liquid Auth bootstrap failed', { error })
     }

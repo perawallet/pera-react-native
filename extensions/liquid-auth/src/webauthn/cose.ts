@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { cborEncode, type CborMap } from './cbor'
+import { cborEncodeMap, type CborMap } from '../encoding/cbor'
 
 // COSE_Key label/value constants (RFC 8152 / RFC 9053).
 const COSE_KTY = 1
@@ -43,5 +43,5 @@ export const coseP256PublicKey = (x: Uint8Array, y: Uint8Array): Uint8Array => {
         [COSE_X, x],
         [COSE_Y, y],
     ]
-    return cborEncode(entries)
+    return cborEncodeMap(entries)
 }

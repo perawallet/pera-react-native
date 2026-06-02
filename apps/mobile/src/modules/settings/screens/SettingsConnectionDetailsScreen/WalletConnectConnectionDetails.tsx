@@ -61,7 +61,7 @@ export const WalletConnectConnectionDetails = ({
         <ConnectionDetailsView
             iconUri={preferredIcon}
             fallbackIconName='wallet-connect'
-            name={peerMeta?.name ?? 'Unknown'}
+            name={peerMeta?.name ?? t('connected_apps.unknown_app')}
             subtitle={peerMeta?.url}
             onSubtitlePress={handleOpenLink}
             description={peerMeta?.description}

@@ -21,7 +21,6 @@ import { getProvider } from '@perawallet/wallet-extension-provider'
 import type {
     LiquidAuthConnectRequest,
     LiquidAuthCredentialRecord,
-    LiquidAuthPendingConnection,
     LiquidAuthSession,
     LiquidAuthStore,
 } from '../models'
@@ -33,7 +32,6 @@ const initialState = {
     credentials: [] as LiquidAuthCredentialRecord[],
     connectRequest: null as Nullable<LiquidAuthConnectRequest>,
     connectionError: null as Nullable<Error>,
-    pendingConnection: null as Nullable<LiquidAuthPendingConnection>,
 }
 
 export const useLiquidAuthStore: UseBoundStore<
@@ -61,9 +59,6 @@ export const useLiquidAuthStore: UseBoundStore<
             ) => set({ connectRequest }),
             setConnectionError: (connectionError: Nullable<Error>) =>
                 set({ connectionError }),
-            setPendingConnection: (
-                pendingConnection: Nullable<LiquidAuthPendingConnection>,
-            ) => set({ pendingConnection }),
             expireSessions: (now: number) =>
                 set(state => ({
                     sessions: state.sessions.filter(

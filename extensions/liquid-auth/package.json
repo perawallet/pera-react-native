@@ -21,11 +21,8 @@
         "@algorandfoundation/wallet-provider": "catalog:",
         "@noble/curves": "catalog:",
         "@noble/hashes": "catalog:",
-        "@perawallet/wallet-core-shared": "workspace:*",
-        "@perawallet/wallet-extension-provider": "workspace:*",
         "@react-native-cookies/cookies": "^6.2.1",
         "eventemitter3": "^5.0.1",
-        "react-native": "0.85.3",
         "react-native-webrtc": "^124.0.7",
         "socket.io-client": "^4.7.5",
         "uuid": "catalog:"

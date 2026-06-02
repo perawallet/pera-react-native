@@ -17,7 +17,7 @@ import {
     useLiquidAuthStore,
     type LiquidAuthSession,
 } from '@perawallet/wallet-core-liquid-auth'
-import { useLiquidAuthConnect } from '@modules/connections/liquid-auth/hooks/useLiquidAuthConnect'
+import { useLiquidAuthConnect } from '@modules/connections/liquid-auth/hooks'
 import { useModalState } from '@hooks/useModalState'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import { useWebView } from '@modules/webview'

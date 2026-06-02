@@ -10,8 +10,6 @@
  limitations under the License
  */
 
-import { registerGlobals } from 'react-native-webrtc'
-
 export type CredentialMechanism = {
     get: (options: unknown) => Promise<unknown>
     create: (options: unknown) => Promise<unknown>
@@ -41,8 +39,14 @@ export const installCredentialsPolyfill = (
  * One-time app-startup bootstrap: registers the react-native-webrtc globals
  * (RTCPeerConnection et al. that the vendored SignalClient expects) and installs
  * the credentials polyfill. Call once before any Liquid Auth connection.
+ *
+ * The WebRTC module is imported lazily so merely loading this module (e.g. via
+ * the package barrel in a jsdom test run) never touches native code.
  */
-export const bootstrapLiquidAuth = (mechanism: CredentialMechanism): void => {
+export const bootstrapLiquidAuth = async (
+    mechanism: CredentialMechanism,
+): Promise<void> => {
+    const { registerGlobals } = await import('react-native-webrtc')
     registerGlobals()
     installCredentialsPolyfill(globalThis as never, mechanism)
 }

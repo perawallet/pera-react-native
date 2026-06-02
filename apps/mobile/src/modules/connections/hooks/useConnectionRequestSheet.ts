@@ -25,6 +25,10 @@ export type UseConnectionRequestSheetParams = {
 const DEFAULT_OPTIONS: BottomSheetOptions = {
     size: 'lg',
     autoCreateContainer: false,
+    // A connection-request sheet must be resolved via Approve/Reject — a
+    // backdrop tap would dismiss it without rejecting, stranding the request
+    // (the dApp is never told, and the sheet won't re-open).
+    enableCloseOnBackdropPress: false,
 }
 
 /**

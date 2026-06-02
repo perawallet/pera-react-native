@@ -21,7 +21,7 @@
 // derive -> sign -> verify math the device runs, and would have caught the
 // dangling-parent / wrong-key-type regressions.
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { p256 } from '@noble/curves/p256'
 import {
     generateXHDRootKeyFromSeed,
@@ -185,17 +185,20 @@ const keyStore = {
     },
 }
 
-const getKeystoreStore = vi.fn(() => reactiveStore)
-const getProvider = vi.fn(() => ({ key: { store: keyStore } }))
-
-vi.mock('@perawallet/wallet-extension-provider', () => ({
-    getKeystoreStore: () => getKeystoreStore(),
-    getProvider: () => getProvider(),
-}))
-
-// Imported after the mock is registered.
 const { createKeystoreP256KeyAccess } =
     await import('../keystoreCredentialsAdapter')
+const { setLiquidAuthKeystoreHost } = await import('../keystoreHost')
+
+// The adapter resolves its keystore/biometrics from the injected host rather
+// than importing the provider (see keystoreHost.ts). Wire the harness in.
+setLiquidAuthKeystoreHost({
+    getKeyStore: () => keyStore as never,
+    getKeys: () => reactiveStore.state.keys,
+    getBiometrics: () => ({
+        checkBiometricsAvailable: async () => false,
+        authenticate: async () => false,
+    }),
+})
 
 // ---------------------------------------------------------------------------
 
