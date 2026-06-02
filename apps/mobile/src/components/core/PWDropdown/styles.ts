@@ -14,7 +14,9 @@ import { makeStyles } from '@rneui/themed'
 
 const DROPDOWN_MIN_WIDTH = 200
 
-export const useStyles = makeStyles(theme => ({
+type StyleProps = { maxHeight?: number }
+
+export const useStyles = makeStyles((theme, { maxHeight }: StyleProps) => ({
     modalOverlay: {
         flex: 1,
         backgroundColor: 'transparent',
@@ -29,6 +31,9 @@ export const useStyles = makeStyles(theme => ({
         ...theme.shadows.md,
         borderWidth: theme.borders.sm,
         borderColor: theme.colors.layerGray,
+    },
+    scrollArea: {
+        maxHeight,
     },
     item: {
         flexDirection: 'row',
