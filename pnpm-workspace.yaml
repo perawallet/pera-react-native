@@ -81,7 +81,7 @@ overrides:
   picomatch@2: 2.3.2
   picomatch@3: 3.0.1
   picomatch@4: 4.0.4
-  protobufjs@7: 7.5.5
+  protobufjs@7: 7.5.8
   react: 19.2.3
   react-dom: 19.2.3
   react-native: 0.85.3
@@ -102,41 +102,17 @@ supportedArchitectures:
 # Supply-chain hardening: wait 7 days before a new version is allowed.
 # Catches compromised/malicious packages that typically get yanked quickly.
 minimumReleaseAge: 10080
-# Security-mandated versions exempt from the freshness window.
-# protobufjs 7.5.5 is the only patched release for GHSA-xq3m-2v4x-88gg.
-# @xmldom/xmldom 0.8.13 patches GHSA-2v35-w6hq-6mfw, -f6ww-3ggp-fr8h, -x6wf-f3px-wcqx, -j759-j44w-7fr8.
-# uuid 14.0.0 patches GHSA-w5hq-g745-h8pq.
-# fast-uri 3.1.2 patches GHSA-q3j6-qgpj-74h6 (path traversal, <=3.1.0) and
-# GHSA-v39h-62p7-jpjc (host confusion, <=3.1.1). Both fixes shipped in the
-# same week so neither has aged into the 7-day window yet; skip the gate
-# rather than ship a vulnerable transitive (only path: ajv → fast-uri).
-# @algorandfoundation/keystore + @algorandfoundation/react-native-keystore:
-# in-progress upstream canary releases consumed during the keystore upgrade
-# work; pinned to specific canary versions in the catalog above.
-# @algorandfoundation/react-native-passkey-autofill: in-progress first-party
-# canary releases consumed during the passkey support work; pinned to a
-# specific canary version in the app + extension package.json. Provenance
-# attestations and maintainer list verified against the prior canary.
-# expo / expo-* / @expo/* / @react-native/* / react-native / react-native-nitro-modules:
-# temporary exemption for the SDK 55 → 56 upgrade. Expo SDK 56.0.0 shipped
-# 2026-05-20 and has not yet aged through the 7-day gate. These entries
-# should be removed once the SDK 56 release has aged past the window
-# (around 2026-06-03).
+# Packages exempt from the freshness window, and why:
+#   @algorandfoundation/keystore, react-native-keystore, react-native-passkey-autofill
+#     — in-progress first-party canaries pinned to specific versions.
+#   expo / expo-* / @expo/* / babel-preset-expo
+#     — tail of the SDK 56 upgrade; baseline expo 56.0.5 ages out 2026-06-03.
+#       Remove once it has aged past the window.
 minimumReleaseAgeExclude:
-  - protobufjs
-  - "@xmldom/xmldom"
-  - uuid
-  - fast-uri
   - "@algorandfoundation/keystore"
   - "@algorandfoundation/react-native-keystore"
   - "@algorandfoundation/react-native-passkey-autofill"
-  - ws
   - expo
   - "expo-*"
   - "@expo/*"
   - babel-preset-expo
-  - react-native
-  - "@react-native/*"
-  - react-native-nitro-modules
-  - react-native-screens
-  - react-native-svg
