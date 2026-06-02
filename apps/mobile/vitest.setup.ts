@@ -2280,6 +2280,12 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
             type: 'algo',
         },
     },
+    PeraAssetType: {
+        algo: 'algo',
+        standard_asset: 'standard_asset',
+        dapp_asset: 'dapp_asset',
+        collectible: 'collectible',
+    },
     PeraAssetVerificationTier: {
         verified: 'verified',
         unverified: 'unverified',
