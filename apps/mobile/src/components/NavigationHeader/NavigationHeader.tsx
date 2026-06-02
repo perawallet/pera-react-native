@@ -11,6 +11,7 @@
  */
 
 import { PWToolbar, PWText, PWIcon } from '@components/core'
+import { getTestProps } from '@utils/test-id-helper'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -65,6 +66,7 @@ export const NavigationHeader = (props: NavigationHeaderProps) => {
                     style={styles.backButton}
                     name='chevron-left'
                     onPress={props.navigation?.goBack}
+                    {...getTestProps('navigation_back_button')}
                 />
             )
         }
