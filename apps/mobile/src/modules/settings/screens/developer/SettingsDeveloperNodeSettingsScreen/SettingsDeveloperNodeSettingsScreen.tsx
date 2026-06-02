@@ -12,6 +12,7 @@
 
 import { useStyles } from './styles'
 import { PWView } from '@components/core'
+import { getContainerTestProps } from '@utils/test-id-helper'
 import { PWRadioButton } from '@components/core/PWRadioButton'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { Networks } from '@perawallet/wallet-core-shared'
@@ -53,7 +54,10 @@ export const SettingsDeveloperNodeSettingsScreen = () => {
     }
 
     return (
-        <PWView style={styles.container}>
+        <PWView
+            style={styles.container}
+            {...getContainerTestProps('node_settings_screen')}
+        >
             <PWRadioButton
                 testID='node_settings_mainnet_radio'
                 title={t('settings.developer.node_settings.mainnet_label')}
