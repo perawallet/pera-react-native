@@ -190,6 +190,7 @@ describe('buildMultiSigAccount', () => {
             multisigDetails: {
                 threshold: 2,
                 addresses: ['P1', 'P2', 'P3'],
+                version: 1,
             },
         })
         expect(generateMultisigAddress).not.toHaveBeenCalled()

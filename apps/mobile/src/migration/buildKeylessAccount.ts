@@ -62,6 +62,7 @@ export const buildMultiSigAccount = (account: LegacyAccount): WalletAccount => {
         multisigDetails: {
             threshold: resolvedThreshold,
             addresses: participants,
+            version: version,
         },
     }
 }
