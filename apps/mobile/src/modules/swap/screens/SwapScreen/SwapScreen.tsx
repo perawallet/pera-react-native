@@ -75,6 +75,7 @@ export const SwapScreen = () => {
                         accountFilter={swapAccountFilter}
                         triggerStyle={styles.accountTrigger}
                         triggerIconProps={{ size: 'md' }}
+                        triggerChevronProps={{ size: 'sm' }}
                         triggerTextProps={{ variant: 'body' }}
                         closeIconPosition='left'
                         hideDefaultHeader

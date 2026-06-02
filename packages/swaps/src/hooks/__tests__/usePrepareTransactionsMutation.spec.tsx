@@ -36,6 +36,19 @@ const wrapper = ({ children }: { children: React.ReactNode }) => {
     )
 }
 
+// Mirrors the app's QueryProvider default (mutations.throwOnError: true).
+function createThrowOnErrorWrapper() {
+    const queryClient = new QueryClient({
+        defaultOptions: { mutations: { throwOnError: true, retry: false } },
+    })
+    return ({ children }: { children: React.ReactNode }) =>
+        React.createElement(
+            QueryClientProvider,
+            { client: queryClient },
+            children,
+        )
+}
+
 describe('usePrepareTransactionsMutation', () => {
     beforeEach(() => {
         vi.mocked(prepareTransactions).mockReset()
@@ -57,5 +70,23 @@ describe('usePrepareTransactionsMutation', () => {
             { quote: 'q' },
             'testnet',
         )
+    })
+
+    test('flags isError without re-throwing under the global throwOnError default', async () => {
+        vi.mocked(prepareTransactions).mockRejectedValue(
+            new Error('Request failed with status code 400'),
+        )
+
+        const { result } = renderHook(() => usePrepareTransactionsMutation(), {
+            wrapper: createThrowOnErrorWrapper(),
+        })
+
+        act(() => {
+            result.current.mutate({ quote: 'q' })
+        })
+
+        // Reaching this assertion proves the failed mutation did not throw
+        // during render (which would crash to the app-root error boundary).
+        await waitFor(() => expect(result.current.isError).toBe(true))
     })
 })

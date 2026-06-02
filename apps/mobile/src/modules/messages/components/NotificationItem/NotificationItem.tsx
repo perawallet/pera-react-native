@@ -21,16 +21,15 @@ import { formatRelativeTime } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import { useMemo } from 'react'
 import { PeraNotification } from '@perawallet/wallet-core-messages'
-import { useNotificationPress } from '@modules/messages/hooks'
 import { UnreadIndicator } from '../UnreadIndicator'
 
 export type NotificationItemProps = {
     item: PeraNotification
+    onPress: (notification: PeraNotification) => void
 }
 
-export const NotificationItem = ({ item }: NotificationItemProps) => {
+export const NotificationItem = ({ item, onPress }: NotificationItemProps) => {
     const styles = useStyles()
-    const { handleNotificationPress } = useNotificationPress()
 
     const image = useMemo(() => {
         if (item.icon?.logo) {
@@ -64,7 +63,7 @@ export const NotificationItem = ({ item }: NotificationItemProps) => {
 
     return (
         <PWTouchableOpacity
-            onPress={() => handleNotificationPress(item)}
+            onPress={() => onPress(item)}
             style={styles.container}
         >
             <PWView style={styles.unreadIndicatorWrapper}>

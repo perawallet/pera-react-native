@@ -13,7 +13,10 @@
 import { useCallback, useMemo } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import {
+    canSignViaParticipants,
+    useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
 import {
     useMultisigAccountDetailQuery,
     useDeleteImportInboxMutation,
@@ -31,6 +34,7 @@ type UseImportSharedAccountScreenResult = {
     participantAddresses: string[]
     totalParticipants: number
     isUserIncluded: boolean
+    canUserSign: boolean
     isAlreadyImported: boolean
     isAddDisabled: boolean
     handleAddAccount: () => void
@@ -69,6 +73,13 @@ export const useImportSharedAccountScreen =
             const participantSet = new Set(participantAddresses)
             return accounts.some(a => participantSet.has(a.address))
         }, [accounts, participantAddresses])
+
+        // Stricter than `isUserIncluded`: a watch-only participant is included
+        // but can't co-sign, so the screen warns when this is false.
+        const canUserSign = useMemo(
+            () => canSignViaParticipants(participantAddresses, accounts),
+            [accounts, participantAddresses],
+        )
 
         const isAlreadyImported = useMemo(
             () => accounts.some(a => a.address === address),
@@ -122,6 +133,7 @@ export const useImportSharedAccountScreen =
             participantAddresses,
             totalParticipants,
             isUserIncluded,
+            canUserSign,
             isAlreadyImported,
             isAddDisabled,
             handleAddAccount,

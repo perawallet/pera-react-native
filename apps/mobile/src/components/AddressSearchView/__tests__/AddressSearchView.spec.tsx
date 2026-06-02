@@ -16,6 +16,7 @@ import { AddressSearchView } from '../AddressSearchView'
 import { useContacts } from '@perawallet/wallet-core-contacts'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import { useNfdSearchQuery } from '@perawallet/wallet-core-nfd'
 
 // Mock dependencies
 vi.mock('@perawallet/wallet-core-contacts', () => ({
@@ -216,5 +217,27 @@ describe('AddressSearchView', () => {
         expect(screen.getByText('address_entry.address')).toBeTruthy()
         expect(screen.queryByText('address_entry.my_accounts')).toBeNull()
         expect(screen.queryByText('address_entry.contacts')).toBeNull()
+    })
+
+    it('forwards the NFD name alongside the address when an NFD result is selected', () => {
+        vi.mocked(useNfdSearchQuery).mockReturnValue({
+            data: [
+                {
+                    name: 'alice.algo',
+                    address: 'NFD_ADDRESS_123',
+                    service: { name: 'nfd', logo: '' },
+                },
+            ],
+            isLoading: false,
+        } as unknown as ReturnType<typeof useNfdSearchQuery>)
+
+        render(<AddressSearchView onSelected={mockOnSelected} />)
+
+        fireEvent.click(screen.getByText('NFD_ADDRESS_123'))
+
+        expect(mockOnSelected).toHaveBeenCalledWith(
+            'NFD_ADDRESS_123',
+            'alice.algo',
+        )
     })
 })

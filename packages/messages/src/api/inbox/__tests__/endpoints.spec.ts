@@ -14,9 +14,15 @@ import { describe, test, expect, vi, beforeEach, Mock } from 'vitest'
 import { fetchInbox } from '../endpoints'
 import { queryClient } from '@perawallet/wallet-core-shared'
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
-    queryClient: vi.fn(),
-}))
+vi.mock('@perawallet/wallet-core-shared', async () => {
+    const actual = await vi.importActual<
+        typeof import('@perawallet/wallet-core-shared')
+    >('@perawallet/wallet-core-shared')
+    return {
+        ...actual,
+        queryClient: vi.fn(),
+    }
+})
 
 const DEVICE_ID = 'test-device-id'
 const ADDRESSES = ['ADDR1', 'ADDR2']

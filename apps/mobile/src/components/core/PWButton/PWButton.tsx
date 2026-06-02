@@ -14,6 +14,7 @@ import { PWText } from '@components/core/PWText'
 import { useStyles } from './styles'
 import { PWIcon, IconName, PWIconVariant } from '@components/core/PWIcon'
 import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
+import { PWView } from '@components/core/PWView'
 import {
     ActivityIndicator,
     StyleProp,
@@ -125,11 +126,13 @@ export const PWButton = ({
             )}
 
             {isLoading && (
-                <ActivityIndicator
-                    testID='activity-indicator'
-                    size='small'
-                    color={styles.loadingStyle.color}
-                />
+                <PWView style={styles.loadingContainer}>
+                    <ActivityIndicator
+                        testID='activity-indicator'
+                        size='small'
+                        color={styles.loadingStyle.color}
+                    />
+                </PWView>
             )}
         </PWTouchableOpacity>
     )

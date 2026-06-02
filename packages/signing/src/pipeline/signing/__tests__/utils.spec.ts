@@ -34,6 +34,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 
 import {
     getLocalParticipants,
+    getProposeParticipants,
     canMeetThresholdLocally,
     getSignaturesNeeded,
 } from '../utils'
@@ -145,6 +146,64 @@ describe('getLocalParticipants', () => {
         const multisig = makeMultisig(2, ['B', 'A'])
 
         const participants = getLocalParticipants(multisig, [
+            accountA,
+            accountB,
+        ])
+
+        expect(participants).toEqual([accountB, accountA])
+    })
+})
+
+describe('getProposeParticipants', () => {
+    test('returns only local-key participants when local-key and hardware are both present (Ledger deferred to per-row Sign)', () => {
+        mocks.isMultisigAccount.mockReturnValue(true)
+        mocks.hasSigningKeys.mockImplementation(
+            (acc: WalletAccount) => acc.address === 'A',
+        )
+        mocks.isHardwareWalletAccount.mockImplementation(
+            (acc: WalletAccount) => acc.address === 'B',
+        )
+        const multisig = makeMultisig(2, ['A', 'B'])
+
+        const participants = getProposeParticipants(multisig, [
+            accountA,
+            accountB,
+        ])
+
+        expect(participants).toEqual([accountA])
+    })
+
+    test('falls back to hardware participants when the user has no local-key participant (propose still needs ≥1 sig)', () => {
+        mocks.isMultisigAccount.mockReturnValue(true)
+        mocks.hasSigningKeys.mockReturnValue(false)
+        mocks.isHardwareWalletAccount.mockReturnValue(true)
+        const multisig = makeMultisig(2, ['A', 'B'])
+
+        const participants = getProposeParticipants(multisig, [
+            accountA,
+            accountB,
+        ])
+
+        expect(participants).toEqual([accountA, accountB])
+    })
+
+    test('returns empty when the user has no local participation in the multisig at all', () => {
+        mocks.isMultisigAccount.mockReturnValue(true)
+        mocks.hasSigningKeys.mockReturnValue(false)
+        mocks.isHardwareWalletAccount.mockReturnValue(false)
+        const multisig = makeMultisig(2, ['A', 'B'])
+
+        expect(getProposeParticipants(multisig, [accountA, accountB])).toEqual(
+            [],
+        )
+    })
+
+    test('returns local-key participants in participant-list order', () => {
+        mocks.isMultisigAccount.mockReturnValue(true)
+        // Multisig participants are [B, A]; both local-key.
+        const multisig = makeMultisig(2, ['B', 'A'])
+
+        const participants = getProposeParticipants(multisig, [
             accountA,
             accountB,
         ])

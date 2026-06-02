@@ -23,6 +23,14 @@ export type SignerAction = {
     label: string
     onPress: () => void
     isLoading?: boolean
+    /**
+     * Visually disables the row's Sign button without changing the label.
+     * Used in draft (deferred-propose) mode to enforce one-at-a-time taps:
+     * the first per-row Sign bootstraps the backend propose; until it
+     * completes, other rows are blocked so we don't race two propose calls
+     * on the same draft.
+     */
+    isDisabled?: boolean
 }
 
 export type SignerStatusListItemProps = {
@@ -60,13 +68,7 @@ export const SignerStatusListItem = ({
                 color={theme.colors.textGray}
             />
         ),
-        unsigned: (
-            <PWIcon
-                name='minus'
-                size='md'
-                variant='secondary'
-            />
-        ),
+        unsigned: null,
     }
 
     return (
@@ -78,6 +80,7 @@ export const SignerStatusListItem = ({
                 address={address}
                 showCopy={false}
                 forceShowIcon
+                contactAvatarVariant='highlighted'
                 style={styles.addressDisplay}
             />
             {action ? (
@@ -87,6 +90,7 @@ export const SignerStatusListItem = ({
                     title={action.label}
                     onPress={action.onPress}
                     isLoading={action.isLoading}
+                    isDisabled={action.isDisabled}
                     testID={`signer_status_action_${address}`}
                 />
             ) : (

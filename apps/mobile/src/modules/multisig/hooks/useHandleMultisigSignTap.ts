@@ -21,6 +21,7 @@ import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import { usePendingSignaturesSheetStore } from '../stores/usePendingSignaturesSheetStore'
 import { buildMultisigCosignRequest } from '../utils/buildMultisigCosignRequest'
 import { getLocalUnsignedSigners } from '../utils/getLocalUnsignedSigners'
+import { splitLocalUnsignedSigners } from '../utils/splitLocalUnsignedSigners'
 
 export type UseHandleMultisigSignTapResult = (
     signRequest: MultisigSignRequest,
@@ -28,12 +29,14 @@ export type UseHandleMultisigSignTapResult = (
 
 /**
  * Returns a callback that handles a tap on a multisig-sign inbox item.
- * Fast path: when the request is actionable and the local user holds at
- * least one unsigned participant key, dispatch a `multisig-cosign`
- * SignRequest per local signer so the signing pipeline opens the sign
- * bottom sheet directly. Slow path (already signed, no local key, or
- * non-actionable status): open `PendingSignaturesContent` so the
- * user can review signer status.
+ * When actionable and the user holds an unsigned local-key (Algo25/HD)
+ * participant, batch-dispatch a `multisig-cosign` SignRequest per signer —
+ * the signing pipeline opens the sign bottom sheet directly. Hardware
+ * (Ledger) participants are never auto-dispatched: their per-row Sign
+ * button in `PendingSignaturesContent` is the only entry point that fires
+ * a device prompt. The pending sheet opens whenever hardware action is
+ * still required, when there is nothing to dispatch, or when the status
+ * isn't actionable.
  */
 export const useHandleMultisigSignTap = (): UseHandleMultisigSignTapResult => {
     const openSheet = usePendingSignaturesSheetStore(state => state.openSheet)
@@ -44,22 +47,23 @@ export const useHandleMultisigSignTap = (): UseHandleMultisigSignTapResult => {
     return useCallback(
         (signRequest: MultisigSignRequest) => {
             if (ACTIONABLE_SIGN_REQUEST_STATUSES.has(signRequest.status)) {
-                const localUnsignedSigners = getLocalUnsignedSigners(
-                    signRequest,
-                    accounts,
+                const { localKey, hardware } = splitLocalUnsignedSigners(
+                    getLocalUnsignedSigners(signRequest, accounts),
                 )
-                if (localUnsignedSigners.length > 0) {
-                    for (const signer of localUnsignedSigners) {
-                        addSignRequest(
-                            buildMultisigCosignRequest({
-                                signRequest,
-                                signerAddress: signer.address,
-                                decodeTransaction,
-                            }),
-                        )
-                    }
-                    return
+                for (const signer of localKey) {
+                    addSignRequest(
+                        buildMultisigCosignRequest({
+                            signRequest,
+                            signerAddress: signer.address,
+                            decodeTransaction,
+                        }),
+                    )
                 }
+                // Only the local-key cosign sign sheet owns the visible UI
+                // when there's nothing else to do. If hardware participants
+                // still need a per-row tap (or there was nothing dispatchable),
+                // fall through and open the pending-signatures sheet.
+                if (localKey.length > 0 && hardware.size === 0) return
             }
             openSheet(signRequest.id)
         },

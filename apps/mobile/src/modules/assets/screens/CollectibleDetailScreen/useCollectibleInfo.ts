@@ -31,7 +31,10 @@ export const useCollectibleInfo = (asset: PeraAsset) => {
     }, [asset.creator.address, pushWebView])
 
     const onAssetIdPressed = useCallback(() => {
-        navigate('AssetDetails', { assetId: asset.assetId }) // Navigate to the Asset Details screen
+        navigate('AssetDetails', {
+            assetId: asset.assetId,
+            isCollectible: true,
+        }) // Navigate to the Asset Details screen
     }, [asset.assetId, pushWebView])
 
     const onOpenExplorer = useCallback(() => {

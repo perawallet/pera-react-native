@@ -18,6 +18,7 @@ export const notificationStatusResponseSchema = z.object({
 
 export const notificationResponseSchema = z.object({
     id: z.coerce.string(),
+    type: z.string().optional(),
     account_address: z.string(),
     message: z.string(),
     url: z.string(),

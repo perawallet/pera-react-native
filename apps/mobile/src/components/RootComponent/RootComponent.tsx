@@ -33,6 +33,7 @@ import { useTokenListener } from '@modules/token'
 import { AutoLockGuard } from '@modules/security/components/AutoLockGuard/AutoLockGuard'
 import { SigningOverlays } from '@modules/signing/components/SigningOverlays'
 import { MultisigOverlays } from '@modules/multisig/components/MultisigOverlays'
+import { useSyncMultisigAccountsOnNetworkSwitch } from '@modules/multisig/hooks/useSyncMultisigAccountsOnNetworkSwitch'
 import {
     getAppStatePlatform,
     getPollingTransitionAction,
@@ -110,6 +111,7 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     const hasAccounts = addresses.length > 0
 
     useDeviceRegistration(addresses)
+    useSyncMultisigAccountsOnNetworkSwitch()
 
     const runSyncAction = useCallback((action: 'start' | 'stop') => {
         try {

@@ -18,9 +18,9 @@ export const useStyles = makeStyles(theme => ({
         backgroundColor: theme.colors.background,
     },
     scrollContent: {
-        paddingHorizontal: theme.spacing.md,
+        paddingHorizontal: theme.spacing.xl,
         paddingTop: theme.spacing.md,
-        paddingBottom: theme.spacing.lg,
+        paddingBottom: theme.spacing.xxl,
         gap: theme.spacing.lg,
     },
     toolbarTitle: {
@@ -39,14 +39,7 @@ export const useStyles = makeStyles(theme => ({
         marginTop: theme.spacing.sm,
     },
     participantRow: {
-        gap: theme.spacing.md,
         paddingVertical: theme.spacing.md,
-        paddingHorizontal: theme.spacing.lg,
-        borderBottomWidth: theme.borders.sm,
-        borderBottomColor: theme.colors.divider,
-    },
-    participantRowLast: {
-        borderBottomWidth: 0,
     },
     centerState: {
         flex: 1,
@@ -60,7 +53,7 @@ export const useStyles = makeStyles(theme => ({
         textAlign: 'center',
     },
     bottomBar: {
-        paddingHorizontal: theme.spacing.md,
+        paddingHorizontal: theme.spacing.xl,
         paddingTop: theme.spacing.md,
         paddingBottom: theme.spacing.md,
         gap: theme.spacing.sm,

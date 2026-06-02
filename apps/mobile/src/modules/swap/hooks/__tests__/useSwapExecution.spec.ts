@@ -386,15 +386,17 @@ describe('useSwapExecution', () => {
             outcome = await result.current.execute('quote-789')
         })
 
+        // Prepare maps the error through getMessage like the submission phase,
+        // so the toAlgodError mock yields the localized unknown_node_error body.
         expect(outcome).toEqual({
             kind: 'error',
             phase: 'prepare',
-            message: 'Prepare failed',
+            message: 'errors.algod.unknown_node_error.body',
         })
         expect(result.current.status).toBe('error')
         expect(result.current.error).toEqual({
             phase: 'prepare',
-            message: 'Prepare failed',
+            message: 'errors.algod.unknown_node_error.body',
         })
     })
 

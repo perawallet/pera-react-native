@@ -122,6 +122,18 @@ describe('useAccountTypeInfo', () => {
         )
     })
 
+    it('resolves an unsignable multisig account as No Auth', () => {
+        mockUseCanSignWith.mockReturnValue(false)
+        const { result } = renderHook(() =>
+            useAccountTypeInfo({ account: accountOfType('multisig') }),
+        )
+
+        expect(result.current.title).toBe('account_type_info.no_auth_title')
+        expect(result.current.description).toBe(
+            'account_type_info.multisig_no_auth_description',
+        )
+    })
+
     it('resolves signable rekeyed account without a known auth as generic rekeyed', () => {
         mockUseCanSignWith.mockReturnValue(true)
         mockUseRekeyTransition.mockReturnValue(null)

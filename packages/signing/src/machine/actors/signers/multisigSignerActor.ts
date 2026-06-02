@@ -19,7 +19,11 @@ import type {
     SigningResult,
 } from '../../../pipeline/types'
 import { createSigningStrategySelector } from '../../../pipeline/signing/getSigningStrategy'
-import { getLocalParticipants } from '../../../pipeline/signing/utils'
+import {
+    buildDeferredProposeSigningResult,
+    getProposeParticipants,
+    shouldDeferPropose,
+} from '../../../pipeline/signing/utils'
 import type {
     LocalSigningFunction,
     LocalArbitrarySigningFunction,
@@ -40,16 +44,28 @@ export type MultisigSignerActorInput = {
 }
 
 /**
- * XState actor that signs each multisig group with every local participant
- * (Algo25, HD, and hardware-wallet) in parallel, producing one combined
- * SigningResult per group. Hardware participants trigger the standard
- * LedgerSigningContent sheet during signing.
+ * XState actor that signs each multisig group with every local-key (Algo25
+ * or HD) participant in parallel, producing one combined SigningResult per
+ * group. Hardware-wallet participants are deliberately skipped here:
+ * `getProposeParticipants` filters them out so a Ledger device prompt
+ * never auto-fires during Send. The user signs hardware participants
+ * explicitly via the per-row Sign button in `PendingSignaturesContent`
+ * once the propose call completes and the sheet opens (via
+ * `useMultisigProposeListener`).
+ *
+ * Hardware-only proposer case (no local-key participant exists): the actor
+ * short-circuits via `shouldDeferPropose` and returns an empty-signers
+ * `SigningResult`. The propose transport recognizes this as a defer signal,
+ * skips the backend propose call, and instead creates a local draft via
+ * an injected `createDraftSignRequest` function. The pending-signatures
+ * sheet then opens with a synthetic draft state, and the user's first
+ * per-row Sign on a Ledger row bootstraps the real backend propose.
  *
  * This runs on the propose flow (creating a new multisig transaction). The
  * cosign flow uses a different entry point: the PendingSignaturesBottomSheet
  * dispatches per-participant `multisig-cosign` requests with `signerOverrides`
- * pinned to a specific address — those bypass `getLocalParticipants` and route
- * directly to the participant's strategy via `selectStrategy`.
+ * pinned to a specific address — those bypass `getProposeParticipants` and
+ * route directly to the participant's strategy via `selectStrategy`.
  *
  * Throws NoLocalParticipantsError (from createMultisigStrategy) if the user
  * has no signing-capable participants in their wallet for the group's
@@ -76,7 +92,7 @@ export const multisigSignerActor = fromPromise<
         signArc60,
         encodeTransaction,
         hardwareWalletRegistry,
-        getLocalParticipants,
+        getLocalParticipants: getProposeParticipants,
         getAllAccounts: () => allAccounts,
     })
 
@@ -90,6 +106,9 @@ export const multisigSignerActor = fromPromise<
                     group.signerAddress,
                     'Account not found in allAccounts',
                 )
+            }
+            if (shouldDeferPropose(signerAccount, allAccounts)) {
+                return buildDeferredProposeSigningResult(group)
             }
             const strategy = selectStrategy(signerAccount, allAccounts)
             return strategy.sign(group, signerAccount, signingCallbacks)

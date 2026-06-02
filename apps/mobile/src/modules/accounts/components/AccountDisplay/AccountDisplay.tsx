@@ -18,6 +18,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     PWIcon,
+    PWIconProps,
     PWText,
     PWTextProps,
     PWView,
@@ -34,6 +35,7 @@ export type AccountDisplayProps = {
     account?: WalletAccount
     iconProps?: Omit<AccountIconProps, 'account'>
     textProps?: PWTextProps
+    chevronProps?: Partial<PWIconProps>
     showChevron?: boolean
     noBorder?: boolean
     compact?: boolean
@@ -47,6 +49,7 @@ export type AccountDisplayProps = {
 export const AccountDisplay = ({
     account,
     iconProps,
+    chevronProps,
     showChevron = true,
     textProps,
     noBorder,
@@ -120,6 +123,7 @@ export const AccountDisplay = ({
                 <PWIcon
                     variant='secondary'
                     name='chevron-down'
+                    {...chevronProps}
                 />
             )}
         </PWView>

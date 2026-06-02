@@ -160,6 +160,7 @@ describe('useAccountOptions', () => {
         multisigDetails: {
             threshold: 2,
             addresses: ['ALGO25ADDRESS', 'HARDWAREADDRESS'],
+            version: 1,
         },
     }
 

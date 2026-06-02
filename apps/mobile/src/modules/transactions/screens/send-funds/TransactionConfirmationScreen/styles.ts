@@ -21,7 +21,8 @@ export const useStyles = makeStyles(theme => {
         secondaryAmount: {
             color: theme.colors.textGray,
         },
-        buttonContainer: {
+        footer: {
+            gap: theme.spacing.md,
             paddingTop: theme.spacing.md,
         },
         linkContainer: {
@@ -32,6 +33,9 @@ export const useStyles = makeStyles(theme => {
         },
         link: {
             color: theme.colors.positive,
+        },
+        scrollView: {
+            flex: 1,
         },
         scrollContent: {
             gap: theme.spacing.xl,

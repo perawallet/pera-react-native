@@ -27,6 +27,7 @@ const mapNotificationResponseToNotification = (
     response: NotificationResponse,
 ): PeraNotification => ({
     id: response.id,
+    type: response.type,
     accountAddress: response.account_address,
     message: response.message,
     url: response.url,

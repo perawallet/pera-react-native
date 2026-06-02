@@ -255,7 +255,7 @@ describe('multisigSignerActor', () => {
         expect(results[1].signers[0].address).toBe(otherParticipant)
     })
 
-    it('signs hardware participants via hardwareStrategy alongside local-key participants', async () => {
+    it('skips hardware participants during propose when a local-key participant is available — Ledger prompt is deferred to per-row Sign in the pending sheet', async () => {
         const ledgerParticipant = {
             type: 'hardware',
             address: PARTICIPANT_B,
@@ -277,9 +277,6 @@ describe('multisigSignerActor', () => {
             .fn()
             .mockResolvedValue([{ txn: {}, sig: new Uint8Array([0x42]) }])
 
-        // Hardware strategy reads `txn.sender.toString()` to detect rekey, so
-        // the txn shape needs a `sender` here (the local-key path doesn't
-        // touch the txn body, so the other tests get away with `{ txn: {} }`).
         const hardwareReadyGroup: AnalyzedSignableGroup = {
             ...mockGroup(),
             data: {
@@ -307,15 +304,65 @@ describe('multisigSignerActor', () => {
         actor.start()
         const results = await toPromise(actor)
 
-        // Both participants produce signatures: the algo25 one via the local
-        // signTransactions function, and the Ledger one via the hardware
-        // strategy (which goes through the registry's transport).
-        expect(results[0].signers).toHaveLength(2)
-        expect(results[0].signers.map(s => s.address).sort()).toEqual([
-            PARTICIPANT_A,
-            PARTICIPANT_B,
-        ])
+        // Only PARTICIPANT_A (local-key) signs the propose. The Ledger
+        // transport must NOT be invoked — the user signs the hardware slot
+        // explicitly via the per-row Sign button after propose completes.
+        expect(results[0].signers).toHaveLength(1)
+        expect(results[0].signers[0].address).toBe(PARTICIPANT_A)
         expect(signTransactions).toHaveBeenCalledTimes(1)
-        expect(transport.signTransaction).toHaveBeenCalledTimes(1)
+        expect(transport.signTransaction).not.toHaveBeenCalled()
+    })
+
+    it('short-circuits to an empty-signers deferred result when only hardware participants exist — propose call is deferred to the per-row Sign in the pending sheet', async () => {
+        const ledgerParticipant = {
+            type: 'hardware',
+            address: PARTICIPANT_A,
+            hardwareDetails: {
+                manufacturer: 'ledger',
+                deviceId: 'device-1',
+                deviceName: 'Nano X',
+                accountIndex: 0,
+                transportType: 'ble',
+            },
+        } as unknown as WalletAccount
+
+        const transport = makeMockTransport(PARTICIPANT_A)
+        const hardwareWalletRegistry = makeMockRegistry(transport)
+        const encodeTransaction = vi
+            .fn()
+            .mockReturnValue(new Uint8Array([0x01]))
+        const signTransactions = vi.fn()
+
+        const hardwareReadyGroup: AnalyzedSignableGroup = {
+            ...mockGroup(),
+            data: {
+                type: 'transactions',
+                transactions: [
+                    { sender: { toString: () => MULTISIG_ADDRESS } } as never,
+                ],
+                indicesToSign: [0],
+            },
+        }
+
+        const input = buildInput({
+            groups: [hardwareReadyGroup],
+            allAccounts: [makeMultisigAccount(), ledgerParticipant],
+            signTransactions,
+            encodeTransaction,
+            hardwareWalletRegistry,
+        })
+
+        const actor = createActor(multisigSignerActor, { input })
+        actor.start()
+        const results = await toPromise(actor)
+
+        // Empty signers is the defer signal the propose transport uses to
+        // create a local draft instead of calling the backend. The raw
+        // transaction is carried in signedData.signed so the transport can
+        // encode it for the draft.
+        expect(results[0].signers).toEqual([])
+        expect(results[0].signedData.type).toBe('transactions')
+        expect(signTransactions).not.toHaveBeenCalled()
+        expect(transport.signTransaction).not.toHaveBeenCalled()
     })
 })

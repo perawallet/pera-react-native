@@ -89,6 +89,7 @@ const seedRekeyAccounts = async (): Promise<{
         multisigDetails: {
             threshold: 1,
             addresses: [ALGO25_TEST_ADDRESS],
+            version: 1,
         },
     }
     useAccountsStore.getState().setAccounts([source, target])

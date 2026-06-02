@@ -21,5 +21,7 @@ export const usePrepareTransactionsMutation = () => {
     return useMutation({
         mutationFn: (data: PrepareTransactionsRequest) =>
             prepareTransactions(data, network),
+        // Handled by the caller — opt out of the global throwOnError default.
+        throwOnError: false,
     })
 }

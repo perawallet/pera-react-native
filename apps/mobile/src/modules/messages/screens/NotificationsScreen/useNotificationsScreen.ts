@@ -18,6 +18,7 @@ import {
     useNotificationsListQuery,
     useMarkNotificationsAsReadMutation,
 } from '@perawallet/wallet-core-messages'
+import { useNotificationPress } from '@modules/messages/hooks'
 
 export type UseNotificationsScreenResult = {
     isPending: boolean
@@ -27,6 +28,7 @@ export type UseNotificationsScreenResult = {
     keyExtractor: (item: PeraNotification) => string
     loadMoreItems: () => Promise<void>
     refetch: () => void
+    handleNotificationPress: (notification: PeraNotification) => void
 }
 
 export const useNotificationsScreen = (): UseNotificationsScreenResult => {
@@ -41,11 +43,12 @@ export const useNotificationsScreen = (): UseNotificationsScreenResult => {
         refetch,
     } = useNotificationsListQuery()
     const { markAsRead } = useMarkNotificationsAsReadMutation()
+    const { handleNotificationPress } = useNotificationPress()
 
     const notifications = data ?? []
 
     useEffect(() => {
-        const unsubscribe = navigation.addListener('blur', () => {
+        const unsubscribe = navigation.addListener('focus', () => {
             if (notifications.length > 0 && hasUnreadNotifications) {
                 markAsRead(parseInt(notifications[0].id, 10))
             }
@@ -66,5 +69,6 @@ export const useNotificationsScreen = (): UseNotificationsScreenResult => {
         keyExtractor: (item: PeraNotification) => item.id,
         loadMoreItems,
         refetch,
+        handleNotificationPress,
     }
 }

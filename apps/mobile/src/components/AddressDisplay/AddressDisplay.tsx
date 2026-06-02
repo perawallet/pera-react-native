@@ -135,10 +135,11 @@ export const AddressDisplay = ({
         const showSecondary = contact.name !== truncatedAddress
         const primaryText = (
             <PWText
-                style={textProps?.style ?? styles.primaryText}
                 variant={textProps?.variant ?? 'h4'}
                 numberOfLines={1}
                 ellipsizeMode='tail'
+                {...textProps}
+                style={textProps?.style ?? styles.primaryText}
             >
                 {contact.name}
             </PWText>
@@ -172,13 +173,10 @@ export const AddressDisplay = ({
         content = (
             <PWView style={styles.contactContainer}>
                 {showAvatar && (
-                    <PWView style={styles.foreignAvatar}>
-                        <PWIcon
-                            name='person'
-                            size='md'
-                            variant='white'
-                        />
-                    </PWView>
+                    <ContactAvatar
+                        size='md'
+                        variant={contactAvatarVariant}
+                    />
                 )}
                 {nfdName ? (
                     <PWView style={styles.addressTextStack}>
