@@ -22,7 +22,7 @@ const STATUS_VARIANT: Record<string, BadgeVariant> = {
     success: 'positive',
     error: 'alert',
     registering: 'primary',
-    skipped: 'secondary',
+    skipped: 'testnet',
     idle: 'secondary',
 }
 
