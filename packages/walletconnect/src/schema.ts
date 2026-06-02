@@ -11,6 +11,25 @@
  */
 
 import { z } from 'zod'
+import { ARC60_MAX_REQUEST_BYTES } from './constants'
+import { WalletConnectSignRequestError } from './errors'
+
+const byteLength = (value: string): number =>
+    new TextEncoder().encode(value).length
+
+/**
+ * Rejects an ARC-60 request whose serialized size exceeds
+ * {@link ARC60_MAX_REQUEST_BYTES} *before* it reaches `safeParse`/`canonify`.
+ * Pure + dependency-free so it can be unit-tested without the WC stack.
+ */
+export const assertArc60RequestWithinLimits = (rawParams: unknown): void => {
+    const serialized = JSON.stringify(rawParams) ?? ''
+    if (byteLength(serialized) > ARC60_MAX_REQUEST_BYTES) {
+        throw new WalletConnectSignRequestError(
+            'Invalid ARC-60 sign request payload — request exceeds the maximum allowed size',
+        )
+    }
+}
 
 /**
  * Zod schema for the wire shape of an ARC-60 `algo_signData` request.
@@ -21,14 +40,14 @@ import { z } from 'zod'
  * truth for the wire shape — do not duplicate typeof checks elsewhere.
  */
 export const arc60PayloadSchema = z.object({
-    data: z.string(),
-    signer: z.string().min(1),
-    domain: z.string().min(1),
-    authenticatorData: z.string().min(1),
-    requestId: z.string().optional(),
-    hdPath: z.string().optional(),
+    data: z.string().max(16 * 1024), // base64-encoded SIWA blob
+    signer: z.string().min(1).max(128),
+    domain: z.string().min(1).max(256),
+    authenticatorData: z.string().min(1).max(512),
+    requestId: z.string().max(256).optional(),
+    hdPath: z.string().max(256).optional(),
     metadata: z.object({
         scope: z.number().int(),
-        encoding: z.string().min(1),
+        encoding: z.string().min(1).max(32),
     }),
 })

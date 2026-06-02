@@ -36,3 +36,10 @@ export {
     MAX_DATA_SIGN_REQUESTS,
     MAX_TRANSACTION_SIGN_REQUESTS,
 } from '@perawallet/wallet-core-signing'
+
+/**
+ * Hard cap on the serialized size of an ARC-60 `algo_signData` request.
+ * ARC-60 is the primary untrusted-dApp input surface; oversized payloads are
+ * rejected *before* parse/canonify to keep the signing UI thread responsive.
+ */
+export const ARC60_MAX_REQUEST_BYTES = 64 * 1024
