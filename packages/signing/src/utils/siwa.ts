@@ -14,6 +14,19 @@ import { canonify } from 'canonify'
 import { z } from 'zod'
 import { Arc60BadJsonError } from './arc60-errors'
 
+const byteLength = (value: string): number =>
+    new TextEncoder().encode(value).length
+
+const maxBytes = (max: number) => (value: string) => byteLength(value) <= max
+
+/** Per the security review: statement ≤ 1KB, resources ≤ 32 × 256B, other fields capped. */
+export const SIWA_MAX_STATEMENT_BYTES = 1024
+export const SIWA_MAX_RESOURCES = 32
+export const SIWA_MAX_RESOURCE_BYTES = 256
+export const SIWA_MAX_FIELD_BYTES = 512
+/** Decoded SIWA JSON hard cap (defense-in-depth before JSON.parse/canonify). */
+export const SIWA_MAX_PAYLOAD_BYTES = 16 * 1024
+
 /**
  * SIWx chain id for Algorand. Equals the SLIP-0044 coin type (283) and is
  * constant across MainNet / TestNet (network is not part of the SIWA
@@ -21,29 +34,55 @@ import { Arc60BadJsonError } from './arc60-errors'
  */
 export const SIWA_CHAIN_ID = '283'
 
+// Per-field byte cap for SIWA descriptor strings ("sensible per-field cap"
+// from the ARC-60 hardening ticket). Two variants because `.refine()` returns
+// a ZodEffects, which has no `.min()` — so required fields must apply `.min(1)`
+// *before* the refine, while optional fields chain `.optional()` after it.
+const cappedField = z.string().refine(maxBytes(SIWA_MAX_FIELD_BYTES), {
+    message: `exceeds ${SIWA_MAX_FIELD_BYTES} bytes`,
+})
+const requiredField = z
+    .string()
+    .min(1)
+    .refine(maxBytes(SIWA_MAX_FIELD_BYTES), {
+        message: `exceeds ${SIWA_MAX_FIELD_BYTES} bytes`,
+    })
+
 /**
  * Zod schema for a Sign-In With Algorand (SIWA) AUTH-scope payload. Field
  * names match the Lute reference implementation so payloads interop across
  * wallets.
  */
 export const siwaSchema = z.object({
-    domain: z.string().min(1),
-    account_address: z.string().min(1),
-    uri: z.string().min(1),
-    version: z.string().min(1),
-    statement: z.string().optional(),
+    domain: requiredField,
+    account_address: requiredField,
+    uri: requiredField,
+    version: requiredField,
+    statement: z
+        .string()
+        .refine(maxBytes(SIWA_MAX_STATEMENT_BYTES), {
+            message: `statement exceeds ${SIWA_MAX_STATEMENT_BYTES} bytes`,
+        })
+        .optional(),
     // Required anti-replay token. ARC-60's AUTH scope is modeled on CAIP-122
     // (the chain-agnostic "Sign-In With X"), where `nonce` is mandatory: a
     // signed SIWA payload with no nonce is replayable, defeating the whole
     // point of the authentication challenge. Reject (rather than silently
     // sign) when it is absent or empty.
-    nonce: z.string().min(1),
-    'issued-at': z.string().optional(),
-    'expiration-time': z.string().optional(),
-    'not-before': z.string().optional(),
-    'request-id': z.string().optional(),
+    nonce: requiredField,
+    'issued-at': cappedField.optional(),
+    'expiration-time': cappedField.optional(),
+    'not-before': cappedField.optional(),
+    'request-id': cappedField.optional(),
     chain_id: z.literal(SIWA_CHAIN_ID),
-    resources: z.array(z.string()).optional(),
+    resources: z
+        .array(
+            z.string().refine(maxBytes(SIWA_MAX_RESOURCE_BYTES), {
+                message: `resource exceeds ${SIWA_MAX_RESOURCE_BYTES} bytes`,
+            }),
+        )
+        .max(SIWA_MAX_RESOURCES)
+        .optional(),
     type: z.literal('ed25519'),
 })
 
@@ -58,6 +97,9 @@ export type Siwa = z.infer<typeof siwaSchema>
  * break signature-replay protections downstream. Mirrors Lute's behaviour.
  */
 export const parseSiwa = (jsonString: string): Siwa => {
+    if (byteLength(jsonString) > SIWA_MAX_PAYLOAD_BYTES) {
+        throw new Arc60BadJsonError('payload exceeds the maximum allowed size')
+    }
     let parsed: unknown
     try {
         parsed = JSON.parse(jsonString)
