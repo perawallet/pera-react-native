@@ -295,6 +295,37 @@ describe('useCreateAccount', () => {
         expect(created.keyPairId).toBe('WALLET1-ed25519')
     })
 
+    test('createHdWalletAccountForSeed derives directly from seedKeyId without consulting getKey or createHDWalletKey (regression: stale useMemo)', async () => {
+        // The HD migration imports the seed in the same async tick, so
+        // `getKey()` (bound to a stale `useKeystoreKeys` snapshot via
+        // useMemo) would miss it and the regular `createHdWalletAccount`
+        // path would mint a fresh random seed. The for-seed variant goes
+        // straight to `getDerivedPublicKey` which reads the live store.
+        uuidSpies.v7.mockImplementationOnce(() => 'ACC1')
+
+        const { result } = renderHook(() => useCreateAccount())
+
+        let created: any
+        await act(async () => {
+            created = await result.current.createHdWalletAccountForSeed({
+                seedKeyId: 'IMPORTED_SEED',
+                account: 0,
+                keyIndex: 0,
+            })
+        })
+
+        expect(kmsMock.getKey).not.toHaveBeenCalled()
+        expect(kmsMock.createHDWalletKey).not.toHaveBeenCalled()
+        expect(kmsMock.getDerivedPublicKey).toHaveBeenCalledWith(
+            'IMPORTED_SEED',
+            0,
+            0,
+            9,
+        )
+        expect(created.type).toBe('hdWallet')
+        expect(created.keyPairId).toBe('IMPORTED_SEED-acc0-idx0-dt9')
+    })
+
     test('uses provided seed reference without consulting getKey or createAlgo25Key (regression: stale useMemo)', async () => {
         // getKey is bound to the previous render's keystore snapshot via
         // useMemo, so a key just minted in the same async handler isn't

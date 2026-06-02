@@ -35,6 +35,8 @@ import { TransactionDetailsScreen } from '@modules/signing/screens/TransactionDe
 import { GroupTransactionListScreen } from '@modules/transactions/screens/GroupTransactionListScreen'
 import { useHasAccounts } from '@perawallet/wallet-core-accounts'
 import { useIsOnboarding } from '@modules/onboarding/hooks'
+import { useNeedsMigration } from '@modules/migration/hooks'
+import { MigrationSplashScreen } from '@modules/migration/screens/MigrationSplashScreen'
 
 import { RootStackParamList } from './types'
 import { fullScreenLayout } from '@layouts/index'
@@ -57,6 +59,7 @@ export const MainRoutes = () => {
     const navTheme = getNavigationTheme(isDarkMode ? 'dark' : 'light')
     const hasAccounts = useHasAccounts()
     const { isOnboarding } = useIsOnboarding()
+    const { needsMigration } = useNeedsMigration()
 
     return (
         <NavigationContainer
@@ -72,13 +75,20 @@ export const MainRoutes = () => {
                 }}
                 screenListeners={screenListeners}
             >
-                {showOnboarding && (
+                {needsMigration && (
+                    <RootStack.Screen
+                        name='MigrationSplash'
+                        component={MigrationSplashScreen}
+                        options={{ statusBarStyle: 'dark' }}
+                    />
+                )}
+                {!needsMigration && showOnboarding && (
                     <RootStack.Screen
                         name='Onboarding'
                         component={OnboardingStackNavigator}
                     />
                 )}
-                {hasAccounts && !isOnboarding && (
+                {!needsMigration && hasAccounts && !isOnboarding && (
                     <>
                         <RootStack.Screen
                             name='TabBar'

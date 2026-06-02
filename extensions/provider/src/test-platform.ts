@@ -15,12 +15,14 @@ import {
     AnalyticsService,
     BiometricsService,
     CrashReportingService,
+    createStubMigrationService,
     DatabaseService,
     DeviceInfoService,
     DevicePlatforms,
     KeyValueStorageService,
     MemoryDatabaseService,
     MemoryKeyValueStorage,
+    MigrationService,
     PlatformServices,
     PushNotificationService,
     RemoteConfigService,
@@ -40,6 +42,7 @@ export type TestPlatformOverrides = Partial<{
     database: DatabaseService
     deviceInfo: DeviceInfoService
     hardwareWalletRegistry: HardwareWalletRegistry
+    migration: MigrationService
 }>
 
 /**
@@ -166,6 +169,7 @@ export const buildTestPlatform = (
         deviceInfo: overrides.deviceInfo ?? deviceInfo,
         hardwareWalletRegistry:
             overrides.hardwareWalletRegistry ?? defaultHardwareWalletRegistry,
+        migration: overrides.migration ?? createStubMigrationService(),
     }
 }
 
