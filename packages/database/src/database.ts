@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { sql } from 'drizzle-orm'
 import type {
     Database,
     DatabaseService,
@@ -51,4 +52,32 @@ export const deleteDatabase = async (
 ): Promise<void> => {
     await databaseService.delete(DATABASE_NAME)
     instance = null
+}
+
+/**
+ * Wipe all user data by emptying every table on the live connection, rather
+ * than closing + deleting + reopening the database file. Tearing the native
+ * connection down (deleteDatabase) while other callers — notably the sync
+ * service, which reads/writes via getDatabase() outside React Query — still
+ * have statements in flight frees the sqlite3 handle out from under them,
+ * crashing libexpo-sqlite.so with a SIGSEGV. expo-sqlite serializes operations
+ * on a single connection, so emptying tables here queues safely behind any
+ * in-flight work and never invalidates a handle.
+ *
+ * The schema and __drizzle_migrations bookkeeping are preserved, so the
+ * connection stays valid and migrations are not re-run.
+ */
+export const clearDatabase = async (
+    db: Database = getDatabase(),
+): Promise<void> => {
+    const tables = await db.values<[string]>(sql`
+        SELECT name FROM sqlite_master
+        WHERE type = 'table'
+          AND name NOT LIKE 'sqlite_%'
+          AND name != '__drizzle_migrations'
+    `)
+
+    for (const [name] of tables) {
+        await db.run(sql.raw(`DELETE FROM "${name}"`))
+    }
 }
