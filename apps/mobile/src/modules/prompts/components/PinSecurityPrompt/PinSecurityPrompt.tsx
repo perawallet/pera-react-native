@@ -18,7 +18,6 @@ import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { PromptViewProps } from '@modules/prompts/models'
 import { PWImage, PWTouchableOpacity } from '@components/core'
-import { getTestProps, getContainerTestProps } from '@utils/test-id-helper'
 import lockImage from '@assets/images/lock.webp'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -32,13 +31,13 @@ export const PinSecurityPrompt = (props: PromptViewProps) => {
     return (
         <PWView
             style={styles.container}
-            {...getContainerTestProps('pin_security_prompt')}
+            testID='pin_security_prompt'
         >
             <PWView style={styles.header}>
                 <PWTouchableOpacity
                     onPress={handleDontAskAgain}
                     style={styles.dontAskButton}
-                    {...getTestProps('pin_security_prompt_dont_ask_button')}
+                    testID='pin_security_prompt_dont_ask_button'
                 >
                     <PWText variant='body'>
                         {t('prompts.security.pin_dont_ask_again')}
@@ -73,14 +72,14 @@ export const PinSecurityPrompt = (props: PromptViewProps) => {
                     onPress={handleSetPinCode}
                     variant='primary'
                     title={t('prompts.security.pin_setpin')}
-                    {...getTestProps('pin_security_prompt_set_pin_button')}
+                    testID='pin_security_prompt_set_pin_button'
                 />
 
                 <PWButton
                     onPress={handleNotNow}
                     variant='secondary'
                     title={t('prompts.security.pin_notnow')}
-                    {...getTestProps('pin_security_prompt_not_now_button')}
+                    testID='pin_security_prompt_not_now_button'
                 />
             </PWView>
         </PWView>

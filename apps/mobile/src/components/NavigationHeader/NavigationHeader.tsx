@@ -10,8 +10,7 @@
  limitations under the License
  */
 
-import { PWToolbar, PWText, PWIcon } from '@components/core'
-import { getTestProps } from '@utils/test-id-helper'
+import { PWToolbar, PWText, PWIcon, PWTouchableOpacity } from '@components/core'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -62,12 +61,15 @@ export const NavigationHeader = (props: NavigationHeaderProps) => {
 
         if (props.navigation?.canGoBack()) {
             return (
-                <PWIcon
-                    style={styles.backButton}
-                    name='chevron-left'
+                <PWTouchableOpacity
                     onPress={props.navigation?.goBack}
-                    {...getTestProps('navigation_back_button')}
-                />
+                    testID='navigation_back_button'
+                >
+                    <PWIcon
+                        style={styles.backButton}
+                        name='chevron-left'
+                    />
+                </PWTouchableOpacity>
             )
         }
 
