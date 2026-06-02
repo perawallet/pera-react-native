@@ -83,3 +83,9 @@ regexes = [
     # Dummy ledger addresses used in tests
     '''(LEDGER|UNKNOWN|TEST|DUMMY|MOCK|FAKE)ADDR[0-9A-Z]+''',
 ]
+
+[[allowlists]]
+description = "Migration simulator fixtures are synthetic Ed25519 test keys (most prefixes decode to 'migration-simulator-...'); they exist solely to drive the dev-only Migration Simulator and never appear in production paths"
+paths = [
+    '''^apps/mobile/migration-(android|ios)/.*fixtures/.*''',
+]
