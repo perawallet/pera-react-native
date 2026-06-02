@@ -31,6 +31,7 @@ import type { RescanRekeyedStackParamList } from '@modules/rekey/routes/rescan-r
 import type { UndoRekeyStackParamList } from '@modules/rekey/routes/undo-rekey'
 
 export type RootStackParamList = {
+    MigrationSplash: undefined
     Onboarding: NavigatorScreenParams<OnboardingStackParamList>
     TabBar: NavigatorScreenParams<TabBarStackParamList>
     AddAccount: NavigatorScreenParams<AddAccountStackParamList>

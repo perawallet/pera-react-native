@@ -726,6 +726,15 @@
             "insufficient_algo_reject": "You don't have enough ALGO to reject this asset. Add funds to cover the transaction fees."
         }
     },
+    "migration": {
+        "splash": {
+            "success": "Migration completed successfully",
+            "failure_one": "Failed to migrate {{count}} account",
+            "failure_other": "Failed to migrate {{count}} accounts",
+            "continue": "Continue",
+            "do_not_show_again": "Do not show again"
+        }
+    },
     "multisig": {
         "create": {
             "title": "Create a\nShared Account",
@@ -1360,6 +1369,7 @@
         "developer_settings": "Developer Settings",
         "node_settings": "Node Settings",
         "feature_flags": "Feature Flags",
+        "migration_viewer": "Migration Viewer",
         "developer_menu": "Developer Options",
         "manage_cache": "Manage Cache",
         "messages": "Messages"
@@ -1589,7 +1599,35 @@
             "developer_menu_enabled": "Developer menu enabled",
             "overridden": "Overridden",
             "enabled": "Enabled",
-            "disabled": "Disabled"
+            "disabled": "Disabled",
+            "migration_viewer": {
+                "banner_title": "Legacy migration snapshot",
+                "refresh": "Refresh",
+                "migrate": "Migrate",
+                "migrating": "Migrating…",
+                "clear_migration_complete": "Clear migration complete",
+                "clear_skip_permanently": "Clear skip permanently",
+                "expand_all": "Expand all",
+                "collapse_all": "Collapse all",
+                "migrate_result_title": "Migration result",
+                "migrate_result_imported": "Imported",
+                "migrate_result_skipped": "Skipped (already present)",
+                "migrate_result_failed": "Failed",
+                "migrate_error_title": "Migration error",
+                "error_title": "Failed to read legacy data",
+                "section_identity": "Identity",
+                "section_preferences": "Preferences",
+                "section_auth": "Auth",
+                "section_accounts": "Accounts",
+                "section_hd_wallets": "HD Wallets",
+                "section_contacts": "Contacts",
+                "section_notification_filters": "Notification Filters",
+                "section_wc_v1": "WalletConnect v1",
+                "section_wc_v2": "WalletConnect v2",
+                "section_passkeys": "Passkeys",
+                "section_device_identifiers": "Device Identifiers",
+                "section_raw_flags": "Raw Flags"
+            }
         },
         "security": {
             "security_settings_section": "Security Settings",

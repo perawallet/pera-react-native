@@ -19,6 +19,7 @@ export const RemoteConfigKeys = {
     swap_price_impact_high_threshold: 'swap_price_impact_high_threshold',
     enable_motion_lock: 'enable_motion_lock',
     enable_duress_pin: 'enable_duress_pin',
+    pera_7_migration: 'pera_7_migration',
 } as const
 
 export type RemoteConfigKey =
@@ -36,6 +37,7 @@ export const RemoteConfigDefaults: Record<
     swap_price_impact_high_threshold: 5,
     enable_motion_lock: false,
     enable_duress_pin: false,
+    pera_7_migration: false,
 }
 
 export interface RemoteConfigService {

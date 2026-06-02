@@ -32,6 +32,7 @@ module.exports = function (api) {
           "@hooks": "./src/hooks",
           "@constants": "./src/constants",
           "@modules": "./src/modules",
+          "@migration": "./src/migration",
           "@assets": "./assets",
           "@theme": "./src/theme",
           "@utils": "./src/utils",

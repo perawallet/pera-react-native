@@ -42,6 +42,7 @@ const aliasMap = {
     '@hooks': path.resolve(projectRoot, 'src/hooks'),
     '@constants': path.resolve(projectRoot, 'src/constants'),
     '@modules': path.resolve(projectRoot, 'src/modules'),
+    '@migration': path.resolve(projectRoot, 'src/migration'),
     '@assets': path.resolve(projectRoot, 'assets'),
     '@theme': path.resolve(projectRoot, 'src/theme'),
     '@layouts': path.resolve(projectRoot, 'src/layouts'),

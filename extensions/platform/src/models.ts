@@ -14,6 +14,7 @@ import type { AnalyticsService } from './analytics'
 import type { BiometricsService } from './biometrics'
 import type { DeviceInfoService } from './device'
 import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
+import type { MigrationService } from './migration'
 import type {
     PushNotificationInitResult,
     PushNotificationService,
@@ -33,6 +34,7 @@ export interface PlatformServices {
     deviceInfo: DeviceInfoService
     database: DatabaseService
     hardwareWalletRegistry: HardwareWalletRegistry
+    migration: MigrationService
 }
 
 export type PlatformExtension = PlatformServices & {

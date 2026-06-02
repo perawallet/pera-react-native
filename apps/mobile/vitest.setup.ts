@@ -2571,6 +2571,7 @@ vi.mock('@perawallet/wallet-extension-platform', () => ({
     })),
     RemoteConfigDefaults: {
         welcome_message: 'Hello',
+        pera_7_migration: false,
     },
     RemoteConfigKeys: {
         welcome_message: 'welcome_message',
@@ -2579,6 +2580,7 @@ vi.mock('@perawallet/wallet-extension-platform', () => ({
         staking_projects: 'staking_projects',
         swap_price_impact_low_threshold: 'swap_price_impact_low_threshold',
         swap_price_impact_high_threshold: 'swap_price_impact_high_threshold',
+        pera_7_migration: 'pera_7_migration',
         enable_motion_lock: 'enable_motion_lock',
         enable_duress_pin: 'enable_duress_pin',
     },
