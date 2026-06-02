@@ -18,8 +18,11 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { runMigration, type MigrationRunResult } from '@migration/runMigration'
-import { useNeedsMigration } from '../../hooks'
+import {
+    runMigration,
+    useNeedsMigration,
+    type MigrationRunResult,
+} from '@perawallet/wallet-core-migrate'
 
 const SUCCESS_DISMISS_DELAY_MS = 3000
 

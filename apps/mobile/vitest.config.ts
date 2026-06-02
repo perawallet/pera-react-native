@@ -76,10 +76,6 @@ export default defineConfig({
                 replacement: path.resolve(__dirname, './src/modules'),
             },
             {
-                find: '@migration',
-                replacement: path.resolve(__dirname, './src/migration'),
-            },
-            {
                 find: '@hooks',
                 replacement: path.resolve(__dirname, './src/hooks'),
             },

@@ -18,7 +18,8 @@ import {
 import { useCurrenciesStore } from '@perawallet/wallet-core-currencies'
 import { useSettingsStore } from '@perawallet/wallet-core-settings'
 import type { LegacyPreferences } from '@perawallet/wallet-extension-platform'
-import { UserPreferences } from '@constants/user-preferences'
+
+const SECURITY_PIN_SETUP_PROMPT_KEY = 'security_pin_setup_prompt'
 
 export const migratePreferences = (preferences: LegacyPreferences): void => {
     applyAppearance(preferences)
@@ -87,7 +88,7 @@ const applyPromptDismissals = (preferences: LegacyPreferences): void => {
     if (preferences.pinSetupPromptDismissed === true) {
         useSettingsStore
             .getState()
-            .setPreference(UserPreferences._securityPinSetupPrompt, true)
+            .setPreference(SECURITY_PIN_SETUP_PROMPT_KEY, true)
     }
 }
 

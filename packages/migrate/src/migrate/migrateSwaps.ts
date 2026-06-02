@@ -13,7 +13,8 @@
 import { useSettingsStore } from '@perawallet/wallet-core-settings'
 import { useSwapsStore } from '@perawallet/wallet-core-swaps'
 import type { LegacyPreferences } from '@perawallet/wallet-extension-platform'
-import { UserPreferences } from '@constants/user-preferences'
+
+const SWAP_INTRODUCTION_SEEN_KEY = 'swap-introduction-seen'
 
 export const migrateSwaps = (preferences: LegacyPreferences): void => {
     if (preferences.swapSlippageTolerance !== null) {
@@ -24,7 +25,7 @@ export const migrateSwaps = (preferences: LegacyPreferences): void => {
 
     const settings = useSettingsStore.getState()
     if (preferences.swapTermsAccepted === true) {
-        settings.setPreference(UserPreferences.swapIntroductionSeen, true)
+        settings.setPreference(SWAP_INTRODUCTION_SEEN_KEY, true)
     }
     if (preferences.swapLastUsedAddress !== null) {
         settings.setPreference(
