@@ -270,6 +270,10 @@ describe('env-loader', () => {
             mainnetBidaliBaseUrl: 'https://commerce.bidali.example.com/dapp',
             testnetBidaliBaseUrl:
                 'https://commerce.staging.bidali.example.com/dapp',
+            mainnetBaanxBaseUrl: 'https://api.baanx.example.com',
+            testnetBaanxBaseUrl: 'https://dev.api.baanx.example.com',
+            mainnetBaanxClientKey: 'test-mainnet-baanx-key',
+            testnetBaanxClientKey: 'test-testnet-baanx-key',
             termsOfServiceUrl: 'https://terms.example.com',
             privacyPolicyUrl: 'https://privacy.example.com',
             peraDemoDappUrl: 'https://demo.example.com',
