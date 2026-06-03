@@ -17,6 +17,6 @@ export const useStyles = makeStyles(theme => {
         searchWrapper: {
             paddingTop: theme.spacing.sm,
             paddingBottom: theme.spacing.sm,
-        }
+        },
     }
 })
