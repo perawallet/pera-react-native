@@ -97,16 +97,18 @@ export const configSchema = z.object({
 export type Config = z.infer<typeof configSchema>
 
 /**
- * Default configuration pointing at production Pera infrastructure.
+ * Production configuration with safe defaults for open source builds.
  */
 const productionConfig = {
-    mainnetAlgodUrl: 'https://node-mainnet.chain.perawallet.app',
-    testnetAlgodUrl: 'https://node-testnet.chain.perawallet.app',
-    mainnetIndexerUrl: 'https://indexer-mainnet.chain.perawallet.app',
-    testnetIndexerUrl: 'https://indexer-testnet.chain.perawallet.app',
-    mainnetBackendUrl: 'https://mainnet.api.perawallet.app',
-    testnetBackendUrl: 'https://testnet.api.perawallet.app',
-    backendAPIKey: '',
+    mainnetAlgodUrl: 'https://mainnet-api.algonode.cloud',
+    testnetAlgodUrl: 'https://testnet-api.algonode.cloud',
+    mainnetIndexerUrl: 'https://mainnet-idx.algonode.cloud',
+    testnetIndexerUrl: 'https://testnet-idx.algonode.cloud',
+    mainnetBackendUrl: 'https://mainnet.staging.api.perawallet.app',
+    testnetBackendUrl: 'https://testnet.staging.api.perawallet.app',
+    //Dev API Key only - not suitable for production use
+    backendAPIKey:
+        'development-purposes-only-dc98f2c7-908f-4f74-81ef-9f5464213f99',
     algodApiKey: '',
     indexerApiKey: '',
 
@@ -114,9 +116,9 @@ const productionConfig = {
 
     mainnetExplorerUrl: 'https://explorer.perawallet.app',
     testnetExplorerUrl: 'https://testnet.explorer.perawallet.app',
-    discoverBaseUrl: 'https://discover-mobile.perawallet.app/',
-    stakingBaseUrl: 'https://staking-mobile.perawallet.app/',
-    onrampBaseUrl: 'https://onramp-mobile.perawallet.app/',
+    discoverBaseUrl: 'https://discover-mobile-staging.perawallet.app/',
+    stakingBaseUrl: 'https://staking-mobile-staging.perawallet.app/',
+    onrampBaseUrl: 'https://onramp-mobile-staging.perawallet.app/',
     supportBaseUrl: 'https://support.perawallet.app/',
     termsOfServiceUrl: 'https://perawallet.app/terms-and-services/',
     privacyPolicyUrl: 'https://perawallet.app/privacy-policy/',
@@ -193,6 +195,7 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     mainnetBackendUrl: 'MAINNET_BACKEND_URL',
     testnetBackendUrl: 'TESTNET_BACKEND_URL',
 
+    //Dev API Key only - not suitable for production use
     backendAPIKey: 'BACKEND_API_KEY',
     algodApiKey: 'ALGOD_API_KEY',
     indexerApiKey: 'INDEXER_API_KEY',

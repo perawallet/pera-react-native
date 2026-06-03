@@ -97,16 +97,6 @@ export const useAccountHeaderMenu = (): UseAccountHeaderMenuResult => {
                 icon: 'globe',
                 onPress: handleNetworkSwitch,
             })
-
-            baseItems.push({
-                label: 'Screen Gallery',
-                icon: 'grid-view',
-                onPress: () =>
-                    navigation.navigate('Settings', {
-                        screen: 'DeveloperSettings',
-                        params: { screen: 'Gallery' },
-                    }),
-            })
         }
 
         return baseItems

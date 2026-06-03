@@ -1573,7 +1573,6 @@
             "debug_webview": "Test Webview API",
             "debug_dapp": "Test Dapp",
             "manage_cache": "Manage Cache",
-            "screen_gallery": "Screen Gallery",
             "refresh_cache": "Refresh full cache",
             "refresh_cache_success_title": "Cache refreshed",
             "refresh_cache_success_body": "All accounts refetched and queries invalidated.",
