@@ -13,8 +13,8 @@
 import { useWindowDimensions } from 'react-native'
 import { useTheme } from '@rneui/themed'
 import QRCode from 'react-native-qrcode-svg'
-import { PWButton, PWIcon, PWText, PWToolbar, PWView } from '@components/core'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { PWButton, PWSheetLayout, PWText, PWView } from '@components/core'
+import { SheetHeader } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useExportShareAccountContent } from './useExportShareAccountContent'
 import { useStyles } from './styles'
@@ -30,24 +30,29 @@ export const ExportShareAccountContent = ({
     const { width } = useWindowDimensions()
     const { theme } = useTheme()
     const styles = useStyles()
-    const { dismiss } = useBottomSheetResult<void>()
     const { exportUrl, handleCopyUrl, handleShareUrl } =
         useExportShareAccountContent({ accountAddress })
 
     return (
-        <PWView style={styles.container}>
-            <PWToolbar
-                left={
-                    <PWIcon
-                        name='cross'
-                        onPress={dismiss}
+        <PWSheetLayout
+            header={<SheetHeader title={t('multisig.export.title')} />}
+            footer={
+                <PWView style={styles.actions}>
+                    <PWButton
+                        title={t('multisig.export.copy_url')}
+                        variant='primary'
+                        icon='copy'
+                        onPress={handleCopyUrl}
                     />
-                }
-                center={
-                    <PWText variant='h3'>{t('multisig.export.title')}</PWText>
-                }
-                paddingStyle='dense'
-            />
+                    <PWButton
+                        title={t('multisig.export.share_url')}
+                        variant='secondary'
+                        icon='share'
+                        onPress={handleShareUrl}
+                    />
+                </PWView>
+            }
+        >
             <PWView style={styles.qrSection}>
                 <QRCode
                     value={exportUrl}
@@ -64,20 +69,6 @@ export const ExportShareAccountContent = ({
                 </PWText>
                 <PWText style={styles.url}>{exportUrl}</PWText>
             </PWView>
-            <PWView style={styles.actions}>
-                <PWButton
-                    title={t('multisig.export.copy_url')}
-                    variant='primary'
-                    icon='copy'
-                    onPress={handleCopyUrl}
-                />
-                <PWButton
-                    title={t('multisig.export.share_url')}
-                    variant='secondary'
-                    icon='share'
-                    onPress={handleShareUrl}
-                />
-            </PWView>
-        </PWView>
+        </PWSheetLayout>
     )
 }

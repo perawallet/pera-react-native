@@ -10,103 +10,89 @@
  limitations under the License
  */
 
-import React from 'react'
+import React, { useCallback } from 'react'
 import {
     PWButton,
-    PWIcon,
+    PWSheetLayout,
     PWSwitch,
     PWText,
-    PWToolbar,
     PWView,
 } from '@components/core'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
+import { useNftFilterContent } from './useNftFilterContent'
 import { useStyles } from './styles'
 
-export type NftFilterContentProps = {
-    showOptedIn: boolean
-    showWatchAccounts: boolean
-    onToggleOptedIn: (value: boolean) => void
-    onToggleWatchAccounts: (value: boolean) => void
-}
-
-export const NftFilterContent = ({
-    showOptedIn,
-    showWatchAccounts,
-    onToggleOptedIn,
-    onToggleWatchAccounts,
-}: NftFilterContentProps) => {
+export const NftFilterContent = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const { dismiss } = useBottomSheetResult<void>()
+    const {
+        showOptedIn,
+        showWatchAccounts,
+        handleToggleOptedIn,
+        handleToggleWatchAccounts,
+        commitChanges,
+    } = useNftFilterContent()
+
+    const handleDone = useCallback(() => {
+        commitChanges()
+        dismiss()
+    }, [commitChanges, dismiss])
 
     return (
-        <>
-            <PWToolbar
-                left={
-                    <PWIcon
-                        name='cross'
-                        onPress={dismiss}
-                    />
-                }
-                center={
-                    <PWText variant='h4'>
-                        {t('account_details.nfts.filter_title')}
+        <PWSheetLayout
+            header={
+                <SheetHeader
+                    title={t('account_details.nfts.filter_title')}
+                    rightAction={
+                        <PWButton
+                            variant='linkPositive'
+                            title={t('common.apply')}
+                            onPress={handleDone}
+                            paddingStyle='none'
+                        />
+                    }
+                />
+            }
+        >
+            <PWView style={styles.filterRow}>
+                <PWView style={styles.filterTextContainer}>
+                    <PWText style={styles.filterLabel}>
+                        {t('account_details.nfts.filter_opted_in')}
                     </PWText>
-                }
-                right={
-                    <PWButton
-                        variant='linkPositive'
-                        title={t('account_details.nfts.filter_done')}
-                        onPress={dismiss}
-                        paddingStyle='none'
-                    />
-                }
-                paddingStyle='dense'
-                style={styles.toolbar}
-            />
-
-            <PWView style={styles.contentContainer}>
-                <PWView style={styles.filterRow}>
-                    <PWView style={styles.filterTextContainer}>
-                        <PWText style={styles.filterLabel}>
-                            {t('account_details.nfts.filter_opted_in')}
-                        </PWText>
-                        <PWText
-                            variant='caption'
-                            style={styles.filterDescription}
-                        >
-                            {t(
-                                'account_details.nfts.filter_opted_in_description',
-                            )}
-                        </PWText>
-                    </PWView>
-                    <PWSwitch
-                        value={showOptedIn}
-                        onValueChange={onToggleOptedIn}
-                    />
+                    <PWText
+                        variant='caption'
+                        style={styles.filterDescription}
+                    >
+                        {t('account_details.nfts.filter_opted_in_description')}
+                    </PWText>
                 </PWView>
-
-                <PWView style={styles.filterRow}>
-                    <PWView style={styles.filterTextContainer}>
-                        <PWText style={styles.filterLabel}>
-                            {t('account_details.nfts.filter_watch_accounts')}
-                        </PWText>
-                        <PWText
-                            variant='caption'
-                            style={styles.filterDescription}
-                        >
-                            {t(
-                                'account_details.nfts.filter_watch_accounts_description',
-                            )}
-                        </PWText>
-                    </PWView>
-                    <PWSwitch
-                        value={showWatchAccounts}
-                        onValueChange={onToggleWatchAccounts}
-                    />
-                </PWView>
+                <PWSwitch
+                    value={showOptedIn}
+                    onValueChange={handleToggleOptedIn}
+                />
             </PWView>
-        </>
+
+            <PWView style={styles.filterRow}>
+                <PWView style={styles.filterTextContainer}>
+                    <PWText style={styles.filterLabel}>
+                        {t('account_details.nfts.filter_watch_accounts')}
+                    </PWText>
+                    <PWText
+                        variant='caption'
+                        style={styles.filterDescription}
+                    >
+                        {t(
+                            'account_details.nfts.filter_watch_accounts_description',
+                        )}
+                    </PWText>
+                </PWView>
+                <PWSwitch
+                    value={showWatchAccounts}
+                    onValueChange={handleToggleWatchAccounts}
+                />
+            </PWView>
+        </PWSheetLayout>
     )
 }

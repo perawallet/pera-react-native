@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { PWScreen } from '@components/core'
 import { NotificationSettingsList } from '@modules/settings/components/NotificationSettingsList'
 import { useStyles } from './styles'
 
@@ -17,10 +18,13 @@ export const SettingsNotificationsScreen = () => {
     const styles = useStyles()
 
     return (
-        <NotificationSettingsList
-            style={styles.container}
-            contentContainerStyle={styles.scrollContent}
+        <PWScreen
+            scroll='never'
             testID='settings_notifications_screen'
-        />
+        >
+            <NotificationSettingsList
+                contentContainerStyle={styles.scrollContent}
+            />
+        </PWScreen>
     )
 }

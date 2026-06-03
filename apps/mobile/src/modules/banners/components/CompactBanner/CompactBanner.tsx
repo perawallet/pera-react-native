@@ -84,8 +84,7 @@ export const CompactBanner = ({
                         <PWText
                             style={styles.text}
                             weight={500}
-                            numberOfLines={1}
-                            ellipsizeMode='tail'
+                            truncate
                         >
                             {text}
                         </PWText>

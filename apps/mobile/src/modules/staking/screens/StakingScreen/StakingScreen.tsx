@@ -10,11 +10,12 @@
  limitations under the License
  */
 
-import { useCallback, useLayoutEffect } from 'react'
+import { useCallback } from 'react'
 import {
     PWButton,
     PWFlatList,
     PWIcon,
+    PWScreen,
     PWSkeleton,
     PWText,
     PWTouchableOpacity,
@@ -22,24 +23,21 @@ import {
 } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { LoadingView } from '@components/LoadingView'
-import { useNavigation } from '@react-navigation/native'
 import { useLanguage } from '@hooks/useLanguage'
+import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import {
     StakingErrorBoundary,
     StakingProjectCard,
 } from '@modules/staking/components'
 import type { StakingProject } from '@modules/staking/models'
-import { useBottomSafeAreaPadding } from '@hooks/useBottomSafeAreaPadding'
 import { useStakingScreen } from './useStakingScreen'
 import { useStyles } from './styles'
 
 const SKELETON_COUNT = 5
 
 export const StakingScreen = () => {
-    const bottomPadding = useBottomSafeAreaPadding()
-    const styles = useStyles(bottomPadding)
+    const styles = useStyles()
     const { t } = useLanguage()
-    const navigation = useNavigation()
     const {
         projects,
         isLoading,
@@ -49,18 +47,16 @@ export const StakingScreen = () => {
         handleHelpOpen,
     } = useStakingScreen()
 
-    useLayoutEffect(() => {
-        navigation.setOptions({
-            headerRight: () => (
-                <PWTouchableOpacity
-                    onPress={handleHelpOpen}
-                    testID='staking-help-button'
-                >
-                    <PWIcon name='question-mark' />
-                </PWTouchableOpacity>
-            ),
-        })
-    }, [navigation, handleHelpOpen])
+    useNavigationHeader({
+        right: (
+            <PWTouchableOpacity
+                onPress={handleHelpOpen}
+                testID='staking-help-button'
+            >
+                <PWIcon name='question-mark' />
+            </PWTouchableOpacity>
+        ),
+    })
 
     const renderProject = useCallback(
         ({ item, index }: { item: StakingProject; index: number }) => {
@@ -75,8 +71,11 @@ export const StakingScreen = () => {
         [handleProjectPress, projects.length],
     )
 
+    const keyExtractor = useCallback((item: StakingProject) => item.id, [])
+
     return (
-        <PWView
+        <PWScreen
+            scroll='never'
             style={styles.container}
             testID='staking-screen'
         >
@@ -146,7 +145,6 @@ export const StakingScreen = () => {
                     <EmptyView
                         title={t('staking.empty_title')}
                         body={t('staking.empty_body')}
-                        style={styles.emptyContainer}
                         testID='staking-empty-view'
                     />
                 )}
@@ -155,13 +153,13 @@ export const StakingScreen = () => {
                     <PWFlatList
                         data={projects}
                         renderItem={renderProject}
-                        keyExtractor={item => item.id}
+                        ItemSeparatorComponent={null}
+                        keyExtractor={keyExtractor}
                         style={styles.list}
-                        contentContainerStyle={styles.listContentContainer}
                         testID='staking-projects-list'
                     />
                 )}
             </StakingErrorBoundary>
-        </PWView>
+        </PWScreen>
     )
 }

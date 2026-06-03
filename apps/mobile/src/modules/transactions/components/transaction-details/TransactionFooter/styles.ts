@@ -21,9 +21,14 @@ export const useStyles = makeStyles(theme => ({
         marginTop: theme.spacing.md,
         gap: theme.spacing.xs,
         width: '100%',
+        minWidth: 0,
     },
     actionButton: {
         flexGrow: 1,
-        flexBasis: '48%',
+        flexShrink: 1,
+        flexBasis: '100%',
+        minWidth: 0,
+        maxWidth: '100%',
+        alignSelf: 'stretch',
     },
 }))

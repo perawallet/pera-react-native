@@ -14,6 +14,7 @@ import React, { useCallback, useRef } from 'react'
 import {
     PWCheckbox,
     PWFlatList,
+    PWScreen,
     PWSlideToConfirm,
     PWText,
     PWTouchableOpacity,
@@ -90,23 +91,10 @@ export const RemoveAssetsScreen = () => {
     )
 
     return (
-        <PWView style={styles.container}>
-            <PWFlatList
-                ref={listRef}
-                data={removableAssets}
-                renderItem={renderItem}
-                keyExtractor={item => item.assetId}
-                contentContainerStyle={styles.listContent}
-                ListEmptyComponent={
-                    <EmptyView
-                        title={t('remove_assets.empty_title')}
-                        body={t('remove_assets.empty_body')}
-                    />
-                }
-            />
-
-            {isRemoveSelectedVisible && (
-                <PWView style={styles.footerContainer}>
+        <PWScreen
+            scroll='never'
+            footer={
+                isRemoveSelectedVisible ? (
                     <PWSlideToConfirm
                         title={t('common.slide_to_confirm.label')}
                         onConfirm={handleRemoveSelected}
@@ -114,8 +102,21 @@ export const RemoveAssetsScreen = () => {
                         isDisabled={selectedAssetIds.size === 0 || isRemoving}
                         testID='remove_assets_confirm_slide'
                     />
-                </PWView>
-            )}
-        </PWView>
+                ) : undefined
+            }
+        >
+            <PWFlatList
+                ref={listRef}
+                data={removableAssets}
+                renderItem={renderItem}
+                keyExtractor={item => item.assetId}
+                ListEmptyComponent={
+                    <EmptyView
+                        title={t('remove_assets.empty_title')}
+                        body={t('remove_assets.empty_body')}
+                    />
+                }
+            />
+        </PWScreen>
     )
 }

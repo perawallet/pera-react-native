@@ -28,12 +28,11 @@ export const useStyles = makeStyles(theme => {
         alignSelf: 'center' as const,
     }
     return {
-        container: {
+        contentContainer: {
             flex: 1,
-            justifyContent: 'flex-start',
-            alignItems: 'center',
+            justifyContent: 'flex-start' as const,
+            alignItems: 'center' as const,
             gap: theme.spacing.lg,
-            paddingBottom: theme.spacing.lg,
         },
         h1,
         mainContentContainer: {
@@ -63,7 +62,6 @@ export const useStyles = makeStyles(theme => {
         nextButton: {
             width: 'auto',
             alignSelf: 'stretch',
-            marginHorizontal: theme.spacing.lg,
         },
         secondaryButton: {
             paddingVertical: theme.spacing.xs,
@@ -82,6 +80,10 @@ export const useStyles = makeStyles(theme => {
         },
         headerTitleContainer: {
             alignItems: 'center',
+        },
+        confirmMessage: {
+            alignItems: 'center',
+            gap: theme.spacing.sm,
         },
     }
 })

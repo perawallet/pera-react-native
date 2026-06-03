@@ -22,6 +22,7 @@ import {
     useAllAccounts,
     useCanSignWith,
     useFindAccountByAddress,
+    useMultisigDetailsBackfill,
     useRemoveAccountById,
     useUpdateAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -81,6 +82,8 @@ export const useAccountOptions = ({
     const { request: requestBottomSheet } = useBottomSheet()
     const { openViewPassphraseFlow } = useViewPassphraseFlow()
 
+    useMultisigDetailsBackfill(account)
+
     const canSign = useCanSignWith(account)
     const isRekeyed = isRekeyedAccount(account)
     const showPassphrase =
@@ -90,7 +93,7 @@ export const useAccountOptions = ({
     const isHdWallet = isHDWalletAccount(account)
     const isSharedAccount = isMultisigAccount(account)
     const participantCount = isMultisigAccount(account)
-        ? account.multisigDetails.addresses.length
+        ? (account.multisigDetails?.addresses.length ?? 0)
         : 0
 
     const authAccount = useFindAccountByAddress(account.rekeyAddress ?? '')
@@ -107,7 +110,7 @@ export const useAccountOptions = ({
 
     const handleViewPassphrase = useCallback(() => {
         // Dismiss the options menu first so we don't end up with the menu
-        // sheet stacked under the PIN / acknowledge / display sheets.
+        // sheet stacked under the PIN/acknowledge/display sheets.
         onClose()
         void openViewPassphraseFlow(account.address)
     }, [onClose, openViewPassphraseFlow, account.address])
@@ -150,12 +153,16 @@ export const useAccountOptions = ({
             contents: (
                 <ExportShareAccountContent accountAddress={account.address} />
             ),
-            options: { size: 'auto', enablePanDownToClose: true },
+            options: {
+                size: 'auto',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
         })
     }, [onClose, requestBottomSheet, account.address])
 
     const handleOpenSharedAccountDetail = useCallback(async () => {
-        if (!isMultisigAccount(account)) return
+        if (!isMultisigAccount(account) || !account.multisigDetails) return
         onClose()
         const details: SharedAccountDetails = {
             name: account.name ?? '',
@@ -167,7 +174,7 @@ export const useAccountOptions = ({
         await requestBottomSheet<void>({
             contents: <SharedAccountDetailsContent details={details} />,
             options: {
-                size: 'lg',
+                size: 'modal',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },
@@ -178,7 +185,11 @@ export const useAccountOptions = ({
         onClose()
         const newName = await requestBottomSheet<string>({
             contents: <RenameAccountContent accountAddress={account.address} />,
-            options: { size: 'auto', enablePanDownToClose: true },
+            options: {
+                size: 'auto',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
         })
         if (!newName) return
         updateAccount({ ...account, name: newName })

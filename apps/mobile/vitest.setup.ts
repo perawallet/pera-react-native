@@ -288,6 +288,8 @@ vi.mock('@components/core', () => {
         // PWBottomSheet host mounts it; consumers fall back to the global
         // Notifier when `.current` is null.
         bottomSheetNotifier: { current: null },
+        // Pure PWIconSize → pixel helper; size value is irrelevant to tests.
+        getIconPixelSize: () => 24,
         // Result screen wrapper used by success/error views; renders
         // title + body + action buttons we care about asserting on.
         PWResultView: ({
@@ -540,6 +542,33 @@ vi.mock('@components/core', () => {
                     React.createElement('span', { key: 'subtitle' }, subtitle),
                 children,
             ),
+        PWListItemLayout: ({
+            left,
+            children,
+            right,
+            showDivider,
+            onPress,
+            testID,
+            style,
+        }: any) =>
+            // Mirror the real component: a pressable row renders a button
+            // (PWTouchableOpacity), a static row renders a div (PWView).
+            React.createElement(
+                onPress ? 'button' : 'div',
+                {
+                    style,
+                    onClick: onPress,
+                    'data-testid': testID,
+                },
+                left && React.createElement('div', { key: 'left' }, left),
+                React.createElement('div', { key: 'center' }, children),
+                right && React.createElement('div', { key: 'right' }, right),
+                showDivider &&
+                    React.createElement('hr', {
+                        key: 'divider',
+                        'data-testid': testID ? `${testID}-divider` : undefined,
+                    }),
+            ),
         PWLoadingOverlay: ({ isVisible, title, children, ...props }: any) =>
             isVisible
                 ? React.createElement(
@@ -630,6 +659,51 @@ vi.mock('@components/core', () => {
             }),
         ),
         PWScrollView: createMockComponent('PWScrollView'),
+        PWSheetLayout: ({ header, children, footer, testID }: any) =>
+            React.createElement(
+                'div',
+                { 'data-testid': testID || 'PWSheetLayout' },
+                header &&
+                    React.createElement(
+                        'div',
+                        {
+                            key: 'header',
+                            'data-testid': 'PWSheetLayout-header',
+                        },
+                        header,
+                    ),
+                children,
+                footer &&
+                    React.createElement(
+                        'div',
+                        {
+                            key: 'footer',
+                            'data-testid': 'PWSheetLayout-footer',
+                        },
+                        footer,
+                    ),
+            ),
+        PWScreen: ({ header, children, footer, testID, style }: any) =>
+            React.createElement(
+                'div',
+                {
+                    style,
+                    'data-testid': testID || 'PWScreen',
+                },
+                header &&
+                    React.createElement(
+                        'div',
+                        { key: 'header', 'data-testid': 'PWScreen-header' },
+                        header,
+                    ),
+                children,
+                footer &&
+                    React.createElement(
+                        'div',
+                        { key: 'footer', 'data-testid': 'PWScreen-footer' },
+                        footer,
+                    ),
+            ),
         PWSkeleton: createMockComponent('PWSkeleton'),
         PWSwitch: ({ value, onValueChange, testID, ...props }: any) =>
             React.createElement('input', {
@@ -768,6 +842,44 @@ vi.mock('expo-image', () => {
         ImageContentFit: {},
     }
 })
+
+// `expo-video` is a native module: importing it under jsdom drags in
+// `expo/src/winter/runtime` and crashes with `Cannot find module
+// './ImportMetaRegistry'`. Stub the hook + view to the surface VideoPlayer
+// uses (a settable player with play/pause and a placeholder view).
+vi.mock('expo-video', () => {
+    const React = require('react')
+    return {
+        useVideoPlayer: (
+            _source: unknown,
+            setup?: (player: Record<string, unknown>) => void,
+        ) => {
+            const player = {
+                loop: false,
+                muted: false,
+                play: vi.fn(),
+                pause: vi.fn(),
+                replace: vi.fn(),
+                release: vi.fn(),
+            }
+            setup?.(player)
+            return player
+        },
+        VideoView: (props: Record<string, unknown>) =>
+            React.createElement('video', {
+                'data-testid': props.testID || 'expo-video',
+            }),
+    }
+})
+
+// `expo-media-library/legacy` is a native module: importing it under jsdom
+// drags in `expo/src/winter/runtime` and crashes resolving
+// `./ImportMetaRegistry`. Stub the surface CollectibleDetail uses (permission
+// request + save). Defaults to granted so the save path can be exercised.
+vi.mock('expo-media-library/legacy', () => ({
+    requestPermissionsAsync: vi.fn().mockResolvedValue({ status: 'granted' }),
+    saveToLibraryAsync: vi.fn().mockResolvedValue(undefined),
+}))
 
 vi.mock('expo-clipboard', () => ({
     setStringAsync: vi.fn(),
@@ -981,20 +1093,6 @@ vi.mock('react-native', () => {
                         children,
                     )
                 },
-            ),
-        KeyboardAvoidingView: vi
-            .fn()
-            .mockImplementation(({ testID, ...props }) =>
-                require('react').createElement(
-                    'div',
-                    {
-                        ...props,
-                        ...(testID
-                            ? { 'data-testid': testID, testid: testID }
-                            : {}),
-                    },
-                    props.children,
-                ),
             ),
         View: vi.fn().mockImplementation(({ testID, ...props }) =>
             require('react').createElement(
@@ -1462,14 +1560,22 @@ vi.mock('@react-navigation/native', () => ({
         const React = require('react')
         return React.createContext(undefined)
     })(),
+    NavigationContext: (() => {
+        const React = require('react')
+        return React.createContext(undefined)
+    })(),
 }))
 
-vi.mock('@react-navigation/bottom-tabs', () => ({
-    createBottomTabNavigator: vi.fn(() => ({
-        Navigator: ({ children }: any) => children,
-        Screen: ({ children }: any) => children,
-    })),
-}))
+vi.mock('@react-navigation/bottom-tabs', () => {
+    const React = require('react')
+    return {
+        createBottomTabNavigator: vi.fn(() => ({
+            Navigator: ({ children }: any) => children,
+            Screen: ({ children }: any) => children,
+        })),
+        BottomTabBarHeightContext: React.createContext(undefined),
+    }
+})
 
 vi.mock('@react-navigation/native-stack', () => {
     const React = require('react')
@@ -2085,6 +2191,10 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     ),
     formatWithUnits: vi.fn(value => String(value)),
     formatNumber: vi.fn(value => String(value)),
+    formatPercentage: vi.fn(
+        (value: { toFixed: (p: number) => string }, precision = 2) =>
+            `${value.toFixed(precision)}%`,
+    ),
     generateUniqueId: vi.fn(() => 'mock-uuid'),
     generateOrderedUniqueId: vi.fn(() => 'mock-time-uuid'),
     toError: vi.fn((e: unknown) =>
@@ -2165,6 +2275,7 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
         isSwappableAsset: vi.fn(() => true),
         apiSlippageToPercent: (slippage: InstanceType<typeof Decimal>) =>
             slippage.mul(100).toString(),
+        useProvidersQuery: vi.fn(() => ({ data: [] })),
     }
 })
 
@@ -2321,6 +2432,36 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         hasNextPage: false,
         fetchNextPage: vi.fn(),
     })),
+    AssetSortModes: {
+        balanceDesc: 'balanceDesc',
+        balanceAsc: 'balanceAsc',
+        alphabeticalAsc: 'alphabeticalAsc',
+        alphabeticalDesc: 'alphabeticalDesc',
+    },
+    useAssetPreferencesStore: vi.fn((selector: (s: any) => any) =>
+        selector({
+            assetSortMode: 'balanceDesc',
+            hideZeroBalance: false,
+            displayNfts: true,
+            displayOptedInNfts: true,
+            setAssetSortMode: vi.fn(),
+            setHideZeroBalance: vi.fn(),
+            setDisplayNfts: vi.fn(),
+            setDisplayOptedInNfts: vi.fn(),
+            resetState: vi.fn(),
+        }),
+    ),
+    useCollectiblePreferencesStore: vi.fn((selector: (s: any) => any) =>
+        selector({
+            collectibleSortMode: 'newestFirst',
+            showOptedIn: false,
+            showWatchAccounts: false,
+            setCollectibleSortMode: vi.fn(),
+            setShowOptedIn: vi.fn(),
+            setShowWatchAccounts: vi.fn(),
+            resetState: vi.fn(),
+        }),
+    ),
 }))
 
 // Mock @perawallet/wallet-core-settings
@@ -2442,6 +2583,21 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             multisig: 'multisig',
             watch: 'watch',
         },
+        AccountSortModes: {
+            alphabeticalAsc: 'alphabeticalAsc',
+            alphabeticalDesc: 'alphabeticalDesc',
+            balanceAsc: 'balanceAsc',
+            balanceDesc: 'balanceDesc',
+            manual: 'manual',
+        },
+        useAccountsStore: vi.fn((selector: (s: any) => any) =>
+            selector({
+                accounts: [],
+                addAccount: vi.fn(),
+                removeAccount: vi.fn(),
+                resetState: vi.fn(),
+            }),
+        ),
         useOwnedAssets: vi.fn(() => ({
             assets: [],
             isLoading: false,
@@ -2471,13 +2627,44 @@ vi.mock('@perawallet/wallet-core-contacts', () => ({
     DuplicateAddressError: class DuplicateAddressError extends Error {},
 }))
 
-// Mock @perawallet/wallet-core-currencies
-vi.mock('@perawallet/wallet-core-currencies', () => ({
-    useCurrency: vi.fn(() => ({
-        preferredCurrency: 'USD',
-        portfolioPreferredValue: '0',
+// Mock @perawallet/wallet-core-staking (dist schema.d.ts uses z.infer<typeof ...> which
+// cannot be parsed as JS; mock the whole package to avoid the SyntaxError)
+vi.mock('@perawallet/wallet-core-staking', () => ({
+    useStakingProjectsQuery: vi.fn(() => ({
+        data: [],
+        isLoading: false,
+        isError: false,
+        error: null,
+        refetch: vi.fn(),
     })),
 }))
+
+// Mock react-native-rate-app (native module not available in jsdom)
+vi.mock('react-native-rate-app', () => ({
+    default: {
+        requestReview: vi.fn().mockResolvedValue(true),
+        openStoreForReview: vi.fn().mockResolvedValue(true),
+        getAndroidMarketUrl: vi.fn(() => ''),
+    },
+    AndroidMarket: {
+        GOOGLE: 'google',
+        AMAZON: 'amazon',
+        SAMSUNG: 'samsung',
+        HUAWEI: 'huawei',
+    },
+}))
+
+// Mock @perawallet/wallet-core-currencies
+vi.mock('@perawallet/wallet-core-currencies', async () => {
+    const { Decimal } = await import('decimal.js')
+    return {
+        useCurrency: vi.fn(() => ({
+            preferredCurrency: 'USD',
+            portfolioPreferredValue: '0',
+            usdToPreferred: (usd: InstanceType<typeof Decimal>) => usd,
+        })),
+    }
+})
 
 // Mock @perawallet/wallet-core-blockchain
 class MockAlgodError extends Error {
@@ -2549,6 +2736,14 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
             )
         },
     ),
+    percentChange: vi.fn((first: unknown, last: unknown) => {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const { Decimal } = require('decimal.js')
+        const firstDp = new Decimal(String(first))
+        const lastDp = new Decimal(String(last))
+        if (firstDp.isZero()) return new Decimal(0)
+        return lastDp.minus(firstDp).div(firstDp).mul(100)
+    }),
 }))
 
 // Stub lottie-react-native globally. It ships untransformed TSX inside its

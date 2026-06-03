@@ -112,6 +112,8 @@ export type PeraAssetMetadata = {
 
 export const ALGO_ASSET_ID = '0'
 
+export const ALGO_ASSET_UNIT_NAME = 'ALGO'
+
 export const KNOWN_ASSET_IDS = {
     USDC: { mainnet: '31566704', testnet: '10458941' },
 } as const satisfies Record<string, Record<'mainnet' | 'testnet', string>>
@@ -124,7 +126,7 @@ export const getKnownAssetId = (key: KnownAssetKey, network: Network): string =>
 export const ALGO_ASSET: PeraAsset = {
     assetId: ALGO_ASSET_ID,
     name: 'Algo',
-    unitName: 'ALGO',
+    unitName: ALGO_ASSET_UNIT_NAME,
     decimals: 6,
     totalSupply: new Decimal('10000000000000000000'), //10,000 T microalgos
     creator: {

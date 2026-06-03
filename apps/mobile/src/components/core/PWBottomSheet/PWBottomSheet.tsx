@@ -25,9 +25,16 @@ import {
     useRef,
 } from 'react'
 import { useStyles } from './styles'
-import { Keyboard, Platform, StyleProp, ViewStyle } from 'react-native'
+import {
+    Keyboard,
+    StyleProp,
+    useWindowDimensions,
+    ViewStyle,
+} from 'react-native'
 import { NotifierRoot, NotifierWrapper } from 'react-native-notifier'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
+import { PWInBottomSheetContext } from './inSheetContext'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export const bottomSheetNotifier = createRef<Nullable<NotifierRoot>>()
@@ -37,17 +44,17 @@ type DefaultPropsReturn = {
     enableDynamicSizing: boolean
 }
 
+// Feeds both `modal`'s snap point and `auto`'s dynamic max height so the two
+// share one ceiling and can't drift apart.
+const SHEET_MAX_RATIO = 0.96
+
 const DEFAULT_PROPS: Record<PWBottomSheetSize, DefaultPropsReturn> = {
     auto: {
         enableDynamicSizing: true,
     },
-    lg: {
+    modal: {
         enableDynamicSizing: false,
-        snapPoints: ['90%'],
-    },
-    md: {
-        enableDynamicSizing: false,
-        snapPoints: ['50%'],
+        snapPoints: [`${SHEET_MAX_RATIO * 100}%`],
     },
     full: {
         enableDynamicSizing: false,
@@ -55,7 +62,7 @@ const DEFAULT_PROPS: Record<PWBottomSheetSize, DefaultPropsReturn> = {
     },
 }
 
-export type PWBottomSheetSize = 'full' | 'lg' | 'md' | 'auto'
+export type PWBottomSheetSize = 'full' | 'modal' | 'auto'
 
 export type PWBottomSheetProps = {
     isVisible: boolean
@@ -88,12 +95,20 @@ export const PWBottomSheet = ({
 }: PWBottomSheetProps) => {
     const bottomSheetModalRef = useRef<BottomSheetModal>(null)
     const insets = useSafeAreaInsets()
+    const { height: windowHeight } = useWindowDimensions()
     const defaults = DEFAULT_PROPS[size]
-    const styles = useStyles({ insets, isFull: size === 'full' })
 
-    // Sync isVisible prop with modal state. Dismiss the keyboard on the
-    // outgoing transition so a sheet that owns a focused input doesn't leave
-    // the keyboard stuck open over the rest of the app.
+    const maxDynamicContentSize =
+        size === 'auto' ? Math.round(windowHeight * SHEET_MAX_RATIO) : undefined
+
+    const styles = useStyles({
+        insets,
+        isFull: size === 'full',
+        maxDynamicContentSize,
+    })
+
+    const isFullScreen = size === 'full' || size === 'modal'
+
     useEffect(() => {
         if (isVisible) {
             bottomSheetModalRef.current?.present()
@@ -103,13 +118,7 @@ export const PWBottomSheet = ({
         }
     }, [isVisible])
 
-    // Gorhom's `BottomSheetModal` registers itself with the
-    // `BottomSheetModalProvider` on `present()` and does NOT auto-dismiss
-    // when the React component unmounts. If a controlled sheet is removed
-    // from the tree while still presented, its entry stays in the provider's
-    // stack and re-surfaces when the topmost sheet pops — visible as an
-    // orphan, content-empty modal you can't dismiss. Explicit cleanup
-    // dismisses the modal whenever the component unmounts.
+    // Gorhom keeps presented modals in the provider stack after unmount — dismiss on cleanup.
     useEffect(() => {
         return () => {
             bottomSheetModalRef.current?.dismiss()
@@ -131,44 +140,52 @@ export const PWBottomSheet = ({
         [styles.backdrop, enableCloseOnBackdropPress, onBackdropPress],
     )
 
-    // Gorhom fires this on actual dismissal completion (animation finished
-    // with status DISMISSED). `onBackdropPress` is intentionally NOT
-    // invoked here — that's reserved for the genuine backdrop-press
-    // gesture path. Fanning it out at dismiss caused a redundant
-    // `store.dismiss(...)` cycle that tore down the underlying sheet.
     const handleDismiss = useCallback(() => {
         onDismiss?.()
     }, [onDismiss])
 
-    // Pan-down / backdrop dismissals bypass the isVisible flow. Listen to the
-    // animation transitioning toward index -1 (closed) and dismiss the
-    // keyboard at the start of that animation so it doesn't linger after the
-    // sheet finishes closing.
     const handleAnimate = useCallback((_from: number, toIndex: number) => {
         if (toIndex === -1) {
             Keyboard.dismiss()
         }
     }, [])
 
-    // Merge background style with containerStyle for backward compatibility
     const mergedBackgroundStyle = containerStyle
         ? [styles.background, containerStyle]
         : styles.background
+
+    const sheetContent = autoCreateContainer ? (
+        <BottomSheetView
+            style={[styles.innerContainer, innerContainerStyle]}
+            testID={testID}
+        >
+            {children}
+        </BottomSheetView>
+    ) : (
+        <PWView
+            style={[styles.innerContainer, innerContainerStyle]}
+            testID={testID}
+        >
+            {children}
+        </PWView>
+    )
 
     return (
         <BottomSheetModal
             ref={bottomSheetModalRef}
             snapPoints={defaults.snapPoints}
             enableDynamicSizing={defaults.enableDynamicSizing}
+            maxDynamicContentSize={maxDynamicContentSize}
             stackBehavior='push'
-            // Never let the sheet rise above the status bar, even when its
-            // dynamically-sized content
             topInset={size === 'full' ? 0 : insets.top}
+            bottomInset={0}
             backdropComponent={renderBackdrop}
             onDismiss={handleDismiss}
             onAnimate={handleAnimate}
             handleIndicatorStyle={
-                enablePanDownToClose ? styles.handleIndicator : styles.hidden
+                enablePanDownToClose && !isFullScreen
+                    ? styles.handleIndicator
+                    : styles.hidden
             }
             backgroundStyle={mergedBackgroundStyle}
             detached={false}
@@ -177,29 +194,32 @@ export const PWBottomSheet = ({
             enablePanDownToClose={enablePanDownToClose}
             enableContentPanningGesture={enableContentPanningGesture}
             enableOverDrag={false}
-            bottomInset={Platform.OS === 'android' ? insets.bottom : 0}
         >
             <NotifierWrapper
                 omitGlobalMethodsHookup
                 ref={bottomSheetNotifier}
+                componentProps={{ ContainerComponent: SafeAreaView }}
             >
-                <PWView style={styles.contentWrapper}>
-                    {autoCreateContainer ? (
-                        <BottomSheetView
-                            style={[styles.innerContainer, innerContainerStyle]}
-                            testID={testID}
-                        >
-                            {children}
-                        </BottomSheetView>
-                    ) : (
-                        <PWView
-                            style={[styles.innerContainer, innerContainerStyle]}
-                            testID={testID}
-                        >
-                            {children}
-                        </PWView>
-                    )}
-                </PWView>
+                <PWInBottomSheetContext.Provider value={true}>
+                    <PWView style={styles.contentWrapper}>
+                        {isFullScreen ? (
+                            // Fixed-height sheets shrink to the space above the
+                            // keyboard via keyboard-controller — the app's single
+                            // keyboard owner (KeyboardProvider). gorhom's own
+                            // keyboardBehavior is inert while it's active. Skipped
+                            // for `auto` (content-sized) sheets, where a
+                            // height-based avoider would collapse to zero.
+                            <KeyboardAvoidingView
+                                behavior='height'
+                                style={styles.keyboardAvoider}
+                            >
+                                {sheetContent}
+                            </KeyboardAvoidingView>
+                        ) : (
+                            sheetContent
+                        )}
+                    </PWView>
+                </PWInBottomSheetContext.Provider>
             </NotifierWrapper>
         </BottomSheetModal>
     )

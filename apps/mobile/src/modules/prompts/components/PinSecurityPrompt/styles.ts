@@ -16,32 +16,17 @@ export const useStyles = makeStyles(theme => ({
     container: {
         flex: 1,
         backgroundColor: theme.colors.background,
-        gap: theme.spacing.lg,
-        paddingHorizontal: theme.spacing.xl,
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
+        paddingHorizontal: theme.spacing.xl,
     },
     dontAskButton: {
         padding: theme.spacing.sm,
         alignItems: 'flex-end',
         justifyContent: 'flex-end',
         width: '100%',
-    },
-    content: {
-        flexGrow: 1,
-        marginTop: theme.spacing.xxl,
-        gap: theme.spacing.lg,
-    },
-    title: {
-        textAlign: 'left',
-    },
-    description: {
-        textAlign: 'left',
-    },
-    buttonContainer: {
-        gap: theme.spacing.lg,
     },
 }))

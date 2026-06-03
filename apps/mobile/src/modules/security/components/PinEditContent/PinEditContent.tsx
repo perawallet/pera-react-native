@@ -10,8 +10,7 @@
  limitations under the License
  */
 
-import { PWIcon, PWTouchableOpacity, PWView } from '@components/core'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { PWIcon, PWToolbar, PWView } from '@components/core'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { PinEditView } from '../PinEditView'
 import type { PinEntryMode } from '../PinEditView'
@@ -35,8 +34,7 @@ export const PinEditContent = ({
     testID,
     savePinHandler,
 }: PinEditContentProps) => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles(insets)
+    const styles = useStyles()
     const { resolve, dismiss } = useBottomSheetResult<boolean>()
 
     return (
@@ -44,15 +42,16 @@ export const PinEditContent = ({
             style={styles.container}
             testID={testID}
         >
-            <PWView style={styles.closeButtonContainer}>
-                <PWTouchableOpacity
-                    style={styles.closeButton}
-                    onPress={dismiss}
-                    testID='close-button'
-                >
-                    <PWIcon name='cross' />
-                </PWTouchableOpacity>
-            </PWView>
+            <PWToolbar
+                left={
+                    <PWIcon
+                        name='cross'
+                        onPress={dismiss}
+                        testID='close-button'
+                    />
+                }
+                paddingStyle='normal'
+            />
             <PinEditView
                 mode={mode}
                 onSuccess={() => resolve(true)}

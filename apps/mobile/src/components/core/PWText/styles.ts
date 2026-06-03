@@ -36,5 +36,9 @@ export const useStyles = makeStyles(
                 },
             }),
         },
+        truncate: {
+            flexShrink: 1,
+            minWidth: 0,
+        },
     }),
 )

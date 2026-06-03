@@ -168,10 +168,14 @@ export const useDeepLink = (): UseDeepLinkResult => {
                     break
 
                 case DeeplinkType.ADDRESS_ACTIONS:
-                    requestByType('account-actions', {
-                        address: parsedData.address,
-                        label: parsedData.label,
-                    })
+                    requestByType(
+                        'account-actions',
+                        {
+                            address: parsedData.address,
+                            label: parsedData.label,
+                        },
+                        { enablePanDownToClose: true },
+                    )
                     break
 
                 case DeeplinkType.ALGO_TRANSFER:
@@ -284,10 +288,20 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         )
                         break
                     }
-                    requestByType('asset-opt-in', {
-                        assetId: parsedData.assetId,
-                        accountAddress,
-                    })
+                    requestByType(
+                        'asset-opt-in',
+                        {
+                            assetId: parsedData.assetId,
+                            accountAddress,
+                        },
+                        // PWSheetLayout only scrolls when it owns the
+                        // container: needs autoCreateContainer:false + bounded auto size.
+                        {
+                            size: 'auto',
+                            enablePanDownToClose: true,
+                            autoCreateContainer: false,
+                        },
+                    )
                     break
                 }
 
@@ -388,7 +402,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         'bidali',
                         {},
                         {
-                            size: 'lg',
+                            size: 'modal',
                             enablePanDownToClose: true,
                             autoCreateContainer: false,
                         },

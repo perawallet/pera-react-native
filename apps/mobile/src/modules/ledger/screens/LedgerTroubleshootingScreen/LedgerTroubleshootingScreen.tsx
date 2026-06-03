@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { PWButton, PWScrollView, PWText, PWView } from '@components/core'
+import { PWButton, PWScreen, PWText, PWView } from '@components/core'
+import { ScreenHeader } from '@components/ScreenHeader'
 import { useStyles } from './styles'
 import { useLedgerTroubleshootingScreen } from './useLedgerTroubleshootingScreen'
 
@@ -21,86 +21,71 @@ export const LedgerTroubleshootingScreen = () => {
         useLedgerTroubleshootingScreen()
 
     return (
-        <PWView
-            style={styles.container}
+        <PWScreen
             testID='ledger-troubleshooting-screen'
-        >
-            <PWScrollView contentContainerStyle={styles.content}>
-                <PWText
-                    variant='h1'
-                    style={styles.title}
-                >
-                    {t('ledger.troubleshooting.title')}
-                </PWText>
-                <PWText
-                    variant='h4'
-                    style={styles.description}
-                >
-                    {t('ledger.troubleshooting.description')}
-                </PWText>
-
-                <PWText
-                    variant='h3'
-                    style={styles.sectionTitle}
-                >
-                    {t('ledger.troubleshooting.pairing_steps_title')}
-                </PWText>
-                <PWView style={styles.list}>
-                    {pairingStepKeys.map((key, index) => (
-                        <PWView
-                            key={key}
-                            style={styles.listItem}
-                        >
-                            <PWView style={styles.stepCircle}>
-                                <PWText variant='bodySemibold'>
-                                    {String(index + 1)}
-                                </PWText>
-                            </PWView>
-                            <PWText
-                                variant='body'
-                                style={styles.listItemText}
-                            >
-                                {t(key)}
-                            </PWText>
-                        </PWView>
-                    ))}
-                </PWView>
-
-                <PWText
-                    variant='h3'
-                    style={styles.sectionTitle}
-                >
-                    {t('ledger.troubleshooting.common_issues_title')}
-                </PWText>
-                <PWView style={styles.list}>
-                    {commonIssueKeys.map(key => (
-                        <PWView
-                            key={key}
-                            style={styles.listItem}
-                        >
-                            <PWView style={styles.bullet} />
-                            <PWText
-                                variant='body'
-                                style={styles.listItemText}
-                            >
-                                {t(key)}
-                            </PWText>
-                        </PWView>
-                    ))}
-                </PWView>
-            </PWScrollView>
-
-            <SafeAreaView
-                edges={['bottom']}
-                style={styles.footer}
-            >
+            footer={
                 <PWButton
                     testID='ledger_troubleshooting_done_button'
                     title={t('ledger.troubleshooting.done')}
                     onPress={handleDone}
                     variant='primary'
                 />
-            </SafeAreaView>
-        </PWView>
+            }
+        >
+            <ScreenHeader
+                title={t('ledger.troubleshooting.title')}
+                description={t('ledger.troubleshooting.description')}
+            />
+
+            <PWText
+                variant='h3'
+                style={styles.sectionTitle}
+            >
+                {t('ledger.troubleshooting.pairing_steps_title')}
+            </PWText>
+            <PWView style={styles.list}>
+                {pairingStepKeys.map((key, index) => (
+                    <PWView
+                        key={key}
+                        style={styles.listItem}
+                    >
+                        <PWView style={styles.stepCircle}>
+                            <PWText variant='bodySemibold'>
+                                {String(index + 1)}
+                            </PWText>
+                        </PWView>
+                        <PWText
+                            variant='body'
+                            style={styles.listItemText}
+                        >
+                            {t(key)}
+                        </PWText>
+                    </PWView>
+                ))}
+            </PWView>
+
+            <PWText
+                variant='h3'
+                style={styles.sectionTitle}
+            >
+                {t('ledger.troubleshooting.common_issues_title')}
+            </PWText>
+            <PWView style={styles.list}>
+                {commonIssueKeys.map(key => (
+                    <PWView
+                        key={key}
+                        style={styles.listItem}
+                    >
+                        <PWView style={styles.bullet} />
+                        <PWText
+                            variant='body'
+                            style={styles.listItemText}
+                        >
+                            {t(key)}
+                        </PWText>
+                    </PWView>
+                ))}
+            </PWView>
+        </PWScreen>
     )
 }

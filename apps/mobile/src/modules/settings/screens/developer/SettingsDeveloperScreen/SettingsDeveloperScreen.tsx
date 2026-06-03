@@ -11,20 +11,19 @@
  */
 
 import { ParamListBase, useNavigation } from '@react-navigation/native'
-import { PWListItem, PWView } from '@components/core'
-import { useStyles } from './styles'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { useLanguage } from '@hooks/useLanguage'
 import { usePreferences } from '@perawallet/wallet-core-settings'
-import { UserPreferences } from '@constants/user-preferences'
-import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
 import { generateUniqueId } from '@perawallet/wallet-core-shared'
 
+import { PWListItem, PWScreen } from '@components/core'
+import { UserPreferences } from '@constants/user-preferences'
+import { useLanguage } from '@hooks/useLanguage'
+import { useWebView } from '@modules/webview'
+
 export const SettingsDeveloperScreen = () => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
-    const styles = useStyles()
     const { t } = useLanguage()
     const { getPreference } = usePreferences()
     const { pushWebView } = useWebView()
@@ -43,10 +42,7 @@ export const SettingsDeveloperScreen = () => {
     }
 
     return (
-        <PWView
-            style={styles.container}
-            testID='developer_settings_screen'
-        >
+        <PWScreen testID='developer_settings_screen'>
             <PWListItem
                 onPress={() => handleTapEvent('NodeSettings')}
                 icon='tree'
@@ -71,6 +67,6 @@ export const SettingsDeveloperScreen = () => {
                     testID='developer_settings_menu_item'
                 />
             )}
-        </PWView>
+        </PWScreen>
     )
 }

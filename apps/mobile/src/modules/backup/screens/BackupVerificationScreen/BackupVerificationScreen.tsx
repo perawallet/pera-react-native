@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { PWButton, PWScrollView, PWText, PWView } from '@components/core'
+import { PWButton, PWScreen, PWView } from '@components/core'
+import { ScreenHeader } from '@components/ScreenHeader'
 import { useLanguage } from '@hooks/useLanguage'
 import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
 import { BackupQuizItem } from '../../components/BackupQuizItem'
@@ -27,17 +28,19 @@ export const BackupVerificationScreen = () => {
         useBackupVerificationScreen()
 
     return (
-        <PWView style={styles.root}>
-            <PWScrollView
-                style={styles.scroll}
-                contentContainerStyle={styles.scrollContent}
-            >
-                <PWText
-                    variant='h1'
-                    style={styles.title}
-                >
-                    {t('backup.verification.title')}
-                </PWText>
+        <PWScreen
+            footer={
+                <PWButton
+                    title={t('backup.verification.cta_next')}
+                    variant='primary'
+                    isDisabled={!isFilled}
+                    onPress={onSubmit}
+                    testID='backup_verification_next'
+                />
+            }
+        >
+            <PWView style={styles.scrollContent}>
+                <ScreenHeader title={t('backup.verification.title')} />
                 <PWView style={styles.quizList}>
                     {items.map((item, i) => (
                         <BackupQuizItem
@@ -50,17 +53,7 @@ export const BackupVerificationScreen = () => {
                         />
                     ))}
                 </PWView>
-            </PWScrollView>
-
-            <PWView style={styles.footer}>
-                <PWButton
-                    title={t('backup.verification.cta_next')}
-                    variant='primary'
-                    isDisabled={!isFilled}
-                    onPress={onSubmit}
-                    testID='backup_verification_next'
-                />
             </PWView>
-        </PWView>
+        </PWScreen>
     )
 }

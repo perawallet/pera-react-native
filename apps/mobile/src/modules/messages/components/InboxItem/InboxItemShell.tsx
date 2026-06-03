@@ -21,8 +21,24 @@ export type InboxItemShellProps = {
     item: InboxItemModel
     icon: ReactNode
     title: ReactNode
+    /**
+     * Trailing text shown beside the title on a single-line (`center`) row.
+     * Ignored when `align='top'` — use `body` for multi-line content.
+     */
     subtitle?: ReactNode
+    /**
+     * Rich, multi-line content stacked under the title (status rows, badges,
+     * CTAs). Pairs with `align='top'`, which pins the indicator/icon to the
+     * first line.
+     */
+    body?: ReactNode
+    /**
+     * `center` (default) is a single-line row with the indicator/icon centered;
+     * `top` pins them to the first line for multi-line `body` content.
+     */
+    align?: 'center' | 'top'
     onPress?: () => void
+    testID?: string
 }
 
 export const InboxItemShell = ({
@@ -30,29 +46,47 @@ export const InboxItemShell = ({
     icon,
     title,
     subtitle,
+    body,
+    align = 'center',
     onPress,
+    testID,
 }: InboxItemShellProps) => {
     const styles = useStyles()
 
+    const isTop = align === 'top'
+    const indicator = <UnreadIndicator isUnread={isPendingAction(item)} />
+
     return (
         <PWTouchableOpacity
-            style={styles.container}
+            style={[styles.container, isTop && styles.containerTop]}
             onPress={onPress}
             disabled={!onPress}
+            testID={testID}
         >
-            <UnreadIndicator isUnread={isPendingAction(item)} />
+            {isTop ? (
+                <PWView style={styles.indicatorSlot}>{indicator}</PWView>
+            ) : (
+                indicator
+            )}
             {icon}
-            <PWView style={styles.messageBox}>
-                <PWText style={styles.titleText}>{title}</PWText>
-                {subtitle ? (
-                    <PWText
-                        variant='caption'
-                        style={styles.subtitleText}
-                    >
-                        {subtitle}
-                    </PWText>
-                ) : null}
-            </PWView>
+            {isTop ? (
+                <PWView style={styles.content}>
+                    <PWText style={styles.titleText}>{title}</PWText>
+                    {body}
+                </PWView>
+            ) : (
+                <PWView style={styles.messageBox}>
+                    <PWText style={styles.titleText}>{title}</PWText>
+                    {subtitle ? (
+                        <PWText
+                            variant='caption'
+                            style={styles.subtitleText}
+                        >
+                            {subtitle}
+                        </PWText>
+                    ) : null}
+                </PWView>
+            )}
         </PWTouchableOpacity>
     )
 }

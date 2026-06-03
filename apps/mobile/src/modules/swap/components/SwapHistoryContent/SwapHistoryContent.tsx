@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { PWIcon, PWText, PWToolbar, PWView } from '@components/core'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { PWView } from '@components/core'
+import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { SwapHistoryList } from '@modules/swap/components/SwapHistoryList'
 import { useStyles } from './styles'
@@ -27,17 +27,7 @@ export const SwapHistoryContent = ({ address }: SwapHistoryContentProps) => {
 
     return (
         <>
-            <PWToolbar
-                left={
-                    <PWIcon
-                        name='cross'
-                        variant='secondary'
-                        onPress={dismiss}
-                    />
-                }
-                center={<PWText variant='h4'>{t('swap.history.title')}</PWText>}
-                paddingStyle='dense'
-            />
+            <SheetHeader title={t('swap.history.title')} />
             <PWView style={styles.listWrapper}>
                 <SwapHistoryList
                     address={address}

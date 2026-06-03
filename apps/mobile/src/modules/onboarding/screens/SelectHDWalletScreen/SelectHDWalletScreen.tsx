@@ -19,19 +19,19 @@ import {
     PWTouchableOpacity,
     PWButton,
     PWLoadingOverlay,
+    PWScreen,
 } from '@components/core'
 import { type HDWalletGroup } from '@perawallet/wallet-core-accounts'
 import { ALGO_ASSET, ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
+import { ScreenHeader } from '@components/ScreenHeader'
 import { Decimal } from 'decimal.js'
-import { useBottomSafeAreaPadding } from '@hooks/useBottomSafeAreaPadding'
 import { useStyles } from './styles'
 import { useSelectHDWalletScreen } from './useSelectHDWalletScreen'
 
 export const SelectHDWalletScreen = () => {
-    const bottomPadding = useBottomSafeAreaPadding()
-    const styles = useStyles(bottomPadding)
+    const styles = useStyles()
     const {
         hdWalletGroups,
         accountBalances,
@@ -72,34 +72,36 @@ export const SelectHDWalletScreen = () => {
                     size='lg'
                     style={styles.walletIconContainer}
                 />
-                <PWView style={styles.walletTextContainer}>
-                    <PWText variant='h3'>{walletLabel}</PWText>
-                    <PWText
-                        variant='body'
-                        style={styles.walletSubtitle}
-                    >
-                        {t('onboarding.select_hd_wallet.account_count', {
-                            count: item.accountCount,
-                        })}
-                    </PWText>
-                </PWView>
-                <PWView style={styles.balanceContainer}>
-                    <CurrencyDisplay
-                        currency='ALGO'
-                        value={groupAlgoValue}
-                        precision={ALGO_ASSET.decimals}
-                        minPrecision={2}
-                        style={styles.algoBalance}
-                        variant='h4'
-                    />
-                    <PreferredCurrencyDisplay
-                        sourceAssetId={ALGO_ASSET_ID}
-                        sourceAmount={groupAlgoValue}
-                        precision={2}
-                        minPrecision={2}
-                        style={styles.fiatBalance}
-                        variant='body'
-                    />
+                <PWView style={styles.rowContent}>
+                    <PWView style={styles.walletTextContainer}>
+                        <PWText variant='h3'>{walletLabel}</PWText>
+                        <PWText
+                            variant='body'
+                            style={styles.walletSubtitle}
+                        >
+                            {t('onboarding.select_hd_wallet.account_count', {
+                                count: item.accountCount,
+                            })}
+                        </PWText>
+                    </PWView>
+                    <PWView style={styles.balanceContainer}>
+                        <CurrencyDisplay
+                            currency='ALGO'
+                            value={groupAlgoValue}
+                            precision={ALGO_ASSET.decimals}
+                            minPrecision={2}
+                            style={styles.algoBalance}
+                            variant='h4'
+                        />
+                        <PreferredCurrencyDisplay
+                            sourceAssetId={ALGO_ASSET_ID}
+                            sourceAmount={groupAlgoValue}
+                            precision={2}
+                            minPrecision={2}
+                            style={styles.fiatBalance}
+                            variant='body'
+                        />
+                    </PWView>
                 </PWView>
             </PWTouchableOpacity>
         )
@@ -107,30 +109,9 @@ export const SelectHDWalletScreen = () => {
 
     return (
         <>
-            <PWView style={styles.container}>
-                <PWView style={styles.content}>
-                    <PWText
-                        variant='h1'
-                        style={styles.title}
-                    >
-                        {t('onboarding.select_hd_wallet.title')}
-                    </PWText>
-                    <PWText
-                        variant='body'
-                        style={styles.description}
-                    >
-                        {t('onboarding.select_hd_wallet.description')}
-                    </PWText>
-                    <PWFlatList
-                        style={styles.list}
-                        data={hdWalletGroups}
-                        renderItem={renderItem}
-                        keyExtractor={item => item.seedKeyId}
-                        extraData={accountBalances}
-                        contentContainerStyle={styles.listContent}
-                    />
-                </PWView>
-                <PWView style={styles.footer}>
+            <PWScreen
+                scroll='never'
+                footer={
                     <PWButton
                         title={t(
                             'onboarding.select_hd_wallet.create_new_wallet',
@@ -141,8 +122,24 @@ export const SelectHDWalletScreen = () => {
                         icon='plus'
                         testID='select_hd_wallet_create_new'
                     />
+                }
+            >
+                <PWView style={styles.content}>
+                    <ScreenHeader
+                        title={t('onboarding.select_hd_wallet.title')}
+                        description={t(
+                            'onboarding.select_hd_wallet.description',
+                        )}
+                    />
+                    <PWFlatList
+                        style={styles.list}
+                        data={hdWalletGroups}
+                        renderItem={renderItem}
+                        keyExtractor={item => item.seedKeyId}
+                        extraData={accountBalances}
+                    />
                 </PWView>
-            </PWView>
+            </PWScreen>
 
             <PWLoadingOverlay
                 isVisible={isCreatingWallet}

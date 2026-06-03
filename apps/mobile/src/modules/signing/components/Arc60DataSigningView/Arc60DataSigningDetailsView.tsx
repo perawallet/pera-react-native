@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWText, PWView, PWScrollView } from '@components/core'
+import { PWText, PWView } from '@components/core'
 import type {
     Arc60ParsedPayload,
     Arc60SignRequest,
@@ -82,80 +82,71 @@ export const Arc60DataSigningDetailsView = ({
     const parseError = parsed.type === 'error' ? parsed.message : undefined
 
     return (
-        <PWView style={styles.container}>
+        <PWView>
             <PWView style={[styles.section, styles.titleSection]}>
                 <PWText style={styles.description}>
                     {t('signing.arc60_view.details_description')}
                 </PWText>
             </PWView>
-            <PWScrollView
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.scrollContainer}
-            >
+            <PWView style={styles.section}>
+                <KeyValueRow title={t('signing.arc60_view.domain')}>
+                    <PWText>{request.stdSigData.domain}</PWText>
+                </KeyValueRow>
+                <KeyValueRow title={t('signing.arc60_view.scope')}>
+                    <PWText>{t('signing.arc60_view.scope_auth')}</PWText>
+                </KeyValueRow>
+                {!!request.stdSigData.requestId && (
+                    <KeyValueRow title={t('signing.arc60_view.request_id')}>
+                        <PWText>{request.stdSigData.requestId}</PWText>
+                    </KeyValueRow>
+                )}
+                {!!account && (
+                    <KeyValueRow title={t('signing.arc60_view.on_behalf_of')}>
+                        <AccountDisplay
+                            account={account}
+                            showChevron={false}
+                        />
+                    </KeyValueRow>
+                )}
+            </PWView>
+            {!!siwa && (
                 <PWView style={styles.section}>
-                    <KeyValueRow title={t('signing.arc60_view.domain')}>
-                        <PWText>{request.stdSigData.domain}</PWText>
-                    </KeyValueRow>
-                    <KeyValueRow title={t('signing.arc60_view.scope')}>
-                        <PWText>{t('signing.arc60_view.scope_auth')}</PWText>
-                    </KeyValueRow>
-                    {!!request.stdSigData.requestId && (
-                        <KeyValueRow title={t('signing.arc60_view.request_id')}>
-                            <PWText>{request.stdSigData.requestId}</PWText>
+                    {!!siwa.statement && (
+                        <KeyValueRow
+                            title={t('signing.arc60_view.siwa_statement')}
+                        >
+                            <PWText>{siwa.statement}</PWText>
                         </KeyValueRow>
                     )}
-                    {!!account && (
+                    {buildSiwaFields(siwa, t).map(field => (
                         <KeyValueRow
-                            title={t('signing.arc60_view.on_behalf_of')}
+                            key={field.label}
+                            title={field.label}
                         >
-                            <AccountDisplay
-                                account={account}
-                                showChevron={false}
-                            />
+                            <PWText>{field.value}</PWText>
+                        </KeyValueRow>
+                    ))}
+                    {!!siwa.resources?.length && (
+                        <KeyValueRow
+                            title={t('signing.arc60_view.siwa_resources')}
+                        >
+                            <PWView style={styles.resources}>
+                                {siwa.resources.map(resource => (
+                                    <PWText key={resource}>{resource}</PWText>
+                                ))}
+                            </PWView>
                         </KeyValueRow>
                     )}
                 </PWView>
-                {!!siwa && (
-                    <PWView style={styles.section}>
-                        {!!siwa.statement && (
-                            <KeyValueRow
-                                title={t('signing.arc60_view.siwa_statement')}
-                            >
-                                <PWText>{siwa.statement}</PWText>
-                            </KeyValueRow>
-                        )}
-                        {buildSiwaFields(siwa, t).map(field => (
-                            <KeyValueRow
-                                key={field.label}
-                                title={field.label}
-                            >
-                                <PWText>{field.value}</PWText>
-                            </KeyValueRow>
-                        ))}
-                        {!!siwa.resources?.length && (
-                            <KeyValueRow
-                                title={t('signing.arc60_view.siwa_resources')}
-                            >
-                                <PWView style={styles.resources}>
-                                    {siwa.resources.map(resource => (
-                                        <PWText key={resource}>
-                                            {resource}
-                                        </PWText>
-                                    ))}
-                                </PWView>
-                            </KeyValueRow>
-                        )}
-                    </PWView>
-                )}
-                {!!parseError && (
-                    <PWView style={styles.section}>
-                        <PWText style={styles.errorText}>
-                            {t('signing.arc60_view.siwa_invalid')}
-                        </PWText>
-                        <PWText style={styles.errorText}>{parseError}</PWText>
-                    </PWView>
-                )}
-            </PWScrollView>
+            )}
+            {!!parseError && (
+                <PWView style={styles.section}>
+                    <PWText style={styles.errorText}>
+                        {t('signing.arc60_view.siwa_invalid')}
+                    </PWText>
+                    <PWText style={styles.errorText}>{parseError}</PWText>
+                </PWView>
+            )}
         </PWView>
     )
 }

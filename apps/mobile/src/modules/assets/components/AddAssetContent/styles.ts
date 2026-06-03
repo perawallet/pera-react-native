@@ -13,18 +13,6 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: theme.spacing.md,
-        paddingTop: theme.spacing.md,
-        paddingBottom: theme.spacing.sm,
-    },
-    headerTitle: {
-        flex: 1,
-        textAlign: 'center',
-    },
     headerAction: {
         width: theme.spacing.xl,
         alignItems: 'center',

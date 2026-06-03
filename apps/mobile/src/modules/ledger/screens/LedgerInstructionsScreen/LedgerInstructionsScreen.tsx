@@ -11,8 +11,8 @@
  */
 
 import React from 'react'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { PWView, PWText, PWButton, PWIcon } from '@components/core'
+import { PWButton, PWScreen, PWText, PWView } from '@components/core'
+import { ScreenHeader } from '@components/ScreenHeader'
 
 import { useStyles } from './styles'
 import { useLedgerInstructionsScreen } from './useLedgerInstructionsScreen'
@@ -44,55 +44,9 @@ export const LedgerInstructionsScreen = () => {
     const instructions = isUsb ? USB_INSTRUCTIONS : BLE_INSTRUCTIONS
 
     return (
-        <PWView style={styles.container}>
-            <PWView style={styles.content}>
-                <PWView style={styles.iconContainer}>
-                    <PWIcon
-                        name='wallet'
-                        size='xxl'
-                    />
-                </PWView>
-
-                <PWText
-                    variant='h1'
-                    style={styles.title}
-                >
-                    {t(titleKey)}
-                </PWText>
-
-                <PWText
-                    variant='h4'
-                    style={styles.description}
-                >
-                    {t(descriptionKey)}
-                </PWText>
-
-                <PWView style={styles.instructionsList}>
-                    {instructions.map(({ step, key }) => (
-                        <PWView
-                            key={step}
-                            style={styles.instructionItem}
-                        >
-                            <PWView style={styles.stepCircle}>
-                                <PWText variant='bodySemibold'>
-                                    {String(step)}
-                                </PWText>
-                            </PWView>
-                            <PWText
-                                variant='body'
-                                style={styles.instructionText}
-                            >
-                                {t(key)}
-                            </PWText>
-                        </PWView>
-                    ))}
-                </PWView>
-            </PWView>
-
-            <SafeAreaView
-                edges={['bottom']}
-                style={styles.footer}
-            >
+        <PWScreen
+            scroll='never'
+            footer={
                 <PWButton
                     testID='ledger_instructions_continue_button'
                     title={t('ledger.instructions.continue')}
@@ -100,7 +54,34 @@ export const LedgerInstructionsScreen = () => {
                     variant='primary'
                     isDisabled={isChecking}
                 />
-            </SafeAreaView>
-        </PWView>
+            }
+        >
+            <ScreenHeader
+                icon='ledger'
+                title={t(titleKey)}
+                description={t(descriptionKey)}
+            />
+
+            <PWView style={styles.instructionsList}>
+                {instructions.map(({ step, key }) => (
+                    <PWView
+                        key={step}
+                        style={styles.instructionItem}
+                    >
+                        <PWView style={styles.stepCircle}>
+                            <PWText variant='bodySemibold'>
+                                {String(step)}
+                            </PWText>
+                        </PWView>
+                        <PWText
+                            variant='body'
+                            style={styles.instructionText}
+                        >
+                            {t(key)}
+                        </PWText>
+                    </PWView>
+                ))}
+            </PWView>
+        </PWScreen>
     )
 }

@@ -12,18 +12,15 @@
 
 import { PWView } from '@components/core/PWView'
 import { PWText } from '@components/core/PWText'
-import { PWButton } from '@components/core/PWButton'
 import { usePinSecurityPrompt } from './usePinSecurityPrompt'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { PromptViewProps } from '@modules/prompts/models'
-import { PWImage, PWTouchableOpacity } from '@components/core'
-import lockImage from '@assets/images/lock.webp'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { PWInfoView, PWTouchableOpacity } from '@components/core'
+import LockImage from '@assets/icons/lock.svg'
 
 export const PinSecurityPrompt = (props: PromptViewProps) => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles({ insets })
+    const styles = useStyles()
     const { t } = useLanguage()
     const { handleSetPinCode, handleNotNow, handleDontAskAgain } =
         usePinSecurityPrompt(props)
@@ -45,43 +42,21 @@ export const PinSecurityPrompt = (props: PromptViewProps) => {
                 </PWTouchableOpacity>
             </PWView>
 
-            <PWImage
-                source={lockImage}
-                width={150}
-                height={175}
+            <PWInfoView
+                illustration={LockImage}
+                title={t('prompts.security.pin_title')}
+                body={t('prompts.security.pin_description')}
+                primaryAction={{
+                    label: t('prompts.security.pin_setpin'),
+                    onPress: handleSetPinCode,
+                    testID: 'pin_security_prompt_set_pin_button',
+                }}
+                secondaryAction={{
+                    label: t('prompts.security.pin_notnow'),
+                    onPress: handleNotNow,
+                    testID: 'pin_security_prompt_not_now_button',
+                }}
             />
-
-            <PWView style={styles.content}>
-                <PWText
-                    variant='h1'
-                    style={styles.title}
-                >
-                    {t('prompts.security.pin_title')}
-                </PWText>
-
-                <PWText
-                    variant='body'
-                    style={styles.description}
-                >
-                    {t('prompts.security.pin_description')}
-                </PWText>
-            </PWView>
-
-            <PWView style={styles.buttonContainer}>
-                <PWButton
-                    onPress={handleSetPinCode}
-                    variant='primary'
-                    title={t('prompts.security.pin_setpin')}
-                    testID='pin_security_prompt_set_pin_button'
-                />
-
-                <PWButton
-                    onPress={handleNotNow}
-                    variant='secondary'
-                    title={t('prompts.security.pin_notnow')}
-                    testID='pin_security_prompt_not_now_button'
-                />
-            </PWView>
         </PWView>
     )
 }

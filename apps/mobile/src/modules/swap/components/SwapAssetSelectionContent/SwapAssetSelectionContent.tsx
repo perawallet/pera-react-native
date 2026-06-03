@@ -13,11 +13,12 @@
 import { useCallback } from 'react'
 import { type AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { isSwappableAsset } from '@perawallet/wallet-core-swaps'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { PWView } from '@components/core'
+import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
-import { PWIcon, PWText, PWToolbar } from '@components/core'
 import { AccountAssetSelectionList } from '@modules/assets/components/AccountAssetSelectionList'
 import { SwapToAssetSelectionList } from '../SwapToAssetSelectionList'
+import { useStyles } from './styles'
 
 const filterSwappable = (item: AssetWithAccountBalance) =>
     isSwappableAsset(item.asset)
@@ -34,7 +35,8 @@ export const SwapAssetSelectionContent = (
 ) => {
     const { variant, excludeAssetId } = props
     const { t } = useLanguage()
-    const { resolve, dismiss } = useBottomSheetResult<string>()
+    const styles = useStyles()
+    const { resolve } = useBottomSheetResult<string>()
 
     const handleAssetSelected = useCallback(
         (asset: AssetWithAccountBalance) => {
@@ -50,46 +52,44 @@ export const SwapAssetSelectionContent = (
 
     return (
         <>
-            <PWToolbar
-                left={
-                    <PWIcon
-                        name='cross'
-                        onPress={dismiss}
+            <SheetHeader title={title} />
+            <PWView style={styles.body}>
+                {props.variant === 'to' ? (
+                    <SwapToAssetSelectionList
+                        fromAssetId={props.fromAssetId}
+                        onAssetSelected={handleAssetSelected}
+                        isVisible
+                        excludeAssetId={excludeAssetId}
+                        inBottomSheet
+                        searchPlaceholder={t(
+                            'swap.asset_selection.search_placeholder',
+                        )}
+                        emptyResultTitle={t(
+                            'swap.asset_selection.no_results_title',
+                        )}
+                        emptyResultBody={t(
+                            'swap.asset_selection.no_results_body',
+                        )}
                     />
-                }
-                center={<PWText variant='h4'>{title}</PWText>}
-            />
-            {props.variant === 'to' ? (
-                <SwapToAssetSelectionList
-                    fromAssetId={props.fromAssetId}
-                    onAssetSelected={handleAssetSelected}
-                    isVisible
-                    excludeAssetId={excludeAssetId}
-                    inBottomSheet
-                    searchPlaceholder={t(
-                        'swap.asset_selection.search_placeholder',
-                    )}
-                    emptyResultTitle={t(
-                        'swap.asset_selection.no_results_title',
-                    )}
-                    emptyResultBody={t('swap.asset_selection.no_results_body')}
-                />
-            ) : (
-                <AccountAssetSelectionList
-                    onAssetSelected={handleAssetSelected}
-                    isVisible
-                    excludeAssetId={excludeAssetId}
-                    filterAsset={filterSwappable}
-                    inBottomSheet
-                    searchPlaceholder={t(
-                        'swap.asset_selection.search_placeholder',
-                    )}
-                    emptyResultTitle={t(
-                        'swap.asset_selection.no_results_title',
-                    )}
-                    emptyResultBody={t('swap.asset_selection.no_results_body')}
-                />
-            )}
+                ) : (
+                    <AccountAssetSelectionList
+                        onAssetSelected={handleAssetSelected}
+                        isVisible
+                        excludeAssetId={excludeAssetId}
+                        filterAsset={filterSwappable}
+                        inBottomSheet
+                        searchPlaceholder={t(
+                            'swap.asset_selection.search_placeholder',
+                        )}
+                        emptyResultTitle={t(
+                            'swap.asset_selection.no_results_title',
+                        )}
+                        emptyResultBody={t(
+                            'swap.asset_selection.no_results_body',
+                        )}
+                    />
+                )}
+            </PWView>
         </>
     )
 }

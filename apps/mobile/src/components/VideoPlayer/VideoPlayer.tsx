@@ -11,7 +11,7 @@
  */
 
 import React from 'react'
-import { StyleProp, useWindowDimensions, ViewStyle } from 'react-native'
+import { StyleProp, ViewStyle } from 'react-native'
 import { useVideoPlayer, VideoView } from 'expo-video'
 import { PWView } from '@components/core'
 import { useStyles } from './styles'
@@ -22,6 +22,7 @@ export type VideoPlayerProps = {
     height?: number
     autoPlay?: boolean
     loop?: boolean
+    muted?: boolean
     style?: StyleProp<ViewStyle>
 }
 
@@ -31,14 +32,13 @@ export const VideoPlayer = ({
     height: heightProp,
     autoPlay = true,
     loop = true,
+    muted = true,
     style,
 }: VideoPlayerProps) => {
-    const window = useWindowDimensions()
-    const width = widthProp ?? window.width
-    const height = heightProp ?? window.height
-    const styles = useStyles({ width, height })
+    const styles = useStyles({ width: widthProp, height: heightProp })
     const player = useVideoPlayer(uri, player => {
         player.loop = loop
+        player.muted = muted
         if (autoPlay) {
             player.play()
         }

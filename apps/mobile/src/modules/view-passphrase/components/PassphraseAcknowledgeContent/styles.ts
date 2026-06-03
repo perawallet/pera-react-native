@@ -14,16 +14,10 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     body: {
-        paddingTop: theme.spacing.xxl,
-        paddingBottom: theme.spacing.xl,
-        paddingHorizontal: theme.spacing.lg,
         alignItems: 'center',
     },
     icon: {
         marginBottom: theme.spacing.lg,
-    },
-    title: {
-        textAlign: 'center',
     },
     description: {
         textAlign: 'center',
@@ -50,8 +44,6 @@ export const useStyles = makeStyles(theme => ({
         flex: 1,
     },
     actions: {
-        width: '100%',
-        paddingTop: theme.spacing.xl,
         gap: theme.spacing.sm,
     },
 }))

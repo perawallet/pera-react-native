@@ -23,6 +23,9 @@ export const useStyles = makeStyles((theme, { size }: StyleProps) => ({
         gap: size === 'h1' ? theme.spacing.lg : theme.spacing.sm,
     },
     value: {
-        color: size === 'h2' ? theme.colors.textGray : theme.colors.textMain,
+        color:
+            size === 'h2'
+                ? theme.colors.textGrayLighter
+                : theme.colors.textMain,
     },
 }))

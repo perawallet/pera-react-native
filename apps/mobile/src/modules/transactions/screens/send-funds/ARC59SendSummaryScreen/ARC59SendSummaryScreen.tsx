@@ -12,12 +12,11 @@
 
 import {
     PWButton,
-    PWScrollView,
+    PWScreen,
     PWSlideToConfirm,
     PWText,
     PWView,
 } from '@components/core'
-import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useARC59SendSummaryScreen } from './useARC59SendSummaryScreen'
@@ -50,8 +49,25 @@ export const ARC59SendSummaryScreen = () => {
     }
 
     return (
-        <PWView style={styles.container}>
-            <PWScrollView contentContainerStyle={styles.content}>
+        <PWScreen
+            footer={
+                <PWView style={styles.footer}>
+                    <PWSlideToConfirm
+                        key={sliderResetKey}
+                        title={t('common.slide_to_confirm.label')}
+                        onConfirm={handleSend}
+                        isDisabled={!summary}
+                        testID='arc59_send_confirm_slide'
+                    />
+                    <PWButton
+                        title={t('common.go_back.label')}
+                        variant='linkNeutral'
+                        onPress={handleClose}
+                    />
+                </PWView>
+            }
+        >
+            <PWView style={styles.content}>
                 <PWText
                     variant='h3'
                     style={styles.title}
@@ -73,7 +89,7 @@ export const ARC59SendSummaryScreen = () => {
                     </PWText>
                 </PWView>
 
-                <PWView style={styles.bottomContainer}>
+                <PWView style={styles.details}>
                     <PWView style={styles.row}>
                         <PWView style={styles.rowAssetContainer}>
                             {asset ? (
@@ -114,25 +130,7 @@ export const ARC59SendSummaryScreen = () => {
                         {t('send_funds.arc59_summary.disclaimer')}
                     </PWText>
                 </PWView>
-            </PWScrollView>
-
-            <SafeAreaView
-                edges={['bottom']}
-                style={styles.footer}
-            >
-                <PWSlideToConfirm
-                    key={sliderResetKey}
-                    title={t('common.slide_to_confirm.label')}
-                    onConfirm={handleSend}
-                    isDisabled={!summary}
-                    testID='arc59_send_confirm_slide'
-                />
-                <PWButton
-                    title={t('common.go_back.label')}
-                    variant='linkNeutral'
-                    onPress={handleClose}
-                />
-            </SafeAreaView>
-        </PWView>
+            </PWView>
+        </PWScreen>
     )
 }

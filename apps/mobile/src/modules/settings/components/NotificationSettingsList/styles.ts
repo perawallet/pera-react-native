@@ -15,20 +15,42 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     header: {
         gap: theme.spacing.lg,
+        width: '100%',
+        minWidth: 0,
     },
     headerRow: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
+        width: '100%',
+        minWidth: 0,
+        gap: theme.spacing.md,
+    },
+    headerLabelContainer: {
+        flex: 1,
+        minWidth: 0,
     },
     accountItem: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingVertical: theme.spacing.sm,
+        paddingVertical: theme.spacing.lg,
+        width: '100%',
+        minWidth: 0,
+        gap: theme.spacing.md,
     },
-    scrollContent: {
-        gap: theme.spacing.lg,
+    accountInfo: {
+        flex: 1,
+        minWidth: 0,
+        overflow: 'hidden',
+    },
+    accountDisplay: {
+        flex: 1,
+        minWidth: 0,
+        width: '100%',
+    },
+    switchContainer: {
+        flexShrink: 0,
     },
     grayText: {
         color: theme.colors.textGray,

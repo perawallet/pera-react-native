@@ -25,15 +25,3 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.xs,
     },
 }))
-
-export const useContentStyles = makeStyles(theme => ({
-    container: {
-        padding: theme.spacing.xl,
-    },
-    contentContainer: {
-        marginBottom: theme.spacing.xl,
-    },
-    title: {
-        textAlign: 'left',
-    },
-}))

@@ -32,22 +32,10 @@ export type PWResultViewProps = {
     variant: PWResultViewVariant
     title: string
     body?: string
-    /**
-     * Optional override for the icon rendered inside the colored circle.
-     * When omitted, a sensible default is picked per variant.
-     */
     icon?: IconName
     primaryAction?: PWResultViewAction
     secondaryAction?: PWResultViewAction
-    /**
-     * Optional link-style action rendered above the primary/secondary buttons
-     * (for example, "View in explorer").
-     */
     linkAction?: PWResultViewAction
-    /**
-     * Optional extra content rendered between the body and the action buttons
-     * (for example, a transaction amount summary).
-     */
     children?: ReactNode
     testID?: string
 }

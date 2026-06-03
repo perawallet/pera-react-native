@@ -28,7 +28,7 @@ export const useStyles = makeStyles(theme => {
         contentContainer: {
             paddingTop: theme.spacing.lg,
             paddingBottom: theme.spacing.xl,
-            paddingHorizontal: theme.spacing.md,
+            paddingHorizontal: theme.spacing.xl,
         },
         header: {
             paddingVertical: theme.spacing.md,
@@ -55,20 +55,24 @@ export const useStyles = makeStyles(theme => {
             borderRadius: theme.spacing.sm,
             padding: theme.spacing.md,
             flexDirection: 'row',
-            justifyContent: 'space-between',
             alignItems: 'center',
+            gap: theme.spacing.sm,
             marginBottom: theme.spacing.md,
             marginTop: theme.spacing.md,
         },
         discoverText: {
             color: theme.colors.textGray,
+            flex: 1,
+            minWidth: 0,
         },
         discoverLink: {
             flexDirection: 'row',
             alignItems: 'center',
+            flexShrink: 0,
         },
         discoverLinkText: {
             marginRight: theme.spacing.xs,
+            flexShrink: 1,
         },
         tagText,
         loadingContainer: {

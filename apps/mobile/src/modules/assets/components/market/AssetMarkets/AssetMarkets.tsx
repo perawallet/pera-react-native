@@ -202,13 +202,17 @@ export const AssetMarkets = ({
                 style={styles.discoverButton}
                 onPress={openDiscover}
             >
-                <PWText style={styles.discoverText}>
+                <PWText
+                    style={styles.discoverText}
+                    truncate
+                >
                     {t('asset_details.markets.discover_more')}
                 </PWText>
                 <PWView style={styles.discoverLink}>
                     <PWText
                         style={styles.discoverLinkText}
                         variant='h4'
+                        truncate
                     >
                         {t('asset_details.markets.title')}
                     </PWText>

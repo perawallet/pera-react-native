@@ -82,6 +82,7 @@ export const PWNumpad = ({
                 style={[styles.key, isDisabled && styles.keyDisabled]}
                 onPress={() => handleKeyPress(key)}
                 disabled={isDisabled}
+                allowRapidPress
             >
                 {isDeleteKey ? (
                     <PWIcon

@@ -15,22 +15,6 @@ import { makeStyles } from '@rneui/themed'
 const BULLET_SIZE = 6
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        flex: 1,
-        backgroundColor: theme.colors.background,
-    },
-    content: {
-        paddingHorizontal: theme.spacing.xl,
-        paddingTop: theme.spacing.xl,
-        paddingBottom: theme.spacing.xxl,
-    },
-    title: {
-        marginBottom: theme.spacing.sm,
-    },
-    description: {
-        color: theme.colors.textGray,
-        marginBottom: theme.spacing.xxl,
-    },
     sectionTitle: {
         marginTop: theme.spacing.xl,
         marginBottom: theme.spacing.md,
@@ -62,11 +46,5 @@ export const useStyles = makeStyles(theme => ({
         backgroundColor: theme.colors.textGray,
         marginTop: theme.spacing.sm,
         marginRight: theme.spacing.md,
-    },
-    footer: {
-        padding: theme.spacing.xl,
-        borderTopWidth: theme.borders.sm,
-        borderTopColor: theme.colors.layerGrayLighter,
-        backgroundColor: theme.colors.background,
     },
 }))

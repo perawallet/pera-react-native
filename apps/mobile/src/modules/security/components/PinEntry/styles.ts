@@ -14,15 +14,8 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
-        flexGrow: 1,
+        flex: 1,
         paddingHorizontal: theme.spacing.xl,
-    },
-    header: {
-        alignItems: 'flex-start',
-    },
-    title: {
-        textAlign: 'left',
-        marginBottom: theme.spacing.sm,
     },
     circlesContainer: {
         alignItems: 'center',

@@ -12,7 +12,6 @@
 
 import { makeStyles } from '@rneui/themed'
 
-// Sizes pulled directly from Figma node 20016913:342592.
 const WALLET_CIRCLE_SIZE = 36
 const CONNECTOR_INDENT = 18
 const CONNECTOR_HORIZONTAL_WIDTH = 16
@@ -31,6 +30,8 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        gap: theme.spacing.md,
+        minWidth: 0,
     },
     accountTypeRow: {
         flexDirection: 'row',
@@ -41,15 +42,18 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.sm,
-        flexShrink: 1,
+        flex: 1,
+        minWidth: 0,
     },
     accountTypeBlock: {
-        flexShrink: 1,
+        flex: 1,
+        minWidth: 0,
     },
     accountTypeMainRow: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.sm,
+        minWidth: 0,
     },
     accountTypeText: {
         flexShrink: 1,
@@ -75,7 +79,6 @@ export const useStyles = makeStyles(theme => ({
     toggleText: {
         color: theme.colors.textGray,
     },
-    // Wallet structure tree styles
     treeContainer: {
         gap: theme.spacing.lg,
         paddingTop: theme.spacing.md,
@@ -104,11 +107,6 @@ export const useStyles = makeStyles(theme => ({
         top: 0,
         left: CONNECTOR_INDENT,
         width: theme.borders.sm,
-        // Default for non-last rows: extends from the top of the row through
-        // its bottom and into the inter-row gap below, so consecutive verticals
-        // visually merge into one continuous line down the tree. The next row's
-        // vertical starts at top: 0 of its container, meeting this one
-        // mid-gap. Bottom is negative the gap value used on `treeContainer`.
         bottom: -theme.spacing.lg,
         backgroundColor: theme.colors.layerGray,
     },

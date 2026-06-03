@@ -15,11 +15,10 @@ import { makeStyles } from '@rneui/themed'
 const SPINNER_CIRCLE_SIZE = 60
 
 export const useStyles = makeStyles(theme => ({
-    container: {
+    contentContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: theme.spacing.md,
     },
     spinnerCircle: {
         width: SPINNER_CIRCLE_SIZE,

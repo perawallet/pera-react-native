@@ -11,11 +11,10 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { EdgeInsets } from 'react-native-safe-area-context'
 
-export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
-    sheetContainer: {
-        paddingBottom: insets.bottom,
+export const useStyles = makeStyles(theme => ({
+    scrollContent: {
+        flexGrow: 1,
     },
     heroSection: {
         backgroundColor: theme.colors.modalityBg,
@@ -28,6 +27,8 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
         paddingHorizontal: theme.spacing.xl,
         paddingTop: theme.spacing.xxl,
         gap: theme.spacing.lg,
+        width: '100%',
+        minWidth: 0,
     },
     title: {
         color: theme.colors.textMain,

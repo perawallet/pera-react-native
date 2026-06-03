@@ -18,19 +18,10 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.sm,
         alignItems: 'center',
     },
-    percentageContainer: {
-        flexDirection: 'row',
-        gap: theme.spacing.xs,
-        alignItems: 'center',
-    },
     itemUp: {
         color: theme.colors.buttonSquareIcon,
     },
     itemDown: {
         color: theme.colors.alertNegative,
-    },
-    trendIconUp: {
-        backgroundColor: theme.colors.buttonSquareBg,
-        borderRadius: theme.spacing.xl,
     },
 }))

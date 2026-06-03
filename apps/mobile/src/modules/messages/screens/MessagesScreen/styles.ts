@@ -13,9 +13,6 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    root: {
-        flex: 1,
-    },
     spotBannersWrapper: {
         paddingTop: theme.spacing.sm,
     },

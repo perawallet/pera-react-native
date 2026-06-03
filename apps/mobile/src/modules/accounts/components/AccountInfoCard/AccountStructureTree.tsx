@@ -66,7 +66,9 @@ export const AccountStructureTree = ({
 
                 return (
                     <PWView
-                        key={account.address}
+                        // A multisig can list the same address more than once,
+                        // so address alone isn't a unique key.
+                        key={`${account.address}-${index}`}
                         style={styles.accountRowWithConnector}
                     >
                         <PWView style={styles.connectorContainer}>

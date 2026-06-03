@@ -10,27 +10,18 @@
  limitations under the License
  */
 
-import { useTheme } from '@rneui/themed'
 import ShieldCheckImage from '@assets/icons/shield-check.svg'
 import { PWInfoView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { ILLUSTRATION_SIZE } from '../../constants'
 import { useBackupInfoScreen } from './useBackupInfoScreen'
 
 export const BackupInfoScreen = () => {
-    const { theme } = useTheme()
     const { t } = useLanguage()
     const { onContinue } = useBackupInfoScreen()
 
     return (
         <PWInfoView
-            illustration={
-                <ShieldCheckImage
-                    width={ILLUSTRATION_SIZE}
-                    height={ILLUSTRATION_SIZE}
-                    color={theme.colors.linkPrimary}
-                />
-            }
+            illustration={ShieldCheckImage}
             title={t('backup.info.title')}
             body={t('backup.info.body')}
             primaryAction={{

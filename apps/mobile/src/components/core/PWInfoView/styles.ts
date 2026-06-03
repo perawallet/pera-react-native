@@ -17,24 +17,25 @@ export const useStyles = makeStyles(theme => ({
         flex: 1,
         backgroundColor: theme.colors.background,
     },
-    content: {
+    scroll: {
         flex: 1,
+    },
+    content: {
+        flexGrow: 1,
         justifyContent: 'flex-start',
         alignItems: 'flex-start',
         paddingHorizontal: theme.spacing.xl,
-        paddingTop: theme.spacing.xl,
+        paddingTop: theme.spacing.md,
         gap: theme.spacing.lg,
     },
-    title: {
-        textAlign: 'left',
-    },
+
     description: {
         textAlign: 'left',
         color: theme.colors.textGray,
     },
     footer: {
         padding: theme.spacing.xl,
-        paddingBottom: theme.spacing.xxl,
+        paddingBottom: theme.spacing.md,
         gap: theme.spacing.lg,
     },
 }))

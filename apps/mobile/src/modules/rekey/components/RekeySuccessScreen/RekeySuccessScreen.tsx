@@ -13,9 +13,8 @@
 import { Trans } from 'react-i18next'
 import { useTheme } from '@rneui/themed'
 import CheckIcon from '@assets/icons/check.svg'
-import { PWButton, PWText, PWView } from '@components/core'
+import { PWButton, PWScreen, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { useBottomSafeAreaPadding } from '@hooks/useBottomSafeAreaPadding'
 import { useRekeySuccessScreen } from './useRekeySuccessScreen'
 import { useStyles } from './styles'
 
@@ -28,8 +27,7 @@ export const RekeySuccessScreen = ({
     i18nPrefix,
     testIdPrefix,
 }: RekeySuccessScreenProps) => {
-    const bottomPadding = useBottomSafeAreaPadding()
-    const styles = useStyles(bottomPadding)
+    const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
     const { sourceName, handleDone } = useRekeySuccessScreen()
@@ -37,9 +35,18 @@ export const RekeySuccessScreen = ({
     const checkSize = theme.spacing['5xl'] * 2
 
     return (
-        <PWView
-            style={styles.container}
+        <PWScreen
+            scroll='never'
             testID={`${testIdPrefix}-success-screen`}
+            footer={
+                <PWButton
+                    variant='primary'
+                    title={t(`${i18nPrefix}.cta`)}
+                    onPress={handleDone}
+                    style={styles.cta}
+                    testID={`${testIdPrefix}-success-done`}
+                />
+            }
         >
             <PWView style={styles.content}>
                 <PWView style={styles.iconWrapper}>
@@ -75,16 +82,6 @@ export const RekeySuccessScreen = ({
                     </PWText>
                 </PWView>
             </PWView>
-
-            <PWView style={styles.footer}>
-                <PWButton
-                    variant='primary'
-                    title={t(`${i18nPrefix}.cta`)}
-                    onPress={handleDone}
-                    style={styles.cta}
-                    testID={`${testIdPrefix}-success-done`}
-                />
-            </PWView>
-        </PWView>
+        </PWScreen>
     )
 }

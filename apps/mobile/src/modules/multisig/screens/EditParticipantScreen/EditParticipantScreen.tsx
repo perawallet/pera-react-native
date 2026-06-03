@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWButton } from '@components/core'
+import { PWButton, PWScreen } from '@components/core'
 import { ContactForm } from '@components/ContactForm'
 import { PhotoPermissionDeniedSheet } from '@components/PhotoPermissionDeniedSheet'
 import { useLanguage } from '@hooks/useLanguage'
@@ -46,7 +46,7 @@ export const EditParticipantScreen = () => {
     })
 
     return (
-        <>
+        <PWScreen>
             <ContactForm
                 control={control}
                 address={address}
@@ -67,6 +67,6 @@ export const EditParticipantScreen = () => {
                 onClose={permissionDenied.close}
                 onOpenSettings={permissionDenied.openSettings}
             />
-        </>
+        </PWScreen>
     )
 }

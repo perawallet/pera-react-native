@@ -18,6 +18,11 @@ import type { TextStyle, ViewStyle } from 'react-native'
  * shared / undo). Each screen owns its own `styles.ts` that wraps this in a
  * `makeStyles` factory — that way every style key the screen uses is declared
  * in its own file and stays visible to the no-unused-style-keys check.
+ *
+ * These screens render inside `PWScreen`, whose body/footer zones own the
+ * horizontal + bottom padding. So `scrollContent`/`footer` here only carry the
+ * inner gaps (and `scrollContent` keeps `flex: 1` so its `spacer` can push the
+ * content down to the footer).
  */
 export const getConfirmScreenStyles = (
     theme: Theme,
@@ -42,9 +47,7 @@ export const getConfirmScreenStyles = (
         backgroundColor: theme.colors.background,
     },
     scrollContent: {
-        flexGrow: 1,
-        paddingHorizontal: theme.spacing.xl,
-        paddingBottom: theme.spacing.xl,
+        flex: 1,
         gap: theme.spacing.xl,
     },
     summarySection: {
@@ -82,8 +85,6 @@ export const getConfirmScreenStyles = (
         color: theme.colors.textGray,
     },
     footer: {
-        paddingHorizontal: theme.spacing.xl,
-        paddingTop: theme.spacing.lg,
         gap: theme.spacing.md,
     },
     cta: {

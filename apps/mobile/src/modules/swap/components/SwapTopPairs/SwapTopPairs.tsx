@@ -36,12 +36,14 @@ export const SwapTopPairs = () => {
                 <PWText
                     variant='body'
                     style={styles.headerTitle}
+                    truncate
                 >
                     {t('swap.top_pairs.title')}
                 </PWText>
                 <PWText
                     variant='body'
                     style={styles.headerLabel}
+                    truncate
                 >
                     {t('swap.top_pairs.volume_24h')}
                 </PWText>

@@ -51,110 +51,116 @@ export const getTypography = (
             fontSize: 32,
             lineHeight: 40,
             color: theme.colors.textMain,
-            fontWeight: 500,
         },
         h2: {
             fontFamily: getFontFamily(500),
             fontSize: 25,
             lineHeight: 32,
             color: theme.colors.textMain,
-            fontWeight: 500,
         },
         h3: {
             fontFamily: getFontFamily(500),
             fontSize: 19,
             lineHeight: 24,
             color: theme.colors.textMain,
-            fontWeight: 500,
         },
         h4: {
             fontFamily: getFontFamily(600),
             fontSize: 15,
             lineHeight: 24,
             color: theme.colors.textMain,
-            fontWeight: 600,
         },
         body: {
             fontFamily: getFontFamily(400),
             fontSize: 13,
             lineHeight: 24,
             color: theme.colors.textMain,
-            fontWeight: 400,
         },
         bodyLarge: {
             fontFamily: getFontFamily(400),
             fontSize: 15,
             lineHeight: 24,
             color: theme.colors.textMain,
-            fontWeight: 400,
         },
         bodyCompact: {
             fontFamily: getFontFamily(400),
             fontSize: 13,
             lineHeight: 16,
             color: theme.colors.textMain,
-            fontWeight: 400,
         },
         bodySemibold: {
             fontFamily: getFontFamily(600),
             fontSize: 13,
             lineHeight: 24,
             color: theme.colors.textMain,
-            fontWeight: 600,
         },
         footnoteMedium: {
             fontFamily: getFontFamily(500),
             fontSize: 13,
             lineHeight: 20,
             color: theme.colors.textMain,
-            fontWeight: 500,
         },
         caption: {
             fontFamily: getFontFamily(400),
             fontSize: 11,
             lineHeight: 24,
             color: theme.colors.textMain,
-            fontWeight: 400,
         },
         captionMedium: {
             fontFamily: getFontFamily(500),
             fontSize: 11,
             lineHeight: 16,
             color: theme.colors.textMain,
-            fontWeight: 500,
         },
         captionSmall: {
             fontFamily: getFontFamily(500),
             fontSize: 9,
             lineHeight: 12,
             color: theme.colors.textMain,
-            fontWeight: 500,
         },
         link: {
             fontFamily: getFontFamily(500),
             fontSize: 13,
             lineHeight: 24,
             color: theme.colors.linkPrimary,
-            fontWeight: 500,
         },
         linkPositive: {
             fontFamily: getFontFamily(500),
             fontSize: 13,
             lineHeight: 24,
             color: theme.colors.positive,
-            fontWeight: 500,
         },
         mono: {
             fontFamily: getMonoFontFamily(400),
             fontSize: 13,
             lineHeight: 24,
             color: theme.colors.textMain,
-            fontWeight: 400,
         },
     }
 
     return typography[variant]
 }
+
+const variantFontWeights: Record<TypographyVariant, FontWeight> = {
+    h1: 500,
+    h2: 500,
+    h3: 500,
+    h4: 600,
+    body: 400,
+    bodyLarge: 400,
+    bodyCompact: 400,
+    bodySemibold: 600,
+    footnoteMedium: 500,
+    caption: 400,
+    captionMedium: 500,
+    captionSmall: 500,
+    link: 500,
+    linkPositive: 500,
+    mono: 400,
+}
+
+export const getVariantFontWeight = (variant: TypographyVariant): FontWeight =>
+    variantFontWeights[variant]
 
 /**
  * Returns the given variant with its font weight (and matching family)
@@ -173,5 +179,4 @@ export const getFontWeightVariant = (
 ): TextStyle => ({
     ...getTypography(theme, variant),
     fontFamily: getFontFamily(weight),
-    fontWeight: weight,
 })

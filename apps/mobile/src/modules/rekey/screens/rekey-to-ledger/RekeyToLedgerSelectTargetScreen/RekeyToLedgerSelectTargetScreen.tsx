@@ -10,58 +10,29 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
-import { PWFlatList, PWView } from '@components/core'
-import { EmptyView } from '@components/EmptyView'
+import { PWScreen } from '@components/core'
 import { ScreenHeader } from '@components/ScreenHeader'
-import { useBottomSafeAreaPadding } from '@hooks/useBottomSafeAreaPadding'
 import { useLanguage } from '@hooks/useLanguage'
-import { RekeyTargetRow } from '../../../components/RekeyTargetRow'
+import { AccountPicker } from '@modules/accounts/components/AccountPicker'
 import { useRekeyToLedgerSelectTargetScreen } from './useRekeyToLedgerSelectTargetScreen'
-import { useStyles } from './styles'
-
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-
-const keyExtractor = (account: WalletAccount) => account.address
 
 export const RekeyToLedgerSelectTargetScreen = () => {
-    const bottomPadding = useBottomSafeAreaPadding()
-    const styles = useStyles(bottomPadding)
     const { t } = useLanguage()
     const { targets, handleSelect } = useRekeyToLedgerSelectTargetScreen()
 
-    const renderItem = useCallback(
-        ({ item }: { item: WalletAccount }) => (
-            <RekeyTargetRow
-                account={item}
-                onSelect={handleSelect}
-            />
-        ),
-        [handleSelect],
-    )
-
-    const renderEmpty = useCallback(
-        () => <EmptyView body={t('rekey.to_ledger.select.empty')} />,
-        [t],
-    )
-
     return (
-        <PWView
-            style={styles.container}
-            testID='rekey-to-ledger-select-target-screen'
-        >
+        <PWScreen testID='rekey-to-ledger-select-target-screen'>
             <ScreenHeader
                 title={t('rekey.to_ledger.select.title')}
                 description={t('rekey.to_ledger.select.subtitle')}
             />
 
-            <PWFlatList
-                contentContainerStyle={styles.list}
-                data={targets}
-                renderItem={renderItem}
-                keyExtractor={keyExtractor}
-                ListEmptyComponent={renderEmpty}
+            <AccountPicker
+                accounts={targets}
+                onSelect={handleSelect}
+                emptyBody={t('rekey.to_ledger.select.empty')}
+                rowTestIDPrefix='rekey-target-row'
             />
-        </PWView>
+        </PWScreen>
     )
 }

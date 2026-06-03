@@ -17,12 +17,15 @@ import { PWFlatList, PWView } from '@components/core'
 import type { PWFlatListProps, PWFlatListRef } from '@components/core'
 import { SearchInput } from '@components/SearchInput'
 import {
+    isHeaderSentinel,
     isSearchSentinel,
+    isSeparatorSuppressed,
     useSearchableList,
     type AugmentedItem,
 } from './useSearchableList'
 import { DEFAULT_SNAP_THRESHOLD, SCROLL_EVENT_THROTTLE } from '@constants/ui'
 import { Maybe } from '@perawallet/wallet-core-shared'
+import { useStyles } from './styles'
 
 type RenderItem<T> = (props: ListRenderItemInfo<T>) => React.ReactNode
 
@@ -82,6 +85,7 @@ const SearchableListInner = <T,>(
         snapThreshold = DEFAULT_SNAP_THRESHOLD,
         onScroll,
         onScrollEndDrag,
+        ItemSeparatorComponent: CallerSeparator,
         // children is part of the React props type but not used by the list.
         children: _children,
         extraData: callerExtraData,
@@ -109,14 +113,7 @@ const SearchableListInner = <T,>(
         onScrollEndDrag,
     })
 
-    const augmentedHeader = useMemo(
-        () => (
-            <PWView onLayout={handleHeaderLayout}>
-                {renderHeaderNode(ListHeaderComponent)}
-            </PWView>
-        ),
-        [ListHeaderComponent, handleHeaderLayout],
-    )
+    const styles = useStyles()
 
     const isListEmpty = (data?.length ?? 0) === 0
 
@@ -150,6 +147,13 @@ const SearchableListInner = <T,>(
 
     const augmentedRenderItem = useCallback<RenderItem<AugmentedItem<T>>>(
         info => {
+            if (isHeaderSentinel(info.item)) {
+                return (
+                    <PWView onLayout={handleHeaderLayout}>
+                        {renderHeaderNode(ListHeaderComponent)}
+                    </PWView>
+                )
+            }
             if (isSearchSentinel(info.item)) {
                 const searchProps = {
                     value: searchValue,
@@ -158,7 +162,11 @@ const SearchableListInner = <T,>(
                     onChangeText: onSearchChange,
                 }
 
-                return <SearchInputComponent {...searchProps} />
+                return (
+                    <PWView style={styles.searchSticky}>
+                        <SearchInputComponent {...searchProps} />
+                    </PWView>
+                )
             }
             return (
                 renderItem?.({
@@ -176,8 +184,39 @@ const SearchableListInner = <T,>(
             SearchInputComponent,
             handleSearchFocus,
             toUserIndex,
+            ListHeaderComponent,
+            handleHeaderLayout,
+            styles.searchSticky,
         ],
     )
+
+    // FlashList draws ItemSeparatorComponent between every adjacent pair, so
+    // wrap the caller's to skip pairs touching a sentinel. With no caller
+    // separator we draw nothing, else PWFlatList's default divider reappears.
+    const augmentedSeparator = useMemo(() => {
+        if (CallerSeparator == null) {
+            return null
+        }
+        const Separator = CallerSeparator
+        const WrappedSeparator = ({
+            leadingItem,
+            trailingItem,
+        }: {
+            leadingItem?: unknown
+            trailingItem?: unknown
+        }) => {
+            if (isSeparatorSuppressed(leadingItem, trailingItem)) {
+                return null
+            }
+            return (
+                <Separator
+                    leadingItem={leadingItem}
+                    trailingItem={trailingItem}
+                />
+            )
+        }
+        return WrappedSeparator
+    }, [CallerSeparator])
 
     const augmentedExtraData = useMemo(
         () =>
@@ -199,9 +238,15 @@ const SearchableListInner = <T,>(
         data: augmentedData,
         renderItem: augmentedRenderItem,
         keyExtractor: augmentedKeyExtractor,
-        ListHeaderComponent: augmentedHeader,
+        ItemSeparatorComponent: augmentedSeparator,
         ListFooterComponent: augmentedFooter,
-        stickyHeaderIndices: isListEmpty ? undefined : [0],
+        stickyHeaderIndices: isListEmpty ? undefined : [1],
+        // Zero PWFlatList's default paddingTop, else the sticky search pins a
+        // gap above the in-flow header.
+        contentContainerStyle: [
+            listProps.contentContainerStyle,
+            styles.content,
+        ],
         extraData: augmentedExtraData,
         onLayout: handleListLayout,
         onContentSizeChange: handleContentSizeChange,

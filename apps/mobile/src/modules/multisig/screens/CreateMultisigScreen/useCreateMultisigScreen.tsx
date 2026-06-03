@@ -99,7 +99,7 @@ export const useCreateMultisigScreen = (): UseCreateMultisigScreenResult => {
         const result = await requestBottomSheet<AddParticipantResult>({
             contents: <AddParticipantContent />,
             options: {
-                size: 'lg',
+                size: 'modal',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },

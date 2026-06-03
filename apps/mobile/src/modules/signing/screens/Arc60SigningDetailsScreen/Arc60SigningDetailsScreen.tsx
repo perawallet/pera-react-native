@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWView } from '@components/core'
+import { PWScreen } from '@components/core'
 import {
     type Arc60SignRequest,
     useSigningPipeline,
@@ -18,10 +18,8 @@ import {
 import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
 import { type Optional } from '@perawallet/wallet-core-shared'
 import { Arc60DataSigningDetailsView } from '@modules/signing/components/Arc60DataSigningView'
-import { useStyles } from './styles'
 
 export const Arc60SigningDetailsScreen = () => {
-    const styles = useStyles()
     const { currentRequest, resolved } = useSigningPipeline()
     const request = currentRequest as Optional<Arc60SignRequest>
 
@@ -31,12 +29,12 @@ export const Arc60SigningDetailsScreen = () => {
     if (!request || !parsed) return null
 
     return (
-        <PWView style={styles.container}>
+        <PWScreen>
             <Arc60DataSigningDetailsView
                 request={request}
                 account={account ?? undefined}
                 parsed={parsed}
             />
-        </PWView>
+        </PWScreen>
     )
 }

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
     useAllAccounts,
     useSelectedAccountAddress,
@@ -19,13 +19,32 @@ import {
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { AccountMenuProps } from './AccountMenu'
+
+import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+
+// Hysteresis band: collapse past COLLAPSE_OFFSET, re-expand only within
+// EXPAND_OFFSET of the top, so small scrolls don't flip the chart on and off.
+const CHART_COLLAPSE_OFFSET = 48
+const CHART_EXPAND_OFFSET = 8
+
+export const resolveChartCollapsed = (
+    wasCollapsed: boolean,
+    offsetY: number,
+): boolean => {
+    if (!wasCollapsed && offsetY > CHART_COLLAPSE_OFFSET) return true
+    if (wasCollapsed && offsetY < CHART_EXPAND_OFFSET) return false
+    return wasCollapsed
+}
 
 type UseAccountMenuResult = {
     sortedAccounts: WalletAccount[]
     selectedAccountAddress: Nullable<string>
     sortMode: string
     handleTap: (acct: WalletAccount) => void
+    isChartCollapsed: boolean
+    handleListScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => void
+    handleExpandChart: () => void
 }
 
 export const useAccountMenu = (
@@ -57,10 +76,26 @@ export const useAccountMenu = (
         [props, setSelectedAccountAddress],
     )
 
+    const [isChartCollapsed, setIsChartCollapsed] = useState(false)
+    const handleListScroll = useCallback(
+        (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+            const offsetY = event.nativeEvent.contentOffset.y
+            setIsChartCollapsed(prev => resolveChartCollapsed(prev, offsetY))
+        },
+        [],
+    )
+
+    const handleExpandChart = useCallback(() => {
+        setIsChartCollapsed(false)
+    }, [])
+
     return {
         sortedAccounts,
         selectedAccountAddress,
         sortMode,
         handleTap,
+        isChartCollapsed,
+        handleListScroll,
+        handleExpandChart,
     }
 }

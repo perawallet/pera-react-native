@@ -25,6 +25,10 @@ export const useStyles = makeStyles(theme => {
         flex: {
             flex: 1,
         },
+        scrollContent: {
+            flex: 1,
+            paddingBottom: 0,
+        },
         webview: {
             alignItems: 'flex-start',
             justifyContent: 'flex-start',

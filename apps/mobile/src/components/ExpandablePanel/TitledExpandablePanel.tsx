@@ -12,12 +12,7 @@
 
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import React, { PropsWithChildren, useState } from 'react'
-import {
-    StyleProp,
-    ViewStyle,
-    GestureResponderEvent,
-    TextStyle,
-} from 'react-native'
+import { StyleProp, ViewStyle, GestureResponderEvent } from 'react-native'
 import Animated, { withTiming, useAnimatedStyle } from 'react-native-reanimated'
 import { useStyles } from './styles'
 import { EXPANDABLE_PANEL_ANIMATION_DURATION } from '@constants/ui'
@@ -28,7 +23,6 @@ export type TitledExpandablePanelProps = {
     iconPressed?: () => void
     containerStyle?: StyleProp<ViewStyle>
     contentStyle?: StyleProp<ViewStyle>
-    titleStyle?: StyleProp<TextStyle>
     startExpanded?: boolean
 } & PropsWithChildren
 
@@ -36,7 +30,6 @@ export const TitledExpandablePanel = ({
     title,
     containerStyle,
     contentStyle,
-    titleStyle,
     startExpanded = false,
     children,
     iconPressed,
@@ -72,11 +65,16 @@ export const TitledExpandablePanel = ({
                 style={styles.header}
             >
                 {typeof title === 'string' ? (
-                    <PWText style={titleStyle}>{title}</PWText>
+                    <PWView style={styles.titleContainer}>
+                        <PWText truncate>{title}</PWText>
+                    </PWView>
                 ) : (
                     title
                 )}
-                <PWTouchableOpacity onPress={handleIconPress}>
+                <PWTouchableOpacity
+                    onPress={handleIconPress}
+                    style={styles.chevronContainer}
+                >
                     <Animated.View style={iconStyle}>
                         <PWIcon
                             name='chevron-right'

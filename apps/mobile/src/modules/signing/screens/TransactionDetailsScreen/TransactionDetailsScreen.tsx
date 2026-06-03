@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
+
 import {
     useNavigation,
     useRoute,
@@ -17,6 +19,7 @@ import {
 } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 
+import { PWScreen } from '@components/core'
 import { LoadingView } from '@components/LoadingView'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
@@ -29,9 +32,6 @@ import { TransactionDisplay } from '@modules/transactions/components/Transaction
 import { GroupTransactionsPanel } from '@modules/transactions/components/transaction-details'
 import { ExternalTransactionCallout } from '@modules/signing/components/ExternalTransactionCallout'
 import type { SigningStackParamList } from '@modules/signing/routes'
-import { useStyles } from './styles'
-import { PWScrollView } from '@components/core'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 type NavigationProp = StackNavigationProp<
     SigningStackParamList,
@@ -44,8 +44,6 @@ type TransactionDetailsRouteProp = RouteProp<
 >
 
 export const TransactionDetailsScreen = () => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles(insets)
     const navigation = useNavigation<NavigationProp>()
     const { t } = useLanguage()
     const route = useRoute<TransactionDetailsRouteProp>()
@@ -68,20 +66,19 @@ export const TransactionDetailsScreen = () => {
 
     const transaction = paramTransaction || fetchedTransaction || null
 
-    const handleInnerTransactionPress = (tx: PeraDisplayableTransaction) => {
-        navigation.push('TransactionDetails', { transaction: tx, groupId })
-    }
-
-    const handleGroupTransactionPress = (tx: PeraDisplayableTransaction) => {
-        navigation.push('TransactionDetails', { transaction: tx, groupId })
-    }
+    const handleTransactionPress = useCallback(
+        (tx: PeraDisplayableTransaction) => {
+            navigation.push('TransactionDetails', { transaction: tx, groupId })
+        },
+        [navigation, groupId],
+    )
 
     if (transaction) {
         return (
-            <PWScrollView contentContainerStyle={styles.contentContainer}>
+            <PWScreen>
                 <TransactionDisplay
                     transaction={transaction}
-                    onInnerTransactionsPress={handleInnerTransactionPress}
+                    onInnerTransactionsPress={handleTransactionPress}
                 />
                 {isExternal && <ExternalTransactionCallout />}
                 {groupTransactions.length > 1 && (
@@ -90,10 +87,10 @@ export const TransactionDetailsScreen = () => {
                         currentTransactionId={
                             transaction.id ?? transactionId ?? ''
                         }
-                        onGroupTransactionPress={handleGroupTransactionPress}
+                        onGroupTransactionPress={handleTransactionPress}
                     />
                 )}
-            </PWScrollView>
+            </PWScreen>
         )
     }
 

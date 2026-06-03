@@ -43,30 +43,36 @@ export const TransactionHeader = ({
     return (
         <PWView style={styles.container}>
             <PWView style={styles.idContainer}>
-                <TransactionIcon
-                    size='md'
-                    type={getTransactionType(transaction)}
-                />
+                <PWView style={styles.transactionIconContainer}>
+                    <TransactionIcon
+                        size='md'
+                        type={getTransactionType(transaction)}
+                    />
+                </PWView>
                 <PWView style={styles.idTextContainer}>
-                    <PWView>
-                        <PWText style={styles.blockTitle}>
+                    <PWView style={styles.titleRow}>
+                        <PWText
+                            style={styles.blockTitle}
+                            truncate
+                        >
                             {t(`transactions.type.${transaction.txType}`)}
                         </PWText>
-                        {!!transaction.id && (
-                            <AddressDisplay
-                                address={transaction.id}
-                                addressFormat='long'
-                                textProps={{ variant: 'body' }}
+                        {!isInnerTransaction && (
+                            <TransactionStatusBadge
+                                status={
+                                    !transaction.id?.length
+                                        ? 'pending'
+                                        : 'completed'
+                                }
                             />
                         )}
                     </PWView>
-                    {!isInnerTransaction && (
-                        <TransactionStatusBadge
-                            status={
-                                !transaction.id?.length
-                                    ? 'pending'
-                                    : 'completed'
-                            }
+                    {!!transaction.id && (
+                        <AddressDisplay
+                            address={transaction.id}
+                            addressFormat='short'
+                            textProps={{ variant: 'body' }}
+                            style={styles.transactionIdDisplay}
                         />
                     )}
                 </PWView>
@@ -75,18 +81,30 @@ export const TransactionHeader = ({
             {!!blockTime && !!transaction.confirmedRound && (
                 <PWView style={styles.blockContainer}>
                     <PWView style={styles.blockColumn}>
-                        <PWText style={styles.blockTitle}>
+                        <PWText
+                            style={styles.blockTitle}
+                            truncate
+                        >
                             {t('transactions.common.round')}
                         </PWText>
-                        <PWText style={styles.blockValue}>
+                        <PWText
+                            style={styles.blockValue}
+                            truncate
+                        >
                             {transaction.confirmedRound.toString()}
                         </PWText>
                     </PWView>
                     <PWView style={styles.blockColumn}>
-                        <PWText style={styles.blockTitle}>
+                        <PWText
+                            style={styles.blockTitle}
+                            truncate
+                        >
                             {t('transactions.common.date')}
                         </PWText>
-                        <PWText style={styles.blockValue}>
+                        <PWText
+                            style={styles.blockValue}
+                            truncate
+                        >
                             {formatDatetime(blockTime, undefined, 'medium')}
                         </PWText>
                     </PWView>

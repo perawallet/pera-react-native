@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { useAssetPreferencesStore } from '@perawallet/wallet-core-assets'
 
 type UseAssetFilterContentResult = {
@@ -20,6 +20,7 @@ type UseAssetFilterContentResult = {
     handleToggleHideZeroBalance: () => void
     handleToggleDisplayNfts: () => void
     handleToggleDisplayOptedInNfts: () => void
+    commitChanges: () => void
 }
 
 export const useAssetFilterContent = (): UseAssetFilterContentResult => {
@@ -40,24 +41,44 @@ export const useAssetFilterContent = (): UseAssetFilterContentResult => {
         state => state.setDisplayOptedInNfts,
     )
 
+    const [draftHideZeroBalance, setDraftHideZeroBalance] =
+        useState(hideZeroBalance)
+    const [draftDisplayNfts, setDraftDisplayNfts] = useState(displayNfts)
+    const [draftDisplayOptedInNfts, setDraftDisplayOptedInNfts] =
+        useState(displayOptedInNfts)
+
     const handleToggleHideZeroBalance = useCallback(() => {
-        setHideZeroBalance(!hideZeroBalance)
-    }, [hideZeroBalance, setHideZeroBalance])
+        setDraftHideZeroBalance(prev => !prev)
+    }, [])
 
     const handleToggleDisplayNfts = useCallback(() => {
-        setDisplayNfts(!displayNfts)
-    }, [displayNfts, setDisplayNfts])
+        setDraftDisplayNfts(prev => !prev)
+    }, [])
 
     const handleToggleDisplayOptedInNfts = useCallback(() => {
-        setDisplayOptedInNfts(!displayOptedInNfts)
-    }, [displayOptedInNfts, setDisplayOptedInNfts])
+        setDraftDisplayOptedInNfts(prev => !prev)
+    }, [])
+
+    const commitChanges = useCallback(() => {
+        setHideZeroBalance(draftHideZeroBalance)
+        setDisplayNfts(draftDisplayNfts)
+        setDisplayOptedInNfts(draftDisplayOptedInNfts)
+    }, [
+        draftHideZeroBalance,
+        draftDisplayNfts,
+        draftDisplayOptedInNfts,
+        setHideZeroBalance,
+        setDisplayNfts,
+        setDisplayOptedInNfts,
+    ])
 
     return {
-        hideZeroBalance,
-        displayNfts,
-        displayOptedInNfts,
+        hideZeroBalance: draftHideZeroBalance,
+        displayNfts: draftDisplayNfts,
+        displayOptedInNfts: draftDisplayOptedInNfts,
         handleToggleHideZeroBalance,
         handleToggleDisplayNfts,
         handleToggleDisplayOptedInNfts,
+        commitChanges,
     }
 }

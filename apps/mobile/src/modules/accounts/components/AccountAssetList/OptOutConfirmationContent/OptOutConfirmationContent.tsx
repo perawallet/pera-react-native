@@ -12,7 +12,7 @@
 
 import {
     PWButton,
-    PWHeader,
+    PWSheetLayout,
     PWSlideToConfirm,
     PWText,
     PWView,
@@ -30,7 +30,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { MIN_TXN_FEE } from '@perawallet/wallet-core-blockchain'
 import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useClipboard } from '@hooks/useClipboard'
 import { useStyles } from './styles'
@@ -67,13 +67,9 @@ export const OptOutConfirmationContent = ({
     }
 
     return (
-        <PWView style={styles.container}>
-            <PWHeader
-                leftIcon='cross'
-                onLeftPress={dismiss}
-                title={t('asset_opt_out.title')}
-            />
-
+        <PWSheetLayout
+            header={<SheetHeader title={t('asset_opt_out.title')} />}
+        >
             <PWView style={styles.body}>
                 <PWView style={styles.assetNameRow}>
                     <PWText
@@ -125,6 +121,7 @@ export const OptOutConfirmationContent = ({
                     <AddressDisplay
                         address={accountAddress}
                         showCopy={false}
+                        textProps={{ style: styles.rowAddress }}
                     />
                 </PWView>
 
@@ -171,6 +168,6 @@ export const OptOutConfirmationContent = ({
                     />
                 </PWView>
             </PWView>
-        </PWView>
+        </PWSheetLayout>
     )
 }

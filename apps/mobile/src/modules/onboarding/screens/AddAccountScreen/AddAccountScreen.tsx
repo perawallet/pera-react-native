@@ -16,13 +16,14 @@ import {
     PWIcon,
     PWImage,
     PWLoadingOverlay,
-    PWScrollView,
+    PWScreen,
     PWText,
     PWToolbar,
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
 import { PanelButton } from '@components/PanelButton'
+import { ScreenHeader } from '@components/ScreenHeader'
 import { useAddAccountScreen } from './useAddAccountScreen'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
@@ -32,9 +33,9 @@ import { MultisigIntroductionDialog } from '@modules/multisig/components/Multisi
 import welcomeBackground from '@assets/images/welcome-background.webp'
 
 export const AddAccountScreen = () => {
-    const styles = useStyles()
     const { t } = useLanguage()
     const insets = useSafeAreaInsets()
+    const styles = useStyles(insets)
     const {
         isCreatingAccount,
         mainOptions,
@@ -57,27 +58,26 @@ export const AddAccountScreen = () => {
                     style={styles.headerImage}
                 />
             </PWView>
-            <PWView style={[styles.rootContainer, { paddingTop: insets.top }]}>
-                <PWToolbar
-                    left={
-                        <PWIcon
-                            name='cross'
-                            onPress={handleClose}
-                            testID='add_account_close_button'
-                        />
-                    }
-                />
+            <PWScreen
+                horizontalPadding='none'
+                style={styles.screen}
+            >
+                <PWView style={styles.scrollContent}>
+                    <PWToolbar
+                        left={
+                            <PWIcon
+                                name='cross'
+                                onPress={handleClose}
+                                testID='add_account_close_button'
+                            />
+                        }
+                    />
 
-                <PWView style={styles.headerContainer}>
-                    <PWText
-                        variant='h1'
-                        style={styles.headerTitle}
-                    >
-                        {t('onboarding.add_account.title')}
-                    </PWText>
-                </PWView>
+                    <ScreenHeader
+                        title={t('onboarding.add_account.title')}
+                        style={styles.header}
+                    />
 
-                <PWScrollView contentContainerStyle={styles.scrollContent}>
                     <PWView style={styles.mainContainer}>
                         {mainOptions.map(option => (
                             <PanelButton
@@ -141,8 +141,8 @@ export const AddAccountScreen = () => {
                             />
                         </PWText>
                     </PWView>
-                </PWScrollView>
-            </PWView>
+                </PWView>
+            </PWScreen>
 
             <PWLoadingOverlay
                 isVisible={isCreatingAccount}

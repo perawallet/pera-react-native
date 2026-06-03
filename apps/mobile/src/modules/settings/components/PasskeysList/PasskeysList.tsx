@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWFlatList, PWView } from '@components/core'
 import type { Passkey } from '@perawallet/wallet-core-passkeys'
 import { PasskeyListItem } from '../PasskeyListItem'
@@ -29,7 +30,8 @@ export const PasskeysList = ({
     passkeys,
     onRequestDelete,
 }: PasskeysListProps) => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles({ bottomInset: insets.bottom })
 
     return (
         <PWFlatList

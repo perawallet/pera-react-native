@@ -11,11 +11,16 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { Platform } from 'react-native'
 import { EdgeInsets } from 'react-native-safe-area-context'
 
+type StyleProps = {
+    insets: EdgeInsets
+    isFull: boolean
+    maxDynamicContentSize?: number
+}
+
 export const useStyles = makeStyles(
-    (theme, { insets, isFull }: { insets: EdgeInsets; isFull: boolean }) => ({
+    (theme, { insets, isFull, maxDynamicContentSize }: StyleProps) => ({
         background: {
             backgroundColor: theme.colors.background,
             borderTopStartRadius: isFull ? 0 : theme.spacing.xl,
@@ -28,14 +33,20 @@ export const useStyles = makeStyles(
             backgroundColor: theme.colors.layerGray,
             width: theme.spacing.xxl,
         },
+        // maxHeight caps auto sheets so content scrolls once it hits the cap.
         contentWrapper: {
             flex: 1,
             paddingTop: isFull ? insets.top : 0,
+            maxHeight: maxDynamicContentSize,
         },
         innerContainer: {
             flexGrow: 1,
-            paddingBottom:
-                (Platform.OS === 'ios' ? insets.bottom : 0) + theme.spacing.md,
+            paddingBottom: isFull ? theme.spacing.md : 0,
+        },
+        // Fills the fixed-height sheet so KeyboardAvoidingView (behavior:
+        // 'height') can shrink it to the space above the keyboard.
+        keyboardAvoider: {
+            flex: 1,
         },
         hidden: {
             display: 'none',

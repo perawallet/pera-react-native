@@ -69,13 +69,15 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
 
     const paddingStyles = {
         normal: {
-            paddingHorizontal: theme.spacing.xxl,
+            paddingHorizontal: theme.spacing.lg,
             paddingVertical: theme.spacing.md,
             minWidth: undefined as Optional<number>,
         },
         dense: {
             paddingHorizontal: theme.spacing.md,
-            paddingVertical: theme.spacing.md,
+            // Titled buttons trim vertical padding so they match icon-only
+            // height (the 24px label box is 8px taller than the 16px icon).
+            paddingVertical: props.title ? theme.spacing.sm : theme.spacing.md,
             minWidth: theme.spacing.xxl,
         },
         none: {
@@ -90,9 +92,9 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
         paddingStyles[props.paddingStyle ?? 'normal']
 
     const titleStyle: TextStyle = {
-        lineHeight: TITLE_LINE_HEIGHT,
         flexWrap: 'nowrap',
         flexShrink: 1,
+        minWidth: 0,
         textAlign: 'center',
         verticalAlign: 'middle',
         justifyContent: 'center',
@@ -122,9 +124,18 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
             borderRadius: props.rounded ? theme.spacing.xl : theme.spacing.sm,
             paddingHorizontal,
             paddingVertical,
-            minWidth,
+            minWidth: minWidth ?? 0,
+            maxWidth: '100%',
+            flexShrink: 1,
+            overflow: 'hidden',
             opacity: props.isDisabled ? 0.7 : 1,
             backgroundColor,
+        },
+        titleContainer: {
+            flexGrow: 0,
+            flexShrink: 1,
+            minWidth: 0,
+            overflow: 'hidden',
         },
         titleStyle,
     }

@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { toError } from '@perawallet/wallet-core-shared'
+
 import type {
     DataTransport,
     SigningResult,
@@ -48,8 +50,7 @@ export const createCallbackTransport = (): DataTransport => {
                     requestId: source.requestId ?? '',
                 }
             } catch (error) {
-                const err =
-                    error instanceof Error ? error : new Error(String(error))
+                const err = toError(error)
 
                 if (source.callbacks?.error) {
                     await source.callbacks.error(err)

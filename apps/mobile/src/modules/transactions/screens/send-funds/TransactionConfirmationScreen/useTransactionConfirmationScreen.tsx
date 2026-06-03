@@ -61,13 +61,6 @@ type useTransactionConfirmationScreenResult = {
     isRecipientBelowMbr: boolean
     recipientMbrDisplay: string
     isRecipientInfoPending: boolean
-    /**
-     * True while a signing attempt is in flight (the user slid to confirm
-     * and we're inside `TransactionProcessing`). Flips back to false when
-     * the screen regains focus, which happens after a failed signing
-     * `navigation.goBack()` — resetting the slide-to-confirm thumb to its
-     * idle position so the user can retry.
-     */
     isSigning: boolean
 }
 
@@ -99,7 +92,11 @@ export const useTransactionConfirmationScreen =
         const openNote = useCallback(() => {
             void requestBottomSheet({
                 contents: <AddNoteContent />,
-                options: { size: 'auto', enablePanDownToClose: true },
+                options: {
+                    size: 'auto',
+                    enablePanDownToClose: true,
+                    autoCreateContainer: false,
+                },
             })
         }, [requestBottomSheet])
 
@@ -142,11 +139,7 @@ export const useTransactionConfirmationScreen =
 
         const [isSigning, setIsSigning] = useState(false)
         const isFocused = useIsFocused()
-        // The screen loses focus on `navigation.navigate('TransactionProcessing')`
-        // and regains it on `navigation.goBack()` (i.e. signing failed).
-        // Use that signal to reset the slide-to-confirm thumb — its internal
-        // useEffect resets `translateX` when its `isLoading` prop flips back
-        // to false (see PWSlideToConfirm/usePWSlideToConfirm.ts).
+        // Regaining focus after failed signing resets slide-to-confirm.
         useEffect(() => {
             if (isFocused) {
                 setIsSigning(false)

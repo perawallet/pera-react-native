@@ -13,16 +13,16 @@
 import {
     PWDivider,
     PWIcon,
+    PWSheetLayout,
     PWText,
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useStyles } from './styles'
 import { AccountOption, useAccountOptions } from './useAccountOptions'
 import { AccountInfoCard } from '../AccountInfoCard'
-import { BottomSheetScrollView } from '@gorhom/bottom-sheet'
 
 export type AccountOptionsContentProps = {
     onShowAddress: () => void
@@ -51,6 +51,7 @@ const OptionRow = ({
                 <PWText
                     variant='h4'
                     style={isDestructive ? styles.dangerText : undefined}
+                    truncate
                 >
                     {option.title}
                 </PWText>
@@ -109,65 +110,63 @@ export const AccountOptionsContent = ({
     )
 
     return (
-        <>
-            <BottomSheetScrollView
-                contentContainerStyle={styles.container}
-                showsVerticalScrollIndicator={false}
-            >
-                <PWView style={styles.accountInfoContainer}>
-                    <AccountInfoCard
-                        account={account}
-                        onClose={dismiss}
-                        rekeyedTo={
-                            isRekeyed && authAddress
-                                ? {
-                                      authAccount,
-                                      authAddress,
-                                      onUndoRekey: canUndoRekey
-                                          ? handleUndoRekey
-                                          : undefined,
-                                  }
-                                : undefined
-                        }
+        <PWSheetLayout
+            horizontalPadding='none'
+            header={<SheetHeader title={account.name} />}
+        >
+            <PWView style={styles.accountInfoContainer}>
+                <AccountInfoCard
+                    account={account}
+                    onClose={dismiss}
+                    rekeyedTo={
+                        isRekeyed && authAddress
+                            ? {
+                                  authAccount,
+                                  authAddress,
+                                  onUndoRekey: canUndoRekey
+                                      ? handleUndoRekey
+                                      : undefined,
+                              }
+                            : undefined
+                    }
+                />
+            </PWView>
+
+            <PWView>
+                {generalOptions.map(option => (
+                    <OptionRow
+                        key={option.id}
+                        option={option}
+                        styles={styles}
                     />
-                </PWView>
+                ))}
+            </PWView>
 
-                <PWView>
-                    {generalOptions.map(option => (
-                        <OptionRow
-                            key={option.id}
-                            option={option}
-                            styles={styles}
-                        />
-                    ))}
-                </PWView>
+            {rekeyOptions.length > 0 && (
+                <>
+                    <PWDivider style={styles.divider} />
+                    <PWView>
+                        {rekeyOptions.map(option => (
+                            <OptionRow
+                                key={option.id}
+                                option={option}
+                                styles={styles}
+                            />
+                        ))}
+                    </PWView>
+                </>
+            )}
 
-                {rekeyOptions.length > 0 && (
-                    <>
-                        <PWDivider style={styles.divider} />
-                        <PWView>
-                            {rekeyOptions.map(option => (
-                                <OptionRow
-                                    key={option.id}
-                                    option={option}
-                                    styles={styles}
-                                />
-                            ))}
-                        </PWView>
-                    </>
-                )}
-
-                <PWDivider style={styles.divider} />
-                <PWView>
-                    {managementOptions.map(option => (
-                        <OptionRow
-                            key={option.id}
-                            option={option}
-                            styles={styles}
-                        />
-                    ))}
-                </PWView>
-            </BottomSheetScrollView>
-        </>
+            <PWDivider style={styles.divider} />
+            <PWView>
+                {managementOptions.map(option => (
+                    <OptionRow
+                        key={option.id}
+                        option={option}
+                        styles={styles}
+                    />
+                ))}
+            </PWView>
+        </PWSheetLayout>
     )
 }

@@ -130,6 +130,8 @@ export const PWTabBar = ({
                                     ]}
                                 >
                                     <Animated.Text
+                                        numberOfLines={1}
+                                        ellipsizeMode='tail'
                                         style={[
                                             styles.title,
                                             {
@@ -158,6 +160,8 @@ export const PWTabBar = ({
                                     ]}
                                 >
                                     <Animated.Text
+                                        numberOfLines={1}
+                                        ellipsizeMode='tail'
                                         style={[
                                             styles.title,
                                             { color: styles.activeTitle.color },

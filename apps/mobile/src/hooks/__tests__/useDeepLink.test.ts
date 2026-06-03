@@ -409,7 +409,7 @@ describe('useDeepLink', () => {
         expect(mockRequestByType).toHaveBeenCalledWith(
             'send-funds',
             { assetId: '0' },
-            expect.objectContaining({ size: 'lg' }),
+            expect.objectContaining({ size: 'modal' }),
         )
         expect(mockSetDestination).toHaveBeenCalledWith('receiver1')
         expect(mockSetSelectedAssetId).toHaveBeenCalledWith('0')
@@ -442,7 +442,7 @@ describe('useDeepLink', () => {
         expect(mockRequestByType).toHaveBeenCalledWith(
             'send-funds',
             { assetId: '123' },
-            expect.objectContaining({ size: 'lg' }),
+            expect.objectContaining({ size: 'modal' }),
         )
         expect(mockSetDestination).toHaveBeenCalledWith('receiver1')
         expect(mockSetSelectedAssetId).toHaveBeenCalledWith('123')
@@ -857,7 +857,7 @@ describe('useDeepLink', () => {
         expect(mockRequestByType).toHaveBeenCalledWith(
             'bidali',
             {},
-            expect.objectContaining({ size: 'lg' }),
+            expect.objectContaining({ size: 'modal' }),
         )
     })
 
@@ -1007,10 +1007,14 @@ describe('useDeepLink', () => {
         // Routes to the account-actions bottom sheet (Send / Watch / Add
         // Contact menu); the in-sheet handlers themselves prefill send-funds
         // when the user picks "Send".
-        expect(mockRequestByType).toHaveBeenCalledWith('account-actions', {
-            address: 'recipient1',
-            label: 'Friend',
-        })
+        expect(mockRequestByType).toHaveBeenCalledWith(
+            'account-actions',
+            {
+                address: 'recipient1',
+                label: 'Friend',
+            },
+            { enablePanDownToClose: true },
+        )
     })
 
     it('should open send-funds bottom sheet for RECEIVER_ACCOUNT_SELECTION deeplink', async () => {
@@ -1033,7 +1037,7 @@ describe('useDeepLink', () => {
         expect(mockRequestByType).toHaveBeenCalledWith(
             'send-funds',
             { assetId: undefined },
-            expect.objectContaining({ size: 'lg' }),
+            expect.objectContaining({ size: 'modal' }),
         )
     })
 

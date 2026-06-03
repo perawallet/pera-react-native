@@ -46,7 +46,11 @@ export const SwapScreen = () => {
         hasShownIntroRef.current = true
         void requestBottomSheet<'start'>({
             contents: <SwapIntroductionContent />,
-            options: { size: 'auto', enablePanDownToClose: true },
+            options: {
+                size: 'auto',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
         }).then(result => {
             if (result === 'start') {
                 markIntroductionSeen()
@@ -59,11 +63,17 @@ export const SwapScreen = () => {
     }, [pushWebView])
 
     return (
-        <PWView style={styles.container}>
+        <PWView style={styles.screen}>
             <PWToolbar
+                paddingStyle='none'
                 left={
                     <PWView style={styles.titleSection}>
-                        <PWText variant='h3'>{t('tabbar.swap')}</PWText>
+                        <PWText
+                            variant='h3'
+                            truncate
+                        >
+                            {t('tabbar.swap')}
+                        </PWText>
                         <PWIcon
                             name='info'
                             onPress={handleInfoPress}
@@ -77,14 +87,21 @@ export const SwapScreen = () => {
                         triggerIconProps={{ size: 'md' }}
                         triggerChevronProps={{ size: 'sm' }}
                         triggerTextProps={{ variant: 'body' }}
-                        closeIconPosition='left'
                         hideDefaultHeader
                         headerContent={
                             <PWView style={styles.selectHeader}>
-                                <PWText variant='h1'>
+                                <PWText
+                                    variant='h1'
+                                    style={styles.selectTitle}
+                                    truncate
+                                >
                                     {t('account_menu.select_title')}
                                 </PWText>
-                                <PWText style={styles.selectDescription}>
+                                <PWText
+                                    style={styles.selectDescription}
+                                    numberOfLines={2}
+                                    ellipsizeMode='tail'
+                                >
                                     {t('account_menu.select_description')}
                                 </PWText>
                             </PWView>
@@ -94,7 +111,9 @@ export const SwapScreen = () => {
                 style={styles.toolbar}
             />
 
-            <SwapForm />
+            <PWView style={styles.formWrapper}>
+                <SwapForm />
+            </PWView>
         </PWView>
     )
 }

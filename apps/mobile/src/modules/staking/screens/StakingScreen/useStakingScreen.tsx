@@ -71,7 +71,7 @@ export const useStakingScreen = (): UseStakingScreenResult => {
             const accepted = await requestBottomSheet<boolean>({
                 contents: <StakingDisclaimerContent />,
                 options: {
-                    size: 'lg',
+                    size: 'modal',
                     enablePanDownToClose: true,
                     autoCreateContainer: false,
                 },
@@ -92,7 +92,13 @@ export const useStakingScreen = (): UseStakingScreenResult => {
     const handleHelpOpen = useCallback(() => {
         void requestBottomSheet({
             contents: <StakingHelpContent />,
-            options: { size: 'auto', enablePanDownToClose: true },
+            // Needs a bounded size (not 'auto'): PWSheetLayout's scroll view
+            // has no height to scroll within when the sheet hugs its content.
+            options: {
+                size: 'modal',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
         })
     }, [requestBottomSheet])
 

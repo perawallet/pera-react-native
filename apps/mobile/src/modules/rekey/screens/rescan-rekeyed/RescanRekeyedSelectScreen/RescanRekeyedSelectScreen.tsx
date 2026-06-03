@@ -11,17 +11,18 @@
  */
 
 import { useMemo } from 'react'
-import { ActivityIndicator } from 'react-native'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import {
     PWButton,
     PWCheckbox,
-    PWScrollView,
+    PWScreen,
     PWText,
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
+import { LoadingView } from '@components/LoadingView'
+import { ScreenHeader } from '@components/ScreenHeader'
 import { useLanguage } from '@hooks/useLanguage'
 import { RescanCandidateRow } from '../../../components/rescan-rekeyed/RescanCandidateRow'
 import { useRescanRekeyedSelectScreen } from './useRescanRekeyedSelectScreen'
@@ -53,7 +54,10 @@ export const RescanRekeyedSelectScreen = () => {
     if (isLoading) {
         return (
             <PWView style={styles.statusContainer}>
-                <ActivityIndicator size='large' />
+                <LoadingView
+                    variant='circle'
+                    size='lg'
+                />
                 <PWText
                     variant='body'
                     style={styles.statusText}
@@ -104,20 +108,36 @@ export const RescanRekeyedSelectScreen = () => {
     }
 
     return (
-        <PWView
-            style={styles.container}
+        <PWScreen
             testID='rescan-rekeyed-select-screen'
-        >
-            <PWScrollView contentContainerStyle={styles.scrollContent}>
-                <PWView style={styles.header}>
-                    <PWText variant='h1'>{t('rekey.rescan.title')}</PWText>
-                    <PWText
-                        variant='bodyLarge'
-                        style={styles.subtitle}
-                    >
-                        {t('rekey.rescan.subtitle')}
-                    </PWText>
+            footer={
+                <PWView style={styles.footer}>
+                    {hasCandidates && (
+                        <PWButton
+                            variant='primary'
+                            title={t('rekey.rescan.cta_add')}
+                            onPress={handleAddSelected}
+                            isLoading={isSubmitting}
+                            isDisabled={!canSubmit}
+                            style={styles.cta}
+                            testID='rescan-rekeyed-add'
+                        />
+                    )}
+                    <PWButton
+                        variant='secondary'
+                        title={t('rekey.rescan.cta_skip')}
+                        onPress={handleSkip}
+                        style={styles.cta}
+                        testID='rescan-rekeyed-skip'
+                    />
                 </PWView>
+            }
+        >
+            <PWView style={styles.scrollContent}>
+                <ScreenHeader
+                    title={t('rekey.rescan.title')}
+                    description={t('rekey.rescan.subtitle')}
+                />
 
                 {hasCandidates && (
                     <PWView style={styles.section}>
@@ -181,28 +201,7 @@ export const RescanRekeyedSelectScreen = () => {
                         ))}
                     </PWView>
                 )}
-            </PWScrollView>
-
-            <PWView style={styles.footer}>
-                {hasCandidates && (
-                    <PWButton
-                        variant='primary'
-                        title={t('rekey.rescan.cta_add')}
-                        onPress={handleAddSelected}
-                        isLoading={isSubmitting}
-                        isDisabled={!canSubmit}
-                        style={styles.cta}
-                        testID='rescan-rekeyed-add'
-                    />
-                )}
-                <PWButton
-                    variant='secondary'
-                    title={t('rekey.rescan.cta_skip')}
-                    onPress={handleSkip}
-                    style={styles.cta}
-                    testID='rescan-rekeyed-skip'
-                />
             </PWView>
-        </PWView>
+        </PWScreen>
     )
 }

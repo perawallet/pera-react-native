@@ -13,18 +13,11 @@
 import { useCallback } from 'react'
 import { ActivityIndicator } from 'react-native'
 import { ALGO_ASSET, ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
-import {
-    PWView,
-    PWText,
-    PWToolbar,
-    PWTouchableIcon,
-    PWButton,
-    PWFlatList,
-} from '@components/core'
+import { PWView, PWText, PWButton, PWFlatList } from '@components/core'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 import { useLanguage } from '@hooks/useLanguage'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { SheetHeader } from '@modules/bottom-sheet'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { AccountAssetItemView } from '@modules/assets/components/AssetItem'
 import {
@@ -46,7 +39,6 @@ export const LedgerAccountInfoContent = ({
 }: LedgerAccountInfoContentProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { dismiss } = useBottomSheetResult<void>()
     const {
         title: resolvedTitle,
         items,
@@ -127,16 +119,7 @@ export const LedgerAccountInfoContent = ({
 
     return (
         <PWView style={styles.container}>
-            <PWToolbar
-                left={
-                    <PWTouchableIcon
-                        name='cross'
-                        onPress={dismiss}
-                        testID='ledger_account_info_close'
-                    />
-                }
-                center={<PWText variant='h3'>{resolvedTitle}</PWText>}
-            />
+            <SheetHeader title={resolvedTitle} />
 
             {isLoading && (
                 <PWView
@@ -172,6 +155,7 @@ export const LedgerAccountInfoContent = ({
                     inBottomSheet
                     data={items}
                     renderItem={renderItem}
+                    ItemSeparatorComponent={null}
                     keyExtractor={(item: LedgerInfoListItem) => item.key}
                     contentContainerStyle={styles.listContent}
                     showsVerticalScrollIndicator={false}

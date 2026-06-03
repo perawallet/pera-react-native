@@ -22,10 +22,12 @@ import {
     useAccountBalancesInvalidator,
 } from '@perawallet/wallet-core-accounts'
 import { fetchAndPersistAssets } from '@perawallet/wallet-core-assets'
+import { toError } from '@perawallet/wallet-core-shared'
 import {
     AlreadyOptedInError,
     InsufficientBalanceForOptInError,
 } from '../errors'
+
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type AssetOptInParams = {
@@ -101,8 +103,7 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
 
                 return { txIds }
             } catch (err) {
-                const error =
-                    err instanceof Error ? err : new Error(String(err))
+                const error = toError(err)
                 setError(error)
                 throw error
             } finally {

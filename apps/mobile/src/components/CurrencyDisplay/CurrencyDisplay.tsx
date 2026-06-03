@@ -11,7 +11,6 @@
  */
 
 import { useStyles } from './styles'
-import { useTheme } from '@rneui/themed'
 import { PWSkeleton, PWText, PWTextProps, PWView } from '@components/core'
 import { useMemo } from 'react'
 import {
@@ -21,17 +20,32 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { Decimal } from 'decimal.js'
-import AlgoIcon from '@assets/icons/algo.svg'
 import { useSettings } from '@perawallet/wallet-core-settings'
 import { StyleProp, TextStyle } from 'react-native'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
-import { TypographyVariant } from '@theme/typography'
+import {
+    getVariantFontWeight,
+    type FontWeight,
+    type TypographyVariant,
+} from '@theme/typography'
+
+const ALGO_SYMBOL = '¦'
+
+/** U+00A6 Algo glyph is only patched in DMSans 400/500/700 — bump 600 → 700. */
+export const getAlgoSymbolWeight = (
+    variant: TypographyVariant,
+    weight?: FontWeight,
+): FontWeight => {
+    const effective = weight ?? getVariantFontWeight(variant)
+    return effective === 600 ? 700 : effective
+}
 
 export type CurrencyDisplayProps = {
     currency: string
     value: Maybe<Decimal>
     precision: number
     minPrecision?: number
+    maxPrecision?: number
     prefix?: string
     alignRight?: boolean
     showSymbol?: boolean
@@ -46,7 +60,6 @@ export type CurrencyDisplayProps = {
 
 export const CurrencyDisplay = (props: CurrencyDisplayProps) => {
     const themeStyle = useStyles(props)
-    const { theme } = useTheme()
     const provider = usePeraProvider()
     const deviceInfo = provider.deviceInfo
     const {
@@ -59,6 +72,7 @@ export const CurrencyDisplay = (props: CurrencyDisplayProps) => {
         symbolPosition = 'start',
         isLoading = false,
         minPrecision,
+        maxPrecision,
         rawValue,
         ignorePrivacyMode = false,
         variant = 'body',
@@ -71,6 +85,8 @@ export const CurrencyDisplay = (props: CurrencyDisplayProps) => {
 
     const shouldShowSymbolInFormat = showSymbol && symbolPosition === 'start'
 
+    const algoSymbolWeight = getAlgoSymbolWeight(variant, props.weight)
+
     const displayValue = useMemo(() => {
         if (rawValue != null) {
             return privacyMode
@@ -82,11 +98,14 @@ export const CurrencyDisplay = (props: CurrencyDisplayProps) => {
             return '---'
         }
 
+        const effectivePrecision =
+            maxPrecision != null ? Math.min(precision, maxPrecision) : precision
+
         return privacyMode
             ? '****'
             : formatCurrency(
                   value,
-                  precision,
+                  effectivePrecision,
                   currency,
                   deviceInfo.getDeviceLocale(),
                   shouldShowSymbolInFormat,
@@ -96,6 +115,7 @@ export const CurrencyDisplay = (props: CurrencyDisplayProps) => {
     }, [
         value,
         precision,
+        maxPrecision,
         currency,
         deviceInfo,
         shouldShowSymbolInFormat,
@@ -126,14 +146,19 @@ export const CurrencyDisplay = (props: CurrencyDisplayProps) => {
     return (
         <PWView style={themeStyle.container}>
             {showAlgoIconStart && (
-                <AlgoIcon
-                    color={theme.colors.textMain}
-                    style={[themeStyle.algoIcon, props.style]}
-                />
+                <PWText
+                    variant={variant}
+                    weight={algoSymbolWeight}
+                    style={[themeStyle.symbol, props.style]}
+                    accessibilityLabel='Algo'
+                >
+                    {ALGO_SYMBOL}
+                </PWText>
             )}
             <PWView style={themeStyle.textContainer}>
                 <PWText
                     variant={variant}
+                    truncate
                     {...rest}
                 >
                     {prefix ? prefix : ''}
@@ -142,10 +167,14 @@ export const CurrencyDisplay = (props: CurrencyDisplayProps) => {
                 </PWText>
             </PWView>
             {showAlgoIconEnd && (
-                <AlgoIcon
-                    color={theme.colors.textMain}
-                    style={[themeStyle.algoIcon, props.style]}
-                />
+                <PWText
+                    variant={variant}
+                    weight={algoSymbolWeight}
+                    style={[themeStyle.symbol, props.style]}
+                    accessibilityLabel='Algo'
+                >
+                    {ALGO_SYMBOL}
+                </PWText>
             )}
         </PWView>
     )

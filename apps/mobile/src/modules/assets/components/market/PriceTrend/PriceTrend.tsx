@@ -10,13 +10,14 @@
  limitations under the License
  */
 
-import { PWIcon, PWText, PWView } from '@components/core'
+import { PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
 import {
     formatCurrency,
     HistoryPeriod,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
+import { percentChange } from '@perawallet/wallet-core-blockchain'
 import { Decimal } from 'decimal.js'
 import { useMemo } from 'react'
 import {
@@ -24,6 +25,7 @@ import {
     useAssetPriceHistoryQuery,
 } from '@perawallet/wallet-core-assets'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
+import { TrendIndicator } from '@components/TrendIndicator'
 
 export type PriceTrendProps = {
     assetId: string
@@ -46,29 +48,21 @@ export const PriceTrend = ({
         period ?? 'one-week',
     )
 
-    const [calculatedPercentage, calculatedValue] = useMemo(() => {
+    const [changePercentage, changeValue] = useMemo(() => {
         const dataPoints = chartData?.map(p => p.usdPrice) ?? []
 
         const firstDp = dataPoints.at(0) ?? new Decimal(0)
         const lastDp =
             selectedDataPoint?.usdPrice ?? dataPoints.at(-1) ?? new Decimal(0)
 
-        if (lastDp.isZero()) return [new Decimal(0), new Decimal(0)]
-
-        return [
-            lastDp.minus(firstDp).div(lastDp).mul(100),
-            lastDp.minus(firstDp),
-        ]
+        return [percentChange(firstDp, lastDp), lastDp.minus(firstDp)]
     }, [chartData, selectedDataPoint])
-
-    const changePercentage = calculatedPercentage ?? new Decimal(0)
-    const changeValue = calculatedValue
 
     const isPositive = changePercentage.greaterThanOrEqualTo(new Decimal(0))
 
     return (
         <PWView style={styles.container}>
-            {showAbsolute && changeValue && (
+            {showAbsolute && (
                 <PWText
                     style={isPositive ? styles.itemUp : styles.itemDown}
                     variant='h4'
@@ -83,20 +77,11 @@ export const PriceTrend = ({
                     )}
                 </PWText>
             )}
-            <PWView style={styles.percentageContainer}>
-                <PWIcon
-                    name={isPositive ? 'arrow-up' : 'arrow-down'}
-                    variant={isPositive ? 'helper' : 'error'}
-                    size='sm'
-                    style={isPositive ? styles.trendIconUp : undefined}
-                />
-                <PWText
-                    style={isPositive ? styles.itemUp : styles.itemDown}
-                    variant='h4'
-                >
-                    {Decimal.abs(changePercentage).toFixed(2)}%
-                </PWText>
-            </PWView>
+            <TrendIndicator
+                percentage={changePercentage}
+                hasIconBackground
+                shouldHideIconWhenZero
+            />
         </PWView>
     )
 }

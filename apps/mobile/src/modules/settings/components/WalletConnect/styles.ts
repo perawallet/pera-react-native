@@ -38,6 +38,9 @@ export const useStyles = makeStyles(theme => {
             alignItems: 'center',
             gap: theme.spacing.md,
         },
+        sessionName: {
+            flexShrink: 1,
+        },
         icon: {
             width: theme.spacing.xxl,
             height: theme.spacing.xxl,

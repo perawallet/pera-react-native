@@ -12,22 +12,34 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
+type StyleProps = { bottomInset: number }
+
+export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
     bottomSheetContainer: {
         alignItems: 'center',
         gap: theme.spacing.md,
         padding: theme.spacing.xl,
-        paddingBottom: theme.spacing['4xl'],
+        paddingBottom: theme.spacing.xl + bottomInset,
+        width: '100%',
+        minWidth: 0,
     },
     buttonContainer: {
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
         gap: theme.spacing['3xl'],
-        marginVertical: theme.spacing.xl,
+        marginTop: theme.spacing.xl,
+        width: '100%',
     },
     bottomSheetMessage: {
         textAlign: 'center',
         color: theme.colors.textGray,
+        width: '100%',
+        minWidth: 0,
+    },
+    title: {
+        textAlign: 'center',
+        width: '100%',
+        minWidth: 0,
     },
 }))

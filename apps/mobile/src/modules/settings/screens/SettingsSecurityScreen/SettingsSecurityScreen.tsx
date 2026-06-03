@@ -11,18 +11,18 @@
  */
 
 import {
+    PWScreen,
     PWSwitch,
     PWText,
     PWView,
     PWTouchableOpacity,
     PWIcon,
-    PWScrollView,
 } from '@components/core'
+import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
+import { InfoButton } from '@components/InfoButton'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSettingsSecurityScreen } from './useSettingsSecurityScreen'
 import { useStyles } from './styles'
-import { InfoButton } from '@components/InfoButton'
-import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
 
 export const SettingsSecurityScreen = () => {
     const { t } = useLanguage()
@@ -32,8 +32,8 @@ export const SettingsSecurityScreen = () => {
         isPinEnabled,
         isBiometricEnabled,
         isBiometricsAvailable,
-        isRekeySupportEnabled,
         isAdvancedSecurityEnabled,
+        isRekeySupportEnabled,
         isAssetFreezeSupportEnabled,
         isShakeToLockFeatureEnabled,
         isShakeToLockEnabled,
@@ -49,202 +49,260 @@ export const SettingsSecurityScreen = () => {
     } = useSettingsSecurityScreen()
 
     return (
-        <PWScrollView
-            style={styles.container}
-            contentContainerStyle={styles.contentContainer}
-            testID='settings_security_screen'
-        >
-            <PWView style={styles.section}>
-                <PWText
-                    variant='body'
-                    style={styles.sectionTitle}
-                >
-                    {t('settings.security.security_settings_section')}
-                </PWText>
-
-                <PWView style={styles.listItem}>
-                    <PWView style={styles.listItemContent}>
-                        <PWIcon name='shield-check' />
-                        <PWText>
-                            {t('settings.security.enable_pin_security')}
-                        </PWText>
-                    </PWView>
-                    <PWSwitch
-                        value={isPinEnabled}
-                        onValueChange={handlePinToggle}
-                        testID='settings_security_pin_toggle'
-                    />
-                </PWView>
-
-                {isPinEnabled && (
-                    <PWTouchableOpacity
-                        style={styles.listItem}
-                        onPress={handleChangePinPress}
-                        testID='settings_security_change_pin_button'
+        <PWScreen testID='settings_security_screen'>
+            <PWView style={styles.container}>
+                <PWView style={styles.section}>
+                    <PWText
+                        variant='body'
+                        style={styles.sectionTitle}
                     >
-                        <PWView style={styles.listItemContent}>
-                            <PWIcon name='locked' />
-                            <PWText>{t('settings.security.change_pin')}</PWText>
-                        </PWView>
-                        <PWIcon name='chevron-right' />
-                    </PWTouchableOpacity>
-                )}
+                        {t('settings.security.security_settings_section')}
+                    </PWText>
 
-                {isPinEnabled && isBiometricsAvailable && (
                     <PWView style={styles.listItem}>
                         <PWView style={styles.listItemContent}>
-                            <PWIcon name='faceid' />
-                            <PWText>
-                                {t('settings.security.enable_biometrics')}
+                            <PWIcon name='shield-check' />
+                            <PWText
+                                style={styles.listItemLabel}
+                                truncate
+                            >
+                                {t('settings.security.enable_pin_security')}
                             </PWText>
                         </PWView>
-                        <PWSwitch
-                            value={isBiometricEnabled}
-                            onValueChange={handleBiometricToggle}
-                            testID='settings_security_biometric_toggle'
-                        />
+                        <PWView style={styles.trailingContainer}>
+                            <PWSwitch
+                                value={isPinEnabled}
+                                onValueChange={handlePinToggle}
+                                testID='settings_security_pin_toggle'
+                            />
+                        </PWView>
                     </PWView>
-                )}
-            </PWView>
 
-            <PWView style={styles.section}>
-                <TitledExpandablePanel
-                    title={t('settings.security.advanced_security_settings')}
-                    titleStyle={styles.sectionTitle}
-                    startExpanded={isAdvancedSecurityEnabled}
-                >
-                    <PWView style={styles.expandablePanelContent}>
-                        <PWView>
-                            <PWView style={styles.listItem}>
-                                <PWView style={styles.listItemContent}>
-                                    <PWIcon name='rekey' />
-                                    <PWText>
-                                        {t(
-                                            'settings.security.enable_rekey_support',
-                                        )}
-                                    </PWText>
-                                </PWView>
+                    {isPinEnabled && (
+                        <PWTouchableOpacity
+                            style={styles.listItem}
+                            onPress={handleChangePinPress}
+                            testID='settings_security_change_pin_button'
+                        >
+                            <PWView style={styles.listItemContent}>
+                                <PWIcon name='locked' />
+                                <PWText
+                                    style={styles.listItemLabel}
+                                    truncate
+                                >
+                                    {t('settings.security.change_pin')}
+                                </PWText>
+                            </PWView>
+                            <PWView style={styles.trailingContainer}>
+                                <PWIcon name='chevron-right' />
+                            </PWView>
+                        </PWTouchableOpacity>
+                    )}
+
+                    {isPinEnabled && isBiometricsAvailable && (
+                        <PWView style={styles.listItem}>
+                            <PWView style={styles.listItemContent}>
+                                <PWIcon name='faceid' />
+                                <PWText
+                                    style={styles.listItemLabel}
+                                    truncate
+                                >
+                                    {t('settings.security.enable_biometrics')}
+                                </PWText>
+                            </PWView>
+                            <PWView style={styles.trailingContainer}>
                                 <PWSwitch
-                                    value={isRekeySupportEnabled}
-                                    onValueChange={handleRekeyToggle}
-                                    testID='settings_security_rekey_toggle'
+                                    value={isBiometricEnabled}
+                                    onValueChange={handleBiometricToggle}
+                                    testID='settings_security_biometric_toggle'
                                 />
                             </PWView>
-                            <PWText style={styles.listItemSubtitle}>
-                                {t(
-                                    'settings.security.enable_rekey_support_description',
-                                )}
-                            </PWText>
                         </PWView>
-                        <PWView>
-                            <PWView style={styles.listItem}>
-                                <PWView style={styles.listItemContent}>
-                                    <PWIcon name='snowflake' />
-                                    <PWText>
-                                        {t(
-                                            'settings.security.enable_asset_freeze_support',
-                                        )}
-                                    </PWText>
-                                </PWView>
-                                <PWSwitch
-                                    value={isAssetFreezeSupportEnabled}
-                                    onValueChange={handleAssetFreezeToggle}
-                                    testID='settings_security_asset_freeze_toggle'
-                                />
-                            </PWView>
-                            <PWText style={styles.listItemSubtitle}>
-                                {t(
-                                    'settings.security.enable_asset_freeze_support_description',
-                                )}
-                            </PWText>
-                        </PWView>
+                    )}
+                </PWView>
 
-                        {isShakeToLockFeatureEnabled && (
+                <PWView style={styles.section}>
+                    <TitledExpandablePanel
+                        title={t(
+                            'settings.security.advanced_security_settings',
+                        )}
+                        startExpanded={isAdvancedSecurityEnabled}
+                    >
+                        <PWView style={styles.expandablePanelContent}>
                             <PWView>
                                 <PWView style={styles.listItem}>
                                     <PWView style={styles.listItemContent}>
-                                        <PWIcon name='shield-check' />
-                                        <PWText>
+                                        <PWIcon name='rekey' />
+                                        <PWText
+                                            style={styles.listItemLabel}
+                                            truncate
+                                        >
                                             {t(
-                                                'settings.security.shake_to_lock',
+                                                'settings.security.enable_rekey_support',
                                             )}
                                         </PWText>
-                                        <InfoButton
-                                            title={t(
-                                                'settings.security.shake_to_lock_info_title',
-                                            )}
-                                        >
-                                            <PWText>
-                                                {t(
-                                                    'settings.security.shake_to_lock_info_body',
-                                                )}
-                                            </PWText>
-                                        </InfoButton>
                                     </PWView>
-                                    <PWSwitch
-                                        value={
-                                            isShakeToLockEnabled && isPinEnabled
-                                        }
-                                        onValueChange={handleShakeToLockToggle}
-                                        disabled={!isPinEnabled}
-                                        testID='settings_security_shake_to_lock_toggle'
-                                    />
+                                    <PWView style={styles.trailingContainer}>
+                                        <PWSwitch
+                                            value={isRekeySupportEnabled}
+                                            onValueChange={handleRekeyToggle}
+                                            testID='settings_security_rekey_toggle'
+                                        />
+                                    </PWView>
                                 </PWView>
                                 <PWText style={styles.listItemSubtitle}>
-                                    {isPinEnabled
-                                        ? t(
-                                              'settings.security.shake_to_lock_description',
-                                          )
-                                        : t(
-                                              'settings.security.shake_to_lock_requires_pin',
-                                          )}
+                                    {t(
+                                        'settings.security.enable_rekey_support_description',
+                                    )}
                                 </PWText>
                             </PWView>
-                        )}
-
-                        {isDuressPinFeatureEnabled && (
                             <PWView>
                                 <PWView style={styles.listItem}>
                                     <PWView style={styles.listItemContent}>
-                                        <PWIcon name='locked' />
-                                        <PWText>
-                                            {t('settings.security.duress_pin')}
-                                        </PWText>
-                                        <InfoButton
-                                            title={t(
-                                                'settings.security.duress_pin_info_title',
-                                            )}
+                                        <PWIcon name='snowflake' />
+                                        <PWText
+                                            style={styles.listItemLabel}
+                                            truncate
                                         >
-                                            <PWText>
-                                                {t(
-                                                    'settings.security.duress_pin_info_body',
-                                                )}
-                                            </PWText>
-                                        </InfoButton>
+                                            {t(
+                                                'settings.security.enable_asset_freeze_support',
+                                            )}
+                                        </PWText>
                                     </PWView>
-                                    <PWSwitch
-                                        value={
-                                            isDuressPinEnabled && isPinEnabled
-                                        }
-                                        onValueChange={handleDuressPinToggle}
-                                        disabled={!isPinEnabled}
-                                        testID='settings_security_duress_pin_toggle'
-                                    />
+                                    <PWView style={styles.trailingContainer}>
+                                        <PWSwitch
+                                            value={isAssetFreezeSupportEnabled}
+                                            onValueChange={
+                                                handleAssetFreezeToggle
+                                            }
+                                            testID='settings_security_asset_freeze_toggle'
+                                        />
+                                    </PWView>
                                 </PWView>
                                 <PWText style={styles.listItemSubtitle}>
-                                    {isPinEnabled
-                                        ? t(
-                                              'settings.security.duress_pin_description',
-                                          )
-                                        : t(
-                                              'settings.security.duress_pin_requires_pin',
-                                          )}
+                                    {t(
+                                        'settings.security.enable_asset_freeze_support_description',
+                                    )}
                                 </PWText>
                             </PWView>
-                        )}
-                    </PWView>
-                </TitledExpandablePanel>
+
+                            {isShakeToLockFeatureEnabled && (
+                                <PWView>
+                                    <PWView style={styles.listItem}>
+                                        <PWView style={styles.listItemContent}>
+                                            <PWIcon name='shield-check' />
+                                            <PWText
+                                                style={styles.listItemLabel}
+                                                truncate
+                                            >
+                                                {t(
+                                                    'settings.security.shake_to_lock',
+                                                )}
+                                            </PWText>
+                                            <PWView
+                                                style={styles.listItemAccessory}
+                                            >
+                                                <InfoButton
+                                                    title={t(
+                                                        'settings.security.shake_to_lock_info_title',
+                                                    )}
+                                                >
+                                                    <PWText>
+                                                        {t(
+                                                            'settings.security.shake_to_lock_info_body',
+                                                        )}
+                                                    </PWText>
+                                                </InfoButton>
+                                            </PWView>
+                                        </PWView>
+                                        <PWView
+                                            style={styles.trailingContainer}
+                                        >
+                                            <PWSwitch
+                                                value={
+                                                    isShakeToLockEnabled &&
+                                                    isPinEnabled
+                                                }
+                                                onValueChange={
+                                                    handleShakeToLockToggle
+                                                }
+                                                disabled={!isPinEnabled}
+                                                testID='settings_security_shake_to_lock_toggle'
+                                            />
+                                        </PWView>
+                                    </PWView>
+                                    <PWText style={styles.listItemSubtitle}>
+                                        {isPinEnabled
+                                            ? t(
+                                                  'settings.security.shake_to_lock_description',
+                                              )
+                                            : t(
+                                                  'settings.security.shake_to_lock_requires_pin',
+                                              )}
+                                    </PWText>
+                                </PWView>
+                            )}
+
+                            {isDuressPinFeatureEnabled && (
+                                <PWView>
+                                    <PWView style={styles.listItem}>
+                                        <PWView style={styles.listItemContent}>
+                                            <PWIcon name='locked' />
+                                            <PWText
+                                                style={styles.listItemLabel}
+                                                truncate
+                                            >
+                                                {t(
+                                                    'settings.security.duress_pin',
+                                                )}
+                                            </PWText>
+                                            <PWView
+                                                style={styles.listItemAccessory}
+                                            >
+                                                <InfoButton
+                                                    title={t(
+                                                        'settings.security.duress_pin_info_title',
+                                                    )}
+                                                >
+                                                    <PWText>
+                                                        {t(
+                                                            'settings.security.duress_pin_info_body',
+                                                        )}
+                                                    </PWText>
+                                                </InfoButton>
+                                            </PWView>
+                                        </PWView>
+                                        <PWView
+                                            style={styles.trailingContainer}
+                                        >
+                                            <PWSwitch
+                                                value={
+                                                    isDuressPinEnabled &&
+                                                    isPinEnabled
+                                                }
+                                                onValueChange={
+                                                    handleDuressPinToggle
+                                                }
+                                                disabled={!isPinEnabled}
+                                                testID='settings_security_duress_pin_toggle'
+                                            />
+                                        </PWView>
+                                    </PWView>
+                                    <PWText style={styles.listItemSubtitle}>
+                                        {isPinEnabled
+                                            ? t(
+                                                  'settings.security.duress_pin_description',
+                                              )
+                                            : t(
+                                                  'settings.security.duress_pin_requires_pin',
+                                              )}
+                                    </PWText>
+                                </PWView>
+                            )}
+                        </PWView>
+                    </TitledExpandablePanel>
+                </PWView>
             </PWView>
-        </PWScrollView>
+        </PWScreen>
     )
 }

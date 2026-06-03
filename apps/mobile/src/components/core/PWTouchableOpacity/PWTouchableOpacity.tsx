@@ -10,23 +10,58 @@
  limitations under the License
  */
 
-import { TouchableOpacity, TouchableOpacityProps } from 'react-native'
+import { useCallback, useRef } from 'react'
+import {
+    Keyboard,
+    TouchableOpacity,
+    type GestureResponderEvent,
+    type TouchableOpacityProps,
+} from 'react-native'
 import { getTestProps } from '@utils/test-id-helper'
 
-export type PWTouchableOpacityProps = {} & TouchableOpacityProps
+export type PWTouchableOpacityProps = {
+    dismissKeyboardOnPress?: boolean
+    /** Opt out of the double-press guard for rapid-tap surfaces (e.g. numpad). */
+    allowRapidPress?: boolean
+} & TouchableOpacityProps
 
 const DEFAULT_ACTIVE_OPACITY = 0.8
+
+// Swallow repeat presses within this window so a double-tap can't fire onPress twice.
+const DOUBLE_PRESS_GUARD_MS = 500
 
 export const PWTouchableOpacity = ({
     children,
     activeOpacity,
     testID,
+    onPress,
+    dismissKeyboardOnPress = true,
+    allowRapidPress = false,
     ...rest
 }: PWTouchableOpacityProps) => {
+    const lastPressAtRef = useRef(0)
+
+    // onPress before Keyboard.dismiss — bottom-sheet open races if reversed.
+    const handlePress = useCallback(
+        (event: GestureResponderEvent) => {
+            if (!allowRapidPress) {
+                const now = Date.now()
+                if (now - lastPressAtRef.current < DOUBLE_PRESS_GUARD_MS) return
+                lastPressAtRef.current = now
+            }
+            onPress?.(event)
+            if (dismissKeyboardOnPress) {
+                Keyboard.dismiss()
+            }
+        },
+        [onPress, dismissKeyboardOnPress, allowRapidPress],
+    )
+
     return (
         <TouchableOpacity
             {...getTestProps(testID)}
             {...rest}
+            onPress={onPress ? handlePress : undefined}
             activeOpacity={activeOpacity ?? DEFAULT_ACTIVE_OPACITY}
         >
             {children}

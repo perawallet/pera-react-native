@@ -10,13 +10,8 @@
  limitations under the License
  */
 
-import {
-    PWText,
-    PWNumpad,
-    PWPinCircles,
-    PWView,
-    NumpadKey,
-} from '@components/core'
+import { PWNumpad, PWPinCircles, PWView, NumpadKey } from '@components/core'
+import { ScreenHeader } from '@components/ScreenHeader'
 import { usePinEntry } from './usePinEntry'
 import { useStyles } from './styles'
 import { PIN_LENGTH } from '@perawallet/wallet-core-security'
@@ -60,14 +55,7 @@ export const PinEntry = ({
 
     return (
         <PWView style={styles.container}>
-            <PWView style={styles.header}>
-                <PWText
-                    variant='h1'
-                    style={styles.title}
-                >
-                    {title}
-                </PWText>
-            </PWView>
+            <ScreenHeader title={title} />
 
             <PWView style={styles.circlesContainer}>
                 <PWPinCircles

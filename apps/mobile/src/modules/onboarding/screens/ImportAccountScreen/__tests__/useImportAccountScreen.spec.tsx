@@ -30,6 +30,7 @@ vi.mock('react-native', () => ({
         addListener: vi.fn(() => ({
             remove: vi.fn(),
         })),
+        dismiss: vi.fn(),
     },
     Platform: {
         OS: 'ios',

@@ -13,21 +13,12 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        flex: 1,
-        gap: theme.spacing.lg,
-        justifyContent: 'space-between',
-        paddingHorizontal: theme.spacing.xl,
-    },
     contentContainer: {
-        flexGrow: 1,
+        flex: 1,
         gap: theme.spacing.lg,
         justifyContent: 'space-between',
     },
     paddedDivider: {
         marginVertical: theme.spacing.xs,
-    },
-    scrollview: {
-        flexGrow: 1,
     },
 }))

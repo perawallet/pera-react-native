@@ -17,10 +17,8 @@ export const useStyles = makeStyles(theme => ({
         flex: 1,
         backgroundColor: theme.colors.background,
     },
-    scrollContent: {
-        paddingHorizontal: theme.spacing.xl,
-        paddingTop: theme.spacing.md,
-        paddingBottom: theme.spacing.xxl,
+    bodyContent: {
+        paddingTop: theme.spacing.lg,
         gap: theme.spacing.lg,
     },
     toolbarTitle: {
@@ -52,10 +50,7 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textGray,
         textAlign: 'center',
     },
-    bottomBar: {
-        paddingHorizontal: theme.spacing.xl,
-        paddingTop: theme.spacing.md,
-        paddingBottom: theme.spacing.md,
+    footerContent: {
         gap: theme.spacing.sm,
     },
     bottomActions: {

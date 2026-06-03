@@ -11,16 +11,13 @@
  */
 
 import React from 'react'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { PWButton, PWRoundIcon, PWText, PWView } from '@components/core'
+import { PWButton, PWScreen } from '@components/core'
 import { QRScannerView } from '@components/QRScannerView'
+import { ScreenHeader } from '@components/ScreenHeader'
 import { useLanguage } from '@hooks/useLanguage'
-import { useStyles } from './styles'
 import { usePeraWebImportInfoScreen } from './usePeraWebImportInfoScreen'
 
 export const PeraWebImportInfoScreen = () => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles(insets)
     const { t } = useLanguage()
     const {
         handleScan,
@@ -31,35 +28,22 @@ export const PeraWebImportInfoScreen = () => {
 
     return (
         <>
-            <PWView style={styles.root}>
-                <PWView style={styles.content}>
-                    <PWRoundIcon
-                        icon='globe'
-                        size='xxl'
-                    />
-                    <PWText
-                        variant='h1'
-                        style={styles.title}
-                    >
-                        {t('onboarding.pera_web_import.info.title')}
-                    </PWText>
-                    <PWText
-                        variant='h4'
-                        style={styles.description}
-                    >
-                        {t('onboarding.pera_web_import.info.body')}
-                    </PWText>
-                </PWView>
-
-                <PWView style={styles.footer}>
+            <PWScreen
+                footer={
                     <PWButton
                         variant='primary'
                         title={t('onboarding.pera_web_import.info.scan_button')}
                         onPress={handleScan}
                         testID='pera_web_import_info_scan_button'
                     />
-                </PWView>
-            </PWView>
+                }
+            >
+                <ScreenHeader
+                    icon='globe'
+                    title={t('onboarding.pera_web_import.info.title')}
+                    description={t('onboarding.pera_web_import.info.body')}
+                />
+            </PWScreen>
 
             <QRScannerView
                 isVisible={isQRScannerVisible}

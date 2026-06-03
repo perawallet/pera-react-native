@@ -18,25 +18,45 @@ export const useStyles = makeStyles(theme => ({
         backgroundColor: theme.colors.background,
     },
     contentContainer: {
-        flexGrow: 1,
-        paddingHorizontal: theme.spacing.md,
-        gap: theme.spacing.sm,
+        paddingHorizontal: theme.spacing.xl,
+    },
+    // marginLeft = 3xl thumbnail + md row gap, to align the divider with row text.
+    listSeparator: {
+        height: theme.borders.sm,
+        backgroundColor: theme.colors.layerGrayLighter,
+        marginLeft: theme.spacing['3xl'] + theme.spacing.md,
+    },
+    // FlashList has no columnWrapperStyle, so grid spacing rides on the cells.
+    gridColumn: {
+        paddingBottom: theme.spacing.xl,
+    },
+    // Half-gap on each cell's inner edge -> xl between columns, outer edges flush.
+    gridColumnLeft: {
+        paddingRight: theme.spacing.xl / 2,
+    },
+    gridColumnRight: {
+        paddingLeft: theme.spacing.xl / 2,
     },
     headerContainer: {
         marginTop: theme.spacing.sm,
         marginBottom: theme.spacing.md,
-        paddingHorizontal: theme.spacing.md,
+        paddingHorizontal: theme.spacing.xl,
     },
     titleBar: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        gap: theme.spacing.md,
         marginBottom: theme.spacing.sm,
+    },
+    titleBarTitleContainer: {
+        flex: 1,
+        minWidth: 0,
     },
     titleBarActions: {
         flexDirection: 'row',
         gap: theme.spacing.sm,
         alignItems: 'center',
+        flexShrink: 0,
     },
     manageButton: {
         flexDirection: 'row',

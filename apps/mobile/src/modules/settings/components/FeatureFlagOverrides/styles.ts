@@ -23,7 +23,6 @@ export const useStyles = makeStyles(theme => {
     }
     return {
         container: {
-            paddingHorizontal: theme.spacing.lg,
             gap: theme.spacing.lg,
         },
         flagContainer: {
@@ -36,6 +35,12 @@ export const useStyles = makeStyles(theme => {
             flexDirection: 'row',
             justifyContent: 'space-between',
             alignItems: 'center',
+            gap: theme.spacing.md,
+        },
+        // minWidth: 0 lets a long title wrap instead of overflowing the row.
+        textColumn: {
+            flex: 1,
+            minWidth: 0,
         },
         flagTitle,
         flagCaption,

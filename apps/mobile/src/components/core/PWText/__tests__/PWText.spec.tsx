@@ -53,4 +53,34 @@ describe('PWText', () => {
             expect(element.getAttribute('minimumfontscale')).toBeNull()
         })
     })
+
+    describe('truncate', () => {
+        it('defaults numberOfLines to 1 and ellipsizeMode to tail', () => {
+            render(<PWText truncate>Long text</PWText>)
+            const element = screen.getByText('Long text')
+            expect(element.getAttribute('numberoflines')).toBe('1')
+            expect(element.getAttribute('ellipsizemode')).toBe('tail')
+        })
+
+        it('lets explicit numberOfLines and ellipsizeMode override the defaults', () => {
+            render(
+                <PWText
+                    truncate
+                    numberOfLines={2}
+                    ellipsizeMode='middle'
+                >
+                    Long text
+                </PWText>,
+            )
+            const element = screen.getByText('Long text')
+            expect(element.getAttribute('numberoflines')).toBe('2')
+            expect(element.getAttribute('ellipsizemode')).toBe('middle')
+        })
+
+        it('does not set truncation attributes when truncate is absent', () => {
+            render(<PWText>Plain</PWText>)
+            const element = screen.getByText('Plain')
+            expect(element.getAttribute('numberoflines')).toBeNull()
+        })
+    })
 })

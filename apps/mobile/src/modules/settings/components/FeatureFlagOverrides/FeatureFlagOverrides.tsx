@@ -35,7 +35,7 @@ export const FeatureFlagOverrides = () => {
                     style={styles.flagContainer}
                 >
                     <PWView style={styles.row}>
-                        <PWView>
+                        <PWView style={styles.textColumn}>
                             <PWText
                                 variant='h4'
                                 style={styles.flagTitle}
@@ -60,7 +60,7 @@ export const FeatureFlagOverrides = () => {
 
                     {expanded?.includes(key) && (
                         <PWView style={styles.row}>
-                            <PWText>
+                            <PWText style={styles.textColumn}>
                                 {t('settings.developer.overridden')}:{' '}
                                 {configOverrides[key]
                                     ? t('settings.developer.enabled')

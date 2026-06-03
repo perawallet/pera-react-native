@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { PWView, PWText, PWIcon } from '@components/core'
+import { PWIcon, PWSheetLayout, PWText, PWView } from '@components/core'
+import { SheetHeader } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
@@ -26,14 +27,9 @@ export const LedgerHowItWorksContent = () => {
     const { t } = useLanguage()
 
     return (
-        <PWView style={styles.container}>
-            <PWText
-                variant='h3'
-                style={styles.title}
-            >
-                {t('ledger.how_does_it_work.title')}
-            </PWText>
-
+        <PWSheetLayout
+            header={<SheetHeader title={t('ledger.how_does_it_work.title')} />}
+        >
             <PWView style={styles.list}>
                 {STEP_KEYS.map(key => (
                     <PWView
@@ -56,6 +52,6 @@ export const LedgerHowItWorksContent = () => {
                     </PWView>
                 ))}
             </PWView>
-        </PWView>
+        </PWSheetLayout>
     )
 }

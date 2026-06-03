@@ -184,8 +184,7 @@ describe('PWBottomSheet', () => {
 
     it.each([
         ['auto', true, undefined],
-        ['lg', false, ['90%']],
-        ['md', false, ['50%']],
+        ['modal', false, ['96%']],
         ['full', false, ['100%']],
     ] as [PWBottomSheetSize, boolean, Optional<string[]>][])(
         'passes correct config for size=%s',
@@ -225,6 +224,41 @@ describe('PWBottomSheet', () => {
         )
 
         expect(capturedProps.enablePanDownToClose).toBe(false)
+    })
+
+    it.each(['modal', 'full'] as PWBottomSheetSize[])(
+        'hides the drag-handle notch on full-screen size=%s even with pan-down',
+        size => {
+            render(
+                <PWBottomSheet
+                    isVisible={true}
+                    size={size}
+                    enablePanDownToClose={true}
+                >
+                    <Text>Content</Text>
+                </PWBottomSheet>,
+            )
+
+            expect(capturedProps.handleIndicatorStyle).toEqual({
+                display: 'none',
+            })
+        },
+    )
+
+    it('shows the drag-handle notch on non-full pan-down sheets', () => {
+        render(
+            <PWBottomSheet
+                isVisible={true}
+                size='auto'
+                enablePanDownToClose={true}
+            >
+                <Text>Content</Text>
+            </PWBottomSheet>,
+        )
+
+        expect(capturedProps.handleIndicatorStyle).not.toEqual({
+            display: 'none',
+        })
     })
 
     it('renders children when autoCreateContainer is false', () => {

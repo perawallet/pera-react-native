@@ -59,7 +59,7 @@ describe('useAssetSortContent', () => {
         ])
     })
 
-    it('returns current sort mode from store', () => {
+    it('initialises the draft from the stored sort mode', () => {
         mockAssetSortMode.mockReturnValue('balanceDesc')
 
         const { result } = renderHook(() => useAssetSortContent())
@@ -67,13 +67,28 @@ describe('useAssetSortContent', () => {
         expect(result.current.assetSortMode).toBe('balanceDesc')
     })
 
-    it('calls setAssetSortMode when handleSortModeChange is called', () => {
+    it('updates the draft without writing to the store on selection', () => {
         const { result } = renderHook(() => useAssetSortContent())
 
         act(() => {
             result.current.handleSortModeChange('balanceAsc' as AssetSortMode)
         })
 
+        expect(result.current.assetSortMode).toBe('balanceAsc')
+        expect(mockSetAssetSortMode).not.toHaveBeenCalled()
+    })
+
+    it('writes the draft to the store only on commit', () => {
+        const { result } = renderHook(() => useAssetSortContent())
+
+        act(() => {
+            result.current.handleSortModeChange('balanceAsc' as AssetSortMode)
+        })
+        act(() => {
+            result.current.commitChanges()
+        })
+
+        expect(mockSetAssetSortMode).toHaveBeenCalledTimes(1)
         expect(mockSetAssetSortMode).toHaveBeenCalledWith('balanceAsc')
     })
 })

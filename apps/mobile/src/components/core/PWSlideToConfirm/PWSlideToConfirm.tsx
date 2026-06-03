@@ -89,6 +89,7 @@ export const PWSlideToConfirm = ({
                     <PWText
                         variant='body'
                         style={styles.labelTextBase}
+                        truncate
                     >
                         {title}
                     </PWText>
@@ -106,6 +107,7 @@ export const PWSlideToConfirm = ({
                         <PWText
                             variant='body'
                             style={styles.labelTextOverlay}
+                            truncate
                         >
                             {title}
                         </PWText>

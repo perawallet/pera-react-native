@@ -18,9 +18,6 @@ export const useStyles = makeStyles(theme => {
         lineHeight: theme.spacing.lg,
     }
     return {
-        container: {
-            paddingBottom: theme.spacing['3xl'],
-        },
         headerCenter: {
             alignItems: 'center',
         },

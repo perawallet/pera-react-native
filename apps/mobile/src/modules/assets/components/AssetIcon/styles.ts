@@ -12,6 +12,8 @@
 
 import { makeStyles } from '@rneui/themed'
 
+const INITIALS_FONT_RATIO = 0.35
+
 type StyleProps = {
     resolvedSize: number
     shape: 'circle' | 'square'
@@ -23,7 +25,7 @@ export const useStyles = makeStyles(
             shape === 'square' ? theme.borderRadius.sm : resolvedSize / 2
         const initialsText = {
             color: theme.colors.textGray,
-            fontSize: resolvedSize * 0.35,
+            fontSize: resolvedSize * INITIALS_FONT_RATIO,
         }
         return {
             container: {

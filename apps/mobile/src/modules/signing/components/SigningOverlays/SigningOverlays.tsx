@@ -93,7 +93,7 @@ const useSignRequestDriver = () => {
                     id: sheetId,
                     contents: <SignRequestContent request={nextRequest!} />,
                     options: {
-                        size: 'lg',
+                        size: 'modal',
                         enablePanDownToClose: false,
                         enableCloseOnBackdropPress: false,
                         autoCreateContainer: false,
@@ -161,7 +161,7 @@ const useTransactionRequestFAQDriver = () => {
  * centralized bottom sheet manager.
  *
  * `onCloseTroubleshooting()` is only invoked when the user dismisses the
- * sheet (Close button, pan-down, backdrop press). The effect cleanup sets
+ * sheet (pan-down or backdrop press). The effect cleanup sets
  * `cancelled = true` before driver-initiated dismissals, so the post-await
  * branch is skipped in that path — important because in the BLE-class
  * auto-open flow `onCloseTroubleshooting` rejects the active sign request

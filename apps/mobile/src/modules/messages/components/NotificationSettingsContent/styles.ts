@@ -14,9 +14,14 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
+        flexGrow: 1,
         gap: theme.spacing.lg,
         paddingHorizontal: theme.spacing.xl,
         paddingBottom: theme.spacing.xl,
+        overflow: 'hidden',
+    },
+    list: {
+        flex: 1,
     },
     scrollContent: {
         gap: theme.spacing.sm,

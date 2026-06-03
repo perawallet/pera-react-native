@@ -13,11 +13,6 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        flex: 1,
-        justifyContent: 'space-between',
-        paddingBottom: theme.spacing.lg,
-    },
     contentContainer: {
         flex: 1,
         justifyContent: 'center',
@@ -33,7 +28,6 @@ export const useStyles = makeStyles(theme => ({
     },
     buttonContainer: {
         gap: theme.spacing.md,
-        marginTop: theme.spacing.xl,
     },
     address: {
         color: theme.colors.textGray,

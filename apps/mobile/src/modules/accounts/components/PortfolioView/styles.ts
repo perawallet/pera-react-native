@@ -20,43 +20,51 @@ export const useStyles = makeStyles(theme => {
             borderColor: theme.colors.layerGray,
             borderRadius: theme.spacing.lg,
             padding: theme.spacing.md,
+            width: '100%',
+            minWidth: 0,
+            overflow: 'hidden',
         },
         columns: {
             flexDirection: 'row',
             justifyContent: 'space-between',
             alignItems: 'stretch',
+            width: '100%',
+            minWidth: 0,
+            gap: theme.spacing.md,
         },
         leftColumn: {
             flex: 1,
+            minWidth: 0,
             gap: theme.spacing.md,
         },
         rightColumn: {
             alignItems: 'flex-end',
             gap: theme.spacing.md,
+            flexShrink: 0,
+            maxWidth: '45%',
         },
         dateTimeColumn: {
             alignItems: 'flex-end',
+            flexShrink: 0,
+            maxWidth: '45%',
+            minWidth: 0,
         },
         trendTitle: {
             color: theme.colors.textGray,
-        },
-        trendContent: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: theme.spacing.xs,
-        },
-        trendIconContainer: {
-            backgroundColor: 'transparent',
-            borderRadius: theme.borderRadius.full,
-            width: theme.spacing.xl,
-            height: theme.spacing.xl,
-            justifyContent: 'center',
-            alignItems: 'center',
         },
         valueTitleBar: {
             flexDirection: 'row',
             alignItems: 'center',
             gap: theme.spacing.xs,
+            minWidth: 0,
+            width: '100%',
+        },
+        titleTextContainer: {
+            flexShrink: 1,
+            minWidth: 0,
+        },
+        infoButtonContainer: {
+            flexShrink: 0,
         },
         valueTitle: {
             color: theme.colors.textGray,
@@ -75,6 +83,8 @@ export const useStyles = makeStyles(theme => {
             alignItems: 'center',
             justifyContent: 'center',
             gap: theme.spacing.xs,
+            width: '100%',
+            minWidth: 0,
         },
         chartToggleText: {
             color: theme.colors.textGray,

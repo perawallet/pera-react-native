@@ -38,6 +38,7 @@ const ICON_SIZE_MAP: Record<PWIconSize, PWIconSize> = {
     lg: 'md',
     xl: 'lg',
     xxl: 'xl',
+    '3xl': 'xxl',
 }
 
 const ICON_VARIANT_MAP: Record<string, PWIconVariant> = {
@@ -55,7 +56,7 @@ const ICON_VARIANT_MAP: Record<string, PWIconVariant> = {
 export const PWRoundIcon = (props: PWRoundIconProps) => {
     const {
         icon,
-        size = 'md',
+        size = 'lg',
         iconSize,
         variant = 'secondary',
         style: propStyle,

@@ -18,13 +18,11 @@ import {
     PWIcon,
     PWText,
     PWTouchableOpacity,
-    PWView,
     type IconName,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
-import { UnreadIndicator } from '../../UnreadIndicator'
-import { isPendingAction } from '../isPendingAction'
+import { InboxItemShell } from '../InboxItemShell'
 import { useStyles } from './styles'
 
 type MultisigInvitationItem = Extract<
@@ -53,53 +51,53 @@ export const MultisigInvitationInboxItem = ({
     const relativeTime = formatRelativeTime(item.createdAt)
 
     return (
-        <PWTouchableOpacity
-            style={styles.container}
+        <InboxItemShell
+            item={item}
+            align='top'
             onPress={onPress}
-            disabled={!onPress}
             testID='multisig_invitation_inbox_item'
-        >
-            <PWView style={styles.indicatorSlot}>
-                <UnreadIndicator isUnread={isPendingAction(item)} />
-            </PWView>
-            <PWIcon
-                name={avatarIcon}
-                size='lg'
-            />
-            <PWView style={styles.content}>
-                <PWText style={styles.title}>
-                    <Trans
-                        i18nKey='messages.inbox.invitation_title'
-                        values={{ address: truncatedAddress }}
-                        components={[
-                            <PWText
-                                key='bold'
-                                variant='bodySemibold'
-                            />,
-                        ]}
-                    />
-                </PWText>
-                <PWTouchableOpacity
-                    style={styles.cta}
-                    onPress={onPress}
-                    disabled={!onPress}
-                    testID='multisig_invitation_inbox_item_cta'
-                >
-                    <PWText variant='bodySemibold'>
-                        {t('messages.inbox.view_invitation_details')}
+            icon={
+                <PWIcon
+                    name={avatarIcon}
+                    size='lg'
+                />
+            }
+            title={
+                <Trans
+                    i18nKey='messages.inbox.invitation_title'
+                    values={{ address: truncatedAddress }}
+                    components={[
+                        <PWText
+                            key='bold'
+                            variant='bodySemibold'
+                        />,
+                    ]}
+                />
+            }
+            body={
+                <>
+                    <PWTouchableOpacity
+                        style={styles.cta}
+                        onPress={onPress}
+                        disabled={!onPress}
+                        testID='multisig_invitation_inbox_item_cta'
+                    >
+                        <PWText variant='bodySemibold'>
+                            {t('messages.inbox.view_invitation_details')}
+                        </PWText>
+                        <PWIcon
+                            name='chevron-right'
+                            size='xs'
+                        />
+                    </PWTouchableOpacity>
+                    <PWText
+                        variant='caption'
+                        style={styles.timestamp}
+                    >
+                        {relativeTime}
                     </PWText>
-                    <PWIcon
-                        name='chevron-right'
-                        size='xs'
-                    />
-                </PWTouchableOpacity>
-                <PWText
-                    variant='caption'
-                    style={styles.timestamp}
-                >
-                    {relativeTime}
-                </PWText>
-            </PWView>
-        </PWTouchableOpacity>
+                </>
+            }
+        />
     )
 }

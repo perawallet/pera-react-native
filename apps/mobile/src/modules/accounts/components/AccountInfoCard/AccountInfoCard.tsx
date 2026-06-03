@@ -84,6 +84,7 @@ export const AccountInfoCard = ({
                 <PWText
                     variant='h4'
                     style={styles.accountTypeText}
+                    truncate
                 >
                     {typeMain}
                 </PWText>
@@ -141,6 +142,7 @@ export const AccountInfoCard = ({
                     <PWText
                         variant='footnoteMedium'
                         style={styles.labelText}
+                        truncate
                     >
                         {t('account_info.min_balance')}
                     </PWText>
@@ -208,6 +210,7 @@ export const AccountInfoCard = ({
                             <PWText
                                 variant='body'
                                 style={styles.toggleText}
+                                truncate
                             >
                                 {isExpanded
                                     ? t('account_info.hide_wallet_structure')

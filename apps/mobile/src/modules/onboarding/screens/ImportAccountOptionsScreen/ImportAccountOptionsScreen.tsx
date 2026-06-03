@@ -11,22 +11,16 @@
  */
 
 import React from 'react'
-import {
-    PWLoadingOverlay,
-    PWScrollView,
-    PWText,
-    PWView,
-} from '@components/core'
+import { PWLoadingOverlay, PWScreen, PWView } from '@components/core'
 import { PanelButton } from '@components/PanelButton'
+import { ScreenHeader } from '@components/ScreenHeader'
 import { QRScannerView } from '@components/QRScannerView'
-import { useBottomSafeAreaPadding } from '@hooks/useBottomSafeAreaPadding'
 import { useLanguage } from '@hooks/useLanguage'
 import { useImportAccountOptionsScreen } from './useImportAccountOptionsScreen'
 import { useStyles } from './styles'
 
 export const ImportAccountOptionsScreen = () => {
-    const bottomPadding = useBottomSafeAreaPadding()
-    const styles = useStyles(bottomPadding)
+    const styles = useStyles()
     const { t } = useLanguage()
     const {
         options,
@@ -38,32 +32,24 @@ export const ImportAccountOptionsScreen = () => {
 
     return (
         <>
-            <PWView style={styles.rootContainer}>
-                <PWView style={styles.headerContainer}>
-                    <PWText
-                        variant='h1'
-                        style={styles.headerTitle}
-                    >
-                        {t('onboarding.import_account_options.title')}
-                    </PWText>
+            <PWScreen>
+                <ScreenHeader
+                    title={t('onboarding.import_account_options.title')}
+                />
+                <PWView style={styles.mainContainer}>
+                    {options.map(option => (
+                        <PanelButton
+                            key={option.testID}
+                            testID={option.testID}
+                            title={t(option.titleKey)}
+                            description={t(option.descriptionKey)}
+                            titleWeight='h3'
+                            leftIcon={option.leftIcon}
+                            onPress={option.onPress}
+                        />
+                    ))}
                 </PWView>
-
-                <PWScrollView contentContainerStyle={styles.scrollContent}>
-                    <PWView style={styles.mainContainer}>
-                        {options.map(option => (
-                            <PanelButton
-                                key={option.testID}
-                                testID={option.testID}
-                                title={t(option.titleKey)}
-                                description={t(option.descriptionKey)}
-                                titleWeight='h3'
-                                leftIcon={option.leftIcon}
-                                onPress={option.onPress}
-                            />
-                        ))}
-                    </PWView>
-                </PWScrollView>
-            </PWView>
+            </PWScreen>
 
             <QRScannerView
                 isVisible={isQRScannerVisible}

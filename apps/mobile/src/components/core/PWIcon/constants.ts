@@ -49,6 +49,7 @@ import GiftIcon from '@assets/icons/gift.svg'
 import GlobeIcon from '@assets/icons/globe.svg'
 import HorizontalLineStackIcon from '@assets/icons/horizontal-line-stack.svg'
 import HouseIcon from '@assets/icons/house.svg'
+import ImageOffIcon from '@assets/icons/image-off.svg'
 import InboxIcon from '@assets/icons/inbox.svg'
 import InflowIcon from '@assets/icons/inflow.svg'
 import InfoIcon from '@assets/icons/info.svg'
@@ -189,6 +190,7 @@ export const ICON_LIBRARY = {
     globe: GlobeIcon,
     'horizontal-line-stack': HorizontalLineStackIcon,
     house: HouseIcon,
+    'image-off': ImageOffIcon,
     inbox: InboxIcon,
     inflow: InflowIcon,
     info: InfoIcon,

@@ -30,6 +30,18 @@ export const useStyles = makeStyles(theme => {
         lineHeight: BOTTOM_TAB_LABEL_LINE_HEIGHT,
     }
     return {
+        container: {
+            width: '100%',
+            alignItems: 'center',
+            overflow: 'hidden',
+            minWidth: 0,
+        },
+        label: {
+            textAlign: 'center',
+            width: '100%',
+            minWidth: 0,
+            flexShrink: 1,
+        },
         active,
         inactive,
     }

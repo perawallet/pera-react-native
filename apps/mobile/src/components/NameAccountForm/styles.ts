@@ -13,14 +13,6 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    mainContainer: {
-        flex: 1,
-        backgroundColor: theme.colors.background,
-    },
-    content: {
-        flex: 1,
-        paddingHorizontal: theme.spacing.xl,
-    },
     headerContainer: {
         gap: theme.spacing.md,
         paddingBottom: theme.spacing.xxl,
@@ -36,9 +28,5 @@ export const useStyles = makeStyles(theme => ({
     },
     clearButton: {
         paddingRight: theme.spacing.sm,
-    },
-    footer: {
-        paddingHorizontal: theme.spacing.xl,
-        paddingTop: theme.spacing.md,
     },
 }))

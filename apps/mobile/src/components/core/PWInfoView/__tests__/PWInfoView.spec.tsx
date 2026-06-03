@@ -19,7 +19,7 @@ describe('PWInfoView', () => {
     it('renders title, body, and illustration slot', () => {
         render(
             <PWInfoView
-                illustration={<Text>illustration-slot</Text>}
+                illustration={() => <Text>illustration-slot</Text>}
                 title='Welcome'
                 body='Get started by creating an account.'
                 primaryAction={{ label: 'Continue', onPress: vi.fn() }}

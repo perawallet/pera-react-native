@@ -12,14 +12,9 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles((theme, bottomPadding: number) => ({
-    container: {
-        flex: 1,
-        backgroundColor: theme.colors.background,
-    },
+export const useStyles = makeStyles(theme => ({
     content: {
         flex: 1,
-        paddingHorizontal: theme.spacing.xl,
         justifyContent: 'center',
         gap: theme.spacing.xxl,
     },
@@ -35,10 +30,6 @@ export const useStyles = makeStyles((theme, bottomPadding: number) => ({
     },
     body: {
         color: theme.colors.textGray,
-    },
-    footer: {
-        paddingHorizontal: theme.spacing.xl,
-        paddingBottom: bottomPadding,
     },
     cta: {
         paddingVertical: theme.spacing.lg,

@@ -90,7 +90,7 @@ describe('Flow: Ledger imported account row checkbox', () => {
     })
 
     it(
-        'Given an already-imported Ledger account discovered on the select-accounts screen, the row renders its checkbox (checked and disabled)',
+        'Given an already-imported Ledger account discovered on the select-accounts screen, the row shows the already-imported chip in place of a checkbox',
         async () => {
             renderWithNavigation(
                 LedgerSelectAccountsScreen,
@@ -111,23 +111,21 @@ describe('Flow: Ledger imported account row checkbox', () => {
                 },
             )
 
-            const checkbox = await waitFor(
+            await waitFor(
                 () =>
-                    screen.getByTestId(
-                        `ledger_select_row_${LEDGER_ADDRESS}-checkbox`,
-                    ),
+                    expect(
+                        screen.queryByText(
+                            'ledger.select_accounts.already_imported',
+                        ),
+                    ).not.toBeNull(),
                 { timeout: 10000 },
             )
 
-            // The "already imported" chip renders under the same `isImported`
-            // flag that forces the checkbox to checked + disabled in
-            // LedgerAccountSelectionRow, so its presence is the faithful
-            // assertion of this scenario. (Integration tests run without
-            // i18n, so the chip renders the raw key.)
-            expect(checkbox).not.toBeNull()
             expect(
-                screen.queryByText('ledger.select_accounts.already_imported'),
-            ).not.toBeNull()
+                screen.queryByTestId(
+                    `ledger_select_row_${LEDGER_ADDRESS}-checkbox`,
+                ),
+            ).toBeNull()
         },
         SLOW_TEST_TIMEOUT_MS,
     )

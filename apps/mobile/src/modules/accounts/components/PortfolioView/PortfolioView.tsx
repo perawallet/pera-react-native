@@ -23,11 +23,8 @@ import { useLanguage } from '@hooks/useLanguage'
 
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { WealthChart } from '@components/WealthChart'
-import {
-    formatDatetime,
-    formatCurrency,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import { formatDatetime, type Nullable } from '@perawallet/wallet-core-shared'
+import { percentChange } from '@perawallet/wallet-core-blockchain'
 import { useCallback, useMemo } from 'react'
 import { useChartInteraction } from '@hooks/useChartInteraction'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
@@ -44,12 +41,20 @@ import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 import { InfoButton } from '@components/InfoButton'
 import { ExpandablePanel } from '@components/ExpandablePanel'
+import { TrendIndicator } from '@components/TrendIndicator'
 
 export type PortfolioViewProps = {
     onDataSelected?: (selected: Nullable<AccountBalanceHistoryItem>) => void
+    /** Transiently collapses the chart without touching the saved `chartVisible` preference. */
+    isCollapsed?: boolean
+    onExpandChart?: () => void
 } & PWViewProps
 
-export const PortfolioView = (props: PortfolioViewProps) => {
+export const PortfolioView = ({
+    isCollapsed = false,
+    onExpandChart,
+    ...props
+}: PortfolioViewProps) => {
     const styles = useStyles()
     const { preferredCurrency, usdToPreferred } = useCurrency()
     const { t } = useLanguage()
@@ -66,8 +71,14 @@ export const PortfolioView = (props: PortfolioViewProps) => {
     const { getPreference, setPreference } = usePreferences()
 
     const chartVisible = !!getPreference(UserPreferences.chartVisible)
+    const isChartShown = chartVisible && !isCollapsed
     const toggleChartVisible = () => {
-        setPreference(UserPreferences.chartVisible, !chartVisible)
+        if (isChartShown) {
+            setPreference(UserPreferences.chartVisible, false)
+            return
+        }
+        setPreference(UserPreferences.chartVisible, true)
+        onExpandChart?.()
     }
 
     const addresses = useMemo(() => accounts.map(a => a.address), [accounts])
@@ -82,17 +93,11 @@ export const PortfolioView = (props: PortfolioViewProps) => {
         [historyData],
     )
 
-    const [trendAbsolute, trendPercentage, isPositiveTrend] = useMemo(() => {
+    const [trendAbsolute, trendPercentage] = useMemo(() => {
         const firstDp = historyDataPoints.at(0) ?? new Decimal(0)
         const lastDp = historyDataPoints.at(-1) ?? new Decimal(0)
 
-        return [
-            lastDp.minus(firstDp),
-            lastDp.isZero()
-                ? new Decimal(0)
-                : lastDp.minus(firstDp).abs().div(lastDp).mul(100),
-            lastDp.greaterThanOrEqualTo(firstDp),
-        ]
+        return [lastDp.minus(firstDp), percentChange(firstDp, lastDp)]
     }, [historyDataPoints])
 
     const chartSelectionChanged = useCallback(
@@ -111,18 +116,23 @@ export const PortfolioView = (props: PortfolioViewProps) => {
             <PWView style={styles.columns}>
                 <PWView style={styles.leftColumn}>
                     <PWView style={styles.valueTitleBar}>
-                        <PWText
-                            style={styles.valueTitle}
-                            variant='h4'
-                        >
-                            {t('portfolio.title')}
-                        </PWText>
-                        <InfoButton
-                            variant='secondary'
-                            title={t('portfolio.info.title')}
-                        >
-                            <PWText>{t('portfolio.info.body')}</PWText>
-                        </InfoButton>
+                        <PWView style={styles.titleTextContainer}>
+                            <PWText
+                                style={styles.valueTitle}
+                                variant='h4'
+                                truncate
+                            >
+                                {t('portfolio.title')}
+                            </PWText>
+                        </PWView>
+                        <PWView style={styles.infoButtonContainer}>
+                            <InfoButton
+                                variant='secondary'
+                                title={t('portfolio.info.title')}
+                            >
+                                <PWText>{t('portfolio.info.body')}</PWText>
+                            </InfoButton>
+                        </PWView>
                     </PWView>
                     <CurrencyDisplay
                         variant='h2'
@@ -156,47 +166,21 @@ export const PortfolioView = (props: PortfolioViewProps) => {
                         <PWText
                             variant='h4'
                             style={styles.trendTitle}
+                            truncate
                         >
                             {t('portfolio.last_7_days')}
                         </PWText>
 
-                        <PWView style={styles.trendContent}>
-                            {!trendPercentage.isZero() && (
-                                <PWView style={styles.trendIconContainer}>
-                                    <PWIcon
-                                        name={
-                                            isPositiveTrend
-                                                ? 'arrow-up'
-                                                : 'arrow-down'
-                                        }
-                                        variant={
-                                            isPositiveTrend ? 'helper' : 'error'
-                                        }
-                                        size='sm'
-                                    />
-                                </PWView>
-                            )}
-                            <PWText
-                                variant='h2'
-                                style={styles.primaryCurrency}
-                            >
-                                {trendPercentage.toFixed(2)}%
-                            </PWText>
-                        </PWView>
-
-                        <PWText
-                            variant='h4'
-                            style={styles.valueTitle}
-                        >
-                            {isPositiveTrend ? '+' : '-'}
-                            {formatCurrency(
-                                trendAbsolute.abs(),
-                                2,
-                                preferredCurrency,
-                                undefined,
-                                true,
-                            )}
-                        </PWText>
+                        <TrendIndicator
+                            percentage={trendPercentage}
+                            variant='h2'
+                            hasNeutralText
+                            shouldHideIconWhenZero
+                            absolute={{
+                                amount: trendAbsolute,
+                                currency: preferredCurrency,
+                            }}
+                        />
                     </PWView>
                 )}
 
@@ -234,8 +218,11 @@ export const PortfolioView = (props: PortfolioViewProps) => {
                 style={styles.chartToggle}
                 onPress={toggleChartVisible}
             >
-                <PWText style={styles.chartToggleText}>
-                    {chartVisible
+                <PWText
+                    style={styles.chartToggleText}
+                    truncate
+                >
+                    {isChartShown
                         ? t('portfolio.hide_chart')
                         : t('portfolio.show_chart')}
                 </PWText>
@@ -243,11 +230,11 @@ export const PortfolioView = (props: PortfolioViewProps) => {
                     name='chevron-down'
                     variant='secondary'
                     size='xs'
-                    style={chartVisible ? styles.invertedIcon : undefined}
+                    style={isChartShown ? styles.invertedIcon : undefined}
                 />
             </PWTouchableOpacity>
 
-            <ExpandablePanel isExpanded={chartVisible}>
+            <ExpandablePanel isExpanded={isChartShown}>
                 <PWView style={styles.chartContainer}>
                     <WealthChart
                         period={period}

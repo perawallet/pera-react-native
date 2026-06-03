@@ -34,41 +34,59 @@ export const ApplicationDisplay = ({
         isEnabled: !!applicationId,
     })
 
+    const appIdLabel = t('transactions.summary.app_id', {
+        id: applicationId,
+    })
+
     return (
         <LoadingView
             variant='skeleton'
             isLoading={isLoading}
         >
             {application ? (
-                <CopyableText copyValue={applicationId}>
-                    <PWView>
+                <CopyableText
+                    copyValue={applicationId}
+                    style={styles.copyContainer}
+                >
+                    <PWView style={styles.content}>
                         <PWView style={styles.row}>
-                            <PWText variant='h4'>{application.name}</PWText>
+                            <PWText
+                                variant='h4'
+                                truncate
+                                style={styles.appName}
+                            >
+                                {application.name}
+                            </PWText>
                             {!!application?.project?.verificationTier && (
-                                <ProjectVerificationIcon
-                                    tier={application.project.verificationTier}
-                                    size='sm'
-                                />
+                                <PWView style={styles.verificationIcon}>
+                                    <ProjectVerificationIcon
+                                        tier={
+                                            application.project.verificationTier
+                                        }
+                                        size='sm'
+                                    />
+                                </PWView>
                             )}
                         </PWView>
                         <PWText
                             variant='caption'
                             style={styles.caption}
+                            truncate
                         >
-                            {t('transactions.summary.app_id', {
-                                id: applicationId,
-                            })}
+                            {appIdLabel}
                         </PWText>
                     </PWView>
                 </CopyableText>
             ) : (
-                <CopyableText copyValue={applicationId}>
-                    <PWText variant='h4'>
-                        {valueOnlyOnFallback
-                            ? applicationId
-                            : t('transactions.summary.app_id', {
-                                  id: applicationId,
-                              })}
+                <CopyableText
+                    copyValue={applicationId}
+                    style={styles.copyContainer}
+                >
+                    <PWText
+                        variant='h4'
+                        truncate
+                    >
+                        {valueOnlyOnFallback ? applicationId : appIdLabel}
                     </PWText>
                 </CopyableText>
             )}

@@ -10,12 +10,19 @@
  limitations under the License
  */
 
-import { PWBadge, PWIcon, PWText, PWView } from '@components/core'
+import { useCallback, useMemo, useState } from 'react'
+import {
+    PWChip,
+    PWIcon,
+    PWSheetLayout,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
 import { SheetHeader } from '@modules/bottom-sheet'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { useClipboard } from '@hooks/useClipboard'
-import { useMemo, useState } from 'react'
 
 export type ViewTextDetailsContentProps = {
     text: string
@@ -47,40 +54,60 @@ export const ViewTextDetailsContent = ({
         copyToClipboard(textToDisplay)
     }
 
-    return (
-        <PWView style={styles.container}>
-            <SheetHeader
-                title={title}
-                rightAction={
-                    <PWIcon
-                        name='copy'
-                        variant='secondary'
-                        onPress={copyText}
-                    />
-                }
-            />
+    const handleSelectText = useCallback(() => setMode('text'), [])
+    const handleSelectHex = useCallback(() => setMode('hex'), [])
+    const handleSelectBase64 = useCallback(() => setMode('base64'), [])
 
-            <PWView style={styles.buttonContainer}>
-                <PWBadge
-                    variant={mode === 'text' ? 'primary' : 'secondary'}
-                    value={t('common.text.label')}
-                    textStyle={styles.buttonText}
-                    onPress={() => setMode('text')}
-                />
-                <PWBadge
-                    variant={mode === 'hex' ? 'primary' : 'secondary'}
-                    value={t('common.hex.label')}
-                    textStyle={styles.buttonText}
-                    onPress={() => setMode('hex')}
-                />
-                <PWBadge
-                    variant={mode === 'base64' ? 'primary' : 'secondary'}
-                    value={t('common.base64.label')}
-                    textStyle={styles.buttonText}
-                    onPress={() => setMode('base64')}
-                />
-            </PWView>
-            <PWText style={styles.noteText}>{textToDisplay}</PWText>
-        </PWView>
+    return (
+        <PWSheetLayout
+            header={
+                <>
+                    <SheetHeader
+                        title={title}
+                        rightAction={
+                            <PWIcon
+                                name='copy'
+                                variant='secondary'
+                                onPress={copyText}
+                            />
+                        }
+                    />
+                    <PWView style={styles.buttonContainer}>
+                        <PWTouchableOpacity onPress={handleSelectText}>
+                            <PWChip
+                                title={t('common.text.label')}
+                                variant={
+                                    mode === 'text' ? 'secondary' : 'outline'
+                                }
+                                forceUppercase={false}
+                                paddingStyle='normal'
+                            />
+                        </PWTouchableOpacity>
+                        <PWTouchableOpacity onPress={handleSelectHex}>
+                            <PWChip
+                                title={t('common.hex.label')}
+                                variant={
+                                    mode === 'hex' ? 'secondary' : 'outline'
+                                }
+                                forceUppercase={false}
+                                paddingStyle='normal'
+                            />
+                        </PWTouchableOpacity>
+                        <PWTouchableOpacity onPress={handleSelectBase64}>
+                            <PWChip
+                                title={t('common.base64.label')}
+                                variant={
+                                    mode === 'base64' ? 'secondary' : 'outline'
+                                }
+                                forceUppercase={false}
+                                paddingStyle='normal'
+                            />
+                        </PWTouchableOpacity>
+                    </PWView>
+                </>
+            }
+        >
+            <PWText>{textToDisplay}</PWText>
+        </PWSheetLayout>
     )
 }

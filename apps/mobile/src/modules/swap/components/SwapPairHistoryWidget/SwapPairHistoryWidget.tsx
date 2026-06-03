@@ -100,6 +100,7 @@ export const SwapPairHistoryWidget = () => {
                 <PWText
                     variant='h4'
                     style={styles.title}
+                    truncate
                 >
                     {t('swap.history.widget.title')}
                 </PWText>

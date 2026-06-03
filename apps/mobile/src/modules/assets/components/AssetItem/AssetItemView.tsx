@@ -31,6 +31,8 @@ export type AssetItemViewProps = {
     /** Right-hand content: balance display (account) or add button (search). */
     right?: ReactNode
     iconSize?: PWIconSize
+    /** Logo URL forwarded to the asset icon, bypassing Prism optimization. */
+    logoUrl?: string
     /** Account-only decorations. Default off so search rows stay clean. */
     showFavorite?: boolean
     showDeletedLabel?: boolean
@@ -41,6 +43,7 @@ export const AssetItemView = ({
     asset,
     right,
     iconSize = 'lg',
+    logoUrl,
     showFavorite = false,
     showDeletedLabel = false,
     copyableAssetId = false,
@@ -98,6 +101,7 @@ export const AssetItemView = ({
         >
             <AssetIcon
                 asset={asset}
+                logoUrl={logoUrl}
                 size={iconSize}
                 shape={iconShape}
             />

@@ -13,22 +13,11 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        paddingHorizontal: theme.spacing.xl,
-        paddingBottom: theme.spacing.xl,
+    body: {
         gap: theme.spacing.lg,
-        width: '100%',
     },
-    icon: {
-        alignSelf: 'center',
-        marginTop: theme.spacing.sm,
-    },
-    message: {
+    intro: {
         color: theme.colors.textGray,
-    },
-    actions: {
-        gap: theme.spacing.md,
-        width: '100%',
     },
     warningItems: {
         gap: theme.spacing.sm,
@@ -37,5 +26,9 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.md,
+    },
+    itemText: {
+        flexShrink: 1,
+        color: theme.colors.textGray,
     },
 }))

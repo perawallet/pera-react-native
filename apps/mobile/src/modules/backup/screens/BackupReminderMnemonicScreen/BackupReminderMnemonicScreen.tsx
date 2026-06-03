@@ -10,8 +10,9 @@
  limitations under the License
  */
 
-import { ActivityIndicator } from 'react-native'
-import { PWButton, PWScrollView, PWText, PWView } from '@components/core'
+import { PWButton, PWScreen, PWText, PWView } from '@components/core'
+import { LoadingView } from '@components/LoadingView'
+import { ScreenHeader } from '@components/ScreenHeader'
 import { useLanguage } from '@hooks/useLanguage'
 import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
 import { PinEditView } from '@modules/security'
@@ -51,9 +52,10 @@ export const BackupReminderMnemonicScreen = () => {
     if (isLoading) {
         return (
             <PWView style={styles.root}>
-                <PWView style={styles.loading}>
-                    <ActivityIndicator />
-                </PWView>
+                <LoadingView
+                    variant='circle'
+                    size='sm'
+                />
             </PWView>
         )
     }
@@ -72,23 +74,21 @@ export const BackupReminderMnemonicScreen = () => {
     }
 
     return (
-        <PWView style={styles.root}>
-            <PWScrollView
-                style={styles.scroll}
-                contentContainerStyle={styles.scrollContent}
-            >
-                <PWText
-                    variant='h1'
-                    style={styles.title}
-                >
-                    {t('backup.mnemonic.title')}
-                </PWText>
-                <PWText
-                    variant='h4'
-                    style={styles.description}
-                >
-                    {t('backup.mnemonic.body')}
-                </PWText>
+        <PWScreen
+            footer={
+                <PWButton
+                    title={t('backup.mnemonic.cta_continue')}
+                    variant='primary'
+                    onPress={onContinue}
+                    testID='backup_mnemonic_continue'
+                />
+            }
+        >
+            <PWView style={styles.scrollContent}>
+                <ScreenHeader
+                    title={t('backup.mnemonic.title')}
+                    description={t('backup.mnemonic.body')}
+                />
                 <PWView style={styles.grid}>
                     {words.map((word, i) => (
                         <PWView
@@ -102,16 +102,7 @@ export const BackupReminderMnemonicScreen = () => {
                         </PWView>
                     ))}
                 </PWView>
-            </PWScrollView>
-
-            <PWView style={styles.footer}>
-                <PWButton
-                    title={t('backup.mnemonic.cta_continue')}
-                    variant='primary'
-                    onPress={onContinue}
-                    testID='backup_mnemonic_continue'
-                />
             </PWView>
-        </PWView>
+        </PWScreen>
     )
 }

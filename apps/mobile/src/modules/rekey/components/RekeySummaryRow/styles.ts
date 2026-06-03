@@ -13,13 +13,10 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
+    // Sits inside confirm cards that own their padding, so drop the layout's
+    // default vertical padding to keep the row flush with the card content.
     row: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.md,
-    },
-    text: {
-        flexShrink: 1,
+        paddingVertical: 0,
     },
     address: {
         color: theme.colors.textGray,

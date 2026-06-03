@@ -16,6 +16,7 @@ export const useStyles = makeStyles(theme => {
     return {
         title: {
             color: theme.colors.textMain,
+            flexShrink: 1,
         },
         row: {
             flexDirection: 'row',
@@ -27,6 +28,7 @@ export const useStyles = makeStyles(theme => {
             flexDirection: 'row',
             alignItems: 'center',
             gap: theme.spacing.lg,
+            flexShrink: 1,
         },
     }
 })

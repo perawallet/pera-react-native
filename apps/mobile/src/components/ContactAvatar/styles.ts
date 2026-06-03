@@ -28,6 +28,7 @@ export const useStyles = makeStyles((theme, { size, variant }: StyleProps) => {
         lg: theme.spacing['3xl'],
         xl: theme.spacing['4xl'],
         xxl: theme.spacing['5xl'],
+        '3xl': theme.spacing['5xl'],
     }[size]
 
     return {

@@ -11,94 +11,18 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { EdgeInsets } from 'react-native-safe-area-context'
 
-const ITEM_SUBTITLE_FONT_SIZE = 12
-
-export const useStyles = makeStyles((theme, insets?: EdgeInsets) => {
-    const itemSubtitle = {
-        color: theme.colors.textGray,
-        fontSize: ITEM_SUBTITLE_FONT_SIZE,
-    }
-    return {
-        container: {
-            flex: 1,
-            backgroundColor: theme.colors.background,
-        },
-        headerContainer: {
-            marginVertical: theme.spacing.xl,
-            gap: theme.spacing.lg,
-        },
-        headerIconContainer: {
-            marginBottom: theme.spacing.md,
-        },
-        title: {
-            marginBottom: theme.spacing.sm,
-        },
-        description: {
-            marginBottom: theme.spacing.xs,
-            color: theme.colors.textGray,
-        },
-        checkboxContainer: {
-            padding: 0,
-            margin: 0,
-            marginLeft: 0,
-            marginRight: 0,
-            backgroundColor: 'transparent',
-        },
-        checkboxWrapper: {
-            marginRight: theme.spacing.md,
-        },
-        listContent: {
-            paddingBottom: theme.spacing.xl,
-            paddingHorizontal: theme.spacing.xl,
-        },
-        itemContainer: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            padding: theme.spacing.lg,
-            marginBottom: theme.spacing.md,
-            backgroundColor: theme.colors.background,
-            borderRadius: theme.spacing.lg,
-            borderWidth: theme.borders.sm,
-            borderColor: theme.colors.layerGray,
-            ...theme.shadows.md,
-        },
-        itemContent: {
-            flex: 1,
-            flexDirection: 'row',
-            alignItems: 'center',
-        },
-        iconContainer: {
-            marginRight: theme.spacing.md,
-            justifyContent: 'center',
-            alignItems: 'center',
-        },
-        itemTextContainer: {
-            flex: 1,
-            paddingRight: theme.spacing.md,
-        },
-        itemTitle: {
-            color: theme.colors.textMain,
-            marginBottom: theme.spacing.xxs,
-        },
-        itemSubtitle,
-        infoIconContainer: {
-            marginLeft: theme.spacing.sm,
-        },
-        footer: {
-            paddingTop: theme.spacing.xl,
-            paddingHorizontal: theme.spacing.xl,
-            paddingBottom: theme.spacing.xl + (insets?.bottom ?? 0),
-            borderTopWidth: theme.borders.sm,
-            borderTopColor: theme.colors.layerGrayLighter,
-            backgroundColor: theme.colors.background,
-        },
-        continueButton: {
-            marginBottom: theme.spacing.md,
-        },
-        list: {
-            flex: 1,
-        },
-    }
-})
+export const useStyles = makeStyles(theme => ({
+    listContent: {
+        paddingHorizontal: theme.spacing.xl,
+    },
+    footerInner: {
+        backgroundColor: theme.colors.background,
+    },
+    continueButton: {
+        marginBottom: theme.spacing.md,
+    },
+    list: {
+        flex: 1,
+    },
+}))

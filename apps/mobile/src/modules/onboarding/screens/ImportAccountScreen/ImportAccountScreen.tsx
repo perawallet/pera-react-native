@@ -13,20 +13,18 @@
 import React from 'react'
 
 import { useTheme } from '@rneui/themed'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useHeaderHeight } from '@react-navigation/elements'
 
 import {
     PWButton,
     PWIcon,
     PWInput,
     PWLoadingOverlay,
-    PWScrollView,
+    PWScreen,
     PWText,
     PWView,
 } from '@components/core'
+import { ScreenHeader } from '@components/ScreenHeader'
 
-import { KeyboardAvoidingView, Platform } from 'react-native'
 import { useStyles } from './styles'
 import { useImportAccountScreen } from './useImportAccountScreen'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
@@ -39,8 +37,7 @@ const SCREEN_CAPTURE_TAG = 'import-account-mnemonic'
 export const ImportAccountScreen = () => {
     usePreventScreenCapture(SCREEN_CAPTURE_TAG)
     const { theme } = useTheme()
-    const insets = useSafeAreaInsets()
-    const headerHeight = useHeaderHeight()
+    const styles = useStyles()
     const {
         words,
         focused,
@@ -60,7 +57,6 @@ export const ImportAccountScreen = () => {
         refCallbacks,
         handleSubmitEditing,
     } = useImportAccountScreen()
-    const styles = useStyles(insets)
 
     const wordsPerColumn = Math.ceil(mnemonicLength / 2)
 
@@ -74,156 +70,141 @@ export const ImportAccountScreen = () => {
     })
 
     return (
-        <PWView style={styles.mainContainer}>
-            <KeyboardAvoidingView
-                style={styles.mainContainer}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                keyboardVerticalOffset={headerHeight}
+        <>
+            <PWScreen
+                footer={
+                    <>
+                        <MnemonicSuggestionBar
+                            suggestions={suggestions}
+                            onSelectSuggestion={handleSelectSuggestion}
+                            testIDPrefix='suggestion'
+                        />
+                        <PWButton
+                            testID='import_account_import_button'
+                            variant='primary'
+                            title={t('onboarding.import_account.button')}
+                            onPress={handleImportAccount}
+                            isDisabled={!canImport}
+                        />
+                    </>
+                }
             >
-                <PWScrollView
-                    style={styles.scrollContainer}
-                    contentContainerStyle={styles.scrollView}
-                    keyboardShouldPersistTaps='handled'
-                >
-                    <PWText variant='h1'>
-                        {t('onboarding.import_account.title')}
-                    </PWText>
-                    <PWView style={styles.wordContainer}>
-                        {[0, 1].map(column => {
-                            const columnOffset = wordsPerColumn * column
-                            return (
-                                <PWView
-                                    style={styles.column}
-                                    key={`column-${columnOffset}`}
-                                >
-                                    {words
-                                        .slice(
-                                            columnOffset,
-                                            columnOffset + wordsPerColumn,
-                                        )
-                                        .map((word, index) => {
-                                            const offsetIndex =
-                                                index + columnOffset
-                                            const isFocused =
-                                                focused === offsetIndex
+                <ScreenHeader title={t('onboarding.import_account.title')} />
+                <PWView style={styles.wordContainer}>
+                    {[0, 1].map(column => {
+                        const columnOffset = wordsPerColumn * column
+                        return (
+                            <PWView
+                                style={styles.column}
+                                key={`column-${columnOffset}`}
+                            >
+                                {words
+                                    .slice(
+                                        columnOffset,
+                                        columnOffset + wordsPerColumn,
+                                    )
+                                    .map((word, index) => {
+                                        const offsetIndex = index + columnOffset
+                                        const isFocused =
+                                            focused === offsetIndex
 
-                                            return (
-                                                <React.Fragment
-                                                    key={`wordinput-${offsetIndex}`}
+                                        return (
+                                            <React.Fragment
+                                                key={`wordinput-${offsetIndex}`}
+                                            >
+                                                <PWView
+                                                    style={
+                                                        isFocused
+                                                            ? styles.focusedInputContainerRow
+                                                            : styles.inputContainerRow
+                                                    }
                                                 >
-                                                    <PWView
+                                                    <PWText
+                                                        variant='h4'
                                                         style={
                                                             isFocused
-                                                                ? styles.focusedInputContainerRow
-                                                                : styles.inputContainerRow
+                                                                ? styles.focusedLabel
+                                                                : styles.label
                                                         }
                                                     >
-                                                        <PWText
-                                                            variant='h4'
-                                                            style={
+                                                        {offsetIndex + 1}
+                                                    </PWText>
+                                                    <PWView
+                                                        style={
+                                                            styles.inputWrapper
+                                                        }
+                                                    >
+                                                        <PWInput
+                                                            ref={
+                                                                refCallbacks[
+                                                                    offsetIndex
+                                                                ]
+                                                            }
+                                                            testID={`import_account_word_input_${offsetIndex}`}
+                                                            containerStyle={
+                                                                styles.inputOuterContainer
+                                                            }
+                                                            inputContainerStyle={
                                                                 isFocused
-                                                                    ? styles.focusedLabel
-                                                                    : styles.label
+                                                                    ? styles.focusedInputContainer
+                                                                    : styles.inputContainer
                                                             }
-                                                        >
-                                                            {offsetIndex + 1}
-                                                        </PWText>
-                                                        <PWView
-                                                            style={
-                                                                styles.inputWrapper
+                                                            inputStyle={
+                                                                styles.input
                                                             }
-                                                        >
-                                                            <PWInput
-                                                                ref={
-                                                                    refCallbacks[
-                                                                        offsetIndex
-                                                                    ]
-                                                                }
-                                                                testID={`import_account_word_input_${offsetIndex}`}
-                                                                containerStyle={
-                                                                    styles.inputOuterContainer
-                                                                }
-                                                                inputContainerStyle={
-                                                                    isFocused
-                                                                        ? styles.focusedInputContainer
-                                                                        : styles.inputContainer
-                                                                }
-                                                                inputStyle={
-                                                                    styles.input
-                                                                }
-                                                                renderErrorMessage={
-                                                                    false
-                                                                }
-                                                                value={word}
-                                                                cursorColor={
-                                                                    theme.colors
-                                                                        .textMain
-                                                                }
-                                                                onChangeText={event =>
-                                                                    handleWordChange(
-                                                                        event,
-                                                                        offsetIndex,
-                                                                    )
-                                                                }
-                                                                onFocus={() =>
-                                                                    setFocused(
-                                                                        offsetIndex,
-                                                                    )
-                                                                }
-                                                                onSubmitEditing={() =>
-                                                                    handleSubmitEditing(
-                                                                        offsetIndex,
-                                                                    )
-                                                                }
-                                                                returnKeyType={
-                                                                    offsetIndex ===
-                                                                    mnemonicLength -
-                                                                        1
-                                                                        ? 'done'
-                                                                        : 'next'
-                                                                }
-                                                                blurOnSubmit={
-                                                                    offsetIndex ===
-                                                                    mnemonicLength -
-                                                                        1
-                                                                }
-                                                                autoFocus={
-                                                                    column ===
-                                                                        0 &&
-                                                                    index === 0
-                                                                }
-                                                                autoCapitalize='none'
-                                                                autoCorrect={
-                                                                    false
-                                                                }
-                                                            />
-                                                        </PWView>
+                                                            renderErrorMessage={
+                                                                false
+                                                            }
+                                                            value={word}
+                                                            cursorColor={
+                                                                theme.colors
+                                                                    .textMain
+                                                            }
+                                                            onChangeText={event =>
+                                                                handleWordChange(
+                                                                    event,
+                                                                    offsetIndex,
+                                                                )
+                                                            }
+                                                            onFocus={() =>
+                                                                setFocused(
+                                                                    offsetIndex,
+                                                                )
+                                                            }
+                                                            onSubmitEditing={() =>
+                                                                handleSubmitEditing(
+                                                                    offsetIndex,
+                                                                )
+                                                            }
+                                                            returnKeyType={
+                                                                offsetIndex ===
+                                                                mnemonicLength -
+                                                                    1
+                                                                    ? 'done'
+                                                                    : 'next'
+                                                            }
+                                                            blurOnSubmit={
+                                                                offsetIndex ===
+                                                                mnemonicLength -
+                                                                    1
+                                                            }
+                                                            autoFocus={
+                                                                column === 0 &&
+                                                                index === 0
+                                                            }
+                                                            autoCapitalize='none'
+                                                            autoCorrect={false}
+                                                        />
                                                     </PWView>
-                                                </React.Fragment>
-                                            )
-                                        })}
-                                </PWView>
-                            )
-                        })}
-                    </PWView>
-                </PWScrollView>
-
-                <MnemonicSuggestionBar
-                    suggestions={suggestions}
-                    onSelectSuggestion={handleSelectSuggestion}
-                    testIDPrefix='suggestion'
-                />
-
-                <PWView style={styles.footer}>
-                    <PWButton
-                        testID='import_account_import_button'
-                        variant='primary'
-                        title={t('onboarding.import_account.button')}
-                        onPress={handleImportAccount}
-                        isDisabled={!canImport}
-                    />
+                                                </PWView>
+                                            </React.Fragment>
+                                        )
+                                    })}
+                            </PWView>
+                        )
+                    })}
                 </PWView>
-            </KeyboardAvoidingView>
+            </PWScreen>
 
             <PWLoadingOverlay
                 isVisible={processing}
@@ -237,6 +218,6 @@ export const ImportAccountScreen = () => {
                 animationType='slide'
                 skipDeepLinkHandler
             />
-        </PWView>
+        </>
     )
 }

@@ -35,7 +35,11 @@ export const useStyles = makeStyles(
             },
             headerTextContainer: {
                 flexDirection: 'row',
+                alignItems: 'center',
                 gap: theme.spacing.lg,
+            },
+            title: {
+                flexShrink: 1,
             },
             logo: {
                 borderRadius: theme.borderRadius.full,

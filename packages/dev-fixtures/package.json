@@ -1,0 +1,35 @@
+{
+  "name": "@perawallet/wallet-core-dev-fixtures",
+  "version": "0.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "test": "vitest run --passWithNoTests",
+    "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
+  },
+  "dependencies": {
+    "@babel/runtime": "catalog:",
+    "@perawallet/wallet-core-accounts": "workspace:*",
+    "@perawallet/wallet-core-assets": "workspace:*",
+    "@perawallet/wallet-core-contacts": "workspace:*",
+    "@perawallet/wallet-core-messages": "workspace:*",
+    "@perawallet/wallet-core-transactions": "workspace:*",
+    "decimal.js": "catalog:"
+  },
+  "devDependencies": {
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-dts": "catalog:",
+    "vitest": "catalog:",
+    "@perawallet/wallet-core-devtools": "workspace:*"
+  }
+}

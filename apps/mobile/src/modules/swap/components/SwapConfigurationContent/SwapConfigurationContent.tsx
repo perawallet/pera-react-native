@@ -12,7 +12,13 @@
 
 import { useCallback } from 'react'
 import type { SwapConfigurationResult } from '@perawallet/wallet-core-swaps'
-import { PWButton, PWIcon, PWText, PWToolbar } from '@components/core'
+import {
+    PWButton,
+    PWIcon,
+    PWSheetLayout,
+    PWText,
+    PWToolbar,
+} from '@components/core'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { BalancePercentageSection } from './BalancePercentageSection'
@@ -51,31 +57,38 @@ export const SwapConfigurationContent = (
     })
 
     return (
-        <>
-            <PWToolbar
-                left={
-                    <PWIcon
-                        name='cross'
-                        onPress={dismiss}
-                    />
-                }
-                center={
-                    <PWText variant='h4'>
-                        {t('swap.configuration.title')}
-                    </PWText>
-                }
-                right={
-                    <PWButton
-                        variant='linkPositive'
-                        title={t('swap.configuration.apply')}
-                        onPress={handleApply}
-                        isDisabled={!isApplyEnabled}
-                        paddingStyle='none'
-                        testID='swap-config-apply'
-                    />
-                }
-                paddingStyle='dense'
-            />
+        <PWSheetLayout
+            horizontalPadding='none'
+            header={
+                <PWToolbar
+                    left={
+                        <PWIcon
+                            name='cross'
+                            onPress={dismiss}
+                        />
+                    }
+                    center={
+                        <PWText
+                            variant='h4'
+                            truncate
+                        >
+                            {t('swap.configuration.title')}
+                        </PWText>
+                    }
+                    right={
+                        <PWButton
+                            variant='linkPositive'
+                            title={t('swap.configuration.apply')}
+                            onPress={handleApply}
+                            isDisabled={!isApplyEnabled}
+                            paddingStyle='none'
+                            testID='swap-config-apply'
+                        />
+                    }
+                    paddingStyle='dense'
+                />
+            }
+        >
             <BalancePercentageSection
                 text={balanceText}
                 onTextChange={setBalanceText}
@@ -90,6 +103,6 @@ export const SwapConfigurationContent = (
                 value={useLocalCurrency}
                 onValueChange={setUseLocalCurrency}
             />
-        </>
+        </PWSheetLayout>
     )
 }

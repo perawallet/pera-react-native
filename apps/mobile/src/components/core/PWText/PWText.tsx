@@ -21,17 +21,14 @@ export type PWTextProps = {
     children?: React.ReactNode
     style?: StyleProp<TextStyle>
     variant?: TypographyVariant
-    /**
-     * Overrides the variant's font weight (and matching family). Use this
-     * instead of adding a dedicated `*Medium` / `*Semibold` sibling variant
-     * for one-off weight tweaks.
-     */
     weight?: FontWeight
     numberOfLines?: number
     ellipsizeMode?: TextProps['ellipsizeMode']
+    truncate?: boolean
     adjustsFontSizeToFit?: TextProps['adjustsFontSizeToFit']
     minimumFontScale?: TextProps['minimumFontScale']
     selectable?: TextProps['selectable']
+    accessibilityLabel?: TextProps['accessibilityLabel']
     testID?: string
     onPress?: () => void
 }
@@ -43,6 +40,7 @@ export const PWText = ({
     weight,
     numberOfLines,
     ellipsizeMode,
+    truncate,
     adjustsFontSizeToFit,
     minimumFontScale,
     selectable,
@@ -58,9 +56,9 @@ export const PWText = ({
 
     return (
         <RNEText
-            style={[styles.text, style]}
-            numberOfLines={numberOfLines}
-            ellipsizeMode={ellipsizeMode}
+            style={[styles.text, truncate && styles.truncate, style]}
+            numberOfLines={numberOfLines ?? (truncate ? 1 : undefined)}
+            ellipsizeMode={ellipsizeMode ?? (truncate ? 'tail' : undefined)}
             adjustsFontSizeToFit={adjustsFontSizeToFit}
             minimumFontScale={resolvedMinimumFontScale}
             selectable={selectable}

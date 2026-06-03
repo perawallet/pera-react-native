@@ -10,16 +10,16 @@
  limitations under the License
  */
 
-import { SafeAreaView } from 'react-native-safe-area-context'
 import {
-    PWView,
+    PWScreen,
     PWText,
     PWTouchableOpacity,
     PWButton,
     PWCheckbox,
-    PWIcon,
     PWFlatList,
 } from '@components/core'
+import { ListItemDivider } from '@components/ListItemDivider'
+import { ScreenHeader } from '@components/ScreenHeader'
 import type { LedgerSelectableAccount } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 
@@ -93,69 +93,9 @@ export const LedgerSelectAccountsScreen = () => {
     )
 
     return (
-        <PWView style={styles.container}>
-            <PWView style={styles.content}>
-                <PWView style={styles.heroIcon}>
-                    <PWIcon
-                        name='wallet'
-                        size='xl'
-                    />
-                </PWView>
-
-                <PWText
-                    variant='h1'
-                    style={styles.title}
-                >
-                    {t('ledger.select_accounts.title', {
-                        count: selectableAccounts.length,
-                    })}
-                </PWText>
-                <PWText
-                    variant='h4'
-                    style={styles.description}
-                >
-                    {t('ledger.select_accounts.description')}
-                </PWText>
-
-                {showSelectAll && (
-                    <PWTouchableOpacity
-                        onPress={toggleSelectAll}
-                        style={styles.selectAllRow}
-                    >
-                        <PWText
-                            variant='link'
-                            style={styles.selectAllText}
-                        >
-                            {t('ledger.select_accounts.select_all')}
-                        </PWText>
-                        <PWCheckbox
-                            checked={isAllSelected}
-                            onPress={toggleSelectAll}
-                            containerStyle={styles.checkboxContainer}
-                            testID='ledger_select_accounts_select_all_checkbox'
-                        />
-                    </PWTouchableOpacity>
-                )}
-
-                <PWFlatList
-                    data={selectableAccounts}
-                    renderItem={renderItem}
-                    keyExtractor={item =>
-                        item.kind === 'derived'
-                            ? item.account.address
-                            : item.address
-                    }
-                    extraData={selectedAddresses}
-                    contentContainerStyle={styles.listContent}
-                    showsVerticalScrollIndicator={false}
-                    ListFooterComponent={renderFooter}
-                />
-            </PWView>
-
-            <SafeAreaView
-                edges={['bottom']}
-                style={styles.footer}
-            >
+        <PWScreen
+            scroll='never'
+            footer={
                 <PWButton
                     testID='ledger_select_accounts_continue_button'
                     title={t('ledger.select_accounts.cta', {
@@ -165,7 +105,49 @@ export const LedgerSelectAccountsScreen = () => {
                     variant='primary'
                     isDisabled={!canContinue}
                 />
-            </SafeAreaView>
-        </PWView>
+            }
+        >
+            <ScreenHeader
+                icon='wallet'
+                title={t('ledger.select_accounts.title', {
+                    count: selectableAccounts.length,
+                })}
+                description={t('ledger.select_accounts.description')}
+            />
+
+            {showSelectAll && (
+                <PWTouchableOpacity
+                    onPress={toggleSelectAll}
+                    style={styles.selectAllRow}
+                >
+                    <PWText
+                        variant='link'
+                        style={styles.selectAllText}
+                    >
+                        {t('ledger.select_accounts.select_all')}
+                    </PWText>
+                    <PWCheckbox
+                        checked={isAllSelected}
+                        onPress={toggleSelectAll}
+                        containerStyle={styles.checkboxContainer}
+                        testID='ledger_select_accounts_select_all_checkbox'
+                    />
+                </PWTouchableOpacity>
+            )}
+
+            <PWFlatList
+                data={selectableAccounts}
+                renderItem={renderItem}
+                keyExtractor={item =>
+                    item.kind === 'derived'
+                        ? item.account.address
+                        : item.address
+                }
+                extraData={selectedAddresses}
+                showsVerticalScrollIndicator={false}
+                ItemSeparatorComponent={ListItemDivider}
+                ListFooterComponent={renderFooter}
+            />
+        </PWScreen>
     )
 }

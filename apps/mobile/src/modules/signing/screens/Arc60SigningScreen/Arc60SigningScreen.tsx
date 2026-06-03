@@ -10,7 +10,13 @@
  limitations under the License
  */
 
-import { PWButton, PWSlideToConfirm, PWText, PWView } from '@components/core'
+import {
+    PWButton,
+    PWScreen,
+    PWSlideToConfirm,
+    PWText,
+    PWView,
+} from '@components/core'
 import { Arc60DataSigningSummaryView } from '@modules/signing/components/Arc60DataSigningView'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
@@ -36,40 +42,30 @@ export const Arc60SigningScreen = () => {
 
     if (parsed.type === 'error') {
         return (
-            <PWView style={styles.container}>
-                <PWView style={styles.contentContainer}>
-                    <PWView style={styles.bodyContainer}>
-                        <EmptyView
-                            title={t('signing.arc60_view.siwa_invalid')}
-                            body={parsed.message}
-                        />
-                    </PWView>
-                    <PWView style={styles.buttonContainer}>
-                        <PWButton
-                            title={t('common.close.label')}
-                            variant='primary'
-                            onPress={handleReject}
-                        />
-                    </PWView>
+            <PWScreen
+                scroll='never'
+                footer={
+                    <PWButton
+                        title={t('common.close.label')}
+                        variant='primary'
+                        onPress={handleReject}
+                    />
+                }
+            >
+                <PWView style={styles.bodyContainer}>
+                    <EmptyView
+                        title={t('signing.arc60_view.siwa_invalid')}
+                        body={parsed.message}
+                    />
                 </PWView>
-            </PWView>
+            </PWScreen>
         )
     }
 
     return (
-        <PWView style={styles.container}>
-            <PWView style={styles.contentContainer}>
-                <PWView style={styles.bodyContainer}>
-                    <Arc60DataSigningSummaryView
-                        request={request}
-                        account={account}
-                        parsed={parsed}
-                        onDetailsPress={handleDetailsPress}
-                    />
-                </PWView>
-                {!!error && (
-                    <PWText style={styles.errorText}>{error.message}</PWText>
-                )}
+        <PWScreen
+            scroll='never'
+            footer={
                 <PWView style={styles.buttonContainer}>
                     <PWSlideToConfirm
                         title={t('common.slide_to_confirm.label')}
@@ -85,7 +81,19 @@ export const Arc60SigningScreen = () => {
                         isDisabled={isPending}
                     />
                 </PWView>
+            }
+        >
+            <PWView style={styles.bodyContainer}>
+                <Arc60DataSigningSummaryView
+                    request={request}
+                    account={account}
+                    parsed={parsed}
+                    onDetailsPress={handleDetailsPress}
+                />
             </PWView>
-        </PWView>
+            {!!error && (
+                <PWText style={styles.errorText}>{error.message}</PWText>
+            )}
+        </PWScreen>
     )
 }

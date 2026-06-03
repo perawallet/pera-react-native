@@ -12,7 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles((theme, bottomPadding: number) => {
+export const useStyles = makeStyles(theme => {
     const algoBalance = {
         lineHeight: theme.spacing.lg,
     }
@@ -20,40 +20,29 @@ export const useStyles = makeStyles((theme, bottomPadding: number) => {
         color: theme.colors.textGray,
     }
     return {
-        container: {
-            flex: 1,
-            backgroundColor: theme.colors.background,
-        },
         content: {
             flex: 1,
-            paddingHorizontal: theme.spacing.xl,
-        },
-        title: {
-            marginBottom: theme.spacing.sm,
-            marginTop: theme.spacing.sm,
-        },
-        description: {
-            marginBottom: theme.spacing.xl,
-            color: theme.colors.textGray,
         },
         list: {
             flex: 1,
         },
-        listContent: {
-            paddingBottom: theme.spacing.xl,
-        },
         walletItem: {
             flexDirection: 'row',
             alignItems: 'center',
-            paddingVertical: theme.spacing.md,
-            borderBottomWidth: theme.borders.sm,
-            borderBottomColor: theme.colors.layerGrayLighter,
         },
         walletIconContainer: {
             width: theme.spacing.xl + 2 * theme.spacing.sm,
             height: theme.spacing.xl + 2 * theme.spacing.sm,
             borderRadius: (theme.spacing.xl + 2 * theme.spacing.sm) / 2,
             marginRight: theme.spacing.md,
+        },
+        rowContent: {
+            flex: 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingVertical: theme.spacing.md,
+            borderBottomWidth: theme.borders.sm,
+            borderBottomColor: theme.colors.layerGrayLighter,
         },
         walletTextContainer: {
             flex: 1,
@@ -69,10 +58,5 @@ export const useStyles = makeStyles((theme, bottomPadding: number) => {
         },
         algoBalance,
         fiatBalance,
-        footer: {
-            paddingHorizontal: theme.spacing.xl,
-            paddingTop: theme.spacing.md,
-            paddingBottom: bottomPadding,
-        },
     }
 })

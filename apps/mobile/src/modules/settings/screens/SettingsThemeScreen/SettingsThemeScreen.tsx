@@ -10,10 +10,11 @@
  limitations under the License
  */
 
-import { useStyles } from './styles'
-import { PWView, PWRadioButton } from '@components/core'
 import { useSettings } from '@perawallet/wallet-core-settings'
+
+import { PWScreen, PWRadioButton, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import { useStyles } from './styles'
 
 export const SettingsThemeScreen = () => {
     const styles = useStyles()
@@ -21,28 +22,27 @@ export const SettingsThemeScreen = () => {
     const { t } = useLanguage()
 
     return (
-        <PWView
-            style={styles.container}
-            testID='settings_theme_screen'
-        >
-            <PWRadioButton
-                title={t('settings.theme.system_label')}
-                onPress={() => setTheme('system')}
-                isSelected={!theme || theme === 'system'}
-                testID='settings_theme_system_radio'
-            />
-            <PWRadioButton
-                title={t('settings.theme.light_label')}
-                onPress={() => setTheme('light')}
-                isSelected={theme === 'light'}
-                testID='settings_theme_light_radio'
-            />
-            <PWRadioButton
-                title={t('settings.theme.dark_label')}
-                onPress={() => setTheme('dark')}
-                isSelected={theme === 'dark'}
-                testID='settings_theme_dark_radio'
-            />
-        </PWView>
+        <PWScreen testID='settings_theme_screen'>
+            <PWView style={styles.container}>
+                <PWRadioButton
+                    title={t('settings.theme.system_label')}
+                    onPress={() => setTheme('system')}
+                    isSelected={!theme || theme === 'system'}
+                    testID='settings_theme_system_radio'
+                />
+                <PWRadioButton
+                    title={t('settings.theme.light_label')}
+                    onPress={() => setTheme('light')}
+                    isSelected={theme === 'light'}
+                    testID='settings_theme_light_radio'
+                />
+                <PWRadioButton
+                    title={t('settings.theme.dark_label')}
+                    onPress={() => setTheme('dark')}
+                    isSelected={theme === 'dark'}
+                    testID='settings_theme_dark_radio'
+                />
+            </PWView>
+        </PWScreen>
     )
 }

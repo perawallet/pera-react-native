@@ -14,9 +14,6 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => {
     return {
-        container: {
-            flex: 1,
-        },
         titleSection: {
             alignItems: 'center',
             gap: theme.spacing.xl,
@@ -33,9 +30,6 @@ export const useStyles = makeStyles(theme => {
         data: {
             flexWrap: 'wrap',
             overflow: 'hidden',
-        },
-        scrollContainer: {
-            flexGrow: 1,
         },
     }
 })

@@ -76,8 +76,7 @@ export const SwapTopPairItem = ({
             <PWView style={styles.itemLabelContainer}>
                 <PWText
                     variant='body'
-                    numberOfLines={1}
-                    ellipsizeMode='tail'
+                    truncate
                 >
                     {pairLabel}
                 </PWText>

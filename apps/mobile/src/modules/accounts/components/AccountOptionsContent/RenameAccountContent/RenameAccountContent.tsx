@@ -12,16 +12,9 @@
 
 import { useState } from 'react'
 import { BottomSheetTextInput } from '@gorhom/bottom-sheet'
-import {
-    PWButton,
-    PWIcon,
-    PWInput,
-    PWText,
-    PWToolbar,
-    PWView,
-} from '@components/core'
+import { PWButton, PWInput, PWSheetLayout, PWView } from '@components/core'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
@@ -39,7 +32,7 @@ export const RenameAccountContent = ({
     const initialName = account?.name ?? ''
     const [name, setName] = useState(initialName)
     const styles = useStyles()
-    const { resolve, dismiss } = useBottomSheetResult<string>()
+    const { resolve } = useBottomSheetResult<string>()
 
     const trimmed = name.trim()
     const isSaveDisabled = trimmed.length === 0
@@ -50,24 +43,10 @@ export const RenameAccountContent = ({
     }
 
     return (
-        <>
-            <PWToolbar
-                center={
-                    <PWText
-                        variant='bodyLarge'
-                        weight={500}
-                    >
-                        {t('account_options.rename_title')}
-                    </PWText>
-                }
-                right={
-                    <PWIcon
-                        name='cross'
-                        onPress={dismiss}
-                    />
-                }
-                paddingStyle='dense'
-            />
+        <PWSheetLayout
+            horizontalPadding='none'
+            header={<SheetHeader title={t('account_options.rename_title')} />}
+        >
             <PWView style={styles.inputContainer}>
                 <PWInput
                     value={name}
@@ -86,6 +65,6 @@ export const RenameAccountContent = ({
                     isDisabled={isSaveDisabled}
                 />
             </PWView>
-        </>
+        </PWSheetLayout>
     )
 }

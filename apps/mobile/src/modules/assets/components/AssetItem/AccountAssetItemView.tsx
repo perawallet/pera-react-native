@@ -30,6 +30,9 @@ export type AccountAssetItemViewProps = {
     accountBalance: AssetWithAccountBalance
     usdPrice?: Decimal
     iconSize?: PWIconSize
+    /** Logo URL forwarded to the asset icon, bypassing Prism optimization. */
+    logoUrl?: string
+    showBalance?: boolean
     skipFetch?: boolean
 } & PWTouchableOpacityProps
 
@@ -37,6 +40,8 @@ export const AccountAssetItemView = ({
     accountBalance,
     usdPrice,
     iconSize,
+    logoUrl,
+    showBalance = true,
     skipFetch = false,
     onPress,
     ...rest
@@ -124,7 +129,8 @@ export const AccountAssetItemView = ({
     return (
         <AssetItemView
             asset={asset}
-            right={balance}
+            right={showBalance ? balance : undefined}
+            logoUrl={logoUrl}
             iconSize={iconSize}
             showFavorite
             showDeletedLabel

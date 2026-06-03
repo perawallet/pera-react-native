@@ -10,17 +10,16 @@
  limitations under the License
  */
 
-import { PWButton, PWIcon, PWText, PWToolbar, PWView } from '@components/core'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { useCallback } from 'react'
+import { PWButton, PWSheetLayout } from '@components/core'
+import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { FilterRow } from './FilterRow'
-import { useStyles } from './styles'
 import { useAssetFilterContent } from './useAssetFilterContent'
 
 export type AssetFilterContentProps = Record<string, never>
 
 export const AssetFilterContent = (_: AssetFilterContentProps = {}) => {
-    const styles = useStyles()
     const { t } = useLanguage()
     const { dismiss } = useBottomSheetResult<void>()
     const {
@@ -30,60 +29,55 @@ export const AssetFilterContent = (_: AssetFilterContentProps = {}) => {
         handleToggleHideZeroBalance,
         handleToggleDisplayNfts,
         handleToggleDisplayOptedInNfts,
+        commitChanges,
     } = useAssetFilterContent()
 
-    return (
-        <>
-            <PWToolbar
-                left={
-                    <PWIcon
-                        name='cross'
-                        onPress={dismiss}
-                    />
-                }
-                center={<PWText variant='h4'>{t('asset_filter.title')}</PWText>}
-                right={
-                    <PWButton
-                        variant='linkPositive'
-                        title={t('asset_filter.done')}
-                        onPress={dismiss}
-                        paddingStyle='none'
-                    />
-                }
-                paddingStyle='dense'
-                style={styles.toolbar}
-            />
+    const handleDone = useCallback(() => {
+        commitChanges()
+        dismiss()
+    }, [commitChanges, dismiss])
 
-            <PWView style={styles.contentContainer}>
-                <FilterRow
-                    label={t('asset_filter.hide_zero_balance')}
-                    description={t(
-                        'asset_filter.hide_zero_balance_description',
-                    )}
-                    value={hideZeroBalance}
-                    onToggle={handleToggleHideZeroBalance}
-                    testID='asset_filter_hide_zero_balance'
+    return (
+        <PWSheetLayout
+            header={
+                <SheetHeader
+                    title={t('asset_filter.title')}
+                    rightAction={
+                        <PWButton
+                            variant='linkPositive'
+                            title={t('common.apply')}
+                            onPress={handleDone}
+                            paddingStyle='none'
+                        />
+                    }
                 />
-                <FilterRow
-                    label={t('asset_filter.display_nfts')}
-                    description={t('asset_filter.display_nfts_description')}
-                    value={displayNfts}
-                    onToggle={handleToggleDisplayNfts}
-                    testID='asset_filter_display_nfts'
-                />
-                <FilterRow
-                    label={t('asset_filter.display_opted_in_nfts')}
-                    description={t(
-                        'asset_filter.display_opted_in_nfts_description',
-                    )}
-                    // Opted-in NFTs are a subset of NFTs, so this option is only
-                    // meaningful when the parent NFTs toggle is enabled.
-                    value={displayNfts && displayOptedInNfts}
-                    onToggle={handleToggleDisplayOptedInNfts}
-                    testID='asset_filter_display_opted_in_nfts'
-                    disabled={!displayNfts}
-                />
-            </PWView>
-        </>
+            }
+        >
+            <FilterRow
+                label={t('asset_filter.hide_zero_balance')}
+                description={t('asset_filter.hide_zero_balance_description')}
+                value={hideZeroBalance}
+                onToggle={handleToggleHideZeroBalance}
+                testID='asset_filter_hide_zero_balance'
+            />
+            <FilterRow
+                label={t('asset_filter.display_nfts')}
+                description={t('asset_filter.display_nfts_description')}
+                value={displayNfts}
+                onToggle={handleToggleDisplayNfts}
+                testID='asset_filter_display_nfts'
+            />
+            <FilterRow
+                label={t('asset_filter.display_opted_in_nfts')}
+                description={t(
+                    'asset_filter.display_opted_in_nfts_description',
+                )}
+                // Opted-in NFTs are a subset of NFTs, so this is gated on the NFTs toggle.
+                value={displayNfts && displayOptedInNfts}
+                onToggle={handleToggleDisplayOptedInNfts}
+                testID='asset_filter_display_opted_in_nfts'
+                disabled={!displayNfts}
+            />
+        </PWSheetLayout>
     )
 }

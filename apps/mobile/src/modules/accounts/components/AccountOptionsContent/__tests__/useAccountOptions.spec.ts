@@ -104,6 +104,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         useAllAccounts: () => mockAllAccounts(),
         useCanSignWith: (account?: WalletAccount | null) =>
             mockUseCanSignWith(account),
+        useMultisigDetailsBackfill: () => ({ isBackfilling: false }),
     }
 })
 
@@ -415,6 +416,7 @@ describe('useAccountOptions', () => {
             expect(arg.options).toEqual({
                 size: 'auto',
                 enablePanDownToClose: true,
+                autoCreateContainer: false,
             })
         })
 
@@ -753,7 +755,7 @@ describe('useAccountOptions', () => {
             expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
             const arg = mockRequestBottomSheet.mock.calls[0][0]
             expect(arg.options).toEqual({
-                size: 'lg',
+                size: 'modal',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             })
@@ -783,6 +785,7 @@ describe('useAccountOptions', () => {
             expect(arg.options).toEqual({
                 size: 'auto',
                 enablePanDownToClose: true,
+                autoCreateContainer: false,
             })
         })
 

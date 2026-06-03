@@ -12,7 +12,17 @@
 
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs'
 import { ParamListBase } from '@react-navigation/native'
+import { makeStyles } from '@rneui/themed'
 import { PWTabBar } from './PWTabBar'
+
+const useStyles = makeStyles(() => ({
+    navigator: {
+        flex: 1,
+    },
+    scene: {
+        flex: 1,
+    },
+}))
 
 export const createPWTabNavigator = <ParamList extends ParamListBase>() => {
     const Tab = createMaterialTopTabNavigator<ParamList>()
@@ -20,16 +30,24 @@ export const createPWTabNavigator = <ParamList extends ParamListBase>() => {
     return {
         Navigator: ({
             tabBarHidden,
+            screenOptions,
             ...props
         }: React.ComponentProps<typeof Tab.Navigator> & {
             children: React.ReactNode
             tabBarHidden?: boolean
         }) => {
+            const styles = useStyles()
+
             return (
                 <Tab.Navigator
                     tabBar={tabBarProps =>
                         tabBarHidden ? null : <PWTabBar {...tabBarProps} />
                     }
+                    style={styles.navigator}
+                    screenOptions={{
+                        sceneStyle: styles.scene,
+                        ...screenOptions,
+                    }}
                     {...props}
                 />
             )

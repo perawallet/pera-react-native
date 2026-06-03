@@ -13,10 +13,6 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        flex: 1,
-        backgroundColor: theme.colors.background,
-    },
     statusContainer: {
         flex: 1,
         backgroundColor: theme.colors.background,
@@ -33,16 +29,7 @@ export const useStyles = makeStyles(theme => ({
         textAlign: 'center',
     },
     scrollContent: {
-        paddingHorizontal: theme.spacing.xl,
-        paddingTop: theme.spacing.lg,
-        paddingBottom: theme.spacing.xl,
         gap: theme.spacing.xl,
-    },
-    header: {
-        gap: theme.spacing.lg,
-    },
-    subtitle: {
-        color: theme.colors.textGray,
     },
     section: {
         gap: theme.spacing.md,
@@ -89,9 +76,6 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textGray,
     },
     footer: {
-        paddingHorizontal: theme.spacing.xl,
-        paddingTop: theme.spacing.lg,
-        paddingBottom: theme.spacing.xl,
         gap: theme.spacing.sm,
     },
     cta: {

@@ -12,7 +12,7 @@
 
 import {
     PWButton,
-    PWHeader,
+    PWSheetLayout,
     PWSlideToConfirm,
     PWText,
     PWView,
@@ -26,7 +26,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { MIN_TXN_FEE } from '@perawallet/wallet-core-blockchain'
 import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { AssetNameBadge } from '@modules/assets/components/AssetNameBadge'
 import { useLanguage } from '@hooks/useLanguage'
 import { useClipboard } from '@hooks/useClipboard'
@@ -46,7 +46,7 @@ export const OptInConfirmationContent = ({
     const styles = useStyles()
     const { t } = useLanguage()
     const { copyToClipboard } = useClipboard()
-    const { resolve, dismiss } = useBottomSheetResult<'confirm'>()
+    const { resolve } = useBottomSheetResult<'confirm'>()
 
     const { data: assets } = useAssetsQuery([assetId])
     const asset = assets?.get(assetId)
@@ -60,14 +60,12 @@ export const OptInConfirmationContent = ({
         copyToClipboard(assetId)
     }
 
-    return (
-        <PWView style={styles.container}>
-            <PWHeader
-                leftIcon='cross'
-                onLeftPress={dismiss}
-                title={t('add_asset.confirmation.title')}
-            />
+    const handleConfirm = () => resolve('confirm')
 
+    return (
+        <PWSheetLayout
+            header={<SheetHeader title={t('add_asset.confirmation.title')} />}
+        >
             <PWView style={styles.body}>
                 <PWView style={styles.assetNameRow}>
                     <AssetNameBadge
@@ -94,6 +92,7 @@ export const OptInConfirmationContent = ({
                     <PWText
                         variant='body'
                         style={styles.rowLabel}
+                        truncate
                     >
                         {assetId}
                     </PWText>
@@ -113,12 +112,15 @@ export const OptInConfirmationContent = ({
                     <PWText
                         variant='body'
                         style={styles.rowLabel}
+                        truncate
                     >
                         {t('add_asset.confirmation.account_label')}
                     </PWText>
                     <AddressDisplay
                         address={accountAddress}
                         showCopy={false}
+                        style={styles.rowAddressContainer}
+                        textProps={{ style: styles.rowAddress }}
                     />
                 </PWView>
 
@@ -128,6 +130,7 @@ export const OptInConfirmationContent = ({
                     <PWText
                         variant='body'
                         style={styles.rowLabel}
+                        truncate
                     >
                         {t('add_asset.confirmation.fee_label')}
                     </PWText>
@@ -148,20 +151,13 @@ export const OptInConfirmationContent = ({
                     {t('add_asset.confirmation.description')}
                 </PWText>
 
-                <PWView style={styles.buttonContainer}>
-                    <PWSlideToConfirm
-                        title={t('common.slide_to_confirm.label')}
-                        onConfirm={() => resolve('confirm')}
-                        testID='opt_in_confirm'
-                    />
-                    <PWButton
-                        title={t('add_asset.confirmation.close')}
-                        variant='linkNeutral'
-                        onPress={dismiss}
-                        testID='opt_in_cancel'
-                    />
-                </PWView>
+                <PWSlideToConfirm
+                    title={t('common.slide_to_confirm.label')}
+                    onConfirm={handleConfirm}
+                    style={styles.confirmButton}
+                    testID='opt_in_confirm'
+                />
             </PWView>
-        </PWView>
+        </PWSheetLayout>
     )
 }

@@ -21,13 +21,6 @@ export const useStyles = makeStyles(theme => ({
         justifyContent: 'flex-start' as const,
         width: '100%',
     },
-    sheetContainer: {
-        paddingBottom: theme.spacing.xxl,
-        paddingHorizontal: theme.spacing.xl,
-        borderTopStartRadius: theme.spacing.sm,
-        borderTopEndRadius: theme.spacing.sm,
-        overflow: 'hidden',
-    },
     warningSection: {
         marginVertical: theme.spacing.md,
         gap: theme.spacing.xs,

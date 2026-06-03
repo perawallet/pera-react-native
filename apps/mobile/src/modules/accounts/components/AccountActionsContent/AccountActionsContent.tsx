@@ -10,11 +10,11 @@
  limitations under the License
  */
 
-import { BottomSheetScrollView } from '@gorhom/bottom-sheet'
 import {
     IconName,
     PWDivider,
     PWIcon,
+    PWScrollView,
     PWText,
     PWTouchableOpacity,
     PWView,
@@ -88,7 +88,8 @@ export const AccountActionsContent = ({
     ]
 
     return (
-        <BottomSheetScrollView
+        <PWScrollView
+            inBottomSheet
             contentContainerStyle={styles.container}
             showsVerticalScrollIndicator={false}
         >
@@ -134,6 +135,6 @@ export const AccountActionsContent = ({
                     </PWView>
                 </PWTouchableOpacity>
             ))}
-        </BottomSheetScrollView>
+        </PWScrollView>
     )
 }

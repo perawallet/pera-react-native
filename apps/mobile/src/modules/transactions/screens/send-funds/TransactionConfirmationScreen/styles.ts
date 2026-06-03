@@ -14,16 +14,8 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => {
     return {
-        container: {
-            paddingHorizontal: theme.spacing.md,
-            flex: 1,
-        },
         secondaryAmount: {
             color: theme.colors.textGray,
-        },
-        footer: {
-            gap: theme.spacing.md,
-            paddingTop: theme.spacing.md,
         },
         linkContainer: {
             flexDirection: 'row',
@@ -33,9 +25,6 @@ export const useStyles = makeStyles(theme => {
         },
         link: {
             color: theme.colors.positive,
-        },
-        scrollView: {
-            flex: 1,
         },
         scrollContent: {
             gap: theme.spacing.xl,

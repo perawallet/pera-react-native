@@ -12,34 +12,13 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles((theme, bottomPadding: number) => ({
-    container: {
-        flex: 1,
-        backgroundColor: theme.colors.background,
-    },
-    content: {
-        flex: 1,
-        paddingHorizontal: theme.spacing.xl,
-        paddingBottom: bottomPadding,
-    },
-    headerContainer: {
-        gap: theme.spacing.md,
-        paddingBottom: theme.spacing.xl,
-    },
+export const useStyles = makeStyles(theme => ({
     description: {
         color: theme.colors.textGray,
     },
     scrollArea: {
-        flex: 1,
         marginTop: theme.spacing.sm,
-    },
-    scrollContent: {
         alignItems: 'flex-start',
-        flexGrow: 1,
-        paddingBottom: theme.spacing.xl,
-    },
-    continueButton: {
-        marginBottom: theme.spacing.sm,
     },
     addButton: {
         marginTop: theme.spacing.lg,

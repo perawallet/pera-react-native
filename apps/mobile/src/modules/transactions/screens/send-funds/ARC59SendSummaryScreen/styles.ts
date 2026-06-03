@@ -13,18 +13,20 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        flex: 1,
-        backgroundColor: theme.colors.layerGrayLightest,
-        borderRadius: theme.spacing.md,
-    },
     content: {
-        flexGrow: 1,
         paddingTop: theme.spacing.lg,
     },
     title: {
         textAlign: 'center',
         marginBottom: theme.spacing.md,
+    },
+    header: {
+        alignItems: 'center',
+        paddingVertical: theme.spacing['3xl'],
+    },
+    inboxIcon: {
+        alignSelf: 'center',
+        marginBottom: theme.spacing.lg,
     },
     description: {
         textAlign: 'center',
@@ -32,6 +34,9 @@ export const useStyles = makeStyles(theme => ({
     },
     readMoreText: {
         color: theme.colors.positive,
+    },
+    details: {
+        gap: theme.spacing.md,
     },
     row: {
         flexDirection: 'row',
@@ -53,24 +58,7 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textMain,
         marginTop: theme.spacing.md,
     },
-    inboxIcon: {
-        alignSelf: 'center',
-        marginBottom: theme.spacing.lg,
-    },
-    header: {
-        alignItems: 'center',
-        paddingHorizontal: theme.spacing.md,
-        paddingVertical: theme.spacing['3xl'],
-    },
-    bottomContainer: {
-        backgroundColor: theme.colors.background,
-        paddingVertical: theme.spacing.xl,
-        paddingHorizontal: theme.spacing.md,
-        flexGrow: 1,
-        gap: theme.spacing.md,
-    },
     footer: {
         gap: theme.spacing.md,
-        backgroundColor: theme.colors.background,
     },
 }))

@@ -99,6 +99,7 @@ export const TxTypeDetails = ({
                 secondary = (
                     <PWText
                         variant='caption'
+                        truncate
                         style={styles.secondaryText}
                     >
                         {t('transactions.app_call.inner_transactions', {
@@ -110,6 +111,7 @@ export const TxTypeDetails = ({
                 secondary = (
                     <PWText
                         variant='caption'
+                        truncate
                         style={styles.secondaryText}
                     >
                         {tx.applicationTransaction?.applicationId?.toString()}
@@ -119,6 +121,7 @@ export const TxTypeDetails = ({
                 secondary = (
                     <PWText
                         variant='caption'
+                        truncate
                         style={styles.secondaryText}
                     >
                         {senderDisplayName}
@@ -131,6 +134,7 @@ export const TxTypeDetails = ({
             secondary = (
                 <PWText
                     variant='caption'
+                    truncate
                     style={styles.secondaryText}
                 >
                     {senderDisplayName}
@@ -141,6 +145,7 @@ export const TxTypeDetails = ({
     return (
         <PWView style={styles.content}>
             <PWText
+                truncate
                 style={isExternal ? styles.secondaryText : styles.primaryText}
             >
                 {t(`transactions.type.${tx.txType}`)}

@@ -11,16 +11,24 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { getFontWeightVariant } from '@theme/typography'
+import { EdgeInsets } from 'react-native-safe-area-context'
 
-const HEADER_IMAGE_WIDTH = 267
-const HEADER_IMAGE_HEIGHT = 307
+const HEADER_IMAGE_SCREEN_RATIO = 1 / 4
 
-export const useStyles = makeStyles(theme => {
-    const headerTitle = {
-        fontWeight: '600' as const,
-        paddingLeft: theme.spacing.xl,
-        alignSelf: 'flex-end' as const,
-    }
+// welcome-background.webp intrinsic dimensions; hardcoded to avoid resolveAssetSource.
+const IMAGE_ASPECT_RATIO = 344 / 544
+
+type StyleProps = {
+    insets: EdgeInsets
+    screenHeight: number
+}
+
+export const useStyles = makeStyles((theme, props: StyleProps) => {
+    const { insets, screenHeight } = props
+    const headerImageHeight =
+        screenHeight * HEADER_IMAGE_SCREEN_RATIO + insets.top
+
     return {
         rootContainer: {
             flex: 1,
@@ -28,13 +36,24 @@ export const useStyles = makeStyles(theme => {
             gap: theme.spacing['3xl'],
         },
         headerContainer: {
-            flexDirection: 'row',
-            alignItems: 'center',
+            width: '100%',
+            height: headerImageHeight,
+            position: 'relative',
         },
-        headerTitle,
+        headerTitle: {
+            position: 'absolute',
+            left: theme.spacing.xl,
+            right: theme.spacing.xl,
+            bottom: 0,
+            zIndex: 1,
+            ...getFontWeightVariant(theme, 'h1', 600),
+        },
         headerImage: {
-            width: HEADER_IMAGE_WIDTH,
-            height: HEADER_IMAGE_HEIGHT,
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            height: headerImageHeight,
+            aspectRatio: IMAGE_ASPECT_RATIO,
             resizeMode: 'contain',
         },
         buttonTitle: {
@@ -51,7 +70,8 @@ export const useStyles = makeStyles(theme => {
         footerContainer: {
             justifyContent: 'flex-end',
             alignItems: 'center',
-            padding: theme.spacing['3xl'],
+            paddingHorizontal: theme.spacing.xl,
+            paddingBottom: theme.spacing['3xl'],
         },
         termsAndPrivacyText: {
             textAlign: 'center',
