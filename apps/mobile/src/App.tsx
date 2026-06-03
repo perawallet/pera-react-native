@@ -45,6 +45,7 @@ import {
 import { seedAlgoAsset } from '@perawallet/wallet-core-assets'
 import { initializeSyncService } from '@perawallet/wallet-core-background'
 import { setOnConfirmedHandler } from '@perawallet/wallet-core-signing'
+import { initCardSession } from '@perawallet/wallet-core-card'
 import { createCrashReportingErrorReporter } from '@perawallet/wallet-extension-platform'
 import {
     getProvider,
@@ -139,6 +140,14 @@ const AppContent = () => {
                 })
 
                 updateQueryHeaders()
+
+                // Hydrate the Baanx card session from the keystore (no-op until
+                // the user has authenticated). Must run after hydrateKeystore.
+                await initCardSession().catch(err =>
+                    logger.error('Card session bootstrap failed', {
+                        error: err,
+                    }),
+                )
 
                 const reactQueryPersistor = createAsyncStoragePersister({
                     storage: provider.keyValueStorage,
