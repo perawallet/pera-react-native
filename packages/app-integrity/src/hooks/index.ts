@@ -11,3 +11,7 @@
  */
 
 export { useAppIntegrityBootstrap } from './useAppIntegrityBootstrap'
+export {
+    useAppIntegrityRegistration,
+    type UseAppIntegrityRegistrationResult,
+} from './useAppIntegrityRegistration'

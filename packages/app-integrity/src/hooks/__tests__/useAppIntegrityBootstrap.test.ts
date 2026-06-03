@@ -14,7 +14,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 
 const registerMock = vi.fn()
-vi.mock('../../registration/registerAppIntegrity', () => ({
+vi.mock('../../services/registerAppIntegrity', () => ({
     registerAppIntegrity: (...a: unknown[]) => registerMock(...a),
 }))
 

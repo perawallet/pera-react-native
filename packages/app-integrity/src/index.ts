@@ -14,7 +14,7 @@ export const name = '@perawallet/wallet-core-app-integrity'
 
 export * from './models'
 export * from './hooks'
-export * from './registration'
+export * from './services'
 export { useAppIntegrityStore } from './store'
 export {
     requestChallenge,

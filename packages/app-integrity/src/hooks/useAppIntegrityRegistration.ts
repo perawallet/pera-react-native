@@ -15,7 +15,7 @@ import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
     registerAppIntegrity,
     type RegisterAppIntegrityResult,
-} from './registerAppIntegrity'
+} from '../services/registerAppIntegrity'
 
 export type UseAppIntegrityRegistrationResult = {
     register: () => Promise<RegisterAppIntegrityResult>

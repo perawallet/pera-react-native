@@ -51,42 +51,78 @@ export const SettingsDeveloperAppIntegrityScreen = () => {
     return (
         <PWView style={styles.container}>
             <PWView style={styles.row}>
-                <PWText variant='caption'>{`Environment: ${appEnvironment}`}</PWText>
-                <PWText variant='caption'>{`Platform: ${platform}`}</PWText>
+                <PWText variant='caption'>
+                    {t('settings.developer.app_integrity_environment', {
+                        value: appEnvironment,
+                    })}
+                </PWText>
+                <PWText variant='caption'>
+                    {t('settings.developer.app_integrity_platform', {
+                        value: platform,
+                    })}
+                </PWText>
                 <PWView style={styles.statusRow}>
-                    <PWText variant='caption'>Supported:</PWText>
+                    <PWText variant='caption'>
+                        {t('settings.developer.app_integrity_supported')}
+                    </PWText>
                     <PWBadge
                         variant={isSupported ? 'positive' : 'secondary'}
                         value={String(isSupported)}
                     />
                 </PWView>
                 <PWView style={styles.statusRow}>
-                    <PWText variant='caption'>Status:</PWText>
+                    <PWText variant='caption'>
+                        {t('settings.developer.app_integrity_status')}
+                    </PWText>
                     <PWBadge
                         variant={statusVariant(status)}
                         value={status}
                     />
                 </PWView>
-                <PWText variant='caption'>{`Token: ${integrityToken ? `${integrityToken.slice(0, 12)}…` : 'none'}`}</PWText>
-                <PWText variant='caption'>{`Expiry: ${expiresAt ?? 'none'}`}</PWText>
+                <PWText variant='caption'>
+                    {t('settings.developer.app_integrity_token', {
+                        value: integrityToken
+                            ? `${integrityToken.slice(0, 12)}…`
+                            : t('settings.developer.app_integrity_none'),
+                    })}
+                </PWText>
+                <PWText variant='caption'>
+                    {t('settings.developer.app_integrity_expiry', {
+                        value:
+                            expiresAt ??
+                            t('settings.developer.app_integrity_none'),
+                    })}
+                </PWText>
                 {!!lastError && (
-                    <PWText variant='caption'>{`Error: ${lastError}`}</PWText>
+                    <PWText variant='caption'>
+                        {t('settings.developer.app_integrity_error', {
+                            value: lastError,
+                        })}
+                    </PWText>
                 )}
                 {!!verifyResult && (
                     <PWView style={styles.statusRow}>
-                        <PWText variant='caption'>Verify:</PWText>
+                        <PWText variant='caption'>
+                            {t('settings.developer.app_integrity_verify_label')}
+                        </PWText>
                         <PWBadge
                             variant={verifyResult.ok ? 'positive' : 'alert'}
                             value={
                                 verifyResult.ok
-                                    ? `ok · ${verifyResult.platform}`
-                                    : 'failed'
+                                    ? `${t('settings.developer.app_integrity_verify_ok')} · ${verifyResult.platform}`
+                                    : t(
+                                          'settings.developer.app_integrity_verify_failed',
+                                      )
                             }
                         />
                     </PWView>
                 )}
                 {!!verifyError && (
-                    <PWText variant='caption'>{`Verify error: ${verifyError}`}</PWText>
+                    <PWText variant='caption'>
+                        {t('settings.developer.app_integrity_verify_error', {
+                            value: verifyError,
+                        })}
+                    </PWText>
                 )}
             </PWView>
             <PWView style={styles.actions}>

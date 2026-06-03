@@ -12,7 +12,7 @@
 
 import { useEffect, useRef } from 'react'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { registerAppIntegrity } from '../registration/registerAppIntegrity'
+import { registerAppIntegrity } from '../services/registerAppIntegrity'
 import { useAppIntegrityStore } from '../store'
 
 // Re-register when within this margin of expiry.

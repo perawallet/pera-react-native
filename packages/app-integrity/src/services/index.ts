@@ -13,7 +13,3 @@
 // `registerAppIntegrity` stays package-internal; business logic is exposed via
 // hooks (useAppIntegrityRegistration, useAppIntegrityBootstrap).
 export { type RegisterAppIntegrityResult } from './registerAppIntegrity'
-export {
-    useAppIntegrityRegistration,
-    type UseAppIntegrityRegistrationResult,
-} from './useAppIntegrityRegistration'
