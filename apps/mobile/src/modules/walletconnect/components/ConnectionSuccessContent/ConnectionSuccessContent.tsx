@@ -35,6 +35,7 @@ export const ConnectionSuccessContent = ({
                 name: dAppName,
             })}
             confirmLabel={t('common.close.label')}
+            confirmVariant='secondary'
         />
     )
 }

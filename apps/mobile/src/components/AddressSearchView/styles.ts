@@ -27,10 +27,6 @@ export const useStyles = makeStyles(theme => {
         list: {
             flex: 1,
         },
-        contentContainer: {
-            flexGrow: 1,
-            paddingBottom: theme.spacing.xl,
-        },
         listSeparator: {
             height: theme.spacing.md,
         },

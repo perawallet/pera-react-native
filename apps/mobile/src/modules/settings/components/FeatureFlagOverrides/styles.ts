@@ -38,8 +38,7 @@ export const useStyles = makeStyles(theme => {
             alignItems: 'center',
             gap: theme.spacing.md,
         },
-        // Takes the remaining width so a long title wraps instead of pushing
-        // the switch off the right edge.
+        // minWidth: 0 lets a long title wrap instead of overflowing the row.
         textColumn: {
             flex: 1,
             minWidth: 0,

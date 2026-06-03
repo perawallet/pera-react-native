@@ -16,8 +16,8 @@ const SPINNER_CIRCLE_SIZE = 60
 
 export const useStyles = makeStyles(theme => ({
     contentContainer: {
-        justifyContent: 'center' as const,
-        alignItems: 'center' as const,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     spinnerCircle: {
         width: SPINNER_CIRCLE_SIZE,

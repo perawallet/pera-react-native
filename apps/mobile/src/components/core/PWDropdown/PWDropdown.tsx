@@ -58,8 +58,6 @@ export const PWDropdown = ({
                 const top = pageY + height
 
                 if (align === 'right') {
-                    // Pin the menu's right edge to the page gutter rather than
-                    // the trigger, so it lines up with the screen edge inset.
                     setPosition({
                         top,
                         right: horizontalInset,

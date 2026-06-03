@@ -13,9 +13,8 @@
 import { createContext } from 'react'
 
 /**
- * True for anything rendered inside a `PWBottomSheet`. Scrollable primitives
- * (`PWFlatList`, `PWScrollView`) read it to auto-cooperate with the sheet pan
- * gesture, so callers never have to remember an `inBottomSheet` flag — a missing
- * flag silently breaks scrolling, which has bitten several sheets.
+ * True inside a `PWBottomSheet`. Scrollable primitives read it to auto-cooperate
+ * with the sheet pan gesture, sparing callers a flag whose omission silently
+ * breaks scrolling.
  */
 export const PWInBottomSheetContext = createContext(false)

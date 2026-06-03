@@ -48,13 +48,10 @@ describe('useGalleryCategoryScreen', () => {
     })
 
     it("returns title 'Screens' and non-empty sections for categoryId 'screens'", () => {
-        // Arrange
         currentCategoryId = 'screens'
 
-        // Act
         const { result } = renderHook(() => useGalleryCategoryScreen())
 
-        // Assert
         expect(result.current.title).toBe('Screens')
         expect(result.current.sections.length).toBeGreaterThan(0)
         result.current.sections.forEach(section => {
@@ -63,19 +60,15 @@ describe('useGalleryCategoryScreen', () => {
     })
 
     it("returns title 'Gallery' and empty sections for an unknown categoryId", () => {
-        // Arrange
         currentCategoryId = 'bogus'
 
-        // Act
         const { result } = renderHook(() => useGalleryCategoryScreen())
 
-        // Assert
         expect(result.current.title).toBe('Gallery')
         expect(result.current.sections).toEqual([])
     })
 
     it('onItemPress delegates to the launcher launch function', () => {
-        // Arrange
         currentCategoryId = 'screens'
         const { result } = renderHook(() => useGalleryCategoryScreen())
         const fakeEntry = {
@@ -84,10 +77,8 @@ describe('useGalleryCategoryScreen', () => {
             launch: { kind: 'action' as const, run: vi.fn() },
         }
 
-        // Act
         result.current.onItemPress(fakeEntry)
 
-        // Assert
         expect(launch).toHaveBeenCalledWith(fakeEntry)
     })
 })

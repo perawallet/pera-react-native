@@ -51,10 +51,6 @@ vi.mock('@modules/view-passphrase', () => ({
     }),
 }))
 
-vi.mock('@modules/accounts/hooks/useMultisigDetailsBackfill', () => ({
-    useMultisigDetailsBackfill: () => ({ isBackfilling: false }),
-}))
-
 vi.mock('@hooks/useClipboard', () => ({
     useClipboard: () => ({
         copyToClipboard: mockCopyToClipboard,
@@ -108,6 +104,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         useAllAccounts: () => mockAllAccounts(),
         useCanSignWith: (account?: WalletAccount | null) =>
             mockUseCanSignWith(account),
+        useMultisigDetailsBackfill: () => ({ isBackfilling: false }),
     }
 })
 

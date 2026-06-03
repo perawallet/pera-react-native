@@ -11,12 +11,16 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { EdgeInsets } from 'react-native-safe-area-context'
 
 const HEADER_IMAGE_WIDTH = 137
 const HEADER_IMAGE_HEIGHT = 217
 
-export const useStyles = makeStyles(theme => {
+export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
     return {
+        screen: {
+            paddingTop: insets.top,
+        },
         imageContainer: {
             flexDirection: 'row',
             alignItems: 'flex-end',

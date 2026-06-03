@@ -12,12 +12,14 @@
 
 import React from 'react'
 
+import { Decimal } from 'decimal.js'
+
 import {
     MOCK_ADDRESS,
+    MOCK_ADDRESS_2,
     MOCK_ASSET_ID,
     mockAlgo25Account,
 } from '@perawallet/wallet-core-dev-fixtures'
-import { Decimal } from 'decimal.js'
 
 import { AccountMenuContent } from '@modules/accounts/components/AccountMenuContent'
 import { AccountOptionsContent } from '@modules/accounts/components/AccountOptionsContent'
@@ -80,7 +82,7 @@ import type { GallerySection } from './types'
 import type { WalletConnectSessionRequest } from '@perawallet/wallet-core-walletconnect'
 
 const A = MOCK_ADDRESS
-const A2 = MOCK_ADDRESS
+const A2 = MOCK_ADDRESS_2
 
 export const getSheetSections = (): GallerySection[] => [
     {
@@ -988,6 +990,8 @@ export const getSheetSections = (): GallerySection[] => [
                         options: {
                             size: 'modal',
                             enablePanDownToClose: true,
+                            // Required, or PWSheetLayout is nested and won't scroll.
+                            autoCreateContainer: false,
                         },
                     }),
                 },
@@ -1003,7 +1007,12 @@ export const getSheetSections = (): GallerySection[] => [
                                 <StakingHelpContent />
                             </GallerySheetBoundary>
                         ),
-                        options: { enablePanDownToClose: true },
+                        options: {
+                            size: 'modal',
+                            enablePanDownToClose: true,
+                            // Required, or PWSheetLayout is nested and won't scroll.
+                            autoCreateContainer: false,
+                        },
                     }),
                 },
             },

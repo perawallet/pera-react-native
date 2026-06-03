@@ -204,9 +204,8 @@ export const PendingSignaturesContent = () => {
                     <PWView style={styles.signersList}>
                         {signers.map((signer, index) => (
                             <SignerStatusListItem
-                                // A multisig can include the same address as
-                                // more than one signer, so address alone isn't
-                                // a unique key.
+                                // A multisig can list the same address twice,
+                                // so address alone isn't a unique key.
                                 key={`${signer.address}-${index}`}
                                 address={signer.address}
                                 status={signer.status}

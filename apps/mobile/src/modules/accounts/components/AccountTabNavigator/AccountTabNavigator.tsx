@@ -40,10 +40,8 @@ export const AccountTabNavigator = ({
 
     return (
         <Tab.Navigator
-            style={{ flex: 1 }}
             screenOptions={{
                 swipeEnabled,
-                sceneStyle: { flex: 1 },
             }}
         >
             <Tab.Screen

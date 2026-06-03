@@ -40,8 +40,6 @@ export const useStyles = makeStyles(theme => ({
     balance: {
         color: theme.colors.textGray,
     },
-    // Shrinks so a long balance truncates within the row instead of running
-    // off-screen; the "Balance:" label stays intact and the amount gives way.
     balanceWrapper: {
         flexDirection: 'row',
         alignItems: 'center',

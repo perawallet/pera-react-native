@@ -20,7 +20,6 @@ import {
 import { getTestProps } from '@utils/test-id-helper'
 
 export type PWTouchableOpacityProps = {
-    /** Dismiss keyboard after press (default true). */
     dismissKeyboardOnPress?: boolean
     /** Opt out of the double-press guard for rapid-tap surfaces (e.g. numpad). */
     allowRapidPress?: boolean
@@ -28,8 +27,7 @@ export type PWTouchableOpacityProps = {
 
 const DEFAULT_ACTIVE_OPACITY = 0.8
 
-// A repeat press of the same element within this window is swallowed, so a
-// double-tap can't fire onPress (and its navigation/submit) twice.
+// Swallow repeat presses within this window so a double-tap can't fire onPress twice.
 const DOUBLE_PRESS_GUARD_MS = 500
 
 export const PWTouchableOpacity = ({

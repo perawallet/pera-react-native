@@ -14,24 +14,16 @@ import { makeStyles } from '@rneui/themed'
 
 type StyleProps = {
     paddingStyle?: 'dense' | 'normal' | 'none'
-    // When a center slot is present, both side slots are forced to the same
-    // width (the wider action, measured at runtime — see usePWToolbar) so the
-    // center title stays on true screen-center while the action buttons keep
-    // their full size. The title is the only slot that truncates. Without a
-    // center, the left slot hugs its content (e.g. the account toolbar's wide
-    // selector) and the center grows to push the right action to the edge.
+    // With a center slot, both sides are forced to the wider action's width so
+    // the center title stays on true screen-center; only the title truncates.
     hasCenter: boolean
-    // Width of the widest side action; applied to both side slots so they match
-    // and the center stays truly centered. Only used when `hasCenter`.
     sideMinWidth: number
 }
 
 export const useStyles = makeStyles(
     (theme, { paddingStyle, hasCenter, sideMinWidth }: StyleProps) => {
-        // Action slots: content-sized and flexShrink:0 so the buttons never
-        // shrink or ellipsize — the center title gives way instead. With a
-        // center, both sides also take minWidth:sideMinWidth so they resolve to
-        // the same width and the center sits dead-center between them.
+        // flexShrink:0 so the action buttons never shrink — the center title
+        // gives way instead.
         const sideSlot = hasCenter
             ? { flexShrink: 0, minWidth: sideMinWidth }
             : { flexShrink: 1, maxWidth: '60%' as const }
@@ -48,10 +40,8 @@ export const useStyles = makeStyles(
             },
             leftSlotContainer: {
                 ...sideSlot,
-                // Row so the slot's max-width propagates to the child via
-                // flexShrink: the content (e.g. the account selector's name)
-                // truncates with an ellipsis instead of being hard-clipped by
-                // overflow:hidden, keeping a trailing chevron visible.
+                // Row so max-width reaches the child via flexShrink: it
+                // ellipsizes instead of being hard-clipped by overflow:hidden.
                 flexDirection: 'row',
                 alignSelf: 'center',
                 alignItems: 'center',

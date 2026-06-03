@@ -155,7 +155,6 @@ export const LedgerAccountInfoContent = ({
                     inBottomSheet
                     data={items}
                     renderItem={renderItem}
-                    // Mixed rows incl. section headers — no blanket divider.
                     ItemSeparatorComponent={null}
                     keyExtractor={(item: LedgerInfoListItem) => item.key}
                     contentContainerStyle={styles.listContent}

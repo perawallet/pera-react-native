@@ -40,17 +40,13 @@ export const useStyles = makeStyles(
             fixedBody: {
                 flex: 1,
                 paddingHorizontal,
-                // Mirror the scroll body: when a footer owns the bottom inset
-                // the body just needs a gap, otherwise it carries the
-                // safe-area inset so a hosted scroller clears the home
-                // indicator (the migrated FlashList no longer does this
-                // natively the way RN's FlatList did).
+                // Carry the safe-area inset here: unlike RN's FlatList, the
+                // migrated FlashList no longer clears the home indicator natively.
                 paddingBottom: hasFooter ? theme.spacing.lg : bottomInset,
             },
             footer: {
-                // Bottom CTAs share one screen gutter (xl) regardless of the
-                // body's horizontalPadding — including full-bleed `none`
-                // screens — so every screen's footer aligns to the same edge.
+                // Always xl, independent of the body's horizontalPadding, so
+                // footers align to the same edge across every screen.
                 paddingHorizontal: theme.spacing.xl,
                 paddingVertical: theme.spacing.md,
             },

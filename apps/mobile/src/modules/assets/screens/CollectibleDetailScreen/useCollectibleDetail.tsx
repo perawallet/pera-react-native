@@ -132,8 +132,7 @@ export const useCollectibleDetail = (
         )
     }, [media, collectible?.primaryImage])
 
-    // Images and videos (incl. GIFs) can be saved to the library; Copy stays
-    // image-only since it writes a bitmap to the clipboard.
+    // Copy stays image-only since it writes a bitmap to the clipboard.
     const saveableMedia = useMemo(
         () =>
             media.find(
@@ -296,8 +295,8 @@ export const useCollectibleDetail = (
         })
     }, [assetId, network, t])
 
-    // The swipeable carousel pages: visual media only (models are surfaced as a
-    // 3D badge, not a page). onFullScreenPress reports indices into THIS list.
+    // Carousel pages exclude models (shown as a 3D badge); indices below are
+    // into this list.
     const visualMedia = useMemo(
         () =>
             media.filter(
@@ -327,7 +326,7 @@ export const useCollectibleDetail = (
             if (m.type === 'video') {
                 items.push({ uri, type: 'video' })
             } else if (m.type === 'audio') {
-                items.push({ uri, type: 'audio', posterUri: posterFallback })
+                items.push({ uri, type: 'audio', posterUri: m.previewUrl ?? posterFallback })
             } else {
                 items.push({ uri, type: 'image' })
             }
@@ -340,8 +339,8 @@ export const useCollectibleDetail = (
     }, [media, collectible, asset])
 
     const handleModelPress = useCallback(() => {
-        // Only the downloadUrl is an actual 3D asset; a preview image can't be
-        // rendered by the model viewer, so there's nothing to open without it.
+        // Only downloadUrl is the real 3D asset; a preview image can't be opened
+        // by the model viewer.
         const modelUrl = media.find(m => m.type === 'model')?.downloadUrl
         if (!modelUrl) return
         setModelViewerUrl(modelUrl)

@@ -24,7 +24,6 @@ describe('resolveChartCollapsed', () => {
     })
 
     it('stays collapsed while scrolling within the hysteresis band', () => {
-        // Already collapsed and still scrolled down past the expand offset.
         expect(resolveChartCollapsed(true, 40)).toBe(true)
         expect(resolveChartCollapsed(true, 8)).toBe(true)
     })

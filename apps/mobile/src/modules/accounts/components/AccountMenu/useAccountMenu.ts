@@ -23,17 +23,11 @@ import type { AccountMenuProps } from './AccountMenu'
 import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
-// Collapse the chart once the list scrolls past this offset, and restore it
-// only once scrolled back near the top. The gap between the two (hysteresis)
-// stops small scrolls from flipping the chart on and off.
+// Hysteresis band: collapse past COLLAPSE_OFFSET, re-expand only within
+// EXPAND_OFFSET of the top, so small scrolls don't flip the chart on and off.
 const CHART_COLLAPSE_OFFSET = 48
 const CHART_EXPAND_OFFSET = 8
 
-/**
- * Hysteresis for the scroll-driven chart collapse: collapse once scrolled
- * past {@link CHART_COLLAPSE_OFFSET}, and only re-expand once back within
- * {@link CHART_EXPAND_OFFSET} of the top — between the two it holds its state.
- */
 export const resolveChartCollapsed = (
     wasCollapsed: boolean,
     offsetY: number,

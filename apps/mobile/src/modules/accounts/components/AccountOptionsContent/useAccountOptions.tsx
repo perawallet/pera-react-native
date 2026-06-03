@@ -22,6 +22,7 @@ import {
     useAllAccounts,
     useCanSignWith,
     useFindAccountByAddress,
+    useMultisigDetailsBackfill,
     useRemoveAccountById,
     useUpdateAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -34,7 +35,6 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useViewPassphraseFlow } from '@modules/view-passphrase'
 import { ExportShareAccountContent } from '@modules/multisig/components/ExportShareAccountContent'
-import { useMultisigDetailsBackfill } from '@modules/accounts/hooks/useMultisigDetailsBackfill'
 import { SharedAccountDetailsContent } from '../SharedAccountDetailsContent'
 import { IconName } from '@components/core'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
@@ -109,6 +109,8 @@ export const useAccountOptions = ({
     }, [onClose, onShowAddress])
 
     const handleViewPassphrase = useCallback(() => {
+        // Dismiss the options menu first so we don't end up with the menu
+        // sheet stacked under the PIN/acknowledge/display sheets.
         onClose()
         void openViewPassphraseFlow(account.address)
     }, [onClose, openViewPassphraseFlow, account.address])
@@ -368,6 +370,9 @@ export const useAccountOptions = ({
         }
 
         if (isSharedAccount) {
+            // Rekeying needs a signature from the source account, so only
+            // offer it when this wallet can actually sign for the multisig.
+            // Export stays available regardless — it only reads metadata.
             if (canSign) {
                 items.push({
                     id: 'rekey-to-shared',

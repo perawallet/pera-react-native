@@ -12,8 +12,9 @@
 
 import { renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useMultisigDetailsBackfill } from '../useMultisigDetailsBackfill'
+
+import type { WalletAccount } from '../../models'
 
 const mocks = vi.hoisted(() => ({
     updateAccount: vi.fn(),
@@ -24,8 +25,11 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
+vi.mock('../useUpdateAccount', () => ({
     useUpdateAccount: () => mocks.updateAccount,
+}))
+
+vi.mock('../../utils', () => ({
     isMultisigAccount: (account: WalletAccount) => account.type === 'multisig',
 }))
 

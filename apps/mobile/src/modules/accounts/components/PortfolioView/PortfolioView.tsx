@@ -45,11 +45,7 @@ import { TrendIndicator } from '@components/TrendIndicator'
 
 export type PortfolioViewProps = {
     onDataSelected?: (selected: Nullable<AccountBalanceHistoryItem>) => void
-    /**
-     * Transiently collapses the chart without touching the user's saved
-     * `chartVisible` preference — used to free up space while the account
-     * list is scrolled.
-     */
+    /** Transiently collapses the chart without touching the saved `chartVisible` preference. */
     isCollapsed?: boolean
     onExpandChart?: () => void
 } & PWViewProps

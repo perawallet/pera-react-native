@@ -10,13 +10,6 @@
  limitations under the License
  */
 
-/**
- * Fake-but-typed domain objects used by the dev Screen Gallery to render
- * param-dependent screens in a reviewable state. Values are intentionally
- * fake — only shaped well enough for a screen to render. This lives in the
- * logic layer (packages) so the UI/screen layer carries no mock-data code.
- */
-
 import { Decimal } from 'decimal.js'
 
 import type { Algo25Account } from '@perawallet/wallet-core-accounts'
@@ -24,8 +17,6 @@ import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import type { Contact } from '@perawallet/wallet-core-contacts'
 import type { ASAInbox } from '@perawallet/wallet-core-messages'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
-
-// --- primitives ---
 
 export const MOCK_ADDRESS =
     'RP35URKAEVP6PA3WIJGDGA3FZKNV76E7Y2QZPEJ4TDLV72T326B3IOFX7A'
@@ -36,8 +27,6 @@ export const MOCK_GROUP_ID = 'mockGroupId000000000000000000000000000000000'
 export const MOCK_TX_ID =
     'MOCKTXID0000000000000000000000000000000000000000000000'
 
-// --- accounts ---
-
 export const mockAlgo25Account: Algo25Account = {
     id: 'mock-algo25',
     type: 'algo25',
@@ -46,22 +35,16 @@ export const mockAlgo25Account: Algo25Account = {
     name: 'Mock Algo25 account',
 }
 
-// --- contacts (20 items, store-seedable) ---
-
 const B32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
 const CONTACT_BODY = 'MOCKDEVCONTACTADDRESSFORGALLERYREVIEWONLYDONOTSEND'
 
-// Synthetic but distinct, plausibly-formatted 58-char base32 addresses. The
-// contact UI only truncates/formats the address (never decodes it), so these
-// render correctly without needing real checksums.
+// Synthetic addresses with no valid checksum: the contact UI only
+// formats/truncates the address, never decodes it.
 const mockContactAddress = (index: number): string =>
     (B32[index % 32] + B32[(index * 5 + 3) % 32] + CONTACT_BODY)
         .padEnd(58, 'A')
         .slice(0, 58)
 
-// Edge-case names to stress the row layout: empty/min, very long, no-space
-// overflow, emoji, CJK, RTL, accents, symbols, numbers, multiline, padded
-// whitespace, and long/short NFDs.
 const MOCK_CONTACT_SPECS: Array<{ name: string; nfd?: string }> = [
     { name: '' },
     { name: 'A' },
@@ -98,15 +81,11 @@ export const mockContacts: Contact[] = MOCK_CONTACT_SPECS.map(
     }),
 )
 
-// --- onboarding / import ---
-
 export const MOCK_IMPORT_RESULT = {
     importedCount: 3,
     skippedDuplicateCount: 1,
     failedCount: 0,
 }
-
-// --- multisig invitation (Messages → MultisigInvitationName) ---
 
 export const MOCK_MULTISIG_INVITATION = {
     customId: 'mock-invitation',
@@ -117,15 +96,11 @@ export const MOCK_MULTISIG_INVITATION = {
     participantAddresses: [MOCK_ADDRESS, MOCK_ADDRESS_2],
 }
 
-// --- inbox (Messages → AssetTransferRequests) ---
-
 export const mockAsaInbox: ASAInbox = {
     address: MOCK_ADDRESS,
     inboxAddress: MOCK_ADDRESS_2,
     requestCount: 2,
 }
-
-// --- notifications (raw API response shape, served via dev MSW) ---
 
 export type MockNotification = {
     id: string
@@ -143,7 +118,6 @@ export type MockNotificationsResponse = {
     previous: string | null
 }
 
-// Edge-case messages to stress the notification row layout.
 const NOTIFICATION_MESSAGES: string[] = [
     '',
     'Sent',
@@ -189,8 +163,6 @@ export const mockNotificationsResponse: MockNotificationsResponse = {
     previous: null,
 }
 
-// --- assets ---
-
 export const mockAsset: PeraAsset = {
     assetId: MOCK_ASSET_ID,
     name: 'USD Coin',
@@ -213,8 +185,6 @@ export const mockAsset: PeraAsset = {
         description: 'USD Coin is a fully collateralised US dollar stablecoin.',
     },
 }
-
-// --- collectibles ---
 
 export const mockCollectible: PeraAsset = {
     assetId: '470842789',
@@ -260,8 +230,6 @@ export const mockCollectible: PeraAsset = {
         },
     },
 }
-
-// --- transactions ---
 
 export const mockTransaction: TransactionHistoryItem = {
     id: MOCK_TX_ID,

@@ -72,8 +72,7 @@ export const AssetFilterContent = (_: AssetFilterContentProps = {}) => {
                 description={t(
                     'asset_filter.display_opted_in_nfts_description',
                 )}
-                // Opted-in NFTs are a subset of NFTs, so this option is only
-                // meaningful when the parent NFTs toggle is enabled.
+                // Opted-in NFTs are a subset of NFTs, so this is gated on the NFTs toggle.
                 value={displayNfts && displayOptedInNfts}
                 onToggle={handleToggleDisplayOptedInNfts}
                 testID='asset_filter_display_opted_in_nfts'

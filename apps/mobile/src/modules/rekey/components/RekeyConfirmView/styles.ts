@@ -13,8 +13,6 @@
 import { makeStyles } from '@rneui/themed'
 import { getConfirmScreenStyles } from '../../utils/confirmScreenStyles'
 
-// The header sits outside the scrollable body, so it needs the same horizontal
-// padding the body/footer get from `getConfirmScreenStyles` to stay aligned.
 export const useStyles = makeStyles(theme => ({
     ...getConfirmScreenStyles(theme),
     header: {

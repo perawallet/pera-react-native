@@ -22,11 +22,7 @@ import { useStyles } from './styles'
 
 export type PWScrollViewProps = ScrollViewProps & {
     testID?: string
-    /**
-     * Render gorhom's `BottomSheetScrollView` so the scroll gesture cooperates
-     * with the sheet's pan gesture. A plain ScrollView inside a bottom sheet
-     * won't scroll. Mirrors `PWFlatList`'s `inBottomSheet`.
-     */
+    /** A plain ScrollView won't scroll inside a sheet; this swaps in gorhom's. */
     inBottomSheet?: boolean
 }
 
@@ -42,18 +38,16 @@ export const PWScrollView = ({
 }: PWScrollViewProps) => {
     const insets = useSafeAreaInsets()
     const isInTabNavigator = useContext(BottomTabBarHeightContext) !== undefined
-    // Auto-detect a surrounding PWBottomSheet (an explicit prop still wins) so a
-    // plain ScrollView never silently fails to scroll inside a sheet.
+    // Auto-detect a surrounding sheet: a plain ScrollView silently fails to
+    // scroll there otherwise.
     const isInSheet = useContext(PWInBottomSheetContext)
     const isInBottomSheet = inBottomSheet ?? isInSheet
     const bottomInset =
         isInBottomSheet || !isInTabNavigator ? insets.bottom : 0
     const styles = useStyles({ bottomInset })
 
-    // Guarantee the content clears the bottom edge — but only when the caller
-    // hasn't already set a bottom-affecting padding. RN edge-specificity makes
-    // an explicit `paddingBottom` win over a caller's `paddingVertical`, so a
-    // blind merge would silently override their value; this opts out instead.
+    // Skip the default bottom padding if the caller set any bottom-affecting
+    // padding: RN edge-specificity would otherwise silently override theirs.
     const callerPadding = StyleSheet.flatten(contentContainerStyle) ?? {}
     const hasBottomPadding =
         callerPadding.paddingBottom != null ||
@@ -82,11 +76,8 @@ export const PWScrollView = ({
 
     return (
         <ScrollView
-            // Default to `'handled'` so taps on touchable children fire
-            // normally while taps on the scroll background still dismiss
-            // the keyboard. RN's default of `'never'` swallows the tap on
-            // the first interaction, which makes buttons appear unresponsive
-            // when an input above them is focused.
+            // RN's default ('never') swallows the first tap on a child while an
+            // input is focused; 'handled' lets the tap through.
             keyboardShouldPersistTaps={keyboardShouldPersistTaps ?? 'handled'}
             contentContainerStyle={resolvedContentContainerStyle}
             showsVerticalScrollIndicator={showsVerticalScrollIndicator}

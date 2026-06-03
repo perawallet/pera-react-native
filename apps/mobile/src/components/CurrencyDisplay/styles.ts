@@ -13,13 +13,13 @@
 import { makeStyles } from '@rneui/themed'
 import { StyleSheet } from 'react-native'
 import { getTypography } from '@theme/typography'
-import { CurrencyDisplayProps } from './CurrencyDisplay'
+
+import type { CurrencyDisplayProps } from './CurrencyDisplay'
 
 const SKELETON_MAX_WIDTH = 150
 
 export const useStyles = makeStyles((theme, props: CurrencyDisplayProps) => {
-    // Match the skeleton bar to the rendered text size: a `style.fontSize`
-    // override wins, otherwise the variant's own font size.
+    // Sizes the skeleton bar to match the rendered text.
     const fontSize =
         StyleSheet.flatten(props.style)?.fontSize ??
         getTypography(theme, props.variant ?? 'body').fontSize ??

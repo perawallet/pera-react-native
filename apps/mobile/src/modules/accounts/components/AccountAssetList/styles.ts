@@ -16,10 +16,8 @@ export const useStyles = makeStyles(theme => ({
     container: {
         flex: 1,
         backgroundColor: theme.colors.background,
-        // Horizontal inset lives on the outer wrapper, not the list's
-        // contentContainerStyle, so the sticky-search overlay (which FlashList
-        // renders edge-to-edge inside the list box) stays inset when pinned
-        // instead of jumping to the screen edges.
+        // Inset on the wrapper, not contentContainerStyle: FlashList renders the
+        // sticky-search overlay edge-to-edge, so it must stay inset when pinned.
         paddingHorizontal: theme.spacing.xl,
     },
     rootContainer: {

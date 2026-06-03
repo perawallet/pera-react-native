@@ -76,8 +76,7 @@ export const useStyles = makeStyles(theme => {
         },
         tagText,
         loadingContainer: {
-            paddingHorizontal: theme.spacing.xl,
-            paddingVertical: theme.spacing.xl,
+            padding: theme.spacing.xl,
             gap: theme.spacing.md,
         },
         trendContainer: {

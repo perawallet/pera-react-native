@@ -97,9 +97,6 @@ const createAssetAmount = (
     }
 }
 
-/**
- * Formats a base-unit amount as a display-unit string (e.g. for swap subtitles).
- */
 const formatAmount = (baseUnits: Decimal, decimals: number): string => {
     const displayAmount = baseUnitsToDisplayUnits(baseUnits, decimals)
     const { sign, integer, fraction } = formatNumber(displayAmount, 2)

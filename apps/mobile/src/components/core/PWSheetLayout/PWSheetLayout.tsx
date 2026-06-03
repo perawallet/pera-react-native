@@ -35,7 +35,6 @@ export type PWSheetLayoutProps = {
     testID?: string
 }
 
-/** Bottom-sheet skeleton: sticky header, scrolling body, optional footer. */
 export const PWSheetLayout = ({
     header,
     children,
@@ -72,13 +71,10 @@ export const PWSheetLayout = ({
         </BottomSheetScrollView>
     )
 
-    // No footer: the scroll fills the sheet exactly as before.
     if (footer == null) {
         return scrollable
     }
 
-    // With a footer: a column lets the scroll shrink so the footer stays pinned
-    // below it (above the host's safe-area inset).
     return (
         <PWView style={styles.root}>
             {scrollable}

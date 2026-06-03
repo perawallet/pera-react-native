@@ -33,7 +33,7 @@ describe('usePWScreenInsets', () => {
         const { result } = renderHook(() => usePWScreenInsets())
 
         expect(result.current.isInTabNavigator).toBe(false)
-        // insets.bottom (34) + theme.spacing.lg (24)
+        // insets.bottom (34) + theme.spacing.lg (24 in vitest mock; 16 in production → 50)
         expect(result.current.bottomInset).toBe(58)
     })
 

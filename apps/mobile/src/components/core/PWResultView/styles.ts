@@ -49,9 +49,6 @@ export const useStyles = makeStyles((theme, { variant }: StyleProps) => {
             textAlign: 'center',
         },
         footer: {
-            // `SafeAreaView edges={['bottom']}` adds the bottom inset on top of
-            // this base, so the CTA keeps a gap above the nav bar / home
-            // indicator rather than sitting flush against it.
             paddingBottom: theme.spacing.md,
             gap: theme.spacing.md,
         },

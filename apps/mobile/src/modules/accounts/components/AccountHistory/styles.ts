@@ -38,8 +38,7 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         paddingVertical: theme.spacing['3xl'],
     },
-    // The list content container already applies the xl horizontal gutter;
-    // zero EmptyView's own so the empty state isn't double-padded.
+    // Zero EmptyView's own gutter: the list content container already insets xl.
     emptyView: {
         paddingHorizontal: 0,
     },

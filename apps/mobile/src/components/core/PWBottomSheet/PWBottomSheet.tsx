@@ -43,10 +43,8 @@ type DefaultPropsReturn = {
     enableDynamicSizing: boolean
 }
 
-/**
- * Shared ceiling for tall sheets. Feeds BOTH `modal`'s snap point and `auto`'s
- * dynamic max height so the two land on the same visual ceiling and can't drift.
- */
+// Feeds both `modal`'s snap point and `auto`'s dynamic max height so the two
+// share one ceiling and can't drift apart.
 const SHEET_MAX_RATIO = 0.96
 
 const DEFAULT_PROPS: Record<PWBottomSheetSize, DefaultPropsReturn> = {

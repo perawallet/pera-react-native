@@ -21,31 +21,22 @@ import type { Decimal } from 'decimal.js'
 import type { TypographyVariant } from '@theme/typography'
 
 export type TrendIndicatorAbsolute = {
-    /** Signed amount for the `±` line. Rendered as an absolute (positive) value with a `+`/`-` prefix derived from `percentage`. */
+    /** Rendered as `|amount|` with a `+`/`-` prefix taken from `percentage`'s sign. */
     amount: Decimal
-    /** Currency code for the `±` line (e.g. 'ALGO', 'USD'). */
     currency: string
-    /** Decimal places for the `±` line. Defaults to 2. */
     precision?: number
-    /** Typography variant for the `±` line. Defaults to 'h4'. */
     variant?: TypographyVariant
 }
 
 export type TrendIndicatorProps = {
-    /** Signed percent change. Direction (up/down), icon and color are derived from its sign. */
+    /** Sign drives the icon and color. */
     percentage: Decimal
-    /** Typography variant for the percentage (and `±`) text. Defaults to 'h4'. */
+    /** Applies to the percentage text only; the `±` line uses `absolute.variant`. */
     variant?: TypographyVariant
-    /** Renders a rounded background behind the up arrow. Defaults to false. */
     hasIconBackground?: boolean
-    /** Hides the direction icon when the change is exactly zero. Defaults to false. */
     shouldHideIconWhenZero?: boolean
-    /**
-     * Colors the percentage (and `±`) text with a neutral color instead of the
-     * up/down colors. The icon still reflects direction. Defaults to false.
-     */
+    /** Neutral-colors the text only; the icon still reflects direction. */
     hasNeutralText?: boolean
-    /** Optional `±{amount}` currency line shown below the percentage. */
     absolute?: TrendIndicatorAbsolute
 }
 

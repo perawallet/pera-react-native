@@ -58,8 +58,7 @@ export const TabBarStackNavigator = () => {
                             ? BOTTOM_TAB_HEIGHT_ANDROID
                             : BOTTOM_TAB_HEIGHT_IOS),
                     // Overriding `height` drops React Navigation's default
-                    // safe-area padding, so reserve it back (plus an extra `md`
-                    // gap) to keep labels clear of the home indicator.
+                    // safe-area padding, so reserve it back here.
                     paddingBottom: insets.bottom + theme.spacing.md,
                 },
                 tabBarIcon: ({ focused }) => {

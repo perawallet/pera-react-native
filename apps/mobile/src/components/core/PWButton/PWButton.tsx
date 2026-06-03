@@ -47,9 +47,8 @@ export type PWButtonProps = TouchableOpacityProps & {
     allowRapidPress?: boolean
 }
 
-// Borderless text buttons (toolbar actions, inline links) render their title
-// at Body/Medium (weight 500) per the design spec; filled buttons keep the
-// heavier h4 (600) title.
+// Text buttons render their title at weight 500 per the design spec; filled
+// buttons keep the heavier h4 (600).
 const TEXT_BUTTON_VARIANTS = new Set<PWButtonProps['variant']>([
     'link',
     'linkNeutral',

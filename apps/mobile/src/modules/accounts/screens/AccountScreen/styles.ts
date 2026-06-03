@@ -39,11 +39,8 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
             paddingTop: theme.spacing.sm,
         },
         iconBar: {
-            alignSelf: 'flex-start',
-            width: '100%',
             flexGrow: 0,
             flexShrink: 0,
-            paddingVertical: 0,
             paddingHorizontal: theme.spacing.lg,
         },
         iconBarSection: {

@@ -21,7 +21,16 @@ import {
 } from '@perawallet/wallet-core-currencies'
 import { useEffect, useState } from 'react'
 
-export const useSettingsCurrencyScreen = () => {
+type UseSettingsCurrencyScreenResult = {
+    setCurrency: (currency: Currency) => void
+    search: string | undefined
+    setSearch: (v?: string) => void
+    filteredData: Currency[]
+    preferredCurrency: string
+    fallbackCurrency: string
+}
+
+export const useSettingsCurrencyScreen = (): UseSettingsCurrencyScreenResult => {
     const {
         setPreferredCurrency,
         setFallbackCurrency,

@@ -88,6 +88,16 @@ describe('useCollectibleItem', () => {
             'https://example.com/primary.png',
         )
         expect(result.current.collectionName).toBe('Cool Collection')
+        expect(result.current.collectionLabel).toBe('Cool Collection')
+    })
+
+    it('falls back to asset unit name for collectionLabel when collection name is absent', () => {
+        const { result } = renderHook(() =>
+            useCollectibleItem({ item: buildItem() }),
+        )
+
+        expect(result.current.collectionName).toBeUndefined()
+        expect(result.current.collectionLabel).toBe('COOL')
     })
 
     it('falls back to asset id when name and collectible title are missing', () => {

@@ -172,7 +172,7 @@ describe('useCreateMultisigScreen', () => {
         expect(result.current.participants).toHaveLength(0)
     })
 
-    it('requests the add-participant sheet with size=lg', async () => {
+    it('requests the add-participant sheet with size=modal', async () => {
         mockRequestBottomSheet.mockResolvedValueOnce(undefined)
         const { result } = renderHook(() => useCreateMultisigScreen())
 

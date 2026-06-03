@@ -26,8 +26,7 @@ import type { StyleProp, ViewStyle } from 'react-native'
  * Large multi-line screen heading rendered below the navigation back arrow.
  * Use on top-level screens where the title doesn't fit a single-line toolbar
  * (e.g. "Select Ledger account"). The h1 wraps freely — no `numberOfLines`
- * — and the optional description appears as a muted h4 below. An optional hero
- * `icon` renders above the title via `PWIcon`.
+ * — and the optional description appears as a muted h4 below.
  */
 export type ScreenHeaderProps = {
     icon?: IconName
@@ -58,7 +57,6 @@ export const ScreenHeader = ({
                     name={icon}
                     size='3xl'
                     variant={iconVariant}
-                    style={styles.icon}
                     testID='screen-header-icon'
                 />
             )}

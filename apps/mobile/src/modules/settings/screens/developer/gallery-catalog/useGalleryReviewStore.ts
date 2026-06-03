@@ -14,14 +14,8 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
-/**
- * Dev-only review tracking for the component gallery. Records which gallery
- * entries have been opened ("seen") and a per-entry good/broken verdict so a
- * reviewer can sweep every sheet and mark its state. Persisted to local
- * storage so progress survives app reloads.
- */
+/** Dev-only review tracking for the component gallery. */
 type GalleryReviewState = {
-    /** Entry ids that have been opened at least once. */
     visited: Record<string, boolean>
     /** Per-entry verdict: `true` = good, `false` = broken. Absent = unmarked. */
     good: Record<string, boolean>

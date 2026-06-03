@@ -11,10 +11,14 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderHook } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
+import * as MediaLibrary from 'expo-media-library/legacy'
 import { useCollectibleDetail } from '../useCollectibleDetail'
-import type { PeraAsset } from '@perawallet/wallet-core-assets'
+import type {
+    CollectibleMedia,
+    PeraAsset,
+} from '@perawallet/wallet-core-assets'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 
 const mockCopyToClipboard = vi.fn()
@@ -87,17 +91,20 @@ vi.mock('expo-clipboard', () => ({
     setImageAsync: vi.fn(),
 }))
 
-vi.mock('expo-file-system', () => ({
-    File: {
-        downloadFileAsync: vi.fn().mockResolvedValue({
+vi.mock('expo-file-system', () => {
+    class File {
+        static downloadFileAsync = vi.fn().mockResolvedValue({
             uri: 'file://cache/collectible_12345',
             base64: vi.fn().mockResolvedValue('base64data'),
-        }),
-    },
-    Paths: {
-        cache: { uri: 'file://cache/' },
-    },
-}))
+        })
+    }
+    return {
+        File,
+        Paths: {
+            cache: { uri: 'file://cache/' },
+        },
+    }
+})
 
 vi.mock('expo-media-library/legacy', () => ({
     requestPermissionsAsync: vi.fn().mockResolvedValue({ status: 'granted' }),
@@ -188,6 +195,30 @@ const makeCollectibleAsset = (): PeraAsset => ({
         },
     },
 })
+
+const makeAssetWithMedia = (
+    media: Array<Omit<CollectibleMedia, 'extension'> & { extension?: string }>,
+    primaryImage?: string,
+): PeraAsset =>
+    ({
+        assetId: '12345',
+        name: 'Cool NFT',
+        decimals: 0,
+        totalSupply: new Decimal(1),
+        creator: { address: 'CREATOR_ADDRESS' },
+        peraMetadata: {
+            isDeleted: false,
+            verificationTier: 'verified',
+            type: 'collectible',
+            collectible: {
+                title: 'Cool NFT #42',
+                standard: 'arc3',
+                primaryImage,
+                mediaType: 'image',
+                media: media.map(m => ({ extension: 'bin', ...m })),
+            },
+        },
+    }) as PeraAsset
 
 describe('useCollectibleDetail', () => {
     const mockAccount = { address: 'ACCOUNT_ADDRESS' }
@@ -343,5 +374,238 @@ describe('useCollectibleDetail', () => {
         expect(result.current.traits).toEqual([])
         expect(result.current.media).toEqual([])
         expect(result.current.collectible).toBeUndefined()
+    })
+
+    describe('hasImage', () => {
+        it('is true when an image media item is present', () => {
+            mockUseSingleAssetDetailsQuery.mockReturnValue({
+                data: makeAssetWithMedia([
+                    {
+                        type: 'image',
+                        downloadUrl: 'https://example.com/full.png',
+                        extension: 'png',
+                    },
+                ]),
+                isPending: false,
+            })
+
+            const { result } = renderHook(() => useCollectibleDetail('12345'))
+
+            expect(result.current.hasImage).toBe(true)
+        })
+
+        it('is true when only a primaryImage is present (no image media)', () => {
+            mockUseSingleAssetDetailsQuery.mockReturnValue({
+                data: makeAssetWithMedia(
+                    [{ type: 'video', downloadUrl: 'https://example.com/v.mp4' }],
+                    'https://example.com/primary.png',
+                ),
+                isPending: false,
+            })
+
+            const { result } = renderHook(() => useCollectibleDetail('12345'))
+
+            expect(result.current.hasImage).toBe(true)
+        })
+
+        it('is false for a video-only collectible without a primaryImage', () => {
+            mockUseSingleAssetDetailsQuery.mockReturnValue({
+                data: makeAssetWithMedia([
+                    { type: 'video', downloadUrl: 'https://example.com/v.mp4' },
+                ]),
+                isPending: false,
+            })
+
+            const { result } = renderHook(() => useCollectibleDetail('12345'))
+
+            expect(result.current.hasImage).toBe(false)
+        })
+
+        it('is false for an empty media list without a primaryImage', () => {
+            mockUseSingleAssetDetailsQuery.mockReturnValue({
+                data: makeAssetWithMedia([]),
+                isPending: false,
+            })
+
+            const { result } = renderHook(() => useCollectibleDetail('12345'))
+
+            expect(result.current.hasImage).toBe(false)
+        })
+    })
+
+    describe('hasSaveableMedia', () => {
+        it('is true for image media with a download URL', () => {
+            mockUseSingleAssetDetailsQuery.mockReturnValue({
+                data: makeAssetWithMedia([
+                    {
+                        type: 'image',
+                        downloadUrl: 'https://example.com/full.png',
+                        extension: 'png',
+                    },
+                ]),
+                isPending: false,
+            })
+
+            const { result } = renderHook(() => useCollectibleDetail('12345'))
+
+            expect(result.current.hasSaveableMedia).toBe(true)
+        })
+
+        it('is true for video media with only a preview URL', () => {
+            mockUseSingleAssetDetailsQuery.mockReturnValue({
+                data: makeAssetWithMedia([
+                    {
+                        type: 'video',
+                        previewUrl: 'https://example.com/preview.png',
+                    },
+                ]),
+                isPending: false,
+            })
+
+            const { result } = renderHook(() => useCollectibleDetail('12345'))
+
+            expect(result.current.hasSaveableMedia).toBe(true)
+        })
+
+        it('falls back to primaryImage when no media is directly saveable', () => {
+            mockUseSingleAssetDetailsQuery.mockReturnValue({
+                data: makeAssetWithMedia(
+                    [{ type: 'model', downloadUrl: 'https://example.com/m.glb' }],
+                    'https://example.com/primary.png',
+                ),
+                isPending: false,
+            })
+
+            const { result } = renderHook(() => useCollectibleDetail('12345'))
+
+            expect(result.current.hasSaveableMedia).toBe(true)
+        })
+
+        it('is false for a model-only collectible without a primaryImage', () => {
+            mockUseSingleAssetDetailsQuery.mockReturnValue({
+                data: makeAssetWithMedia([
+                    { type: 'model', downloadUrl: 'https://example.com/m.glb' },
+                ]),
+                isPending: false,
+            })
+
+            const { result } = renderHook(() => useCollectibleDetail('12345'))
+
+            expect(result.current.hasSaveableMedia).toBe(false)
+        })
+    })
+
+    describe('handleSaveImage', () => {
+        it('saves the saveable media to the library when a URL is available', async () => {
+            const { result } = renderHook(() => useCollectibleDetail('12345'))
+
+            await result.current.handleSaveImage()
+
+            expect(MediaLibrary.saveToLibraryAsync).toHaveBeenCalledWith(
+                'file://cache/collectible_12345',
+            )
+            expect(mockShowToast).toHaveBeenCalledWith(
+                expect.objectContaining({ type: 'success' }),
+            )
+        })
+
+        it('bails out without saving when there is no saveable media URL', async () => {
+            mockUseSingleAssetDetailsQuery.mockReturnValue({
+                data: makeAssetWithMedia([
+                    { type: 'model', downloadUrl: 'https://example.com/m.glb' },
+                ]),
+                isPending: false,
+            })
+
+            const { result } = renderHook(() => useCollectibleDetail('12345'))
+
+            await result.current.handleSaveImage()
+
+            expect(
+                MediaLibrary.requestPermissionsAsync,
+            ).not.toHaveBeenCalled()
+            expect(MediaLibrary.saveToLibraryAsync).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('handleModelPress', () => {
+        it('opens the model viewer with the model download URL', () => {
+            mockUseSingleAssetDetailsQuery.mockReturnValue({
+                data: makeAssetWithMedia([
+                    { type: 'model', downloadUrl: 'https://example.com/m.glb' },
+                ]),
+                isPending: false,
+            })
+
+            const { result } = renderHook(() => useCollectibleDetail('12345'))
+
+            act(() => {
+                result.current.handleModelPress()
+            })
+
+            expect(result.current.modelViewerModal.isOpen).toBe(true)
+            expect(result.current.modelViewerUrl).toBe(
+                'https://example.com/m.glb',
+            )
+        })
+
+        it('does not open the viewer when the model has no download URL', () => {
+            mockUseSingleAssetDetailsQuery.mockReturnValue({
+                data: makeAssetWithMedia([
+                    {
+                        type: 'model',
+                        previewUrl: 'https://example.com/m-preview.png',
+                    },
+                ]),
+                isPending: false,
+            })
+
+            const { result } = renderHook(() => useCollectibleDetail('12345'))
+
+            result.current.handleModelPress()
+
+            expect(result.current.modelViewerModal.isOpen).toBe(false)
+            expect(result.current.modelViewerUrl).toBeUndefined()
+        })
+    })
+
+    describe('handleFullScreenPress', () => {
+        it('opens the full-screen media viewer for a visual media index', () => {
+            mockUseSingleAssetDetailsQuery.mockReturnValue({
+                data: makeAssetWithMedia([
+                    {
+                        type: 'image',
+                        downloadUrl: 'https://example.com/full.png',
+                        extension: 'png',
+                    },
+                ]),
+                isPending: false,
+            })
+
+            const { result } = renderHook(() => useCollectibleDetail('12345'))
+
+            result.current.handleFullScreenPress(0)
+
+            expect(mockRequestBottomSheet).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    options: expect.objectContaining({ size: 'full' }),
+                }),
+            )
+        })
+
+        it('does not open the viewer when there is no visual media', () => {
+            mockUseSingleAssetDetailsQuery.mockReturnValue({
+                data: makeAssetWithMedia([
+                    { type: 'model', downloadUrl: 'https://example.com/m.glb' },
+                ]),
+                isPending: false,
+            })
+
+            const { result } = renderHook(() => useCollectibleDetail('12345'))
+
+            result.current.handleFullScreenPress(0)
+
+            expect(mockRequestBottomSheet).not.toHaveBeenCalled()
+        })
     })
 })

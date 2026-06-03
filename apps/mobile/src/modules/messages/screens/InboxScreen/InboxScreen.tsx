@@ -17,7 +17,7 @@ import { RefreshControl } from 'react-native-gesture-handler'
 
 import { EmptyView } from '@components/EmptyView'
 import { ListItemDivider } from '@components/ListItemDivider'
-import { PWFlatList, PWScreen, PWView } from '@components/core'
+import { PWFlatList, PWScreen } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { InboxItem } from '@modules/messages/components/InboxItem/InboxItem'
 import { useStyles } from './styles'
@@ -54,7 +54,6 @@ export const InboxScreen = () => {
                 renderItem={renderItem}
                 keyExtractor={keyExtractor}
                 ItemSeparatorComponent={ListItemDivider}
-                ListHeaderComponent={<PWView style={styles.listEdgeSpacer} />}
                 ListEmptyComponent={
                     <EmptyView
                         isLoading={isPending}

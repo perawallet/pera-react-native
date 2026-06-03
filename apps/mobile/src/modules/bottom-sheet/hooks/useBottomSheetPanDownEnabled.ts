@@ -15,7 +15,6 @@ import { useContext } from 'react'
 import { BottomSheetIdContext } from '../components/BottomSheetHost/BottomSheetIdContext'
 import { useBottomSheetStore } from '../store/bottomSheetStore'
 
-/** Whether the host sheet has `enablePanDownToClose` (see `SheetHeader`). */
 export const useBottomSheetPanDownEnabled = (): boolean => {
     const id = useContext(BottomSheetIdContext)
     return useBottomSheetStore(s =>

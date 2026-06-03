@@ -35,10 +35,8 @@ export const SearchFilterContent = ({
     const styles = useStyles()
     const { t } = useLanguage()
 
-    // The sheet is rendered once as static bottom-sheet content, so it never
-    // sees updates to the `scopes` prop. Track the toggles locally (seeded from
-    // the initial scopes) to drive the switches, and mirror each change up to
-    // the parent so the live search refreshes.
+    // Static sheet content never sees `scopes` prop updates, so track toggles
+    // locally and mirror each change up to the parent.
     const [activeScopes, setActiveScopes] = useState<SearchScope[]>(scopes)
 
     const handleToggle = (scope: SearchScope) => {

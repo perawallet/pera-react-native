@@ -17,9 +17,6 @@ export const useStyles = makeStyles(
         container: {
             paddingBottom: theme.spacing.xl,
         },
-        icon: {
-            marginTop: 0,
-        },
         title: {
             marginTop: hasIcon ? theme.spacing.xl : 0,
         },

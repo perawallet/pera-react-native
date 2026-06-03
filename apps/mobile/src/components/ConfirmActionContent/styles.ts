@@ -14,12 +14,11 @@ import { makeStyles } from '@rneui/themed'
 
 type StyleProps = {
     bottomInset: number
-    titleAlign: 'left' | 'center'
     hasActions: boolean
 }
 
 export const useStyles = makeStyles(
-    (theme, { bottomInset, titleAlign, hasActions }: StyleProps) => ({
+    (theme, { bottomInset, hasActions }: StyleProps) => ({
         container: {
             paddingBottom: hasActions ? theme.spacing.lg : bottomInset,
             alignItems: 'center',
@@ -29,7 +28,7 @@ export const useStyles = makeStyles(
         },
         title: {
             alignSelf: 'stretch',
-            textAlign: titleAlign,
+            textAlign: 'center',
             paddingHorizontal: theme.spacing.lg,
         },
         message: {

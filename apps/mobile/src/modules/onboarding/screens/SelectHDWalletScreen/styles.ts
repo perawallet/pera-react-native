@@ -36,8 +36,6 @@ export const useStyles = makeStyles(theme => {
             borderRadius: (theme.spacing.xl + 2 * theme.spacing.sm) / 2,
             marginRight: theme.spacing.md,
         },
-        // Border lives on the content (not the row) so the divider starts at
-        // the title, inset past the leading icon.
         rowContent: {
             flex: 1,
             flexDirection: 'row',

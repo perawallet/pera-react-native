@@ -38,25 +38,15 @@ export type PWFlatListRef = {
 
 export type PWFlatListProps<T> = FlashListProps<T> & {
     inBottomSheet?: boolean
-    /**
-     * Card-list preset for lists of self-contained cards (account pickers,
-     * rekey targets, …): separates cards with a plain `md` gap instead of the
-     * default inset row divider.
-     */
     cardLayout?: boolean
 }
 
-/**
- * Default separator for plain row lists: a hairline divider inset to the row
- * content (past the leading icon) with `md` breathing room above and below.
- */
 const ListSeparator = () => {
     const styles = useStyles()
 
     return <PWView style={styles.itemSeparator} />
 }
 
-/** Card-list separator: a plain `md` gap, no divider line. */
 const CardSeparator = () => {
     const styles = useStyles()
 
@@ -72,6 +62,9 @@ export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
             contentContainerStyle,
             showsVerticalScrollIndicator = false,
             showsHorizontalScrollIndicator = false,
+            // RN's default ('never') makes the first tap dismiss the keyboard
+            // instead of hitting the row; 'handled' lets the row receive it.
+            keyboardShouldPersistTaps = 'handled',
             ...props
         },
         ref,
@@ -81,9 +74,8 @@ export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
         const styles = useStyles({ bottomInset: insets.bottom })
         const BottomSheetScrollable = useBottomSheetScrollableCreator()
 
-        // Auto-detect a surrounding PWBottomSheet so the scroll gesture always
-        // cooperates with the sheet pan — a missing manual flag silently breaks
-        // scrolling (the recurring footgun). An explicit prop still wins.
+        // Auto-detect a surrounding sheet: a missing flag silently breaks
+        // scrolling, so the gesture can't cooperate with the sheet pan.
         const isInSheet = useContext(PWInBottomSheetContext)
         const isInBottomSheet = inBottomSheet ?? isInSheet
 
@@ -100,9 +92,6 @@ export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
             (props.data?.length ?? 0) === 0 && props.ListEmptyComponent != null
         const isVerticalList = !isHorizontal && !fillEmpty
 
-        // Vertical lists get a default separator: a plain gap for card lists,
-        // an inset row divider otherwise. A caller-supplied separator wins;
-        // pass `ItemSeparatorComponent={null}` for flush rows.
         const defaultSeparator = cardLayout ? CardSeparator : ListSeparator
         const resolvedSeparator = isHorizontal
             ? ItemSeparatorComponent
@@ -114,6 +103,7 @@ export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
             ...props,
             showsVerticalScrollIndicator,
             showsHorizontalScrollIndicator,
+            keyboardShouldPersistTaps,
             ItemSeparatorComponent: resolvedSeparator,
             contentContainerStyle: StyleSheet.flatten([
                 isVerticalList && styles.content,

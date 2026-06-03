@@ -15,8 +15,6 @@ import { makeStyles } from '@rneui/themed'
 const HEADER_IMAGE_HEIGHT = 220
 
 export const useStyles = makeStyles(theme => ({
-    // Full-bleed hero: negative margins cancel PWDialog's content padding so the
-    // image reaches the box edges (clipped by the box's rounded corners).
     headerImage: {
         alignSelf: 'stretch',
         height: HEADER_IMAGE_HEIGHT,
@@ -68,8 +66,5 @@ export const useStyles = makeStyles(theme => ({
     },
     continueButton: {
         alignSelf: 'stretch',
-        marginBottom: theme.spacing.md,
-        width: '100%',
-        minWidth: 0,
     },
 }))

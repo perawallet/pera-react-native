@@ -294,7 +294,13 @@ export const useDeepLink = (): UseDeepLinkResult => {
                             assetId: parsedData.assetId,
                             accountAddress,
                         },
-                        { size: 'modal', enablePanDownToClose: true },
+                        // PWSheetLayout only scrolls when it owns the
+                        // container: needs autoCreateContainer:false + bounded auto size.
+                        {
+                            size: 'auto',
+                            enablePanDownToClose: true,
+                            autoCreateContainer: false,
+                        },
                     )
                     break
                 }

@@ -33,9 +33,9 @@ import { MultisigIntroductionDialog } from '@modules/multisig/components/Multisi
 import welcomeBackground from '@assets/images/welcome-background.png'
 
 export const AddAccountScreen = () => {
-    const styles = useStyles()
     const { t } = useLanguage()
     const insets = useSafeAreaInsets()
+    const styles = useStyles(insets)
     const {
         isCreatingAccount,
         mainOptions,
@@ -60,7 +60,7 @@ export const AddAccountScreen = () => {
             </PWView>
             <PWScreen
                 horizontalPadding='none'
-                style={{ paddingTop: insets.top }}
+                style={styles.screen}
                 contentContainerStyle={styles.scrollContent}
             >
                 <PWToolbar

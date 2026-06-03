@@ -12,18 +12,16 @@
 
 import React from 'react'
 import { Decimal } from 'decimal.js'
-import { makeStyles } from '@rneui/themed'
+import { makeStyles, useTheme } from '@rneui/themed'
 
 import { PWView } from '@components/core'
 
-// ─── accounts module ──────────────────────────────────────────────────────────
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { AccountIcon } from '@modules/accounts/components/AccountIcon'
 import { ConfettiAnimation } from '@modules/accounts/components/ConfettiAnimation'
 import { NftEmptyState } from '@modules/accounts/components/NftEmptyState'
 import { SelectableAccountCheckboxRow } from '@modules/accounts/components/SelectableAccountCheckboxRow'
 
-// ─── assets module ────────────────────────────────────────────────────────────
 import { AssetFavoriteButton } from '@modules/assets/components/AssetFavoriteButton'
 import { AssetIcon } from '@modules/assets/components/AssetIcon'
 import { AssetNameBadge } from '@modules/assets/components/AssetNameBadge'
@@ -37,72 +35,53 @@ import { CollectibleListItem as AssetsCollectibleListItem } from '@modules/asset
 import { CollectibleThumbnail as AssetsCollectibleThumbnail } from '@modules/assets/components/CollectibleThumbnail'
 import { AccountAssetItemView } from '@modules/assets/components/AssetItem'
 
-// ─── transactions module ──────────────────────────────────────────────────────
 import { TransactionDateHeader } from '@modules/transactions/components/TransactionDateHeader'
 import { TransactionIcon } from '@modules/transactions/components/TransactionIcon'
 import { TransactionListItem } from '@modules/transactions/components/TransactionListItem'
 import { TransactionStatusBadge } from '@modules/transactions/components/TransactionStatusBadge'
 
-// ─── swap module ──────────────────────────────────────────────────────────────
 import { SwapAssetPairIcon } from '@modules/swap/components/SwapAssetPairIcon'
 import { SwapProviderDisplay } from '@modules/swap/components/SwapProviderDisplay'
 import { SwapProviderRow } from '@modules/swap/components/SwapProviderRow'
 import { SwapQuoteDetails } from '@modules/swap/components/SwapQuoteDetails'
 
-// ─── signing module ───────────────────────────────────────────────────────────
 import { SourceMetadataBadge } from '@modules/signing/components/SourceMetadataBadge'
 import { SourceMetadataView } from '@modules/signing/components/SourceMetadataView'
 
-// ─── multisig module ──────────────────────────────────────────────────────────
 import { ParticipantListItem } from '@modules/multisig/components/ParticipantListItem'
 import { SignerStatusListItem } from '@modules/multisig/components/SignerStatusListItem'
 import { ThresholdStepper } from '@modules/multisig/components/ThresholdStepper'
 
-// ─── staking module ───────────────────────────────────────────────────────────
 import { StakingProjectCard } from '@modules/staking/components/StakingProjectCard'
 import { StakingTypeBadge } from '@modules/staking/components/StakingTypeBadge'
 
-// ─── messages module ──────────────────────────────────────────────────────────
 import { InboxItem } from '@modules/messages/components/InboxItem'
 import { UnreadIndicator } from '@modules/messages/components/UnreadIndicator'
 
-// ─── ledger module ────────────────────────────────────────────────────────────
 import { LedgerCompositeIcon } from '@modules/ledger/components/LedgerCompositeIcon'
 import { LedgerDeviceItem } from '@modules/ledger/components/LedgerDeviceItem'
 
-// ─── banners module ───────────────────────────────────────────────────────────
 import { BannerCard } from '@modules/banners/components/BannerCard'
 import { BannerIcon } from '@modules/banners/components/BannerIcon'
 import { CompactBanner } from '@modules/banners/components/CompactBanner'
 
-// ─── settings module ──────────────────────────────────────────────────────────
 import { AppVersion } from '@modules/settings/components/AppVersion'
 
-// ─── walletconnect module ─────────────────────────────────────────────────────
 import { PermissionItem } from '@modules/walletconnect/components/PermissionItem'
 
-// ─── rekey module ─────────────────────────────────────────────────────────────
 import { NumberedList } from '@modules/rekey/components/NumberedList'
 import { RekeySummaryRow } from '@modules/rekey/components/RekeySummaryRow'
 
-// ─── security module ──────────────────────────────────────────────────────────
 import { PinEntry } from '@modules/security/components/PinEntry'
 
-// ─── prompts module ───────────────────────────────────────────────────────────
 import { PinSecurityPrompt } from '@modules/prompts/components/PinSecurityPrompt/PinSecurityPrompt'
 
-// ─── projects module ──────────────────────────────────────────────────────────
 import { ProjectVerificationIcon } from '@modules/projects/components/ProjectVerificationIcon'
 
-// ─── onboarding module ────────────────────────────────────────────────────────
 import { MnemonicSuggestionBar } from '@modules/onboarding/components/MnemonicSuggestionBar'
 
-// ─── menu module ──────────────────────────────────────────────────────────────
-
-// ─── backup module ────────────────────────────────────────────────────────────
 import { BackupQuizItem } from '@modules/backup/components/BackupQuizItem'
 
-// ─── webview module ───────────────────────────────────────────────────────────
 import { PWWebView } from '@modules/webview/components/PWWebView'
 
 import {
@@ -117,9 +96,12 @@ import {
 
 import { registerPreview } from './registry'
 
+import type { Banner } from '@perawallet/wallet-core-banners'
+import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wallet'
+import type { SignRequestSource } from '@perawallet/wallet-core-signing'
+import type { StakingProject } from '@perawallet/wallet-core-staking'
+import type { DexSwapAsset, SwapQuote } from '@perawallet/wallet-core-swaps'
 import type { GallerySection } from './types'
-
-// ─── Preview wrapper components ───────────────────────────────────────────────
 
 const useThumbPreviewStyles = makeStyles(theme => ({
     thumb: { width: theme.spacing['4xl'], height: theme.spacing['4xl'] },
@@ -144,13 +126,6 @@ const AssetsCollectibleThumbnailPreview = () => {
         </PWView>
     )
 }
-import type { DexSwapAsset, SwapQuote } from '@perawallet/wallet-core-swaps'
-import type { SignRequestSource } from '@perawallet/wallet-core-signing'
-import type { StakingProject } from '@perawallet/wallet-core-staking'
-import type { Banner } from '@perawallet/wallet-core-banners'
-import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wallet'
-
-// ─── Accounts (module) ────────────────────────────────────────────────────────
 
 registerPreview({
     id: 'comp-account-display',
@@ -213,8 +188,6 @@ registerPreview({
         </PWView>
     ),
 })
-
-// ─── Assets (module) ─────────────────────────────────────────────────────────
 
 registerPreview({
     id: 'comp-asset-icon',
@@ -395,8 +368,6 @@ registerPreview({
     ),
 })
 
-// ─── Transactions (module) ────────────────────────────────────────────────────
-
 registerPreview({
     id: 'comp-transaction-date-header',
     render: () => <TransactionDateHeader title='May 25, 2025' />,
@@ -447,8 +418,6 @@ registerPreview({
     ),
 })
 
-// ─── Swap (module) ────────────────────────────────────────────────────────────
-
 const mockDexAssetAlgo: DexSwapAsset = {
     assetId: '0',
     name: 'Algorand',
@@ -478,15 +447,20 @@ const mockSwapQuote: SwapQuote = {
     slippage: new Decimal('0.005'),
 }
 
-registerPreview({
-    id: 'comp-swap-asset-pair-icon',
-    render: () => (
+const SwapAssetPairIconPreview = () => {
+    const { theme } = useTheme()
+    return (
         <SwapAssetPairIcon
             assetIn={mockDexAssetAlgo}
             assetOut={mockDexAssetUsdc}
-            surfaceColor='#ffffff'
+            surfaceColor={theme.colors.background}
         />
-    ),
+    )
+}
+
+registerPreview({
+    id: 'comp-swap-asset-pair-icon',
+    render: () => <SwapAssetPairIconPreview />,
 })
 
 registerPreview({
@@ -520,8 +494,6 @@ registerPreview({
     ),
 })
 
-// ─── Signing (module) ─────────────────────────────────────────────────────────
-
 const mockSignRequestSource: SignRequestSource = {
     name: 'Pera Demo DApp',
     description: 'A sample decentralized application',
@@ -538,8 +510,6 @@ registerPreview({
     id: 'comp-source-metadata-view',
     render: () => <SourceMetadataView metadata={mockSignRequestSource} />,
 })
-
-// ─── Multisig (module) ────────────────────────────────────────────────────────
 
 registerPreview({
     id: 'comp-threshold-stepper',
@@ -577,8 +547,6 @@ registerPreview({
     ),
 })
 
-// ─── Staking (module) ─────────────────────────────────────────────────────────
-
 const mockStakingProject: StakingProject = {
     id: 'mock-staking-project',
     title: 'Folks Finance',
@@ -606,8 +574,6 @@ registerPreview({
     ),
 })
 
-// ─── Messages (module) ────────────────────────────────────────────────────────
-
 registerPreview({
     id: 'comp-inbox-item-asa',
     render: () => (
@@ -632,8 +598,6 @@ registerPreview({
     ),
 })
 
-// ─── Ledger (module) ──────────────────────────────────────────────────────────
-
 registerPreview({
     id: 'comp-ledger-composite-icon',
     render: () => <LedgerCompositeIcon testID='gallery-ledger-composite' />,
@@ -657,8 +621,6 @@ registerPreview({
         />
     ),
 })
-
-// ─── Banners (module) ─────────────────────────────────────────────────────────
 
 const mockBanner: Banner = {
     id: 1,
@@ -719,14 +681,10 @@ registerPreview({
     ),
 })
 
-// ─── Settings (module) ────────────────────────────────────────────────────────
-
 registerPreview({
     id: 'comp-app-version',
     render: () => <AppVersion enableSecretTaps={false} />,
 })
-
-// ─── WalletConnect (module) ───────────────────────────────────────────────────
 
 registerPreview({
     id: 'comp-permission-item',
@@ -738,8 +696,6 @@ registerPreview({
         </PWView>
     ),
 })
-
-// ─── Rekey (module) ───────────────────────────────────────────────────────────
 
 registerPreview({
     id: 'comp-numbered-list',
@@ -764,8 +720,6 @@ registerPreview({
     ),
 })
 
-// ─── Security (module) ────────────────────────────────────────────────────────
-
 registerPreview({
     id: 'comp-pin-entry',
     render: () => (
@@ -778,8 +732,6 @@ registerPreview({
     ),
 })
 
-// ─── Prompts (module) ─────────────────────────────────────────────────────────
-
 registerPreview({
     id: 'comp-pin-security-prompt',
     render: () => (
@@ -789,8 +741,6 @@ registerPreview({
         />
     ),
 })
-
-// ─── Projects (module) ────────────────────────────────────────────────────────
 
 registerPreview({
     id: 'comp-project-verification-icon',
@@ -808,8 +758,6 @@ registerPreview({
     ),
 })
 
-// ─── Onboarding (module) ──────────────────────────────────────────────────────
-
 registerPreview({
     id: 'comp-mnemonic-suggestion-bar',
     render: () => (
@@ -819,8 +767,6 @@ registerPreview({
         />
     ),
 })
-
-// ─── Backup (module) ──────────────────────────────────────────────────────────
 
 registerPreview({
     id: 'comp-backup-quiz-item',
@@ -834,8 +780,6 @@ registerPreview({
     ),
 })
 
-// ─── WebView (module) ─────────────────────────────────────────────────────────
-
 registerPreview({
     id: 'comp-pw-webview',
     render: () => (
@@ -846,8 +790,6 @@ registerPreview({
         />
     ),
 })
-
-// ─── Sections ─────────────────────────────────────────────────────────────────
 
 export const getModuleComponentSections = (): GallerySection[] => [
     {

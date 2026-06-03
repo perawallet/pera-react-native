@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { PWButton, PWIcon, PWScreen, PWText, PWView } from '@components/core'
+import { PWButton, PWScreen, PWText, PWView } from '@components/core'
+import { ParticipantCount } from '@components/ParticipantCount'
 import { ScreenHeader } from '@components/ScreenHeader'
 import { useLanguage } from '@hooks/useLanguage'
 import { ThresholdStepper } from '../../components/ThresholdStepper'
@@ -54,19 +55,13 @@ export const SetThresholdScreen = () => {
                         {t('multisig.threshold.number_of_accounts')}
                     </PWText>
                     <PWView style={styles.countGroup}>
-                        <PWIcon
-                            name='people'
-                            variant='secondary'
-                            size='lg'
+                        <ParticipantCount
+                            count={participantCount}
+                            size='h1'
+                            testID='participant_count_value'
                         />
-                        <PWView style={styles.valueCell}>
-                            <PWText
-                                variant='h1'
-                                testID='participant_count_value'
-                            >
-                                {participantCount}
-                            </PWText>
-                        </PWView>
+                        {/* Aligns the count value under the stepper's value
+                            column by reserving the width of the + button. */}
                         <PWView style={styles.buttonSpacer} />
                     </PWView>
                 </PWView>

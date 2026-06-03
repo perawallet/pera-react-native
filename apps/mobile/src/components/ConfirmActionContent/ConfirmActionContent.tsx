@@ -19,12 +19,10 @@ import { useStyles } from './styles'
 import type { ReactNode } from 'react'
 import type { IconName, PWButtonProps, PWIconVariant } from '@components/core'
 
-/** Standard icon + title + body + actions bottom-sheet layout. */
 export type ConfirmActionContentProps<TResult = boolean> = {
     icon?: IconName
     iconVariant?: PWIconVariant
     title?: string
-    titleAlign?: 'left' | 'center'
     message?: ReactNode
     confirmLabel?: string
     cancelLabel?: string
@@ -41,7 +39,6 @@ export const ConfirmActionContent = <TResult = boolean,>({
     icon,
     iconVariant = 'primary',
     title,
-    titleAlign = 'center',
     message,
     confirmLabel,
     cancelLabel,
@@ -56,7 +53,6 @@ export const ConfirmActionContent = <TResult = boolean,>({
     const insets = useSafeAreaInsets()
     const styles = useStyles({
         bottomInset: insets.bottom,
-        titleAlign,
         hasActions: !!confirmLabel,
     })
     const { resolve, dismiss } = useBottomSheetResult<TResult>()

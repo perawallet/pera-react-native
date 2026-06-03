@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWScreen } from '@components/core'
+import { PWView } from '@components/core'
 import { PWWebView } from '@modules/webview/components/PWWebView'
 import { useBidaliWebViewScreen } from './useBidaliWebViewScreen'
 import { useStyles } from './styles'
@@ -21,12 +21,7 @@ export const BidaliWebViewScreen = () => {
         useBidaliWebViewScreen()
 
     return (
-        <PWScreen
-            scroll={false}
-            horizontalPadding='none'
-            keyboard='none'
-            style={styles.container}
-        >
+        <PWView style={styles.container}>
             <PWWebView
                 url={url}
                 enablePeraConnect={false}
@@ -37,6 +32,6 @@ export const BidaliWebViewScreen = () => {
                 webviewRef={webviewRef}
                 containerStyle={styles.webview}
             />
-        </PWScreen>
+        </PWView>
     )
 }

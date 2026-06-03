@@ -30,9 +30,8 @@ export type AccountAssetItemViewProps = {
     accountBalance: AssetWithAccountBalance
     usdPrice?: Decimal
     iconSize?: PWIconSize
-    /** Direct logo URL forwarded to the asset icon, bypassing Prism optimization. */
+    /** Logo URL forwarded to the asset icon, bypassing Prism optimization. */
     logoUrl?: string
-    /** When false, the balance/value column is omitted. Defaults to true. */
     showBalance?: boolean
     skipFetch?: boolean
 } & PWTouchableOpacityProps

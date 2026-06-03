@@ -17,8 +17,6 @@ import { useDeeplinkListener } from '@hooks/useDeeplinkListener'
 
 export type SafeAreaLayoutProps = ViewProps
 
-// Bottom edge is intentionally omitted — PWScreen owns the bottom safe area
-// (it knows whether there's a sticky footer to anchor).
 const SAFE_AREA_EDGES = ['top', 'left', 'right'] as const
 
 export const SafeAreaLayout = (props: SafeAreaLayoutProps) => {

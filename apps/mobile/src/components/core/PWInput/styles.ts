@@ -21,19 +21,16 @@ export const useStyles = makeStyles((theme, { variant }: PWInputStyleProps) => {
     const input = {
         ...getTypography(theme, variant),
         lineHeight: undefined,
-        // Fill the row so the placeholder has the full width and never wraps to
-        // a second line (RN TextInput has no maxLines for placeholders).
+        // Full width so the placeholder doesn't wrap (RN TextInput has no
+        // maxLines for placeholders).
         flex: 1,
-        // No vertical padding: the field's min height centers the single line,
-        // so the placeholder/value never looks top-aligned. `textAlignVertical`
-        // pins it centered on Android too.
         paddingVertical: 0,
+        // Pin the single line centered on Android.
         textAlignVertical: 'center' as const,
     }
     return {
-        // RNEInput defaults its outer container to paddingHorizontal: 10, which
-        // insets every field past the screen gutter. Zero it so inputs align
-        // flush with surrounding content; callers can still override.
+        // Zero RNEInput's default outer paddingHorizontal: 10 so fields align
+        // flush with surrounding content.
         container: {
             paddingHorizontal: 0,
         },

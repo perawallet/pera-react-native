@@ -10,10 +10,8 @@
  limitations under the License
  */
 
-// Test stub for `react-native-keyboard-controller`. The published package
-// ships untranspiled JSX/TS that vitest's parser can't read; tests don't
-// need real keyboard tracking, so route every consumer through these
-// passthrough components.
+// Stub for `react-native-keyboard-controller`: the published package ships
+// untranspiled JSX/TS that vitest can't parse, so route tests through these.
 
 import React from 'react'
 // guardrails-ignore-next-line no-primitive-rn-components

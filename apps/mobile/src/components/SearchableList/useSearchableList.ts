@@ -66,11 +66,8 @@ export const isHeaderSentinel = (item: unknown): item is HeaderSentinel =>
     item.__searchableListHeader === true
 
 /**
- * The injected header (item 0) and search (item 1) ride as data items so the
- * search can pin only after the header scrolls away. FlashList draws the
- * ItemSeparatorComponent between every adjacent pair, so a separator must be
- * suppressed whenever either side of the gap is one of these sentinels —
- * otherwise dividers appear around the header and the sticky search.
+ * FlashList draws ItemSeparatorComponent between every adjacent pair, so
+ * suppress it whenever either side is a header/search sentinel.
  */
 export const isSeparatorSuppressed = (
     leadingItem: unknown,
@@ -254,12 +251,8 @@ export const useSearchableList = <T>({
         [onScrollEndDrag, snapThreshold],
     )
 
-    // The list header rides as the first data item (index 0) and the search
-    // bar as the second (index 1). FlashList pins a sticky item once its
-    // layout `y` scrolls under the top; keeping the search at index 1 means it
-    // only pins after the header item scrolls away (y === headerHeight), rather
-    // than from offset 0 — which is what produced a duplicated, always-pinned
-    // search bar above the in-flow one.
+    // Search at index 1 (after the header) pins only once the header scrolls
+    // away; at index 0 it would always pin, duplicating the in-flow bar.
     const augmentedData = useMemo<AugmentedItem<T>[]>(
         () => [HEADER_SENTINEL, SEARCH_SENTINEL, ...(data ?? [])],
         [data],

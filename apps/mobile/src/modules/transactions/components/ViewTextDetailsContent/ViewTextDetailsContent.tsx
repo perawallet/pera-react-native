@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useCallback, useMemo, useState } from 'react'
 import {
     PWChip,
     PWIcon,
@@ -22,7 +23,6 @@ import { SheetHeader } from '@modules/bottom-sheet'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { useClipboard } from '@hooks/useClipboard'
-import { useMemo, useState } from 'react'
 
 export type ViewTextDetailsContentProps = {
     text: string
@@ -54,6 +54,10 @@ export const ViewTextDetailsContent = ({
         copyToClipboard(textToDisplay)
     }
 
+    const handleSelectText = useCallback(() => setMode('text'), [])
+    const handleSelectHex = useCallback(() => setMode('hex'), [])
+    const handleSelectBase64 = useCallback(() => setMode('base64'), [])
+
     return (
         <PWSheetLayout
             header={
@@ -69,7 +73,7 @@ export const ViewTextDetailsContent = ({
                         }
                     />
                     <PWView style={styles.buttonContainer}>
-                        <PWTouchableOpacity onPress={() => setMode('text')}>
+                        <PWTouchableOpacity onPress={handleSelectText}>
                             <PWChip
                                 title={t('common.text.label')}
                                 variant={
@@ -79,7 +83,7 @@ export const ViewTextDetailsContent = ({
                                 paddingStyle='normal'
                             />
                         </PWTouchableOpacity>
-                        <PWTouchableOpacity onPress={() => setMode('hex')}>
+                        <PWTouchableOpacity onPress={handleSelectHex}>
                             <PWChip
                                 title={t('common.hex.label')}
                                 variant={
@@ -89,7 +93,7 @@ export const ViewTextDetailsContent = ({
                                 paddingStyle='normal'
                             />
                         </PWTouchableOpacity>
-                        <PWTouchableOpacity onPress={() => setMode('base64')}>
+                        <PWTouchableOpacity onPress={handleSelectBase64}>
                             <PWChip
                                 title={t('common.base64.label')}
                                 variant={

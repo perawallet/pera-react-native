@@ -24,7 +24,6 @@ type UseCollectibleItemResult = {
     verificationIconName: Nullable<IconName>
     title: string
     collectionName: Optional<string>
-    /** Collection name, falling back to the asset unit name when absent. */
     collectionLabel: Optional<string>
 }
 

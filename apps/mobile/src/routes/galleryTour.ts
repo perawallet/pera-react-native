@@ -464,30 +464,33 @@ export const runGalleryTour = async (): Promise<void> => {
     if (started || !nav.isReady()) return
     started = true
 
-    for (let i = 0; i < STEPS.length; i++) {
-        const step = STEPS[i]
+    try {
+        for (let i = 0; i < STEPS.length; i++) {
+            const step = STEPS[i]
+            sheet().dismissAll()
+            goToGallery()
+            await sleep(700)
+            try {
+                step.run()
+            } catch (error) {
+                console.log(`GALLERY_ERR|${step.label}|${String(error)}`)
+            }
+            await sleep(1800)
+            const tag = String(i).padStart(2, '0')
+            console.log(`GALLERY_SHOT|${tag}|${step.label}`)
+            await sleep(1800)
+            sheet().dismissAll()
+            await sleep(300)
+        }
+
         sheet().dismissAll()
         goToGallery()
-        await sleep(700)
-        try {
-            step.run()
-        } catch (error) {
-            console.log(`GALLERY_ERR|${step.label}|${String(error)}`)
-        }
-        await sleep(1800)
-        const tag = String(i).padStart(2, '0')
-        console.log(`GALLERY_SHOT|${tag}|${step.label}`)
-        await sleep(1800)
-        sheet().dismissAll()
-        await sleep(300)
+        console.log('GALLERY_TOUR_DONE')
+    } finally {
+        started = false
     }
-
-    sheet().dismissAll()
-    goToGallery()
-    console.log('GALLERY_TOUR_DONE')
 }
 
-/** Fire-and-forget trigger for the dev gallery button. */
 export const startGalleryTour = (): void => {
     void runGalleryTour()
 }

@@ -18,8 +18,6 @@ export const useStyles = makeStyles(theme => {
         lineHeight: theme.spacing.lg,
     }
     return {
-        // PWSheetLayout owns the outer padding; the inner sections carry their
-        // own horizontal padding, so neutralize the body padding here.
         body: {
             paddingHorizontal: 0,
             paddingVertical: 0,

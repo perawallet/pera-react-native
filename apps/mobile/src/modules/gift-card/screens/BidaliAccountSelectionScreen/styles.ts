@@ -10,24 +10,15 @@
  limitations under the License
  */
 
-import type { Theme } from '@rneui/themed'
-import type { ViewStyle } from 'react-native'
+import { makeStyles } from '@rneui/themed'
 
-// Shared layout for the rekey-to-{ledger,shared,standard} select-target screens.
-// Each screen wraps this in its own makeStyles so its style keys stay visible to
-// the no-unused-style-keys check.
-export const getSelectTargetScreenStyles = (
-    theme: Theme,
-    bottomPadding: number,
-): Record<'container' | 'list', ViewStyle> => ({
+export const useStyles = makeStyles(theme => ({
+    // Bare flex container instead of PWScreen: this screen lives inside a
+    // bottom sheet, so the nested AccountPicker (PWFlatList) already owns the
+    // bottom safe-area inset. Wrapping it in PWScreen would add the inset a
+    // second time, leaving an oversized empty band below the list.
     container: {
         flex: 1,
-        backgroundColor: theme.colors.background,
-    },
-    list: {
-        flexGrow: 1,
-        gap: theme.spacing.sm,
         paddingHorizontal: theme.spacing.xl,
-        paddingBottom: bottomPadding,
     },
-})
+}))

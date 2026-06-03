@@ -24,7 +24,7 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.md,
         paddingHorizontal: theme.spacing.sm,
         paddingVertical: theme.spacing.lg,
-        borderRadius: theme.spacing.sm,
+        borderRadius: theme.borderRadius.sm,
     },
     rowGood: {
         backgroundColor: theme.colors.positiveLighter,

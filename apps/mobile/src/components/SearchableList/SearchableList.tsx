@@ -190,12 +190,9 @@ const SearchableListInner = <T,>(
         ],
     )
 
-    // The list header and search bar ride as data items 0 and 1, and FlashList
-    // draws ItemSeparatorComponent between *every* adjacent pair of items —
-    // including header↔search and search↔first-row. Wrap the caller's separator
-    // so it only renders between real rows, never adjacent to a sentinel. With
-    // no caller separator we draw nothing (PWFlatList's default divider would
-    // otherwise reappear around the sentinels).
+    // FlashList draws ItemSeparatorComponent between every adjacent pair, so
+    // wrap the caller's to skip pairs touching a sentinel. With no caller
+    // separator we draw nothing, else PWFlatList's default divider reappears.
     const augmentedSeparator = useMemo(() => {
         if (CallerSeparator == null) {
             return null
@@ -234,8 +231,6 @@ const SearchableListInner = <T,>(
     // single `any` to bridge it; everything we *write* (data, renderItem,
     // keyExtractor, etc.) is properly typed above. FlashList enables
     // maintainVisibleContentPosition by default, so it isn't set explicitly.
-    // The list header and search ride as data items 0 and 1; the search pins
-    // (stickyHeaderIndices [1]) only once the header item scrolls past.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return createElement(PWFlatList as any, {
         ...listProps,
@@ -246,8 +241,7 @@ const SearchableListInner = <T,>(
         ItemSeparatorComponent: augmentedSeparator,
         ListFooterComponent: augmentedFooter,
         stickyHeaderIndices: isListEmpty ? undefined : [1],
-        // The header item owns the list's top spacing, so cancel PWFlatList's
-        // default content paddingTop — otherwise the sticky search would pin a
+        // Zero PWFlatList's default paddingTop, else the sticky search pins a
         // gap above the in-flow header.
         contentContainerStyle: [
             listProps.contentContainerStyle,

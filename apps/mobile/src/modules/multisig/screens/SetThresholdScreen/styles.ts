@@ -26,18 +26,12 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textMain,
         flexShrink: 1,
     },
-    // Mirrors ThresholdStepper's layout so the count and threshold numbers
-    // line up on the same column: [icon] [value] [spacer == + button].
     countGroup: {
         flexDirection: 'row',
         alignItems: 'center',
     },
-    valueCell: {
-        minWidth: theme.spacing['3xl'],
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginLeft: theme.spacing.lg,
-    },
+    // Matches ThresholdStepper's + button width so the count column-aligns
+    // with the threshold value below it.
     buttonSpacer: {
         width: theme.spacing['3xl'],
         marginLeft: theme.spacing.xs,

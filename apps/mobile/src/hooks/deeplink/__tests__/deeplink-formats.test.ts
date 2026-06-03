@@ -496,7 +496,12 @@ const cases: Case[] = [
                     assetId: ASSET_ID,
                     accountAddress: 'fallback-addr',
                 },
-                { size: 'modal', enablePanDownToClose: true },
+                // PWSheetLayout only scrolls with autoCreateContainer:false + bounded auto size.
+                {
+                    size: 'auto',
+                    enablePanDownToClose: true,
+                    autoCreateContainer: false,
+                },
             )
         },
     ),

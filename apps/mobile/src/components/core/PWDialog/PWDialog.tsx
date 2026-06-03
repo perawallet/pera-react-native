@@ -32,7 +32,6 @@ export type PWDialogProps = {
     testID?: string
 }
 
-/** Centered modal dialog; prefer domain sheets for confirm/error flows. */
 export const PWDialog = ({
     isVisible,
     title,

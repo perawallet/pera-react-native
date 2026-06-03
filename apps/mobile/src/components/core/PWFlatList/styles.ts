@@ -20,10 +20,8 @@ export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
     content: {
         paddingVertical: theme.spacing.xl,
     },
-    // In-sheet lists scroll edge-to-edge, so the content owns the bottom
-    // safe-area inset (the hosting sheets use autoCreateContainer:false, which
-    // means no inner-container inset). Appended last so it wins over a caller's
-    // contentContainerStyle paddingBottom.
+    // Hosting sheets use autoCreateContainer:false (no inner-container inset),
+    // so in-sheet content must carry the bottom safe-area inset itself.
     sheetBottomInset: {
         paddingBottom: theme.spacing.xl + bottomInset,
     },
@@ -31,15 +29,13 @@ export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
         marginVertical: theme.spacing.md,
         height: theme.borders.sm,
         backgroundColor: theme.colors.layerGrayLighter,
-        // Inset to align with row content past the standard leading icon
-        // (icon width xxl + row gap lg), matching AccountAssetList's divider.
+        // Inset past the standard leading icon (width xxl + row gap lg) to
+        // align with row content.
         marginLeft: theme.spacing.xxl + theme.spacing.lg,
     },
     cardSeparator: {
         height: theme.spacing.md,
     },
-    // Lets a ListEmptyComponent fill the list height so it can center itself,
-    // applied only while the list is actually empty (no effect on content).
     fillEmpty: {
         flexGrow: 1,
     },

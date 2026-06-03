@@ -12,8 +12,6 @@
 
 import { makeStyles } from '@rneui/themed'
 
-// Initials are sized at ~35% of the icon diameter so they stay legible and
-// centered across every PWIconSize without per-size font tokens.
 const INITIALS_FONT_RATIO = 0.35
 
 type StyleProps = {

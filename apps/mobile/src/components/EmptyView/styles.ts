@@ -19,7 +19,6 @@ export const useStyles = makeStyles(theme => ({
         width: '100%',
         minWidth: 0,
     },
-    // Icon, text, and optional CTA, centered with xl spacing between each.
     content: {
         flex: 1,
         alignItems: 'center',

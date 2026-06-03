@@ -68,7 +68,7 @@ export const SettingsDeveloperMenuScreen = () => {
             <PWListItem
                 onPress={() => handleTapEvent('Gallery')}
                 icon='dot-stack'
-                title='Screen Gallery'
+                title={t('settings.developer.screen_gallery')}
                 testID='developer_menu_gallery_item'
             />
         </PWScreen>

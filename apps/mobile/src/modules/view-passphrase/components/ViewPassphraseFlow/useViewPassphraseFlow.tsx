@@ -54,10 +54,6 @@ export const useViewPassphraseFlow = (): UseViewPassphraseFlowResult => {
                 await requestBottomSheet<PassphraseAcknowledgeContentResult>({
                     contents: <PassphraseAcknowledgeContent />,
                     options: {
-                        // 'auto' caps the sheet at the dynamic max height so the
-                        // PWSheetLayout body scrolls and its pinned footer stays
-                        // visible; 'modal' left the column unbounded and pushed
-                        // the Reveal button below the fold.
                         size: 'auto',
                         enablePanDownToClose: true,
                         autoCreateContainer: false,

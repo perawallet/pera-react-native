@@ -30,10 +30,8 @@ describe('useSettingsDeveloperGalleryScreen', () => {
     beforeEach(() => vi.clearAllMocks())
 
     it('returns a non-empty categories array containing all 5 expected ids', () => {
-        // Arrange / Act
         const { result } = renderHook(() => useSettingsDeveloperGalleryScreen())
 
-        // Assert
         const ids = result.current.categories.map(c => c.id)
         expect(ids).toContain('screens')
         expect(ids).toContain('sheets')
@@ -44,15 +42,12 @@ describe('useSettingsDeveloperGalleryScreen', () => {
     })
 
     it('openCategory navigates to GalleryCategory with the given id', () => {
-        // Arrange
         const { result } = renderHook(() => useSettingsDeveloperGalleryScreen())
 
-        // Act
         act(() => {
             result.current.openCategory('dialogs')
         })
 
-        // Assert
         expect(navigate).toHaveBeenCalledWith('GalleryCategory', {
             categoryId: 'dialogs',
         })

@@ -55,19 +55,16 @@ export const MediaCarousel = ({
     const { t } = useLanguage()
     const [activeIndex, setActiveIndex] = useState(0)
 
-    // The square media area (matches styles.ts). VideoPlayer needs explicit
-    // width/height or it defaults to the full window and leaves dead space.
+    // VideoPlayer defaults to the full window without explicit width/height.
     const mediaSize = dimensions.width - 2 * theme.spacing.xl
 
-    // A model isn't its own swipeable page: its 3D badge rides on the visual
-    // media instead. Only when there's no visual media does the model's poster
-    // become the single page (so the 3D entry point still has something to sit on).
+    // A model isn't its own page: its 3D badge rides on the visual media, and
+    // its poster only becomes the page when there's no visual media at all.
     const visualMedia = media.filter(
         m => m.type === 'image' || m.type === 'video' || m.type === 'audio',
     )
     const modelItem = media.find(m => m.type === 'model')
-    // Only surface the 3D badge when there's an actual model file to open;
-    // a model entry without a downloadUrl has nothing to render as 3D.
+    // No model file means nothing to open as 3D.
     const hasModel = modelItem?.downloadUrl !== undefined
     const pages =
         visualMedia.length > 0 ? visualMedia : modelItem ? [modelItem] : []
@@ -77,8 +74,7 @@ export const MediaCarousel = ({
         ({ item, index }: { item?: MediaItem; index: number }) => {
             const downloadUri = item?.downloadUrl
             const isModelItem = item?.type === 'model'
-            // A model's downloadUrl is the 3D asset, not an image — only a
-            // preview/fallback image is renderable inline (else placeholder).
+            // A model's downloadUrl is the 3D asset, not an inline image.
             const imageUri = isModelItem
                 ? (item?.previewUrl ?? fallbackImageUrl)
                 : (item?.previewUrl ?? item?.downloadUrl ?? fallbackImageUrl)

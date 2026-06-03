@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
+import { Keyboard } from 'react-native'
 import { Contact, useContacts } from '@perawallet/wallet-core-contacts'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { ContactQRContent } from '@modules/contacts/components/ContactQRContent'
@@ -62,6 +63,8 @@ export const useContactListScreen = ({
 
     const showQR = useCallback(
         (contact: Contact) => {
+            // Presenting a sheet isn't a nav blur, so dismiss the keyboard ourselves.
+            Keyboard.dismiss()
             void requestBottomSheet<void>({
                 contents: <ContactQRContent contact={contact} />,
                 options: { size: 'auto', enablePanDownToClose: true },

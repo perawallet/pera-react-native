@@ -19,13 +19,8 @@ import { PWText } from '@components/core/PWText'
 import { PWView } from '@components/core/PWView'
 import { useStyles } from './styles'
 
-/** Default illustration size; callers pass the icon and PWInfoView sizes it. */
 const ILLUSTRATION_SIZE = 160
 
-/**
- * Illustration contract: an SVG icon (or image wrapper) accepting a size and
- * optional tint. PWInfoView renders it at the default size, tinted `textMain`.
- */
 export type PWInfoViewIllustration = ComponentType<{
     width: number
     height: number

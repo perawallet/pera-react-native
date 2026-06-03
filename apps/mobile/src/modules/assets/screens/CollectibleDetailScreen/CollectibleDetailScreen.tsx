@@ -94,8 +94,6 @@ export const CollectibleDetailScreen = ({
     }
 
     const displayTitle = collectible?.title ?? asset.name ?? `#${asset.assetId}`
-    // Collection name, falling back to the unit name so the secondary line
-    // isn't blank when the collection has no name (matches the list/grid items).
     const collectionLabel = collectible?.collection?.name ?? asset.unitName
     const quantity = assetAmount.toNumber()
 
@@ -105,7 +103,6 @@ export const CollectibleDetailScreen = ({
                 horizontalPadding='none'
                 keyboard='none'
                 style={styles.container}
-                contentContainerStyle={styles.scrollContent}
             >
                 <PWView style={styles.contentContainer}>
                     <PWView style={styles.titleSection}>

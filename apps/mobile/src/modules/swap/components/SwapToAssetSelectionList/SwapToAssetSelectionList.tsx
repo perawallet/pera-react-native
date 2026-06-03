@@ -116,6 +116,7 @@ export const SwapToAssetSelectionList = ({
                 data={listData}
                 renderItem={renderItem}
                 cardLayout
+                keyboardDismissMode='on-drag'
                 inBottomSheet={inBottomSheet}
                 keyExtractor={item =>
                     isSkeletonItem(item) ? item.id : item.dexAsset.assetId

@@ -15,23 +15,16 @@ import { useCallback, useState } from 'react'
 import type { LayoutChangeEvent } from 'react-native'
 
 type UsePWToolbarResult = {
-    /**
-     * Width of the widest side slot, applied as a min-width to both so they
-     * resolve to the same size — which keeps the center slot on true
-     * screen-center while the action buttons keep their full width.
-     */
     sideMinWidth: number
-    /** Attach to each side slot to feed its measured width into the max. */
     handleSideLayout: (event: LayoutChangeEvent) => void
 }
 
 export const usePWToolbar = (): UsePWToolbarResult => {
     const [sideMinWidth, setSideMinWidth] = useState(0)
 
-    // Grows monotonically to the widest side ever measured. The first layout
-    // pass measures both slots at their natural width (min-width still 0), so
-    // the larger one wins; afterwards both render at that width and report it
-    // back unchanged, so this settles in a single extra render without looping.
+    // Grows monotonically so it settles in one extra render without looping.
+    // Caveat: if side content later shrinks, the stale wider width persists and
+    // the center title drifts off-center.
     const handleSideLayout = useCallback((event: LayoutChangeEvent) => {
         const { width } = event.nativeEvent.layout
         setSideMinWidth(current => (width > current ? width : current))

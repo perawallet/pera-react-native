@@ -48,7 +48,6 @@ export const CreateMultisigScreen = () => {
                 description={t('multisig.create.description')}
             />
 
-
             <PWScrollView
                 style={styles.listFlex}
                 contentContainerStyle={styles.scrollArea}

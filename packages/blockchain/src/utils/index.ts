@@ -107,22 +107,6 @@ export const algosToMicroAlgos = (
     return displayUnitsToBaseUnits(algos, 6)
 }
 
-/**
- * Computes the signed percent change between two data points using the first
- * value as the base: `(last - first) / first * 100`.
- *
- * The result preserves its sign so callers can derive up/down direction from
- * it. Guards against divide-by-zero: when `first` is zero, returns `0`.
- *
- * @example
- * percentChange(new Decimal(100), new Decimal(150)) // new Decimal(50)
- * percentChange(new Decimal(100), new Decimal(50))  // new Decimal(-50)
- * percentChange(new Decimal(0), new Decimal(50))    // new Decimal(0)
- *
- * @param first - The earlier (base) data point
- * @param last - The later data point
- * @returns The signed percent change as a Decimal
- */
 export const percentChange = (first: Decimal, last: Decimal): Decimal => {
     if (first.isZero()) {
         return new Decimal(0)

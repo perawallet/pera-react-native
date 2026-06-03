@@ -12,7 +12,9 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
+type StyleProps = { bottomInset: number }
+
+export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
     scrollView: {
         flex: 1,
     },
@@ -51,6 +53,8 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         gap: theme.spacing.md,
         paddingHorizontal: theme.spacing.lg,
+        paddingTop: theme.spacing.md,
+        paddingBottom: theme.spacing.md + bottomInset,
     },
     ignoreButton: {
         flex: 1,

@@ -46,6 +46,7 @@ export const SendFundsInfoContent = () => {
                 <PWIcon
                     name='info'
                     size='xxl'
+                    variant='helper'
                 />
                 <PWView style={styles.bodyContainer}>
                     <PWText

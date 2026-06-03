@@ -25,7 +25,6 @@ export type PWOverlayProps = {
     fullScreen?: boolean
 }
 
-/** Low-level overlay; prefer `PWDialog` or `PWLoadingOverlay`. */
 export const PWOverlay = ({
     isVisible,
     onBackdropPress,

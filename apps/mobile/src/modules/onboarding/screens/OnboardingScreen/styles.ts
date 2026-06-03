@@ -16,14 +16,16 @@ import { EdgeInsets } from 'react-native-safe-area-context'
 
 const HEADER_IMAGE_SCREEN_RATIO = 1 / 4
 
+// welcome-background.png intrinsic dimensions; hardcoded to avoid resolveAssetSource.
+const IMAGE_ASPECT_RATIO = 344 / 544
+
 type StyleProps = {
     insets: EdgeInsets
     screenHeight: number
-    imageAspectRatio: number
 }
 
 export const useStyles = makeStyles((theme, props: StyleProps) => {
-    const { insets, screenHeight, imageAspectRatio } = props
+    const { insets, screenHeight } = props
     const headerImageHeight =
         screenHeight * HEADER_IMAGE_SCREEN_RATIO + insets.top
 
@@ -51,7 +53,7 @@ export const useStyles = makeStyles((theme, props: StyleProps) => {
             top: 0,
             right: 0,
             height: headerImageHeight,
-            aspectRatio: imageAspectRatio,
+            aspectRatio: IMAGE_ASPECT_RATIO,
             resizeMode: 'contain',
         },
         buttonTitle: {

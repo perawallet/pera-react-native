@@ -12,13 +12,11 @@
 
 import { useEffect, useRef } from 'react'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import {
-    isMultisigAccount,
-    useUpdateAccount,
-} from '@perawallet/wallet-core-accounts'
 import { useMultisigAccountDetailQuery } from '@perawallet/wallet-core-multisig'
+import { isMultisigAccount } from '../utils'
+import { useUpdateAccount } from './useUpdateAccount'
 
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '../models'
 
 type UseMultisigDetailsBackfillResult = {
     isBackfilling: boolean

@@ -27,8 +27,7 @@ export const useStyles = makeStyles(theme => {
         separator: {
             height: theme.borders.sm,
             backgroundColor: theme.colors.layerGrayLighter,
-            // Inset to align with the contact name past AddressDisplay's
-            // leading avatar (icon width xxl + row gap md).
+            // Inset past AddressDisplay's avatar (icon xxl + row gap md).
             marginLeft: theme.spacing.xxl + theme.spacing.md,
         },
         emptyButton: {

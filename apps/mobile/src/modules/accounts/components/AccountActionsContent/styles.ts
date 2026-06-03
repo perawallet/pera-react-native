@@ -12,12 +12,9 @@
 
 import { makeStyles } from '@rneui/themed'
 
-type StyleProps = { bottomInset: number }
-
-export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
+export const useStyles = makeStyles(theme => ({
     container: {
         paddingTop: theme.spacing.xl,
-        paddingBottom: theme.spacing.xl + bottomInset,
     },
     addressCard: {
         marginHorizontal: theme.spacing.xl,

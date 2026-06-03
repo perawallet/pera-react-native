@@ -18,7 +18,7 @@ import { RefreshControl } from 'react-native-gesture-handler'
 import { EmptyView } from '@components/EmptyView'
 import { ListItemDivider } from '@components/ListItemDivider'
 import { LoadingView } from '@components/LoadingView'
-import { PWFlatList, PWScreen, PWView } from '@components/core'
+import { PWFlatList, PWScreen } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { NotificationItem } from '@modules/messages/components/NotificationItem/NotificationItem'
 import { useStyles } from './styles'
@@ -59,7 +59,6 @@ export const NotificationsScreen = () => {
                 onEndReachedThreshold={0.1}
                 keyExtractor={keyExtractor}
                 ItemSeparatorComponent={ListItemDivider}
-                ListHeaderComponent={<PWView style={styles.listEdgeSpacer} />}
                 ListEmptyComponent={
                     <EmptyView
                         isLoading={isPending}
@@ -71,10 +70,7 @@ export const NotificationsScreen = () => {
                 }
                 ListFooterComponent={
                     isFetchingNextPage ? (
-                        <LoadingView
-                            variant='circle'
-                            size='sm'
-                        />
+                        <LoadingView variant='circle' />
                     ) : null
                 }
                 refreshControl={

@@ -12,8 +12,41 @@
 
 import { describe, it, expect } from 'vitest'
 import { Theme } from '@rneui/themed'
-import { getTypography, TypographyVariant } from '../typography'
+import {
+    getTypography,
+    getVariantFontWeight,
+    type FontWeight,
+    type TypographyVariant,
+} from '../typography'
 import { getTheme } from '../theme'
+import { fontFamilies } from '@constants/fonts'
+
+const ALL_VARIANTS: TypographyVariant[] = [
+    'h1',
+    'h2',
+    'h3',
+    'h4',
+    'body',
+    'bodyLarge',
+    'bodyCompact',
+    'bodySemibold',
+    'footnoteMedium',
+    'caption',
+    'captionMedium',
+    'captionSmall',
+    'link',
+    'linkPositive',
+    'mono',
+]
+
+const FONT_FAMILY_TO_WEIGHT = new Map<string, FontWeight>([
+    ...Object.entries(fontFamilies.DMSANS).map(
+        ([weight, family]) => [family, Number(weight) as FontWeight] as const,
+    ),
+    ...Object.entries(fontFamilies.DMMONO).map(
+        ([weight, family]) => [family, Number(weight) as FontWeight] as const,
+    ),
+])
 
 describe('typography', () => {
     const lightTheme = getTheme('light') as Theme
@@ -90,6 +123,31 @@ describe('typography', () => {
                 const style = getTypography(lightTheme, variant)
                 expect(style.lineHeight).toBeGreaterThanOrEqual(style.fontSize!)
             }
+        })
+    })
+
+    describe('getVariantFontWeight', () => {
+        it.each(ALL_VARIANTS)(
+            'stays consistent with the weight getTypography encodes for %s',
+            variant => {
+                const { fontFamily } = getTypography(lightTheme, variant)
+                const encodedWeight = FONT_FAMILY_TO_WEIGHT.get(fontFamily!)
+
+                expect(encodedWeight).toBeDefined()
+                expect(getVariantFontWeight(variant)).toBe(encodedWeight)
+            },
+        )
+
+        it('returns the medium weight for h1', () => {
+            expect(getVariantFontWeight('h1')).toBe(500)
+        })
+
+        it('returns the semibold weight for h4', () => {
+            expect(getVariantFontWeight('h4')).toBe(600)
+        })
+
+        it('returns the regular weight for body', () => {
+            expect(getVariantFontWeight('body')).toBe(400)
         })
     })
 })

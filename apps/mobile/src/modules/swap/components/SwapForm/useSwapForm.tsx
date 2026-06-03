@@ -380,8 +380,8 @@ export const useSwapForm = (): UseSwapFormResult => {
                     selectedProviderName={selectedProviderName}
                 />
             ),
-            // PWSheetLayout owns its BottomSheetScrollView, so skip the
-            // content-sized BottomSheetView wrapper or the list can't scroll.
+            // autoCreateContainer:false: PWSheetLayout owns the scroll view, so
+            // skip the content-sized wrapper or the list can't scroll.
             options: {
                 size: 'auto',
                 enablePanDownToClose: true,

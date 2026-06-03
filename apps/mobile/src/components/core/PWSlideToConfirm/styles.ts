@@ -64,9 +64,8 @@ export const useStyles = makeStyles((theme, { isDisabled }: StyleProps) => ({
     },
     label: {
         position: 'absolute',
-        // Symmetric thumb-width insets so the title centers on the true track
-        // center (clear of the thumb) and lines up with the reveal overlay,
-        // which centers across the full track width.
+        // Symmetric thumb-width insets keep the title centered clear of the
+        // thumb and aligned with the reveal overlay.
         left: THUMB_SIZE + TRACK_INSET,
         right: THUMB_SIZE + TRACK_INSET,
         alignItems: 'center',

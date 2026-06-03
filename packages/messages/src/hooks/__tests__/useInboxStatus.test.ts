@@ -102,7 +102,6 @@ describe('useInboxStatus', () => {
         expect(result.current.hasUnreadInboxItems).toBe(false)
         expect(result.current.hasUnreadNotifications).toBe(false)
         expect(result.current.unreadInboxCount).toBe(0)
-        // Lock the contract: never leak truthy/falsy non-booleans or counts.
         expect(typeof result.current.hasUnreadItems).toBe('boolean')
         expect(typeof result.current.hasUnreadInboxItems).toBe('boolean')
         expect(typeof result.current.hasUnreadNotifications).toBe('boolean')

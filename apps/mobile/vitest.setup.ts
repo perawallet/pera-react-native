@@ -2599,7 +2599,7 @@ vi.mock('@perawallet/wallet-core-contacts', () => ({
 // cannot be parsed as JS; mock the whole package to avoid the SyntaxError)
 vi.mock('@perawallet/wallet-core-staking', () => ({
     useStakingProjectsQuery: vi.fn(() => ({
-        stakingProjects: [],
+        data: [],
         isLoading: false,
         isError: false,
         error: null,

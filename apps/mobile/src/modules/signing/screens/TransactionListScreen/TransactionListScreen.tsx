@@ -57,6 +57,7 @@ export const TransactionListScreen = () => {
             footer={<TransactionListFooter />}
         >
             <PWFlatList
+                cardLayout
                 data={listItems}
                 renderItem={renderItem}
                 keyExtractor={keyExtractor}

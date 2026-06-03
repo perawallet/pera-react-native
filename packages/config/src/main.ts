@@ -98,7 +98,6 @@ export type Config = z.infer<typeof configSchema>
 
 /**
  * Default configuration pointing at production Pera infrastructure.
- * API keys/tokens are injected via `.env` → `generated-env.ts` (gitignored).
  */
 const productionConfig = {
     mainnetAlgodUrl: 'https://node-mainnet.chain.perawallet.app',
@@ -194,7 +193,6 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     mainnetBackendUrl: 'MAINNET_BACKEND_URL',
     testnetBackendUrl: 'TESTNET_BACKEND_URL',
 
-    // Injected via `.env` → `generated-env.ts`
     backendAPIKey: 'BACKEND_API_KEY',
     algodApiKey: 'ALGOD_API_KEY',
     indexerApiKey: 'INDEXER_API_KEY',

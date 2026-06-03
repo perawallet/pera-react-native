@@ -11,11 +11,11 @@
  */
 
 import { useCallback } from 'react'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { SwapConfigurationResult } from '@perawallet/wallet-core-swaps'
 import { PWButton, PWIcon, PWText, PWToolbar } from '@components/core'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { BalancePercentageSection } from './BalancePercentageSection'
 import { SlippageToleranceSection } from './SlippageToleranceSection'
 import { PrimaryCurrencyToggle } from './PrimaryCurrencyToggle'

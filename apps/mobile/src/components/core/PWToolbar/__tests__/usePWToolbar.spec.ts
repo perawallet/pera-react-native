@@ -29,8 +29,7 @@ describe('usePWToolbar', () => {
         act(() => result.current.handleSideLayout(layoutEvent(60)))
         expect(result.current.sideMinWidth).toBe(60)
 
-        // A narrower later measurement (e.g. both slots settling at the max)
-        // must not pull the shared min-width back down.
+        // A narrower later measurement must not pull the min-width back down.
         act(() => result.current.handleSideLayout(layoutEvent(30)))
         expect(result.current.sideMinWidth).toBe(60)
     })

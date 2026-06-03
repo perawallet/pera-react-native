@@ -24,9 +24,8 @@ export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => {
             borderTopStartRadius: theme.spacing.sm,
             borderTopEndRadius: theme.spacing.sm,
         },
-        // Lets the scroll view yield height so the footer CTA stays pinned when
-        // content overflows. `flex: 1` would feed an unbounded height to the
-        // dynamically-sized sheet and break its measurement.
+        // `flexShrink: 1` (not `flex: 1`) keeps the footer pinned; an unbounded
+        // height would break the auto-sized sheet's measurement.
         scrollBody: {
             flexShrink: 1,
         },
@@ -34,6 +33,7 @@ export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => {
             alignItems: 'center',
             paddingTop: theme.spacing.xl,
             paddingHorizontal: theme.spacing.xl,
+            paddingBottom: 0,
         },
         bodyContainer: {
             width: '100%',

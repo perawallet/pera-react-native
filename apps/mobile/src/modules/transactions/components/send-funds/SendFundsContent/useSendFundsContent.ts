@@ -24,11 +24,6 @@ import { useSendFunds } from '@modules/transactions/hooks'
 
 type UseSendFundsContentResult = {
     selectedAccount: ReturnType<typeof useSelectedAccount>
-    /**
-     * Whether the send store has been seeded for the launch context. False for
-     * one render when an assetId is supplied, so the navigator doesn't mount on
-     * the asset-selection step before we've marked the asset as pre-selected.
-     */
     isReady: boolean
     handleFinished: () => void
 }
@@ -51,8 +46,6 @@ export const useSendFundsContent = (
     const { data: assets } = useAssetsQuery(assetId ? [assetId] : [])
     const asset = assetId ? assets.get(assetId) : undefined
 
-    // When launched without an asset (generic Send) the picker is the entry
-    // point, so we're ready immediately; with an asset we seed the store first.
     const [isReady, setIsReady] = useState(assetId == null)
 
     useLayoutEffect(() => {

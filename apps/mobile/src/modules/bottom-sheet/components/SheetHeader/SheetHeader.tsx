@@ -10,16 +10,15 @@
  limitations under the License
  */
 
-import type { ReactNode } from 'react'
 import { PWIcon, PWText, PWToolbar, PWView } from '@components/core'
 import { useBottomSheetResult } from '../../hooks/useBottomSheetResult'
 import { useBottomSheetPanDownEnabled } from '../../hooks/useBottomSheetPanDownEnabled'
 import { useBottomSheetSize } from '../../hooks/useBottomSheetSize'
+import { useStyles } from './styles'
 
+import type { ReactNode } from 'react'
 import type { StyleProp, ViewStyle } from 'react-native'
 import type { FontWeight, TypographyVariant } from '@theme/typography'
-
-import { useStyles } from './styles'
 
 export type SheetHeaderProps = {
     title: ReactNode

@@ -11,17 +11,8 @@
  */
 
 /**
- * Dev-only API record/replay for the Screen Gallery.
- *
- * Patches `global.fetch` (Hermes-safe — avoids MSW's `BroadcastChannel`):
- * - RECORD: pass requests through to the real network, capturing each
- *   `url → { status, body }` and persisting the dump via the platform
- *   key-value storage. Run once on an ONLINE build to capture.
- * - REPLAY: serve captured responses from the dump (offline-friendly). The
- *   app's normal fetch→DB upsert flow then also fills DB-backed lists.
- *
- * Authored edge-case overrides (e.g. notifications) always win in replay so
- * those lists show boundary cases regardless of what was recorded.
+ * Dev-only API record/replay for the Screen Gallery. Patches `global.fetch`
+ * directly rather than MSW (Hermes-safe — avoids MSW's `BroadcastChannel`).
  */
 
 import { getProvider } from '@perawallet/wallet-extension-provider'

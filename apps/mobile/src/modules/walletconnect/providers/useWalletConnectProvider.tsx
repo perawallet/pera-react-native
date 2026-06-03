@@ -26,6 +26,8 @@ import { ConnectionSuccessContent } from '../components/ConnectionSuccessContent
 import { WalletConnectErrorContent } from '../components/WalletConnectErrorContent'
 
 export const useWalletConnectProvider = () => {
+    // Without this, a backgrounded session silently drops outgoing signed
+    // responses and incoming dApp requests until the app reconnects.
     useWalletConnectForegroundReconnect()
 
     const { sessionRequests, removeSessionRequest } =

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useMemo } from 'react'
 import {
     algorandSafeJsonStringify,
     PeraDisplayableTransaction,
@@ -20,10 +21,9 @@ import {
     PWSheetLayout,
     PWText,
 } from '@components/core'
+import { SheetHeader } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useClipboard } from '@hooks/useClipboard'
-import { SheetHeader } from '@modules/bottom-sheet'
-import { useMemo } from 'react'
 
 export type RawTransactionContentProps = {
     transaction: PeraDisplayableTransaction

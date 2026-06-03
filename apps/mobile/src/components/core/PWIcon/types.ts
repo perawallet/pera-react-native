@@ -14,7 +14,6 @@ import type { Theme } from '@rneui/themed'
 
 export type PWIconSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl' | '3xl'
 
-/** Canonical PWIconSize → pixel mapping, shared by PWIcon and AssetIcon. */
 export const getIconPixelSize = (theme: Theme, size: PWIconSize): number =>
     ({
         xs: theme.spacing.md,

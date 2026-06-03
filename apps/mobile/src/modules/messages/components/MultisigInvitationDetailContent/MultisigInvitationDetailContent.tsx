@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWButton, PWScrollView, PWText, PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { MultisigInfoCard } from '@components/MultisigInfoCard'
@@ -29,7 +30,8 @@ export type MultisigInvitationDetailContentProps = {
 export const MultisigInvitationDetailContent = ({
     invitation,
 }: MultisigInvitationDetailContentProps) => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles({ bottomInset: insets.bottom })
     const { t } = useLanguage()
     const { resolve } =
         useBottomSheetResult<MultisigInvitationDetailContentResult>()
@@ -92,9 +94,8 @@ export const MultisigInvitationDetailContent = ({
                     {renderedInvitation.participantAddresses.map(
                         (address, index, arr) => (
                             <AddressDisplay
-                                // A multisig can list the same address as more
-                                // than one participant, so address alone isn't
-                                // a unique key.
+                                // A multisig can repeat an address, so address
+                                // alone isn't a unique key.
                                 key={`${address}-${index}`}
                                 address={address}
                                 forceShowIcon

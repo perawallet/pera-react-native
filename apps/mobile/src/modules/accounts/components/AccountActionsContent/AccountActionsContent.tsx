@@ -10,18 +10,17 @@
  limitations under the License
  */
 
-import { BottomSheetScrollView } from '@gorhom/bottom-sheet'
 import {
     IconName,
     PWDivider,
     PWIcon,
+    PWScrollView,
     PWText,
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useStyles } from './styles'
 import { useAccountActions } from './useAccountActions'
 
@@ -42,8 +41,7 @@ export const AccountActionsContent = ({
     address,
     label,
 }: AccountActionsContentProps) => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles({ bottomInset: insets.bottom })
+    const styles = useStyles()
     const { t } = useLanguage()
     const { dismiss } = useBottomSheetResult<void>()
     const {
@@ -90,7 +88,8 @@ export const AccountActionsContent = ({
     ]
 
     return (
-        <BottomSheetScrollView
+        <PWScrollView
+            inBottomSheet
             contentContainerStyle={styles.container}
             showsVerticalScrollIndicator={false}
         >
@@ -136,6 +135,6 @@ export const AccountActionsContent = ({
                     </PWView>
                 </PWTouchableOpacity>
             ))}
-        </BottomSheetScrollView>
+        </PWScrollView>
     )
 }

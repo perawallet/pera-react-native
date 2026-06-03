@@ -10,14 +10,12 @@
  limitations under the License
  */
 
-import { BottomSheetScrollView } from '@gorhom/bottom-sheet'
-import { PWText, PWTouchableIcon, PWView } from '@components/core'
+import { PWScrollView, PWText, PWTouchableIcon, PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { MultisigInfoCard } from '@components/MultisigInfoCard'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { SheetHeader } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useSharedAccountDetailsContent } from './useSharedAccountDetailsContent'
 import { useStyles } from './styles'
 
@@ -36,8 +34,7 @@ export type SharedAccountDetailsContentProps = {
 export const SharedAccountDetailsContent = ({
     details,
 }: SharedAccountDetailsContentProps) => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles({ bottomInset: insets.bottom })
+    const styles = useStyles()
     const { t } = useLanguage()
     const { isUserIncluded, isAddressInWallet, handleEditContact } =
         useSharedAccountDetailsContent(details.addresses)
@@ -53,7 +50,8 @@ export const SharedAccountDetailsContent = ({
                         : undefined
                 }
             />
-            <BottomSheetScrollView
+            <PWScrollView
+                inBottomSheet
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
@@ -83,10 +81,8 @@ export const SharedAccountDetailsContent = ({
                                     const isLast = index === arr.length - 1
                                     return (
                                         <AddressDisplay
-                                            // A multisig can list the same
-                                            // address as more than one
-                                            // participant, so the address alone
-                                            // isn't a unique key.
+                                            // A multisig can repeat a participant
+                                            // address, so address alone isn't unique.
                                             key={`${participantAddress}-${index}`}
                                             address={participantAddress}
                                             forceShowIcon
@@ -120,7 +116,7 @@ export const SharedAccountDetailsContent = ({
                         </PWView>
                     </PWView>
                 </PWView>
-            </BottomSheetScrollView>
+            </PWScrollView>
         </PWView>
     )
 }

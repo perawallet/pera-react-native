@@ -21,11 +21,9 @@ export type UsePWScreenInsetsResult = {
 }
 
 /**
- * Resolves the effective bottom inset for a screen body.
- *
- * - Returns `0` when the screen is hosted by a bottom-tab navigator (the tab
- *   bar already sits above the home indicator, so adding inset double-pads).
- * - Otherwise returns `insets.bottom + theme.spacing.lg`.
+ * Effective bottom inset for a screen body. Returns 0 inside a bottom-tab
+ * navigator, whose tab bar already clears the home indicator (adding inset
+ * would double-pad).
  */
 export const usePWScreenInsets = (): UsePWScreenInsetsResult => {
     const insets = useSafeAreaInsets()

@@ -109,6 +109,7 @@ export const AddAssetView = ({ variant = 'asset' }: AddAssetScreenProps) => {
                     keyExtractor={item => item.assetId}
                     onEndReached={handleEndReached}
                     onEndReachedThreshold={0.5}
+                    keyboardDismissMode='on-drag'
                     inBottomSheet
                     ListEmptyComponent={
                         !isLoading ? (

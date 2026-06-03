@@ -19,9 +19,6 @@ export const useStyles = makeStyles(theme => ({
         flex: 1,
         backgroundColor: theme.colors.background,
     },
-    scrollContent: {
-        paddingBottom: theme.spacing.xl,
-    },
     contentContainer: {
         paddingHorizontal: theme.spacing.xl,
         gap: theme.spacing.xl,
@@ -72,8 +69,6 @@ export const useStyles = makeStyles(theme => ({
     },
     infoLabel: {
         color: theme.colors.textGray,
-        // Yield space (and truncate) so the value — e.g. an address link —
-        // stays whole on screen instead of overflowing.
         flexShrink: 1,
         minWidth: 0,
         marginRight: theme.spacing.md,
@@ -122,7 +117,6 @@ export const useStyles = makeStyles(theme => ({
     quantityChip: {
         alignSelf: 'center',
         marginLeft: theme.spacing.sm,
-        // Never shrink/wrap — the address text yields instead.
         flexShrink: 0,
     },
     mediaContainerDimmed: {

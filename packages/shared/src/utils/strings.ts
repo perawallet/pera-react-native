@@ -154,15 +154,7 @@ export const formatCurrency = (
     return `${sign}${currencySymbol ? `${currencySymbol} ` : ''}${integer}${fraction.length > 1 ? fraction : ''}${unit}`
 }
 
-/**
- * Formats a value as a percentage string with a fixed number of decimals and a
- * trailing `%`. The value is treated as an already-computed percentage (e.g.
- * `12.34` → `"12.34%"`), not a fraction.
- *
- * @param value - The percentage value
- * @param precision - Number of decimal places (defaults to 2)
- * @returns The formatted percentage string
- */
+// `value` is an already-computed percentage, not a fraction: `12.34` → `"12.34%"`.
 export const formatPercentage = (
     value: Decimal | number,
     precision: number = 2,

@@ -50,6 +50,32 @@ const ListSeparator = () => {
     return <PWView style={styles.listSeparator} />
 }
 
+type GridCellProps = {
+    item: CollectibleDisplayItem
+    index: number
+    onPress: (item: CollectibleDisplayItem) => void
+}
+
+const GridCell = ({ item, index, onPress }: GridCellProps) => {
+    const styles = useStyles()
+
+    return (
+        <PWView
+            style={[
+                styles.gridColumn,
+                index % GRID_COLUMNS === 0
+                    ? styles.gridColumnLeft
+                    : styles.gridColumnRight,
+            ]}
+        >
+            <CollectibleGridItem
+                item={item}
+                onPress={() => onPress(item)}
+            />
+        </PWView>
+    )
+}
+
 export const AccountNfts = () => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -76,28 +102,18 @@ export const AccountNfts = () => {
     const renderItem = useCallback(
         ({ item, index }: { item: CollectibleDisplayItem; index: number }) =>
             isGrid ? (
-                // FlashList has no columnWrapperStyle, so the inter-column
-                // gutter rides on the leading edge of each grid cell.
-                <PWView
-                    style={[
-                        styles.gridColumn,
-                        index % GRID_COLUMNS === 0
-                            ? styles.gridColumnLeft
-                            : styles.gridColumnRight,
-                    ]}
-                >
-                    <CollectibleGridItem
-                        item={item}
-                        onPress={() => handlePress(item)}
-                    />
-                </PWView>
+                <GridCell
+                    item={item}
+                    index={index}
+                    onPress={handlePress}
+                />
             ) : (
                 <CollectibleListItem
                     item={item}
                     onPress={() => handlePress(item)}
                 />
             ),
-        [isGrid, handlePress, styles],
+        [isGrid, handlePress],
     )
 
     if (!hasAccount) {
@@ -198,8 +214,6 @@ export const AccountNfts = () => {
                         key={`${galleryLayout}:${sortMode}:${debouncedSearchFilter}`}
                         data={collectibles}
                         renderItem={renderItem}
-                        // Grid cells own their spacing; list rows get the
-                        // accounts-style inset hairline divider.
                         ItemSeparatorComponent={isGrid ? null : ListSeparator}
                         numColumns={isGrid ? GRID_COLUMNS : 1}
                         keyExtractor={item => item.assetId}

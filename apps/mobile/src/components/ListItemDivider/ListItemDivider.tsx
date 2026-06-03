@@ -13,11 +13,6 @@
 import { useTheme } from '@rneui/themed'
 import { PWDivider } from '@components/core'
 
-/**
- * Hairline separator for plain-row lists, themed to the standard list divider
- * color. Pass directly as a FlatList `ItemSeparatorComponent` so row lists
- * (contacts, address pickers, message lists, …) read consistently.
- */
 export const ListItemDivider = () => {
     const { theme } = useTheme()
 

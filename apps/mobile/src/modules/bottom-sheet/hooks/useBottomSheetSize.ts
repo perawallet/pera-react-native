@@ -16,7 +16,6 @@ import { BottomSheetIdContext } from '../components/BottomSheetHost/BottomSheetI
 import { useBottomSheetStore } from '../store/bottomSheetStore'
 import type { BottomSheetSize } from '../types'
 
-/** Host sheet size (`full` | `modal` | `auto`); used by `SheetHeader`. */
 export const useBottomSheetSize = (): BottomSheetSize | undefined => {
     const id = useContext(BottomSheetIdContext)
     return useBottomSheetStore(s =>

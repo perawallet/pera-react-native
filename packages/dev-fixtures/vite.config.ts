@@ -37,12 +37,15 @@ export default defineConfig({
         rollupOptions: {
             external: [
                 '@perawallet/wallet-core-accounts',
+                '@perawallet/wallet-core-assets',
                 '@perawallet/wallet-core-contacts',
                 '@perawallet/wallet-core-hardware-wallet',
                 '@perawallet/wallet-core-messages',
                 '@perawallet/wallet-core-shared',
                 '@perawallet/wallet-core-signing',
+                '@perawallet/wallet-core-transactions',
                 '@perawallet/wallet-core-walletconnect',
+                'decimal.js',
             ],
         },
     },

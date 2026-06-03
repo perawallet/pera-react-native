@@ -14,16 +14,10 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     content: {
-        // The header item provides the list's top spacing; keeping the content
-        // paddingTop at 0 keeps the sticky-search pin offset aligned with the
-        // header height the snap logic measures.
         paddingTop: 0,
     },
-    // The search row is a sticky header. Its input pill is the only painted
-    // surface, so without an opaque backing the list rows scroll *through* the
-    // transparent space around the pill — most visible during iOS top
-    // overscroll, where it reads as the sticky bar losing its margin. An opaque
-    // backing matching the list background occludes the rows behind it.
+    // Opaque backing for the sticky search; without it rows scroll through the
+    // transparent space around the pill (visible on iOS top overscroll).
     searchSticky: {
         backgroundColor: theme.colors.background,
     },

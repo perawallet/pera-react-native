@@ -213,10 +213,8 @@ export const getScreenSections = (): GallerySection[] => [
     {
         title: 'Onboarding',
         items: [
-            // The Onboarding stack is only mounted before the first account
-            // exists; from a logged-in session (where the gallery lives) it is
-            // unreachable. Its import-flow screens are covered via the
-            // 'AddAccount' stack in the "Add account & import" section below.
+            // Unreachable from a logged-in session (the gallery lives there):
+            // the Onboarding stack only mounts before the first account exists.
             {
                 id: 'scr-onboarding-home',
                 label: 'Onboarding welcome (needs onboarding state)',

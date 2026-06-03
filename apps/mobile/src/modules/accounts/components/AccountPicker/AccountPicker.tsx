@@ -20,23 +20,14 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 export type AccountPickerProps = {
     accounts: WalletAccount[]
     onSelect: (account: WalletAccount) => void
-    /** Highlights the row whose address matches (e.g. the current selection). */
     highlightedAddress?: string
     /** Body text for the empty state; omit to render no empty state. */
     emptyBody?: string
-    /** Row testID becomes `${rowTestIDPrefix}-${address}`; defaults to the
-     *  SelectableAccountRow default (`account-row-${address}`). */
     rowTestIDPrefix?: string
 }
 
 const keyExtractor = (account: WalletAccount) => account.address
 
-/**
- * Single-select account list shared across the receive, gift-card and rekey
- * flows. Wraps the card-layout list + row + empty state so each screen only
- * supplies its accounts, an `onSelect`, and (optionally) a header around it.
- * Scroll-in-sheet cooperation is handled automatically by PWFlatList.
- */
 const AccountPickerComponent = ({
     accounts,
     onSelect,

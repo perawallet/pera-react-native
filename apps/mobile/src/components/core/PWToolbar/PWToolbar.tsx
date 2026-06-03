@@ -37,7 +37,6 @@ export const PWToolbar = ({
     const { sideMinWidth, handleSideLayout } = usePWToolbar()
     const styles = useStyles({ paddingStyle, hasCenter, sideMinWidth })
 
-    // Only measure when a center title needs centering between the two actions.
     const onSideLayout = hasCenter ? handleSideLayout : undefined
 
     return (

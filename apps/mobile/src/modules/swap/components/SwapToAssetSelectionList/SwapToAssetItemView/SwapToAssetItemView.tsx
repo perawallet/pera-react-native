@@ -14,15 +14,20 @@ import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import {
     DEFAULT_ASSET_METADATA,
+    PeraAssetVerificationTier,
     type PeraAsset,
-    type PeraAssetVerificationTier,
 } from '@perawallet/wallet-core-assets'
 import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { AccountAssetItemView } from '@modules/assets/components'
-import { type PWTouchableOpacityProps } from '@components/core'
 
 import type { DexSwapAsset } from '@perawallet/wallet-core-swaps'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { PWTouchableOpacityProps } from '@components/core'
+
+const VERIFICATION_TIERS = new Set<string>(Object.values(PeraAssetVerificationTier))
+
+const isVerificationTier = (value: unknown): value is PeraAssetVerificationTier =>
+    typeof value === 'string' && VERIFICATION_TIERS.has(value)
 
 export type SwapToAssetItemViewProps = {
     dexAsset: DexSwapAsset
@@ -46,8 +51,9 @@ export const SwapToAssetItemView = ({
                 : new Decimal(0),
             peraMetadata: {
                 ...DEFAULT_ASSET_METADATA,
-                verificationTier:
-                    dexAsset.verificationTier as PeraAssetVerificationTier,
+                verificationTier: isVerificationTier(dexAsset.verificationTier)
+                    ? dexAsset.verificationTier
+                    : DEFAULT_ASSET_METADATA.verificationTier,
             },
         }
 

@@ -141,11 +141,6 @@ export const getTypography = (
     return typography[variant]
 }
 
-/**
- * Font weight backing each {@link TypographyVariant}. Lets callers query a
- * variant's weight without re-deriving it from the (platform-specific) font
- * family. Kept consistent with {@link getTypography} by a guard test.
- */
 const variantFontWeights: Record<TypographyVariant, FontWeight> = {
     h1: 500,
     h2: 500,

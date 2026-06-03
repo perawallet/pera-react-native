@@ -98,8 +98,7 @@ describe('WealthTrend', () => {
         const { container, getByTestId } = render(
             <WealthTrend period='one-week' />,
         )
-        // Direction is shown by the down arrow; the percentage itself is the
-        // absolute magnitude.
+        // Direction is shown by the down arrow; the percentage is absolute.
         expect(getByTestId('trend-indicator-down')).toBeTruthy()
         expect(container.textContent).toContain('%')
     })

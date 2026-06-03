@@ -81,7 +81,7 @@ export const useMnemonicWordEntry = ({
             if (split.length > 1) {
                 if (split.length === wordCount) {
                     setWords(split)
-                    // Entry done: drop the keyboard so the submit button is reachable.
+                    // Drop keyboard so the submit button is reachable.
                     Keyboard.dismiss()
                     return
                 }

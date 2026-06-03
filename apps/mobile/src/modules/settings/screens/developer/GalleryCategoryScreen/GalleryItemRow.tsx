@@ -27,11 +27,7 @@ type GalleryItemRowProps = {
     onPress: (item: GalleryEntry) => void
 }
 
-/**
- * Gallery list row with review tracking: opening the entry grays the row
- * (marks it seen) and the trailing switch records a good (on) / broken (off)
- * verdict. See {@link useGalleryReviewStore}.
- */
+/** Gallery list row with review tracking. See {@link useGalleryReviewStore}. */
 export const GalleryItemRow = ({ item, onPress }: GalleryItemRowProps) => {
     const styles = useStyles()
     const visited = useGalleryReviewStore(state => !!state.visited[item.id])

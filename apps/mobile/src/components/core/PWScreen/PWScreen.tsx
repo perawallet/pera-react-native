@@ -41,10 +41,7 @@ export type PWScreenProps = {
     testID?: string
 }
 
-/**
- * Screen body with optional sticky footer. Owns the bottom safe-area inset only
- * (top inset is the navigation header's job).
- */
+/** Screen body with optional sticky footer. */
 export const PWScreen = ({
     children,
     scroll = true,
@@ -69,8 +66,8 @@ export const PWScreen = ({
 
     const keyboardEnabled = keyboard === 'avoid'
 
-    // Dismiss the keyboard when navigating away from this screen so it
-    // doesn't linger over the next screen during the transition.
+    // Dismiss the keyboard on navigating away so it doesn't linger over the
+    // next screen during the transition.
     useEffect(() => {
         if (!navigation) return
         const unsubscribe = navigation.addListener('blur', () => {
@@ -98,17 +95,14 @@ export const PWScreen = ({
             keyboardShouldPersistTaps='handled'
             keyboardDismissMode='interactive'
             enabled={keyboardEnabled}
-            // Clear the sticky footer (plus a gap) so a focused input never
-            // scrolls to rest behind it.
+            // Clear the sticky footer so a focused input never rests behind it.
             bottomOffset={footerHeight + theme.spacing.lg}
         >
             {children}
         </KeyboardAwareScrollView>
     ) : (
-        // A non-scroll body holds its own scroller (e.g. a FlashList), so the
-        // keyboard-controller provider neutralises native `adjustResize` and
-        // nothing shrinks the body on its own. Pad the body by the keyboard
-        // height so the inner list always sits above the keyboard.
+        // keyboard-controller neutralises native `adjustResize`, so a non-scroll
+        // body (holding its own scroller) must be padded by the keyboard height.
         <KeyboardAvoidingView
             style={styles.body}
             behavior='padding'

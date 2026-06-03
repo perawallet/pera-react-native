@@ -17,9 +17,7 @@ import { getTypography } from '@theme/typography'
 const ICON_SIZE = 48
 
 export const useStyles = makeStyles(theme => ({
-    // PagerView (multi-banner only) needs an explicit height; size it to the
-    // card's natural height (icon + equal vertical padding). The single-banner
-    // path skips the pager and wraps content.
+    // PagerView won't render without an explicit height.
     pager: {
         height: ICON_SIZE + theme.spacing.lg * 2,
     },

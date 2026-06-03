@@ -12,12 +12,9 @@
 
 import { makeStyles } from '@rneui/themed'
 
-type StyleProps = { bottomInset: number }
-
-export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
+export const useStyles = makeStyles(theme => ({
     scrollContent: {
         flexGrow: 1,
-        paddingBottom: theme.spacing.xl + bottomInset,
     },
     heroSection: {
         backgroundColor: theme.colors.modalityBg,
@@ -29,7 +26,6 @@ export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
     contentSection: {
         paddingHorizontal: theme.spacing.xl,
         paddingTop: theme.spacing.xxl,
-        // No paddingBottom here - handled at scroll view level
         gap: theme.spacing.lg,
         width: '100%',
         minWidth: 0,

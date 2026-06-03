@@ -29,17 +29,14 @@ export const useStyles = makeStyles(
             isKeyboardVisible,
         }: StyleProps,
     ) => ({
-        // Column wrapper used only when a `footer` is present, so the scroll can
-        // shrink and the footer stays pinned below it.
         root: {
             flexShrink: 1,
         },
         scrollView: {
             flexShrink: 1,
         },
-        // Sticky header lives inside the scroll (so the sheet measures the full
-        // content and sizes to it); an opaque background keeps body content from
-        // showing through as it scrolls underneath.
+        // Sticky header lives inside the scroll so the sheet measures the full
+        // content; opaque background hides body content scrolling underneath.
         header: {
             backgroundColor: theme.colors.background,
         },
@@ -48,23 +45,17 @@ export const useStyles = makeStyles(
                 horizontalPadding === 'none' ? 0 : theme.spacing.xl,
             paddingTop: theme.spacing.xl,
         },
-        // Bottom of the scroll body. With no footer the safe-area inset lives
-        // here, INSIDE the scroll, so the last item clears the nav bar / home
-        // indicator (gorhom draws the sheet edge-to-edge). With a footer it is
-        // just a visual gap — the footer owns the inset. When the keyboard is
-        // open it covers the home indicator, so the inset is dropped for a flat
-        // 24 gap above the keyboard. Applied after `bodyStyle` so callers can't
-        // accidentally drop it.
+        // gorhom draws the sheet edge-to-edge, so with no footer the safe-area
+        // inset must live inside the scroll. Dropped when the keyboard is open
+        // (it already covers the home indicator).
         bodyBottom: {
             paddingBottom:
                 hasFooter || isKeyboardVisible
                     ? theme.spacing.xl
                     : theme.spacing.xl + bottomInset,
         },
-        // Fixed footer pinned below the scroll. Owns the bottom safe-area inset
-        // (a visual gap matching the body's bottom + nav-bar inset) since it is
-        // the bottom-most element. When the keyboard is open it covers the home
-        // indicator, so the inset is dropped for a flat gap above the keyboard.
+        // Bottom inset dropped when the keyboard is open (it already covers the
+        // home indicator).
         footer: {
             paddingHorizontal: theme.spacing.xl,
             paddingTop: theme.spacing.lg,

@@ -21,7 +21,6 @@ export type PWIconProps = {
     name: IconName
     size?: PWIconSize
     variant?: PWIconVariant
-    /** Dismiss keyboard after press (default true). */
     dismissKeyboardOnPress?: boolean
 } & Omit<SvgProps, 'color' | 'width' | 'height'>
 

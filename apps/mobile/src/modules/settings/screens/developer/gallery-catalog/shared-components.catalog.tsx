@@ -42,8 +42,6 @@ import { VariantPreview } from './VariantPreview'
 
 import type { GallerySection } from './types'
 
-// ─── Shared — display ─────────────────────────────────────────────────────────
-
 registerPreview({
     id: 'comp-contact-avatar',
     render: () => (
@@ -251,8 +249,6 @@ registerPreview({
     ),
 })
 
-// ─── Shared — layout & panels ─────────────────────────────────────────────────
-
 registerPreview({
     id: 'comp-expandable-panel',
     render: () => (
@@ -351,8 +347,6 @@ registerPreview({
     ),
 })
 
-// ─── Shared — empty & loading states ──────────────────────────────────────────
-
 registerPreview({
     id: 'comp-empty-view',
     render: () => (
@@ -427,8 +421,6 @@ registerPreview({
     ),
 })
 
-// ─── Shared — inputs & number entry ───────────────────────────────────────────
-
 registerPreview({
     id: 'comp-search-input',
     render: () => (
@@ -501,8 +493,6 @@ registerPreview({
     ),
 })
 
-// ─── Shared — chart & period ───────────────────────────────────────────────────
-
 registerPreview({
     id: 'comp-chart-period-selection',
     render: () => (
@@ -512,8 +502,6 @@ registerPreview({
         />
     ),
 })
-
-// ─── Shared — buttons ─────────────────────────────────────────────────────────
 
 registerPreview({
     id: 'comp-round-button',
@@ -652,8 +640,6 @@ registerPreview({
     ),
 })
 
-// ─── Shared — screen header ────────────────────────────────────────────────────
-
 registerPreview({
     id: 'comp-screen-header',
     render: () => (
@@ -677,8 +663,6 @@ registerPreview({
         />
     ),
 })
-
-// ─── Shared — multisig ────────────────────────────────────────────────────────
 
 registerPreview({
     id: 'comp-multisig-info-card',
@@ -709,8 +693,6 @@ registerPreview({
         />
     ),
 })
-
-// ─── Shared — forms ───────────────────────────────────────────────────────────
 
 registerPreview({
     id: 'comp-name-account-form',
@@ -752,14 +734,10 @@ registerPreview({
     ),
 })
 
-// ─── Shared — media ───────────────────────────────────────────────────────────
-
 registerPreview({
     id: 'comp-zoomable-image',
     render: () => <ZoomableImage uri='https://via.placeholder.com/300' />,
 })
-
-// ─── Sections ─────────────────────────────────────────────────────────────────
 
 export const getSharedComponentSections = (): GallerySection[] => [
     {

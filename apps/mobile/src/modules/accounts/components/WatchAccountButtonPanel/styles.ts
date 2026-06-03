@@ -25,6 +25,5 @@ export const useStyles = makeStyles(theme => ({
         flex: 1,
         minWidth: 0,
         maxWidth: `${100 / 3}%`,
-        alignItems: 'center',
     },
 }))

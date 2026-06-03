@@ -33,17 +33,12 @@ export const useStyles = makeStyles(
             backgroundColor: theme.colors.layerGray,
             width: theme.spacing.xxl,
         },
-        // Content wrapper constrains the max height for auto sheets so content
-        // actually scrolls when it reaches the maxDynamicContentSize cap.
+        // maxHeight caps auto sheets so content scrolls once it hits the cap.
         contentWrapper: {
             flex: 1,
             paddingTop: isFull ? insets.top : 0,
             maxHeight: maxDynamicContentSize,
         },
-        // Inner container wraps the sheet's content. The bottom safe-area inset
-        // is owned by the scroll content itself (PWSheetLayout / PWFlatList /
-        // PWScrollView / raw scrolls place it inside their scroll so it clears
-        // the nav bar), so it is not added here — only the `full` visual gap.
         innerContainer: {
             flexGrow: 1,
             paddingBottom: isFull ? theme.spacing.md : 0,

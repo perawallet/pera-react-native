@@ -60,6 +60,8 @@ export const useAccountSortContent = (): UseAccountSortContentResult => {
     const { sortedAccounts, sortMode, setSortMode, setManualAccountOrder } =
         useSortedAccounts(accounts, accountBalances)
 
+    // Snapshot sort state on open; upstream changes are intentionally ignored
+    // while the sheet is mounted, so edits aren't clobbered by late updates.
     const [draftSortMode, setDraftSortMode] = useState(sortMode)
     const [draftAccounts, setDraftAccounts] = useState(sortedAccounts)
 

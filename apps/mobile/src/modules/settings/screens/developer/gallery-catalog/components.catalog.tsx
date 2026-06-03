@@ -72,8 +72,6 @@ const LottiePreview = () => {
 
 import type { GallerySection } from './types'
 
-// ─── Core — buttons & actions ────────────────────────────────────────────────
-
 registerPreview({
     id: 'comp-pw-button',
     render: () => (
@@ -265,8 +263,6 @@ registerPreview({
         />
     ),
 })
-
-// ─── Core — inputs ────────────────────────────────────────────────────────────
 
 registerPreview({
     id: 'comp-pw-input',
@@ -508,8 +504,6 @@ registerPreview({
         />
     ),
 })
-
-// ─── Core — display ───────────────────────────────────────────────────────────
 
 registerPreview({
     id: 'comp-pw-text',
@@ -961,8 +955,6 @@ registerPreview({
     render: () => <LottiePreview />,
 })
 
-// ─── Core — layout & structure ───────────────────────────────────────────────
-
 registerPreview({
     id: 'comp-pw-view',
     render: () => (
@@ -997,9 +989,9 @@ registerPreview({
     render: () => (
         <PWFlatList
             data={['Item 1', 'Item 2', 'Item 3']}
-            keyExtractor={item => item as string}
+            keyExtractor={item => item}
             renderItem={({ item }) => (
-                <PWText variant='body'>{item as string}</PWText>
+                <PWText variant='body'>{item}</PWText>
             )}
         />
     ),
@@ -1023,10 +1015,7 @@ registerPreview({
     ),
 })
 
-// ─── Core — navigation chrome ─────────────────────────────────────────────────
-
-// PWTabView is a navigator factory (`{ createNavigator }`), not a self-contained
-// renderable component. The preview just documents its existence.
+// PWTabView is a navigator factory, not an inline-renderable component.
 void PWTabView // keep the import live
 
 registerPreview({
@@ -1064,8 +1053,6 @@ registerPreview({
         />
     ),
 })
-
-// ─── Core — list items ────────────────────────────────────────────────────────
 
 registerPreview({
     id: 'comp-pw-list-item',
@@ -1106,8 +1093,6 @@ registerPreview({
         />
     ),
 })
-
-// ─── Core — info / result ─────────────────────────────────────────────────────
 
 registerPreview({
     id: 'comp-pw-info-view',
@@ -1209,8 +1194,6 @@ registerPreview({
     ),
 })
 
-// ─── Core — dropdown ─────────────────────────────────────────────────────────
-
 registerPreview({
     id: 'comp-pw-dropdown',
     render: () => (
@@ -1260,8 +1243,6 @@ registerPreview({
     ),
 })
 
-// ─── Core — overlays / portals (may not display inline) ──────────────────────
-
 registerPreview({
     id: 'comp-pw-overlay',
     render: () => (
@@ -1292,8 +1273,6 @@ registerPreview({
         </PWBottomSheet>
     ),
 })
-
-// ─── Sections ─────────────────────────────────────────────────────────────────
 
 export const getComponentSections = (): GallerySection[] => [
     {

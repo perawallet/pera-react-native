@@ -28,7 +28,6 @@ export const useStyles = makeStyles(theme => ({
     },
     scrollViewContent: {
         gap: theme.spacing.md,
-        paddingBottom: theme.spacing.lg,
     },
     acceptButton: {
         marginTop: theme.spacing.md,

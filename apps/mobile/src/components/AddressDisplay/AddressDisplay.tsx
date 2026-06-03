@@ -50,9 +50,8 @@ export type AddressDisplayProps = {
      */
     trailing?: ReactNode
     /**
-     * Hug the address content (copy/trailing sit right after the text) instead
-     * of filling the row and pushing them to the far right. The text still
-     * truncates so siblings never overflow.
+     * Sit copy/trailing right after the text instead of filling the row and
+     * pushing them to the far right.
      */
     hugContent?: boolean
 } & PWTouchableOpacityProps

@@ -22,7 +22,6 @@ export type VideoPlayerProps = {
     height?: number
     autoPlay?: boolean
     loop?: boolean
-    /** Start muted; the user can unmute via the native player controls. */
     muted?: boolean
     style?: StyleProp<ViewStyle>
 }

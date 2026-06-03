@@ -12,11 +12,8 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => {
+export const useStyles = makeStyles(() => {
     return {
-        listEdgeSpacer: {
-            height: theme.spacing.xl,
-        },
         emptyView: {
             flex: 1,
             justifyContent: 'center',

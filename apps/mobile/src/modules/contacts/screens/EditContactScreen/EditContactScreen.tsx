@@ -11,6 +11,7 @@
  */
 
 import { useCallback } from 'react'
+import { Keyboard } from 'react-native'
 
 import { PWButton, PWScreen } from '@components/core'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
@@ -54,6 +55,8 @@ export const EditContactScreen = () => {
     })
 
     const openDeleteConfirm = useCallback(async () => {
+        // Presenting a sheet isn't a nav blur, so dismiss the keyboard ourselves.
+        Keyboard.dismiss()
         const confirmed = await requestBottomSheet<boolean>({
             contents: (
                 <ConfirmActionContent

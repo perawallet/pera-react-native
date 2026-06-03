@@ -31,7 +31,7 @@ export type AssetItemViewProps = {
     /** Right-hand content: balance display (account) or add button (search). */
     right?: ReactNode
     iconSize?: PWIconSize
-    /** Direct logo URL forwarded to the asset icon, bypassing Prism optimization. */
+    /** Logo URL forwarded to the asset icon, bypassing Prism optimization. */
     logoUrl?: string
     /** Account-only decorations. Default off so search rows stay clean. */
     showFavorite?: boolean

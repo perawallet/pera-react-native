@@ -13,9 +13,6 @@
 import { makeStyles } from '@rneui/themed'
 
 type StyleProps = {
-    // When true, the row hugs its content (sits right after the address) and
-    // only shrinks the text to truncate; otherwise it fills the row and pushes
-    // the copy icon to the far right.
     hugContent: boolean
 }
 
