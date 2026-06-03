@@ -11,13 +11,16 @@
  */
 
 import { PWText, PWView } from '@components/core'
-import type { ExtrasMigrationResult } from '@migration/runExtrasMigration'
-import type { MigrationRunResult } from '@migration/runMigration'
-import type { MigrationResult } from '@migration/types'
-import { useStyles } from '../styles'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
+import type {
+    MigrationResult,
+    MigrationRunResult,
+} from '@perawallet/wallet-core-migrate'
+import { useStyles } from '../styles'
 import { MigrationDataRow } from './MigrationDataRow'
 import { StackedMigrationDataRow } from './StackedMigrationDataRow'
+
+type ExtrasMigrationResult = NonNullable<MigrationRunResult['extras']>
 
 type MigrationRunResultBannerProps = {
     result: MigrationRunResult | null

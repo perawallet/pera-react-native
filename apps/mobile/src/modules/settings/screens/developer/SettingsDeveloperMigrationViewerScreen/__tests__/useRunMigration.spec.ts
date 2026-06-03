@@ -40,12 +40,12 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({ migration: migrationService }),
 }))
 
-vi.mock('@migration/runMigration', () => ({
+vi.mock('@perawallet/wallet-core-migrate', () => ({
     runMigration: vi.fn(),
 }))
 
 import { useRunMigration } from '../useRunMigration'
-import { runMigration } from '@migration/runMigration'
+import { runMigration } from '@perawallet/wallet-core-migrate'
 
 const successfulRun = {
     completed: true,

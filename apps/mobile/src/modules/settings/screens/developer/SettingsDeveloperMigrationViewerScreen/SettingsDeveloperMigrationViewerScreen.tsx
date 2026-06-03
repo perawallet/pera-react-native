@@ -16,7 +16,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { useMigrationGateStore } from '@modules/migration/hooks'
+import { useMigrationGateStore } from '@perawallet/wallet-core-migrate'
 import {
     ExpandAllContext,
     MigrationDataSection,

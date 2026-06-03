@@ -17,7 +17,10 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { runMigration, type MigrationRunResult } from '@migration/runMigration'
+import {
+    runMigration,
+    type MigrationRunResult,
+} from '@perawallet/wallet-core-migrate'
 
 export type UseRunMigrationResult = {
     run: () => Promise<MigrationRunResult>
