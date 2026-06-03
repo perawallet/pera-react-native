@@ -87,7 +87,6 @@ describe('useCollectibleItem', () => {
         expect(result.current.thumbnailUrl).toBe(
             'https://example.com/primary.png',
         )
-        expect(result.current.collectionName).toBe('Cool Collection')
         expect(result.current.collectionLabel).toBe('Cool Collection')
     })
 
@@ -96,7 +95,6 @@ describe('useCollectibleItem', () => {
             useCollectibleItem({ item: buildItem() }),
         )
 
-        expect(result.current.collectionName).toBeUndefined()
         expect(result.current.collectionLabel).toBe('COOL')
     })
 

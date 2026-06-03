@@ -23,7 +23,6 @@ type UseCollectibleItemResult = {
     hasBalance: boolean
     verificationIconName: Nullable<IconName>
     title: string
-    collectionName: Optional<string>
     collectionLabel: Optional<string>
 }
 
@@ -50,7 +49,6 @@ export const useCollectibleItem = ({
         hasBalance,
         verificationIconName,
         title,
-        collectionName,
         collectionLabel,
     }
 }

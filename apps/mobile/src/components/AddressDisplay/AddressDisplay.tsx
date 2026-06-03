@@ -190,8 +190,8 @@ export const AddressDisplay = ({
                 {nfdName ? (
                     <PWView style={styles.addressTextStack}>
                         <PWText
-                            variant='bodyLarge'
-                            weight={500}
+                            variant={textProps?.variant ?? 'bodyLarge'}
+                            weight={textProps?.variant ? undefined : 500}
                             {...textProps}
                             truncate
                         >
@@ -209,8 +209,8 @@ export const AddressDisplay = ({
                     </PWView>
                 ) : (
                     <PWText
-                        variant='bodyLarge'
-                        weight={500}
+                        variant={textProps?.variant ?? 'bodyLarge'}
+                        weight={textProps?.variant ? undefined : 500}
                         {...textProps}
                         truncate
                         ellipsizeMode='middle'

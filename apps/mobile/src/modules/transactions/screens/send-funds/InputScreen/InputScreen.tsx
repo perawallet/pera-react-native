@@ -70,7 +70,11 @@ export const InputScreen = () => {
     const openInfo = useCallback(() => {
         void requestBottomSheet({
             contents: <SendFundsInfoContent />,
-            options: { size: 'auto', enablePanDownToClose: true },
+            options: {
+                size: 'auto',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
         })
     }, [requestBottomSheet])
 

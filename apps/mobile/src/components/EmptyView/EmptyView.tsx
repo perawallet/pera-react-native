@@ -16,7 +16,7 @@ import { PWText } from '@components/core/PWText'
 import { PWView, PWViewProps } from '@components/core/PWView'
 import { LoadingView } from '@components/LoadingView'
 import { useStyles } from './styles'
-import { TextStyle, ViewStyle } from 'react-native'
+import { ViewStyle } from 'react-native'
 
 export type EmptyViewProps = {
     title?: string

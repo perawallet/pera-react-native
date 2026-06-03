@@ -30,8 +30,6 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         alignItems: 'center',
     },
-    // Matches ThresholdStepper's + button width so the count column-aligns
-    // with the threshold value below it.
     buttonSpacer: {
         width: theme.spacing['3xl'],
         marginLeft: theme.spacing.xs,

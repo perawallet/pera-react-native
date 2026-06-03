@@ -21,9 +21,7 @@ export const RekeyToLedgerSelectTargetScreen = () => {
     const { targets, handleSelect } = useRekeyToLedgerSelectTargetScreen()
 
     return (
-        <PWScreen
-            testID='rekey-to-ledger-select-target-screen'
-        >
+        <PWScreen testID='rekey-to-ledger-select-target-screen'>
             <ScreenHeader
                 title={t('rekey.to_ledger.select.title')}
                 description={t('rekey.to_ledger.select.subtitle')}
