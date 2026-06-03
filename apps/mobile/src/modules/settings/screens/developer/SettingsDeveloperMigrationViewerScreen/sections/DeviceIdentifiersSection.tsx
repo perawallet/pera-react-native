@@ -10,13 +10,10 @@
  limitations under the License
  */
 
-import { useLanguage } from '@hooks/useLanguage'
 import type { LegacyDeviceIdentifiers } from '@perawallet/wallet-extension-platform'
-import {
-    CollapsibleSection,
-    ComparisonRow,
-    InlineRow,
-} from '../SettingsDeveloperMigrationViewerScreen'
+import { MigrationDataSection } from '../components/MigrationDataSection'
+import { LegacyVsRnRow } from '../components/LegacyVsRnRow'
+import { MigrationDataRow } from '../components/MigrationDataRow'
 import type { RNMigrationSnapshot } from '../useRNMigrationSnapshot'
 
 export const DeviceIdentifiersSection = ({
@@ -26,18 +23,13 @@ export const DeviceIdentifiersSection = ({
     deviceIdentifiers: LegacyDeviceIdentifiers
     rn: RNMigrationSnapshot
 }) => {
-    const { t } = useLanguage()
     return (
-        <CollapsibleSection
-            title={t(
-                'settings.developer.migration_viewer.section_device_identifiers',
-            )}
-        >
-            <InlineRow
+        <MigrationDataSection title='Device Identifiers'>
+            <MigrationDataRow
                 label='notificationUserId'
                 value={deviceIdentifiers.notificationUserId}
             />
-            <ComparisonRow
+            <LegacyVsRnRow
                 label='mainnetDeviceId'
                 legacyValue={deviceIdentifiers.mainnetDeviceId}
                 rnValue={rn.deviceIDs.mainnet}
@@ -45,7 +37,7 @@ export const DeviceIdentifiersSection = ({
                     deviceIdentifiers.mainnetDeviceId === rn.deviceIDs.mainnet
                 }
             />
-            <ComparisonRow
+            <LegacyVsRnRow
                 label='testnetDeviceId'
                 legacyValue={deviceIdentifiers.testnetDeviceId}
                 rnValue={rn.deviceIDs.testnet}
@@ -53,14 +45,14 @@ export const DeviceIdentifiersSection = ({
                     deviceIdentifiers.testnetDeviceId === rn.deviceIDs.testnet
                 }
             />
-            <InlineRow
+            <MigrationDataRow
                 label='legacyDeviceId'
                 value={deviceIdentifiers.legacyDeviceId}
             />
-            <InlineRow
+            <MigrationDataRow
                 label='lastSeenNotificationId'
                 value={deviceIdentifiers.lastSeenNotificationId}
             />
-        </CollapsibleSection>
+        </MigrationDataSection>
     )
 }

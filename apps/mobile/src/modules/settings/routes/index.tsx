@@ -103,7 +103,7 @@ const DeveloperSettingsStackNavigator = () => {
             <DeveloperSettingsStack.Screen
                 name='MigrationViewer'
                 options={{
-                    title: 'screens.migration_viewer',
+                    title: 'Migration Viewer',
                 }}
                 component={SettingsDeveloperMigrationViewerScreen}
             />

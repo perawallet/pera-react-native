@@ -10,20 +10,12 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect } from 'react'
 import type { MigrationPlanSummary } from '@perawallet/wallet-extension-platform'
-import { getProvider } from '@perawallet/wallet-extension-provider'
-
-export type SimulationOutcome =
-    | { kind: 'pending' }
-    | { kind: 'success'; version: number; at: number }
-    | { kind: 'done'; detail: string; at: number }
-    | { kind: 'error'; message: string }
-
-export type ResultRow = {
-    dbName: string
-    outcome: SimulationOutcome
-}
+import {
+    useMigrationSimulatorStore,
+    type ResultRow,
+} from './useMigrationSimulatorStore'
 
 type UseMigrationSimulatorResult = {
     plans: MigrationPlanSummary[]
@@ -44,190 +36,62 @@ type UseMigrationSimulatorResult = {
 }
 
 export const useMigrationSimulator = (): UseMigrationSimulatorResult => {
-    const [plans, setPlans] = useState<MigrationPlanSummary[]>([])
-    const [isLoadingPlans, setIsLoadingPlans] = useState(true)
-    const [loadError, setLoadError] = useState<Error | null>(null)
-    const [selectedVersions, setSelectedVersions] = useState<
-        Record<string, number>
-    >({})
-    const [lastGenerated, setLastGenerated] = useState<
-        Record<string, { version: number; at: number }>
-    >({})
-    const [results, setResults] = useState<ResultRow[]>([])
-    const [isWorking, setIsWorking] = useState(false)
-    const [includeUnroutable, setIncludeUnroutable] = useState(false)
-    const [includeAuthState, setIncludeAuthState] = useState(false)
-
+    const loadPlansIfNeeded = useMigrationSimulatorStore(
+        state => state.loadPlansIfNeeded,
+    )
     useEffect(() => {
-        let cancelled = false
-        getProvider()
-            .migration.getMigrationPlans()
-            .then(result => {
-                if (cancelled) return
-                setPlans(result)
-                const defaults: Record<string, number> = {}
-                for (const p of result) {
-                    defaults[p.dbName] = p.oldestSupported
-                }
-                setSelectedVersions(defaults)
-                setIsLoadingPlans(false)
-            })
-            .catch(err => {
-                if (cancelled) return
-                setLoadError(
-                    err instanceof Error ? err : new Error(String(err)),
-                )
-                setIsLoadingPlans(false)
-            })
-        return () => {
-            cancelled = true
-        }
-    }, [])
+        void loadPlansIfNeeded()
+    }, [loadPlansIfNeeded])
 
-    const setSelectedVersion = useCallback(
-        (dbName: string, version: number) => {
-            setSelectedVersions(prev => ({ ...prev, [dbName]: version }))
-        },
-        [],
+    const plans = useMigrationSimulatorStore(state => state.plans)
+    const isLoadingPlans = useMigrationSimulatorStore(
+        state => state.isLoadingPlans,
     )
-
-    const generate = useCallback(async () => {
-        if (plans.length === 0) return
-        setIsWorking(true)
-        setResults(
-            plans.map(plan => ({
-                dbName: plan.dbName,
-                outcome: { kind: 'pending' } as const,
-            })),
-        )
-        const migration = getProvider().migration
-        const next: ResultRow[] = []
-        const successful: Record<string, { version: number; at: number }> = {}
-        for (const plan of plans) {
-            const version =
-                selectedVersions[plan.dbName] ?? plan.oldestSupported
-            try {
-                await migration.simulateLegacyDatabase({
-                    dbName: plan.dbName,
-                    version,
-                    includeUnroutableAccounts: includeUnroutable,
-                    includeAuthState,
-                })
-                const at = Date.now()
-                next.push({
-                    dbName: plan.dbName,
-                    outcome: { kind: 'success', version, at },
-                })
-                successful[plan.dbName] = { version, at }
-            } catch (err) {
-                next.push({
-                    dbName: plan.dbName,
-                    outcome: {
-                        kind: 'error',
-                        message:
-                            err instanceof Error ? err.message : String(err),
-                    },
-                })
-            }
-        }
-        setResults(next)
-        setLastGenerated(prev => ({ ...prev, ...successful }))
-        setIsWorking(false)
-    }, [plans, selectedVersions, includeUnroutable, includeAuthState])
-
-    const generatePreSixxAccounts = useCallback(async () => {
-        setIsWorking(true)
-        try {
-            await getProvider().migration.simulatePreSixxAccounts()
-            setResults([
-                {
-                    dbName: 'pre-6.x accounts',
-                    outcome: {
-                        kind: 'done',
-                        detail: 'blob written',
-                        at: Date.now(),
-                    },
-                },
-            ])
-        } catch (err) {
-            setResults([
-                {
-                    dbName: 'pre-6.x accounts',
-                    outcome: {
-                        kind: 'error',
-                        message:
-                            err instanceof Error ? err.message : String(err),
-                    },
-                },
-            ])
-        }
-        setIsWorking(false)
-    }, [])
-
-    const reset = useCallback(async () => {
-        setIsWorking(true)
-        try {
-            await getProvider().migration.resetLegacyData()
-            setLastGenerated({})
-            setResults(
-                plans.map(plan => ({
-                    dbName: plan.dbName,
-                    outcome: {
-                        kind: 'success',
-                        version: 0,
-                        at: Date.now(),
-                    } as const,
-                })),
-            )
-        } catch (err) {
-            setResults([
-                {
-                    dbName: 'reset',
-                    outcome: {
-                        kind: 'error',
-                        message:
-                            err instanceof Error ? err.message : String(err),
-                    },
-                },
-            ])
-        }
-        setIsWorking(false)
-    }, [plans])
-
-    return useMemo(
-        () => ({
-            plans,
-            isLoadingPlans,
-            loadError,
-            selectedVersions,
-            setSelectedVersion,
-            includeUnroutable,
-            setIncludeUnroutable,
-            includeAuthState,
-            setIncludeAuthState,
-            lastGenerated,
-            results,
-            isWorking,
-            generate,
-            generatePreSixxAccounts,
-            reset,
-        }),
-        [
-            plans,
-            isLoadingPlans,
-            loadError,
-            selectedVersions,
-            setSelectedVersion,
-            includeUnroutable,
-            setIncludeUnroutable,
-            includeAuthState,
-            setIncludeAuthState,
-            lastGenerated,
-            results,
-            isWorking,
-            generate,
-            generatePreSixxAccounts,
-            reset,
-        ],
+    const loadError = useMigrationSimulatorStore(state => state.loadError)
+    const selectedVersions = useMigrationSimulatorStore(
+        state => state.selectedVersions,
     )
+    const includeUnroutable = useMigrationSimulatorStore(
+        state => state.includeUnroutable,
+    )
+    const includeAuthState = useMigrationSimulatorStore(
+        state => state.includeAuthState,
+    )
+    const lastGenerated = useMigrationSimulatorStore(
+        state => state.lastGenerated,
+    )
+    const results = useMigrationSimulatorStore(state => state.results)
+    const isWorking = useMigrationSimulatorStore(state => state.isWorking)
+    const setSelectedVersion = useMigrationSimulatorStore(
+        state => state.setSelectedVersion,
+    )
+    const setIncludeUnroutable = useMigrationSimulatorStore(
+        state => state.setIncludeUnroutable,
+    )
+    const setIncludeAuthState = useMigrationSimulatorStore(
+        state => state.setIncludeAuthState,
+    )
+    const generate = useMigrationSimulatorStore(state => state.generate)
+    const generatePreSixxAccounts = useMigrationSimulatorStore(
+        state => state.generatePreSixxAccounts,
+    )
+    const reset = useMigrationSimulatorStore(state => state.reset)
+
+    return {
+        plans,
+        isLoadingPlans,
+        loadError,
+        selectedVersions,
+        setSelectedVersion,
+        includeUnroutable,
+        setIncludeUnroutable,
+        includeAuthState,
+        setIncludeAuthState,
+        lastGenerated,
+        results,
+        isWorking,
+        generate,
+        generatePreSixxAccounts,
+        reset,
+    }
 }

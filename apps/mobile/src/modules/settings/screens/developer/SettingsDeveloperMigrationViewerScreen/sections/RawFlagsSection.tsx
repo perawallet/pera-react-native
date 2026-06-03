@@ -10,37 +10,33 @@
  limitations under the License
  */
 
-import { useLanguage } from '@hooks/useLanguage'
 import type { LegacyPreferences } from '@perawallet/wallet-extension-platform'
-import {
-    CollapsibleSection,
-    EmptyHint,
-    InlineRow,
-} from '../SettingsDeveloperMigrationViewerScreen'
+import { MigrationDataSection } from '../components/MigrationDataSection'
+import { EmptyDataHint } from '../components/EmptyDataHint'
+import { MigrationDataRow } from '../components/MigrationDataRow'
 
 export const RawFlagsSection = ({
     rawFlags,
 }: {
     rawFlags: LegacyPreferences['rawFlags']
 }) => {
-    const { t } = useLanguage()
     const entries = Object.entries(rawFlags)
     return (
-        <CollapsibleSection
-            title={t('settings.developer.migration_viewer.section_raw_flags')}
+        <MigrationDataSection
+            title='Raw Flags'
             count={entries.length}
         >
             {entries.length === 0 ? (
-                <EmptyHint />
+                <EmptyDataHint />
             ) : (
                 entries.map(([key, value]) => (
-                    <InlineRow
+                    <MigrationDataRow
                         key={key}
                         label={key}
                         value={value}
                     />
                 ))
             )}
-        </CollapsibleSection>
+        </MigrationDataSection>
     )
 }

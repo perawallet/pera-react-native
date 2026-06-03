@@ -10,85 +10,81 @@
  limitations under the License
  */
 
-import { useLanguage } from '@hooks/useLanguage'
 import type {
     LegacyWalletConnectV1Session,
     LegacyWalletConnectV2Session,
 } from '@perawallet/wallet-extension-platform'
-import {
-    CollapsibleSection,
-    EmptyHint,
-    InlineRow,
-    SubBlock,
-} from '../SettingsDeveloperMigrationViewerScreen'
+import { MigrationDataSection } from '../components/MigrationDataSection'
+import { EmptyDataHint } from '../components/EmptyDataHint'
+import { MigrationDataRow } from '../components/MigrationDataRow'
+import { MigrationDataSubBlock } from '../components/MigrationDataSubBlock'
 
 export const WalletConnectV1Section = ({
     sessions,
 }: {
     sessions: LegacyWalletConnectV1Session[]
 }) => {
-    const { t } = useLanguage()
     return (
-        <CollapsibleSection
-            title={t('settings.developer.migration_viewer.section_wc_v1')}
+        <MigrationDataSection
+            title='WalletConnect v1'
             count={sessions.length}
         >
             {sessions.length === 0 ? (
-                <EmptyHint />
+                <EmptyDataHint />
             ) : (
                 sessions.map((s, i) => (
-                    <SubBlock
+                    <MigrationDataSubBlock
                         key={`${s.id}-${i}`}
                         title={`#${i} — ${s.peerMeta.name || s.id}`}
                     >
-                        <InlineRow
+                        <MigrationDataRow
                             label='id'
                             value={s.id}
                         />
-                        <InlineRow
+                        <MigrationDataRow
                             label='peerMeta.name'
                             value={s.peerMeta.name}
                         />
-                        <InlineRow
+                        <MigrationDataRow
                             label='peerMeta.url'
                             value={s.peerMeta.url}
                         />
-                        <InlineRow
+                        <MigrationDataRow
                             label='peerMeta.description'
                             value={s.peerMeta.description}
                         />
-                        <InlineRow
+                        <MigrationDataRow
                             label='peerMeta.icons'
                             value={s.peerMeta.icons}
                         />
-                        <InlineRow
+                        <MigrationDataRow
                             label='isConnected'
                             value={s.isConnected}
                         />
-                        <InlineRow
+                        <MigrationDataRow
                             label='isSubscribed'
                             value={s.isSubscribed}
                         />
-                        <InlineRow
+                        <MigrationDataRow
                             label='dateTimestampMs'
                             value={s.dateTimestampMs}
                         />
-                        <InlineRow
+                        <MigrationDataRow
                             label='fallbackBrowserGroupResponse'
                             value={s.fallbackBrowserGroupResponse}
                         />
-                        <InlineRow
+                        <MigrationDataRow
                             label='connectedAccounts'
                             value={s.connectedAccounts}
                         />
-                        <InlineRow
+                        <MigrationDataRow
                             label='sessionMetaJson'
                             value={s.sessionMetaJson}
                         />
-                    </SubBlock>
+                    </MigrationDataSubBlock>
                 ))
             )}
-        </CollapsibleSection>
+        </MigrationDataSection>
     )
 }
 
@@ -97,39 +93,38 @@ export const WalletConnectV2Section = ({
 }: {
     sessions: LegacyWalletConnectV2Session[]
 }) => {
-    const { t } = useLanguage()
     return (
-        <CollapsibleSection
-            title={t('settings.developer.migration_viewer.section_wc_v2')}
+        <MigrationDataSection
+            title='WalletConnect v2'
             count={sessions.length}
         >
             {sessions.length === 0 ? (
-                <EmptyHint />
+                <EmptyDataHint />
             ) : (
                 sessions.map((s, i) => (
-                    <SubBlock
+                    <MigrationDataSubBlock
                         key={`${s.topic}-${i}`}
                         title={`#${i}`}
                     >
-                        <InlineRow
+                        <MigrationDataRow
                             label='topic'
                             value={s.topic}
                         />
-                        <InlineRow
+                        <MigrationDataRow
                             label='dateTimestampMs'
                             value={s.dateTimestampMs}
                         />
-                        <InlineRow
+                        <MigrationDataRow
                             label='isSubscribed'
                             value={s.isSubscribed}
                         />
-                        <InlineRow
+                        <MigrationDataRow
                             label='fallbackBrowserGroupResponse'
                             value={s.fallbackBrowserGroupResponse}
                         />
-                    </SubBlock>
+                    </MigrationDataSubBlock>
                 ))
             )}
-        </CollapsibleSection>
+        </MigrationDataSection>
     )
 }

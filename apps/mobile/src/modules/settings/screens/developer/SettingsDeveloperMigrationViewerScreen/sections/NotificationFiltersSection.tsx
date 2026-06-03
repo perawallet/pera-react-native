@@ -10,11 +10,8 @@
  limitations under the License
  */
 
-import { useLanguage } from '@hooks/useLanguage'
-import {
-    CollapsibleSection,
-    ComparisonRow,
-} from '../SettingsDeveloperMigrationViewerScreen'
+import { MigrationDataSection } from '../components/MigrationDataSection'
+import { LegacyVsRnRow } from '../components/LegacyVsRnRow'
 import type { RNMigrationSnapshot } from '../useRNMigrationSnapshot'
 
 export const NotificationFiltersSection = ({
@@ -24,15 +21,12 @@ export const NotificationFiltersSection = ({
     filters: string[]
     rn: RNMigrationSnapshot
 }) => {
-    const { t } = useLanguage()
     return (
-        <CollapsibleSection
-            title={t(
-                'settings.developer.migration_viewer.section_notification_filters',
-            )}
+        <MigrationDataSection
+            title='Notification Filters'
             count={filters.length}
         >
-            <ComparisonRow
+            <LegacyVsRnRow
                 label='muted count'
                 legacyValue={filters.length}
                 rnValue={rn.notificationDisabledAccounts.size}
@@ -41,7 +35,7 @@ export const NotificationFiltersSection = ({
                 }
             />
             {filters.map((address, i) => (
-                <ComparisonRow
+                <LegacyVsRnRow
                     key={`${address}-${i}`}
                     label={`#${i}`}
                     legacyValue={address}
@@ -53,6 +47,6 @@ export const NotificationFiltersSection = ({
                     matches={rn.notificationDisabledAccounts.has(address)}
                 />
             ))}
-        </CollapsibleSection>
+        </MigrationDataSection>
     )
 }

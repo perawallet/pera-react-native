@@ -10,21 +10,27 @@
  limitations under the License
  */
 
+import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
-import { useLanguage } from '@hooks/useLanguage'
 import type { LegacyAccount } from '@perawallet/wallet-extension-platform'
 import {
-    CollapsibleSection,
-    ComparisonRow,
-    EmptyHint,
-    getDisplayType,
-    InlineRow,
-    SubBlock,
-    truncateAddress,
+    MigrationDataSection,
     useExpandableState,
-} from '../SettingsDeveloperMigrationViewerScreen'
+} from '../components/MigrationDataSection'
+import { LegacyVsRnRow } from '../components/LegacyVsRnRow'
+import { EmptyDataHint } from '../components/EmptyDataHint'
+import { MigrationDataRow } from '../components/MigrationDataRow'
+import { MigrationDataSubBlock } from '../components/MigrationDataSubBlock'
 import { useStyles } from '../styles'
 import type { RNMigrationSnapshot } from '../useRNMigrationSnapshot'
+
+const getDisplayType = (account: LegacyAccount): string => {
+    if (account.type === 'watch') return 'watch'
+    if (account.joint !== null) return 'multisig'
+    if (account.ledger !== null) return 'hardware'
+    if (account.hdWalletId !== null) return 'hdWallet'
+    return 'algo25'
+}
 
 export const AccountsSection = ({
     accounts,
@@ -33,20 +39,19 @@ export const AccountsSection = ({
     accounts: LegacyAccount[]
     rn: RNMigrationSnapshot
 }) => {
-    const { t } = useLanguage()
     return (
-        <CollapsibleSection
-            title={t('settings.developer.migration_viewer.section_accounts')}
+        <MigrationDataSection
+            title='Accounts'
             count={accounts.length}
         >
-            <ComparisonRow
+            <LegacyVsRnRow
                 label='count'
                 legacyValue={accounts.length}
                 rnValue={rn.accountsByAddress.size}
                 matches={accounts.length === rn.accountsByAddress.size}
             />
             {accounts.length === 0 ? (
-                <EmptyHint />
+                <EmptyDataHint />
             ) : (
                 accounts.map((account, i) => (
                     <AccountCard
@@ -56,7 +61,7 @@ export const AccountsSection = ({
                     />
                 ))
             )}
-        </CollapsibleSection>
+        </MigrationDataSection>
     )
 }
 
@@ -104,7 +109,8 @@ const AccountCard = ({
                             numberOfLines={1}
                             ellipsizeMode='middle'
                         >
-                            {account.name || truncateAddress(account.address)}
+                            {account.name ||
+                                truncateAlgorandAddress(account.address)}
                         </PWText>
                     </PWView>
                     <PWIcon
@@ -124,28 +130,28 @@ const AccountCard = ({
                         )
                         return (
                             <>
-                                <InlineRow
+                                <MigrationDataRow
                                     label='address'
                                     value={account.address}
                                 />
-                                <ComparisonRow
+                                <LegacyVsRnRow
                                     label='present in RN'
                                     legacyValue={true}
                                     rnValue={rnAccount !== undefined}
                                     matches={rnAccount !== undefined}
                                 />
-                                <ComparisonRow
+                                <LegacyVsRnRow
                                     label='name'
                                     legacyValue={account.name}
                                     rnValue={rnAccount?.name ?? '(missing)'}
                                     matches={rnAccount?.name === account.name}
                                 />
-                                <ComparisonRow
+                                <LegacyVsRnRow
                                     label='type'
                                     legacyValue={account.type}
                                     rnValue={rnAccount?.type ?? '(missing)'}
                                 />
-                                <ComparisonRow
+                                <LegacyVsRnRow
                                     label='preferredOrder'
                                     legacyValue={account.preferredOrder}
                                     rnValue={
@@ -154,54 +160,54 @@ const AccountCard = ({
                                             : '(missing)'
                                     }
                                 />
-                                <InlineRow
+                                <MigrationDataRow
                                     label='isBackedUp'
                                     value={account.isBackedUp}
                                 />
                             </>
                         )
                     })()}
-                    <InlineRow
+                    <MigrationDataRow
                         label='secretKey'
                         value={account.secretKey}
                     />
-                    <InlineRow
+                    <MigrationDataRow
                         label='hdWalletId'
                         value={account.hdWalletId}
                     />
 
                     {account.ledger && (
-                        <SubBlock title='ledger'>
-                            <InlineRow
+                        <MigrationDataSubBlock title='ledger'>
+                            <MigrationDataRow
                                 label='bluetoothAddress'
                                 value={account.ledger.bluetoothAddress}
                             />
-                            <InlineRow
+                            <MigrationDataRow
                                 label='bluetoothName'
                                 value={account.ledger.bluetoothName}
                             />
-                            <InlineRow
+                            <MigrationDataRow
                                 label='positionInLedger'
                                 value={account.ledger.positionInLedger}
                             />
-                        </SubBlock>
+                        </MigrationDataSubBlock>
                     )}
 
                     {account.joint && (
-                        <SubBlock title='joint'>
-                            <InlineRow
+                        <MigrationDataSubBlock title='joint'>
+                            <MigrationDataRow
                                 label='threshold'
                                 value={account.joint.threshold}
                             />
-                            <InlineRow
+                            <MigrationDataRow
                                 label='version'
                                 value={account.joint.version}
                             />
-                            <InlineRow
+                            <MigrationDataRow
                                 label='participants'
                                 value={account.joint.participants}
                             />
-                        </SubBlock>
+                        </MigrationDataSubBlock>
                     )}
                 </PWView>
             )}

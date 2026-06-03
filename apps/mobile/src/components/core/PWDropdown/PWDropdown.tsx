@@ -11,10 +11,11 @@
  */
 
 import { IconName, PWIcon } from '@components/core/PWIcon'
+import { PWScrollView } from '@components/core/PWScrollView'
 import { PWText } from '@components/core/PWText'
 import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
 import { useRef, useState } from 'react'
-import { Modal, Pressable, ScrollView, View, Dimensions } from 'react-native'
+import { Modal, Pressable, View, Dimensions } from 'react-native'
 import { useStyles } from './styles'
 
 // Gap kept between the dropdown's bottom edge and the screen edge so the menu
@@ -113,7 +114,7 @@ export const PWDropdown = ({
                         style={[styles.dropdown, position]}
                         onPress={e => e.stopPropagation()}
                     >
-                        <ScrollView
+                        <PWScrollView
                             style={styles.scrollArea}
                             nestedScrollEnabled
                             keyboardShouldPersistTaps='handled'
@@ -147,7 +148,7 @@ export const PWDropdown = ({
                                     </PWText>
                                 </PWTouchableOpacity>
                             ))}
-                        </ScrollView>
+                        </PWScrollView>
                     </Pressable>
                 </Pressable>
             </Modal>

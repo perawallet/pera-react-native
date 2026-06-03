@@ -10,69 +10,65 @@
  limitations under the License
  */
 
-import { useLanguage } from '@hooks/useLanguage'
 import type { LegacyPasskey } from '@perawallet/wallet-extension-platform'
-import {
-    CollapsibleSection,
-    EmptyHint,
-    InlineRow,
-    SubBlock,
-} from '../SettingsDeveloperMigrationViewerScreen'
+import { MigrationDataSection } from '../components/MigrationDataSection'
+import { EmptyDataHint } from '../components/EmptyDataHint'
+import { MigrationDataRow } from '../components/MigrationDataRow'
+import { MigrationDataSubBlock } from '../components/MigrationDataSubBlock'
 
 export const PasskeysSection = ({
     passkeys,
 }: {
     passkeys: LegacyPasskey[]
 }) => {
-    const { t } = useLanguage()
     return (
-        <CollapsibleSection
-            title={t('settings.developer.migration_viewer.section_passkeys')}
+        <MigrationDataSection
+            title='Passkeys'
             count={passkeys.length}
         >
             {passkeys.length === 0 ? (
-                <EmptyHint />
+                <EmptyDataHint />
             ) : (
                 passkeys.map((p, i) => (
-                    <SubBlock
+                    <MigrationDataSubBlock
                         key={`${p.credentialId}-${i}`}
                         title={`#${i} — ${p.siteName ?? p.siteUrl}`}
                     >
-                        <InlineRow
+                        <MigrationDataRow
                             label='credentialId'
                             value={p.credentialId}
                         />
-                        <InlineRow
+                        <MigrationDataRow
                             label='address'
                             value={p.address}
                         />
-                        <InlineRow
+                        <MigrationDataRow
                             label='siteUrl'
                             value={p.siteUrl}
                         />
-                        <InlineRow
+                        <MigrationDataRow
                             label='siteName'
                             value={p.siteName}
                         />
-                        <InlineRow
+                        <MigrationDataRow
                             label='userName'
                             value={p.userName}
                         />
-                        <InlineRow
+                        <MigrationDataRow
                             label='userDisplayName'
                             value={p.userDisplayName}
                         />
-                        <InlineRow
+                        <MigrationDataRow
                             label='userHandle'
                             value={p.userHandle}
                         />
-                        <InlineRow
+                        <MigrationDataRow
                             label='lastUsedAtMs'
                             value={p.lastUsedAtMs}
                         />
-                    </SubBlock>
+                    </MigrationDataSubBlock>
                 ))
             )}
-        </CollapsibleSection>
+        </MigrationDataSection>
     )
 }

@@ -10,34 +10,22 @@
  limitations under the License
  */
 
-import {
-    createContext,
-    ReactNode,
-    useContext,
-    useEffect,
-    useRef,
-    useState,
-} from 'react'
-import {
-    PWButton,
-    PWIcon,
-    PWScrollView,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
+import { useState } from 'react'
+import { PWButton, PWScrollView, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import type {
-    LegacyAccount,
-    LegacyMigrationData,
-} from '@perawallet/wallet-extension-platform'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useMigrationGateStore } from '@modules/migration/hooks'
-import type { MigrationRunResult } from '@migration/runMigration'
-import type { ExtrasMigrationResult } from '@migration/runExtrasMigration'
-import type { MigrationResult } from '@migration/types'
+import {
+    ExpandAllContext,
+    MigrationDataSection,
+    type ExpandAllSignal,
+} from './components/MigrationDataSection'
+import { MigrationDataRow } from './components/MigrationDataRow'
+import { MigrationDevToolsRow } from './components/MigrationDevToolsRow'
+import { MigrationRunResultBanner } from './components/MigrationRunResultBanner'
+import { MigrationSnapshotBanner } from './components/MigrationSnapshotBanner'
 import { AccountsSection } from './sections/AccountsSection'
 import { AuthSection } from './sections/AuthSection'
 import { ContactsSection } from './sections/ContactsSection'
@@ -90,13 +78,11 @@ export const SettingsDeveloperMigrationViewerScreen = () => {
     if (error) {
         return (
             <PWView style={styles.centered}>
-                <PWText variant='h4'>
-                    {t('settings.developer.migration_viewer.error_title')}
-                </PWText>
+                <PWText variant='h4'>Failed to read legacy data</PWText>
                 <PWText>{error.message}</PWText>
                 <PWButton
                     variant='secondary'
-                    title={t('settings.developer.migration_viewer.refresh')}
+                    title='Refresh'
                     onPress={refresh}
                 />
             </PWView>
@@ -110,7 +96,7 @@ export const SettingsDeveloperMigrationViewerScreen = () => {
             style={styles.container}
             contentContainerStyle={styles.scrollContent}
         >
-            <StatusBanner
+            <MigrationSnapshotBanner
                 data={data}
                 isMigrationComplete={isMigrationComplete}
             />
@@ -118,21 +104,13 @@ export const SettingsDeveloperMigrationViewerScreen = () => {
             <PWView style={styles.actionsRow}>
                 <PWButton
                     variant='secondary'
-                    title={t('settings.developer.migration_viewer.refresh')}
+                    title='Refresh'
                     onPress={refresh}
                     isDisabled={isAnyMigrationRunning}
                 />
                 <PWButton
                     variant='secondary'
-                    title={
-                        expandAll.expand
-                            ? t(
-                                  'settings.developer.migration_viewer.collapse_all',
-                              )
-                            : t(
-                                  'settings.developer.migration_viewer.expand_all',
-                              )
-                    }
+                    title={expandAll.expand ? 'Collapse all' : 'Expand all'}
                     onPress={() =>
                         setExpandAll(prev => ({
                             expand: !prev.expand,
@@ -142,11 +120,7 @@ export const SettingsDeveloperMigrationViewerScreen = () => {
                 />
                 <PWButton
                     variant='primary'
-                    title={
-                        isAnyMigrationRunning
-                            ? t('settings.developer.migration_viewer.migrating')
-                            : t('settings.developer.migration_viewer.migrate')
-                    }
+                    title={isAnyMigrationRunning ? 'Migrating…' : 'Migrate'}
                     onPress={() => {
                         void (async () => {
                             await runMigrationFlow()
@@ -157,9 +131,7 @@ export const SettingsDeveloperMigrationViewerScreen = () => {
                 />
                 <PWButton
                     variant='secondary'
-                    title={t(
-                        'settings.developer.migration_viewer.clear_migration_complete',
-                    )}
+                    title='Clear migration complete'
                     onPress={() => {
                         void (async () => {
                             await getProvider().migration.clearMigrationComplete()
@@ -170,40 +142,34 @@ export const SettingsDeveloperMigrationViewerScreen = () => {
                 />
                 <PWButton
                     variant='secondary'
-                    title={t(
-                        'settings.developer.migration_viewer.clear_skip_permanently',
-                    )}
+                    title='Clear skip permanently'
                     onPress={clearSkipped}
                     isDisabled={isAnyMigrationRunning || !skipped}
                 />
             </PWView>
 
-            <DevToolsSection navigation={navigation} />
+            <MigrationDevToolsRow navigation={navigation} />
 
-            <RunResultBanner
+            <MigrationRunResultBanner
                 result={runResult}
                 error={runError}
             />
 
             <ExpandAllContext.Provider value={expandAll}>
-                <CollapsibleSection
-                    title={t(
-                        'settings.developer.migration_viewer.section_identity',
-                    )}
-                >
-                    <InlineRow
+                <MigrationDataSection title='Identity'>
+                    <MigrationDataRow
                         label='schemaVersion'
                         value={data.schemaVersion}
                     />
-                    <InlineRow
+                    <MigrationDataRow
                         label='sourcePlatform'
                         value={data.sourcePlatform}
                     />
-                    <InlineRow
+                    <MigrationDataRow
                         label='walletConnectHistoryBlob'
                         value={data.walletConnectHistoryBlob}
                     />
-                </CollapsibleSection>
+                </MigrationDataSection>
 
                 <SchemaReplayResultsSection
                     results={data.schemaReplayResults}
@@ -246,505 +212,4 @@ export const SettingsDeveloperMigrationViewerScreen = () => {
             </ExpandAllContext.Provider>
         </PWScrollView>
     )
-}
-
-const StatusBanner = ({
-    data,
-    isMigrationComplete,
-}: {
-    data: LegacyMigrationData
-    isMigrationComplete: boolean
-}) => {
-    const styles = useStyles()
-    const { t } = useLanguage()
-    return (
-        <PWView style={styles.statusBanner}>
-            <PWText
-                variant='h4'
-                style={styles.statusBannerTitle}
-            >
-                {t('settings.developer.migration_viewer.banner_title')}
-            </PWText>
-            <InlineRow
-                label='sourcePlatform'
-                value={data.sourcePlatform}
-            />
-            <InlineRow
-                label='schemaVersion'
-                value={data.schemaVersion}
-            />
-            <InlineRow
-                label='isMigrationComplete'
-                value={isMigrationComplete}
-            />
-        </PWView>
-    )
-}
-
-const DevToolsSection = ({
-    navigation,
-}: {
-    navigation: NativeStackNavigationProp<ParamListBase>
-}) => {
-    const styles = useStyles()
-    return (
-        <>
-            <PWView style={styles.devToolsDivider} />
-            <PWText
-                variant='caption'
-                style={styles.devToolsLabel}
-            >
-                Dev tools
-            </PWText>
-            <PWView style={styles.devToolsRow}>
-                <PWView style={styles.devToolsButton}>
-                    <PWButton
-                        variant='secondary'
-                        title='Migrations info'
-                        onPress={() => navigation.push('MigrationInfo')}
-                    />
-                </PWView>
-                <PWView style={styles.devToolsButton}>
-                    <PWButton
-                        variant='secondary'
-                        title='Simulator'
-                        onPress={() => navigation.push('MigrationSimulator')}
-                    />
-                </PWView>
-            </PWView>
-        </>
-    )
-}
-
-const RunResultBanner = ({
-    result,
-    error,
-}: {
-    result: MigrationRunResult | null
-    error: Error | null
-}) => {
-    const styles = useStyles()
-    const { t } = useLanguage()
-
-    if (error) {
-        return (
-            <PWView style={styles.statusBanner}>
-                <PWText
-                    variant='h4'
-                    style={styles.statusBannerTitle}
-                >
-                    {t(
-                        'settings.developer.migration_viewer.migrate_error_title',
-                    )}
-                </PWText>
-                <PWText>{error.message}</PWText>
-            </PWView>
-        )
-    }
-
-    if (!result) return null
-
-    return (
-        <PWView style={styles.statusBanner}>
-            <PWText
-                variant='h4'
-                style={styles.statusBannerTitle}
-            >
-                {t('settings.developer.migration_viewer.migrate_result_title')}
-            </PWText>
-            <InlineRow
-                label='completed'
-                value={result.completed}
-            />
-            {result.incompleteReason && (
-                <InlineRow
-                    label='incompleteReason'
-                    value={result.incompleteReason}
-                />
-            )}
-            {result.error && (
-                <StackedRow
-                    label='error'
-                    value={result.error.message}
-                />
-            )}
-            {result.accounts && (
-                <AccountsResultRows accounts={result.accounts} />
-            )}
-            {result.extras && <ExtrasResultRows extras={result.extras} />}
-        </PWView>
-    )
-}
-
-const AccountsResultRows = ({ accounts }: { accounts: MigrationResult }) => {
-    const { t } = useLanguage()
-    return (
-        <>
-            <InlineRow
-                label={t(
-                    'settings.developer.migration_viewer.migrate_result_imported',
-                )}
-                value={accounts.imported}
-            />
-            <InlineRow
-                label={t(
-                    'settings.developer.migration_viewer.migrate_result_skipped',
-                )}
-                value={accounts.skipped}
-            />
-            <InlineRow
-                label={t(
-                    'settings.developer.migration_viewer.migrate_result_failed',
-                )}
-                value={accounts.failed.length}
-            />
-            {accounts.failed.map((f, i) => (
-                <StackedRow
-                    key={`${f.address}-${i}`}
-                    label={`${f.name || truncateAddress(f.address)}`}
-                    value={f.reason}
-                />
-            ))}
-        </>
-    )
-}
-
-const ExtrasResultRows = ({ extras }: { extras: ExtrasMigrationResult }) => (
-    <>
-        <InlineRow
-            label='preferences'
-            value={extras.preferences}
-        />
-        <InlineRow
-            label='swaps'
-            value={extras.swaps}
-        />
-        <InlineRow
-            label='deviceIdentifiers'
-            value={extras.deviceIdentifiers}
-        />
-        <InlineRow
-            label='contacts imported'
-            value={extras.contacts.imported}
-        />
-        <InlineRow
-            label='contacts skipped'
-            value={extras.contacts.skipped}
-        />
-        <InlineRow
-            label='notifications muted'
-            value={extras.notifications.muted}
-        />
-        <InlineRow
-            label='pin migrated'
-            value={extras.auth.pinMigrated}
-        />
-        <InlineRow
-            label='biometric migrated'
-            value={extras.auth.biometricMigrated}
-        />
-        <InlineRow
-            label='lockout migrated'
-            value={extras.auth.lockoutMigrated}
-        />
-        <InlineRow
-            label='passkeys stashed'
-            value={extras.stashed.passkeysStashed}
-        />
-        <InlineRow
-            label='extras steps failed'
-            value={extras.failed.length}
-        />
-        {extras.failed.map((f, i) => (
-            <StackedRow
-                key={`${f.step}-${i}`}
-                label={f.step}
-                value={f.reason}
-            />
-        ))}
-    </>
-)
-
-type ExpandAllSignal = { expand: boolean; generation: number }
-const ExpandAllContext = createContext<ExpandAllSignal | null>(null)
-
-export const useExpandableState = (initial: boolean) => {
-    const ctx = useContext(ExpandAllContext)
-    const [expanded, setExpanded] = useState(initial)
-    const lastGen = useRef<number | null>(null)
-    useEffect(() => {
-        if (ctx && ctx.generation !== lastGen.current) {
-            lastGen.current = ctx.generation
-            setExpanded(ctx.expand)
-        }
-    }, [ctx])
-    return [expanded, setExpanded] as const
-}
-
-type CollapsibleSectionProps = {
-    title: string
-    count?: number
-    initiallyExpanded?: boolean
-    children: ReactNode
-}
-
-export const CollapsibleSection = ({
-    title,
-    count,
-    initiallyExpanded = false,
-    children,
-}: CollapsibleSectionProps) => {
-    const styles = useStyles()
-    const [expanded, setExpanded] = useExpandableState(initiallyExpanded)
-
-    return (
-        <PWView>
-            <PWTouchableOpacity onPress={() => setExpanded(prev => !prev)}>
-                <PWView style={styles.sectionHeader}>
-                    <PWView style={styles.sectionHeaderLeft}>
-                        <PWText
-                            variant='h4'
-                            style={styles.sectionTitle}
-                        >
-                            {title}
-                        </PWText>
-                        {count !== undefined && (
-                            <PWView style={styles.countChip}>
-                                <PWText
-                                    variant='caption'
-                                    style={styles.countChipText}
-                                >
-                                    {count}
-                                </PWText>
-                            </PWView>
-                        )}
-                    </PWView>
-                    <PWIcon
-                        name={expanded ? 'chevron-down' : 'chevron-right'}
-                        size='sm'
-                    />
-                </PWView>
-            </PWTouchableOpacity>
-            {expanded && <PWView style={styles.sectionBody}>{children}</PWView>}
-        </PWView>
-    )
-}
-
-type RowProps = { label: string; value: unknown }
-
-export const InlineRow = ({ label, value }: RowProps) => {
-    if (shouldStack(value)) {
-        return (
-            <StackedRow
-                label={label}
-                value={value}
-            />
-        )
-    }
-    return (
-        <InlineRowImpl
-            label={label}
-            value={value}
-        />
-    )
-}
-
-const InlineRowImpl = ({ label, value }: RowProps) => {
-    const styles = useStyles()
-    return (
-        <PWView style={styles.inlineRow}>
-            <PWText
-                variant='body'
-                style={styles.inlineRowLabel}
-            >
-                {label}
-            </PWText>
-            <PWText
-                variant='body'
-                style={styles.inlineRowValue}
-                numberOfLines={1}
-                ellipsizeMode='middle'
-            >
-                {formatValue(value)}
-            </PWText>
-        </PWView>
-    )
-}
-
-export const StackedRow = ({ label, value }: RowProps) => {
-    const styles = useStyles()
-    return (
-        <PWView style={styles.stackedRow}>
-            <PWText
-                variant='body'
-                style={styles.stackedRowLabel}
-            >
-                {label}
-            </PWText>
-            <PWText
-                variant='body'
-                style={[styles.stackedRowValue, styles.monospaceValue]}
-            >
-                {formatValue(value)}
-            </PWText>
-        </PWView>
-    )
-}
-
-export const EmptyHint = () => {
-    const styles = useStyles()
-    return (
-        <PWText
-            variant='body'
-            style={styles.empty}
-        >
-            {'(empty)'}
-        </PWText>
-    )
-}
-
-export const SubBlock = ({
-    title,
-    children,
-}: {
-    title: string
-    children: ReactNode
-}) => {
-    const styles = useStyles()
-    return (
-        <PWView style={styles.subBlock}>
-            <PWText
-                variant='body'
-                style={styles.subBlockTitle}
-            >
-                {title}
-            </PWText>
-            {children}
-        </PWView>
-    )
-}
-
-type ComparisonRowProps = {
-    label: string
-    legacyValue: unknown
-    rnValue: unknown
-    matches?: boolean
-}
-
-export const ComparisonRow = ({
-    label,
-    legacyValue,
-    rnValue,
-    matches,
-}: ComparisonRowProps) => {
-    const styles = useStyles()
-    return (
-        <PWView style={styles.comparisonRow}>
-            <PWView style={styles.comparisonHeader}>
-                <PWText
-                    variant='body'
-                    style={styles.comparisonLabel}
-                >
-                    {label}
-                </PWText>
-                {matches !== undefined && (
-                    <PWText
-                        variant='body'
-                        style={[
-                            styles.comparisonStatus,
-                            matches
-                                ? styles.comparisonStatusOk
-                                : styles.comparisonStatusWarn,
-                        ]}
-                    >
-                        {matches ? '✓' : '⚠'}
-                    </PWText>
-                )}
-            </PWView>
-            <PWView style={styles.comparisonLine}>
-                <PWText
-                    variant='body'
-                    style={styles.comparisonTag}
-                >
-                    Device
-                </PWText>
-                <PWText
-                    variant='body'
-                    style={styles.comparisonValue}
-                >
-                    {formatValue(legacyValue)}
-                </PWText>
-            </PWView>
-            <PWView style={styles.comparisonLine}>
-                <PWText
-                    variant='body'
-                    style={styles.comparisonTag}
-                >
-                    RN
-                </PWText>
-                <PWText
-                    variant='body'
-                    style={styles.comparisonValue}
-                >
-                    {formatValue(rnValue)}
-                </PWText>
-            </PWView>
-        </PWView>
-    )
-}
-
-const shouldStack = (value: unknown): boolean => {
-    if (value instanceof Uint8Array) return true
-    if (Array.isArray(value)) return value.length > 0
-    if (typeof value === 'string') return value.length > 32
-    return value !== null && typeof value === 'object'
-}
-
-const formatValue = (value: unknown): string => {
-    if (value === null || value === undefined) return '(null)'
-    if (value instanceof Uint8Array) {
-        if (value.length === 0) return 'Uint8Array(0) []'
-        const preview = Array.from(value.slice(0, 8))
-            .map(b => b.toString(16).padStart(2, '0'))
-            .join(' ')
-        return `Uint8Array(${value.length}) [${preview}${value.length > 8 ? ' …' : ''}]`
-    }
-    if (Array.isArray(value)) {
-        if (value.length === 0) return '[]'
-        try {
-            return JSON.stringify(value)
-        } catch {
-            return `Array(${value.length})`
-        }
-    }
-    if (typeof value === 'boolean') return value ? 'true' : 'false'
-    if (typeof value === 'number') return String(value)
-    if (typeof value === 'string') {
-        if (value.length === 0) return '""'
-        if (ALGORAND_ADDRESS_RE.test(value)) return truncateAddress(value)
-        return value
-    }
-    if (typeof value === 'object') {
-        try {
-            return JSON.stringify(value)
-        } catch {
-            return '[Object]'
-        }
-    }
-    return String(value)
-}
-
-export const truncateAddress = (address: string): string => {
-    if (address.length <= 11) return address
-    return `${address.slice(0, 4)}...${address.slice(-4)}`
-}
-
-const ALGORAND_ADDRESS_RE = /^[A-Z2-7]{58}$/
-
-export const getDisplayType = (account: LegacyAccount): string => {
-    if (account.type === 'watch') return 'watch'
-    if (account.joint !== null) return 'multisig'
-    if (account.ledger !== null) return 'hardware'
-    if (account.hdWalletId !== null) return 'hdWallet'
-    return 'algo25'
 }

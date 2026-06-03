@@ -10,12 +10,9 @@
  limitations under the License
  */
 
-import { useLanguage } from '@hooks/useLanguage'
 import type { LegacyMigrationData } from '@perawallet/wallet-extension-platform'
-import {
-    CollapsibleSection,
-    ComparisonRow,
-} from '../SettingsDeveloperMigrationViewerScreen'
+import { MigrationDataSection } from '../components/MigrationDataSection'
+import { LegacyVsRnRow } from '../components/LegacyVsRnRow'
 import type { RNMigrationSnapshot } from '../useRNMigrationSnapshot'
 
 export const AuthSection = ({
@@ -27,7 +24,6 @@ export const AuthSection = ({
     biometricEnabled: boolean | null
     rn: RNMigrationSnapshot
 }) => {
-    const { t } = useLanguage()
     const legacyPinBytes = auth.pin?.length ?? null
     const rnPinDesc = rn.auth.hasPin
         ? `PinRecord v${rn.auth.pinRecordVersion ?? '?'} (${rn.auth.pinRecordBytes ?? '?'} B)`
@@ -37,21 +33,19 @@ export const AuthSection = ({
     const legacyBio = biometricEnabled === true
     const rnBio = rn.auth.hasBiometric
     return (
-        <CollapsibleSection
-            title={t('settings.developer.migration_viewer.section_auth')}
-        >
-            <ComparisonRow
+        <MigrationDataSection title='Auth'>
+            <LegacyVsRnRow
                 label='pin'
                 legacyValue={legacyPinDesc}
                 rnValue={rnPinDesc}
                 matches={(legacyPinBytes !== null) === rn.auth.hasPin}
             />
-            <ComparisonRow
+            <LegacyVsRnRow
                 label='biometric enabled'
                 legacyValue={legacyBio}
                 rnValue={rnBio}
                 matches={legacyBio === rnBio}
             />
-        </CollapsibleSection>
+        </MigrationDataSection>
     )
 }

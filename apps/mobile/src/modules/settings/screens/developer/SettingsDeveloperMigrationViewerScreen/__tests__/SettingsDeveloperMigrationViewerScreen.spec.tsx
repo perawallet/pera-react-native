@@ -99,14 +99,10 @@ describe('SettingsDeveloperMigrationViewerScreen', () => {
 
         render(<SettingsDeveloperMigrationViewerScreen />)
 
-        expect(
-            screen.getByText('settings.developer.migration_viewer.error_title'),
-        ).toBeTruthy()
+        expect(screen.getByText('Failed to read legacy data')).toBeTruthy()
         expect(screen.getByText('load failed')).toBeTruthy()
 
-        fireEvent.click(
-            screen.getByText('settings.developer.migration_viewer.refresh'),
-        )
+        fireEvent.click(screen.getByText('Refresh'))
         expect(refresh).toHaveBeenCalledTimes(1)
     })
 
@@ -129,11 +125,7 @@ describe('SettingsDeveloperMigrationViewerScreen', () => {
         render(<SettingsDeveloperMigrationViewerScreen />)
 
         expect(screen.getByText('common.loading.label')).toBeTruthy()
-        expect(
-            screen.queryByText(
-                'settings.developer.migration_viewer.error_title',
-            ),
-        ).toBeNull()
+        expect(screen.queryByText('Failed to read legacy data')).toBeNull()
         expect(screen.queryByText('should not be shown')).toBeNull()
     })
 })

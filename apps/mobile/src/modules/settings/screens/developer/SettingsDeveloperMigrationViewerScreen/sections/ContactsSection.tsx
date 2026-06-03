@@ -10,15 +10,12 @@
  limitations under the License
  */
 
-import { useLanguage } from '@hooks/useLanguage'
 import type { LegacyContact } from '@perawallet/wallet-extension-platform'
-import {
-    CollapsibleSection,
-    ComparisonRow,
-    EmptyHint,
-    InlineRow,
-    SubBlock,
-} from '../SettingsDeveloperMigrationViewerScreen'
+import { MigrationDataSection } from '../components/MigrationDataSection'
+import { LegacyVsRnRow } from '../components/LegacyVsRnRow'
+import { EmptyDataHint } from '../components/EmptyDataHint'
+import { MigrationDataRow } from '../components/MigrationDataRow'
+import { MigrationDataSubBlock } from '../components/MigrationDataSubBlock'
 import type { RNMigrationSnapshot } from '../useRNMigrationSnapshot'
 
 export const ContactsSection = ({
@@ -28,54 +25,53 @@ export const ContactsSection = ({
     contacts: LegacyContact[]
     rn: RNMigrationSnapshot
 }) => {
-    const { t } = useLanguage()
     return (
-        <CollapsibleSection
-            title={t('settings.developer.migration_viewer.section_contacts')}
+        <MigrationDataSection
+            title='Contacts'
             count={contacts.length}
         >
-            <ComparisonRow
+            <LegacyVsRnRow
                 label='count'
                 legacyValue={contacts.length}
                 rnValue={rn.contactsByAddress.size}
                 matches={contacts.length <= rn.contactsByAddress.size}
             />
             {contacts.length === 0 ? (
-                <EmptyHint />
+                <EmptyDataHint />
             ) : (
                 contacts.map((c, i) => {
                     const rnContact = rn.contactsByAddress.get(
                         c.address.toLowerCase(),
                     )
                     return (
-                        <SubBlock
+                        <MigrationDataSubBlock
                             key={`${c.address}-${i}`}
                             title={`#${i} — ${c.name}`}
                         >
-                            <ComparisonRow
+                            <LegacyVsRnRow
                                 label='present in RN'
                                 legacyValue={true}
                                 rnValue={rnContact !== undefined}
                                 matches={rnContact !== undefined}
                             />
-                            <ComparisonRow
+                            <LegacyVsRnRow
                                 label='name'
                                 legacyValue={c.name}
                                 rnValue={rnContact?.name ?? '(missing)'}
                                 matches={rnContact?.name === c.name}
                             />
-                            <InlineRow
+                            <MigrationDataRow
                                 label='address'
                                 value={c.address}
                             />
-                            <InlineRow
+                            <MigrationDataRow
                                 label='avatar'
                                 value={c.avatar}
                             />
-                        </SubBlock>
+                        </MigrationDataSubBlock>
                     )
                 })
             )}
-        </CollapsibleSection>
+        </MigrationDataSection>
     )
 }

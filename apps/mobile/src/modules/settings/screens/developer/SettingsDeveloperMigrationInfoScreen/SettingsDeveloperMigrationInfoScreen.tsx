@@ -11,6 +11,7 @@
  */
 
 import { PWScrollView, PWText, PWView } from '@components/core'
+import { useLanguage } from '@hooks/useLanguage'
 import type {
     BundledMigrationSummary,
     MigrationPlanSummary,
@@ -20,12 +21,13 @@ import { useMigrationPlans } from './useMigrationPlans'
 
 export const SettingsDeveloperMigrationInfoScreen = () => {
     const styles = useStyles()
+    const { t } = useLanguage()
     const { plans, isLoading, error } = useMigrationPlans()
 
     if (isLoading) {
         return (
             <PWView style={styles.centered}>
-                <PWText>Loading…</PWText>
+                <PWText>{t('common.loading.label')}</PWText>
             </PWView>
         )
     }
@@ -88,7 +90,7 @@ const PlanCard = ({ plan }: { plan: MigrationPlanSummary }) => {
                     variant='caption'
                     style={styles.planMeta}
                 >
-                    target v{plan.targetVersion} · floor v{plan.oldestSupported}
+                    {`target v${plan.targetVersion} · floor v${plan.oldestSupported}`}
                 </PWText>
             </PWView>
 
@@ -121,7 +123,7 @@ const MigrationRow = ({
                 variant='body'
                 style={styles.migrationStep}
             >
-                {migration.from} → {migration.to}
+                {`${migration.from} → ${migration.to}`}
             </PWText>
             <PWText
                 variant='body'

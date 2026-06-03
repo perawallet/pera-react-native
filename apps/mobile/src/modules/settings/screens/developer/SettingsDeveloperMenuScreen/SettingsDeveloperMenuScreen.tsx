@@ -54,7 +54,7 @@ export const SettingsDeveloperMenuScreen = () => {
             <PWListItem
                 onPress={() => handleTapEvent('MigrationViewer')}
                 icon='code'
-                title={t('screens.migration_viewer')}
+                title='Migration Viewer'
             />
             <PWListItem
                 onPress={() => openTestingWebview()}

@@ -10,13 +10,10 @@
  limitations under the License
  */
 
-import { useLanguage } from '@hooks/useLanguage'
 import type { LegacyPreferences } from '@perawallet/wallet-extension-platform'
-import {
-    CollapsibleSection,
-    ComparisonRow,
-    InlineRow,
-} from '../SettingsDeveloperMigrationViewerScreen'
+import { MigrationDataSection } from '../components/MigrationDataSection'
+import { LegacyVsRnRow } from '../components/LegacyVsRnRow'
+import { MigrationDataRow } from '../components/MigrationDataRow'
 import type { RNMigrationSnapshot } from '../useRNMigrationSnapshot'
 
 const PREFERENCE_KEYS: Array<keyof LegacyPreferences> = [
@@ -55,17 +52,16 @@ export const PreferencesSection = ({
     preferences: LegacyPreferences
     rn: RNMigrationSnapshot
 }) => {
-    const { t } = useLanguage()
     return (
-        <CollapsibleSection
-            title={t('settings.developer.migration_viewer.section_preferences')}
+        <MigrationDataSection
+            title='Preferences'
             count={PREFERENCE_KEYS.length}
         >
             {PREFERENCE_KEYS.map(key => {
                 const cmp = preferenceComparison(key, preferences, rn)
                 if (cmp === null) {
                     return (
-                        <InlineRow
+                        <MigrationDataRow
                             key={key}
                             label={key}
                             value={preferences[key]}
@@ -73,7 +69,7 @@ export const PreferencesSection = ({
                     )
                 }
                 return (
-                    <ComparisonRow
+                    <LegacyVsRnRow
                         key={key}
                         label={key}
                         legacyValue={cmp.legacy}
@@ -82,7 +78,7 @@ export const PreferencesSection = ({
                     />
                 )
             })}
-        </CollapsibleSection>
+        </MigrationDataSection>
     )
 }
 

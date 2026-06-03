@@ -10,83 +10,81 @@
  limitations under the License
  */
 
-import { useLanguage } from '@hooks/useLanguage'
 import type { LegacyHDWallet } from '@perawallet/wallet-extension-platform'
-import {
-    CollapsibleSection,
-    EmptyHint,
-    InlineRow,
-    SubBlock,
-    truncateAddress,
-} from '../SettingsDeveloperMigrationViewerScreen'
+import { MigrationDataSection } from '../components/MigrationDataSection'
+import { EmptyDataHint } from '../components/EmptyDataHint'
+import { MigrationDataRow } from '../components/MigrationDataRow'
+import { MigrationDataSubBlock } from '../components/MigrationDataSubBlock'
+import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 
 export const HDWalletsSection = ({
     hdWallets,
 }: {
     hdWallets: LegacyHDWallet[]
 }) => {
-    const { t } = useLanguage()
     return (
-        <CollapsibleSection
-            title={t('settings.developer.migration_viewer.section_hd_wallets')}
+        <MigrationDataSection
+            title='HD Wallets'
             count={hdWallets.length}
         >
             {hdWallets.length === 0 ? (
-                <EmptyHint />
+                <EmptyDataHint />
             ) : (
                 hdWallets.map((w, i) => (
-                    <SubBlock
+                    <MigrationDataSubBlock
                         key={`${w.walletId}-${i}`}
                         title={`#${i} — ${w.walletId}`}
                     >
-                        <InlineRow
+                        <MigrationDataRow
                             label='walletId'
                             value={w.walletId}
                         />
-                        <InlineRow
+                        <MigrationDataRow
                             label='name'
                             value={w.name}
                         />
-                        <InlineRow
+                        <MigrationDataRow
                             label='entropy'
                             value={w.entropy}
                         />
-                        <SubBlock title={`keys (${w.keys.length})`}>
+                        <MigrationDataSubBlock
+                            title={`keys (${w.keys.length})`}
+                        >
                             {w.keys.length === 0 ? (
-                                <EmptyHint />
+                                <EmptyDataHint />
                             ) : (
                                 w.keys.map((k, j) => (
-                                    <SubBlock
+                                    <MigrationDataSubBlock
                                         key={`${k.address}-${j}`}
-                                        title={`#${j} — ${truncateAddress(k.address)}`}
+                                        title={`#${j} — ${truncateAlgorandAddress(k.address)}`}
                                     >
-                                        <InlineRow
+                                        <MigrationDataRow
                                             label='address'
                                             value={k.address}
                                         />
-                                        <InlineRow
+                                        <MigrationDataRow
                                             label='account'
                                             value={k.account}
                                         />
-                                        <InlineRow
+                                        <MigrationDataRow
                                             label='change'
                                             value={k.change}
                                         />
-                                        <InlineRow
+                                        <MigrationDataRow
                                             label='keyIndex'
                                             value={k.keyIndex}
                                         />
-                                        <InlineRow
+                                        <MigrationDataRow
                                             label='derivationType'
                                             value={k.derivationType}
                                         />
-                                    </SubBlock>
+                                    </MigrationDataSubBlock>
                                 ))
                             )}
-                        </SubBlock>
-                    </SubBlock>
+                        </MigrationDataSubBlock>
+                    </MigrationDataSubBlock>
                 ))
             )}
-        </CollapsibleSection>
+        </MigrationDataSection>
     )
 }

@@ -14,15 +14,14 @@ import { Alert, Platform } from 'react-native'
 import {
     PWButton,
     PWCheckbox,
-    PWDropdown,
-    PWIcon,
     PWScrollView,
     PWText,
     PWView,
 } from '@components/core'
-import type { MigrationPlanSummary } from '@perawallet/wallet-extension-platform'
+import { LegacyDatabaseCard } from './components/LegacyDatabaseCard'
+import { ResultLine } from './components/ResultLine'
 import { useStyles } from './styles'
-import { useMigrationSimulator, type ResultRow } from './useMigrationSimulator'
+import { useMigrationSimulator } from './useMigrationSimulator'
 
 export const SettingsDeveloperMigrationSimulatorScreen = () => {
     const styles = useStyles()
@@ -100,7 +99,7 @@ export const SettingsDeveloperMigrationSimulatorScreen = () => {
                 </PWText>
             ) : (
                 plans.map(plan => (
-                    <DbCard
+                    <LegacyDatabaseCard
                         key={plan.dbName}
                         plan={plan}
                         selectedVersion={
@@ -219,167 +218,4 @@ export const SettingsDeveloperMigrationSimulatorScreen = () => {
             )}
         </PWScrollView>
     )
-}
-
-const DbCard = ({
-    plan,
-    selectedVersion,
-    onSelectVersion,
-    lastGenerated,
-    disabled,
-}: {
-    plan: MigrationPlanSummary
-    selectedVersion: number
-    onSelectVersion: (version: number) => void
-    lastGenerated: { version: number; at: number } | undefined
-    disabled: boolean
-}) => {
-    const styles = useStyles()
-    const versions: number[] = []
-    for (let v = plan.oldestSupported; v <= plan.targetVersion; v += 1) {
-        versions.push(v)
-    }
-    const isSingleSnapshot = versions.length <= 1
-    return (
-        <PWView style={styles.dbCard}>
-            <PWView style={styles.dbCardHeader}>
-                <PWText
-                    variant='h4'
-                    style={styles.dbCardTitle}
-                >
-                    {plan.dbName}
-                </PWText>
-                {!isSingleSnapshot && (
-                    <PWText
-                        variant='caption'
-                        style={styles.dbCardRange}
-                    >
-                        range v{plan.oldestSupported}..v{plan.targetVersion}
-                    </PWText>
-                )}
-            </PWView>
-
-            {isSingleSnapshot ? (
-                <PWText
-                    variant='body'
-                    style={styles.snapshotNote}
-                >
-                    single snapshot · no schema versions
-                </PWText>
-            ) : (
-                <PWView style={styles.versionRow}>
-                    <PWText
-                        variant='body'
-                        style={styles.versionLabel}
-                    >
-                        user_version
-                    </PWText>
-                    <PWDropdown
-                        align='right'
-                        items={versions.map(v => ({
-                            label: `v${v}`,
-                            onPress: () => {
-                                if (!disabled) onSelectVersion(v)
-                            },
-                        }))}
-                    >
-                        <PWView style={styles.versionChip}>
-                            <PWText
-                                variant='body'
-                                style={styles.versionChipText}
-                            >
-                                v{selectedVersion}
-                            </PWText>
-                            <PWIcon
-                                name='chevron-down'
-                                size='sm'
-                            />
-                        </PWView>
-                    </PWDropdown>
-                </PWView>
-            )}
-
-            <PWText
-                variant='caption'
-                style={styles.lastGenerated}
-            >
-                last generated{' '}
-                {lastGenerated
-                    ? isSingleSnapshot
-                        ? formatRelative(lastGenerated.at)
-                        : `v${lastGenerated.version} · ${formatRelative(lastGenerated.at)}`
-                    : '—'}
-            </PWText>
-        </PWView>
-    )
-}
-
-const ResultLine = ({ row }: { row: ResultRow }) => {
-    const styles = useStyles()
-    const { icon, iconVariant, detail } = describeOutcome(row.outcome)
-    return (
-        <PWView style={styles.resultRow}>
-            <PWView style={styles.resultStatusIcon}>
-                <PWIcon
-                    name={icon}
-                    size='sm'
-                    variant={iconVariant}
-                />
-            </PWView>
-            <PWText
-                variant='body'
-                style={styles.resultDbName}
-            >
-                {row.dbName}
-            </PWText>
-            <PWText
-                variant='body'
-                style={styles.resultDetail}
-            >
-                {detail}
-            </PWText>
-        </PWView>
-    )
-}
-
-const describeOutcome = (
-    outcome: ResultRow['outcome'],
-): {
-    icon: 'check' | 'cross' | 'info'
-    iconVariant: 'positive' | 'error' | 'helper'
-    detail: string
-} => {
-    switch (outcome.kind) {
-        case 'pending':
-            return { icon: 'info', iconVariant: 'helper', detail: 'Working…' }
-        case 'success':
-            return outcome.version === 0
-                ? { icon: 'check', iconVariant: 'positive', detail: 'Reset' }
-                : {
-                      icon: 'check',
-                      iconVariant: 'positive',
-                      detail: `v${outcome.version}`,
-                  }
-        case 'done':
-            return {
-                icon: 'check',
-                iconVariant: 'positive',
-                detail: outcome.detail,
-            }
-        case 'error':
-            return {
-                icon: 'cross',
-                iconVariant: 'error',
-                detail: outcome.message,
-            }
-    }
-}
-
-const formatRelative = (at: number): string => {
-    const deltaSec = Math.max(0, Math.round((Date.now() - at) / 1000))
-    if (deltaSec < 60) return `${deltaSec}s ago`
-    const deltaMin = Math.round(deltaSec / 60)
-    if (deltaMin < 60) return `${deltaMin} min ago`
-    const deltaHr = Math.round(deltaMin / 60)
-    return `${deltaHr} hr ago`
 }

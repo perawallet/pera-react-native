@@ -11,12 +11,10 @@
  */
 
 import type { LegacySchemaReplayResult } from '@perawallet/wallet-extension-platform'
-import {
-    CollapsibleSection,
-    EmptyHint,
-    InlineRow,
-    StackedRow,
-} from '../SettingsDeveloperMigrationViewerScreen'
+import { MigrationDataSection } from '../components/MigrationDataSection'
+import { EmptyDataHint } from '../components/EmptyDataHint'
+import { MigrationDataRow } from '../components/MigrationDataRow'
+import { StackedMigrationDataRow } from '../components/StackedMigrationDataRow'
 
 export const SchemaReplayResultsSection = ({
     results,
@@ -26,7 +24,7 @@ export const SchemaReplayResultsSection = ({
     if (!results) return null
     const entries = Object.entries(results)
     return (
-        <CollapsibleSection
+        <MigrationDataSection
             title='Schema replay results'
             count={entries.length}
             initiallyExpanded={entries.some(
@@ -37,7 +35,7 @@ export const SchemaReplayResultsSection = ({
             )}
         >
             {entries.length === 0 ? (
-                <EmptyHint />
+                <EmptyDataHint />
             ) : (
                 entries.map(([dbName, result]) => (
                     <SchemaReplayResultRow
@@ -47,7 +45,7 @@ export const SchemaReplayResultsSection = ({
                     />
                 ))
             )}
-        </CollapsibleSection>
+        </MigrationDataSection>
     )
 }
 
@@ -59,12 +57,12 @@ const SchemaReplayResultRow = ({
     result: LegacySchemaReplayResult
 }) => (
     <>
-        <InlineRow
+        <MigrationDataRow
             label={dbName}
             value={formatSchemaReplayResult(result)}
         />
         {result.kind === 'failed' && (
-            <StackedRow
+            <StackedMigrationDataRow
                 label={`${dbName} error`}
                 value={result.errorMessage}
             />
