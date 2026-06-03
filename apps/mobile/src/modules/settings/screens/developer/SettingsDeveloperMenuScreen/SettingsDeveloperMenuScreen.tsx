@@ -52,6 +52,11 @@ export const SettingsDeveloperMenuScreen = () => {
                 title={t('screens.feature_flags')}
             />
             <PWListItem
+                onPress={() => handleTapEvent('MigrationViewer')}
+                icon='code'
+                title='Migration Viewer'
+            />
+            <PWListItem
                 onPress={() => openTestingWebview()}
                 icon='globe'
                 title={t('settings.developer.debug_webview')}

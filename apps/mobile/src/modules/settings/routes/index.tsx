@@ -33,6 +33,9 @@ import { SettingsWalletConnectDetailsScreen } from '@modules/settings/screens/Se
 import { SettingsDeveloperMenuScreen } from '../screens/developer/SettingsDeveloperMenuScreen/SettingsDeveloperMenuScreen'
 import { SettingsDeveloperFeatureFlagsScreen } from '../screens/developer/SettingsDeveloperFeatureFlagsScreen/SettingsDeveloperFeatureFlagsScreen'
 import { SettingsDeveloperManageCacheScreen } from '../screens/developer/SettingsDeveloperManageCacheScreen'
+import { SettingsDeveloperMigrationViewerScreen } from '../screens/developer/SettingsDeveloperMigrationViewerScreen'
+import { SettingsDeveloperMigrationInfoScreen } from '../screens/developer/SettingsDeveloperMigrationInfoScreen'
+import { SettingsDeveloperMigrationSimulatorScreen } from '../screens/developer/SettingsDeveloperMigrationSimulatorScreen'
 
 export type DeveloperSettingsStackParamsList = {
     DeveloperSettingsHome: undefined
@@ -40,6 +43,9 @@ export type DeveloperSettingsStackParamsList = {
     DevMenu: undefined
     FeatureFlags: undefined
     ManageCache: undefined
+    MigrationViewer: undefined
+    MigrationInfo: undefined
+    MigrationSimulator: undefined
 }
 
 const DeveloperSettingsStack =
@@ -93,6 +99,27 @@ const DeveloperSettingsStackNavigator = () => {
                     title: 'screens.manage_cache',
                 }}
                 component={SettingsDeveloperManageCacheScreen}
+            />
+            <DeveloperSettingsStack.Screen
+                name='MigrationViewer'
+                options={{
+                    title: 'Migration Viewer',
+                }}
+                component={SettingsDeveloperMigrationViewerScreen}
+            />
+            <DeveloperSettingsStack.Screen
+                name='MigrationInfo'
+                options={{
+                    title: 'Migration reference',
+                }}
+                component={SettingsDeveloperMigrationInfoScreen}
+            />
+            <DeveloperSettingsStack.Screen
+                name='MigrationSimulator'
+                options={{
+                    title: 'Migration simulator',
+                }}
+                component={SettingsDeveloperMigrationSimulatorScreen}
             />
         </DeveloperSettingsStack.Navigator>
     )
