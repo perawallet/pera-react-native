@@ -14,6 +14,8 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { useBalanceValidation } from '../useBalanceValidation'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 
 const mockAccountInformation = vi.fn()
 
@@ -35,14 +37,21 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
     }
 })
 
-import { useBalanceValidation } from '../useBalanceValidation'
-
 const wrapper = ({ children }: { children: React.ReactNode }) => {
     const client = new QueryClient({
         defaultOptions: { queries: { retry: false } },
     })
     return React.createElement(QueryClientProvider, { client }, children)
 }
+
+const makeTx = (
+    overrides: Partial<PeraDisplayableTransaction> = {},
+): PeraDisplayableTransaction =>
+    ({
+        sender: 'ADDR_A',
+        fee: 1000n,
+        ...overrides,
+    }) as unknown as PeraDisplayableTransaction
 
 describe('useBalanceValidation', () => {
     beforeEach(() => {
@@ -105,5 +114,47 @@ describe('useBalanceValidation', () => {
         await waitFor(() => expect(result.current.isLoading).toBe(false))
         expect(result.current.validation?.isValid).toBe(true)
         expect(mockAccountInformation).not.toHaveBeenCalled()
+    })
+
+    test('recomputes validation when includeMBR toggles', async () => {
+        // amount sits between (fee + payment) and (fee + payment + minBalance):
+        //   required without MBR = 1_000 + 850_000           =   851_000  (<= 900_000, valid)
+        //   required with MBR    = 1_000 + 850_000 + 100_000  =   951_000  (>  900_000, invalid)
+        mockAccountInformation.mockResolvedValue({
+            address: { toString: () => 'ADDR_A' },
+            amount: 900_000n,
+            minBalance: 100_000n,
+            assets: [],
+        })
+
+        const transactions = [
+            makeTx({
+                fee: 1000n,
+                paymentTransaction: {
+                    amount: 850_000n,
+                    receiver: 'RECEIVER',
+                } as any,
+            }),
+        ]
+        const signableAddresses = new Set(['ADDR_A'])
+
+        const { result, rerender } = renderHook(
+            ({ includeMBR }: { includeMBR: boolean }) =>
+                useBalanceValidation({
+                    transactions,
+                    signableAddresses,
+                    includeMBR,
+                }),
+            { wrapper, initialProps: { includeMBR: true } },
+        )
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
+        // MBR included → required exceeds available → invalid
+        expect(result.current.validation?.isValid).toBe(false)
+
+        rerender({ includeMBR: false })
+        // MBR excluded → required is below available → valid
+        // Fails before the dependency-array fix (stale memo keeps returning invalid)
+        expect(result.current.validation?.isValid).toBe(true)
     })
 })

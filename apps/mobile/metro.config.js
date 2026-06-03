@@ -15,6 +15,8 @@
 const { getDefaultConfig } = require('expo/metro-config');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const path = require('path');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const fs = require('fs');
 
 // Find the monorepo root (2 levels up from apps/mobile)
 const projectRoot = __dirname;
@@ -29,6 +31,10 @@ const watchFolders = [monorepoRoot];
 const nodeModulesPaths = [
     path.resolve(projectRoot, 'node_modules'),
     path.resolve(monorepoRoot, 'node_modules'),
+    ...fs
+        .readdirSync(path.resolve(monorepoRoot, 'extensions'))
+        .map(name => path.resolve(monorepoRoot, 'extensions', name, 'node_modules'))
+        .filter(p => fs.existsSync(p)),
 ];
 
 // SVG transformer configuration

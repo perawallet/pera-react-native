@@ -88,7 +88,14 @@ export const useBalanceValidation = (
             accountStates,
             includeMBR,
         )
-    }, [isLoading, results, addresses, transactions, signableAddresses])
+    }, [
+        isLoading,
+        results,
+        addresses,
+        transactions,
+        signableAddresses,
+        includeMBR,
+    ])
 
     return { validation, isLoading }
 }
