@@ -26,28 +26,25 @@ export const PeraWebImportLoadingScreen = () => {
     usePeraWebImportLoadingScreen()
 
     return (
-        <PWScreen
-            scroll='never'
-            body={
-                <PWView style={styles.container}>
-                    <PWRoundIcon
-                        icon='globe'
-                        size='xxl'
+        <PWScreen scroll='never'>
+            <PWView style={styles.container}>
+                <PWRoundIcon
+                    icon='globe'
+                    size='xxl'
+                />
+                <PWText
+                    variant='h2'
+                    style={styles.title}
+                >
+                    {t('onboarding.pera_web_import.loading.title')}
+                </PWText>
+                <PWView testID='pera_web_import_loading_indicator'>
+                    <LoadingView
+                        variant='circle'
+                        size='lg'
                     />
-                    <PWText
-                        variant='h2'
-                        style={styles.title}
-                    >
-                        {t('onboarding.pera_web_import.loading.title')}
-                    </PWText>
-                    <PWView testID='pera_web_import_loading_indicator'>
-                        <LoadingView
-                            variant='circle'
-                            size='lg'
-                        />
-                    </PWView>
                 </PWView>
-            }
-        />
+            </PWView>
+        </PWScreen>
     )
 }

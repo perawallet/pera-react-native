@@ -57,7 +57,8 @@ export const RawTransactionContent = ({
                     }
                 />
             }
-            body={<PWText variant='mono'>{rawText}</PWText>}
-        />
+        >
+            <PWText variant='mono'>{rawText}</PWText>
+        </PWSheetLayout>
     )
 }

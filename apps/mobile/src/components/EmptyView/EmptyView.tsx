@@ -26,7 +26,6 @@ export type EmptyViewProps = {
     isLoading?: boolean
     loadingView?: ReactNode
     loadingStyle?: ViewStyle
-    bodyStyle?: TextStyle
 } & PWViewProps
 
 export const EmptyView = (props: EmptyViewProps) => {
@@ -40,7 +39,6 @@ export const EmptyView = (props: EmptyViewProps) => {
         isLoading,
         loadingView,
         loadingStyle,
-        bodyStyle,
         ...rest
     } = props
 
@@ -85,7 +83,7 @@ export const EmptyView = (props: EmptyViewProps) => {
                 )}
                 <PWText
                     variant='body'
-                    style={[styles.text, bodyStyle]}
+                    style={[styles.text]}
                     numberOfLines={3}
                     truncate
                 >

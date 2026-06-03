@@ -94,70 +94,67 @@ export const SwapConfirmationContent = ({
                     }
                 />
             }
-            body={
-                <>
-                    <PWView style={styles.assetsGroup}>
-                        <SwapAssetSection
-                            asset={inAsset}
-                            amountDisplay={payDisplay}
-                            fiatDisplay={payFiatDisplay}
-                            unitName={quote.assetIn.unitName}
-                            verificationTier={quote.assetIn.verificationTier}
-                        />
+        >
+            <PWView style={styles.assetsGroup}>
+                <SwapAssetSection
+                    asset={inAsset}
+                    amountDisplay={payDisplay}
+                    fiatDisplay={payFiatDisplay}
+                    unitName={quote.assetIn.unitName}
+                    verificationTier={quote.assetIn.verificationTier}
+                />
 
-                        <PWView style={styles.toDivider}>
-                            <PWDivider style={styles.toDividerLine} />
-                            <PWText
-                                variant='caption'
-                                style={styles.toLabel}
-                            >
-                                {t('swap.form.to')}
-                            </PWText>
-                            <PWDivider style={styles.toDividerLine} />
-                        </PWView>
+                <PWView style={styles.toDivider}>
+                    <PWDivider style={styles.toDividerLine} />
+                    <PWText
+                        variant='caption'
+                        style={styles.toLabel}
+                    >
+                        {t('swap.form.to')}
+                    </PWText>
+                    <PWDivider style={styles.toDividerLine} />
+                </PWView>
 
-                        <SwapAssetSection
-                            asset={outAsset}
-                            amountDisplay={receiveDisplay}
-                            fiatDisplay={receiveFiatDisplay}
-                            unitName={quote.assetOut.unitName}
-                            verificationTier={quote.assetOut.verificationTier}
-                        />
-                    </PWView>
+                <SwapAssetSection
+                    asset={outAsset}
+                    amountDisplay={receiveDisplay}
+                    fiatDisplay={receiveFiatDisplay}
+                    unitName={quote.assetOut.unitName}
+                    verificationTier={quote.assetOut.verificationTier}
+                />
+            </PWView>
 
-                    <PWDivider style={styles.detailsDivider} />
+            <PWDivider style={styles.detailsDivider} />
 
-                    <SwapDetailsSection
-                        quote={quote}
-                        rateDisplay={rateDisplay}
-                        minimumReceivedDisplay={minimumReceivedDisplay}
-                        peraFeeDisplay={peraFeeDisplay}
-                        slippageDisplay={slippageDisplay}
-                        priceImpactDisplay={priceImpactDisplay}
-                        priceImpactStyle={priceImpactStyle}
-                    />
+            <SwapDetailsSection
+                quote={quote}
+                rateDisplay={rateDisplay}
+                minimumReceivedDisplay={minimumReceivedDisplay}
+                peraFeeDisplay={peraFeeDisplay}
+                slippageDisplay={slippageDisplay}
+                priceImpactDisplay={priceImpactDisplay}
+                priceImpactStyle={priceImpactStyle}
+            />
 
-                    {hasHighPriceImpact && (
-                        <PWView
-                            style={styles.warningBanner}
-                            testID='swap-confirm-warning'
-                        >
-                            <PWText style={styles.warningText}>
-                                {t('swap.quote.high_price_impact_warning')}
-                            </PWText>
-                        </PWView>
-                    )}
+            {hasHighPriceImpact && (
+                <PWView
+                    style={styles.warningBanner}
+                    testID='swap-confirm-warning'
+                >
+                    <PWText style={styles.warningText}>
+                        {t('swap.quote.high_price_impact_warning')}
+                    </PWText>
+                </PWView>
+            )}
 
-                    <PWSlideToConfirm
-                        title={t('swap.quote.slide_to_confirm')}
-                        onConfirm={handleSlideConfirm}
-                        isLoading={isProcessing}
-                        isConfirmed={swapStatus === 'success'}
-                        style={styles.confirmButton}
-                        testID='swap-confirm-slide'
-                    />
-                </>
-            }
-        />
+            <PWSlideToConfirm
+                title={t('swap.quote.slide_to_confirm')}
+                onConfirm={handleSlideConfirm}
+                isLoading={isProcessing}
+                isConfirmed={swapStatus === 'success'}
+                style={styles.confirmButton}
+                testID='swap-confirm-slide'
+            />
+        </PWSheetLayout>
     )
 }

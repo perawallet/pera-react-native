@@ -13,11 +13,6 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    content: {
-        flex: 1,
-        justifyContent: 'flex-start',
-        alignItems: 'flex-start',
-    },
     warningRow: {
         flexDirection: 'row',
         alignItems: 'flex-start',

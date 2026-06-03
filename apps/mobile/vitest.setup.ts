@@ -542,6 +542,33 @@ vi.mock('@components/core', () => {
                     React.createElement('span', { key: 'subtitle' }, subtitle),
                 children,
             ),
+        PWListItemLayout: ({
+            left,
+            children,
+            right,
+            showDivider,
+            onPress,
+            testID,
+            style,
+        }: any) =>
+            // Mirror the real component: a pressable row renders a button
+            // (PWTouchableOpacity), a static row renders a div (PWView).
+            React.createElement(
+                onPress ? 'button' : 'div',
+                {
+                    style,
+                    onClick: onPress,
+                    'data-testid': testID,
+                },
+                left && React.createElement('div', { key: 'left' }, left),
+                React.createElement('div', { key: 'center' }, children),
+                right && React.createElement('div', { key: 'right' }, right),
+                showDivider &&
+                    React.createElement('hr', {
+                        key: 'divider',
+                        'data-testid': testID ? `${testID}-divider` : undefined,
+                    }),
+            ),
         PWLoadingOverlay: ({ isVisible, title, children, ...props }: any) =>
             isVisible
                 ? React.createElement(
@@ -632,7 +659,7 @@ vi.mock('@components/core', () => {
             }),
         ),
         PWScrollView: createMockComponent('PWScrollView'),
-        PWSheetLayout: ({ header, body, footer, testID }: any) =>
+        PWSheetLayout: ({ header, children, footer, testID }: any) =>
             React.createElement(
                 'div',
                 { 'data-testid': testID || 'PWSheetLayout' },
@@ -645,7 +672,7 @@ vi.mock('@components/core', () => {
                         },
                         header,
                     ),
-                body,
+                children,
                 footer &&
                     React.createElement(
                         'div',
@@ -656,7 +683,7 @@ vi.mock('@components/core', () => {
                         footer,
                     ),
             ),
-        PWScreen: ({ header, body, footer, testID, style }: any) =>
+        PWScreen: ({ header, children, footer, testID, style }: any) =>
             React.createElement(
                 'div',
                 {
@@ -669,7 +696,7 @@ vi.mock('@components/core', () => {
                         { key: 'header', 'data-testid': 'PWScreen-header' },
                         header,
                     ),
-                body,
+                children,
                 footer &&
                     React.createElement(
                         'div',

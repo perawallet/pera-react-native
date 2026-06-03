@@ -11,15 +11,13 @@
  */
 
 import React from 'react'
-import { PWButton, PWIcon, PWScreen, PWView } from '@components/core'
+import { PWButton, PWIcon, PWScreen } from '@components/core'
 import { ScreenHeader } from '@components/ScreenHeader'
-import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { useImportInfoScreen } from './useImportInfoScreen'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 
 export const ImportInfoScreen = () => {
-    const styles = useStyles()
     const { t } = useLanguage()
     const { handleRecoverPress, handleInfoPress } = useImportInfoScreen()
 
@@ -35,16 +33,6 @@ export const ImportInfoScreen = () => {
 
     return (
         <PWScreen
-            scroll='never'
-            body={
-                <PWView style={styles.content}>
-                    <ScreenHeader
-                        icon='key'
-                        title={t('onboarding.import_info.title')}
-                        description={t('onboarding.import_info.body')}
-                    />
-                </PWView>
-            }
             footer={
                 <PWButton
                     variant='primary'
@@ -53,6 +41,12 @@ export const ImportInfoScreen = () => {
                     testID='import_info_recover_button'
                 />
             }
-        />
+        >
+            <ScreenHeader
+                icon='key'
+                title={t('onboarding.import_info.title')}
+                description={t('onboarding.import_info.body')}
+            />
+        </PWScreen>
     )
 }

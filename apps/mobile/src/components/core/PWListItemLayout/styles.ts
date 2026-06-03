@@ -8,7 +8,7 @@
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  See the License for the specific language governing permissions and
  limitations under the License
-*/
+ */
 
 import { makeStyles } from '@rneui/themed'
 
@@ -22,7 +22,9 @@ type StyleProps = {
 }
 
 const toPercent = (ratio?: number): DimensionValue | undefined =>
-    ratio == null ? undefined : (`${Math.round(ratio * 100)}%` as DimensionValue)
+    ratio == null
+        ? undefined
+        : (`${Math.round(ratio * 100)}%` as DimensionValue)
 
 export const useStyles = makeStyles(
     (theme, { leftFlex, leftMaxWidthRatio, centerFlex, align }: StyleProps) => {

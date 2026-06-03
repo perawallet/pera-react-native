@@ -55,51 +55,44 @@ export const NftFilterContent = () => {
                     }
                 />
             }
-            body={
-                <>
-                    <PWView style={styles.filterRow}>
-                        <PWView style={styles.filterTextContainer}>
-                            <PWText style={styles.filterLabel}>
-                                {t('account_details.nfts.filter_opted_in')}
-                            </PWText>
-                            <PWText
-                                variant='caption'
-                                style={styles.filterDescription}
-                            >
-                                {t(
-                                    'account_details.nfts.filter_opted_in_description',
-                                )}
-                            </PWText>
-                        </PWView>
-                        <PWSwitch
-                            value={showOptedIn}
-                            onValueChange={handleToggleOptedIn}
-                        />
-                    </PWView>
+        >
+            <PWView style={styles.filterRow}>
+                <PWView style={styles.filterTextContainer}>
+                    <PWText style={styles.filterLabel}>
+                        {t('account_details.nfts.filter_opted_in')}
+                    </PWText>
+                    <PWText
+                        variant='caption'
+                        style={styles.filterDescription}
+                    >
+                        {t('account_details.nfts.filter_opted_in_description')}
+                    </PWText>
+                </PWView>
+                <PWSwitch
+                    value={showOptedIn}
+                    onValueChange={handleToggleOptedIn}
+                />
+            </PWView>
 
-                    <PWView style={styles.filterRow}>
-                        <PWView style={styles.filterTextContainer}>
-                            <PWText style={styles.filterLabel}>
-                                {t(
-                                    'account_details.nfts.filter_watch_accounts',
-                                )}
-                            </PWText>
-                            <PWText
-                                variant='caption'
-                                style={styles.filterDescription}
-                            >
-                                {t(
-                                    'account_details.nfts.filter_watch_accounts_description',
-                                )}
-                            </PWText>
-                        </PWView>
-                        <PWSwitch
-                            value={showWatchAccounts}
-                            onValueChange={handleToggleWatchAccounts}
-                        />
-                    </PWView>
-                </>
-            }
-        />
+            <PWView style={styles.filterRow}>
+                <PWView style={styles.filterTextContainer}>
+                    <PWText style={styles.filterLabel}>
+                        {t('account_details.nfts.filter_watch_accounts')}
+                    </PWText>
+                    <PWText
+                        variant='caption'
+                        style={styles.filterDescription}
+                    >
+                        {t(
+                            'account_details.nfts.filter_watch_accounts_description',
+                        )}
+                    </PWText>
+                </PWView>
+                <PWSwitch
+                    value={showWatchAccounts}
+                    onValueChange={handleToggleWatchAccounts}
+                />
+            </PWView>
+        </PWSheetLayout>
     )
 }

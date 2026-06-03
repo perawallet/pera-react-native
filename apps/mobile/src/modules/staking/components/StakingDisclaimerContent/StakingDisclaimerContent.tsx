@@ -56,74 +56,73 @@ export const StakingDisclaimerContent = () => {
                     testID='staking-disclaimer'
                 />
             }
-            body={
-                <PWView style={styles.scrollViewContent}>
-                    <PWText
-                        variant='bodyCompact'
-                        style={styles.emphasizedText}
-                    >
-                        {t('staking.disclaimer.intro')}
-                    </PWText>
+        >
+            <PWView style={styles.scrollViewContent}>
+                <PWText
+                    variant='bodyCompact'
+                    style={styles.emphasizedText}
+                >
+                    {t('staking.disclaimer.intro')}
+                </PWText>
 
-                    <PWText
-                        variant='bodyCompact'
-                        style={styles.paragraph}
-                    >
-                        {t('staking.disclaimer.research_warning')}
-                    </PWText>
+                <PWText
+                    variant='bodyCompact'
+                    style={styles.paragraph}
+                >
+                    {t('staking.disclaimer.research_warning')}
+                </PWText>
 
-                    <PWText
-                        variant='bodyCompact'
-                        style={styles.paragraph}
-                    >
-                        {t('staking.disclaimer.acknowledgment_prompt')}
-                    </PWText>
+                <PWText
+                    variant='bodyCompact'
+                    style={styles.paragraph}
+                >
+                    {t('staking.disclaimer.acknowledgment_prompt')}
+                </PWText>
 
-                    <PWView style={styles.bulletList}>
-                        {DISCLAIMER_BULLET_KEYS.map(key => (
-                            <PWText
-                                key={key}
-                                variant='bodyCompact'
-                                style={styles.bulletText}
-                            >
-                                {`- ${t(key)}`}
-                            </PWText>
-                        ))}
-                    </PWView>
-
-                    <PWText
-                        variant='bodyCompact'
-                        style={styles.paragraph}
-                    >
-                        {t('staking.disclaimer.closing')}
-                    </PWText>
-
-                    <PWText
-                        variant='bodyCompact'
-                        style={styles.paragraph}
-                    >
-                        <Trans
-                            i18nKey='staking.disclaimer.terms_agreement'
-                            components={[
-                                <PWText
-                                    key='terms'
-                                    variant='link'
-                                    onPress={handleTermsPress}
-                                />,
-                            ]}
-                        />
-                    </PWText>
-
-                    <PWButton
-                        variant='primary'
-                        title={t('staking.disclaimer.accept')}
-                        onPress={() => resolve(true)}
-                        isDisabled={!isScrolledToBottom}
-                        style={styles.acceptButton}
-                        testID='staking-disclaimer-accept-button'
-                    />
+                <PWView style={styles.bulletList}>
+                    {DISCLAIMER_BULLET_KEYS.map(key => (
+                        <PWText
+                            key={key}
+                            variant='bodyCompact'
+                            style={styles.bulletText}
+                        >
+                            {`- ${t(key)}`}
+                        </PWText>
+                    ))}
                 </PWView>
-            }
-        />
+
+                <PWText
+                    variant='bodyCompact'
+                    style={styles.paragraph}
+                >
+                    {t('staking.disclaimer.closing')}
+                </PWText>
+
+                <PWText
+                    variant='bodyCompact'
+                    style={styles.paragraph}
+                >
+                    <Trans
+                        i18nKey='staking.disclaimer.terms_agreement'
+                        components={[
+                            <PWText
+                                key='terms'
+                                variant='link'
+                                onPress={handleTermsPress}
+                            />,
+                        ]}
+                    />
+                </PWText>
+
+                <PWButton
+                    variant='primary'
+                    title={t('staking.disclaimer.accept')}
+                    onPress={() => resolve(true)}
+                    isDisabled={!isScrolledToBottom}
+                    style={styles.acceptButton}
+                    testID='staking-disclaimer-accept-button'
+                />
+            </PWView>
+        </PWSheetLayout>
     )
 }

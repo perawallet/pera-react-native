@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWText, PWTouchableOpacity, PWView } from '@components/core'
+import { PWListItemLayout, PWText, PWView } from '@components/core'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { TransactionIcon } from '@modules/transactions/components/TransactionIcon'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
@@ -42,57 +42,54 @@ export const TransactionListItem = ({
     }
 
     return (
-        <PWTouchableOpacity
+        <PWListItemLayout
             style={styles.container}
+            align='top'
             onPress={handlePress}
-        >
-            <PWView style={styles.iconContainer}>
+            left={
                 <TransactionIcon
                     type={iconType}
                     size='sm'
                 />
-            </PWView>
-
-            <PWView style={styles.contentContainer}>
-                <PWView style={styles.mainRow}>
-                    <PWView style={styles.titleContainer}>
-                        <PWText
+            }
+            right={
+                <PWView style={styles.amountContainer}>
+                    {amounts.map((amount, index) => (
+                        <CurrencyDisplay
+                            key={index}
+                            value={amount.value}
+                            currency={amount.currency}
+                            precision={amount.precision}
+                            maxPrecision={2}
+                            minPrecision={0}
+                            prefix={amount.prefix}
+                            showSymbol
+                            symbolPosition='end'
+                            style={getAmountStyle(amount)}
                             variant='h4'
-                            style={styles.title}
-                            truncate
-                        >
-                            {title}
-                        </PWText>
-                        {subtitle && (
-                            <PWText
-                                style={styles.subtitle}
-                                truncate
-                                ellipsizeMode='middle'
-                            >
-                                {subtitle}
-                            </PWText>
-                        )}
-                    </PWView>
-
-                    <PWView style={styles.amountContainer}>
-                        {amounts.map((amount, index) => (
-                            <CurrencyDisplay
-                                key={index}
-                                value={amount.value}
-                                currency={amount.currency}
-                                precision={amount.precision}
-                                maxPrecision={2}
-                                minPrecision={0}
-                                prefix={amount.prefix}
-                                showSymbol
-                                symbolPosition='end'
-                                style={getAmountStyle(amount)}
-                                variant='h4'
-                            />
-                        ))}
-                    </PWView>
+                        />
+                    ))}
                 </PWView>
+            }
+        >
+            <PWView>
+                <PWText
+                    variant='h4'
+                    style={styles.title}
+                    truncate
+                >
+                    {title}
+                </PWText>
+                {subtitle && (
+                    <PWText
+                        style={styles.subtitle}
+                        truncate
+                        ellipsizeMode='middle'
+                    >
+                        {subtitle}
+                    </PWText>
+                )}
             </PWView>
-        </PWTouchableOpacity>
+        </PWListItemLayout>
     )
 }

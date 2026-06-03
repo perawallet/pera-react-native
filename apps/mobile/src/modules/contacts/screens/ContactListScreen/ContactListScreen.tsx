@@ -77,18 +77,12 @@ export const ContactListScreen = () => {
 
     const keyExtractor = useCallback((c: Contact) => c.address, [])
 
-    const renderSeparator = useCallback(
-        () => <PWView style={styles.separator} />,
-        [styles.separator],
-    )
-
     if (isEmpty) {
         return (
             <EmptyView
                 icon='contacts'
                 title={t('contacts.list.no_contacts_title')}
                 body={t('contacts.list.no_contacts_body')}
-                bodyStyle={styles.emptyViewBody}
                 button={
                     <PWButton
                         title={t('contacts.list.add_contact')}
@@ -102,31 +96,25 @@ export const ContactListScreen = () => {
     }
 
     return (
-        <PWScreen
-            scroll='never'
-            body={
-                <>
-                    <PWView style={styles.searchWrapper}>
-                        <SearchInput
-                            placeholder={t('contacts.list.search_placeholder')}
-                            value={search}
-                            onChangeText={onSearchChange}
-                        />
-                    </PWView>
-                    <PWFlatList
-                        data={contacts}
-                        keyExtractor={keyExtractor}
-                        renderItem={renderItem}
-                        ItemSeparatorComponent={renderSeparator}
-                        ListEmptyComponent={
-                            <EmptyView
-                                title={t('contacts.list.no_matching_title')}
-                                body={t('contacts.list.no_matching_body')}
-                            />
-                        }
+        <PWScreen scroll='never'>
+            <PWView style={styles.searchWrapper}>
+                <SearchInput
+                    placeholder={t('contacts.list.search_placeholder')}
+                    value={search}
+                    onChangeText={onSearchChange}
+                />
+            </PWView>
+            <PWFlatList
+                data={contacts}
+                keyExtractor={keyExtractor}
+                renderItem={renderItem}
+                ListEmptyComponent={
+                    <EmptyView
+                        title={t('contacts.list.no_matching_title')}
+                        body={t('contacts.list.no_matching_body')}
                     />
-                </>
-            }
-        />
+                }
+            />
+        </PWScreen>
     )
 }

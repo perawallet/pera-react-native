@@ -36,7 +36,8 @@ export const SigningWarningsContent = ({
                     })}
                 />
             }
-            body={distinctWarnings.map((warning, index) => (
+        >
+            {distinctWarnings.map((warning, index) => (
                 <WarningItem
                     key={`${warning.type}-${warning.senderAddress}-${warning.targetAddress}`}
                     warning={warning}
@@ -44,6 +45,6 @@ export const SigningWarningsContent = ({
                     isGroup={isGroup}
                 />
             ))}
-        />
+        </PWSheetLayout>
     )
 }

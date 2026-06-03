@@ -54,60 +54,57 @@ export const MessagesScreen = () => {
         <PWScreen
             scroll='never'
             horizontalPadding='none'
-            body={
-                <>
-                    <PWView style={styles.spotBannersWrapper}>
-                        <MessagesSpotBanners />
-                    </PWView>
-                    <Tab.Navigator
-                        initialRouteName={initialTab}
-                        screenListeners={{
-                            state: e => {
-                                const state = e.data?.state
-                                if (state) {
-                                    const route = state.routes[state.index]
-                                    setActiveTab(
-                                        route.name as keyof MessagesTabsParamsList,
-                                    )
+        >
+            <PWView style={styles.spotBannersWrapper}>
+                <MessagesSpotBanners />
+            </PWView>
+            <Tab.Navigator
+                initialRouteName={initialTab}
+                screenListeners={{
+                    state: e => {
+                        const state = e.data?.state
+                        if (state) {
+                            const route = state.routes[state.index]
+                            setActiveTab(
+                                route.name as keyof MessagesTabsParamsList,
+                            )
+                        }
+                    },
+                }}
+            >
+                <Tab.Screen
+                    name='Inbox'
+                    options={{
+                        title: t('messages.tabs.inbox'),
+                        tabBarBadge: () => (
+                            <PWView
+                                style={
+                                    showInboxBadge
+                                        ? styles.unreadBadge
+                                        : styles.badge
                                 }
-                            },
-                        }}
-                    >
-                        <Tab.Screen
-                            name='Inbox'
-                            options={{
-                                title: t('messages.tabs.inbox'),
-                                tabBarBadge: () => (
-                                    <PWView
-                                        style={
-                                            showInboxBadge
-                                                ? styles.unreadBadge
-                                                : styles.badge
-                                        }
-                                    />
-                                ),
-                            }}
-                            component={InboxScreen}
-                        />
-                        <Tab.Screen
-                            name='Notifications'
-                            options={{
-                                title: t('messages.tabs.notifications'),
-                                tabBarBadge: () => (
-                                    <PWView
-                                        style={
-                                            showNotificationsBadge
-                                                ? styles.unreadBadge
-                                                : styles.badge
-                                        }
-                                    />
-                                ),
-                            }}
-                            component={NotificationsScreen}
-                        />
-                    </Tab.Navigator>
-                </>
-            }
-        />
+                            />
+                        ),
+                    }}
+                    component={InboxScreen}
+                />
+                <Tab.Screen
+                    name='Notifications'
+                    options={{
+                        title: t('messages.tabs.notifications'),
+                        tabBarBadge: () => (
+                            <PWView
+                                style={
+                                    showNotificationsBadge
+                                        ? styles.unreadBadge
+                                        : styles.badge
+                                }
+                            />
+                        ),
+                    }}
+                    component={NotificationsScreen}
+                />
+            </Tab.Navigator>
+        </PWScreen>
     )
 }

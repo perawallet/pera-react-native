@@ -33,18 +33,17 @@ export const StakingHelpContent = () => {
                     testID='staking-help-sheet'
                 />
             }
-            body={
-                <PWView style={styles.contentContainer}>
-                    {STAKING_TYPES.map((type, index) => (
-                        <StakingTypeRow
-                            key={type}
-                            type={type}
-                            isLast={index === STAKING_TYPES.length - 1}
-                            onClose={dismiss}
-                        />
-                    ))}
-                </PWView>
-            }
-        />
+        >
+            <PWView style={styles.contentContainer}>
+                {STAKING_TYPES.map((type, index) => (
+                    <StakingTypeRow
+                        key={type}
+                        type={type}
+                        isLast={index === STAKING_TYPES.length - 1}
+                        onClose={dismiss}
+                    />
+                ))}
+            </PWView>
+        </PWSheetLayout>
     )
 }

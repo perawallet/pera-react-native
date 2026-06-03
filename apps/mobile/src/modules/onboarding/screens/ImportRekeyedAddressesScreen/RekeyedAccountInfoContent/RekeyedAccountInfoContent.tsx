@@ -51,55 +51,120 @@ export const RekeyedAccountInfoContent = ({
     } = useRekeyedAccountInfoContent({ account })
 
     return (
-        <PWSheetLayout
-            header={<SheetHeader title={accountDisplayName} />}
-            body={
+        <PWSheetLayout header={<SheetHeader title={accountDisplayName} />}>
+            <PWText
+                variant='body'
+                style={styles.sectionTitle}
+                testID='section-account-details'
+            >
+                {t(
+                    'onboarding.import_rekeyed_addresses.info_sheet.account_details',
+                )}
+            </PWText>
+
+            <PWView style={styles.accountRow}>
+                <PWRoundIcon
+                    icon='account-rekeyed'
+                    variant='helper'
+                    size='md'
+                />
+                <PWView style={styles.accountTextContainer}>
+                    <CopyableText copyValue={account.address}>
+                        <PWText
+                            variant='body'
+                            truncate
+                            ellipsizeMode='middle'
+                        >
+                            {account.address}
+                        </PWText>
+                    </CopyableText>
+                    <PWText
+                        variant='caption'
+                        style={styles.accountSubtitle}
+                    >
+                        {t(
+                            'onboarding.import_rekeyed_addresses.rekeyed_account_subtitle',
+                        )}
+                    </PWText>
+                </PWView>
+                <PWView style={styles.balanceContainer}>
+                    <CurrencyDisplay
+                        currency='ALGO'
+                        value={rekeyedAccountAlgoValue}
+                        precision={6}
+                        minPrecision={2}
+                        showSymbol
+                    />
+                    <PreferredCurrencyDisplay
+                        sourceAmount={rekeyedAccountAlgoValue}
+                        sourceAssetId={ALGO_ASSET_ID}
+                        precision={2}
+                        minPrecision={2}
+                        showSymbol
+                        style={styles.secondaryBalance}
+                    />
+                </PWView>
+            </PWView>
+
+            <PWView style={styles.divider} />
+
+            <PWText
+                variant='body'
+                style={styles.sectionTitle}
+                testID='section-assets'
+            >
+                {t('onboarding.import_rekeyed_addresses.info_sheet.assets')}
+            </PWText>
+
+            {rekeyedAccountBalances.map(balance => (
+                <AccountAssetItemView
+                    key={balance.assetId}
+                    accountBalance={balance}
+                    style={styles.assetItem}
+                />
+            ))}
+
+            {!!authAddress && (
                 <>
+                    <PWView style={styles.divider} />
+
                     <PWText
                         variant='body'
                         style={styles.sectionTitle}
-                        testID='section-account-details'
+                        testID='section-can-be-signed-by'
                     >
                         {t(
-                            'onboarding.import_rekeyed_addresses.info_sheet.account_details',
+                            'onboarding.import_rekeyed_addresses.info_sheet.can_be_signed_by',
                         )}
                     </PWText>
 
                     <PWView style={styles.accountRow}>
                         <PWRoundIcon
-                            icon='account-rekeyed'
+                            icon='wallet'
                             variant='helper'
                             size='md'
                         />
                         <PWView style={styles.accountTextContainer}>
-                            <CopyableText copyValue={account.address}>
+                            <CopyableText copyValue={authAddress}>
                                 <PWText
                                     variant='body'
                                     truncate
                                     ellipsizeMode='middle'
                                 >
-                                    {account.address}
+                                    {authAddress}
                                 </PWText>
                             </CopyableText>
-                            <PWText
-                                variant='caption'
-                                style={styles.accountSubtitle}
-                            >
-                                {t(
-                                    'onboarding.import_rekeyed_addresses.rekeyed_account_subtitle',
-                                )}
-                            </PWText>
                         </PWView>
                         <PWView style={styles.balanceContainer}>
                             <CurrencyDisplay
                                 currency='ALGO'
-                                value={rekeyedAccountAlgoValue}
+                                value={authAccountAlgoValue}
                                 precision={6}
                                 minPrecision={2}
                                 showSymbol
                             />
                             <PreferredCurrencyDisplay
-                                sourceAmount={rekeyedAccountAlgoValue}
+                                sourceAmount={authAccountAlgoValue}
                                 sourceAssetId={ALGO_ASSET_ID}
                                 precision={2}
                                 minPrecision={2}
@@ -108,88 +173,16 @@ export const RekeyedAccountInfoContent = ({
                             />
                         </PWView>
                     </PWView>
-
-                    <PWView style={styles.divider} />
-
-                    <PWText
-                        variant='body'
-                        style={styles.sectionTitle}
-                        testID='section-assets'
-                    >
-                        {t(
-                            'onboarding.import_rekeyed_addresses.info_sheet.assets',
-                        )}
-                    </PWText>
-
-                    {rekeyedAccountBalances.map(balance => (
-                        <AccountAssetItemView
-                            key={balance.assetId}
-                            accountBalance={balance}
-                            style={styles.assetItem}
-                        />
-                    ))}
-
-                    {!!authAddress && (
-                        <>
-                            <PWView style={styles.divider} />
-
-                            <PWText
-                                variant='body'
-                                style={styles.sectionTitle}
-                                testID='section-can-be-signed-by'
-                            >
-                                {t(
-                                    'onboarding.import_rekeyed_addresses.info_sheet.can_be_signed_by',
-                                )}
-                            </PWText>
-
-                            <PWView style={styles.accountRow}>
-                                <PWRoundIcon
-                                    icon='wallet'
-                                    variant='helper'
-                                    size='md'
-                                />
-                                <PWView style={styles.accountTextContainer}>
-                                    <CopyableText copyValue={authAddress}>
-                                        <PWText
-                                            variant='body'
-                                            truncate
-                                            ellipsizeMode='middle'
-                                        >
-                                            {authAddress}
-                                        </PWText>
-                                    </CopyableText>
-                                </PWView>
-                                <PWView style={styles.balanceContainer}>
-                                    <CurrencyDisplay
-                                        currency='ALGO'
-                                        value={authAccountAlgoValue}
-                                        precision={6}
-                                        minPrecision={2}
-                                        showSymbol
-                                    />
-                                    <PreferredCurrencyDisplay
-                                        sourceAmount={authAccountAlgoValue}
-                                        sourceAssetId={ALGO_ASSET_ID}
-                                        precision={2}
-                                        minPrecision={2}
-                                        showSymbol
-                                        style={styles.secondaryBalance}
-                                    />
-                                </PWView>
-                            </PWView>
-                        </>
-                    )}
-
-                    <PWButton
-                        variant='secondary'
-                        title={t('common.close.label')}
-                        onPress={dismiss}
-                        style={styles.closeButton}
-                        testID='close-button'
-                    />
                 </>
-            }
-        />
+            )}
+
+            <PWButton
+                variant='secondary'
+                title={t('common.close.label')}
+                onPress={dismiss}
+                style={styles.closeButton}
+                testID='close-button'
+            />
+        </PWSheetLayout>
     )
 }

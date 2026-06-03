@@ -38,38 +38,6 @@ export const CreateMultisigScreen = () => {
                     description={t('multisig.create.description')}
                 />
             }
-            body={
-                <PWView style={styles.scrollArea}>
-                    <PWText variant='h4'>
-                        {t('multisig.create.accounts_section')}
-                    </PWText>
-                    <PWText style={styles.description}>
-                        {t('multisig.create.accounts_subtitle')}
-                    </PWText>
-
-                    {participants.map((participant, index) => (
-                        <ParticipantListItem
-                            key={`${index}-${participant.address}`}
-                            participant={participant}
-                            index={index}
-                            isInWallet={isParticipantInWallet(
-                                participant.address,
-                            )}
-                            onEdit={handleEditParticipant}
-                            onRemove={handleRemoveParticipant}
-                        />
-                    ))}
-                    <PWButton
-                        variant='linkPositive'
-                        icon='plus'
-                        title={t('multisig.create.add_account')}
-                        onPress={handleOpenAddParticipant}
-                        testID='add_participant_button'
-                        paddingStyle='none'
-                        style={styles.addButton}
-                    />
-                </PWView>
-            }
             footer={
                 <PWButton
                     variant='primary'
@@ -79,6 +47,35 @@ export const CreateMultisigScreen = () => {
                     testID='create_multisig_continue_button'
                 />
             }
-        />
+        >
+            <PWView style={styles.scrollArea}>
+                <PWText variant='h4'>
+                    {t('multisig.create.accounts_section')}
+                </PWText>
+                <PWText style={styles.description}>
+                    {t('multisig.create.accounts_subtitle')}
+                </PWText>
+
+                {participants.map((participant, index) => (
+                    <ParticipantListItem
+                        key={`${index}-${participant.address}`}
+                        participant={participant}
+                        index={index}
+                        isInWallet={isParticipantInWallet(participant.address)}
+                        onEdit={handleEditParticipant}
+                        onRemove={handleRemoveParticipant}
+                    />
+                ))}
+                <PWButton
+                    variant='linkPositive'
+                    icon='plus'
+                    title={t('multisig.create.add_account')}
+                    onPress={handleOpenAddParticipant}
+                    testID='add_participant_button'
+                    paddingStyle='none'
+                    style={styles.addButton}
+                />
+            </PWView>
+        </PWScreen>
     )
 }

@@ -18,10 +18,19 @@ type StyleProps = {
     horizontalPadding: HorizontalPaddingMode
     bottomInset: number
     hasFooter: boolean
+    isKeyboardVisible: boolean
 }
 
 export const useStyles = makeStyles(
-    (theme, { horizontalPadding, bottomInset, hasFooter }: StyleProps) => {
+    (
+        theme,
+        {
+            horizontalPadding,
+            bottomInset,
+            hasFooter,
+            isKeyboardVisible,
+        }: StyleProps,
+    ) => {
         const paddingHorizontal =
             horizontalPadding === 'none' ? 0 : theme.spacing[horizontalPadding]
 
@@ -32,8 +41,6 @@ export const useStyles = makeStyles(
             keyboardView: {
                 flex: 1,
             },
-            // Sticky header zone. Matches the body's horizontal padding so a
-            // header (e.g. ScreenHeader) aligns with the scrollable content.
             header: {
                 paddingHorizontal,
             },
@@ -41,20 +48,20 @@ export const useStyles = makeStyles(
                 flex: 1,
             },
             scrollContent: {
-                flexGrow: 1,
+                // Fill the viewport so short bodies can bottom-align or center
+                // their content — but drop the fill while the keyboard is open,
+                // or the empty filler becomes scrollable space the user can fling
+                // the content into (header scrolls off above a fitting form).
+                flexGrow: isKeyboardVisible ? 0 : 1,
                 paddingHorizontal,
                 paddingBottom: hasFooter ? theme.spacing.lg : bottomInset,
             },
             fixedBody: {
                 flex: 1,
                 paddingHorizontal,
-                // Carry the safe-area inset here: unlike RN's FlatList, the
-                // migrated FlashList no longer clears the home indicator natively.
                 paddingBottom: hasFooter ? theme.spacing.lg : bottomInset,
             },
             footer: {
-                // Always xl, independent of the body's horizontalPadding, so
-                // footers align to the same edge across every screen.
                 paddingHorizontal: theme.spacing.xl,
                 paddingVertical: theme.spacing.md,
             },

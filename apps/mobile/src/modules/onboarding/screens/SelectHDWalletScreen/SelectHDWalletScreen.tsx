@@ -111,23 +111,6 @@ export const SelectHDWalletScreen = () => {
         <>
             <PWScreen
                 scroll='never'
-                body={
-                    <PWView style={styles.content}>
-                        <ScreenHeader
-                            title={t('onboarding.select_hd_wallet.title')}
-                            description={t(
-                                'onboarding.select_hd_wallet.description',
-                            )}
-                        />
-                        <PWFlatList
-                            style={styles.list}
-                            data={hdWalletGroups}
-                            renderItem={renderItem}
-                            keyExtractor={item => item.seedKeyId}
-                            extraData={accountBalances}
-                        />
-                    </PWView>
-                }
                 footer={
                     <PWButton
                         title={t(
@@ -140,7 +123,23 @@ export const SelectHDWalletScreen = () => {
                         testID='select_hd_wallet_create_new'
                     />
                 }
-            />
+            >
+                <PWView style={styles.content}>
+                    <ScreenHeader
+                        title={t('onboarding.select_hd_wallet.title')}
+                        description={t(
+                            'onboarding.select_hd_wallet.description',
+                        )}
+                    />
+                    <PWFlatList
+                        style={styles.list}
+                        data={hdWalletGroups}
+                        renderItem={renderItem}
+                        keyExtractor={item => item.seedKeyId}
+                        extraData={accountBalances}
+                    />
+                </PWView>
+            </PWScreen>
 
             <PWLoadingOverlay
                 isVisible={isCreatingWallet}

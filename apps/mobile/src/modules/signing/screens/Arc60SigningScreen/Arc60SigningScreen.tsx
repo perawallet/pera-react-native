@@ -44,14 +44,6 @@ export const Arc60SigningScreen = () => {
         return (
             <PWScreen
                 scroll='never'
-                body={
-                    <PWView style={styles.bodyContainer}>
-                        <EmptyView
-                            title={t('signing.arc60_view.siwa_invalid')}
-                            body={parsed.message}
-                        />
-                    </PWView>
-                }
                 footer={
                     <PWButton
                         title={t('common.close.label')}
@@ -59,30 +51,20 @@ export const Arc60SigningScreen = () => {
                         onPress={handleReject}
                     />
                 }
-            />
+            >
+                <PWView style={styles.bodyContainer}>
+                    <EmptyView
+                        title={t('signing.arc60_view.siwa_invalid')}
+                        body={parsed.message}
+                    />
+                </PWView>
+            </PWScreen>
         )
     }
 
     return (
         <PWScreen
             scroll='never'
-            body={
-                <>
-                    <PWView style={styles.bodyContainer}>
-                        <Arc60DataSigningSummaryView
-                            request={request}
-                            account={account}
-                            parsed={parsed}
-                            onDetailsPress={handleDetailsPress}
-                        />
-                    </PWView>
-                    {!!error && (
-                        <PWText style={styles.errorText}>
-                            {error.message}
-                        </PWText>
-                    )}
-                </>
-            }
             footer={
                 <PWView style={styles.buttonContainer}>
                     <PWSlideToConfirm
@@ -100,6 +82,18 @@ export const Arc60SigningScreen = () => {
                     />
                 </PWView>
             }
-        />
+        >
+            <PWView style={styles.bodyContainer}>
+                <Arc60DataSigningSummaryView
+                    request={request}
+                    account={account}
+                    parsed={parsed}
+                    onDetailsPress={handleDetailsPress}
+                />
+            </PWView>
+            {!!error && (
+                <PWText style={styles.errorText}>{error.message}</PWText>
+            )}
+        </PWScreen>
     )
 }

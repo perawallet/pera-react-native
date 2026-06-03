@@ -32,42 +32,37 @@ export const SettingsScreen = () => {
         useSettingsScreen()
 
     return (
-        <PWScreen
-            testID='settings_screen'
-            body={
-                <>
-                    <PWView style={styles.sectionContainer}>
-                        {settingsOptions.map(item => (
-                            <PWView
-                                style={styles.section}
-                                key={`settings-section-${item.title}`}
-                                testID={`settings_section_${item.title.toLowerCase().replace(/\s+/g, '_')}`}
-                            >
-                                <PWText style={styles.sectionTitle}>
-                                    {item.title}
-                                </PWText>
-                                {item.items.map(page => (
-                                    <PWListItem
-                                        key={`settings-sectionrow-${page.title}`}
-                                        onPress={() => handleTapEvent(page)}
-                                        icon={page.icon as IconName}
-                                        title={page.title}
-                                        style={styles.sectionRow}
-                                        testID={`settings_item_${page.title.toLowerCase().replace(/\s+/g, '_')}`}
-                                    />
-                                ))}
-                            </PWView>
+        <PWScreen testID='settings_screen'>
+            <PWView style={styles.sectionContainer}>
+                {settingsOptions.map(item => (
+                    <PWView
+                        style={styles.section}
+                        key={`settings-section-${item.title}`}
+                        testID={`settings_section_${item.title.toLowerCase().replace(/\s+/g, '_')}`}
+                    >
+                        <PWText style={styles.sectionTitle}>
+                            {item.title}
+                        </PWText>
+                        {item.items.map(page => (
+                            <PWListItem
+                                key={`settings-sectionrow-${page.title}`}
+                                onPress={() => handleTapEvent(page)}
+                                icon={page.icon as IconName}
+                                title={page.title}
+                                style={styles.sectionRow}
+                                testID={`settings_item_${page.title.toLowerCase().replace(/\s+/g, '_')}`}
+                            />
                         ))}
                     </PWView>
-                    <PWButton
-                        variant='secondary'
-                        title={t('settings.main.remove_all_accounts')}
-                        onPress={openDeleteConfirm}
-                        {...getTestProps('settings_remove_all_accounts_button')}
-                    />
-                    <AppVersion enableSecretTaps />
-                </>
-            }
-        />
+                ))}
+            </PWView>
+            <PWButton
+                variant='secondary'
+                title={t('settings.main.remove_all_accounts')}
+                onPress={openDeleteConfirm}
+                {...getTestProps('settings_remove_all_accounts_button')}
+            />
+            <AppVersion enableSecretTaps />
+        </PWScreen>
     )
 }

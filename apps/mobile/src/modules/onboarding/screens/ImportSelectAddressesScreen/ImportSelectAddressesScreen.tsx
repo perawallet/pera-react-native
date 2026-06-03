@@ -70,84 +70,6 @@ export const ImportSelectAddressesScreen = () => {
         <>
             <PWScreen
                 scroll='never'
-                body={
-                    <PWView style={styles.content}>
-                        <ScreenHeader
-                            title={t(
-                                'onboarding.import_select_addresses.title',
-                            )}
-                            description={
-                                !areAllImported
-                                    ? t(
-                                          'onboarding.import_select_addresses.description',
-                                          {
-                                              count: accounts.length,
-                                          },
-                                      )
-                                    : undefined
-                            }
-                        />
-
-                        {areAllImported ? (
-                            <EmptyView
-                                style={styles.emptyState}
-                                title={t(
-                                    'onboarding.searching_accounts.no_new_addresses_title',
-                                )}
-                                body={t(
-                                    'onboarding.searching_accounts.no_new_addresses_body',
-                                )}
-                            />
-                        ) : (
-                            <>
-                                <PWView style={styles.headerRow}>
-                                    <PWText
-                                        variant='bodySemibold'
-                                        style={styles.headerCount}
-                                    >
-                                        {t(
-                                            'onboarding.import_select_addresses.addresses_count',
-                                            {
-                                                count: accounts.length,
-                                            },
-                                        )}
-                                    </PWText>
-
-                                    <PWTouchableOpacity
-                                        onPress={toggleSelectAll}
-                                        style={styles.selectAllContainer}
-                                    >
-                                        <PWText
-                                            variant='link'
-                                            style={styles.selectAllText}
-                                        >
-                                            {t(
-                                                'onboarding.import_select_addresses.select_all',
-                                            )}
-                                        </PWText>
-                                        <PWCheckbox
-                                            checked={isAllSelected}
-                                            onPress={toggleSelectAll}
-                                            containerStyle={
-                                                styles.checkboxContainer
-                                            }
-                                            testID='import_select_addresses_select_all_checkbox'
-                                        />
-                                    </PWTouchableOpacity>
-                                </PWView>
-
-                                <PWFlatList
-                                    data={accounts}
-                                    renderItem={renderItem}
-                                    keyExtractor={item => item.address}
-                                    extraData={selectedAddresses}
-                                    cardLayout
-                                    showsVerticalScrollIndicator={false}
-                                />
-                            </>
-                        )}
-                    </PWView>
-                }
                 footer={
                     <PWButton
                         testID='import_select_addresses_continue_button'
@@ -159,7 +81,82 @@ export const ImportSelectAddressesScreen = () => {
                         isDisabled={!canContinue}
                     />
                 }
-            />
+            >
+                <PWView style={styles.content}>
+                    <ScreenHeader
+                        title={t('onboarding.import_select_addresses.title')}
+                        description={
+                            !areAllImported
+                                ? t(
+                                      'onboarding.import_select_addresses.description',
+                                      {
+                                          count: accounts.length,
+                                      },
+                                  )
+                                : undefined
+                        }
+                    />
+
+                    {areAllImported ? (
+                        <EmptyView
+                            style={styles.emptyState}
+                            title={t(
+                                'onboarding.searching_accounts.no_new_addresses_title',
+                            )}
+                            body={t(
+                                'onboarding.searching_accounts.no_new_addresses_body',
+                            )}
+                        />
+                    ) : (
+                        <>
+                            <PWView style={styles.headerRow}>
+                                <PWText
+                                    variant='bodySemibold'
+                                    style={styles.headerCount}
+                                >
+                                    {t(
+                                        'onboarding.import_select_addresses.addresses_count',
+                                        {
+                                            count: accounts.length,
+                                        },
+                                    )}
+                                </PWText>
+
+                                <PWTouchableOpacity
+                                    onPress={toggleSelectAll}
+                                    style={styles.selectAllContainer}
+                                >
+                                    <PWText
+                                        variant='link'
+                                        style={styles.selectAllText}
+                                    >
+                                        {t(
+                                            'onboarding.import_select_addresses.select_all',
+                                        )}
+                                    </PWText>
+                                    <PWCheckbox
+                                        checked={isAllSelected}
+                                        onPress={toggleSelectAll}
+                                        containerStyle={
+                                            styles.checkboxContainer
+                                        }
+                                        testID='import_select_addresses_select_all_checkbox'
+                                    />
+                                </PWTouchableOpacity>
+                            </PWView>
+
+                            <PWFlatList
+                                data={accounts}
+                                renderItem={renderItem}
+                                keyExtractor={item => item.address}
+                                extraData={selectedAddresses}
+                                cardLayout
+                                showsVerticalScrollIndicator={false}
+                            />
+                        </>
+                    )}
+                </PWView>
+            </PWScreen>
 
             <PWLoadingOverlay
                 isVisible={isProcessing}

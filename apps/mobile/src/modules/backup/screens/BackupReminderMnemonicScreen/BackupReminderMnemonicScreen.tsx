@@ -75,27 +75,6 @@ export const BackupReminderMnemonicScreen = () => {
 
     return (
         <PWScreen
-            body={
-                <PWView style={styles.scrollContent}>
-                    <ScreenHeader
-                        title={t('backup.mnemonic.title')}
-                        description={t('backup.mnemonic.body')}
-                    />
-                    <PWView style={styles.grid}>
-                        {words.map((word, i) => (
-                            <PWView
-                                key={`${i}-${word}`}
-                                style={styles.wordCell}
-                            >
-                                <PWText style={styles.wordIndex}>
-                                    {String(i + 1)}
-                                </PWText>
-                                <PWText style={styles.wordText}>{word}</PWText>
-                            </PWView>
-                        ))}
-                    </PWView>
-                </PWView>
-            }
             footer={
                 <PWButton
                     title={t('backup.mnemonic.cta_continue')}
@@ -104,6 +83,26 @@ export const BackupReminderMnemonicScreen = () => {
                     testID='backup_mnemonic_continue'
                 />
             }
-        />
+        >
+            <PWView style={styles.scrollContent}>
+                <ScreenHeader
+                    title={t('backup.mnemonic.title')}
+                    description={t('backup.mnemonic.body')}
+                />
+                <PWView style={styles.grid}>
+                    {words.map((word, i) => (
+                        <PWView
+                            key={`${i}-${word}`}
+                            style={styles.wordCell}
+                        >
+                            <PWText style={styles.wordIndex}>
+                                {String(i + 1)}
+                            </PWText>
+                            <PWText style={styles.wordText}>{word}</PWText>
+                        </PWView>
+                    ))}
+                </PWView>
+            </PWView>
+        </PWScreen>
     )
 }

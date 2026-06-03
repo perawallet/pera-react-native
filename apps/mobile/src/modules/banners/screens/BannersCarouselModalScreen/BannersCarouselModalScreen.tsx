@@ -33,32 +33,29 @@ export const BannersCarouselModalScreen = () => {
             horizontalPadding='none'
             style={styles.root}
             testID='banners_carousel_modal'
-            body={
-                <>
-                    <PWView style={styles.body}>
-                        <BannerCarousel
-                            banners={banners}
-                            initialIndex={initialIndex}
-                            isDismissable={isDismissable}
-                            onPressCTA={onPressCTA}
-                            onDismiss={onDismiss}
-                        />
-                    </PWView>
-                    {isClosable ? (
-                        <PWTouchableOpacity
-                            style={styles.closeButton}
-                            onPress={onClose}
-                            testID='banners_carousel_modal_close'
-                        >
-                            <PWIcon
-                                name='cross'
-                                size='sm'
-                                variant='white'
-                            />
-                        </PWTouchableOpacity>
-                    ) : null}
-                </>
-            }
-        />
+        >
+            <PWView style={styles.body}>
+                <BannerCarousel
+                    banners={banners}
+                    initialIndex={initialIndex}
+                    isDismissable={isDismissable}
+                    onPressCTA={onPressCTA}
+                    onDismiss={onDismiss}
+                />
+            </PWView>
+            {isClosable ? (
+                <PWTouchableOpacity
+                    style={styles.closeButton}
+                    onPress={onClose}
+                    testID='banners_carousel_modal_close'
+                >
+                    <PWIcon
+                        name='cross'
+                        size='sm'
+                        variant='white'
+                    />
+                </PWTouchableOpacity>
+            ) : null}
+        </PWScreen>
     )
 }

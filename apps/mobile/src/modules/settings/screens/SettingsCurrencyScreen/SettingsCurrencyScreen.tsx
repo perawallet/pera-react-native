@@ -68,48 +68,47 @@ export const SettingsCurrencyScreen = () => {
         <PWScreen
             scroll='never'
             testID='settings_currency_screen'
-            body={
-                <PWView style={styles.container}>
-                    <PWText
-                        variant='bodyLarge'
-                        weight={500}
-                    >
-                        {t('settings.currency.title')}
-                    </PWText>
-                    <PWText
-                        variant='footnoteMedium'
-                        weight={400}
-                        style={styles.description}
-                    >
-                        <Trans
-                            i18nKey='settings.currency.description'
-                            values={{ preferredCurrency, fallbackCurrency }}
-                            components={[
-                                <PWText
-                                    key='emphasis'
-                                    variant='footnoteMedium'
-                                    weight={400}
-                                    style={styles.descriptionEmphasis}
-                                />,
-                            ]}
-                        />
-                    </PWText>
-                    <SearchInput
-                        placeholder={t('settings.currency.search_placeholder')}
-                        value={search}
-                        onChangeText={setSearch}
-                        testID='settings_currency_search_input'
+        >
+            <PWView style={styles.container}>
+                <PWText
+                    variant='bodyLarge'
+                    weight={500}
+                >
+                    {t('settings.currency.title')}
+                </PWText>
+                <PWText
+                    variant='footnoteMedium'
+                    weight={400}
+                    style={styles.description}
+                >
+                    <Trans
+                        i18nKey='settings.currency.description'
+                        values={{ preferredCurrency, fallbackCurrency }}
+                        components={[
+                            <PWText
+                                key='emphasis'
+                                variant='footnoteMedium'
+                                weight={400}
+                                style={styles.descriptionEmphasis}
+                            />,
+                        ]}
                     />
-                    <PWFlatList
-                        data={filteredData}
-                        renderItem={renderItem}
-                        keyExtractor={keyExtractor}
-                        extraData={preferredCurrency}
-                        ItemSeparatorComponent={ListItemDivider}
-                        testID='settings_currency_list'
-                    />
-                </PWView>
-            }
-        />
+                </PWText>
+                <SearchInput
+                    placeholder={t('settings.currency.search_placeholder')}
+                    value={search}
+                    onChangeText={setSearch}
+                    testID='settings_currency_search_input'
+                />
+                <PWFlatList
+                    data={filteredData}
+                    renderItem={renderItem}
+                    keyExtractor={keyExtractor}
+                    extraData={preferredCurrency}
+                    ItemSeparatorComponent={ListItemDivider}
+                    testID='settings_currency_list'
+                />
+            </PWView>
+        </PWScreen>
     )
 }

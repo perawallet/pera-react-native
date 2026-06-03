@@ -32,6 +32,7 @@ import {
     ViewStyle,
 } from 'react-native'
 import { NotifierRoot, NotifierWrapper } from 'react-native-notifier'
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWInBottomSheetContext } from './inSheetContext'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -153,6 +154,22 @@ export const PWBottomSheet = ({
         ? [styles.background, containerStyle]
         : styles.background
 
+    const sheetContent = autoCreateContainer ? (
+        <BottomSheetView
+            style={[styles.innerContainer, innerContainerStyle]}
+            testID={testID}
+        >
+            {children}
+        </BottomSheetView>
+    ) : (
+        <PWView
+            style={[styles.innerContainer, innerContainerStyle]}
+            testID={testID}
+        >
+            {children}
+        </PWView>
+    )
+
     return (
         <BottomSheetModal
             ref={bottomSheetModalRef}
@@ -185,26 +202,21 @@ export const PWBottomSheet = ({
             >
                 <PWInBottomSheetContext.Provider value={true}>
                     <PWView style={styles.contentWrapper}>
-                        {autoCreateContainer ? (
-                            <BottomSheetView
-                                style={[
-                                    styles.innerContainer,
-                                    innerContainerStyle,
-                                ]}
-                                testID={testID}
+                        {isFullScreen ? (
+                            // Fixed-height sheets shrink to the space above the
+                            // keyboard via keyboard-controller — the app's single
+                            // keyboard owner (KeyboardProvider). gorhom's own
+                            // keyboardBehavior is inert while it's active. Skipped
+                            // for `auto` (content-sized) sheets, where a
+                            // height-based avoider would collapse to zero.
+                            <KeyboardAvoidingView
+                                behavior='height'
+                                style={styles.keyboardAvoider}
                             >
-                                {children}
-                            </BottomSheetView>
+                                {sheetContent}
+                            </KeyboardAvoidingView>
                         ) : (
-                            <PWView
-                                style={[
-                                    styles.innerContainer,
-                                    innerContainerStyle,
-                                ]}
-                                testID={testID}
-                            >
-                                {children}
-                            </PWView>
+                            sheetContent
                         )}
                     </PWView>
                 </PWInBottomSheetContext.Provider>

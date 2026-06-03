@@ -44,29 +44,26 @@ export const TransactionProcessingScreen = () => {
             : undefined
 
     return (
-        <PWScreen
-            scroll='never'
-            body={
-                <PWView style={styles.contentContainer}>
-                    <PWView style={styles.spinnerCircle}>
-                        <LottieView
-                            autoPlay
-                            loop
-                            source={peraTransactionLoading}
-                            style={styles.animation}
-                        />
-                    </PWView>
-                    <PWText
-                        variant='h3'
-                        style={styles.title}
-                    >
-                        {t(titleKey)}
-                    </PWText>
-                    <PWText style={styles.subtitle}>
-                        {t(subtitleKey, subtitleParams)}
-                    </PWText>
+        <PWScreen scroll='never'>
+            <PWView style={styles.contentContainer}>
+                <PWView style={styles.spinnerCircle}>
+                    <LottieView
+                        autoPlay
+                        loop
+                        source={peraTransactionLoading}
+                        style={styles.animation}
+                    />
                 </PWView>
-            }
-        />
+                <PWText
+                    variant='h3'
+                    style={styles.title}
+                >
+                    {t(titleKey)}
+                </PWText>
+                <PWText style={styles.subtitle}>
+                    {t(subtitleKey, subtitleParams)}
+                </PWText>
+            </PWView>
+        </PWScreen>
     )
 }

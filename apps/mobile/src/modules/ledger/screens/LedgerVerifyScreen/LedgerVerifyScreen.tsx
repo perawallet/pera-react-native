@@ -58,44 +58,6 @@ export const LedgerVerifyScreen = () => {
 
     return (
         <PWScreen
-            body={
-                <>
-                    <PWView style={styles.heroIcon}>
-                        <PWIcon
-                            name='ledger'
-                            size='xl'
-                        />
-                    </PWView>
-
-                    <PWText
-                        variant='h2'
-                        style={styles.title}
-                    >
-                        {t('ledger.verify.title')}
-                    </PWText>
-                    <PWText
-                        variant='body'
-                        style={styles.description}
-                    >
-                        {t('ledger.verify.description')}
-                    </PWText>
-
-                    <PWView style={styles.cardList}>
-                        {verifyTargets.map((acc, i) => (
-                            <LedgerVerificationCard
-                                key={acc.address}
-                                address={acc.address}
-                                status={
-                                    verifiedIndices.has(i)
-                                        ? 'verified'
-                                        : 'awaiting'
-                                }
-                                testID={`ledger_verify_card_${i}`}
-                            />
-                        ))}
-                    </PWView>
-                </>
-            }
             footer={
                 <PWButton
                     testID='ledger_verify_add_accounts_button'
@@ -107,6 +69,39 @@ export const LedgerVerifyScreen = () => {
                     isDisabled={!areAllVerified}
                 />
             }
-        />
+        >
+            <PWView style={styles.heroIcon}>
+                <PWIcon
+                    name='ledger'
+                    size='xl'
+                />
+            </PWView>
+
+            <PWText
+                variant='h2'
+                style={styles.title}
+            >
+                {t('ledger.verify.title')}
+            </PWText>
+            <PWText
+                variant='body'
+                style={styles.description}
+            >
+                {t('ledger.verify.description')}
+            </PWText>
+
+            <PWView style={styles.cardList}>
+                {verifyTargets.map((acc, i) => (
+                    <LedgerVerificationCard
+                        key={acc.address}
+                        address={acc.address}
+                        status={
+                            verifiedIndices.has(i) ? 'verified' : 'awaiting'
+                        }
+                        testID={`ledger_verify_card_${i}`}
+                    />
+                ))}
+            </PWView>
+        </PWScreen>
     )
 }

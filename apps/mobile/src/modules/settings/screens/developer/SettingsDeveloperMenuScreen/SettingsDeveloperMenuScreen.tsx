@@ -44,31 +44,27 @@ export const SettingsDeveloperMenuScreen = () => {
     }
 
     return (
-        <PWScreen
-            body={
-                <>
-                    <PWListItem
-                        onPress={() => handleTapEvent('FeatureFlags')}
-                        icon='sliders'
-                        title={t('screens.feature_flags')}
-                    />
-                    <PWListItem
-                        onPress={() => openTestingWebview()}
-                        icon='globe'
-                        title={t('settings.developer.debug_webview')}
-                    />
-                    <PWListItem
-                        onPress={() => openTestingDapp()}
-                        icon='globe'
-                        title={t('settings.developer.debug_dapp')}
-                    />
-                    <PWListItem
-                        onPress={() => handleTapEvent('ManageCache')}
-                        icon='reload'
-                        title={t('settings.developer.manage_cache')}
-                    />
-                </>
-            }
-        />
+        <PWScreen>
+            <PWListItem
+                onPress={() => handleTapEvent('FeatureFlags')}
+                icon='sliders'
+                title={t('screens.feature_flags')}
+            />
+            <PWListItem
+                onPress={() => openTestingWebview()}
+                icon='globe'
+                title={t('settings.developer.debug_webview')}
+            />
+            <PWListItem
+                onPress={() => openTestingDapp()}
+                icon='globe'
+                title={t('settings.developer.debug_dapp')}
+            />
+            <PWListItem
+                onPress={() => handleTapEvent('ManageCache')}
+                icon='reload'
+                title={t('settings.developer.manage_cache')}
+            />
+        </PWScreen>
     )
 }

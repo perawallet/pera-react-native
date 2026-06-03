@@ -32,28 +32,24 @@ export const ImportAccountOptionsScreen = () => {
 
     return (
         <>
-            <PWScreen
-                body={
-                    <>
-                        <ScreenHeader
-                            title={t('onboarding.import_account_options.title')}
+            <PWScreen>
+                <ScreenHeader
+                    title={t('onboarding.import_account_options.title')}
+                />
+                <PWView style={styles.mainContainer}>
+                    {options.map(option => (
+                        <PanelButton
+                            key={option.testID}
+                            testID={option.testID}
+                            title={t(option.titleKey)}
+                            description={t(option.descriptionKey)}
+                            titleWeight='h3'
+                            leftIcon={option.leftIcon}
+                            onPress={option.onPress}
                         />
-                        <PWView style={styles.mainContainer}>
-                            {options.map(option => (
-                                <PanelButton
-                                    key={option.testID}
-                                    testID={option.testID}
-                                    title={t(option.titleKey)}
-                                    description={t(option.descriptionKey)}
-                                    titleWeight='h3'
-                                    leftIcon={option.leftIcon}
-                                    onPress={option.onPress}
-                                />
-                            ))}
-                        </PWView>
-                    </>
-                }
-            />
+                    ))}
+                </PWView>
+            </PWScreen>
 
             <QRScannerView
                 isVisible={isQRScannerVisible}

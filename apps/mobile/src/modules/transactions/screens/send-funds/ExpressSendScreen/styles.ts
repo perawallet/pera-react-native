@@ -14,7 +14,7 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     content: {
-        paddingTop: theme.spacing.xl,
+        paddingTop: theme.spacing.lg,
     },
     iconRow: {
         flexDirection: 'row',

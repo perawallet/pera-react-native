@@ -36,79 +36,6 @@ export const SendFundsInfoContent = () => {
 
     return (
         <PWSheetLayout
-            body={
-                <PWView style={styles.body}>
-                    <PWIcon
-                        name='info'
-                        size='xxl'
-                        variant='helper'
-                    />
-                    <PWView style={styles.bodyContainer}>
-                        <PWText
-                            variant='h3'
-                            style={styles.title}
-                        >
-                            {t('send_funds.info.title')}
-                        </PWText>
-                        <PWText style={styles.preamble}>
-                            {t('send_funds.info.preamble')}
-                        </PWText>
-                        <PWView style={styles.tipsContainer}>
-                            <PWView style={styles.tip}>
-                                <PWView style={styles.tipNumberContainer}>
-                                    <PWText
-                                        variant='h4'
-                                        style={styles.tipNumber}
-                                    >
-                                        1
-                                    </PWText>
-                                </PWView>
-                                <PWText style={styles.tipText}>
-                                    {t('send_funds.info.tip_1')}
-                                </PWText>
-                            </PWView>
-                            <PWView style={styles.tip}>
-                                <PWView style={styles.tipNumberContainer}>
-                                    <PWText
-                                        variant='h4'
-                                        style={styles.tipNumber}
-                                    >
-                                        2
-                                    </PWText>
-                                </PWView>
-                                <PWText style={styles.tipText}>
-                                    <Trans
-                                        i18nKey='send_funds.info.tip_2'
-                                        components={[
-                                            <PWText
-                                                key='warning'
-                                                style={styles.redText}
-                                            />,
-                                        ]}
-                                    />
-                                </PWText>
-                            </PWView>
-                        </PWView>
-                        <PWDivider color={theme.colors.layerGray} />
-                        <PWText
-                            variant='bodyCompact'
-                            style={styles.postamble}
-                        >
-                            <Trans
-                                i18nKey='send_funds.info.more_info'
-                                components={[
-                                    <PWText
-                                        key='link'
-                                        variant='link'
-                                        style={styles.link}
-                                        onPress={handleOpenInfoLink}
-                                    />,
-                                ]}
-                            />
-                        </PWText>
-                    </PWView>
-                </PWView>
-            }
             footer={
                 <PWButton
                     variant='secondary'
@@ -116,6 +43,78 @@ export const SendFundsInfoContent = () => {
                     title={t('send_funds.info.i_understand')}
                 />
             }
-        />
+        >
+            <PWView style={styles.body}>
+                <PWIcon
+                    name='info'
+                    size='xxl'
+                    variant='helper'
+                />
+                <PWView style={styles.bodyContainer}>
+                    <PWText
+                        variant='h3'
+                        style={styles.title}
+                    >
+                        {t('send_funds.info.title')}
+                    </PWText>
+                    <PWText style={styles.preamble}>
+                        {t('send_funds.info.preamble')}
+                    </PWText>
+                    <PWView style={styles.tipsContainer}>
+                        <PWView style={styles.tip}>
+                            <PWView style={styles.tipNumberContainer}>
+                                <PWText
+                                    variant='h4'
+                                    style={styles.tipNumber}
+                                >
+                                    1
+                                </PWText>
+                            </PWView>
+                            <PWText style={styles.tipText}>
+                                {t('send_funds.info.tip_1')}
+                            </PWText>
+                        </PWView>
+                        <PWView style={styles.tip}>
+                            <PWView style={styles.tipNumberContainer}>
+                                <PWText
+                                    variant='h4'
+                                    style={styles.tipNumber}
+                                >
+                                    2
+                                </PWText>
+                            </PWView>
+                            <PWText style={styles.tipText}>
+                                <Trans
+                                    i18nKey='send_funds.info.tip_2'
+                                    components={[
+                                        <PWText
+                                            key='warning'
+                                            style={styles.redText}
+                                        />,
+                                    ]}
+                                />
+                            </PWText>
+                        </PWView>
+                    </PWView>
+                    <PWDivider color={theme.colors.layerGray} />
+                    <PWText
+                        variant='bodyCompact'
+                        style={styles.postamble}
+                    >
+                        <Trans
+                            i18nKey='send_funds.info.more_info'
+                            components={[
+                                <PWText
+                                    key='link'
+                                    variant='link'
+                                    style={styles.link}
+                                    onPress={handleOpenInfoLink}
+                                />,
+                            ]}
+                        />
+                    </PWText>
+                </PWView>
+            </PWView>
+        </PWSheetLayout>
     )
 }

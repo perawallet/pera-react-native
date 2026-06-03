@@ -29,23 +29,6 @@ export const BackupVerificationScreen = () => {
 
     return (
         <PWScreen
-            body={
-                <PWView style={styles.scrollContent}>
-                    <ScreenHeader title={t('backup.verification.title')} />
-                    <PWView style={styles.quizList}>
-                        {items.map((item, i) => (
-                            <BackupQuizItem
-                                key={`${item.position}-${i}`}
-                                position={item.position}
-                                options={item.options}
-                                selectedWord={item.selectedWord}
-                                onSelect={word => onSelect(i, word)}
-                                testID={`backup_verification_item_${i}`}
-                            />
-                        ))}
-                    </PWView>
-                </PWView>
-            }
             footer={
                 <PWButton
                     title={t('backup.verification.cta_next')}
@@ -55,6 +38,22 @@ export const BackupVerificationScreen = () => {
                     testID='backup_verification_next'
                 />
             }
-        />
+        >
+            <PWView style={styles.scrollContent}>
+                <ScreenHeader title={t('backup.verification.title')} />
+                <PWView style={styles.quizList}>
+                    {items.map((item, i) => (
+                        <BackupQuizItem
+                            key={`${item.position}-${i}`}
+                            position={item.position}
+                            options={item.options}
+                            selectedWord={item.selectedWord}
+                            onSelect={word => onSelect(i, word)}
+                            testID={`backup_verification_item_${i}`}
+                        />
+                    ))}
+                </PWView>
+            </PWView>
+        </PWScreen>
     )
 }

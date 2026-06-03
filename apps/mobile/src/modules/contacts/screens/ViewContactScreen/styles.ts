@@ -14,7 +14,7 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
-        paddingTop: theme.spacing.xxl,
+        paddingTop: theme.spacing.lg,
     },
     headerButtons: {
         flexDirection: 'row',

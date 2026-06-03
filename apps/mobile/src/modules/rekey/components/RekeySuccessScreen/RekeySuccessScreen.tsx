@@ -38,42 +38,6 @@ export const RekeySuccessScreen = ({
         <PWScreen
             scroll='never'
             testID={`${testIdPrefix}-success-screen`}
-            body={
-                <PWView style={styles.content}>
-                    <PWView style={styles.iconWrapper}>
-                        <CheckIcon
-                            width={checkSize}
-                            height={checkSize}
-                            color={theme.colors.textMain}
-                        />
-                    </PWView>
-
-                    <PWView style={styles.textBlock}>
-                        <PWText
-                            variant='h1'
-                            style={styles.title}
-                        >
-                            {t(`${i18nPrefix}.title`)}
-                        </PWText>
-                        <PWText
-                            variant='bodyLarge'
-                            style={styles.body}
-                        >
-                            <Trans
-                                i18nKey={`${i18nPrefix}.body`}
-                                values={{ source: sourceName }}
-                                components={[
-                                    <PWText
-                                        key='source'
-                                        variant='h4'
-                                        style={styles.body}
-                                    />,
-                                ]}
-                            />
-                        </PWText>
-                    </PWView>
-                </PWView>
-            }
             footer={
                 <PWButton
                     variant='primary'
@@ -83,6 +47,41 @@ export const RekeySuccessScreen = ({
                     testID={`${testIdPrefix}-success-done`}
                 />
             }
-        />
+        >
+            <PWView style={styles.content}>
+                <PWView style={styles.iconWrapper}>
+                    <CheckIcon
+                        width={checkSize}
+                        height={checkSize}
+                        color={theme.colors.textMain}
+                    />
+                </PWView>
+
+                <PWView style={styles.textBlock}>
+                    <PWText
+                        variant='h1'
+                        style={styles.title}
+                    >
+                        {t(`${i18nPrefix}.title`)}
+                    </PWText>
+                    <PWText
+                        variant='bodyLarge'
+                        style={styles.body}
+                    >
+                        <Trans
+                            i18nKey={`${i18nPrefix}.body`}
+                            values={{ source: sourceName }}
+                            components={[
+                                <PWText
+                                    key='source'
+                                    variant='h4'
+                                    style={styles.body}
+                                />,
+                            ]}
+                        />
+                    </PWText>
+                </PWView>
+            </PWView>
+        </PWScreen>
     )
 }

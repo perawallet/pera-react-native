@@ -51,40 +51,35 @@ export const NotificationsScreen = () => {
     )
 
     return (
-        <PWScreen
-            scroll='never'
-            body={
-                <PWFlatList
-                    data={notifications}
-                    renderItem={renderItem}
-                    onEndReached={loadMoreItems}
-                    onEndReachedThreshold={0.1}
-                    keyExtractor={keyExtractor}
-                    ItemSeparatorComponent={ListItemDivider}
-                    ListEmptyComponent={
-                        <EmptyView
-                            isLoading={isPending}
-                            style={styles.emptyView}
-                            icon='bell'
-                            title={t('notifications.empty_title')}
-                            body={t('notifications.empty_body')}
-                        />
-                    }
-                    ListFooterComponent={
-                        isFetchingNextPage ? (
-                            <LoadingView variant='circle' />
-                        ) : null
-                    }
-                    refreshControl={
-                        <RefreshControl
-                            refreshing={isRefetching}
-                            onRefresh={refetch}
-                            colors={[theme.colors.primary]}
-                            progressBackgroundColor={theme.colors.background}
-                        />
-                    }
-                />
-            }
-        />
+        <PWScreen scroll='never'>
+            <PWFlatList
+                data={notifications}
+                renderItem={renderItem}
+                onEndReached={loadMoreItems}
+                onEndReachedThreshold={0.1}
+                keyExtractor={keyExtractor}
+                ItemSeparatorComponent={ListItemDivider}
+                ListEmptyComponent={
+                    <EmptyView
+                        isLoading={isPending}
+                        style={styles.emptyView}
+                        icon='bell'
+                        title={t('notifications.empty_title')}
+                        body={t('notifications.empty_body')}
+                    />
+                }
+                ListFooterComponent={
+                    isFetchingNextPage ? <LoadingView variant='circle' /> : null
+                }
+                refreshControl={
+                    <RefreshControl
+                        refreshing={isRefetching}
+                        onRefresh={refetch}
+                        colors={[theme.colors.primary]}
+                        progressBackgroundColor={theme.colors.background}
+                    />
+                }
+            />
+        </PWScreen>
     )
 }

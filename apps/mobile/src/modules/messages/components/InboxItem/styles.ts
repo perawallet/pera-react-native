@@ -19,6 +19,19 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         justifyContent: 'flex-start',
     },
+    // `align='top'` rows: pin the indicator/icon to the first line and stack
+    // the title + body vertically.
+    containerTop: {
+        alignItems: 'flex-start',
+    },
+    indicatorSlot: {
+        height: theme.spacing.xxl,
+        justifyContent: 'center',
+    },
+    content: {
+        flex: 1,
+        gap: theme.spacing.sm,
+    },
     messageBox: {
         flex: 1,
         overflow: 'hidden',

@@ -50,52 +50,6 @@ export const WatchAccountScreen = () => {
 
     return (
         <PWScreen
-            scroll='never'
-            body={
-                <>
-                    <ScreenHeader
-                        title={t('onboarding.watch_account.title')}
-                        description={t('onboarding.watch_account.description')}
-                    />
-
-                    <AddressEntryField
-                        testID='watch_account_address_input'
-                        placeholder={t(
-                            'onboarding.watch_account.address_placeholder',
-                        )}
-                        value={address}
-                        onChangeText={handleAddressChange}
-                        allowQRCode
-                        onScanned={handleAddressChange}
-                        errorMessage={errorMessage}
-                    />
-                    {isNfdResolving && (
-                        <PWView style={styles.nfdStatus}>
-                            <ActivityIndicator size='small' />
-                            <PWText
-                                variant='caption'
-                                style={styles.nfdStatusText}
-                            >
-                                {t('address_entry.nfd_resolving')}
-                            </PWText>
-                        </PWView>
-                    )}
-                    {isNfdResolved && nfdName && (
-                        <PWView style={styles.nfdStatus}>
-                            <PWText
-                                variant='caption'
-                                style={styles.nfdStatusText}
-                            >
-                                {t('address_entry.nfd_resolved', {
-                                    name: nfdName,
-                                })}
-                                {' — '}
-                                {truncateAlgorandAddress(resolvedAddress)}
-                            </PWText>
-                        </PWView>
-                    )}
-                </>
-            }
             footer={
                 <PWButton
                     testID='watch_account_submit_button'
@@ -105,6 +59,46 @@ export const WatchAccountScreen = () => {
                     isDisabled={!isValidAddress || isDuplicateAddress}
                 />
             }
-        />
+        >
+            <ScreenHeader
+                title={t('onboarding.watch_account.title')}
+                description={t('onboarding.watch_account.description')}
+            />
+
+            <AddressEntryField
+                testID='watch_account_address_input'
+                placeholder={t('onboarding.watch_account.address_placeholder')}
+                value={address}
+                onChangeText={handleAddressChange}
+                allowQRCode
+                onScanned={handleAddressChange}
+                errorMessage={errorMessage}
+            />
+            {isNfdResolving && (
+                <PWView style={styles.nfdStatus}>
+                    <ActivityIndicator size='small' />
+                    <PWText
+                        variant='caption'
+                        style={styles.nfdStatusText}
+                    >
+                        {t('address_entry.nfd_resolving')}
+                    </PWText>
+                </PWView>
+            )}
+            {isNfdResolved && nfdName && (
+                <PWView style={styles.nfdStatus}>
+                    <PWText
+                        variant='caption'
+                        style={styles.nfdStatusText}
+                    >
+                        {t('address_entry.nfd_resolved', {
+                            name: nfdName,
+                        })}
+                        {' — '}
+                        {truncateAlgorandAddress(resolvedAddress)}
+                    </PWText>
+                </PWView>
+            )}
+        </PWScreen>
     )
 }

@@ -57,44 +57,6 @@ export const UndoRekeyConfirmScreen = () => {
     return (
         <PWScreen
             testID='undo-rekey-confirm-screen'
-            body={
-                <PWView style={styles.scrollContent}>
-                    <ScreenHeader
-                        title={t('rekey.undo.confirm.title')}
-                        description={
-                            <Trans
-                                i18nKey='rekey.undo.confirm.body'
-                                components={bodyTransComponents}
-                            />
-                        }
-                    />
-                    <PWView style={styles.summarySection}>
-                        <PWText
-                            variant='bodyLarge'
-                            style={styles.summaryLabel}
-                        >
-                            {t('rekey.undo.confirm.summary_label')}
-                        </PWText>
-
-                        <PWView style={styles.summaryCard}>
-                            <RekeySummaryRow account={source} />
-                            <PWView style={styles.arrowRow}>
-                                <PWIcon
-                                    name='arrow-down'
-                                    size='sm'
-                                    variant='secondary'
-                                />
-                            </PWView>
-                            <RekeySummaryRow
-                                account={source}
-                                ignoreRekey
-                            />
-                        </PWView>
-                    </PWView>
-
-                    <PWView style={styles.spacer} />
-                </PWView>
-            }
             footer={
                 <PWView style={styles.footer}>
                     {currentAuth && (
@@ -135,6 +97,43 @@ export const UndoRekeyConfirmScreen = () => {
                     />
                 </PWView>
             }
-        />
+        >
+            <PWView style={styles.scrollContent}>
+                <ScreenHeader
+                    title={t('rekey.undo.confirm.title')}
+                    description={
+                        <Trans
+                            i18nKey='rekey.undo.confirm.body'
+                            components={bodyTransComponents}
+                        />
+                    }
+                />
+                <PWView style={styles.summarySection}>
+                    <PWText
+                        variant='bodyLarge'
+                        style={styles.summaryLabel}
+                    >
+                        {t('rekey.undo.confirm.summary_label')}
+                    </PWText>
+
+                    <PWView style={styles.summaryCard}>
+                        <RekeySummaryRow account={source} />
+                        <PWView style={styles.arrowRow}>
+                            <PWIcon
+                                name='arrow-down'
+                                size='sm'
+                                variant='secondary'
+                            />
+                        </PWView>
+                        <RekeySummaryRow
+                            account={source}
+                            ignoreRekey
+                        />
+                    </PWView>
+                </PWView>
+
+                <PWView style={styles.spacer} />
+            </PWView>
+        </PWScreen>
     )
 }

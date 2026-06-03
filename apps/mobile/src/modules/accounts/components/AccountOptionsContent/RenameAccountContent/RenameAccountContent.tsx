@@ -46,28 +46,25 @@ export const RenameAccountContent = ({
         <PWSheetLayout
             horizontalPadding='none'
             header={<SheetHeader title={t('account_options.rename_title')} />}
-            body={
-                <>
-                    <PWView style={styles.inputContainer}>
-                        <PWInput
-                            value={name}
-                            onChangeText={setName}
-                            placeholder={t('account_options.rename_label')}
-                            autoFocus
-                            inputStyle={styles.input}
-                            InputComponent={BottomSheetTextInput}
-                        />
-                    </PWView>
-                    <PWView style={styles.buttonContainer}>
-                        <PWButton
-                            variant='primary'
-                            title={t('account_options.rename_save')}
-                            onPress={handleSave}
-                            isDisabled={isSaveDisabled}
-                        />
-                    </PWView>
-                </>
-            }
-        />
+        >
+            <PWView style={styles.inputContainer}>
+                <PWInput
+                    value={name}
+                    onChangeText={setName}
+                    placeholder={t('account_options.rename_label')}
+                    autoFocus
+                    inputStyle={styles.input}
+                    InputComponent={BottomSheetTextInput}
+                />
+            </PWView>
+            <PWView style={styles.buttonContainer}>
+                <PWButton
+                    variant='primary'
+                    title={t('account_options.rename_save')}
+                    onPress={handleSave}
+                    isDisabled={isSaveDisabled}
+                />
+            </PWView>
+        </PWSheetLayout>
     )
 }

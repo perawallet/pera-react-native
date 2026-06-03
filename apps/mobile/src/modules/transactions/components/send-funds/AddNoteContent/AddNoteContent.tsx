@@ -56,23 +56,22 @@ export const AddNoteContent = () => {
                     }
                 />
             }
-            body={
-                <Controller
-                    control={control}
-                    name='note'
-                    render={({ field: { onChange, onBlur, value } }) => (
-                        <PWInput
-                            onBlur={onBlur}
-                            onChangeText={onChange}
-                            value={value}
-                            label={t('send_funds.add_note.placeholder')}
-                            errorMessage={errors.note?.message}
-                            autoFocus
-                            InputComponent={BottomSheetTextInput}
-                        />
-                    )}
-                />
-            }
-        />
+        >
+            <Controller
+                control={control}
+                name='note'
+                render={({ field: { onChange, onBlur, value } }) => (
+                    <PWInput
+                        onBlur={onBlur}
+                        onChangeText={onChange}
+                        value={value}
+                        label={t('send_funds.add_note.placeholder')}
+                        errorMessage={errors.note?.message}
+                        autoFocus
+                        InputComponent={BottomSheetTextInput}
+                    />
+                )}
+            />
+        </PWSheetLayout>
     )
 }

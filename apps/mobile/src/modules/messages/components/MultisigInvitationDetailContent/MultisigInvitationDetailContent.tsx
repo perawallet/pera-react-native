@@ -60,48 +60,6 @@ export const MultisigInvitationDetailContent = ({
                     testID='multisig_invitation_sheet'
                 />
             }
-            body={
-                <PWView style={styles.body}>
-                    <MultisigInfoCard
-                        threshold={renderedInvitation.threshold}
-                        totalParticipants={totalParticipants}
-                        isUserIncluded={isUserIncluded}
-                        participantCountTestID='multisig_invitation_participant_count'
-                        thresholdTestID='multisig_invitation_threshold_value'
-                    />
-
-                    <PWText
-                        variant='h4'
-                        style={styles.sectionHeading}
-                    >
-                        {t('multisig.invitation.accounts_heading', {
-                            count: totalParticipants,
-                        })}
-                    </PWText>
-
-                    <PWView>
-                        {renderedInvitation.participantAddresses.map(
-                            (address, index, arr) => (
-                                <AddressDisplay
-                                    // A multisig can repeat an address, so address
-                                    // alone isn't a unique key.
-                                    key={`${address}-${index}`}
-                                    address={address}
-                                    forceShowIcon
-                                    contactAvatarVariant='highlighted'
-                                    textProps={{ variant: 'h4' }}
-                                    style={[
-                                        styles.participantRow,
-                                        index === arr.length - 1 &&
-                                            styles.participantRowLast,
-                                    ]}
-                                    testID={`participant_row_${address}_${index}`}
-                                />
-                            ),
-                        )}
-                    </PWView>
-                </PWView>
-            }
             footer={
                 <PWView style={styles.bottomBar}>
                     <PWButton
@@ -123,6 +81,47 @@ export const MultisigInvitationDetailContent = ({
                     />
                 </PWView>
             }
-        />
+        >
+            <PWView style={styles.body}>
+                <MultisigInfoCard
+                    threshold={renderedInvitation.threshold}
+                    totalParticipants={totalParticipants}
+                    isUserIncluded={isUserIncluded}
+                    participantCountTestID='multisig_invitation_participant_count'
+                    thresholdTestID='multisig_invitation_threshold_value'
+                />
+
+                <PWText
+                    variant='h4'
+                    style={styles.sectionHeading}
+                >
+                    {t('multisig.invitation.accounts_heading', {
+                        count: totalParticipants,
+                    })}
+                </PWText>
+
+                <PWView>
+                    {renderedInvitation.participantAddresses.map(
+                        (address, index, arr) => (
+                            <AddressDisplay
+                                // A multisig can repeat an address, so address
+                                // alone isn't a unique key.
+                                key={`${address}-${index}`}
+                                address={address}
+                                forceShowIcon
+                                contactAvatarVariant='highlighted'
+                                textProps={{ variant: 'h4' }}
+                                style={[
+                                    styles.participantRow,
+                                    index === arr.length - 1 &&
+                                        styles.participantRowLast,
+                                ]}
+                                testID={`participant_row_${address}_${index}`}
+                            />
+                        ),
+                    )}
+                </PWView>
+            </PWView>
+        </PWSheetLayout>
     )
 }

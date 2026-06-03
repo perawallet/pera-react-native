@@ -20,61 +20,58 @@ export const SearchAccountsScreen = () => {
     const styles = useStyles()
 
     return (
-        <PWScreen
-            scroll='never'
-            body={
-                <PWView style={styles.container}>
-                    <PWView style={styles.topRow}>
-                        <PWRoundIcon
-                            icon='globe'
-                            iconSize='lg'
+        <PWScreen scroll='never'>
+            <PWView style={styles.container}>
+                <PWView style={styles.topRow}>
+                    <PWRoundIcon
+                        icon='globe'
+                        iconSize='lg'
+                    />
+
+                    <PWView style={styles.dotsContainer}>
+                        <Animated.View
+                            style={[
+                                styles.dot,
+                                styles.dot1,
+                                { opacity: dotOpacities[0] },
+                            ]}
                         />
-
-                        <PWView style={styles.dotsContainer}>
-                            <Animated.View
-                                style={[
-                                    styles.dot,
-                                    styles.dot1,
-                                    { opacity: dotOpacities[0] },
-                                ]}
-                            />
-                            <Animated.View
-                                style={[
-                                    styles.dot,
-                                    styles.dot2,
-                                    { opacity: dotOpacities[1] },
-                                ]}
-                            />
-                            <Animated.View
-                                style={[
-                                    styles.dot,
-                                    styles.dot3,
-                                    { opacity: dotOpacities[2] },
-                                ]}
-                            />
-                            <Animated.View
-                                style={[
-                                    styles.dot,
-                                    styles.dot4,
-                                    { opacity: dotOpacities[3] },
-                                ]}
-                            />
-                        </PWView>
-
-                        <PWRoundIcon
-                            icon='phone'
-                            iconSize='lg'
+                        <Animated.View
+                            style={[
+                                styles.dot,
+                                styles.dot2,
+                                { opacity: dotOpacities[1] },
+                            ]}
+                        />
+                        <Animated.View
+                            style={[
+                                styles.dot,
+                                styles.dot3,
+                                { opacity: dotOpacities[2] },
+                            ]}
+                        />
+                        <Animated.View
+                            style={[
+                                styles.dot,
+                                styles.dot4,
+                                { opacity: dotOpacities[3] },
+                            ]}
                         />
                     </PWView>
 
-                    <PWText
-                        variant='h3'
-                        style={styles.title}
-                    >
-                        {t('onboarding.searching_accounts.title')}
-                    </PWText>
+                    <PWRoundIcon
+                        icon='phone'
+                        iconSize='lg'
+                    />
                 </PWView>
-            }
-        />
+
+                <PWText
+                    variant='h3'
+                    style={styles.title}
+                >
+                    {t('onboarding.searching_accounts.title')}
+                </PWText>
+            </PWView>
+        </PWScreen>
     )
 }

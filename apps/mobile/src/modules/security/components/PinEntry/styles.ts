@@ -17,13 +17,6 @@ export const useStyles = makeStyles(theme => ({
         flex: 1,
         paddingHorizontal: theme.spacing.xl,
     },
-    header: {
-        alignItems: 'flex-start',
-    },
-    title: {
-        textAlign: 'left',
-        marginBottom: theme.spacing.sm,
-    },
     circlesContainer: {
         alignItems: 'center',
         justifyContent: 'center',

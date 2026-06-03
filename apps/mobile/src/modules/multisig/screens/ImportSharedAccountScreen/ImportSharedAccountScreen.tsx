@@ -108,42 +108,6 @@ export const ImportSharedAccountScreen = () => {
         <PWScreen
             style={styles.container}
             testID='import-shared-account-screen'
-            body={
-                <PWView style={styles.bodyContent}>
-                    <MultisigInfoCard
-                        totalParticipants={totalParticipants}
-                        threshold={threshold}
-                        isUserIncluded={isUserIncluded}
-                        canUserSign={canUserSign}
-                        participantCountTestID='import-shared-account-participant-count'
-                        thresholdTestID='import-shared-account-threshold'
-                    />
-
-                    <PWText
-                        variant='h4'
-                        style={styles.sectionHeading}
-                    >
-                        {t('multisig.import.accounts_heading', {
-                            count: totalParticipants,
-                        })}
-                    </PWText>
-
-                    <PWView>
-                        {participantAddresses.map(participant => (
-                            <AddressDisplay
-                                key={participant}
-                                address={participant}
-                                showCopy={false}
-                                forceShowIcon
-                                contactAvatarVariant='highlighted'
-                                textProps={{ variant: 'h4' }}
-                                style={styles.participantRow}
-                                testID={`import-participant-row-${participant}`}
-                            />
-                        ))}
-                    </PWView>
-                </PWView>
-            }
             footer={
                 <PWView style={styles.footerContent}>
                     {isAlreadyImported && (
@@ -172,6 +136,41 @@ export const ImportSharedAccountScreen = () => {
                     </PWView>
                 </PWView>
             }
-        />
+        >
+            <PWView style={styles.bodyContent}>
+                <MultisigInfoCard
+                    totalParticipants={totalParticipants}
+                    threshold={threshold}
+                    isUserIncluded={isUserIncluded}
+                    canUserSign={canUserSign}
+                    participantCountTestID='import-shared-account-participant-count'
+                    thresholdTestID='import-shared-account-threshold'
+                />
+
+                <PWText
+                    variant='h4'
+                    style={styles.sectionHeading}
+                >
+                    {t('multisig.import.accounts_heading', {
+                        count: totalParticipants,
+                    })}
+                </PWText>
+
+                <PWView>
+                    {participantAddresses.map(participant => (
+                        <AddressDisplay
+                            key={participant}
+                            address={participant}
+                            showCopy={false}
+                            forceShowIcon
+                            contactAvatarVariant='highlighted'
+                            textProps={{ variant: 'h4' }}
+                            style={styles.participantRow}
+                            testID={`import-participant-row-${participant}`}
+                        />
+                    ))}
+                </PWView>
+            </PWView>
+        </PWScreen>
     )
 }

@@ -14,5 +14,9 @@ import { PWScreen } from '@components/core'
 import { FeatureFlagOverrides } from '@modules/settings/components/FeatureFlagOverrides/FeatureFlagOverrides'
 
 export const SettingsDeveloperFeatureFlagsScreen = () => {
-    return <PWScreen body={<FeatureFlagOverrides />} />
+    return (
+        <PWScreen>
+            <FeatureFlagOverrides />
+        </PWScreen>
+    )
 }

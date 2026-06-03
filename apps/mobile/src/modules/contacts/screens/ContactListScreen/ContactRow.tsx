@@ -13,10 +13,8 @@
 import { useCallback } from 'react'
 import { Contact } from '@perawallet/wallet-core-contacts'
 
-import { PWIcon, PWTouchableOpacity } from '@components/core'
-import { AddressDisplay } from '@components/AddressDisplay'
-
-import { useStyles } from './styles'
+import { PWIcon } from '@components/core'
+import { AddressListItem } from '@components/AddressListItem'
 
 type ContactRowProps = {
     contact: Contact
@@ -29,8 +27,6 @@ export const ContactRow = ({
     onShowQR,
     onSelect,
 }: ContactRowProps) => {
-    const styles = useStyles()
-
     const handlePress = useCallback(
         () => onSelect(contact),
         [contact, onSelect],
@@ -41,21 +37,17 @@ export const ContactRow = ({
     )
 
     return (
-        <PWTouchableOpacity
+        <AddressListItem
+            address={contact.address}
             onPress={handlePress}
-            style={styles.contactContainer}
-        >
-            <AddressDisplay
-                address={contact.address}
-                showCopy={false}
-                trailing={
-                    <PWIcon
-                        name='qr'
-                        variant='primary'
-                        onPress={handleShowQR}
-                    />
-                }
-            />
-        </PWTouchableOpacity>
+            showDivider
+            right={
+                <PWIcon
+                    name='qr'
+                    variant='primary'
+                    onPress={handleShowQR}
+                />
+            }
+        />
     )
 }

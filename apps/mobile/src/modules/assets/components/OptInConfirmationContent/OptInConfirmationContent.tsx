@@ -65,100 +65,99 @@ export const OptInConfirmationContent = ({
     return (
         <PWSheetLayout
             header={<SheetHeader title={t('add_asset.confirmation.title')} />}
-            body={
-                <PWView style={styles.body}>
-                    <PWView style={styles.assetNameRow}>
-                        <AssetNameBadge
-                            name={assetDisplayName}
-                            verificationTier={verificationTier}
-                            isFavorited={isFavorited}
-                            textVariant='h3'
-                        />
-                    </PWView>
-                    {!!unitName && (
-                        <PWView style={styles.unitNameRow}>
-                            <PWText
-                                variant='body'
-                                style={styles.unitName}
-                            >
-                                {unitName}
-                            </PWText>
-                        </PWView>
-                    )}
-
-                    <PWView style={styles.divider} />
-
-                    <PWView style={styles.row}>
-                        <PWText
-                            variant='body'
-                            style={styles.rowLabel}
-                            truncate
-                        >
-                            {assetId}
-                        </PWText>
-                        <PWButton
-                            title={t('add_asset.confirmation.copy_id')}
-                            variant='secondary'
-                            paddingStyle='dense'
-                            onPress={handleCopyId}
-                            testID='opt_in_copy_id'
-                            rounded
-                        />
-                    </PWView>
-
-                    <PWView style={styles.divider} />
-
-                    <PWView style={styles.row}>
-                        <PWText
-                            variant='body'
-                            style={styles.rowLabel}
-                            truncate
-                        >
-                            {t('add_asset.confirmation.account_label')}
-                        </PWText>
-                        <AddressDisplay
-                            address={accountAddress}
-                            showCopy={false}
-                            style={styles.rowAddressContainer}
-                            textProps={{ style: styles.rowAddress }}
-                        />
-                    </PWView>
-
-                    <PWView style={styles.divider} />
-
-                    <PWView style={styles.row}>
-                        <PWText
-                            variant='body'
-                            style={styles.rowLabel}
-                            truncate
-                        >
-                            {t('add_asset.confirmation.fee_label')}
-                        </PWText>
-                        <CurrencyDisplay
-                            currency='ALGO'
-                            precision={ALGO_ASSET.decimals}
-                            minPrecision={DEFAULT_PRECISION}
-                            value={MIN_FEE_WHOLE_UNITS}
-                            showSymbol
-                            style={styles.rowValue}
-                        />
-                    </PWView>
-
-                    <PWText
-                        variant='body'
-                        style={styles.description}
-                    >
-                        {t('add_asset.confirmation.description')}
-                    </PWText>
-
-                    <PWSlideToConfirm
-                        title={t('common.slide_to_confirm.label')}
-                        onConfirm={handleConfirm}
-                        style={styles.confirmButton}
-                        testID='opt_in_confirm'
+        >
+            <PWView style={styles.body}>
+                <PWView style={styles.assetNameRow}>
+                    <AssetNameBadge
+                        name={assetDisplayName}
+                        verificationTier={verificationTier}
+                        isFavorited={isFavorited}
+                        textVariant='h3'
                     />
                 </PWView>
-            }
-        />
+                {!!unitName && (
+                    <PWView style={styles.unitNameRow}>
+                        <PWText
+                            variant='body'
+                            style={styles.unitName}
+                        >
+                            {unitName}
+                        </PWText>
+                    </PWView>
+                )}
+
+                <PWView style={styles.divider} />
+
+                <PWView style={styles.row}>
+                    <PWText
+                        variant='body'
+                        style={styles.rowLabel}
+                        truncate
+                    >
+                        {assetId}
+                    </PWText>
+                    <PWButton
+                        title={t('add_asset.confirmation.copy_id')}
+                        variant='secondary'
+                        paddingStyle='dense'
+                        onPress={handleCopyId}
+                        testID='opt_in_copy_id'
+                        rounded
+                    />
+                </PWView>
+
+                <PWView style={styles.divider} />
+
+                <PWView style={styles.row}>
+                    <PWText
+                        variant='body'
+                        style={styles.rowLabel}
+                        truncate
+                    >
+                        {t('add_asset.confirmation.account_label')}
+                    </PWText>
+                    <AddressDisplay
+                        address={accountAddress}
+                        showCopy={false}
+                        style={styles.rowAddressContainer}
+                        textProps={{ style: styles.rowAddress }}
+                    />
+                </PWView>
+
+                <PWView style={styles.divider} />
+
+                <PWView style={styles.row}>
+                    <PWText
+                        variant='body'
+                        style={styles.rowLabel}
+                        truncate
+                    >
+                        {t('add_asset.confirmation.fee_label')}
+                    </PWText>
+                    <CurrencyDisplay
+                        currency='ALGO'
+                        precision={ALGO_ASSET.decimals}
+                        minPrecision={DEFAULT_PRECISION}
+                        value={MIN_FEE_WHOLE_UNITS}
+                        showSymbol
+                        style={styles.rowValue}
+                    />
+                </PWView>
+
+                <PWText
+                    variant='body'
+                    style={styles.description}
+                >
+                    {t('add_asset.confirmation.description')}
+                </PWText>
+
+                <PWSlideToConfirm
+                    title={t('common.slide_to_confirm.label')}
+                    onConfirm={handleConfirm}
+                    style={styles.confirmButton}
+                    testID='opt_in_confirm'
+                />
+            </PWView>
+        </PWSheetLayout>
     )
 }

@@ -95,51 +95,6 @@ export const LedgerSelectAccountsScreen = () => {
     return (
         <PWScreen
             scroll='never'
-            body={
-                <>
-                    <ScreenHeader
-                        icon='wallet'
-                        title={t('ledger.select_accounts.title', {
-                            count: selectableAccounts.length,
-                        })}
-                        description={t('ledger.select_accounts.description')}
-                    />
-
-                    {showSelectAll && (
-                        <PWTouchableOpacity
-                            onPress={toggleSelectAll}
-                            style={styles.selectAllRow}
-                        >
-                            <PWText
-                                variant='link'
-                                style={styles.selectAllText}
-                            >
-                                {t('ledger.select_accounts.select_all')}
-                            </PWText>
-                            <PWCheckbox
-                                checked={isAllSelected}
-                                onPress={toggleSelectAll}
-                                containerStyle={styles.checkboxContainer}
-                                testID='ledger_select_accounts_select_all_checkbox'
-                            />
-                        </PWTouchableOpacity>
-                    )}
-
-                    <PWFlatList
-                        data={selectableAccounts}
-                        renderItem={renderItem}
-                        keyExtractor={item =>
-                            item.kind === 'derived'
-                                ? item.account.address
-                                : item.address
-                        }
-                        extraData={selectedAddresses}
-                        showsVerticalScrollIndicator={false}
-                        ItemSeparatorComponent={ListItemDivider}
-                        ListFooterComponent={renderFooter}
-                    />
-                </>
-            }
             footer={
                 <PWButton
                     testID='ledger_select_accounts_continue_button'
@@ -151,6 +106,48 @@ export const LedgerSelectAccountsScreen = () => {
                     isDisabled={!canContinue}
                 />
             }
-        />
+        >
+            <ScreenHeader
+                icon='wallet'
+                title={t('ledger.select_accounts.title', {
+                    count: selectableAccounts.length,
+                })}
+                description={t('ledger.select_accounts.description')}
+            />
+
+            {showSelectAll && (
+                <PWTouchableOpacity
+                    onPress={toggleSelectAll}
+                    style={styles.selectAllRow}
+                >
+                    <PWText
+                        variant='link'
+                        style={styles.selectAllText}
+                    >
+                        {t('ledger.select_accounts.select_all')}
+                    </PWText>
+                    <PWCheckbox
+                        checked={isAllSelected}
+                        onPress={toggleSelectAll}
+                        containerStyle={styles.checkboxContainer}
+                        testID='ledger_select_accounts_select_all_checkbox'
+                    />
+                </PWTouchableOpacity>
+            )}
+
+            <PWFlatList
+                data={selectableAccounts}
+                renderItem={renderItem}
+                keyExtractor={item =>
+                    item.kind === 'derived'
+                        ? item.account.address
+                        : item.address
+                }
+                extraData={selectedAddresses}
+                showsVerticalScrollIndicator={false}
+                ItemSeparatorComponent={ListItemDivider}
+                ListFooterComponent={renderFooter}
+            />
+        </PWScreen>
     )
 }

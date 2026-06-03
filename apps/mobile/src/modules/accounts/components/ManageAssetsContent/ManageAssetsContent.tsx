@@ -36,65 +36,62 @@ export const ManageAssetsContent = ({
     return (
         <PWSheetLayout
             header={<SheetHeader title={t('manage_assets.title')} />}
-            body={
-                <>
-                    <PWTouchableOpacity
-                        style={styles.menuRow}
-                        onPress={() => resolve('sort')}
-                        testID='manage_assets_sort'
-                    >
-                        <PWIcon
-                            name='list-arrow-down'
-                            variant='primary'
-                            size='md'
-                        />
-                        <PWText
-                            variant='bodyLarge'
-                            style={styles.menuLabel}
-                        >
-                            {t('manage_assets.sort')}
-                        </PWText>
-                    </PWTouchableOpacity>
+        >
+            <PWTouchableOpacity
+                style={styles.menuRow}
+                onPress={() => resolve('sort')}
+                testID='manage_assets_sort'
+            >
+                <PWIcon
+                    name='list-arrow-down'
+                    variant='primary'
+                    size='md'
+                />
+                <PWText
+                    variant='bodyLarge'
+                    style={styles.menuLabel}
+                >
+                    {t('manage_assets.sort')}
+                </PWText>
+            </PWTouchableOpacity>
 
-                    <PWTouchableOpacity
-                        style={styles.menuRow}
-                        onPress={() => resolve('filter')}
-                        testID='manage_assets_filter'
-                    >
-                        <PWIcon
-                            name='funnel'
-                            variant='primary'
-                            size='md'
-                        />
-                        <PWText
-                            variant='bodyLarge'
-                            style={styles.menuLabel}
-                        >
-                            {t('manage_assets.filter')}
-                        </PWText>
-                    </PWTouchableOpacity>
+            <PWTouchableOpacity
+                style={styles.menuRow}
+                onPress={() => resolve('filter')}
+                testID='manage_assets_filter'
+            >
+                <PWIcon
+                    name='funnel'
+                    variant='primary'
+                    size='md'
+                />
+                <PWText
+                    variant='bodyLarge'
+                    style={styles.menuLabel}
+                >
+                    {t('manage_assets.filter')}
+                </PWText>
+            </PWTouchableOpacity>
 
-                    {!isReadOnly && (
-                        <PWTouchableOpacity
-                            style={styles.menuRow}
-                            onPress={() => resolve('remove')}
-                            testID='manage_assets_remove'
-                        >
-                            <PWIcon
-                                name='trash'
-                                variant='error'
-                                size='md'
-                            />
-                            <PWText
-                                variant='bodyLarge'
-                                style={styles.menuLabelDestructive}
-                            >
-                                {t('manage_assets.remove_assets')}
-                            </PWText>
-                        </PWTouchableOpacity>
-                    )}
-                </>
-            }
-        />
+            {!isReadOnly && (
+                <PWTouchableOpacity
+                    style={styles.menuRow}
+                    onPress={() => resolve('remove')}
+                    testID='manage_assets_remove'
+                >
+                    <PWIcon
+                        name='trash'
+                        variant='error'
+                        size='md'
+                    />
+                    <PWText
+                        variant='bodyLarge'
+                        style={styles.menuLabelDestructive}
+                    >
+                        {t('manage_assets.remove_assets')}
+                    </PWText>
+                </PWTouchableOpacity>
+            )}
+        </PWSheetLayout>
     )
 }

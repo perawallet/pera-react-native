@@ -133,81 +133,6 @@ export const InputScreen = () => {
         <PWScreen
             scroll='never'
             horizontalPadding='none'
-            body={
-                <PWView style={styles.contentContainer}>
-                    <PWView style={styles.mainContentContainer}>
-                        <CurrencyDisplay
-                            currency={asset.unitName ?? ''}
-                            precision={asset.decimals}
-                            value={
-                                cryptoValue
-                                    ? new Decimal(cryptoValue)
-                                    : new Decimal(0)
-                            }
-                            rawValue={cryptoValue ?? undefined}
-                            ignorePrivacyMode
-                            variant='h1'
-                            style={[
-                                cryptoValue
-                                    ? styles.amount
-                                    : styles.amountPlaceholder,
-                                styles.h1,
-                            ]}
-                            showSymbol={false}
-                            minPrecision={asset.decimals ? 2 : 0}
-                        />
-                        {!isCollectible && (
-                            <PreferredCurrencyDisplay
-                                sourceAmount={
-                                    cryptoValue
-                                        ? new Decimal(cryptoValue)
-                                        : null
-                                }
-                                ignorePrivacyMode
-                                sourceAssetId={
-                                    accountAssetBalance?.assetId ?? ''
-                                }
-                                precision={6}
-                                showSymbol
-                                minPrecision={2}
-                                variant='h1'
-                                style={styles.amountPlaceholder}
-                            />
-                        )}
-
-                        <PWView style={styles.buttonContainer}>
-                            <PWButton
-                                title={
-                                    note
-                                        ? t('send_funds.confirmation.edit')
-                                        : t('send_funds.add_note.button')
-                                }
-                                variant='secondary'
-                                style={styles.secondaryButton}
-                                onPress={openNote}
-                            />
-                            <PWButton
-                                title={t('send_funds.input.max')}
-                                variant='secondary'
-                                style={styles.secondaryButton}
-                                onPress={setMax}
-                            />
-                        </PWView>
-
-                        <PWView style={styles.numpadContainer}>
-                            <NumberPad
-                                onPress={handleKey}
-                                allowDecimal={(asset.decimals ?? 0) > 0}
-                            />
-                        </PWView>
-                    </PWView>
-
-                    <AccountAssetItemView
-                        accountBalance={accountAssetBalance}
-                        style={styles.assetDisplay}
-                    />
-                </PWView>
-            }
             footer={
                 <PWButton
                     variant='primary'
@@ -217,6 +142,76 @@ export const InputScreen = () => {
                     isDisabled={!cryptoValue}
                 />
             }
-        />
+        >
+            <PWView style={styles.contentContainer}>
+                <PWView style={styles.mainContentContainer}>
+                    <CurrencyDisplay
+                        currency={asset.unitName ?? ''}
+                        precision={asset.decimals}
+                        value={
+                            cryptoValue
+                                ? new Decimal(cryptoValue)
+                                : new Decimal(0)
+                        }
+                        rawValue={cryptoValue ?? undefined}
+                        ignorePrivacyMode
+                        variant='h1'
+                        style={[
+                            cryptoValue
+                                ? styles.amount
+                                : styles.amountPlaceholder,
+                            styles.h1,
+                        ]}
+                        showSymbol={false}
+                        minPrecision={asset.decimals ? 2 : 0}
+                    />
+                    {!isCollectible && (
+                        <PreferredCurrencyDisplay
+                            sourceAmount={
+                                cryptoValue ? new Decimal(cryptoValue) : null
+                            }
+                            ignorePrivacyMode
+                            sourceAssetId={accountAssetBalance?.assetId ?? ''}
+                            precision={6}
+                            showSymbol
+                            minPrecision={2}
+                            variant='h1'
+                            style={styles.amountPlaceholder}
+                        />
+                    )}
+
+                    <PWView style={styles.buttonContainer}>
+                        <PWButton
+                            title={
+                                note
+                                    ? t('send_funds.confirmation.edit')
+                                    : t('send_funds.add_note.button')
+                            }
+                            variant='secondary'
+                            style={styles.secondaryButton}
+                            onPress={openNote}
+                        />
+                        <PWButton
+                            title={t('send_funds.input.max')}
+                            variant='secondary'
+                            style={styles.secondaryButton}
+                            onPress={setMax}
+                        />
+                    </PWView>
+
+                    <PWView style={styles.numpadContainer}>
+                        <NumberPad
+                            onPress={handleKey}
+                            allowDecimal={(asset.decimals ?? 0) > 0}
+                        />
+                    </PWView>
+                </PWView>
+
+                <AccountAssetItemView
+                    accountBalance={accountAssetBalance}
+                    style={styles.assetDisplay}
+                />
+            </PWView>
+        </PWScreen>
     )
 }

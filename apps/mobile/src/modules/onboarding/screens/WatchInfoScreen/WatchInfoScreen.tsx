@@ -35,18 +35,6 @@ export const WatchInfoScreen = () => {
 
     return (
         <PWScreen
-            scroll='never'
-            body={
-                <PWView style={styles.content}>
-                    <ScreenHeader
-                        icon='eye'
-                        title={t('onboarding.watch_account.info_title')}
-                        description={t(
-                            'onboarding.watch_account.info_description',
-                        )}
-                    />
-                </PWView>
-            }
             footer={
                 <PWView style={styles.footerInner}>
                     <PWView style={styles.warningRow}>
@@ -68,6 +56,12 @@ export const WatchInfoScreen = () => {
                     />
                 </PWView>
             }
-        />
+        >
+            <ScreenHeader
+                icon='eye'
+                title={t('onboarding.watch_account.info_title')}
+                description={t('onboarding.watch_account.info_description')}
+            />
+        </PWScreen>
     )
 }

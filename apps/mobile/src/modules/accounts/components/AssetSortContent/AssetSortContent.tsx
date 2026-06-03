@@ -47,7 +47,8 @@ export const AssetSortContent = (_: AssetSortContentProps = {}) => {
                     }
                 />
             }
-            body={sortOptions.map(option => (
+        >
+            {sortOptions.map(option => (
                 <PWRadioButton
                     key={option.mode}
                     title={t(option.labelKey)}
@@ -56,6 +57,6 @@ export const AssetSortContent = (_: AssetSortContentProps = {}) => {
                     testID={`asset_sort_option_${option.mode}`}
                 />
             ))}
-        />
+        </PWSheetLayout>
     )
 }

@@ -67,27 +67,6 @@ export const BidaliIntroScreen = () => {
                     paddingStyle='dense'
                 />
             }
-            body={
-                <>
-                    <PWView style={styles.heroSection}>
-                        <PWView style={styles.heroImage}>
-                            <PWImage
-                                source={bidaliBackground}
-                                width={width}
-                                height={width * BG_IMAGE_ASPECT_RATIO}
-                                resizeMode='contain'
-                            />
-                        </PWView>
-                    </PWView>
-
-                    <PWView style={styles.contentSection}>
-                        <ScreenHeader
-                            title={t('giftCard.intro.title')}
-                            description={t('giftCard.intro.body')}
-                        />
-                    </PWView>
-                </>
-            }
             footer={
                 <PWButton
                     variant='primary'
@@ -96,6 +75,21 @@ export const BidaliIntroScreen = () => {
                     testID='bidali_intro_buy_button'
                 />
             }
-        />
+        >
+            <PWView style={styles.heroSection}>
+                <PWView style={styles.heroImage}>
+                    <PWImage
+                        source={bidaliBackground}
+                        width={width}
+                        height={width * BG_IMAGE_ASPECT_RATIO}
+                        resizeMode='contain'
+                    />
+                </PWView>
+            </PWView>
+            <ScreenHeader
+                title={t('giftCard.intro.title')}
+                description={t('giftCard.intro.body')}
+            />
+        </PWSheetLayout>
     )
 }

@@ -41,14 +41,6 @@ export const LedgerPairScreen = () => {
 
     return (
         <PWScreen
-            scroll='never'
-            body={
-                <ScreenHeader
-                    icon='ledger'
-                    title={t('ledger.pair.title')}
-                    description={t('ledger.pair.description')}
-                />
-            }
             footer={
                 <PWView style={styles.footer}>
                     <PWButton
@@ -65,6 +57,12 @@ export const LedgerPairScreen = () => {
                     />
                 </PWView>
             }
-        />
+        >
+            <ScreenHeader
+                icon='ledger'
+                title={t('ledger.pair.title')}
+                description={t('ledger.pair.description')}
+            />
+        </PWScreen>
     )
 }

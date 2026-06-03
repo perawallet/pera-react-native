@@ -93,20 +93,6 @@ export const RemoveAssetsScreen = () => {
     return (
         <PWScreen
             scroll='never'
-            body={
-                <PWFlatList
-                    ref={listRef}
-                    data={removableAssets}
-                    renderItem={renderItem}
-                    keyExtractor={item => item.assetId}
-                    ListEmptyComponent={
-                        <EmptyView
-                            title={t('remove_assets.empty_title')}
-                            body={t('remove_assets.empty_body')}
-                        />
-                    }
-                />
-            }
             footer={
                 isRemoveSelectedVisible ? (
                     <PWSlideToConfirm
@@ -118,6 +104,19 @@ export const RemoveAssetsScreen = () => {
                     />
                 ) : undefined
             }
-        />
+        >
+            <PWFlatList
+                ref={listRef}
+                data={removableAssets}
+                renderItem={renderItem}
+                keyExtractor={item => item.assetId}
+                ListEmptyComponent={
+                    <EmptyView
+                        title={t('remove_assets.empty_title')}
+                        body={t('remove_assets.empty_body')}
+                    />
+                }
+            />
+        </PWScreen>
     )
 }

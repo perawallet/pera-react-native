@@ -10,7 +10,5 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-import { getImportInfoScreenStyles } from '../../utils/importInfoScreenStyles'
-
-export const useStyles = makeStyles(getImportInfoScreenStyles)
+export { AddressListItem } from './AddressListItem'
+export type { AddressListItemProps } from './AddressListItem'

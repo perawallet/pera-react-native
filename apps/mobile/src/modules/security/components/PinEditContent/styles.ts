@@ -14,13 +14,7 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
+        paddingTop: theme.spacing.sm,
         flex: 1,
-    },
-    closeButtonContainer: {
-        paddingVertical: theme.spacing.sm,
-        paddingHorizontal: theme.spacing.md,
-    },
-    closeButton: {
-        padding: theme.spacing.sm,
     },
 }))

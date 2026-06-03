@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWIcon, PWTouchableOpacity, PWView } from '@components/core'
+import { PWIcon, PWToolbar, PWView } from '@components/core'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { PinEditView } from '../PinEditView'
 import type { PinEntryMode } from '../PinEditView'
@@ -42,15 +42,16 @@ export const PinEditContent = ({
             style={styles.container}
             testID={testID}
         >
-            <PWView style={styles.closeButtonContainer}>
-                <PWTouchableOpacity
-                    style={styles.closeButton}
-                    onPress={dismiss}
-                    testID='close-button'
-                >
-                    <PWIcon name='cross' />
-                </PWTouchableOpacity>
-            </PWView>
+            <PWToolbar
+                left={
+                    <PWIcon
+                        name='cross'
+                        onPress={dismiss}
+                        testID='close-button'
+                    />
+                }
+                paddingStyle='normal'
+            />
             <PinEditView
                 mode={mode}
                 onSuccess={() => resolve(true)}

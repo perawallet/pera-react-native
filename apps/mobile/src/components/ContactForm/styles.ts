@@ -18,9 +18,8 @@ export const useStyles = makeStyles(theme => {
     return {
         avatarWrapper: {
             alignItems: 'center',
-            marginTop: theme.spacing.xxl,
+            marginTop: theme.spacing.lg,
             marginBottom: theme.spacing['4xl'],
-            paddingHorizontal: theme.spacing.lg,
             gap: theme.spacing.xl,
         },
         avatarTouchable: {

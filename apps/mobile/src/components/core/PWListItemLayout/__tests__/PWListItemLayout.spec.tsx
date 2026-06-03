@@ -8,7 +8,7 @@
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  See the License for the specific language governing permissions and
  limitations under the License
-*/
+ */
 
 import { render, fireEvent, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
@@ -20,9 +20,10 @@ describe('PWListItemLayout', () => {
         render(
             <PWListItemLayout
                 left={<Text>left-slot</Text>}
-                center={<Text>center-slot</Text>}
                 right={<Text>right-slot</Text>}
-            />,
+            >
+                <Text>center-slot</Text>
+            </PWListItemLayout>,
         )
 
         expect(screen.getByText('left-slot')).toBeTruthy()
@@ -32,10 +33,9 @@ describe('PWListItemLayout', () => {
 
     it('renders the divider only when showDivider is set', () => {
         const { container, rerender } = render(
-            <PWListItemLayout
-                testID='item'
-                center={<Text>center-slot</Text>}
-            />,
+            <PWListItemLayout testID='item'>
+                <Text>center-slot</Text>
+            </PWListItemLayout>,
         )
 
         expect(container.querySelector('[testid="item-divider"]')).toBeNull()
@@ -43,14 +43,13 @@ describe('PWListItemLayout', () => {
         rerender(
             <PWListItemLayout
                 testID='item'
-                center={<Text>center-slot</Text>}
                 showDivider
-            />,
+            >
+                <Text>center-slot</Text>
+            </PWListItemLayout>,
         )
 
-        expect(
-            container.querySelector('[testid="item-divider"]'),
-        ).toBeTruthy()
+        expect(container.querySelector('[testid="item-divider"]')).toBeTruthy()
     })
 
     it('invokes onPress when pressed', () => {
@@ -58,9 +57,10 @@ describe('PWListItemLayout', () => {
         const { container } = render(
             <PWListItemLayout
                 testID='item'
-                center={<Text>center-slot</Text>}
                 onPress={onPress}
-            />,
+            >
+                <Text>center-slot</Text>
+            </PWListItemLayout>,
         )
 
         const item = container.querySelector('[testid="item"]')

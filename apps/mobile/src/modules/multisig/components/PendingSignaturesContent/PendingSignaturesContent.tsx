@@ -172,55 +172,6 @@ export const PendingSignaturesContent = () => {
                     )}
                 </PWView>
             }
-            body={
-                <PWView style={styles.body}>
-                    {!signRequest && (
-                        <PWView
-                            style={styles.loadingContainer}
-                            testID='pending_signatures_loading_indicator'
-                        >
-                            <ActivityIndicator
-                                size='large'
-                                color={theme.colors.textGray}
-                            />
-                        </PWView>
-                    )}
-
-                    {!!signRequest && (
-                        <PWView style={styles.accountsHeader}>
-                            <PWText variant='h4'>
-                                {t(
-                                    'multisig.pending_signatures.accounts_heading',
-                                )}
-                            </PWText>
-                            <PWText
-                                variant='caption'
-                                style={styles.accountsHelpText}
-                            >
-                                {t(
-                                    'multisig.pending_signatures.accounts_subtitle',
-                                    { count: threshold },
-                                )}
-                            </PWText>
-                        </PWView>
-                    )}
-
-                    {!!signRequest && (
-                        <PWView style={styles.signersList}>
-                            {signers.map((signer, index) => (
-                                <SignerStatusListItem
-                                    // A multisig can list the same address twice,
-                                    // so address alone isn't a unique key.
-                                    key={`${signer.address}-${index}`}
-                                    address={signer.address}
-                                    status={signer.status}
-                                    action={getSignerAction(signer)}
-                                />
-                            ))}
-                        </PWView>
-                    )}
-                </PWView>
-            }
             footer={
                 canSign || canCancel ? (
                     <PWView style={styles.actionsRow}>
@@ -263,6 +214,52 @@ export const PendingSignaturesContent = () => {
                     />
                 )
             }
-        />
+        >
+            <PWView style={styles.body}>
+                {!signRequest && (
+                    <PWView
+                        style={styles.loadingContainer}
+                        testID='pending_signatures_loading_indicator'
+                    >
+                        <ActivityIndicator
+                            size='large'
+                            color={theme.colors.textGray}
+                        />
+                    </PWView>
+                )}
+
+                {!!signRequest && (
+                    <PWView style={styles.accountsHeader}>
+                        <PWText variant='h4'>
+                            {t('multisig.pending_signatures.accounts_heading')}
+                        </PWText>
+                        <PWText
+                            variant='caption'
+                            style={styles.accountsHelpText}
+                        >
+                            {t(
+                                'multisig.pending_signatures.accounts_subtitle',
+                                { count: threshold },
+                            )}
+                        </PWText>
+                    </PWView>
+                )}
+
+                {!!signRequest && (
+                    <PWView style={styles.signersList}>
+                        {signers.map((signer, index) => (
+                            <SignerStatusListItem
+                                // A multisig can list the same address twice,
+                                // so address alone isn't a unique key.
+                                key={`${signer.address}-${index}`}
+                                address={signer.address}
+                                status={signer.status}
+                                action={getSignerAction(signer)}
+                            />
+                        ))}
+                    </PWView>
+                )}
+            </PWView>
+        </PWSheetLayout>
     )
 }

@@ -54,27 +54,24 @@ export const SingleTransactionScreen = () => {
     }
 
     return (
-        <PWScreen
-            body={
-                <PWView style={styles.contentContainer}>
-                    <TransactionSummaryHeader
-                        transaction={transaction}
-                        metadata={request?.sourceMetadata}
-                    />
+        <PWScreen footer={<SigningActionButtons />}>
+            <PWView style={styles.contentContainer}>
+                <TransactionSummaryHeader
+                    transaction={transaction}
+                    metadata={request?.sourceMetadata}
+                />
 
-                    <SigningWarnings />
+                <SigningWarnings />
 
-                    <PWDivider
-                        color={theme.colors.layerGray}
-                        style={styles.paddedDivider}
-                    />
+                <PWDivider
+                    color={theme.colors.layerGray}
+                    style={styles.paddedDivider}
+                />
 
-                    <SigningAccountDisplay transaction={transaction} />
+                <SigningAccountDisplay transaction={transaction} />
 
-                    <FeeDisplay transaction={transaction} />
-                </PWView>
-            }
-            footer={<SigningActionButtons />}
-        />
+                <FeeDisplay transaction={transaction} />
+            </PWView>
+        </PWScreen>
     )
 }

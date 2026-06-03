@@ -11,6 +11,9 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { getImportInfoScreenStyles } from '../../utils/importInfoScreenStyles'
 
-export const useStyles = makeStyles(getImportInfoScreenStyles)
+export const useStyles = makeStyles(theme => ({
+    secondary: {
+        color: theme.colors.textGray,
+    },
+}))

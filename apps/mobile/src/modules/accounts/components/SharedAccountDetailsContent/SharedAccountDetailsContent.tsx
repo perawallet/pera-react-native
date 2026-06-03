@@ -59,69 +59,67 @@ export const SharedAccountDetailsContent = ({
                     }
                 />
             }
-            body={
-                <PWView
-                    style={styles.details}
-                    testID='shared_account_details_content'
-                >
-                    <MultisigInfoCard
-                        totalParticipants={details.participantCount}
-                        threshold={details.threshold}
-                        isUserIncluded={isUserIncluded}
-                        participantCountTestID='shared_account_participant_count'
-                        thresholdTestID='shared_account_threshold'
-                    />
+        >
+            <PWView
+                style={styles.details}
+                testID='shared_account_details_content'
+            >
+                <MultisigInfoCard
+                    totalParticipants={details.participantCount}
+                    threshold={details.threshold}
+                    isUserIncluded={isUserIncluded}
+                    participantCountTestID='shared_account_participant_count'
+                    thresholdTestID='shared_account_threshold'
+                />
 
-                    <PWView style={styles.participants}>
-                        <PWText variant='h4'>
-                            {t('multisig.detail.accounts_title', {
-                                count: details.participantCount,
-                            })}
-                        </PWText>
-                        <PWView>
-                            {details.addresses.map(
-                                (participantAddress, index, arr) => {
-                                    const inWallet =
-                                        isAddressInWallet(participantAddress)
-                                    const isLast = index === arr.length - 1
-                                    return (
-                                        <AddressDisplay
-                                            // A multisig can repeat a participant
-                                            // address, so address alone isn't unique.
-                                            key={`${participantAddress}-${index}`}
-                                            address={participantAddress}
-                                            forceShowIcon
-                                            contactAvatarVariant='highlighted'
-                                            textProps={{ variant: 'h4' }}
-                                            style={[
-                                                styles.participant,
-                                                isLast &&
-                                                    styles.participantLast,
-                                            ]}
-                                            testID={`shared_account_participant_${participantAddress}_${index}`}
-                                            trailing={
-                                                inWallet ? undefined : (
-                                                    <PWTouchableIcon
-                                                        name='edit-pen'
-                                                        size='md'
-                                                        variant='positive'
-                                                        onPress={() =>
-                                                            handleEditContact(
-                                                                participantAddress,
-                                                            )
-                                                        }
-                                                        testID={`shared_account_participant_edit_${participantAddress}_${index}`}
-                                                    />
-                                                )
-                                            }
-                                        />
-                                    )
-                                },
-                            )}
-                        </PWView>
+                <PWView style={styles.participants}>
+                    <PWText variant='h4'>
+                        {t('multisig.detail.accounts_title', {
+                            count: details.participantCount,
+                        })}
+                    </PWText>
+                    <PWView>
+                        {details.addresses.map(
+                            (participantAddress, index, arr) => {
+                                const inWallet =
+                                    isAddressInWallet(participantAddress)
+                                const isLast = index === arr.length - 1
+                                return (
+                                    <AddressDisplay
+                                        // A multisig can repeat a participant
+                                        // address, so address alone isn't unique.
+                                        key={`${participantAddress}-${index}`}
+                                        address={participantAddress}
+                                        forceShowIcon
+                                        contactAvatarVariant='highlighted'
+                                        textProps={{ variant: 'h4' }}
+                                        style={[
+                                            styles.participant,
+                                            isLast && styles.participantLast,
+                                        ]}
+                                        testID={`shared_account_participant_${participantAddress}_${index}`}
+                                        trailing={
+                                            inWallet ? undefined : (
+                                                <PWTouchableIcon
+                                                    name='edit-pen'
+                                                    size='md'
+                                                    variant='positive'
+                                                    onPress={() =>
+                                                        handleEditContact(
+                                                            participantAddress,
+                                                        )
+                                                    }
+                                                    testID={`shared_account_participant_edit_${participantAddress}_${index}`}
+                                                />
+                                            )
+                                        }
+                                    />
+                                )
+                            },
+                        )}
                     </PWView>
                 </PWView>
-            }
-        />
+            </PWView>
+        </PWSheetLayout>
     )
 }

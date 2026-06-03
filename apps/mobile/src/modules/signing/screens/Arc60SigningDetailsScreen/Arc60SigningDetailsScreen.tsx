@@ -29,14 +29,12 @@ export const Arc60SigningDetailsScreen = () => {
     if (!request || !parsed) return null
 
     return (
-        <PWScreen
-            body={
-                <Arc60DataSigningDetailsView
-                    request={request}
-                    account={account ?? undefined}
-                    parsed={parsed}
-                />
-            }
-        />
+        <PWScreen>
+            <Arc60DataSigningDetailsView
+                request={request}
+                account={account ?? undefined}
+                parsed={parsed}
+            />
+        </PWScreen>
     )
 }

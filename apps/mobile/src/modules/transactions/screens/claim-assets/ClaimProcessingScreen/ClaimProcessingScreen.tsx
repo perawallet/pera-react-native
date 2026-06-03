@@ -25,29 +25,26 @@ export const ClaimProcessingScreen = () => {
     useClaimProcessingScreen()
 
     return (
-        <PWScreen
-            scroll='never'
-            body={
-                <PWView style={styles.contentContainer}>
-                    <PWView style={styles.spinnerCircle}>
-                        <LottieView
-                            autoPlay
-                            loop
-                            source={peraTransactionLoading}
-                            style={styles.animation}
-                        />
-                    </PWView>
-                    <PWText
-                        variant='h3'
-                        style={styles.title}
-                    >
-                        {t('messages.claim.processing_title')}
-                    </PWText>
-                    <PWText style={styles.subtitle}>
-                        {t('messages.claim.processing_subtitle')}
-                    </PWText>
+        <PWScreen scroll='never'>
+            <PWView style={styles.contentContainer}>
+                <PWView style={styles.spinnerCircle}>
+                    <LottieView
+                        autoPlay
+                        loop
+                        source={peraTransactionLoading}
+                        style={styles.animation}
+                    />
                 </PWView>
-            }
-        />
+                <PWText
+                    variant='h3'
+                    style={styles.title}
+                >
+                    {t('messages.claim.processing_title')}
+                </PWText>
+                <PWText style={styles.subtitle}>
+                    {t('messages.claim.processing_subtitle')}
+                </PWText>
+            </PWView>
+        </PWScreen>
     )
 }

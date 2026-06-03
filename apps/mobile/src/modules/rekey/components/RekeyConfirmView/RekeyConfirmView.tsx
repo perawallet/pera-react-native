@@ -65,47 +65,6 @@ export const RekeyConfirmView = ({
         <PWScreen
             style={styles.container}
             testID={`${testIDPrefix}-confirm-screen`}
-            body={
-                <PWView style={styles.scrollContent}>
-                    <ScreenHeader
-                        title={t(`${i18nPrefix}.title`)}
-                        description={
-                            <>
-                                {t(`${i18nPrefix}.body`)}{' '}
-                                <PWText
-                                    variant='bodyLarge'
-                                    style={styles.learnMore}
-                                    onPress={handleLearnMore}
-                                >
-                                    {t(`${i18nPrefix}.learn_more`)}
-                                </PWText>
-                            </>
-                        }
-                    />
-                    <PWView style={styles.summarySection}>
-                        <PWText
-                            variant='bodyLarge'
-                            style={styles.summaryLabel}
-                        >
-                            {t(`${i18nPrefix}.summary_label`)}
-                        </PWText>
-
-                        <PWView style={styles.summaryCard}>
-                            <RekeySummaryRow account={source} />
-                            <PWView style={styles.arrowRow}>
-                                <PWIcon
-                                    name='arrow-down'
-                                    size='sm'
-                                    variant='secondary'
-                                />
-                            </PWView>
-                            <RekeySummaryRow account={target} />
-                        </PWView>
-                    </PWView>
-
-                    <PWView style={styles.spacer} />
-                </PWView>
-            }
             footer={
                 <PWView style={styles.footer}>
                     {hasPreviousRekey && currentAuth && (
@@ -146,6 +105,46 @@ export const RekeyConfirmView = ({
                     />
                 </PWView>
             }
-        />
+        >
+            <PWView style={styles.scrollContent}>
+                <ScreenHeader
+                    title={t(`${i18nPrefix}.title`)}
+                    description={
+                        <>
+                            {t(`${i18nPrefix}.body`)}{' '}
+                            <PWText
+                                variant='bodyLarge'
+                                style={styles.learnMore}
+                                onPress={handleLearnMore}
+                            >
+                                {t(`${i18nPrefix}.learn_more`)}
+                            </PWText>
+                        </>
+                    }
+                />
+                <PWView style={styles.summarySection}>
+                    <PWText
+                        variant='bodyLarge'
+                        style={styles.summaryLabel}
+                    >
+                        {t(`${i18nPrefix}.summary_label`)}
+                    </PWText>
+
+                    <PWView style={styles.summaryCard}>
+                        <RekeySummaryRow account={source} />
+                        <PWView style={styles.arrowRow}>
+                            <PWIcon
+                                name='arrow-down'
+                                size='sm'
+                                variant='secondary'
+                            />
+                        </PWView>
+                        <RekeySummaryRow account={target} />
+                    </PWView>
+                </PWView>
+
+                <PWView style={styles.spacer} />
+            </PWView>
+        </PWScreen>
     )
 }

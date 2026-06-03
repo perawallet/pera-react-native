@@ -88,24 +88,21 @@ export const SwapConfigurationContent = (
                     paddingStyle='dense'
                 />
             }
-            body={
-                <>
-                    <BalancePercentageSection
-                        text={balanceText}
-                        onTextChange={setBalanceText}
-                        isError={isBalanceError}
-                    />
-                    <SlippageToleranceSection
-                        text={slippageText}
-                        onTextChange={setSlippageText}
-                        isError={isSlippageError}
-                    />
-                    <PrimaryCurrencyToggle
-                        value={useLocalCurrency}
-                        onValueChange={setUseLocalCurrency}
-                    />
-                </>
-            }
-        />
+        >
+            <BalancePercentageSection
+                text={balanceText}
+                onTextChange={setBalanceText}
+                isError={isBalanceError}
+            />
+            <SlippageToleranceSection
+                text={slippageText}
+                onTextChange={setSlippageText}
+                isError={isSlippageError}
+            />
+            <PrimaryCurrencyToggle
+                value={useLocalCurrency}
+                onValueChange={setUseLocalCurrency}
+            />
+        </PWSheetLayout>
     )
 }

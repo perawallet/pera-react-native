@@ -26,10 +26,4 @@ export const useStyles = makeStyles(theme => ({
     heroImage: {
         backgroundColor: theme.colors.dappBidali,
     },
-    contentSection: {
-        flexGrow: 1,
-        paddingHorizontal: theme.spacing.xl,
-        marginTop: theme.spacing.xl,
-        backgroundColor: theme.colors.background,
-    },
 }))

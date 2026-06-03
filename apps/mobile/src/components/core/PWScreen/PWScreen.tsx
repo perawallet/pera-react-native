@@ -10,14 +10,16 @@
  limitations under the License
  */
 
-import { useContext, useEffect } from 'react'
-import { Keyboard } from 'react-native'
+import { useCallback, useContext, useEffect, useState } from 'react'
+import { Keyboard, type LayoutChangeEvent } from 'react-native'
 import {
+    KeyboardAwareScrollView,
     KeyboardAvoidingView,
+    KeyboardStickyView,
     useKeyboardState,
 } from 'react-native-keyboard-controller'
-import { ScrollView } from 'react-native-gesture-handler'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { useTheme } from '@rneui/themed'
 import { NavigationContext } from '@react-navigation/native'
 import { getTestProps } from '@utils/test-id-helper'
 import { PWView } from '../PWView'
@@ -31,15 +33,16 @@ export type PWScreenProps = {
     /** Sticky top zone, above the body. Most screens leave this to the
      * navigation header and omit it. */
     header?: ReactNode
-    /** Scrollable body — the only required zone. */
-    body: ReactNode
+    /** Scrollable body. Omit when the screen is header + footer only. */
+    children?: ReactNode
     /** Sticky bottom zone, pinned above the keyboard when it opens. */
     footer?: ReactNode
     /** Body scroll behavior. `'auto'` (default) wraps the body in a scroll
      * container that scrolls only when its content overflows the screen.
      * `'never'` renders a fixed, full-height body — use it when the body owns
      * its own scrolling (e.g. a `PWFlatList`) or is a fixed layout that must
-     * not scroll. */
+     * not scroll. Forms with text inputs should use `'auto'`, which scrolls the
+     * focused field clear of the keyboard. */
     scroll?: 'auto' | 'never'
     horizontalPadding?: HorizontalPaddingMode
     style?: StyleProp<ViewStyle>
@@ -55,13 +58,14 @@ export type PWScreenProps = {
  */
 export const PWScreen = ({
     header,
-    body,
+    children,
     footer,
     scroll = 'auto',
     horizontalPadding = 'xl',
     style,
     testID,
 }: PWScreenProps) => {
+    const { theme } = useTheme()
     const { bottomInset, isInTabNavigator } = usePWScreenInsets()
     const isKeyboardVisible = useKeyboardState(state => state.isVisible)
     const navigation = useContext(NavigationContext)
@@ -69,7 +73,13 @@ export const PWScreen = ({
         horizontalPadding,
         bottomInset,
         hasFooter: footer != null,
+        isKeyboardVisible,
     })
+    const [footerHeight, setFooterHeight] = useState(0)
+
+    const handleFooterLayout = useCallback((event: LayoutChangeEvent) => {
+        setFooterHeight(event.nativeEvent.layout.height)
+    }, [])
 
     // Dismiss the keyboard on navigating away so it doesn't linger over the
     // next screen during the transition.
@@ -90,31 +100,65 @@ export const PWScreen = ({
         header == null ? null : <PWView style={styles.header}>{header}</PWView>
 
     const renderedBody =
-        scroll === 'auto' ? (
-            <ScrollView
+        children == null ? (
+            // Header + footer only: a flex filler absorbs the free space so the
+            // footer sticks to the bottom (no body to push it down otherwise).
+            <PWView style={styles.fixedBody} />
+        ) : scroll === 'auto' ? (
+            <KeyboardAwareScrollView
                 style={styles.body}
                 contentContainerStyle={styles.scrollContent}
+                bottomOffset={
+                    footer != null ? footerHeight + theme.spacing.md : 0
+                }
                 showsVerticalScrollIndicator={false}
                 showsHorizontalScrollIndicator={false}
                 keyboardShouldPersistTaps='handled'
                 keyboardDismissMode='interactive'
             >
-                {body}
-            </ScrollView>
+                {children}
+            </KeyboardAwareScrollView>
         ) : (
-            <PWView style={styles.fixedBody}>{body}</PWView>
+            <PWView style={styles.fixedBody}>{children}</PWView>
         )
 
-    const renderedFooter =
+    const renderedScrollFooter =
+        footer == null ? null : (
+            <KeyboardStickyView>
+                <SafeAreaView
+                    edges={footerEdges}
+                    onLayout={handleFooterLayout}
+                >
+                    <PWView style={styles.footer}>{footer}</PWView>
+                </SafeAreaView>
+            </KeyboardStickyView>
+        )
+
+    const renderedFixedFooter =
         footer == null ? null : (
             <SafeAreaView edges={footerEdges}>
                 <PWView style={styles.footer}>{footer}</PWView>
             </SafeAreaView>
         )
 
-    // `behavior='padding'` shrinks the body to the space the keyboard leaves,
-    // so the footer pins just above it and the body scrolls only when its
-    // content can't fit — instead of reserving keyboard-height ghost padding.
+    if (scroll === 'auto') {
+        // KeyboardAwareScrollView keeps the focused field visible; the sticky
+        // footer rides the keyboard via KeyboardStickyView — no KAV needed.
+        return (
+            <PWView
+                style={[styles.root, style]}
+                {...getTestProps(testID)}
+            >
+                {renderedHeader}
+                {renderedBody}
+                {renderedScrollFooter}
+            </PWView>
+        )
+    }
+
+    // scroll='never' renders a fixed body (it owns its own scrolling, e.g. a
+    // PWFlatList). `behavior='padding'` shrinks the container as the keyboard
+    // opens, lifting the fixed body and its footer above it.
     return (
         <PWView
             style={[styles.root, style]}
@@ -126,7 +170,7 @@ export const PWScreen = ({
             >
                 {renderedHeader}
                 {renderedBody}
-                {renderedFooter}
+                {renderedFixedFooter}
             </KeyboardAvoidingView>
         </PWView>
     )

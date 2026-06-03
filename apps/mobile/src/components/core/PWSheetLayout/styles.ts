@@ -32,10 +32,10 @@ export const useStyles = makeStyles(
         }: StyleProps,
     ) => ({
         root: {
-            flexShrink: 1,
+            flex: 1,
         },
         scrollView: {
-            flexShrink: 1,
+            flex: 1,
         },
         // Sticky header lives inside the scroll so the sheet measures the full
         // content; opaque background hides body content scrolling underneath.

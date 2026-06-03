@@ -39,7 +39,6 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
         },
         scrollContent: {
             flex: 1,
-            paddingBottom: theme.spacing['3xl'],
         },
         mainContainer: {
             paddingHorizontal: theme.spacing.xl,

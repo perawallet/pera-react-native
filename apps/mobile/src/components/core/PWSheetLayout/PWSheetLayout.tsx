@@ -26,7 +26,7 @@ export type PWSheetLayoutProps = {
     header?: ReactNode
     /** Scrollable body — the only required zone. Style the body via its own
      * content (like the header/footer slots), not a zone-level style prop. */
-    body: ReactNode
+    children: ReactNode
     /** Sticky bottom zone, pinned below the body. */
     footer?: ReactNode
     horizontalPadding?: HorizontalPaddingMode
@@ -42,7 +42,7 @@ export type PWSheetLayoutProps = {
  */
 export const PWSheetLayout = ({
     header,
-    body,
+    children,
     footer,
     horizontalPadding = 'xl',
     onScroll,
@@ -69,7 +69,7 @@ export const PWSheetLayout = ({
             {header != null ? (
                 <PWView style={styles.header}>{header}</PWView>
             ) : null}
-            <PWView style={styles.body}>{body}</PWView>
+            <PWView style={styles.body}>{children}</PWView>
         </BottomSheetScrollView>
     )
 

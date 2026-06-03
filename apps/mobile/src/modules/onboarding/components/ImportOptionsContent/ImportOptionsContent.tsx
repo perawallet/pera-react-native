@@ -38,126 +38,125 @@ export const ImportOptionsContent = () => {
             header={
                 <SheetHeader title={t('onboarding.import_options.title')} />
             }
-            body={
-                <PWView style={styles.optionsContainer}>
-                    <PWTouchableOpacity
-                        onPress={() => resolve('hdWallet')}
-                        style={styles.optionBox}
-                        {...getTestProps('import_options_hd_wallet_button')}
-                    >
-                        <PWView style={styles.optionContent}>
-                            <PWView style={styles.optionTopContent}>
-                                <PWView style={styles.optionHeader}>
-                                    <PWView style={styles.optionTitleContainer}>
-                                        <PWText
-                                            variant='h4'
-                                            numberOfLines={2}
-                                            ellipsizeMode='tail'
-                                        >
-                                            {t(
-                                                'onboarding.import_options.hd_wallet.title',
-                                            )}
-                                        </PWText>
-                                    </PWView>
-                                    <PWView style={styles.optionChipContainer}>
-                                        <PWChip
-                                            title={t(
-                                                'onboarding.import_options.hd_wallet.chip',
-                                            )}
-                                            variant='helper'
-                                        />
-                                    </PWView>
+        >
+            <PWView style={styles.optionsContainer}>
+                <PWTouchableOpacity
+                    onPress={() => resolve('hdWallet')}
+                    style={styles.optionBox}
+                    {...getTestProps('import_options_hd_wallet_button')}
+                >
+                    <PWView style={styles.optionContent}>
+                        <PWView style={styles.optionTopContent}>
+                            <PWView style={styles.optionHeader}>
+                                <PWView style={styles.optionTitleContainer}>
+                                    <PWText
+                                        variant='h4'
+                                        numberOfLines={2}
+                                        ellipsizeMode='tail'
+                                    >
+                                        {t(
+                                            'onboarding.import_options.hd_wallet.title',
+                                        )}
+                                    </PWText>
                                 </PWView>
-                                <PWText
-                                    variant='body'
-                                    style={styles.optionBody}
-                                    numberOfLines={3}
-                                    ellipsizeMode='tail'
-                                >
-                                    {t(
-                                        'onboarding.import_options.hd_wallet.description',
-                                    )}
-                                </PWText>
+                                <PWView style={styles.optionChipContainer}>
+                                    <PWChip
+                                        title={t(
+                                            'onboarding.import_options.hd_wallet.chip',
+                                        )}
+                                        variant='helper'
+                                    />
+                                </PWView>
                             </PWView>
                             <PWText
-                                variant='link'
-                                style={styles.optionLink}
-                                numberOfLines={2}
-                                ellipsizeMode='tail'
-                            >
-                                {t('onboarding.import_options.mnemonic_info')}
-                            </PWText>
-                        </PWView>
-
-                        <PWView style={styles.rightIconContainer}>
-                            <PWIcon
-                                name='chevron-right'
-                                size='sm'
-                                variant='secondary'
-                            />
-                        </PWView>
-                    </PWTouchableOpacity>
-
-                    <PWTouchableOpacity
-                        onPress={() => resolve('algo25')}
-                        style={styles.optionBox}
-                        {...getTestProps('import_options_algo25_button')}
-                    >
-                        <PWView style={styles.optionContent}>
-                            <PWView style={styles.optionTopContent}>
-                                <PWView style={styles.optionHeader}>
-                                    <PWView style={styles.optionTitleContainer}>
-                                        <PWText
-                                            variant='h4'
-                                            numberOfLines={2}
-                                            ellipsizeMode='tail'
-                                        >
-                                            {t(
-                                                'onboarding.import_options.algo25.title',
-                                            )}
-                                        </PWText>
-                                    </PWView>
-                                    <PWView style={styles.optionChipContainer}>
-                                        <PWChip
-                                            title={t(
-                                                'onboarding.import_options.algo25.chip',
-                                            )}
-                                        />
-                                    </PWView>
-                                </PWView>
-                                <PWText
-                                    variant='body'
-                                    style={styles.optionBody}
-                                    numberOfLines={3}
-                                    ellipsizeMode='tail'
-                                >
-                                    {t(
-                                        'onboarding.import_options.algo25.description',
-                                    )}
-                                </PWText>
-                            </PWView>
-                            <PWText
-                                variant='link'
-                                style={styles.optionLink}
-                                numberOfLines={2}
+                                variant='body'
+                                style={styles.optionBody}
+                                numberOfLines={3}
                                 ellipsizeMode='tail'
                             >
                                 {t(
-                                    'onboarding.import_options.algo25.mnemonic_info',
+                                    'onboarding.import_options.hd_wallet.description',
                                 )}
                             </PWText>
                         </PWView>
+                        <PWText
+                            variant='link'
+                            style={styles.optionLink}
+                            numberOfLines={2}
+                            ellipsizeMode='tail'
+                        >
+                            {t('onboarding.import_options.mnemonic_info')}
+                        </PWText>
+                    </PWView>
 
-                        <PWView style={styles.rightIconContainer}>
-                            <PWIcon
-                                name='chevron-right'
-                                size='sm'
-                                variant='secondary'
-                            />
+                    <PWView style={styles.rightIconContainer}>
+                        <PWIcon
+                            name='chevron-right'
+                            size='sm'
+                            variant='secondary'
+                        />
+                    </PWView>
+                </PWTouchableOpacity>
+
+                <PWTouchableOpacity
+                    onPress={() => resolve('algo25')}
+                    style={styles.optionBox}
+                    {...getTestProps('import_options_algo25_button')}
+                >
+                    <PWView style={styles.optionContent}>
+                        <PWView style={styles.optionTopContent}>
+                            <PWView style={styles.optionHeader}>
+                                <PWView style={styles.optionTitleContainer}>
+                                    <PWText
+                                        variant='h4'
+                                        numberOfLines={2}
+                                        ellipsizeMode='tail'
+                                    >
+                                        {t(
+                                            'onboarding.import_options.algo25.title',
+                                        )}
+                                    </PWText>
+                                </PWView>
+                                <PWView style={styles.optionChipContainer}>
+                                    <PWChip
+                                        title={t(
+                                            'onboarding.import_options.algo25.chip',
+                                        )}
+                                    />
+                                </PWView>
+                            </PWView>
+                            <PWText
+                                variant='body'
+                                style={styles.optionBody}
+                                numberOfLines={3}
+                                ellipsizeMode='tail'
+                            >
+                                {t(
+                                    'onboarding.import_options.algo25.description',
+                                )}
+                            </PWText>
                         </PWView>
-                    </PWTouchableOpacity>
-                </PWView>
-            }
-        />
+                        <PWText
+                            variant='link'
+                            style={styles.optionLink}
+                            numberOfLines={2}
+                            ellipsizeMode='tail'
+                        >
+                            {t(
+                                'onboarding.import_options.algo25.mnemonic_info',
+                            )}
+                        </PWText>
+                    </PWView>
+
+                    <PWView style={styles.rightIconContainer}>
+                        <PWIcon
+                            name='chevron-right'
+                            size='sm'
+                            variant='secondary'
+                        />
+                    </PWView>
+                </PWTouchableOpacity>
+            </PWView>
+        </PWSheetLayout>
     )
 }

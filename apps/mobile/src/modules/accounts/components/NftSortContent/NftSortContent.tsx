@@ -44,30 +44,27 @@ export const NftSortContent = (_: NftSortContentProps = {}) => {
                     }
                 />
             }
-            body={
-                <>
-                    <PWRadioButton
-                        title={t('account_details.nfts.sort_newest_first')}
-                        isSelected={sortMode === 'newestFirst'}
-                        onPress={() => handleSortModeChange('newestFirst')}
-                    />
-                    <PWRadioButton
-                        title={t('account_details.nfts.sort_oldest_first')}
-                        isSelected={sortMode === 'oldestFirst'}
-                        onPress={() => handleSortModeChange('oldestFirst')}
-                    />
-                    <PWRadioButton
-                        title={t('account_details.nfts.sort_title_asc')}
-                        isSelected={sortMode === 'titleAsc'}
-                        onPress={() => handleSortModeChange('titleAsc')}
-                    />
-                    <PWRadioButton
-                        title={t('account_details.nfts.sort_title_desc')}
-                        isSelected={sortMode === 'titleDesc'}
-                        onPress={() => handleSortModeChange('titleDesc')}
-                    />
-                </>
-            }
-        />
+        >
+            <PWRadioButton
+                title={t('account_details.nfts.sort_newest_first')}
+                isSelected={sortMode === 'newestFirst'}
+                onPress={() => handleSortModeChange('newestFirst')}
+            />
+            <PWRadioButton
+                title={t('account_details.nfts.sort_oldest_first')}
+                isSelected={sortMode === 'oldestFirst'}
+                onPress={() => handleSortModeChange('oldestFirst')}
+            />
+            <PWRadioButton
+                title={t('account_details.nfts.sort_title_asc')}
+                isSelected={sortMode === 'titleAsc'}
+                onPress={() => handleSortModeChange('titleAsc')}
+            />
+            <PWRadioButton
+                title={t('account_details.nfts.sort_title_desc')}
+                isSelected={sortMode === 'titleDesc'}
+                onPress={() => handleSortModeChange('titleDesc')}
+            />
+        </PWSheetLayout>
     )
 }

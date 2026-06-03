@@ -18,38 +18,14 @@ export const useStyles = makeStyles(theme => {
         fontWeight: '500' as const,
     }
     return {
+        // Dense transaction history: keep the compact vertical padding + gap
+        // rather than the layout's default lg spacing.
         container: {
-            flexDirection: 'row',
-            alignItems: 'flex-start',
             paddingVertical: theme.spacing.md,
             gap: theme.spacing.md,
-            width: '100%',
-            minWidth: 0,
-        },
-        iconContainer: {
-            justifyContent: 'center',
-            alignItems: 'center',
-            flexShrink: 0,
-        },
-        contentContainer: {
-            flex: 1,
-            minWidth: 0,
-        },
-        mainRow: {
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            minWidth: 0,
-        },
-        titleContainer: {
-            flex: 1,
-            minWidth: 0,
-            marginRight: theme.spacing.sm,
         },
         amountContainer: {
             alignItems: 'flex-end',
-            flexShrink: 1,
-            minWidth: 0,
         },
         title: {
             color: theme.colors.textMain,

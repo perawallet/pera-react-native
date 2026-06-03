@@ -76,31 +76,29 @@ export const SettingsDeveloperManageCacheScreen = () => {
     }
 
     return (
-        <PWScreen
-            body={
-                <PWView style={styles.content}>
-                    <PWButton
-                        variant='primary'
-                        title={t('settings.developer.refresh_cache')}
-                        icon='reload'
-                        onPress={handleRefreshCache}
-                        isLoading={isRefreshing}
-                        isDisabled={isRefreshing}
-                    />
-                    <PWButton
-                        variant='secondary'
-                        title={t('settings.developer.reset_banners')}
-                        icon='bell'
-                        onPress={handleResetBanners}
-                    />
-                    <PWButton
-                        variant='secondary'
-                        title={t('settings.developer.clear_one_time_flags')}
-                        icon='trash'
-                        onPress={handleClearOneTimeFlags}
-                    />
-                </PWView>
-            }
-        />
+        <PWScreen>
+            <PWView style={styles.content}>
+                <PWButton
+                    variant='primary'
+                    title={t('settings.developer.refresh_cache')}
+                    icon='reload'
+                    onPress={handleRefreshCache}
+                    isLoading={isRefreshing}
+                    isDisabled={isRefreshing}
+                />
+                <PWButton
+                    variant='secondary'
+                    title={t('settings.developer.reset_banners')}
+                    icon='bell'
+                    onPress={handleResetBanners}
+                />
+                <PWButton
+                    variant='secondary'
+                    title={t('settings.developer.clear_one_time_flags')}
+                    icon='trash'
+                    onPress={handleClearOneTimeFlags}
+                />
+            </PWView>
+        </PWScreen>
     )
 }

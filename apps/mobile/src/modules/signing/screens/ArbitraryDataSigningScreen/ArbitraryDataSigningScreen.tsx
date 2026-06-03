@@ -34,26 +34,6 @@ export const ArbitraryDataSigningScreen = () => {
 
     return (
         <PWScreen
-            body={
-                <>
-                    {!!request.sourceMetadata && (
-                        <SourceMetadataView metadata={request.sourceMetadata} />
-                    )}
-                    <PWView style={styles.bodyContainer}>
-                        {isSingleSignRequest ? (
-                            <SingleArbitrarySignRequestView
-                                request={request.data[0]}
-                                onDetailsPress={handleDetailsPress}
-                            />
-                        ) : (
-                            <MultipleArbitrarySignRequestView
-                                requests={request.data}
-                                onDetailsPress={handleDetailsPress}
-                            />
-                        )}
-                    </PWView>
-                </>
-            }
             footer={
                 <PWView style={styles.buttonContainer}>
                     <PWSlideToConfirm
@@ -70,6 +50,23 @@ export const ArbitraryDataSigningScreen = () => {
                     />
                 </PWView>
             }
-        />
+        >
+            {!!request.sourceMetadata && (
+                <SourceMetadataView metadata={request.sourceMetadata} />
+            )}
+            <PWView style={styles.bodyContainer}>
+                {isSingleSignRequest ? (
+                    <SingleArbitrarySignRequestView
+                        request={request.data[0]}
+                        onDetailsPress={handleDetailsPress}
+                    />
+                ) : (
+                    <MultipleArbitrarySignRequestView
+                        requests={request.data}
+                        onDetailsPress={handleDetailsPress}
+                    />
+                )}
+            </PWView>
+        </PWScreen>
     )
 }

@@ -75,33 +75,6 @@ export const EditContactScreen = () => {
 
     return (
         <PWScreen
-            body={
-                <>
-                    <ContactForm
-                        control={control}
-                        address={
-                            nfd.isNfdResolved
-                                ? nfd.resolvedAddress
-                                : (selectedContact?.address ?? '')
-                        }
-                        nameLabel={t('contacts.edit_contact.name_label')}
-                        addressLabel={t('contacts.edit_contact.address_label')}
-                        nameError={errors.name?.message}
-                        addressError={errors.address?.message}
-                        nfdName={nfd.isNfdResolved ? nfd.nfdName : undefined}
-                        isResolvingNfd={nfd.isNfdResolving}
-                        onAddressInputChange={onAddressInputChange}
-                        rawAddressInput={rawAddressInput}
-                        imageUri={imageUri}
-                        onPickImage={onPickImage}
-                    />
-                    <PhotoPermissionDeniedSheet
-                        isVisible={permissionDenied.isVisible}
-                        onClose={permissionDenied.close}
-                        onOpenSettings={permissionDenied.openSettings}
-                    />
-                </>
-            }
             footer={
                 <PWButton
                     onPress={openDeleteConfirm}
@@ -109,6 +82,30 @@ export const EditContactScreen = () => {
                     variant='destructive'
                 />
             }
-        />
+        >
+            <ContactForm
+                control={control}
+                address={
+                    nfd.isNfdResolved
+                        ? nfd.resolvedAddress
+                        : (selectedContact?.address ?? '')
+                }
+                nameLabel={t('contacts.edit_contact.name_label')}
+                addressLabel={t('contacts.edit_contact.address_label')}
+                nameError={errors.name?.message}
+                addressError={errors.address?.message}
+                nfdName={nfd.isNfdResolved ? nfd.nfdName : undefined}
+                isResolvingNfd={nfd.isNfdResolving}
+                onAddressInputChange={onAddressInputChange}
+                rawAddressInput={rawAddressInput}
+                imageUri={imageUri}
+                onPickImage={onPickImage}
+            />
+            <PhotoPermissionDeniedSheet
+                isVisible={permissionDenied.isVisible}
+                onClose={permissionDenied.close}
+                onOpenSettings={permissionDenied.openSettings}
+            />
+        </PWScreen>
     )
 }

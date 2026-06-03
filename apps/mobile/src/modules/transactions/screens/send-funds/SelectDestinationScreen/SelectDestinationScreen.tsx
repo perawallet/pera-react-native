@@ -56,7 +56,8 @@ export const SelectDestinationScreen = () => {
         <PWScreen
             scroll='never'
             horizontalPadding='none'
-            body={<AddressSearchView onSelected={handleSelected} />}
-        />
+        >
+            <AddressSearchView onSelected={handleSelected} />
+        </PWScreen>
     )
 }

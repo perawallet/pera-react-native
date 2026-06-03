@@ -21,11 +21,10 @@ export const SettingsNotificationsScreen = () => {
         <PWScreen
             scroll='never'
             testID='settings_notifications_screen'
-            body={
-                <NotificationSettingsList
-                    contentContainerStyle={styles.scrollContent}
-                />
-            }
-        />
+        >
+            <NotificationSettingsList
+                contentContainerStyle={styles.scrollContent}
+            />
+        </PWScreen>
     )
 }

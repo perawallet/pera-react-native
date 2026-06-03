@@ -54,43 +54,6 @@ export const NameAccountForm = ({
     return (
         <>
             <PWScreen
-                body={
-                    <>
-                        <PWView style={styles.headerContainer}>
-                            <PWText variant='h1'>{title}</PWText>
-                            <PWText
-                                variant='h4'
-                                style={styles.description}
-                            >
-                                {description}
-                            </PWText>
-                        </PWView>
-
-                        {children}
-
-                        <PWInput
-                            containerStyle={styles.input}
-                            inputContainerStyle={styles.inputContainer}
-                            value={value}
-                            onChangeText={onChangeText}
-                            autoFocus
-                            autoCorrect={false}
-                            testID='name_account_name_input'
-                            errorMessage={errorMessage}
-                            rightIcon={
-                                value ? (
-                                    <PWTouchableIcon
-                                        name='cross'
-                                        variant='secondary'
-                                        size='sm'
-                                        onPress={() => onChangeText('')}
-                                        containerStyle={styles.clearButton}
-                                    />
-                                ) : undefined
-                            }
-                        />
-                    </>
-                }
                 footer={
                     <PWButton
                         variant='primary'
@@ -101,7 +64,41 @@ export const NameAccountForm = ({
                         testID='name_account_finish_button'
                     />
                 }
-            />
+            >
+                <PWView style={styles.headerContainer}>
+                    <PWText variant='h1'>{title}</PWText>
+                    <PWText
+                        variant='h4'
+                        style={styles.description}
+                    >
+                        {description}
+                    </PWText>
+                </PWView>
+
+                {children}
+
+                <PWInput
+                    containerStyle={styles.input}
+                    inputContainerStyle={styles.inputContainer}
+                    value={value}
+                    onChangeText={onChangeText}
+                    autoFocus
+                    autoCorrect={false}
+                    testID='name_account_name_input'
+                    errorMessage={errorMessage}
+                    rightIcon={
+                        value ? (
+                            <PWTouchableIcon
+                                name='cross'
+                                variant='secondary'
+                                size='sm'
+                                onPress={() => onChangeText('')}
+                                containerStyle={styles.clearButton}
+                            />
+                        ) : undefined
+                    }
+                />
+            </PWScreen>
 
             <PWLoadingOverlay
                 isVisible={isLoading}

@@ -8,7 +8,7 @@
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  See the License for the specific language governing permissions and
  limitations under the License
-*/
+ */
 
 import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
 import { PWView } from '@components/core/PWView'
@@ -16,7 +16,7 @@ import { getTestProps } from '@utils/test-id-helper'
 import { useStyles } from './styles'
 
 import type { ReactNode } from 'react'
-import type { StyleProp, ViewStyle } from 'react-native'
+import type { GestureResponderEvent, StyleProp, ViewStyle } from 'react-native'
 
 export type PWListItemLayoutProps = {
     /**
@@ -26,7 +26,7 @@ export type PWListItemLayoutProps = {
      */
     left?: ReactNode
     /** Flexible main slot. Fills the space the sticky slots leave behind. */
-    center: ReactNode
+    children: ReactNode
     /** Sticky trailing slot (value, chevron, action). Never shrinks. */
     right?: ReactNode
     /**
@@ -52,14 +52,19 @@ export type PWListItemLayoutProps = {
      * to the first line for multi-line rows (inbox, notifications).
      */
     align?: 'center' | 'top'
-    onPress?: () => void
+    /**
+     * Press handler. Accepts the RN press signature so callers that forward a
+     * `(event) => void` handler (e.g. navigation rows) type-check; handlers that
+     * ignore the event (`() => void`) remain assignable too.
+     */
+    onPress?: (event: GestureResponderEvent) => void
     style?: StyleProp<ViewStyle>
     testID?: string
 }
 
 export const PWListItemLayout = ({
     left,
-    center,
+    children,
     right,
     showDivider = false,
     leftFlex = 0,
@@ -68,7 +73,7 @@ export const PWListItemLayout = ({
     align = 'center',
     onPress,
     style,
-    testID = 'pw-list-item-layout',
+    testID,
 }: PWListItemLayoutProps) => {
     const styles = useStyles({ leftFlex, leftMaxWidthRatio, centerFlex, align })
 
@@ -77,7 +82,7 @@ export const PWListItemLayout = ({
             {left != null ? <PWView style={styles.left}>{left}</PWView> : null}
             <PWView style={styles.body}>
                 <PWView style={styles.contentRow}>
-                    <PWView style={styles.center}>{center}</PWView>
+                    <PWView style={styles.center}>{children}</PWView>
                     {right != null ? (
                         <PWView style={styles.right}>{right}</PWView>
                     ) : null}
@@ -85,7 +90,9 @@ export const PWListItemLayout = ({
                 {showDivider ? (
                     <PWView
                         style={styles.divider}
-                        {...getTestProps(`${testID}-divider`)}
+                        {...getTestProps(
+                            testID == null ? undefined : `${testID}-divider`,
+                        )}
                     />
                 ) : null}
             </PWView>

@@ -11,7 +11,7 @@
  */
 
 import React from 'react'
-import { PWText, PWTouchableOpacity, PWView, PWIcon } from '@components/core'
+import { PWListItemLayout, PWText, PWView, PWIcon } from '@components/core'
 import { CollectibleThumbnail } from '../CollectibleThumbnail'
 import { useStyles } from './styles'
 import { type CollectibleItemProps } from '@modules/assets/types/collectible'
@@ -35,18 +35,23 @@ const CollectibleListItemBase = ({ item, onPress }: CollectibleItemProps) => {
         .filter(Boolean)
         .join(' \u00B7 ')
 
-    const content = (
-        <>
-            <PWView style={styles.thumbnail}>
-                <CollectibleThumbnail
-                    thumbnailUrl={thumbnailUrl}
-                    imageStyle={styles.image}
-                    placeholderStyle={styles.placeholderContainer}
-                    iconSize='md'
-                    notOptedIn={!hasBalance}
-                />
-            </PWView>
-            <PWView style={styles.textContainer}>
+    return (
+        <PWListItemLayout
+            style={styles.container}
+            onPress={onPress}
+            left={
+                <PWView style={styles.thumbnail}>
+                    <CollectibleThumbnail
+                        thumbnailUrl={thumbnailUrl}
+                        imageStyle={styles.image}
+                        placeholderStyle={styles.placeholderContainer}
+                        iconSize='md'
+                        notOptedIn={!hasBalance}
+                    />
+                </PWView>
+            }
+        >
+            <PWView>
                 <PWView style={styles.titleRow}>
                     <PWText
                         variant='body'
@@ -72,21 +77,8 @@ const CollectibleListItemBase = ({ item, onPress }: CollectibleItemProps) => {
                     </PWText>
                 )}
             </PWView>
-        </>
+        </PWListItemLayout>
     )
-
-    if (onPress) {
-        return (
-            <PWTouchableOpacity
-                style={styles.container}
-                onPress={onPress}
-            >
-                {content}
-            </PWTouchableOpacity>
-        )
-    }
-
-    return <PWView style={styles.container}>{content}</PWView>
 }
 
 export const CollectibleListItem = React.memo(CollectibleListItemBase)

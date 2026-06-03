@@ -18,7 +18,7 @@ export const useStyles = makeStyles(theme => ({
         backgroundColor: theme.colors.background,
     },
     bodyContent: {
-        paddingTop: theme.spacing.md,
+        paddingTop: theme.spacing.lg,
         gap: theme.spacing.lg,
     },
     toolbarTitle: {

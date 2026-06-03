@@ -75,26 +75,22 @@ export const TransactionDetailsScreen = () => {
 
     if (transaction) {
         return (
-            <PWScreen
-                body={
-                    <>
-                        <TransactionDisplay
-                            transaction={transaction}
-                            onInnerTransactionsPress={handleTransactionPress}
-                        />
-                        {isExternal && <ExternalTransactionCallout />}
-                        {groupTransactions.length > 1 && (
-                            <GroupTransactionsPanel
-                                groupTransactions={groupTransactions}
-                                currentTransactionId={
-                                    transaction.id ?? transactionId ?? ''
-                                }
-                                onGroupTransactionPress={handleTransactionPress}
-                            />
-                        )}
-                    </>
-                }
-            />
+            <PWScreen>
+                <TransactionDisplay
+                    transaction={transaction}
+                    onInnerTransactionsPress={handleTransactionPress}
+                />
+                {isExternal && <ExternalTransactionCallout />}
+                {groupTransactions.length > 1 && (
+                    <GroupTransactionsPanel
+                        groupTransactions={groupTransactions}
+                        currentTransactionId={
+                            transaction.id ?? transactionId ?? ''
+                        }
+                        onGroupTransactionPress={handleTransactionPress}
+                    />
+                )}
+            </PWScreen>
         )
     }
 

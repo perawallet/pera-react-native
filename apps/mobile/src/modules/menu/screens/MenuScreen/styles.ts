@@ -16,7 +16,7 @@ export const useStyles = makeStyles(theme => {
     return {
         container: {
             backgroundColor: theme.colors.background,
-            paddingTop: theme.spacing.xl,
+            paddingTop: theme.spacing.lg,
         },
         iconBar: {
             flexDirection: 'row',

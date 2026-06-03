@@ -31,10 +31,9 @@ describe('PWScreen', () => {
 
     it('renders the body inside a scroll container by default', () => {
         render(
-            <PWScreen
-                testID='screen'
-                body={<Text>Body content</Text>}
-            />,
+            <PWScreen testID='screen'>
+                <Text>Body content</Text>
+            </PWScreen>,
         )
         expect(screen.getByText('Body content')).toBeTruthy()
     })
@@ -45,8 +44,9 @@ describe('PWScreen', () => {
                 testID='screen'
                 header={<Text>Header</Text>}
                 footer={<Text>Continue</Text>}
-                body={<Text>Body</Text>}
-            />,
+            >
+                <Text>Body</Text>
+            </PWScreen>,
         )
         expect(screen.getByText('Header')).toBeTruthy()
         expect(screen.getByText('Body')).toBeTruthy()
@@ -58,8 +58,9 @@ describe('PWScreen', () => {
             <PWScreen
                 testID='screen'
                 scroll='never'
-                body={<View testID='child-list' />}
-            />,
+            >
+                <View testID='child-list' />
+            </PWScreen>,
         )
         expect(screen.getByTestId('child-list')).toBeTruthy()
     })
@@ -67,10 +68,9 @@ describe('PWScreen', () => {
     it('renders inside a tab navigator without crashing', () => {
         render(
             <BottomTabBarHeightContext.Provider value={49}>
-                <PWScreen
-                    testID='screen'
-                    body={<Text>Tab Body</Text>}
-                />
+                <PWScreen testID='screen'>
+                    <Text>Tab Body</Text>
+                </PWScreen>
             </BottomTabBarHeightContext.Provider>,
         )
         expect(screen.getByText('Tab Body')).toBeTruthy()
@@ -78,20 +78,18 @@ describe('PWScreen', () => {
 
     it('exposes the testID on the root container', () => {
         render(
-            <PWScreen
-                testID='custom-screen'
-                body={<Text>Body</Text>}
-            />,
+            <PWScreen testID='custom-screen'>
+                <Text>Body</Text>
+            </PWScreen>,
         )
         expect(screen.getByTestId('custom-screen')).toBeTruthy()
     })
 
     it('renders without a footer when none is provided', () => {
         render(
-            <PWScreen
-                testID='screen'
-                body={<Text>Body only</Text>}
-            />,
+            <PWScreen testID='screen'>
+                <Text>Body only</Text>
+            </PWScreen>,
         )
         expect(screen.getByText('Body only')).toBeTruthy()
         expect(screen.queryByText('Continue')).toBeNull()
@@ -102,8 +100,9 @@ describe('PWScreen', () => {
             <PWScreen
                 testID='screen'
                 horizontalPadding='none'
-                body={<Text>Edge-to-edge body</Text>}
-            />,
+            >
+                <Text>Edge-to-edge body</Text>
+            </PWScreen>,
         )
         expect(screen.getByText('Edge-to-edge body')).toBeTruthy()
     })

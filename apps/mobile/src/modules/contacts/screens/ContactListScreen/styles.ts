@@ -18,25 +18,10 @@ export const useStyles = makeStyles(theme => {
             paddingTop: theme.spacing.sm,
             paddingBottom: theme.spacing.sm,
         },
-        contactContainer: {
-            flexDirection: 'row',
-            gap: theme.spacing.lg,
-            alignItems: 'center',
-            paddingVertical: theme.spacing.lg,
-        },
-        separator: {
-            height: theme.borders.sm,
-            backgroundColor: theme.colors.layerGrayLighter,
-            // Inset past AddressDisplay's avatar (icon xxl + row gap md).
-            marginLeft: theme.spacing.xxl + theme.spacing.md,
-        },
         emptyButton: {
             minHeight: theme.spacing['3xl'],
             borderRadius: theme.borderRadius.xs,
             marginTop: theme.spacing.xl,
-        },
-        emptyViewBody: {
-            paddingHorizontal: theme.spacing['3xl'],
         },
     }
 })

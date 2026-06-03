@@ -51,45 +51,6 @@ export const RekeyIntroScreen = ({
         <PWScreen
             horizontalPadding='none'
             testID={`${testIdPrefix}-intro-screen`}
-            body={
-                <>
-                    <PWImage
-                        source={heroImage}
-                        style={styles.hero}
-                        resizeMode='cover'
-                    />
-
-                    <PWView style={styles.body}>
-                        <PWText variant='h1'>
-                            {t(`${i18nBaseKey}.title`)}
-                        </PWText>
-
-                        <PWText
-                            variant='bodyLarge'
-                            style={styles.bodyText}
-                        >
-                            {t(`${i18nBaseKey}.body`)}{' '}
-                            <PWText
-                                variant='bodyLarge'
-                                style={styles.learnMore}
-                                onPress={handleLearnMore}
-                            >
-                                {t(`${i18nBaseKey}.learn_more`)}
-                            </PWText>
-                        </PWText>
-
-                        <PWView style={styles.listSection}>
-                            <PWText
-                                variant='bodySemibold'
-                                style={styles.expectLabel}
-                            >
-                                {t(`${i18nBaseKey}.expect_label`)}
-                            </PWText>
-                            <NumberedList items={expectations} />
-                        </PWView>
-                    </PWView>
-                </>
-            }
             footer={
                 <PWButton
                     variant='primary'
@@ -99,6 +60,40 @@ export const RekeyIntroScreen = ({
                     testID={`${testIdPrefix}-intro-start`}
                 />
             }
-        />
+        >
+            <PWImage
+                source={heroImage}
+                style={styles.hero}
+                resizeMode='cover'
+            />
+
+            <PWView style={styles.body}>
+                <PWText variant='h1'>{t(`${i18nBaseKey}.title`)}</PWText>
+
+                <PWText
+                    variant='bodyLarge'
+                    style={styles.bodyText}
+                >
+                    {t(`${i18nBaseKey}.body`)}{' '}
+                    <PWText
+                        variant='bodyLarge'
+                        style={styles.learnMore}
+                        onPress={handleLearnMore}
+                    >
+                        {t(`${i18nBaseKey}.learn_more`)}
+                    </PWText>
+                </PWText>
+
+                <PWView style={styles.listSection}>
+                    <PWText
+                        variant='bodySemibold'
+                        style={styles.expectLabel}
+                    >
+                        {t(`${i18nBaseKey}.expect_label`)}
+                    </PWText>
+                    <NumberedList items={expectations} />
+                </PWView>
+            </PWView>
+        </PWScreen>
     )
 }

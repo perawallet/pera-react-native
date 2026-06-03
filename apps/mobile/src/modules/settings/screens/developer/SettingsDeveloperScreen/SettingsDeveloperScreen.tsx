@@ -42,36 +42,31 @@ export const SettingsDeveloperScreen = () => {
     }
 
     return (
-        <PWScreen
-            testID='developer_settings_screen'
-            body={
-                <>
-                    <PWListItem
-                        onPress={() => handleTapEvent('NodeSettings')}
-                        icon='tree'
-                        title={t('settings.developer.node_settings_title')}
-                        testID='developer_settings_node_item'
-                    />
+        <PWScreen testID='developer_settings_screen'>
+            <PWListItem
+                onPress={() => handleTapEvent('NodeSettings')}
+                icon='tree'
+                title={t('settings.developer.node_settings_title')}
+                testID='developer_settings_node_item'
+            />
 
-                    {isTestnet && (
-                        <PWListItem
-                            onPress={openDispenser}
-                            icon='algo'
-                            title={t('settings.developer.dispenser_title')}
-                            testID='developer_settings_dispenser_item'
-                        />
-                    )}
+            {isTestnet && (
+                <PWListItem
+                    onPress={openDispenser}
+                    icon='algo'
+                    title={t('settings.developer.dispenser_title')}
+                    testID='developer_settings_dispenser_item'
+                />
+            )}
 
-                    {getPreference(UserPreferences.developerMenuEnabled) && (
-                        <PWListItem
-                            onPress={() => handleTapEvent('DevMenu')}
-                            icon='sliders'
-                            title={t('screens.developer_menu')}
-                            testID='developer_settings_menu_item'
-                        />
-                    )}
-                </>
-            }
-        />
+            {getPreference(UserPreferences.developerMenuEnabled) && (
+                <PWListItem
+                    onPress={() => handleTapEvent('DevMenu')}
+                    icon='sliders'
+                    title={t('screens.developer_menu')}
+                    testID='developer_settings_menu_item'
+                />
+            )}
+        </PWScreen>
     )
 }

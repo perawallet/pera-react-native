@@ -54,7 +54,7 @@ export const useViewPassphraseFlow = (): UseViewPassphraseFlowResult => {
                 await requestBottomSheet<PassphraseAcknowledgeContentResult>({
                     contents: <PassphraseAcknowledgeContent />,
                     options: {
-                        size: 'auto',
+                        size: 'modal',
                         enablePanDownToClose: true,
                         autoCreateContainer: false,
                     },
