@@ -33,6 +33,7 @@ import { SettingsWalletConnectDetailsScreen } from '@modules/settings/screens/Se
 import { SettingsDeveloperMenuScreen } from '../screens/developer/SettingsDeveloperMenuScreen/SettingsDeveloperMenuScreen'
 import { SettingsDeveloperFeatureFlagsScreen } from '../screens/developer/SettingsDeveloperFeatureFlagsScreen/SettingsDeveloperFeatureFlagsScreen'
 import { SettingsDeveloperManageCacheScreen } from '../screens/developer/SettingsDeveloperManageCacheScreen'
+import { SettingsDeveloperAppIntegrityScreen } from '../screens/developer/SettingsDeveloperAppIntegrityScreen'
 
 export type DeveloperSettingsStackParamsList = {
     DeveloperSettingsHome: undefined
@@ -40,6 +41,7 @@ export type DeveloperSettingsStackParamsList = {
     DevMenu: undefined
     FeatureFlags: undefined
     ManageCache: undefined
+    AppIntegrity: undefined
 }
 
 const DeveloperSettingsStack =
@@ -93,6 +95,13 @@ const DeveloperSettingsStackNavigator = () => {
                     title: 'screens.manage_cache',
                 }}
                 component={SettingsDeveloperManageCacheScreen}
+            />
+            <DeveloperSettingsStack.Screen
+                name='AppIntegrity'
+                options={{
+                    title: 'screens.app_integrity',
+                }}
+                component={SettingsDeveloperAppIntegrityScreen}
             />
         </DeveloperSettingsStack.Navigator>
     )

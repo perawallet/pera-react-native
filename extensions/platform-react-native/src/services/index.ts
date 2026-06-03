@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+export { RNAppIntegrityService } from './app-integrity'
 export { RNFirebaseService } from './firebase'
 export { RNBiometricsService } from './biometrics'
 export { RNKeyValueStorageService } from './key-value-storage'
