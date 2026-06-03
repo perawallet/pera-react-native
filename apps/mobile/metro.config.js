@@ -34,7 +34,7 @@ const nodeModulesPaths = [
     ...fs
         .readdirSync(path.resolve(monorepoRoot, 'extensions'))
         .map(name => path.resolve(monorepoRoot, 'extensions', name, 'node_modules'))
-        .filter(p => require('fs').existsSync(p)),
+        .filter(p => fs.existsSync(p)),
 ];
 
 // SVG transformer configuration
