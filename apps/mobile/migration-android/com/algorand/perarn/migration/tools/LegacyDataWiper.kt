@@ -20,14 +20,6 @@ import java.security.KeyStore
 // DESTRUCTIVE: wipes every legacy artifact. Do NOT call from production migration flow.
 internal class LegacyDataWiper(private val context: Context) {
 
-    fun clear() {
-        // Guarded no-op; remove this `return` consciously to enable the destructive wipe.
-        return
-
-        @Suppress("UNREACHABLE_CODE")
-        wipeEverything()
-    }
-
     // DEV-ONLY destructive wipe (no production guard) + schema-replay cache. Do not call from app code.
     fun forceClear() {
         wipeEverything()

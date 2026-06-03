@@ -123,27 +123,6 @@ export class RNMigrationService implements MigrationService {
         this.keyValueStorage.removeItem(MIGRATION_SENTINEL_KEY)
     }
 
-    // ⚠️ DO NOT CALL FROM APPLICATION CODE — permanently destroys legacy on-device data.
-    async clearLegacyData(): Promise<void> {
-        warn(
-            'clearLegacyData() invoked — this destroys legacy native data and should never be called from application code',
-        )
-        const module = getNativeModule()
-        if (!module) {
-            warn(
-                'clearLegacyData() no-op (native LegacyMigration module is not registered)',
-            )
-            return
-        }
-        try {
-            await module.clearLegacyData()
-            log('clearLegacyData() native call completed')
-        } catch (err) {
-            error('clearLegacyData() native call threw', err)
-            throw err
-        }
-    }
-
     async getMigrationPlans(): Promise<MigrationPlanSummary[]> {
         const module = getNativeModule()
         if (!module || typeof module.getMigrationPlans !== 'function') {
@@ -245,8 +224,6 @@ interface NativeLegacyMigrationModule {
     hasLegacyData(): Promise<boolean>
 
     getLegacyData(): Promise<unknown>
-
-    clearLegacyData(): Promise<void>
 
     getMigrationPlans?(): Promise<unknown>
 

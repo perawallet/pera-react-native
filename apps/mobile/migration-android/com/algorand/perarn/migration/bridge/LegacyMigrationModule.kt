@@ -54,17 +54,6 @@ class LegacyMigrationModule(
     }
 
     @ReactMethod
-    fun clearLegacyData(promise: Promise) {
-        try {
-            LegacyDataWiper(reactApplicationContext).clear()
-            promise.resolve(null)
-        } catch (t: Throwable) {
-            Log.e(LegacyMigrationConstants.LOG_TAG, "clearLegacyData failed", t)
-            promise.reject(E_CLEAR_LEGACY_DATA, t)
-        }
-    }
-
-    @ReactMethod
     fun getMigrationPlans(promise: Promise) {
         try {
             promise.resolve(composeMigrationPlanSummaries())
@@ -126,7 +115,6 @@ class LegacyMigrationModule(
         const val NAME = "LegacyMigration"
         private const val E_HAS_LEGACY_DATA = "E_HAS_LEGACY_DATA"
         private const val E_GET_LEGACY_DATA = "E_GET_LEGACY_DATA"
-        private const val E_CLEAR_LEGACY_DATA = "E_CLEAR_LEGACY_DATA"
         private const val E_GET_MIGRATION_PLANS = "E_GET_MIGRATION_PLANS"
         private const val E_SIMULATE_LEGACY_DATABASE = "E_SIMULATE_LEGACY_DATABASE"
         private const val E_SIMULATE_PRESIXX_ACCOUNTS = "E_SIMULATE_PRESIXX_ACCOUNTS"

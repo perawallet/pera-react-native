@@ -122,9 +122,6 @@ export class StubMigrationService implements MigrationService {
         this.sentinel = null
     }
 
-    /** ⚠️ Do not call from production code. Kept for native-interface parity. */
-    async clearLegacyData(): Promise<void> {}
-
     async getMigrationPlans() {
         return []
     }

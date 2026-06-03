@@ -51,7 +51,6 @@ import { RNMigrationService } from '../services/migration'
 type NativeModule = {
     hasLegacyData: ReturnType<typeof vi.fn>
     getLegacyData: ReturnType<typeof vi.fn>
-    clearLegacyData: ReturnType<typeof vi.fn>
     getMigrationPlans?: ReturnType<typeof vi.fn>
     simulateLegacyDatabase?: ReturnType<typeof vi.fn>
     simulatePreSixxAccounts?: ReturnType<typeof vi.fn>
@@ -63,7 +62,6 @@ const createNativeModule = (
 ): NativeModule => ({
     hasLegacyData: vi.fn().mockResolvedValue(false),
     getLegacyData: vi.fn(),
-    clearLegacyData: vi.fn().mockResolvedValue(undefined),
     getMigrationPlans: vi.fn().mockResolvedValue([]),
     simulateLegacyDatabase: vi.fn().mockResolvedValue(undefined),
     simulatePreSixxAccounts: vi.fn().mockResolvedValue(undefined),
@@ -588,34 +586,6 @@ describe('RNMigrationService', () => {
             storage.setItem(MIGRATION_SENTINEL_KEY, 'x')
             await service.clearMigrationComplete()
             expect(storage.getItem(MIGRATION_SENTINEL_KEY)).toBeNull()
-        })
-    })
-
-    describe('clearLegacyData', () => {
-        test('is a no-op when the native module is missing', async () => {
-            await expect(service.clearLegacyData()).resolves.toBeUndefined()
-            expect(loggerMock.warn).toHaveBeenCalledWith(
-                expect.stringContaining('no-op'),
-                undefined,
-            )
-        })
-
-        test('forwards to the native module', async () => {
-            const module = createNativeModule()
-            nativeModulesMock.LegacyMigration = module
-
-            await service.clearLegacyData()
-
-            expect(module.clearLegacyData).toHaveBeenCalledOnce()
-        })
-
-        test('rethrows on native failure', async () => {
-            nativeModulesMock.LegacyMigration = createNativeModule({
-                clearLegacyData: vi.fn().mockRejectedValue(new Error('nope')),
-            })
-
-            await expect(service.clearLegacyData()).rejects.toThrow('nope')
-            expect(loggerMock.error).toHaveBeenCalled()
         })
     })
 

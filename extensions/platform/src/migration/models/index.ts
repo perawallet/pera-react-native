@@ -29,8 +29,6 @@ export interface MigrationService {
         sourcePlatform: LegacyMigrationSourcePlatform,
     ): Promise<void>
     clearMigrationComplete(): Promise<void>
-    /** ⚠️ DO NOT CALL FROM APPLICATION CODE: permanently destroys legacy on-device data. */
-    clearLegacyData(): Promise<void>
     getMigrationPlans(): Promise<MigrationPlanSummary[]>
     /** ⚠️ DEV-ONLY: materializes a populated legacy DB — never call from app code. */
     simulateLegacyDatabase(args: SimulateLegacyDatabaseArgs): Promise<void>

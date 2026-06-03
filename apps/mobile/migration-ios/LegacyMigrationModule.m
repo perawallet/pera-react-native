@@ -20,9 +20,6 @@ RCT_EXTERN_METHOD(hasLegacyData:(RCTPromiseResolveBlock)resolve
 RCT_EXTERN_METHOD(getLegacyData:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 
-RCT_EXTERN_METHOD(clearLegacyData:(RCTPromiseResolveBlock)resolve
-                  rejecter:(RCTPromiseRejectBlock)reject)
-
 RCT_EXTERN_METHOD(getMigrationPlans:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 
