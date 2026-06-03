@@ -726,15 +726,6 @@
             "insufficient_algo_reject": "You don't have enough ALGO to reject this asset. Add funds to cover the transaction fees."
         }
     },
-    "migration": {
-        "splash": {
-            "success": "Migration completed successfully",
-            "failure_one": "Failed to migrate {{count}} account",
-            "failure_other": "Failed to migrate {{count}} accounts",
-            "continue": "Continue",
-            "do_not_show_again": "Do not show again"
-        }
-    },
     "multisig": {
         "create": {
             "title": "Create a\nShared Account",

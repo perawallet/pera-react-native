@@ -13,20 +13,23 @@
 import React from 'react'
 import { ActivityIndicator } from 'react-native'
 import { PWButton, PWImage, PWText, PWView } from '@components/core'
-import { useLanguage } from '@hooks/useLanguage'
 import bootsplashLogo from '@assets/bootsplash/logo.png'
 import { SPINNER_COLOR, useStyles } from './styles'
 import { useMigrationSplashScreen } from './useMigrationSplashScreen'
 
 export const MigrationSplashScreen = () => {
     const styles = useStyles()
-    const { t } = useLanguage()
     const {
         status,
         failedAccountCount,
         handleContinue,
         handleSkipPermanently,
     } = useMigrationSplashScreen()
+
+    const failureMessage =
+        failedAccountCount === 1
+            ? `Failed to migrate ${failedAccountCount} account`
+            : `Failed to migrate ${failedAccountCount} accounts`
 
     return (
         <PWView style={styles.container}>
@@ -51,7 +54,7 @@ export const MigrationSplashScreen = () => {
                         style={styles.footerMessage}
                         testID='migration_splash_success'
                     >
-                        {t('migration.splash.success')}
+                        Migration completed successfully
                     </PWText>
                 )}
                 {status === 'failure' && (
@@ -61,14 +64,12 @@ export const MigrationSplashScreen = () => {
                             style={styles.footerMessage}
                             testID='migration_splash_failure'
                         >
-                            {t('migration.splash.failure', {
-                                count: failedAccountCount,
-                            })}
+                            {failureMessage}
                         </PWText>
                         <PWView style={styles.continueButton}>
                             <PWButton
                                 variant='primary'
-                                title={t('migration.splash.continue')}
+                                title='Continue'
                                 onPress={handleContinue}
                                 testID='migration_splash_continue'
                             />
@@ -76,7 +77,7 @@ export const MigrationSplashScreen = () => {
                         <PWView style={styles.continueButton}>
                             <PWButton
                                 variant='secondary'
-                                title={t('migration.splash.do_not_show_again')}
+                                title='Do not show again'
                                 onPress={handleSkipPermanently}
                                 testID='migration_splash_do_not_show_again'
                             />

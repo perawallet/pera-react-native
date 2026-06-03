@@ -11,11 +11,16 @@
  */
 
 import { IconName, PWIcon } from '@components/core/PWIcon'
+import { PWScrollView } from '@components/core/PWScrollView'
 import { PWText } from '@components/core/PWText'
 import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
 import { useRef, useState } from 'react'
 import { Modal, Pressable, View, Dimensions } from 'react-native'
 import { useStyles } from './styles'
+
+// Gap kept between the dropdown's bottom edge and the screen edge so the menu
+// never runs off-screen; beyond this the item list scrolls.
+const SCREEN_EDGE_MARGIN = 24
 
 export type PWDropdownItem = {
     label: string
@@ -35,13 +40,14 @@ export const PWDropdown = ({
     items,
     align = 'right',
 }: PWDropdownProps) => {
-    const styles = useStyles()
     const [visible, setVisible] = useState(false)
     const [position, setPosition] = useState<{
         top: number
         left?: number
         right?: number
     }>({ top: 0 })
+    const [maxHeight, setMaxHeight] = useState<number | undefined>(undefined)
+    const styles = useStyles({ maxHeight })
     const triggerContainerRef = useRef<View>(null)
 
     const handleOpen = () => {
@@ -50,13 +56,15 @@ export const PWDropdown = ({
 
         if (view.measure) {
             view.measure((_x, _y, width, height, pageX, pageY) => {
-                const windowWidth = Dimensions.get('window').width
+                const window = Dimensions.get('window')
                 const top = pageY + height
+
+                setMaxHeight(window.height - top - SCREEN_EDGE_MARGIN)
 
                 if (align === 'right') {
                     setPosition({
                         top,
-                        right: windowWidth - (pageX + width),
+                        right: window.width - (pageX + width),
                     })
                 } else {
                     setPosition({
@@ -106,35 +114,41 @@ export const PWDropdown = ({
                         style={[styles.dropdown, position]}
                         onPress={e => e.stopPropagation()}
                     >
-                        {items.map((item, index) => (
-                            <PWTouchableOpacity
-                                key={index}
-                                style={styles.item}
-                                onPress={() => handleSelect(item)}
-                            >
-                                {item.icon && (
-                                    <PWIcon
-                                        name={item.icon}
-                                        size='sm'
-                                        variant={
-                                            item.variant === 'destructive'
-                                                ? 'error'
-                                                : 'primary'
-                                        }
-                                    />
-                                )}
-                                <PWText
-                                    variant='h4'
-                                    style={
-                                        item.variant === 'destructive'
-                                            ? styles.labelDestructive
-                                            : styles.label
-                                    }
+                        <PWScrollView
+                            style={styles.scrollArea}
+                            nestedScrollEnabled
+                            keyboardShouldPersistTaps='handled'
+                        >
+                            {items.map((item, index) => (
+                                <PWTouchableOpacity
+                                    key={index}
+                                    style={styles.item}
+                                    onPress={() => handleSelect(item)}
                                 >
-                                    {item.label}
-                                </PWText>
-                            </PWTouchableOpacity>
-                        ))}
+                                    {item.icon && (
+                                        <PWIcon
+                                            name={item.icon}
+                                            size='sm'
+                                            variant={
+                                                item.variant === 'destructive'
+                                                    ? 'error'
+                                                    : 'primary'
+                                            }
+                                        />
+                                    )}
+                                    <PWText
+                                        variant='h4'
+                                        style={
+                                            item.variant === 'destructive'
+                                                ? styles.labelDestructive
+                                                : styles.label
+                                        }
+                                    >
+                                        {item.label}
+                                    </PWText>
+                                </PWTouchableOpacity>
+                            ))}
+                        </PWScrollView>
                     </Pressable>
                 </Pressable>
             </Modal>
