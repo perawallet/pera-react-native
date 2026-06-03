@@ -76,7 +76,10 @@ export const MenuScreen = () => {
     }
 
     return (
-        <PWView style={styles.container}>
+        <PWView
+            style={styles.container}
+            testID='menu_screen'
+        >
             <PWView style={styles.iconBar}>
                 <PWView style={styles.iconBarColumn} />
                 <PWText

@@ -69,6 +69,29 @@ describe('services/accounts/store', () => {
         expect(useAccountsStore.getState().accounts).toEqual([a1, a3])
     })
 
+    test('dedupes accounts by address, keeping the first occurrence', () => {
+        const a1: WalletAccount = {
+            id: '1',
+            name: 'Alice',
+            type: 'algo25',
+            address: 'DUPE-ADDR',
+            canSign: true,
+        }
+        const a2: WalletAccount = {
+            id: '2',
+            name: 'Alice copy',
+            type: 'algo25',
+            address: 'DUPE-ADDR',
+            canSign: true,
+        }
+
+        useAccountsStore.getState().setAccounts([a1, a2])
+
+        const { accounts } = useAccountsStore.getState()
+        expect(accounts).toHaveLength(1)
+        expect(accounts[0].id).toBe('1')
+    })
+
     test('getSelectedAccount returns the selected account', () => {
         const a1: WalletAccount = {
             id: '1',

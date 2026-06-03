@@ -12,3 +12,5 @@
 
 export { AccountAssetItemView } from './AccountAssetItemView'
 export type { AccountAssetItemViewProps } from './AccountAssetItemView'
+export { AssetItemView } from './AssetItemView'
+export type { AssetItemViewProps } from './AssetItemView'

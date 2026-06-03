@@ -47,7 +47,7 @@ import {
     WalletConnectTransactionPayload,
 } from '../models'
 import { MAX_DATA_SIGN_REQUESTS, WC_DELIVERY_TIMEOUT_MS } from '../constants'
-import { arc60PayloadSchema } from '../schema'
+import { arc60PayloadSchema, assertArc60RequestWithinLimits } from '../schema'
 import {
     canSignArbitraryData,
     canSignArc60,
@@ -217,6 +217,7 @@ const validateArc60Request = (
     error: Nullable<Error>,
 ): { stdSigData: Arc60StdSigData; metadata: Arc60Metadata } => {
     const foundSession = validateRequest(connector, connections, network, error)
+    assertArc60RequestWithinLimits(rawParams)
 
     const parsed = arc60PayloadSchema.safeParse(rawParams)
     if (!parsed.success) {

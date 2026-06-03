@@ -29,11 +29,15 @@ export const PinSecurityPrompt = (props: PromptViewProps) => {
         usePinSecurityPrompt(props)
 
     return (
-        <PWView style={styles.container}>
+        <PWView
+            style={styles.container}
+            testID='pin_security_prompt'
+        >
             <PWView style={styles.header}>
                 <PWTouchableOpacity
                     onPress={handleDontAskAgain}
                     style={styles.dontAskButton}
+                    testID='pin_security_prompt_dont_ask_button'
                 >
                     <PWText variant='body'>
                         {t('prompts.security.pin_dont_ask_again')}
@@ -68,12 +72,14 @@ export const PinSecurityPrompt = (props: PromptViewProps) => {
                     onPress={handleSetPinCode}
                     variant='primary'
                     title={t('prompts.security.pin_setpin')}
+                    testID='pin_security_prompt_set_pin_button'
                 />
 
                 <PWButton
                     onPress={handleNotNow}
                     variant='secondary'
                     title={t('prompts.security.pin_notnow')}
+                    testID='pin_security_prompt_not_now_button'
                 />
             </PWView>
         </PWView>
