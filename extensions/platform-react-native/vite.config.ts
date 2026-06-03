@@ -51,6 +51,8 @@ export default defineConfig({
                 '@react-native-firebase/messaging',
                 '@react-native-firebase/remote-config',
                 '@notifee/react-native',
+                '@expo/app-integrity',
+                '@noble/hashes/sha256',
                 'expo-application',
                 'expo-device',
                 'expo-local-authentication',

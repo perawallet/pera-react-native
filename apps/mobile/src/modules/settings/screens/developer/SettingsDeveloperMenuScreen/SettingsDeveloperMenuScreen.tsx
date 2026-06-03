@@ -65,6 +65,11 @@ export const SettingsDeveloperMenuScreen = () => {
                 icon='reload'
                 title={t('settings.developer.manage_cache')}
             />
+            <PWListItem
+                onPress={() => handleTapEvent('AppIntegrity')}
+                icon='shield-check'
+                title={t('settings.developer.app_integrity')}
+            />
         </PWScreen>
     )
 }

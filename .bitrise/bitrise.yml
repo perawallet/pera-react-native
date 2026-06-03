@@ -202,6 +202,9 @@ workflows:
             - content: |
                 #!/usr/bin/env bash
                 set -ex
+                # APP_ENV must be set here so generate-config.sh bakes
+                # appEnvironment into the bundled config (defaults to development).
+                export APP_ENV="${ENVIRONMENT:-development}"
                 pnpm run generate:config
       - script@1:
           title: Run Tests
@@ -214,6 +217,12 @@ workflows:
     description: Build and deploy iOS Staging to TestFlight
     envs:
       - ENVIRONMENT: staging
+      # APP_ENV must be set at workflow level (not just inside individual
+      # steps) so every generate-config.sh run + Expo prebuild bakes the
+      # correct appEnvironment. Step-level `export`s don't persist across
+      # Bitrise steps, which previously let "Build packages" regenerate the
+      # config blank (appEnvironment fell back to development).
+      - APP_ENV: staging
       - BITRISE_SCHEME: "$BITRISE_SCHEME_STAGING"
       - NOTIFICATION_TITLE_PREFIX: QA Build (Nightly)
       - USE_CACHE: "true"
@@ -244,6 +253,8 @@ workflows:
     description: Build and deploy iOS Production to TestFlight
     envs:
       - ENVIRONMENT: production
+      # See ios-staging: APP_ENV must be a workflow-level env.
+      - APP_ENV: production
       - BITRISE_SCHEME: "$BITRISE_SCHEME_PRODUCTION"
       - IOS_PROFILE_NAME: Pera React Native Prod
       - NOTIFICATION_TITLE_PREFIX: Release Candidate
@@ -364,6 +375,9 @@ workflows:
             - content: |
                 #!/usr/bin/env bash
                 set -ex
+                # APP_ENV must be set here so generate-config.sh bakes
+                # appEnvironment into the bundled config (defaults to development).
+                export APP_ENV="${ENVIRONMENT:-development}"
                 pnpm run generate:config
       - script@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
@@ -372,6 +386,11 @@ workflows:
             - content: |
                 #!/usr/bin/env bash
                 set -ex
+                # build:packages re-runs generate-config.sh, which bakes
+                # appEnvironment from APP_ENV. Derive it from ENVIRONMENT here
+                # (step shells don't inherit prior steps' exports) or the
+                # bundled appEnvironment silently falls back to development.
+                export APP_ENV="${ENVIRONMENT:-development}"
                 pnpm run build:packages
       - script@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
@@ -466,6 +485,8 @@ workflows:
     description: Build and deploy Android Staging to Firebase App Distribution
     envs:
       - ENVIRONMENT: staging
+      # See ios-staging: APP_ENV must be a workflow-level env.
+      - APP_ENV: staging
       - ANDROID_FLAVOR: staging
       - ANDROID_PACKAGE_NAME: com.algorand.perarn.staging
       - NOTIFICATION_TITLE_PREFIX: QA Build (Nightly)
@@ -496,6 +517,8 @@ workflows:
     description: Build and deploy Android Production to Play Store Internal
     envs:
       - ENVIRONMENT: production
+      # See ios-staging: APP_ENV must be a workflow-level env.
+      - APP_ENV: production
       - ANDROID_FLAVOR: production
       - ANDROID_PACKAGE_NAME: com.algorand.perarn
       - NOTIFICATION_TITLE_PREFIX: Release Candidate
@@ -616,6 +639,9 @@ workflows:
             - content: |
                 #!/usr/bin/env bash
                 set -ex
+                # APP_ENV must be set here so generate-config.sh bakes
+                # appEnvironment into the bundled config (defaults to development).
+                export APP_ENV="${ENVIRONMENT:-development}"
                 pnpm run generate:config
       - script@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
@@ -624,6 +650,11 @@ workflows:
             - content: |
                 #!/usr/bin/env bash
                 set -ex
+                # build:packages re-runs generate-config.sh, which bakes
+                # appEnvironment from APP_ENV. Derive it from ENVIRONMENT here
+                # (step shells don't inherit prior steps' exports) or the
+                # bundled appEnvironment silently falls back to development.
+                export APP_ENV="${ENVIRONMENT:-development}"
                 pnpm run build:packages
       - script@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'

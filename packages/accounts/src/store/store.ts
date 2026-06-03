@@ -55,6 +55,16 @@ export const useAccountsStore: UseBoundStore<
                 )
             },
             setAccounts: (accounts: WalletAccount[]) => {
+                // Single chokepoint for every account write — dedupe by
+                // address (keep first) so no caller can ever persist the same
+                // account twice. Callers that need to surface duplicates to
+                // the user (batch import) still throw DuplicateAccountError
+                // before reaching here; this is the structural safety net.
+                const seen = new Set<string>()
+                accounts = accounts.filter(a =>
+                    seen.has(a.address) ? false : (seen.add(a.address), true),
+                )
+
                 const currentSelected = get().selectedAccountAddress
                 const currentManualOrder = get().manualAccountOrder
                 set({ accounts })

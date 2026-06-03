@@ -27,6 +27,7 @@ import {
     MemoryKeyValueStorage,
     DevicePlatforms,
     type AnalyticsService,
+    type AppIntegrityService,
     type BiometricsService,
     type CrashReportingService,
     type DatabaseService,
@@ -96,6 +97,17 @@ const buildServices = (): PlatformServices => {
         getDeviceCountry: () => 'US',
         getDeviceModelId: () => 'test-model-id',
         getUserAgent: () => 'Pera/test',
+        // Non-store env so the startup attestation handshake is skipped in tests.
+        getAppEnvironment: () => 'development',
+        isStoreBuild: () => false,
+    }
+
+    const appIntegrity: AppIntegrityService = {
+        isSupported: async () => false,
+        attest: async () => ({
+            attestation: 'test-attestation',
+            keyId: 'test-key-id',
+        }),
     }
 
     return {
@@ -107,6 +119,7 @@ const buildServices = (): PlatformServices => {
         keyValueStorage,
         database,
         deviceInfo,
+        appIntegrity,
         hardwareWalletRegistry: createHardwareWalletRegistry(),
     }
 }

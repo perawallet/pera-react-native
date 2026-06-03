@@ -36,6 +36,7 @@ export const configSchema = z.object({
     testnetExplorerUrl: z.url(),
 
     appStoreAppID: z.string(),
+    playIntegrityCloudProjectNumber: z.string(),
 
     notificationRefreshTime: z.number().int(),
     remoteConfigRefreshTime: z.number().int(),
@@ -92,6 +93,11 @@ export const configSchema = z.object({
     }),
 
     defaultNetwork: z.enum(['mainnet', 'testnet']).default('mainnet'),
+
+    /** Build channel. Sourced from APP_ENV; defaults to development when unset. */
+    appEnvironment: z
+        .enum(['development', 'staging', 'production'])
+        .default('development'),
 })
 
 export type Config = z.infer<typeof configSchema>
@@ -113,6 +119,7 @@ const productionConfig = {
     indexerApiKey: '',
 
     appStoreAppID: '',
+    playIntegrityCloudProjectNumber: '',
 
     mainnetExplorerUrl: 'https://explorer.perawallet.app',
     testnetExplorerUrl: 'https://testnet.explorer.perawallet.app',
@@ -184,6 +191,7 @@ const productionConfig = {
     },
 
     defaultNetwork: 'mainnet',
+    appEnvironment: 'development',
 }
 
 // A map of which environment variable (if any) to read config overrides from
@@ -201,6 +209,7 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     indexerApiKey: 'INDEXER_API_KEY',
 
     appStoreAppID: 'APP_STORE_APP_ID',
+    playIntegrityCloudProjectNumber: 'PLAY_INTEGRITY_CLOUD_PROJECT_NUMBER',
 
     mainnetExplorerUrl: 'MAINNET_EXPLORER_URL',
     testnetExplorerUrl: 'TESTNET_EXPLORER_URL',
@@ -236,6 +245,7 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     testnetBidaliBaseUrl: 'BIDALI_BASE_URL',
 
     defaultNetwork: 'DEFAULT_NETWORK',
+    appEnvironment: 'APP_ENV',
 }
 
 /**
