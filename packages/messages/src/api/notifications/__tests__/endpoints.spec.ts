@@ -15,6 +15,7 @@ import {
     fetchNotificationStatus,
     fetchNotificationList,
     updateNotificationEnabled,
+    fetchMessageStatus,
 } from '../endpoints'
 import { queryClient } from '@perawallet/wallet-core-shared'
 
@@ -193,5 +194,54 @@ describe('updateNotificationEnabled', () => {
         await expect(
             updateNotificationEnabled('testnet', DEVICE_ID, ACCOUNT_ID, true),
         ).rejects.toThrow('Request failed')
+    })
+})
+
+describe('fetchMessageStatus', () => {
+    const validResponse = {
+        hasUnreadItems: true,
+        hasUnreadNotifications: true,
+        hasUnreadInboxItems: false,
+    }
+
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
+
+    test('calls queryClient with correct v3 endpoint', async () => {
+        ;(queryClient as Mock).mockResolvedValue({ data: validResponse })
+
+        await fetchMessageStatus('testnet', DEVICE_ID)
+
+        expect(queryClient).toHaveBeenCalledWith({
+            backend: 'pera',
+            network: 'testnet',
+            method: 'GET',
+            url: `/api/v3/devices/${DEVICE_ID}/message-status`,
+        })
+    })
+
+    test('returns parsed response on success', async () => {
+        ;(queryClient as Mock).mockResolvedValue({ data: validResponse })
+
+        const result = await fetchMessageStatus('mainnet', DEVICE_ID)
+        expect(result).toEqual(validResponse)
+    })
+
+    test('throws when response data fails schema validation', async () => {
+        const invalidData = { hasUnreadItems: 'not-a-boolean' }
+        ;(queryClient as Mock).mockResolvedValue({ data: invalidData })
+
+        await expect(
+            fetchMessageStatus('testnet', DEVICE_ID),
+        ).rejects.toThrow()
+    })
+
+    test('propagates errors from queryClient', async () => {
+        ;(queryClient as Mock).mockRejectedValue(new Error('Network error'))
+
+        await expect(
+            fetchMessageStatus('testnet', DEVICE_ID),
+        ).rejects.toThrow('Network error')
     })
 })
