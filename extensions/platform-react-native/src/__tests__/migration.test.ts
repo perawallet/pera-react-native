@@ -37,10 +37,9 @@ vi.mock('react-native', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
-    const actual =
-        await vi.importActual<typeof import('@perawallet/wallet-core-shared')>(
-            '@perawallet/wallet-core-shared',
-        )
+    const actual = await vi.importActual<
+        typeof import('@perawallet/wallet-core-shared')
+    >('@perawallet/wallet-core-shared')
     return {
         ...actual,
         logger: loggerMock,
