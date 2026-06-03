@@ -10,28 +10,17 @@
  limitations under the License
  */
 
-import { entropyToMnemonic } from '@scure/bip39'
-import { wordlist } from '@scure/bip39/wordlists/english.js'
-import { mnemonicFromSeed } from '@algorandfoundation/algokit-utils/algo25'
+import {
+    algo25SecretKeyToMnemonic,
+    entropyToMnemonic,
+} from '@perawallet/wallet-core-kms'
 import type { LegacyHDWallet } from '@perawallet/wallet-extension-platform'
 
-const ALGO25_SEED_LENGTH = 32
-
-export const algo25SecretKeyToMnemonic = (secretKey: Uint8Array): string => {
-    const seed =
-        secretKey.length >= ALGO25_SEED_LENGTH
-            ? secretKey.slice(0, ALGO25_SEED_LENGTH)
-            : secretKey
-    try {
-        return mnemonicFromSeed(seed)
-    } finally {
-        seed.fill(0)
-    }
-}
+export { algo25SecretKeyToMnemonic }
 
 export const hdWalletEntropyToMnemonic = (parent: LegacyHDWallet): string => {
     if (parent.entropy && parent.entropy.length > 0) {
-        return entropyToMnemonic(Uint8Array.from(parent.entropy), wordlist)
+        return entropyToMnemonic(Uint8Array.from(parent.entropy))
     }
     throw new Error(`HD wallet ${parent.walletId} has no entropy`)
 }

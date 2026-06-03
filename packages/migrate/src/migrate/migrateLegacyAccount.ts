@@ -11,6 +11,7 @@
  */
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import type { LegacyAccount } from '@perawallet/wallet-extension-platform'
 import { addKeylessAccountToStore } from './accountStoreOps'
 import {
@@ -67,7 +68,7 @@ export const classifyLegacyAccountRoute = (
 }
 
 const buildUnroutableAccountError = (account: LegacyAccount): string =>
-    `Cannot migrate ${account.address}: type=${account.type}, ` +
+    `Cannot migrate ${truncateAlgorandAddress(account.address)}: type=${account.type}, ` +
     `secretKey=${describeBytes(account.secretKey)}, ` +
     `hdWalletId=${account.hdWalletId ?? 'null'}, ` +
     `ledger=${account.ledger ? 'set' : 'null'}, ` +
