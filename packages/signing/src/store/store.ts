@@ -15,6 +15,7 @@ import { persist } from 'zustand/middleware'
 import type { PersistStorage } from 'zustand/middleware'
 import type { SigningStore, SignRequest } from '../models'
 import {
+    logger,
     generateOrderedUniqueId,
     registerStore,
     type WithPersist,
@@ -37,7 +38,16 @@ const signingStoreStorage = (): PersistStorage<PartializedState> => ({
     getItem: name => {
         const str = getProvider().keyValueStorage.getItem(name)
         if (!str) return null
-        return algorandSafeQueryParse(str as string)
+        try {
+            return algorandSafeQueryParse(str as string)
+        } catch (error) {
+            logger.warn(
+                'Failed to parse persisted signing-store; dropping persisted state',
+                { error },
+            )
+            getProvider().keyValueStorage.removeItem(name)
+            return null
+        }
     },
     setItem: (name, value) => {
         getProvider().keyValueStorage.setItem(

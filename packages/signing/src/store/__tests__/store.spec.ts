@@ -186,4 +186,18 @@ describe('SigningStore', () => {
 
         expect(result.current.pendingSignRequests).toEqual([])
     })
+
+    test('boots with default state when persisted JSON is malformed', async () => {
+        mockStorage.getItem.mockReturnValueOnce('{ not valid json')
+        await useSigningStore.persist.rehydrate()
+        expect(useSigningStore.getState().pendingSignRequests).toEqual([])
+    })
+
+    test('boots with default state when a persisted bigint tag is malformed', async () => {
+        mockStorage.getItem.mockReturnValueOnce(
+            '{"state":{"pendingSignRequests":[{"id":"1","amount":"__bigint__nope"}]},"version":1}',
+        )
+        await useSigningStore.persist.rehydrate()
+        expect(useSigningStore.getState().pendingSignRequests).toEqual([])
+    })
 })
