@@ -55,13 +55,18 @@ const main = () => {
         return
     }
     const pbxPath = path.join(iosRoot, xcodeprojDir, 'project.pbxproj')
-    if (!fs.existsSync(pbxPath)) {
-        console.log('[fix-development-team] no project.pbxproj; skipping')
-        return
-    }
 
     const teamId = process.env.APPLE_TEAM_ID || ''
-    const contents = fs.readFileSync(pbxPath, 'utf8')
+    let contents
+    try {
+        contents = fs.readFileSync(pbxPath, 'utf8')
+    } catch (err) {
+        if (err.code === 'ENOENT') {
+            console.log('[fix-development-team] no project.pbxproj; skipping')
+            return
+        }
+        throw err
+    }
     const sanitized = contents.replace(
         /DEVELOPMENT_TEAM\s*=\s*"?\$\(DEVELOPMENT_TEAM\)"?\s*;/g,
         `DEVELOPMENT_TEAM = "${teamId}";`,
