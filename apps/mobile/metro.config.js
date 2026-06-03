@@ -29,6 +29,10 @@ const watchFolders = [monorepoRoot];
 const nodeModulesPaths = [
     path.resolve(projectRoot, 'node_modules'),
     path.resolve(monorepoRoot, 'node_modules'),
+    ...require('fs')
+        .readdirSync(path.resolve(monorepoRoot, 'extensions'))
+        .map(name => path.resolve(monorepoRoot, 'extensions', name, 'node_modules'))
+        .filter(p => require('fs').existsSync(p)),
 ];
 
 // SVG transformer configuration
