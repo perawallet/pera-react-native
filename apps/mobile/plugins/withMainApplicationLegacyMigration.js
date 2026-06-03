@@ -22,10 +22,12 @@ const IMPORT_RE = /^import .+$/gm;
 const APPLY_BLOCK_RE = /(PackageList\(this\)\.packages\.apply\s*\{)([^}]*)(\})/;
 const BARE_PACKAGES_RE = /PackageList\(this\)\.packages(?!\.apply)/;
 
+const patchMainApplication = (contents) => addRegistration(addImport(contents));
+
 const withMainApplicationLegacyMigration = (config) =>
     withMainApplication(config, (config) => {
         assertKotlin(config.modResults);
-        config.modResults.contents = addRegistration(addImport(config.modResults.contents));
+        config.modResults.contents = patchMainApplication(config.modResults.contents);
         return config;
     });
 
@@ -80,3 +82,4 @@ const fail = (message) => {
 };
 
 module.exports = withMainApplicationLegacyMigration;
+module.exports.patchMainApplication = patchMainApplication;

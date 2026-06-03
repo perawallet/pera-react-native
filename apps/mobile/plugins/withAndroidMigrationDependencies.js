@@ -16,24 +16,28 @@ const { withAppBuildGradle } = require('@expo/config-plugins');
 const TINK_DEPENDENCY = 'com.google.crypto.tink:tink-android:1.18.0';
 const TINK_LINE = `    implementation("${TINK_DEPENDENCY}")`;
 
+const patchAppBuildGradle = (contents) => {
+  if (contents.includes('com.google.crypto.tink:tink-android')) {
+    return contents;
+  }
+  const patched = contents.replace(
+    /^dependencies \{$/m,
+    `dependencies {\n${TINK_LINE}`,
+  );
+  if (patched === contents) {
+    throw new Error(
+      '[withAndroidMigrationDependencies] could not find `dependencies {` ' +
+        'block in app/build.gradle — Expo template may have changed.',
+    );
+  }
+  return patched;
+};
+
 const withAndroidMigrationDependencies = (config) =>
   withAppBuildGradle(config, (config) => {
-    const { contents } = config.modResults;
-    if (contents.includes('com.google.crypto.tink:tink-android')) {
-      return config;
-    }
-    const patched = contents.replace(
-      /^dependencies \{$/m,
-      `dependencies {\n${TINK_LINE}`,
-    );
-    if (patched === contents) {
-      throw new Error(
-        '[withAndroidMigrationDependencies] could not find `dependencies {` ' +
-          'block in app/build.gradle — Expo template may have changed.',
-      );
-    }
-    config.modResults.contents = patched;
+    config.modResults.contents = patchAppBuildGradle(config.modResults.contents);
     return config;
   });
 
 module.exports = withAndroidMigrationDependencies;
+module.exports.patchAppBuildGradle = patchAppBuildGradle;
