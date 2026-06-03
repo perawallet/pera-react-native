@@ -56,11 +56,13 @@ internal class WalletConnectReader(
                         isConnected = c.optInt("is_connected") != 0,
                         isSubscribed = c.optInt("is_subscribed") != 0,
                         fallbackBrowserGroupResponse = c.optString("fallback_browser_group_response"),
-                        connectedAccounts = readConnectedAccounts(db, id),
+                        connectedAccounts = emptyList(),
                     )
                 }
             }
-            sessions
+            sessions.map { session ->
+                session.copy(connectedAccounts = readConnectedAccounts(db, session.id))
+            }
         }.orEmpty()
 
     fun readV2Sessions(): List<WalletConnectV2SessionRow> =
