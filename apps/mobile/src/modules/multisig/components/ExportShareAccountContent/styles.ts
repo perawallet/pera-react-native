@@ -13,10 +13,6 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    body: {
-        paddingTop: 0,
-        paddingBottom: theme.spacing.xxl,
-    },
     qrSection: {
         alignItems: 'center',
         gap: theme.spacing.md,

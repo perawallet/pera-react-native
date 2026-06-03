@@ -29,29 +29,30 @@ export const LedgerHowItWorksContent = () => {
     return (
         <PWSheetLayout
             header={<SheetHeader title={t('ledger.how_does_it_work.title')} />}
-        >
-            <PWView style={styles.list}>
-                {STEP_KEYS.map(key => (
-                    <PWView
-                        key={key}
-                        style={styles.item}
-                    >
-                        <PWView style={styles.bullet}>
-                            <PWIcon
-                                name='check'
-                                size='xs'
-                                variant='positive'
-                            />
-                        </PWView>
-                        <PWText
-                            variant='body'
-                            style={styles.itemText}
+            body={
+                <PWView style={styles.list}>
+                    {STEP_KEYS.map(key => (
+                        <PWView
+                            key={key}
+                            style={styles.item}
                         >
-                            {t(key)}
-                        </PWText>
-                    </PWView>
-                ))}
-            </PWView>
-        </PWSheetLayout>
+                            <PWView style={styles.bullet}>
+                                <PWIcon
+                                    name='check'
+                                    size='xs'
+                                    variant='positive'
+                                />
+                            </PWView>
+                            <PWText
+                                variant='body'
+                                style={styles.itemText}
+                            >
+                                {t(key)}
+                            </PWText>
+                        </PWView>
+                    ))}
+                </PWView>
+            }
+        />
     )
 }

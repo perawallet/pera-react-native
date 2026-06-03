@@ -51,21 +51,25 @@ export const SearchFilterContent = ({
     return (
         <PWSheetLayout
             header={<SheetHeader title={t('search.filter.title')} />}
-            bodyStyle={styles.body}
-        >
-            {SEARCH_SCOPES.map(scope => (
-                <PWView
-                    key={scope}
-                    style={styles.row}
-                >
-                    <PWText variant='body'>{t(SCOPE_LABEL_KEYS[scope])}</PWText>
-                    <PWSwitch
-                        value={activeScopes.includes(scope)}
-                        onValueChange={() => handleToggle(scope)}
-                        testID={`search_filter_toggle_${scope}`}
-                    />
+            body={
+                <PWView style={styles.body}>
+                    {SEARCH_SCOPES.map(scope => (
+                        <PWView
+                            key={scope}
+                            style={styles.row}
+                        >
+                            <PWText variant='body'>
+                                {t(SCOPE_LABEL_KEYS[scope])}
+                            </PWText>
+                            <PWSwitch
+                                value={activeScopes.includes(scope)}
+                                onValueChange={() => handleToggle(scope)}
+                                testID={`search_filter_toggle_${scope}`}
+                            />
+                        </PWView>
+                    ))}
                 </PWView>
-            ))}
-        </PWSheetLayout>
+            }
+        />
     )
 }

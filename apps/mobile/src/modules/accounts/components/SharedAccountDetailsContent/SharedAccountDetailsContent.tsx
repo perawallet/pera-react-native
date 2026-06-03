@@ -10,7 +10,12 @@
  limitations under the License
  */
 
-import { PWScrollView, PWText, PWTouchableIcon, PWView } from '@components/core'
+import {
+    PWSheetLayout,
+    PWText,
+    PWTouchableIcon,
+    PWView,
+} from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { MultisigInfoCard } from '@components/MultisigInfoCard'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
@@ -40,21 +45,21 @@ export const SharedAccountDetailsContent = ({
         useSharedAccountDetailsContent(details.addresses)
 
     return (
-        <PWView style={styles.container}>
-            <SheetHeader
-                title={details.name || truncateAlgorandAddress(details.address)}
-                titleVariant='bodyLarge'
-                subtitle={
-                    details.name
-                        ? truncateAlgorandAddress(details.address)
-                        : undefined
-                }
-            />
-            <PWScrollView
-                inBottomSheet
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}
-            >
+        <PWSheetLayout
+            header={
+                <SheetHeader
+                    title={
+                        details.name || truncateAlgorandAddress(details.address)
+                    }
+                    titleVariant='bodyLarge'
+                    subtitle={
+                        details.name
+                            ? truncateAlgorandAddress(details.address)
+                            : undefined
+                    }
+                />
+            }
+            body={
                 <PWView
                     style={styles.details}
                     testID='shared_account_details_content'
@@ -116,7 +121,7 @@ export const SharedAccountDetailsContent = ({
                         </PWView>
                     </PWView>
                 </PWView>
-            </PWScrollView>
-        </PWView>
+            }
+        />
     )
 }

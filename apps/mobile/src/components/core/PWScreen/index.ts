@@ -12,3 +12,4 @@
 
 export { PWScreen } from './PWScreen'
 export type { PWScreenProps } from './PWScreen'
+export type { HorizontalPaddingMode } from './styles'

@@ -53,23 +53,24 @@ export const TransactionListScreen = () => {
 
     return (
         <PWScreen
-            scroll={false}
+            scroll='never'
+            body={
+                <PWFlatList
+                    cardLayout
+                    data={listItems}
+                    renderItem={renderItem}
+                    keyExtractor={keyExtractor}
+                    ListHeaderComponent={
+                        <TransactionListHeader
+                            itemCount={transactionCount}
+                            sourceMetadata={sourceMetadata}
+                        />
+                    }
+                    showsVerticalScrollIndicator={false}
+                    inBottomSheet
+                />
+            }
             footer={<TransactionListFooter />}
-        >
-            <PWFlatList
-                cardLayout
-                data={listItems}
-                renderItem={renderItem}
-                keyExtractor={keyExtractor}
-                ListHeaderComponent={
-                    <TransactionListHeader
-                        itemCount={transactionCount}
-                        sourceMetadata={sourceMetadata}
-                    />
-                }
-                showsVerticalScrollIndicator={false}
-                inBottomSheet
-            />
-        </PWScreen>
+        />
     )
 }

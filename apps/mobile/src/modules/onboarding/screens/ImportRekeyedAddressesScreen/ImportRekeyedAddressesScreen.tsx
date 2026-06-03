@@ -36,9 +36,35 @@ export const ImportRekeyedAddressesScreen = () => {
     return (
         <>
             <PWScreen
-                scroll={false}
+                scroll='never'
                 horizontalPadding='none'
                 testID='import_rekeyed_addresses_screen'
+                body={
+                    <PWFlatList
+                        cardLayout
+                        style={styles.list}
+                        contentContainerStyle={styles.listContent}
+                        showsVerticalScrollIndicator={false}
+                        ListHeaderComponent={() => (
+                            <ImportRekeyedAddressesHeader
+                                accountsCount={accounts.length}
+                            />
+                        )}
+                        data={accounts}
+                        extraData={selectedAddresses}
+                        keyExtractor={item => item.address}
+                        renderItem={({ item }) => (
+                            <ImportRekeyedAddressesItem
+                                account={item}
+                                isImported={alreadyImportedAddresses.has(
+                                    item.address,
+                                )}
+                                isSelected={selectedAddresses.has(item.address)}
+                                onToggle={toggleSelection}
+                            />
+                        )}
+                    />
+                }
                 footer={
                     <ImportRekeyedAddressesFooter
                         onContinue={handleContinue}
@@ -46,32 +72,7 @@ export const ImportRekeyedAddressesScreen = () => {
                         canContinue={canContinue}
                     />
                 }
-            >
-                <PWFlatList
-                    cardLayout
-                    style={styles.list}
-                    contentContainerStyle={styles.listContent}
-                    showsVerticalScrollIndicator={false}
-                    ListHeaderComponent={() => (
-                        <ImportRekeyedAddressesHeader
-                            accountsCount={accounts.length}
-                        />
-                    )}
-                    data={accounts}
-                    extraData={selectedAddresses}
-                    keyExtractor={item => item.address}
-                    renderItem={({ item }) => (
-                        <ImportRekeyedAddressesItem
-                            account={item}
-                            isImported={alreadyImportedAddresses.has(
-                                item.address,
-                            )}
-                            isSelected={selectedAddresses.has(item.address)}
-                            onToggle={toggleSelection}
-                        />
-                    )}
-                />
-            </PWScreen>
+            />
             <PWLoadingOverlay
                 isVisible={isImporting}
                 title={t(

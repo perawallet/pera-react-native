@@ -50,10 +50,53 @@ export const PassphraseAcknowledgeContent = ({
 
     return (
         <PWSheetLayout
+            horizontalPadding='lg'
+            testID={testID}
             header={
                 <SheetHeader title={t('view_passphrase.acknowledge.title')} />
             }
-            bodyStyle={styles.body}
+            body={
+                <PWView style={styles.body}>
+                    <PWIcon
+                        name='account-rekeyed'
+                        variant='positive'
+                        size='xxl'
+                        style={styles.icon}
+                    />
+                    <PWText
+                        variant='body'
+                        style={styles.description}
+                    >
+                        {t('view_passphrase.acknowledge.description')}
+                    </PWText>
+                    <PWView style={styles.rows}>
+                        {ACKNOWLEDGE_ROW_KEYS.map((key, index) => (
+                            <PWTouchableOpacity
+                                key={key}
+                                style={[
+                                    styles.row,
+                                    index !== 0
+                                        ? styles.separatorBorder
+                                        : undefined,
+                                ]}
+                                onPress={() => toggle(index)}
+                                testID={`${testID}_row_${index}`}
+                            >
+                                <PWText
+                                    variant='body'
+                                    style={styles.rowText}
+                                >
+                                    {t(key)}
+                                </PWText>
+                                <PWCheckbox
+                                    checked={checked[index]}
+                                    onPress={() => toggle(index)}
+                                />
+                            </PWTouchableOpacity>
+                        ))}
+                    </PWView>
+                </PWView>
+            }
             footer={
                 <PWView style={styles.actions}>
                     <PWButton
@@ -71,44 +114,6 @@ export const PassphraseAcknowledgeContent = ({
                     />
                 </PWView>
             }
-            testID={testID}
-        >
-            <PWIcon
-                name='account-rekeyed'
-                variant='positive'
-                size='xxl'
-                style={styles.icon}
-            />
-            <PWText
-                variant='body'
-                style={styles.description}
-            >
-                {t('view_passphrase.acknowledge.description')}
-            </PWText>
-            <PWView style={styles.rows}>
-                {ACKNOWLEDGE_ROW_KEYS.map((key, index) => (
-                    <PWTouchableOpacity
-                        key={key}
-                        style={[
-                            styles.row,
-                            index !== 0 ? styles.separatorBorder : undefined,
-                        ]}
-                        onPress={() => toggle(index)}
-                        testID={`${testID}_row_${index}`}
-                    >
-                        <PWText
-                            variant='body'
-                            style={styles.rowText}
-                        >
-                            {t(key)}
-                        </PWText>
-                        <PWCheckbox
-                            checked={checked[index]}
-                            onPress={() => toggle(index)}
-                        />
-                    </PWTouchableOpacity>
-                ))}
-            </PWView>
-        </PWSheetLayout>
+        />
     )
 }

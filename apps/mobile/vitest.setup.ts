@@ -632,7 +632,7 @@ vi.mock('@components/core', () => {
             }),
         ),
         PWScrollView: createMockComponent('PWScrollView'),
-        PWSheetLayout: ({ header, children, footer, testID }: any) =>
+        PWSheetLayout: ({ header, body, footer, testID }: any) =>
             React.createElement(
                 'div',
                 { 'data-testid': testID || 'PWSheetLayout' },
@@ -645,7 +645,7 @@ vi.mock('@components/core', () => {
                         },
                         header,
                     ),
-                children,
+                body,
                 footer &&
                     React.createElement(
                         'div',
@@ -656,15 +656,20 @@ vi.mock('@components/core', () => {
                         footer,
                     ),
             ),
-        PWScreen: ({ children, footer, testID, style, ...props }: any) =>
+        PWScreen: ({ header, body, footer, testID, style }: any) =>
             React.createElement(
                 'div',
                 {
-                    ...props,
                     style,
                     'data-testid': testID || 'PWScreen',
                 },
-                children,
+                header &&
+                    React.createElement(
+                        'div',
+                        { key: 'header', 'data-testid': 'PWScreen-header' },
+                        header,
+                    ),
+                body,
                 footer &&
                     React.createElement(
                         'div',

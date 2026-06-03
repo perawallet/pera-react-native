@@ -38,6 +38,7 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
             resizeMode: 'contain',
         },
         scrollContent: {
+            flex: 1,
             paddingBottom: theme.spacing['3xl'],
         },
         mainContainer: {

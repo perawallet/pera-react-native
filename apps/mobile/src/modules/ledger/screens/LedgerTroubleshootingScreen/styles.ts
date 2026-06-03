@@ -15,9 +15,6 @@ import { makeStyles } from '@rneui/themed'
 const BULLET_SIZE = 6
 
 export const useStyles = makeStyles(theme => ({
-    content: {
-        paddingBottom: theme.spacing.xxl,
-    },
     sectionTitle: {
         marginTop: theme.spacing.xl,
         marginBottom: theme.spacing.md,

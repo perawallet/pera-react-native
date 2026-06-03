@@ -16,7 +16,7 @@ import { EdgeInsets } from 'react-native-safe-area-context'
 
 const HEADER_IMAGE_SCREEN_RATIO = 1 / 4
 
-// welcome-background.png intrinsic dimensions; hardcoded to avoid resolveAssetSource.
+// welcome-background.webp intrinsic dimensions; hardcoded to avoid resolveAssetSource.
 const IMAGE_ASPECT_RATIO = 344 / 544
 
 type StyleProps = {

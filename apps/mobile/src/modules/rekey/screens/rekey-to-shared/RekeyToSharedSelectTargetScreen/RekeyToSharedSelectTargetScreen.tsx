@@ -22,20 +22,23 @@ export const RekeyToSharedSelectTargetScreen = () => {
 
     return (
         <PWScreen
-            scroll={false}
+            scroll='never'
             testID='rekey-to-shared-select-target-screen'
-        >
-            <ScreenHeader
-                title={t('rekey.to_shared.select.title')}
-                description={t('rekey.to_shared.select.subtitle')}
-            />
+            body={
+                <>
+                    <ScreenHeader
+                        title={t('rekey.to_shared.select.title')}
+                        description={t('rekey.to_shared.select.subtitle')}
+                    />
 
-            <AccountPicker
-                accounts={targets}
-                onSelect={handleSelect}
-                emptyBody={t('rekey.to_shared.select.empty')}
-                rowTestIDPrefix='rekey-target-row'
-            />
-        </PWScreen>
+                    <AccountPicker
+                        accounts={targets}
+                        onSelect={handleSelect}
+                        emptyBody={t('rekey.to_shared.select.empty')}
+                        rowTestIDPrefix='rekey-target-row'
+                    />
+                </>
+            }
+        />
     )
 }

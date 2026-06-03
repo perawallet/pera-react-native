@@ -38,7 +38,84 @@ export const AsbImportBackupScreen = () => {
 
     return (
         <PWScreen
-            scroll={false}
+            scroll='never'
+            body={
+                <PWView style={styles.content}>
+                    <ScreenHeader
+                        title={t('onboarding.asb_import.backup.title')}
+                        description={t('onboarding.asb_import.backup.body')}
+                    />
+
+                    <PWView style={styles.dropZoneWrap}>
+                        {loadedFile ? (
+                            <PWView style={styles.fileRow}>
+                                <PWIcon
+                                    name='text-document'
+                                    size='md'
+                                />
+                                <PWText
+                                    variant='h4'
+                                    style={styles.fileName}
+                                    truncate
+                                >
+                                    {loadedFile.name}
+                                </PWText>
+                                <PWTouchableOpacity
+                                    onPress={handleClearFile}
+                                    testID='asb_import_backup_clear_button'
+                                >
+                                    <PWIcon
+                                        name='cross'
+                                        size='md'
+                                    />
+                                </PWTouchableOpacity>
+                            </PWView>
+                        ) : (
+                            <PWTouchableOpacity
+                                style={styles.dropZone}
+                                onPress={handlePickFile}
+                                testID='asb_import_backup_pick_file_button'
+                            >
+                                <PWRoundIcon
+                                    icon='arrow-up'
+                                    size='xl'
+                                    variant='secondary'
+                                />
+                                <PWText
+                                    variant='body'
+                                    style={styles.dropZoneLabel}
+                                    numberOfLines={2}
+                                    ellipsizeMode='tail'
+                                >
+                                    {t(
+                                        'onboarding.asb_import.backup.pick_file_button',
+                                    )}
+                                </PWText>
+                            </PWTouchableOpacity>
+                        )}
+
+                        <PWTouchableOpacity
+                            style={styles.pasteRow}
+                            onPress={handlePasteFromClipboard}
+                            testID='asb_import_backup_paste_button'
+                        >
+                            <PWIcon
+                                name='copy'
+                                size='md'
+                                variant='link'
+                            />
+                            <PWText
+                                variant='link'
+                                style={styles.pasteLabel}
+                                numberOfLines={2}
+                                ellipsizeMode='tail'
+                            >
+                                {t('onboarding.asb_import.backup.paste_button')}
+                            </PWText>
+                        </PWTouchableOpacity>
+                    </PWView>
+                </PWView>
+            }
             footer={
                 <PWButton
                     variant='primary'
@@ -48,82 +125,6 @@ export const AsbImportBackupScreen = () => {
                     testID='asb_import_backup_continue_button'
                 />
             }
-        >
-            <PWView style={styles.content}>
-                <ScreenHeader
-                    title={t('onboarding.asb_import.backup.title')}
-                    description={t('onboarding.asb_import.backup.body')}
-                />
-
-                <PWView style={styles.dropZoneWrap}>
-                    {loadedFile ? (
-                        <PWView style={styles.fileRow}>
-                            <PWIcon
-                                name='text-document'
-                                size='md'
-                            />
-                            <PWText
-                                variant='h4'
-                                style={styles.fileName}
-                                truncate
-                            >
-                                {loadedFile.name}
-                            </PWText>
-                            <PWTouchableOpacity
-                                onPress={handleClearFile}
-                                testID='asb_import_backup_clear_button'
-                            >
-                                <PWIcon
-                                    name='cross'
-                                    size='md'
-                                />
-                            </PWTouchableOpacity>
-                        </PWView>
-                    ) : (
-                        <PWTouchableOpacity
-                            style={styles.dropZone}
-                            onPress={handlePickFile}
-                            testID='asb_import_backup_pick_file_button'
-                        >
-                            <PWRoundIcon
-                                icon='arrow-up'
-                                size='xl'
-                                variant='secondary'
-                            />
-                            <PWText
-                                variant='body'
-                                style={styles.dropZoneLabel}
-                                numberOfLines={2}
-                                ellipsizeMode='tail'
-                            >
-                                {t(
-                                    'onboarding.asb_import.backup.pick_file_button',
-                                )}
-                            </PWText>
-                        </PWTouchableOpacity>
-                    )}
-
-                    <PWTouchableOpacity
-                        style={styles.pasteRow}
-                        onPress={handlePasteFromClipboard}
-                        testID='asb_import_backup_paste_button'
-                    >
-                        <PWIcon
-                            name='copy'
-                            size='md'
-                            variant='link'
-                        />
-                        <PWText
-                            variant='link'
-                            style={styles.pasteLabel}
-                            numberOfLines={2}
-                            ellipsizeMode='tail'
-                        >
-                            {t('onboarding.asb_import.backup.paste_button')}
-                        </PWText>
-                    </PWTouchableOpacity>
-                </PWView>
-            </PWView>
-        </PWScreen>
+        />
     )
 }

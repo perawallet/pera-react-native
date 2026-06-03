@@ -150,6 +150,7 @@ export const CurrencyDisplay = (props: CurrencyDisplayProps) => {
                     variant={variant}
                     weight={algoSymbolWeight}
                     style={[themeStyle.symbol, props.style]}
+                    accessibilityLabel='Algo'
                 >
                     {ALGO_SYMBOL}
                 </PWText>
@@ -170,6 +171,7 @@ export const CurrencyDisplay = (props: CurrencyDisplayProps) => {
                     variant={variant}
                     weight={algoSymbolWeight}
                     style={[themeStyle.symbol, props.style]}
+                    accessibilityLabel='Algo'
                 >
                     {ALGO_SYMBOL}
                 </PWText>

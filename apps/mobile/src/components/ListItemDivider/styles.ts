@@ -11,19 +11,9 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { getConfirmScreenStyles } from '../../../utils/confirmScreenStyles'
 
-// PWScreen's body/footer zones own the horizontal + bottom padding, so the
-// body/footer wrappers here contribute only their gaps (and the body keeps
-// flex:1 so its inner spacer can push the content). The shared factory still
-// carries full padding for the hand-rolled RekeyConfirmView.
 export const useStyles = makeStyles(theme => ({
-    ...getConfirmScreenStyles(theme),
-    scrollContent: {
-        flex: 1,
-        gap: theme.spacing.xl,
-    },
-    footer: {
-        gap: theme.spacing.md,
+    divider: {
+        backgroundColor: theme.colors.layerGrayLighter,
     },
 }))

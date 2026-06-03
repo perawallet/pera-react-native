@@ -29,6 +29,7 @@ export const useStyles = makeStyles(theme => {
     }
     return {
         contentContainer: {
+            flex: 1,
             justifyContent: 'flex-start' as const,
             alignItems: 'center' as const,
             gap: theme.spacing.lg,

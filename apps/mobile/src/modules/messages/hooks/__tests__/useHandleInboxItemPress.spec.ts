@@ -112,6 +112,7 @@ describe('useHandleInboxItemPress', () => {
         expect(arg.options).toEqual({
             size: 'auto',
             enablePanDownToClose: true,
+            autoCreateContainer: false,
         })
     })
 

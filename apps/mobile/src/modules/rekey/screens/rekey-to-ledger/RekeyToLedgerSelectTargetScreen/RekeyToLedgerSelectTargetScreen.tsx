@@ -22,20 +22,23 @@ export const RekeyToLedgerSelectTargetScreen = () => {
 
     return (
         <PWScreen
-            scroll={false}
+            scroll='never'
             testID='rekey-to-ledger-select-target-screen'
-        >
-            <ScreenHeader
-                title={t('rekey.to_ledger.select.title')}
-                description={t('rekey.to_ledger.select.subtitle')}
-            />
+            body={
+                <>
+                    <ScreenHeader
+                        title={t('rekey.to_ledger.select.title')}
+                        description={t('rekey.to_ledger.select.subtitle')}
+                    />
 
-            <AccountPicker
-                accounts={targets}
-                onSelect={handleSelect}
-                emptyBody={t('rekey.to_ledger.select.empty')}
-                rowTestIDPrefix='rekey-target-row'
-            />
-        </PWScreen>
+                    <AccountPicker
+                        accounts={targets}
+                        onSelect={handleSelect}
+                        emptyBody={t('rekey.to_ledger.select.empty')}
+                        rowTestIDPrefix='rekey-target-row'
+                    />
+                </>
+            }
+        />
     )
 }

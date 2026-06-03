@@ -30,7 +30,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { Trans } from 'react-i18next'
 import { MultisigIntroductionDialog } from '@modules/multisig/components/MultisigIntroductionDialog'
 
-import welcomeBackground from '@assets/images/welcome-background.png'
+import welcomeBackground from '@assets/images/welcome-background.webp'
 
 export const AddAccountScreen = () => {
     const { t } = useLanguage()
@@ -61,87 +61,91 @@ export const AddAccountScreen = () => {
             <PWScreen
                 horizontalPadding='none'
                 style={styles.screen}
-                contentContainerStyle={styles.scrollContent}
-            >
-                <PWToolbar
-                    left={
-                        <PWIcon
-                            name='cross'
-                            onPress={handleClose}
-                            testID='add_account_close_button'
+                body={
+                    <PWView style={styles.scrollContent}>
+                        <PWToolbar
+                            left={
+                                <PWIcon
+                                    name='cross'
+                                    onPress={handleClose}
+                                    testID='add_account_close_button'
+                                />
+                            }
                         />
-                    }
-                />
 
-                <ScreenHeader
-                    title={t('onboarding.add_account.title')}
-                    style={styles.header}
-                />
-
-                <PWView style={styles.mainContainer}>
-                    {mainOptions.map(option => (
-                        <PanelButton
-                            key={option.testID}
-                            testID={option.testID}
-                            title={t(option.titleKey)}
-                            description={t(option.descriptionKey)}
-                            titleWeight='h3'
-                            leftIcon={option.leftIcon}
-                            onPress={option.onPress}
-                            disabled={option.isDisabled}
+                        <ScreenHeader
+                            title={t('onboarding.add_account.title')}
+                            style={styles.header}
                         />
-                    ))}
 
-                    {isOtherOptionsVisible &&
-                        otherOptions.map(option => (
-                            <PanelButton
-                                key={option.testID}
-                                testID={option.testID}
-                                title={t(option.titleKey)}
-                                description={t(option.descriptionKey)}
-                                titleWeight='h3'
-                                leftIcon={option.leftIcon}
-                                onPress={option.onPress}
-                                disabled={option.isDisabled}
-                            />
-                        ))}
-                </PWView>
+                        <PWView style={styles.mainContainer}>
+                            {mainOptions.map(option => (
+                                <PanelButton
+                                    key={option.testID}
+                                    testID={option.testID}
+                                    title={t(option.titleKey)}
+                                    description={t(option.descriptionKey)}
+                                    titleWeight='h3'
+                                    leftIcon={option.leftIcon}
+                                    onPress={option.onPress}
+                                    disabled={option.isDisabled}
+                                />
+                            ))}
 
-                {!isOtherOptionsVisible && (
-                    <PWTouchableOpacity
-                        style={styles.otherOptionsButton}
-                        onPress={handleToggleOtherOptions}
-                        testID='add_account_see_other_options_button'
-                    >
-                        <PWView style={styles.otherOptionsIconWrapper}>
-                            <PWIcon name='chevron-down' />
+                            {isOtherOptionsVisible &&
+                                otherOptions.map(option => (
+                                    <PanelButton
+                                        key={option.testID}
+                                        testID={option.testID}
+                                        title={t(option.titleKey)}
+                                        description={t(option.descriptionKey)}
+                                        titleWeight='h3'
+                                        leftIcon={option.leftIcon}
+                                        onPress={option.onPress}
+                                        disabled={option.isDisabled}
+                                    />
+                                ))}
                         </PWView>
-                        <PWText variant='h4'>
-                            {t('onboarding.add_account.see_other_options')}
-                        </PWText>
-                    </PWTouchableOpacity>
-                )}
 
-                <PWView style={styles.footerContainer}>
-                    <PWText style={styles.termsAndPrivacyText}>
-                        <Trans
-                            i18nKey='onboarding.add_account.terms_and_privacy'
-                            components={[
-                                <PWText
-                                    key='terms'
-                                    variant='link'
-                                    onPress={handleTermsPress}
-                                />,
-                                <PWText
-                                    key='privacy'
-                                    variant='link'
-                                    onPress={handlePrivacyPress}
-                                />,
-                            ]}
-                        />
-                    </PWText>
-                </PWView>
-            </PWScreen>
+                        {!isOtherOptionsVisible && (
+                            <PWTouchableOpacity
+                                style={styles.otherOptionsButton}
+                                onPress={handleToggleOtherOptions}
+                                testID='add_account_see_other_options_button'
+                            >
+                                <PWView style={styles.otherOptionsIconWrapper}>
+                                    <PWIcon name='chevron-down' />
+                                </PWView>
+                                <PWText variant='h4'>
+                                    {t(
+                                        'onboarding.add_account.see_other_options',
+                                    )}
+                                </PWText>
+                            </PWTouchableOpacity>
+                        )}
+
+                        <PWView style={styles.footerContainer}>
+                            <PWText style={styles.termsAndPrivacyText}>
+                                <Trans
+                                    i18nKey='onboarding.add_account.terms_and_privacy'
+                                    components={[
+                                        <PWText
+                                            key='terms'
+                                            variant='link'
+                                            onPress={handleTermsPress}
+                                        />,
+                                        <PWText
+                                            key='privacy'
+                                            variant='link'
+                                            onPress={handlePrivacyPress}
+                                        />,
+                                    ]}
+                                />
+                            </PWText>
+                        </PWView>
+                    </PWView>
+                }
+            />
 
             <PWLoadingOverlay
                 isVisible={isCreatingAccount}

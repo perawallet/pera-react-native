@@ -11,10 +11,15 @@
  */
 
 import { ActivityIndicator } from 'react-native'
-import { BottomSheetScrollView } from '@gorhom/bottom-sheet'
 import { useTheme } from '@rneui/themed'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import { PWButton, PWIcon, PWText, PWView } from '@components/core'
+import {
+    PWButton,
+    PWIcon,
+    PWSheetLayout,
+    PWText,
+    PWView,
+} from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { type SignerRow } from '../../utils/buildSignerRows'
 import {
@@ -60,164 +65,164 @@ export const PendingSignaturesContent = () => {
     }
 
     return (
-        <PWView style={styles.layout}>
-            <PWView style={styles.header}>
-                <PWText
-                    variant='h4'
-                    style={styles.title}
-                >
-                    {t('multisig.pending_signatures.title')}
-                </PWText>
-
-                {bannerVariant === 'failure' && (
-                    <PWView
-                        style={styles.failureBanner}
-                        testID='pending_signatures_failure_banner'
+        <PWSheetLayout
+            header={
+                <PWView style={styles.header}>
+                    <PWText
+                        variant='h4'
+                        style={styles.title}
                     >
-                        <PWIcon
-                            name='cross'
-                            size='sm'
-                            variant='error'
-                        />
-                        <PWText
-                            variant='caption'
-                            style={styles.failureBannerText}
-                        >
-                            {failReason ?? t(failureBannerKey)}
-                        </PWText>
-                    </PWView>
-                )}
+                        {t('multisig.pending_signatures.title')}
+                    </PWText>
 
-                {bannerVariant === 'success' && (
-                    <PWView
-                        style={styles.successBanner}
-                        testID='pending_signatures_success_banner'
-                    >
-                        <PWIcon
-                            name='check'
-                            size='sm'
-                            variant='positive'
-                        />
-                        <PWText
-                            variant='caption'
-                            style={styles.successBannerText}
-                        >
-                            {t('multisig.pending_signatures.confirmed')}
-                        </PWText>
-                    </PWView>
-                )}
-
-                {bannerVariant === 'submitting' && (
-                    <PWView
-                        style={styles.submittingBanner}
-                        testID='pending_signatures_submitting_banner'
-                    >
-                        <ActivityIndicator
-                            size='small'
-                            color={theme.colors.textGray}
-                        />
-                        <PWText
-                            variant='caption'
-                            style={styles.submittingBannerText}
-                        >
-                            {t('multisig.pending_signatures.submitting')}
-                        </PWText>
-                    </PWView>
-                )}
-
-                {bannerVariant === 'waiting' && !!signRequest && (
-                    <PWView style={styles.badgesRow}>
+                    {bannerVariant === 'failure' && (
                         <PWView
-                            style={styles.badge}
-                            testID='pending_signatures_signed_count_badge'
+                            style={styles.failureBanner}
+                            testID='pending_signatures_failure_banner'
+                        >
+                            <PWIcon
+                                name='cross'
+                                size='sm'
+                                variant='error'
+                            />
+                            <PWText
+                                variant='caption'
+                                style={styles.failureBannerText}
+                            >
+                                {failReason ?? t(failureBannerKey)}
+                            </PWText>
+                        </PWView>
+                    )}
+
+                    {bannerVariant === 'success' && (
+                        <PWView
+                            style={styles.successBanner}
+                            testID='pending_signatures_success_banner'
                         >
                             <PWIcon
                                 name='check'
                                 size='sm'
-                                variant='secondary'
+                                variant='positive'
                             />
                             <PWText
                                 variant='caption'
-                                style={styles.badgeText}
+                                style={styles.successBannerText}
                             >
-                                {t('multisig.pending_signatures.x_of_y', {
-                                    signed: signedCount,
-                                    total: threshold,
-                                })}
+                                {t('multisig.pending_signatures.confirmed')}
                             </PWText>
                         </PWView>
-                        {!!timeRemaining && (
+                    )}
+
+                    {bannerVariant === 'submitting' && (
+                        <PWView
+                            style={styles.submittingBanner}
+                            testID='pending_signatures_submitting_banner'
+                        >
+                            <ActivityIndicator
+                                size='small'
+                                color={theme.colors.textGray}
+                            />
+                            <PWText
+                                variant='caption'
+                                style={styles.submittingBannerText}
+                            >
+                                {t('multisig.pending_signatures.submitting')}
+                            </PWText>
+                        </PWView>
+                    )}
+
+                    {bannerVariant === 'waiting' && !!signRequest && (
+                        <PWView style={styles.badgesRow}>
                             <PWView
                                 style={styles.badge}
-                                testID='pending_signatures_time_remaining_badge'
+                                testID='pending_signatures_signed_count_badge'
                             >
+                                <PWIcon
+                                    name='check'
+                                    size='sm'
+                                    variant='secondary'
+                                />
                                 <PWText
                                     variant='caption'
                                     style={styles.badgeText}
                                 >
-                                    {t(
-                                        'multisig.pending_signatures.time_left',
-                                        { time: timeRemaining },
-                                    )}
+                                    {t('multisig.pending_signatures.x_of_y', {
+                                        signed: signedCount,
+                                        total: threshold,
+                                    })}
                                 </PWText>
                             </PWView>
-                        )}
-                    </PWView>
-                )}
-            </PWView>
-
-            <BottomSheetScrollView
-                style={styles.scrollView}
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}
-            >
-                {!signRequest && (
-                    <PWView
-                        style={styles.loadingContainer}
-                        testID='pending_signatures_loading_indicator'
-                    >
-                        <ActivityIndicator
-                            size='large'
-                            color={theme.colors.textGray}
-                        />
-                    </PWView>
-                )}
-
-                {!!signRequest && (
-                    <PWView style={styles.accountsHeader}>
-                        <PWText variant='h4'>
-                            {t('multisig.pending_signatures.accounts_heading')}
-                        </PWText>
-                        <PWText
-                            variant='caption'
-                            style={styles.accountsHelpText}
-                        >
-                            {t(
-                                'multisig.pending_signatures.accounts_subtitle',
-                                { count: threshold },
+                            {!!timeRemaining && (
+                                <PWView
+                                    style={styles.badge}
+                                    testID='pending_signatures_time_remaining_badge'
+                                >
+                                    <PWText
+                                        variant='caption'
+                                        style={styles.badgeText}
+                                    >
+                                        {t(
+                                            'multisig.pending_signatures.time_left',
+                                            { time: timeRemaining },
+                                        )}
+                                    </PWText>
+                                </PWView>
                             )}
-                        </PWText>
-                    </PWView>
-                )}
-
-                {!!signRequest && (
-                    <PWView style={styles.signersList}>
-                        {signers.map((signer, index) => (
-                            <SignerStatusListItem
-                                // A multisig can list the same address twice,
-                                // so address alone isn't a unique key.
-                                key={`${signer.address}-${index}`}
-                                address={signer.address}
-                                status={signer.status}
-                                action={getSignerAction(signer)}
+                        </PWView>
+                    )}
+                </PWView>
+            }
+            body={
+                <PWView style={styles.body}>
+                    {!signRequest && (
+                        <PWView
+                            style={styles.loadingContainer}
+                            testID='pending_signatures_loading_indicator'
+                        >
+                            <ActivityIndicator
+                                size='large'
+                                color={theme.colors.textGray}
                             />
-                        ))}
-                    </PWView>
-                )}
-            </BottomSheetScrollView>
+                        </PWView>
+                    )}
 
-            <PWView style={styles.footer}>
-                {canSign || canCancel ? (
+                    {!!signRequest && (
+                        <PWView style={styles.accountsHeader}>
+                            <PWText variant='h4'>
+                                {t(
+                                    'multisig.pending_signatures.accounts_heading',
+                                )}
+                            </PWText>
+                            <PWText
+                                variant='caption'
+                                style={styles.accountsHelpText}
+                            >
+                                {t(
+                                    'multisig.pending_signatures.accounts_subtitle',
+                                    { count: threshold },
+                                )}
+                            </PWText>
+                        </PWView>
+                    )}
+
+                    {!!signRequest && (
+                        <PWView style={styles.signersList}>
+                            {signers.map((signer, index) => (
+                                <SignerStatusListItem
+                                    // A multisig can list the same address twice,
+                                    // so address alone isn't a unique key.
+                                    key={`${signer.address}-${index}`}
+                                    address={signer.address}
+                                    status={signer.status}
+                                    action={getSignerAction(signer)}
+                                />
+                            ))}
+                        </PWView>
+                    )}
+                </PWView>
+            }
+            footer={
+                canSign || canCancel ? (
                     <PWView style={styles.actionsRow}>
                         {canSign && (
                             <PWButton
@@ -256,8 +261,8 @@ export const PendingSignaturesContent = () => {
                         onPress={handleClose}
                         testID='pending_signatures_close_button'
                     />
-                )}
-            </PWView>
-        </PWView>
+                )
+            }
+        />
     )
 }

@@ -34,26 +34,31 @@ export const ImportAccountSupportOptionsContent = () => {
                     title={t('onboarding.import_account.support_options.title')}
                 />
             }
-        >
-            <PWListItem
-                icon='text-document'
-                title={t(
-                    'onboarding.import_account.support_options.paste_passphrase',
-                )}
-                onPress={() => resolve('paste')}
-            />
-            <PWListItem
-                icon='camera'
-                title={t('onboarding.import_account.support_options.scan_qr')}
-                onPress={() => resolve('scan')}
-            />
-            <PWListItem
-                icon='info'
-                title={t(
-                    'onboarding.import_account.support_options.learn_more',
-                )}
-                onPress={() => resolve('learn-more')}
-            />
-        </PWSheetLayout>
+            body={
+                <>
+                    <PWListItem
+                        icon='text-document'
+                        title={t(
+                            'onboarding.import_account.support_options.paste_passphrase',
+                        )}
+                        onPress={() => resolve('paste')}
+                    />
+                    <PWListItem
+                        icon='camera'
+                        title={t(
+                            'onboarding.import_account.support_options.scan_qr',
+                        )}
+                        onPress={() => resolve('scan')}
+                    />
+                    <PWListItem
+                        icon='info'
+                        title={t(
+                            'onboarding.import_account.support_options.learn_more',
+                        )}
+                        onPress={() => resolve('learn-more')}
+                    />
+                </>
+            }
+        />
     )
 }

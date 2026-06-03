@@ -35,10 +35,20 @@ export const WatchInfoScreen = () => {
 
     return (
         <PWScreen
-            scroll={false}
-            footerStyle={styles.footerInner}
+            scroll='never'
+            body={
+                <PWView style={styles.content}>
+                    <ScreenHeader
+                        icon='eye'
+                        title={t('onboarding.watch_account.info_title')}
+                        description={t(
+                            'onboarding.watch_account.info_description',
+                        )}
+                    />
+                </PWView>
+            }
             footer={
-                <>
+                <PWView style={styles.footerInner}>
                     <PWView style={styles.warningRow}>
                         <PWIcon
                             name='warning'
@@ -56,16 +66,8 @@ export const WatchInfoScreen = () => {
                         title={t('onboarding.watch_account.info_button')}
                         onPress={handleCreateWatchAccount}
                     />
-                </>
+                </PWView>
             }
-        >
-            <PWView style={styles.content}>
-                <ScreenHeader
-                    icon='eye'
-                    title={t('onboarding.watch_account.info_title')}
-                    description={t('onboarding.watch_account.info_description')}
-                />
-            </PWView>
-        </PWScreen>
+        />
     )
 }

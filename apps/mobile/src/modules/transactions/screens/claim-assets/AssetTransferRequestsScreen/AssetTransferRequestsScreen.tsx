@@ -62,26 +62,27 @@ export const AssetTransferRequestsScreen = () => {
 
     return (
         <PWScreen
-            scroll={false}
+            scroll='never'
             horizontalPadding='none'
-        >
-            <PWFlatList
-                data={assetRequests}
-                renderItem={renderItem}
-                contentContainerStyle={styles.contentContainer}
-                keyExtractor={keyExtractor}
-                ItemSeparatorComponent={renderSeparator}
-                ListEmptyComponent={
-                    <EmptyView
-                        isLoading={isPending}
-                        loadingStyle={styles.loadingView}
-                        style={styles.emptyView}
-                        icon='inbox'
-                        title={t('arc59.requests.empty_title')}
-                        body={t('arc59.requests.empty_body')}
-                    />
-                }
-            />
-        </PWScreen>
+            body={
+                <PWFlatList
+                    data={assetRequests}
+                    renderItem={renderItem}
+                    contentContainerStyle={styles.contentContainer}
+                    keyExtractor={keyExtractor}
+                    ItemSeparatorComponent={renderSeparator}
+                    ListEmptyComponent={
+                        <EmptyView
+                            isLoading={isPending}
+                            loadingStyle={styles.loadingView}
+                            style={styles.emptyView}
+                            icon='inbox'
+                            title={t('arc59.requests.empty_title')}
+                            body={t('arc59.requests.empty_body')}
+                        />
+                    }
+                />
+            }
+        />
     )
 }

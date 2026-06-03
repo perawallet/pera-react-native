@@ -47,9 +47,36 @@ export const AsaVerificationInfoContent = (
 
     return (
         <PWSheetLayout
-            header={<SheetHeader title='' />}
             horizontalPadding='none'
-            bodyStyle={styles.body}
+            header={<SheetHeader title='' />}
+            body={
+                <>
+                    <PWImage
+                        source={heroImage}
+                        style={styles.heroImage}
+                        resizeMode='cover'
+                    />
+
+                    <PWView style={styles.content}>
+                        <PWText
+                            variant='h2'
+                            style={styles.title}
+                        >
+                            {t('asa_verification_info.title')}
+                        </PWText>
+
+                        <PWText style={styles.paragraph}>
+                            {t('asa_verification_info.body_1')}
+                        </PWText>
+                        <PWText style={styles.paragraph}>
+                            {t('asa_verification_info.body_2')}
+                        </PWText>
+                        <PWText style={styles.paragraph}>
+                            {t('asa_verification_info.body_3')}
+                        </PWText>
+                    </PWView>
+                </>
+            }
             footer={
                 <PWButton
                     title={t('asa_verification_info.learn_more')}
@@ -57,31 +84,6 @@ export const AsaVerificationInfoContent = (
                     onPress={handleLearnMore}
                 />
             }
-        >
-            <PWImage
-                source={heroImage}
-                style={styles.heroImage}
-                resizeMode='cover'
-            />
-
-            <PWView style={styles.content}>
-                <PWText
-                    variant='h2'
-                    style={styles.title}
-                >
-                    {t('asa_verification_info.title')}
-                </PWText>
-
-                <PWText style={styles.paragraph}>
-                    {t('asa_verification_info.body_1')}
-                </PWText>
-                <PWText style={styles.paragraph}>
-                    {t('asa_verification_info.body_2')}
-                </PWText>
-                <PWText style={styles.paragraph}>
-                    {t('asa_verification_info.body_3')}
-                </PWText>
-            </PWView>
-        </PWSheetLayout>
+        />
     )
 }

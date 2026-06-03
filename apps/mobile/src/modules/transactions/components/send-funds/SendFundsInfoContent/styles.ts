@@ -12,36 +12,17 @@
 
 import { makeStyles } from '@rneui/themed'
 
-type StyleProps = { bottomInset: number }
-
-export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => {
+export const useStyles = makeStyles(theme => {
     const tipNumber = {
         fontSize: theme.spacing.lg,
         color: theme.colors.textGray,
     }
     return {
-        container: {
-            borderTopStartRadius: theme.spacing.sm,
-            borderTopEndRadius: theme.spacing.sm,
-        },
-        // `flexShrink: 1` (not `flex: 1`) keeps the footer pinned; an unbounded
-        // height would break the auto-sized sheet's measurement.
-        scrollBody: {
-            flexShrink: 1,
-        },
-        scrollContent: {
+        body: {
             alignItems: 'center',
-            paddingTop: theme.spacing.xl,
-            paddingHorizontal: theme.spacing.xl,
-            paddingBottom: 0,
         },
         bodyContainer: {
             width: '100%',
-        },
-        footer: {
-            paddingTop: theme.spacing.lg,
-            paddingBottom: theme.spacing.xl + bottomInset,
-            paddingHorizontal: theme.spacing.xl,
         },
         title: {
             marginTop: theme.spacing.lg,

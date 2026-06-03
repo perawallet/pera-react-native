@@ -17,7 +17,7 @@ import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useBannersStore } from '@perawallet/wallet-core-banners'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 
-import { PWButton, PWScreen } from '@components/core'
+import { PWButton, PWScreen, PWView } from '@components/core'
 import { OneTimeUserPreferenceFlags } from '@constants/user-preferences'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -76,27 +76,31 @@ export const SettingsDeveloperManageCacheScreen = () => {
     }
 
     return (
-        <PWScreen contentContainerStyle={styles.content}>
-            <PWButton
-                variant='primary'
-                title={t('settings.developer.refresh_cache')}
-                icon='reload'
-                onPress={handleRefreshCache}
-                isLoading={isRefreshing}
-                isDisabled={isRefreshing}
-            />
-            <PWButton
-                variant='secondary'
-                title={t('settings.developer.reset_banners')}
-                icon='bell'
-                onPress={handleResetBanners}
-            />
-            <PWButton
-                variant='secondary'
-                title={t('settings.developer.clear_one_time_flags')}
-                icon='trash'
-                onPress={handleClearOneTimeFlags}
-            />
-        </PWScreen>
+        <PWScreen
+            body={
+                <PWView style={styles.content}>
+                    <PWButton
+                        variant='primary'
+                        title={t('settings.developer.refresh_cache')}
+                        icon='reload'
+                        onPress={handleRefreshCache}
+                        isLoading={isRefreshing}
+                        isDisabled={isRefreshing}
+                    />
+                    <PWButton
+                        variant='secondary'
+                        title={t('settings.developer.reset_banners')}
+                        icon='bell'
+                        onPress={handleResetBanners}
+                    />
+                    <PWButton
+                        variant='secondary'
+                        title={t('settings.developer.clear_one_time_flags')}
+                        icon='trash'
+                        onPress={handleClearOneTimeFlags}
+                    />
+                </PWView>
+            }
+        />
     )
 }

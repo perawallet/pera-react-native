@@ -10,11 +10,11 @@
  limitations under the License
  */
 
-import { useTheme } from '@rneui/themed'
 import { PWDivider } from '@components/core'
+import { useStyles } from './styles'
 
 export const ListItemDivider = () => {
-    const { theme } = useTheme()
+    const styles = useStyles()
 
-    return <PWDivider color={theme.colors.layerGrayLighter} />
+    return <PWDivider style={styles.divider} />
 }

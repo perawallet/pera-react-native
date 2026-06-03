@@ -52,7 +52,119 @@ export const AsbImportKeyScreen = () => {
     return (
         <>
             <PWScreen
-                contentContainerStyle={styles.scrollContent}
+                body={
+                    <PWView style={styles.scrollContent}>
+                        <ScreenHeader
+                            title={t('onboarding.asb_import.key.title')}
+                            description={t('onboarding.asb_import.key.body')}
+                        />
+
+                        <PWView style={styles.columns}>
+                            {[0, 1].map(column => {
+                                const offset = column * wordsPerColumn
+                                return (
+                                    <PWView
+                                        key={`column-${column}`}
+                                        style={styles.column}
+                                    >
+                                        {words
+                                            .slice(
+                                                offset,
+                                                offset + wordsPerColumn,
+                                            )
+                                            .map((word, idx) => {
+                                                const globalIndex = offset + idx
+                                                const isFocused =
+                                                    focused === globalIndex
+                                                return (
+                                                    <PWView
+                                                        key={globalIndex}
+                                                        style={styles.row}
+                                                    >
+                                                        <PWText
+                                                            variant='h4'
+                                                            style={
+                                                                isFocused
+                                                                    ? styles.labelFocused
+                                                                    : styles.label
+                                                            }
+                                                        >
+                                                            {globalIndex + 1}
+                                                        </PWText>
+                                                        <PWView
+                                                            style={
+                                                                styles.inputWrap
+                                                            }
+                                                        >
+                                                            <PWInput
+                                                                ref={
+                                                                    refCallbacks[
+                                                                        globalIndex
+                                                                    ]
+                                                                }
+                                                                testID={`asb_import_key_word_${globalIndex}`}
+                                                                value={word}
+                                                                onChangeText={text =>
+                                                                    handleWordChange(
+                                                                        text,
+                                                                        globalIndex,
+                                                                    )
+                                                                }
+                                                                onFocus={() =>
+                                                                    setFocused(
+                                                                        globalIndex,
+                                                                    )
+                                                                }
+                                                                onSubmitEditing={() =>
+                                                                    handleSubmitEditing(
+                                                                        globalIndex,
+                                                                    )
+                                                                }
+                                                                returnKeyType={
+                                                                    globalIndex ===
+                                                                    wordCount -
+                                                                        1
+                                                                        ? 'done'
+                                                                        : 'next'
+                                                                }
+                                                                blurOnSubmit={
+                                                                    globalIndex ===
+                                                                    wordCount -
+                                                                        1
+                                                                }
+                                                                autoCapitalize='none'
+                                                                autoCorrect={
+                                                                    false
+                                                                }
+                                                                autoFocus={
+                                                                    globalIndex ===
+                                                                    0
+                                                                }
+                                                                renderErrorMessage={
+                                                                    false
+                                                                }
+                                                                containerStyle={
+                                                                    styles.inputOuter
+                                                                }
+                                                                inputContainerStyle={
+                                                                    isFocused
+                                                                        ? styles.inputContainerFocused
+                                                                        : styles.inputContainer
+                                                                }
+                                                                inputStyle={
+                                                                    styles.input
+                                                                }
+                                                            />
+                                                        </PWView>
+                                                    </PWView>
+                                                )
+                                            })}
+                                    </PWView>
+                                )
+                            })}
+                        </PWView>
+                    </PWView>
+                }
                 footer={
                     <>
                         <MnemonicSuggestionBar
@@ -69,107 +181,7 @@ export const AsbImportKeyScreen = () => {
                         />
                     </>
                 }
-            >
-                <ScreenHeader
-                    title={t('onboarding.asb_import.key.title')}
-                    description={t('onboarding.asb_import.key.body')}
-                />
-
-                <PWView style={styles.columns}>
-                    {[0, 1].map(column => {
-                        const offset = column * wordsPerColumn
-                        return (
-                            <PWView
-                                key={`column-${column}`}
-                                style={styles.column}
-                            >
-                                {words
-                                    .slice(offset, offset + wordsPerColumn)
-                                    .map((word, idx) => {
-                                        const globalIndex = offset + idx
-                                        const isFocused =
-                                            focused === globalIndex
-                                        return (
-                                            <PWView
-                                                key={globalIndex}
-                                                style={styles.row}
-                                            >
-                                                <PWText
-                                                    variant='h4'
-                                                    style={
-                                                        isFocused
-                                                            ? styles.labelFocused
-                                                            : styles.label
-                                                    }
-                                                >
-                                                    {globalIndex + 1}
-                                                </PWText>
-                                                <PWView
-                                                    style={styles.inputWrap}
-                                                >
-                                                    <PWInput
-                                                        ref={
-                                                            refCallbacks[
-                                                                globalIndex
-                                                            ]
-                                                        }
-                                                        testID={`asb_import_key_word_${globalIndex}`}
-                                                        value={word}
-                                                        onChangeText={text =>
-                                                            handleWordChange(
-                                                                text,
-                                                                globalIndex,
-                                                            )
-                                                        }
-                                                        onFocus={() =>
-                                                            setFocused(
-                                                                globalIndex,
-                                                            )
-                                                        }
-                                                        onSubmitEditing={() =>
-                                                            handleSubmitEditing(
-                                                                globalIndex,
-                                                            )
-                                                        }
-                                                        returnKeyType={
-                                                            globalIndex ===
-                                                            wordCount - 1
-                                                                ? 'done'
-                                                                : 'next'
-                                                        }
-                                                        blurOnSubmit={
-                                                            globalIndex ===
-                                                            wordCount - 1
-                                                        }
-                                                        autoCapitalize='none'
-                                                        autoCorrect={false}
-                                                        autoFocus={
-                                                            globalIndex === 0
-                                                        }
-                                                        renderErrorMessage={
-                                                            false
-                                                        }
-                                                        containerStyle={
-                                                            styles.inputOuter
-                                                        }
-                                                        inputContainerStyle={
-                                                            isFocused
-                                                                ? styles.inputContainerFocused
-                                                                : styles.inputContainer
-                                                        }
-                                                        inputStyle={
-                                                            styles.input
-                                                        }
-                                                    />
-                                                </PWView>
-                                            </PWView>
-                                        )
-                                    })}
-                            </PWView>
-                        )
-                    })}
-                </PWView>
-            </PWScreen>
+            />
 
             <PWLoadingOverlay
                 isVisible={isProcessing}

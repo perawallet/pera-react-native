@@ -18,29 +18,33 @@ import { PWView } from '../PWView'
 import { useStyles } from './styles'
 
 import type { ReactNode } from 'react'
-import type {
-    NativeScrollEvent,
-    NativeSyntheticEvent,
-    StyleProp,
-    ViewStyle,
-} from 'react-native'
+import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native'
+import type { HorizontalPaddingMode } from '../PWScreen'
 
 export type PWSheetLayoutProps = {
+    /** Sticky top zone — kept on screen while the body scrolls under it. */
     header?: ReactNode
-    children: ReactNode
+    /** Scrollable body — the only required zone. Style the body via its own
+     * content (like the header/footer slots), not a zone-level style prop. */
+    body: ReactNode
+    /** Sticky bottom zone, pinned below the body. */
     footer?: ReactNode
-    horizontalPadding?: 'xl' | 'none'
-    bodyStyle?: StyleProp<ViewStyle>
+    horizontalPadding?: HorizontalPaddingMode
     onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void
     testID?: string
 }
 
+/**
+ * Bottom-sheet layout with three stacked zones: an optional sticky `header`, a
+ * scrollable `body`, and an optional sticky `footer` pinned below it. Mirrors
+ * `PWScreen`'s `header`/`body`/`footer` slots for full screens. Open the sheet
+ * with `autoCreateContainer: false` so the footer pins and the body scrolls.
+ */
 export const PWSheetLayout = ({
     header,
-    children,
+    body,
     footer,
     horizontalPadding = 'xl',
-    bodyStyle,
     onScroll,
     testID,
 }: PWSheetLayoutProps) => {
@@ -65,9 +69,7 @@ export const PWSheetLayout = ({
             {header != null ? (
                 <PWView style={styles.header}>{header}</PWView>
             ) : null}
-            <PWView style={[styles.body, bodyStyle, styles.bodyBottom]}>
-                {children}
-            </PWView>
+            <PWView style={styles.body}>{body}</PWView>
         </BottomSheetScrollView>
     )
 

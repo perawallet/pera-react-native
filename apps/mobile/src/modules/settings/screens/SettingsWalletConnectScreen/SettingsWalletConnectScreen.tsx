@@ -72,69 +72,78 @@ export const SettingsWalletConnectScreen = () => {
 
     return (
         <PWScreen
-            scroll={false}
+            scroll='never'
             testID='wallet_connect_screen'
-        >
-            <PWFlatList
-                contentContainerStyle={styles.listContainer}
-                data={connections}
-                renderItem={renderItem}
-                ListEmptyComponent={
-                    <EmptyView
-                        style={styles.emptyView}
-                        icon='wallet-connect'
-                        title={t('walletconnect.settings.empty_title')}
-                        body={t('walletconnect.settings.empty_body')}
-                        button={
-                            <PWButton
-                                title={t('walletconnect.settings.empty_button')}
-                                variant='primary'
-                                onPress={scannerState.open}
-                                testID='wallet_connect_connect_button'
+            body={
+                <>
+                    <PWFlatList
+                        contentContainerStyle={styles.listContainer}
+                        data={connections}
+                        renderItem={renderItem}
+                        ListEmptyComponent={
+                            <EmptyView
+                                style={styles.emptyView}
+                                icon='wallet-connect'
+                                title={t('walletconnect.settings.empty_title')}
+                                body={t('walletconnect.settings.empty_body')}
+                                button={
+                                    <PWButton
+                                        title={t(
+                                            'walletconnect.settings.empty_button',
+                                        )}
+                                        variant='primary'
+                                        onPress={scannerState.open}
+                                        testID='wallet_connect_connect_button'
+                                    />
+                                }
                             />
                         }
+                        ListFooterComponentStyle={styles.listFooter}
+                        ListFooterComponent={
+                            connections.length > 0 ? (
+                                <PWButton
+                                    title={t(
+                                        'walletconnect.settings.clear_all',
+                                    )}
+                                    variant='secondary'
+                                    onPress={deleteState.open}
+                                    testID='wallet_connect_clear_all_button'
+                                />
+                            ) : null
+                        }
                     />
-                }
-                ListFooterComponentStyle={styles.listFooter}
-                ListFooterComponent={
-                    connections.length > 0 ? (
-                        <PWButton
-                            title={t('walletconnect.settings.clear_all')}
-                            variant='secondary'
-                            onPress={deleteState.open}
-                            testID='wallet_connect_clear_all_button'
+                    <QRScannerView
+                        isVisible={scannerState.isOpen}
+                        onSuccess={scannerState.close}
+                        onClose={scannerState.close}
+                        animationType='slide'
+                    />
+                    <Dialog
+                        isVisible={deleteState.isOpen}
+                        onBackdropPress={deleteState.close}
+                    >
+                        <Dialog.Title
+                            title={t('walletconnect.settings.delete_all_title')}
                         />
-                    ) : null
-                }
-            />
-            <QRScannerView
-                isVisible={scannerState.isOpen}
-                onSuccess={scannerState.close}
-                onClose={scannerState.close}
-                animationType='slide'
-            />
-            <Dialog
-                isVisible={deleteState.isOpen}
-                onBackdropPress={deleteState.close}
-            >
-                <Dialog.Title
-                    title={t('walletconnect.settings.delete_all_title')}
-                />
-                <Text>{t('walletconnect.settings.delete_all_body')}</Text>
-                <Dialog.Actions>
-                    <Dialog.Button
-                        title={t('common.delete.label')}
-                        titleStyle={styles.deleteButtonTitle}
-                        onPress={handleDeleteAll}
-                        disabled={isLoading}
-                    />
-                    <Dialog.Button
-                        title={t('common.cancel.label')}
-                        onPress={deleteState.close}
-                        disabled={isLoading}
-                    />
-                </Dialog.Actions>
-            </Dialog>
-        </PWScreen>
+                        <Text>
+                            {t('walletconnect.settings.delete_all_body')}
+                        </Text>
+                        <Dialog.Actions>
+                            <Dialog.Button
+                                title={t('common.delete.label')}
+                                titleStyle={styles.deleteButtonTitle}
+                                onPress={handleDeleteAll}
+                                disabled={isLoading}
+                            />
+                            <Dialog.Button
+                                title={t('common.cancel.label')}
+                                onPress={deleteState.close}
+                                disabled={isLoading}
+                            />
+                        </Dialog.Actions>
+                    </Dialog>
+                </>
+            }
+        />
     )
 }

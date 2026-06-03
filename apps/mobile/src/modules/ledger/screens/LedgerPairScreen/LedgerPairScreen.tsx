@@ -15,6 +15,7 @@ import {
     PWIcon,
     PWScreen,
     PWTouchableOpacity,
+    PWView,
 } from '@components/core'
 import { ScreenHeader } from '@components/ScreenHeader'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
@@ -40,10 +41,16 @@ export const LedgerPairScreen = () => {
 
     return (
         <PWScreen
-            scroll={false}
-            footerStyle={styles.footer}
+            scroll='never'
+            body={
+                <ScreenHeader
+                    icon='ledger'
+                    title={t('ledger.pair.title')}
+                    description={t('ledger.pair.description')}
+                />
+            }
             footer={
-                <>
+                <PWView style={styles.footer}>
                     <PWButton
                         testID='ledger_pair_primary_button'
                         title={t('ledger.pair.cta')}
@@ -56,14 +63,8 @@ export const LedgerPairScreen = () => {
                         onPress={handleOpenHowDoesItWork}
                         variant='secondary'
                     />
-                </>
+                </PWView>
             }
-        >
-            <ScreenHeader
-                icon='ledger'
-                title={t('ledger.pair.title')}
-                description={t('ledger.pair.description')}
-            />
-        </PWScreen>
+        />
     )
 }

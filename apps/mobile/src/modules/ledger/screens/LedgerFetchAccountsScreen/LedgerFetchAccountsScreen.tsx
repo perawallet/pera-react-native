@@ -48,36 +48,39 @@ export const LedgerFetchAccountsScreen = () => {
     }
 
     return (
-        <PWScreen scroll={false}>
-            <PWView style={styles.content}>
-                {isLoading && (
-                    <>
-                        <LoadingView
-                            variant='circle'
-                            size='lg'
-                        />
-                        <PWText
-                            variant='h2'
-                            style={styles.title}
-                        >
-                            {isDiscovering
-                                ? t('ledger.fetch_accounts.discovering')
-                                : t('ledger.fetch_accounts.connecting')}
-                        </PWText>
-
-                        {isDiscovering && progress.current > 0 && (
+        <PWScreen
+            scroll='never'
+            body={
+                <PWView style={styles.content}>
+                    {isLoading && (
+                        <>
+                            <LoadingView
+                                variant='circle'
+                                size='lg'
+                            />
                             <PWText
-                                variant='body'
-                                style={styles.progressText}
+                                variant='h2'
+                                style={styles.title}
                             >
-                                {t('ledger.fetch_accounts.progress', {
-                                    current: progress.current,
-                                })}
+                                {isDiscovering
+                                    ? t('ledger.fetch_accounts.discovering')
+                                    : t('ledger.fetch_accounts.connecting')}
                             </PWText>
-                        )}
-                    </>
-                )}
-            </PWView>
-        </PWScreen>
+
+                            {isDiscovering && progress.current > 0 && (
+                                <PWText
+                                    variant='body'
+                                    style={styles.progressText}
+                                >
+                                    {t('ledger.fetch_accounts.progress', {
+                                        current: progress.current,
+                                    })}
+                                </PWText>
+                            )}
+                        </>
+                    )}
+                </PWView>
+            }
+        />
     )
 }

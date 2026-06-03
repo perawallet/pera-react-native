@@ -13,10 +13,6 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    body: {
-        paddingHorizontal: 0,
-        paddingVertical: 0,
-    },
     inputContainer: {
         paddingHorizontal: theme.spacing.lg,
         paddingVertical: theme.spacing.md,

@@ -28,10 +28,63 @@ export const ExpressSendScreen = () => {
 
     return (
         <PWScreen
-            contentContainerStyle={styles.content}
-            footerStyle={styles.footer}
+            body={
+                <PWView style={styles.content}>
+                    <PWView style={styles.iconRow}>
+                        <PWIcon
+                            name='wallet'
+                            size='xl'
+                        />
+                        <PWIcon
+                            name='swap'
+                            size='md'
+                            variant='helper'
+                        />
+                        <PWIcon
+                            name='wallet'
+                            size='xl'
+                        />
+                    </PWView>
+
+                    <PWText
+                        variant='h3'
+                        style={styles.title}
+                    >
+                        {t('send_funds.express_send.title')}
+                    </PWText>
+
+                    <PWText style={styles.body}>
+                        {t('send_funds.express_send.body_1')}
+                    </PWText>
+
+                    <PWText style={styles.body}>
+                        {t('send_funds.express_send.body_2')}
+                    </PWText>
+
+                    <PWText
+                        variant='h4'
+                        style={styles.sectionTitle}
+                    >
+                        {t('send_funds.express_send.how_it_works')}
+                    </PWText>
+
+                    {STEPS.map((stepKey, index) => (
+                        <PWView
+                            key={stepKey}
+                            style={styles.stepRow}
+                        >
+                            <PWText
+                                style={styles.stepNumber}
+                            >{`${index + 1}.`}</PWText>
+                            <PWText style={styles.stepText}>
+                                {t(stepKey)}
+                            </PWText>
+                        </PWView>
+                    ))}
+                </PWView>
+            }
             footer={
-                <>
+                <PWView style={styles.footer}>
                     <PWButton
                         title={t('send_funds.express_send.continue')}
                         variant='primary'
@@ -42,56 +95,8 @@ export const ExpressSendScreen = () => {
                         variant='secondary'
                         onPress={handleDontShowAgain}
                     />
-                </>
-            }
-        >
-            <PWView style={styles.iconRow}>
-                <PWIcon
-                    name='wallet'
-                    size='xl'
-                />
-                <PWIcon
-                    name='swap'
-                    size='md'
-                    variant='helper'
-                />
-                <PWIcon
-                    name='wallet'
-                    size='xl'
-                />
-            </PWView>
-
-            <PWText
-                variant='h3'
-                style={styles.title}
-            >
-                {t('send_funds.express_send.title')}
-            </PWText>
-
-            <PWText style={styles.body}>
-                {t('send_funds.express_send.body_1')}
-            </PWText>
-
-            <PWText style={styles.body}>
-                {t('send_funds.express_send.body_2')}
-            </PWText>
-
-            <PWText
-                variant='h4'
-                style={styles.sectionTitle}
-            >
-                {t('send_funds.express_send.how_it_works')}
-            </PWText>
-
-            {STEPS.map((stepKey, index) => (
-                <PWView
-                    key={stepKey}
-                    style={styles.stepRow}
-                >
-                    <PWText style={styles.stepNumber}>{`${index + 1}.`}</PWText>
-                    <PWText style={styles.stepText}>{t(stepKey)}</PWText>
                 </PWView>
-            ))}
-        </PWScreen>
+            }
+        />
     )
 }

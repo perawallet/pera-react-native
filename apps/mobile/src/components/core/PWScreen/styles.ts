@@ -29,6 +29,9 @@ export const useStyles = makeStyles(
             root: {
                 flex: 1,
             },
+            keyboardView: {
+                flex: 1,
+            },
             body: {
                 flex: 1,
             },

@@ -103,131 +103,134 @@ export const CollectibleDetailScreen = ({
                 horizontalPadding='none'
                 keyboard='none'
                 style={styles.container}
-            >
-                <PWView style={styles.contentContainer}>
-                    <PWView style={styles.titleSection}>
-                        <PWText
-                            variant='h3'
-                            style={styles.title}
-                        >
-                            {displayTitle}
-                        </PWText>
-                        {collectionLabel && (
-                            <PWText
-                                variant='body'
-                                style={styles.collectionName}
-                            >
-                                {collectionLabel}
-                            </PWText>
-                        )}
-                    </PWView>
-
-                    {accountAddress ? (
-                        <PWView style={styles.accountRow}>
-                            <AddressDisplay
-                                address={accountAddress}
-                                hugContent
-                            />
-                            {quantity > 0 && (
-                                <PWChip
-                                    title={`x${quantity}`}
-                                    variant='outline'
-                                    paddingStyle='dense'
-                                    forceUppercase={false}
-                                    textVariant='footnoteMedium'
-                                    style={styles.quantityChip}
-                                />
-                            )}
-                        </PWView>
-                    ) : null}
-                </PWView>
-                <PWView
-                    style={
-                        isOptedInNotOwned
-                            ? styles.mediaContainerDimmed
-                            : undefined
-                    }
-                >
-                    <MediaCarousel
-                        media={media}
-                        fallbackImageUrl={
-                            collectible?.primaryImage ??
-                            asset.peraMetadata?.logo ??
-                            undefined
-                        }
-                        onModelPress={handleModelPress}
-                        onFullScreenPress={handleFullScreenPress}
-                    />
-                </PWView>
-
-                <PWView style={styles.contentContainer}>
-                    {!isOptedInNotOwned && !isReadOnly && (
-                        <PWView style={styles.actionButtonsContainer}>
-                            <RoundButton
-                                title={t('common.send')}
-                                icon='outflow'
-                                variant='primary'
-                                size='md'
-                                onPress={handleSendPressed}
-                            />
-                            {hasImage && (
-                                <RoundButton
-                                    title={t('common.copy')}
-                                    icon='copy'
-                                    variant='secondary'
-                                    size='md'
-                                    onPress={handleCopyImage}
-                                />
-                            )}
-                            {hasSaveableMedia && (
-                                <RoundButton
-                                    title={t('common.save')}
-                                    icon='save'
-                                    variant='secondary'
-                                    size='md'
-                                    onPress={handleSaveImage}
-                                />
-                            )}
-                        </PWView>
-                    )}
-
-                    {isOptedInNotOwned && !isReadOnly && (
-                        <PWView style={styles.optOutNotice}>
-                            <PWView style={styles.optOutNoticeRow}>
-                                <PWIcon
-                                    name='info'
-                                    size='md'
-                                    variant='secondary'
-                                />
+                body={
+                    <>
+                        <PWView style={styles.contentContainer}>
+                            <PWView style={styles.titleSection}>
                                 <PWText
-                                    variant='caption'
-                                    style={styles.optOutNoticeText}
+                                    variant='h3'
+                                    style={styles.title}
                                 >
-                                    {t(
-                                        'asset_details.collectible.not_owner_notice',
-                                    )}
+                                    {displayTitle}
                                 </PWText>
+                                {collectionLabel && (
+                                    <PWText
+                                        variant='body'
+                                        style={styles.collectionName}
+                                    >
+                                        {collectionLabel}
+                                    </PWText>
+                                )}
                             </PWView>
-                            <PWButton
-                                title={t('asset_opt_out.opt_out_cta')}
-                                variant='secondary'
-                                onPress={handleOptOutPressed}
+
+                            {accountAddress ? (
+                                <PWView style={styles.accountRow}>
+                                    <AddressDisplay
+                                        address={accountAddress}
+                                        hugContent
+                                    />
+                                    {quantity > 0 && (
+                                        <PWChip
+                                            title={`x${quantity}`}
+                                            variant='outline'
+                                            paddingStyle='dense'
+                                            forceUppercase={false}
+                                            textVariant='footnoteMedium'
+                                            style={styles.quantityChip}
+                                        />
+                                    )}
+                                </PWView>
+                            ) : null}
+                        </PWView>
+                        <PWView
+                            style={
+                                isOptedInNotOwned
+                                    ? styles.mediaContainerDimmed
+                                    : undefined
+                            }
+                        >
+                            <MediaCarousel
+                                media={media}
+                                fallbackImageUrl={
+                                    collectible?.primaryImage ??
+                                    asset.peraMetadata?.logo ??
+                                    undefined
+                                }
+                                onModelPress={handleModelPress}
+                                onFullScreenPress={handleFullScreenPress}
                             />
                         </PWView>
-                    )}
 
-                    <CollectibleTraitsGrid traits={traits} />
+                        <PWView style={styles.contentContainer}>
+                            {!isOptedInNotOwned && !isReadOnly && (
+                                <PWView style={styles.actionButtonsContainer}>
+                                    <RoundButton
+                                        title={t('common.send')}
+                                        icon='outflow'
+                                        variant='primary'
+                                        size='md'
+                                        onPress={handleSendPressed}
+                                    />
+                                    {hasImage && (
+                                        <RoundButton
+                                            title={t('common.copy')}
+                                            icon='copy'
+                                            variant='secondary'
+                                            size='md'
+                                            onPress={handleCopyImage}
+                                        />
+                                    )}
+                                    {hasSaveableMedia && (
+                                        <RoundButton
+                                            title={t('common.save')}
+                                            icon='save'
+                                            variant='secondary'
+                                            size='md'
+                                            onPress={handleSaveImage}
+                                        />
+                                    )}
+                                </PWView>
+                            )}
 
-                    <CollectibleDescription
-                        description={collectible?.description}
-                    />
+                            {isOptedInNotOwned && !isReadOnly && (
+                                <PWView style={styles.optOutNotice}>
+                                    <PWView style={styles.optOutNoticeRow}>
+                                        <PWIcon
+                                            name='info'
+                                            size='md'
+                                            variant='secondary'
+                                        />
+                                        <PWText
+                                            variant='caption'
+                                            style={styles.optOutNoticeText}
+                                        >
+                                            {t(
+                                                'asset_details.collectible.not_owner_notice',
+                                            )}
+                                        </PWText>
+                                    </PWView>
+                                    <PWButton
+                                        title={t('asset_opt_out.opt_out_cta')}
+                                        variant='secondary'
+                                        onPress={handleOptOutPressed}
+                                    />
+                                </PWView>
+                            )}
 
-                    <CollectibleInfoSection
-                        asset={asset}
-                        collectible={collectible}
-                    />
-                </PWView>
-            </PWScreen>
+                            <CollectibleTraitsGrid traits={traits} />
+
+                            <CollectibleDescription
+                                description={collectible?.description}
+                            />
+
+                            <CollectibleInfoSection
+                                asset={asset}
+                                collectible={collectible}
+                            />
+                        </PWView>
+                    </>
+                }
+            />
             <ModelViewerBottomSheet
                 isVisible={modelViewerModal.isOpen}
                 onClose={modelViewerModal.close}

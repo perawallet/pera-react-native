@@ -22,20 +22,23 @@ export const RekeyToStandardSelectTargetScreen = () => {
 
     return (
         <PWScreen
-            scroll={false}
+            scroll='never'
             testID='rekey-to-standard-select-target-screen'
-        >
-            <ScreenHeader
-                title={t('rekey.to_standard.select.title')}
-                description={t('rekey.to_standard.select.subtitle')}
-            />
+            body={
+                <>
+                    <ScreenHeader
+                        title={t('rekey.to_standard.select.title')}
+                        description={t('rekey.to_standard.select.subtitle')}
+                    />
 
-            <AccountPicker
-                accounts={targets}
-                onSelect={handleSelect}
-                emptyBody={t('rekey.to_standard.select.empty')}
-                rowTestIDPrefix='rekey-target-row'
-            />
-        </PWScreen>
+                    <AccountPicker
+                        accounts={targets}
+                        onSelect={handleSelect}
+                        emptyBody={t('rekey.to_standard.select.empty')}
+                        rowTestIDPrefix='rekey-target-row'
+                    />
+                </>
+            }
+        />
     )
 }

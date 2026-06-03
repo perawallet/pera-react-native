@@ -31,34 +31,39 @@ export const ManageNftsContent = (_: ManageNftsContentProps = {}) => {
 
     return (
         <PWSheetLayout
+            horizontalPadding='lg'
             header={
                 <SheetHeader title={t('account_details.nfts.manage_title')} />
             }
-            bodyStyle={styles.contentContainer}
-        >
-            <PWTouchableOpacity
-                style={styles.menuRow}
-                onPress={() => resolve('sort')}
-            >
-                <PWIcon
-                    name='list-arrow-down'
-                    size='md'
-                />
-                <PWText variant='body'>{t('account_details.nfts.sort')}</PWText>
-            </PWTouchableOpacity>
+            body={
+                <>
+                    <PWTouchableOpacity
+                        style={styles.menuRow}
+                        onPress={() => resolve('sort')}
+                    >
+                        <PWIcon
+                            name='list-arrow-down'
+                            size='md'
+                        />
+                        <PWText variant='body'>
+                            {t('account_details.nfts.sort')}
+                        </PWText>
+                    </PWTouchableOpacity>
 
-            <PWTouchableOpacity
-                style={styles.menuRow}
-                onPress={() => resolve('filter')}
-            >
-                <PWIcon
-                    name='funnel'
-                    size='md'
-                />
-                <PWText variant='body'>
-                    {t('account_details.nfts.filter')}
-                </PWText>
-            </PWTouchableOpacity>
-        </PWSheetLayout>
+                    <PWTouchableOpacity
+                        style={styles.menuRow}
+                        onPress={() => resolve('filter')}
+                    >
+                        <PWIcon
+                            name='funnel'
+                            size='md'
+                        />
+                        <PWText variant='body'>
+                            {t('account_details.nfts.filter')}
+                        </PWText>
+                    </PWTouchableOpacity>
+                </>
+            }
+        />
     )
 }

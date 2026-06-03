@@ -77,10 +77,30 @@ export const QRViewScreen = () => {
 
     return (
         <PWScreen
-            scroll={false}
-            footerStyle={styles.buttonContainer}
+            scroll='never'
+            body={
+                <PWView style={styles.contentContainer}>
+                    <PWView style={styles.qrContainer}>
+                        <QRCode
+                            {...getTestProps('receive_qr_code')}
+                            value={deeplink}
+                            size={width - theme.spacing['5xl'] * 2}
+                            color='black'
+                            backgroundColor='white'
+                            quietZone={theme.spacing.sm}
+                        />
+                    </PWView>
+                    <PWView style={styles.addressContainer}>
+                        <CopyableText copyValue={account.address}>
+                            <PWText style={styles.address}>
+                                {account.address}
+                            </PWText>
+                        </CopyableText>
+                    </PWView>
+                </PWView>
+            }
             footer={
-                <>
+                <PWView style={styles.buttonContainer}>
                     <PWButton
                         title={t('receive_funds.qrview.copy_address')}
                         variant='primary'
@@ -95,28 +115,8 @@ export const QRViewScreen = () => {
                         testID='receive_share_address_button'
                         onPress={handleShareAddress}
                     />
-                </>
+                </PWView>
             }
-        >
-            <PWView style={styles.contentContainer}>
-                <PWView style={styles.qrContainer}>
-                    <QRCode
-                        {...getTestProps('receive_qr_code')}
-                        value={deeplink}
-                        size={width - theme.spacing['5xl'] * 2}
-                        color='black'
-                        backgroundColor='white'
-                        quietZone={theme.spacing.sm}
-                    />
-                </PWView>
-                <PWView style={styles.addressContainer}>
-                    <CopyableText copyValue={account.address}>
-                        <PWText style={styles.address}>
-                            {account.address}
-                        </PWText>
-                    </CopyableText>
-                </PWView>
-            </PWView>
-        </PWScreen>
+        />
     )
 }

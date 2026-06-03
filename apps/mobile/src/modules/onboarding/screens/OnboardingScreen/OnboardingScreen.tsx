@@ -22,7 +22,7 @@ import {
     PWView,
 } from '@components/core'
 import { PanelButton } from '@components/PanelButton'
-import welcomeBackground from '@assets/images/welcome-background.png'
+import welcomeBackground from '@assets/images/welcome-background.webp'
 import { useLanguage } from '@hooks/useLanguage'
 import { useOnboardingScreen } from './useOnboardingScreen'
 import { useStyles } from './styles'
@@ -45,76 +45,83 @@ export const OnboardingScreen = () => {
             <PWScreen
                 keyboard='none'
                 horizontalPadding='none'
-            >
-                <PWView style={styles.rootContainer}>
-                    <PWView style={styles.headerContainer}>
-                        <PWImage
-                            source={welcomeBackground}
-                            style={styles.headerImage}
-                        />
-                        <PWText
-                            style={styles.headerTitle}
-                            variant='h1'
-                            numberOfLines={3}
-                            ellipsizeMode='tail'
-                        >
-                            {t('onboarding.main_screen.welcome')}
-                        </PWText>
-                    </PWView>
-                    <PWView style={styles.mainContainer}>
-                        <PWText
-                            style={styles.buttonTitle}
-                            variant='h4'
-                        >
-                            {t('onboarding.main_screen.new_to_algo')}
-                        </PWText>
-                        <PanelButton
-                            testID='onboarding_create_wallet_button'
-                            title={t('onboarding.main_screen.create_wallet')}
-                            titleWeight='h4'
-                            onPress={handleCreateAccount}
-                            leftIcon={'wallet-with-algo'}
-                            rightIcon={'chevron-right'}
-                            disabled={isCreatingAccount}
-                        />
-
-                        <PWText
-                            style={styles.buttonTitle}
-                            variant='h4'
-                        >
-                            {t('onboarding.main_screen.already_have_account')}
-                        </PWText>
-                        <PanelButton
-                            testID='onboarding_import_account_button'
-                            title={t('onboarding.main_screen.import_account')}
-                            titleWeight='h4'
-                            onPress={handleImportAccount}
-                            leftIcon={'key'}
-                            rightIcon={'chevron-right'}
-                        />
-                    </PWView>
-
-                    <PWView style={styles.footerContainer}>
-                        <PWText style={styles.termsAndPrivacyText}>
-                            <Trans
-                                i18nKey='onboarding.main_screen.terms_and_privacy'
-                                components={[
-                                    <PWText
-                                        key='terms'
-                                        variant='link'
-                                        onPress={handleTermsPress}
-                                    />,
-                                    <PWText
-                                        key='privacy'
-                                        variant='link'
-                                        onPress={handlePrivacyPress}
-                                    />,
-                                ]}
+                body={
+                    <PWView style={styles.rootContainer}>
+                        <PWView style={styles.headerContainer}>
+                            <PWImage
+                                source={welcomeBackground}
+                                style={styles.headerImage}
                             />
-                        </PWText>
+                            <PWText
+                                style={styles.headerTitle}
+                                variant='h1'
+                                numberOfLines={3}
+                                ellipsizeMode='tail'
+                            >
+                                {t('onboarding.main_screen.welcome')}
+                            </PWText>
+                        </PWView>
+                        <PWView style={styles.mainContainer}>
+                            <PWText
+                                style={styles.buttonTitle}
+                                variant='h4'
+                            >
+                                {t('onboarding.main_screen.new_to_algo')}
+                            </PWText>
+                            <PanelButton
+                                testID='onboarding_create_wallet_button'
+                                title={t(
+                                    'onboarding.main_screen.create_wallet',
+                                )}
+                                titleWeight='h4'
+                                onPress={handleCreateAccount}
+                                leftIcon={'wallet-with-algo'}
+                                rightIcon={'chevron-right'}
+                                disabled={isCreatingAccount}
+                            />
+
+                            <PWText
+                                style={styles.buttonTitle}
+                                variant='h4'
+                            >
+                                {t(
+                                    'onboarding.main_screen.already_have_account',
+                                )}
+                            </PWText>
+                            <PanelButton
+                                testID='onboarding_import_account_button'
+                                title={t(
+                                    'onboarding.main_screen.import_account',
+                                )}
+                                titleWeight='h4'
+                                onPress={handleImportAccount}
+                                leftIcon={'key'}
+                                rightIcon={'chevron-right'}
+                            />
+                        </PWView>
+
+                        <PWView style={styles.footerContainer}>
+                            <PWText style={styles.termsAndPrivacyText}>
+                                <Trans
+                                    i18nKey='onboarding.main_screen.terms_and_privacy'
+                                    components={[
+                                        <PWText
+                                            key='terms'
+                                            variant='link'
+                                            onPress={handleTermsPress}
+                                        />,
+                                        <PWText
+                                            key='privacy'
+                                            variant='link'
+                                            onPress={handlePrivacyPress}
+                                        />,
+                                    ]}
+                                />
+                            </PWText>
+                        </PWView>
                     </PWView>
-                </PWView>
-            </PWScreen>
+                }
+            />
 
             <PWLoadingOverlay
                 isVisible={isCreatingAccount}

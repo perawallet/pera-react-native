@@ -56,6 +56,102 @@ export const AssetClaimDetailScreen = () => {
 
     return (
         <PWScreen
+            body={
+                <>
+                    <PWView style={styles.amountSection}>
+                        <AssetNameBadge
+                            name={request.asset.name ?? ''}
+                            verificationTier={
+                                request.asset.peraMetadata?.verificationTier
+                            }
+                        />
+                        <CurrencyDisplay
+                            variant='h2'
+                            value={amount}
+                            currency={request.asset?.unitName ?? ''}
+                            precision={request.asset?.decimals}
+                            minPrecision={DEFAULT_PRECISION}
+                        />
+                        <PreferredCurrencyDisplay
+                            sourceAmount={amount}
+                            sourceAssetId={request.asset?.assetId}
+                            precision={DEFAULT_PRECISION}
+                            showSymbol
+                            style={styles.usdText}
+                            usdPrice={request.usdValue ?? undefined}
+                        />
+                    </PWView>
+
+                    {request.id && (
+                        <>
+                            <PWView style={styles.assetIdRow}>
+                                <CopyableText copyValue={request.id}>
+                                    <PWText style={styles.usdText}>
+                                        {request.id}
+                                    </PWText>
+                                </CopyableText>
+                                <PWTouchableOpacity
+                                    style={styles.copyIdPill}
+                                    onPress={handleCopyAssetId}
+                                >
+                                    <PWText variant='caption'>
+                                        {t('messages.claim.copy_id')}
+                                    </PWText>
+                                </PWTouchableOpacity>
+                            </PWView>
+
+                            <PWDivider style={styles.separator} />
+                        </>
+                    )}
+
+                    <PWView style={styles.accountRow}>
+                        <PWText style={styles.headerLabelText}>
+                            {t('messages.claim.account')}
+                        </PWText>
+                        {receiverAccount && (
+                            <AccountDisplay
+                                account={receiverAccount}
+                                showChevron={false}
+                            />
+                        )}
+                    </PWView>
+
+                    <PWDivider style={styles.separator} />
+
+                    <PWView style={styles.sendersSection}>
+                        <PWView style={styles.sendersHeader}>
+                            <PWText style={styles.headerLabelText}>
+                                {t('messages.claim.senders')}
+                            </PWText>
+                            <PWText style={styles.headerLabelText}>
+                                {t('messages.claim.amount')}
+                            </PWText>
+                        </PWView>
+                        {request.senders.results.map((senderItem, index) => (
+                            <PWView
+                                key={`${senderItem.sender.address}-${index}`}
+                                style={styles.senderRow}
+                            >
+                                <AddressDisplay
+                                    address={senderItem.sender.address}
+                                    showCopy={false}
+                                />
+                                <CurrencyDisplay
+                                    value={baseUnitsToDisplayUnits(
+                                        senderItem.amount,
+                                        request.asset.decimals,
+                                    )}
+                                    currency={request.asset?.unitName ?? ''}
+                                    precision={request.asset?.decimals}
+                                    minPrecision={DEFAULT_PRECISION}
+                                    prefix={'+'}
+                                    style={styles.senderAmountText}
+                                />
+                            </PWView>
+                        ))}
+                    </PWView>
+                </>
+            }
             footer={
                 <>
                     {!request.microAlgoGainOnClaim.isZero() && (
@@ -95,97 +191,6 @@ export const AssetClaimDetailScreen = () => {
                     </PWView>
                 </>
             }
-        >
-            <PWView style={styles.amountSection}>
-                <AssetNameBadge
-                    name={request.asset.name ?? ''}
-                    verificationTier={
-                        request.asset.peraMetadata?.verificationTier
-                    }
-                />
-                <CurrencyDisplay
-                    variant='h2'
-                    value={amount}
-                    currency={request.asset?.unitName ?? ''}
-                    precision={request.asset?.decimals}
-                    minPrecision={DEFAULT_PRECISION}
-                />
-                <PreferredCurrencyDisplay
-                    sourceAmount={amount}
-                    sourceAssetId={request.asset?.assetId}
-                    precision={DEFAULT_PRECISION}
-                    showSymbol
-                    style={styles.usdText}
-                    usdPrice={request.usdValue ?? undefined}
-                />
-            </PWView>
-
-            {request.id && (
-                <>
-                    <PWView style={styles.assetIdRow}>
-                        <CopyableText copyValue={request.id}>
-                            <PWText style={styles.usdText}>{request.id}</PWText>
-                        </CopyableText>
-                        <PWTouchableOpacity
-                            style={styles.copyIdPill}
-                            onPress={handleCopyAssetId}
-                        >
-                            <PWText variant='caption'>
-                                {t('messages.claim.copy_id')}
-                            </PWText>
-                        </PWTouchableOpacity>
-                    </PWView>
-
-                    <PWDivider style={styles.separator} />
-                </>
-            )}
-
-            <PWView style={styles.accountRow}>
-                <PWText style={styles.headerLabelText}>
-                    {t('messages.claim.account')}
-                </PWText>
-                {receiverAccount && (
-                    <AccountDisplay
-                        account={receiverAccount}
-                        showChevron={false}
-                    />
-                )}
-            </PWView>
-
-            <PWDivider style={styles.separator} />
-
-            <PWView style={styles.sendersSection}>
-                <PWView style={styles.sendersHeader}>
-                    <PWText style={styles.headerLabelText}>
-                        {t('messages.claim.senders')}
-                    </PWText>
-                    <PWText style={styles.headerLabelText}>
-                        {t('messages.claim.amount')}
-                    </PWText>
-                </PWView>
-                {request.senders.results.map((senderItem, index) => (
-                    <PWView
-                        key={`${senderItem.sender.address}-${index}`}
-                        style={styles.senderRow}
-                    >
-                        <AddressDisplay
-                            address={senderItem.sender.address}
-                            showCopy={false}
-                        />
-                        <CurrencyDisplay
-                            value={baseUnitsToDisplayUnits(
-                                senderItem.amount,
-                                request.asset.decimals,
-                            )}
-                            currency={request.asset?.unitName ?? ''}
-                            precision={request.asset?.decimals}
-                            minPrecision={DEFAULT_PRECISION}
-                            prefix={'+'}
-                            style={styles.senderAmountText}
-                        />
-                    </PWView>
-                ))}
-            </PWView>
-        </PWScreen>
+        />
     )
 }

@@ -39,16 +39,17 @@ export const DiscoverScreen = () => {
 
     return (
         <PWScreen
-            scroll={false}
+            scroll='never'
             horizontalPadding='none'
             keyboard='none'
             style={styles.container}
-        >
-            <PWWebView
-                url={url}
-                enablePeraConnect={true}
-                containerStyle={styles.webview}
-            />
-        </PWScreen>
+            body={
+                <PWWebView
+                    url={url}
+                    enablePeraConnect={true}
+                    containerStyle={styles.webview}
+                />
+            }
+        />
     )
 }

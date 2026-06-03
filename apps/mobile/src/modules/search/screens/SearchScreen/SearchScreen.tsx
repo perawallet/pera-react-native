@@ -161,54 +161,57 @@ export const SearchScreen = () => {
 
     return (
         <PWScreen
-            scroll={false}
+            scroll='never'
             keyboard='avoid'
-        >
-            <SearchInput
-                value={value}
-                onChangeText={setValue}
-                placeholder={t('search.placeholder')}
-                containerStyle={styles.searchContainer}
-                inputContainerStyle={styles.searchField}
-                testID='search_input'
-            />
-            <PWFlatList
-                key={listKey}
-                ref={listRef}
-                data={rows}
-                renderItem={renderItem}
-                // Mixed rows incl. section headers / show-more — no blanket divider.
-                ItemSeparatorComponent={null}
-                keyExtractor={keyExtractor}
-                style={styles.list}
-                contentContainerStyle={styles.contentContainer}
-                ListEmptyComponent={
-                    showNoResults ? (
-                        <EmptyView
-                            icon='magnifying-glass'
-                            title={t('search.no_results_title')}
-                            body={t('search.no_results_body')}
-                        />
-                    ) : showSkeleton ? (
-                        <PWView
-                            testID='search_loading_skeleton'
-                            style={styles.skeletonContainer}
-                        >
-                            <LoadingView
-                                variant='skeleton'
-                                count={SKELETON_ROW_COUNT}
-                                size='sm'
-                            />
-                        </PWView>
-                    ) : (
-                        <EmptyView
-                            icon='magnifying-glass'
-                            title={t('search.empty_prompt_title')}
-                            body={t('search.empty_prompt_body')}
-                        />
-                    )
-                }
-            />
-        </PWScreen>
+            body={
+                <>
+                    <SearchInput
+                        value={value}
+                        onChangeText={setValue}
+                        placeholder={t('search.placeholder')}
+                        containerStyle={styles.searchContainer}
+                        inputContainerStyle={styles.searchField}
+                        testID='search_input'
+                    />
+                    <PWFlatList
+                        key={listKey}
+                        ref={listRef}
+                        data={rows}
+                        renderItem={renderItem}
+                        // Mixed rows incl. section headers / show-more — no blanket divider.
+                        ItemSeparatorComponent={null}
+                        keyExtractor={keyExtractor}
+                        style={styles.list}
+                        contentContainerStyle={styles.contentContainer}
+                        ListEmptyComponent={
+                            showNoResults ? (
+                                <EmptyView
+                                    icon='magnifying-glass'
+                                    title={t('search.no_results_title')}
+                                    body={t('search.no_results_body')}
+                                />
+                            ) : showSkeleton ? (
+                                <PWView
+                                    testID='search_loading_skeleton'
+                                    style={styles.skeletonContainer}
+                                >
+                                    <LoadingView
+                                        variant='skeleton'
+                                        count={SKELETON_ROW_COUNT}
+                                        size='sm'
+                                    />
+                                </PWView>
+                            ) : (
+                                <EmptyView
+                                    icon='magnifying-glass'
+                                    title={t('search.empty_prompt_title')}
+                                    body={t('search.empty_prompt_body')}
+                                />
+                            )
+                        }
+                    />
+                </>
+            }
+        />
     )
 }

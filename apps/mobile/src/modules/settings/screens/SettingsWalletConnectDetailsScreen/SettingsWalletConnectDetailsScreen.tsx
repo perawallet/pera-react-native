@@ -79,140 +79,154 @@ export const SettingsWalletConnectDetailsScreen = ({
 
     return (
         <PWScreen
-            contentContainerStyle={styles.container}
             testID='wallet_connect_details_screen'
-        >
-            {!!preferredIcon && (
-                <Image
-                    source={{ uri: preferredIcon }}
-                    style={styles.icon}
-                />
-            )}
-            {!preferredIcon && (
-                <PWIcon
-                    name='wallet-connect'
-                    size='xl'
-                />
-            )}
-            <Text h4>{peerMeta?.name ?? 'Unknown'}</Text>
-            {peerMeta?.url && (
-                <PWTouchableOpacity
-                    onPress={handleOpenLink}
-                    testID='wallet_connect_details_url_link'
-                >
-                    <Text style={styles.link}>{peerMeta?.url}</Text>
-                </PWTouchableOpacity>
-            )}
-            {peerMeta?.description && (
-                <Text style={styles.description}>{peerMeta?.description}</Text>
-            )}
-            <PWView style={styles.versionContainer}>
-                <PWBadge
-                    variant='secondary'
-                    value={`WCV${session?.version}`}
-                />
-                <Text style={styles.version}>
-                    {t('walletconnect.settings.version', {
-                        version: session?.version,
-                    })}
-                </Text>
-            </PWView>
-            <PWView style={styles.connectionContainer}>
-                <KeyValueRow
-                    title={t('walletconnect.settings.created_at', { date: '' })}
-                >
-                    <Text style={styles.createdAt}>
-                        {formatDatetime(
-                            session?.createdAt ?? new Date(),
-                            undefined,
-                            'medium',
-                        )}
-                    </Text>
-                </KeyValueRow>
-            </PWView>
-            {!!connectedAccounts?.length && (
-                <PWView style={styles.accountContainer}>
-                    <Text>
-                        {t('walletconnect.settings.connected_accounts')}
-                    </Text>
-                    {connectedAccounts.map(account => (
-                        <PWView
-                            style={styles.accountRow}
-                            key={account?.id}
+            body={
+                <PWView style={styles.container}>
+                    {!!preferredIcon && (
+                        <Image
+                            source={{ uri: preferredIcon }}
+                            style={styles.icon}
+                        />
+                    )}
+                    {!preferredIcon && (
+                        <PWIcon
+                            name='wallet-connect'
+                            size='xl'
+                        />
+                    )}
+                    <Text h4>{peerMeta?.name ?? 'Unknown'}</Text>
+                    {peerMeta?.url && (
+                        <PWTouchableOpacity
+                            onPress={handleOpenLink}
+                            testID='wallet_connect_details_url_link'
                         >
-                            <AccountDisplay
-                                account={account}
-                                showChevron={false}
-                                style={styles.accountDisplay}
-                            />
-                            <ConnectedNetworks
-                                chainId={session.session?.chainId ?? 4160}
-                            />
-                        </PWView>
-                    ))}
-                </PWView>
-            )}
-            <TitledExpandablePanel
-                title={
-                    <PWView style={styles.permissionsTitle}>
-                        <Text>{t('walletconnect.settings.permissions')}</Text>
-                        <InfoButton
-                            size='sm'
-                            title={t(
-                                'walletconnect.settings.permissions_info_title',
-                            )}
+                            <Text style={styles.link}>{peerMeta?.url}</Text>
+                        </PWTouchableOpacity>
+                    )}
+                    {peerMeta?.description && (
+                        <Text style={styles.description}>
+                            {peerMeta?.description}
+                        </Text>
+                    )}
+                    <PWView style={styles.versionContainer}>
+                        <PWBadge
+                            variant='secondary'
+                            value={`WCV${session?.version}`}
+                        />
+                        <Text style={styles.version}>
+                            {t('walletconnect.settings.version', {
+                                version: session?.version,
+                            })}
+                        </Text>
+                    </PWView>
+                    <PWView style={styles.connectionContainer}>
+                        <KeyValueRow
+                            title={t('walletconnect.settings.created_at', {
+                                date: '',
+                            })}
                         >
-                            <Text>
-                                {t(
-                                    'walletconnect.settings.permissions_info_body',
+                            <Text style={styles.createdAt}>
+                                {formatDatetime(
+                                    session?.createdAt ?? new Date(),
+                                    undefined,
+                                    'medium',
                                 )}
                             </Text>
-                        </InfoButton>
+                        </KeyValueRow>
                     </PWView>
-                }
-            >
-                <PWView style={styles.permissionsContainer}>
-                    {session.session?.permissions?.map(permission => (
-                        <PermissionItem
-                            key={permission}
-                            permission={permission as AlgorandPermission}
-                        />
-                    ))}
-                </PWView>
-            </TitledExpandablePanel>
+                    {!!connectedAccounts?.length && (
+                        <PWView style={styles.accountContainer}>
+                            <Text>
+                                {t('walletconnect.settings.connected_accounts')}
+                            </Text>
+                            {connectedAccounts.map(account => (
+                                <PWView
+                                    style={styles.accountRow}
+                                    key={account?.id}
+                                >
+                                    <AccountDisplay
+                                        account={account}
+                                        showChevron={false}
+                                        style={styles.accountDisplay}
+                                    />
+                                    <ConnectedNetworks
+                                        chainId={
+                                            session.session?.chainId ?? 4160
+                                        }
+                                    />
+                                </PWView>
+                            ))}
+                        </PWView>
+                    )}
+                    <TitledExpandablePanel
+                        title={
+                            <PWView style={styles.permissionsTitle}>
+                                <Text>
+                                    {t('walletconnect.settings.permissions')}
+                                </Text>
+                                <InfoButton
+                                    size='sm'
+                                    title={t(
+                                        'walletconnect.settings.permissions_info_title',
+                                    )}
+                                >
+                                    <Text>
+                                        {t(
+                                            'walletconnect.settings.permissions_info_body',
+                                        )}
+                                    </Text>
+                                </InfoButton>
+                            </PWView>
+                        }
+                    >
+                        <PWView style={styles.permissionsContainer}>
+                            {session.session?.permissions?.map(permission => (
+                                <PermissionItem
+                                    key={permission}
+                                    permission={
+                                        permission as AlgorandPermission
+                                    }
+                                />
+                            ))}
+                        </PWView>
+                    </TitledExpandablePanel>
 
-            <PWView style={styles.deleteContainer}>
-                <PWButton
-                    variant='secondary'
-                    title={t('walletconnect.settings.delete_title')}
-                    onPress={deleteModalState.open}
-                    testID='wallet_connect_details_delete_button'
-                />
-            </PWView>
-            <Dialog
-                isVisible={deleteModalState.isOpen}
-                onBackdropPress={deleteModalState.close}
-            >
-                <Dialog.Title
-                    title={t('walletconnect.settings.delete_title')}
-                />
-                <Text>{t('walletconnect.settings.delete_body')}</Text>
-                <Dialog.Actions>
-                    <Dialog.Button
-                        title={t('common.delete.label')}
-                        titleStyle={{ color: theme.colors.alertNegative }}
-                        onPress={handleDelete}
-                        disabled={isLoading}
-                        testID='wallet_connect_details_confirm_delete_button'
-                    />
-                    <Dialog.Button
-                        title={t('common.cancel.label')}
-                        onPress={deleteModalState.close}
-                        disabled={isLoading}
-                        testID='wallet_connect_details_cancel_button'
-                    />
-                </Dialog.Actions>
-            </Dialog>
-        </PWScreen>
+                    <PWView style={styles.deleteContainer}>
+                        <PWButton
+                            variant='secondary'
+                            title={t('walletconnect.settings.delete_title')}
+                            onPress={deleteModalState.open}
+                            testID='wallet_connect_details_delete_button'
+                        />
+                    </PWView>
+                    <Dialog
+                        isVisible={deleteModalState.isOpen}
+                        onBackdropPress={deleteModalState.close}
+                    >
+                        <Dialog.Title
+                            title={t('walletconnect.settings.delete_title')}
+                        />
+                        <Text>{t('walletconnect.settings.delete_body')}</Text>
+                        <Dialog.Actions>
+                            <Dialog.Button
+                                title={t('common.delete.label')}
+                                titleStyle={{
+                                    color: theme.colors.alertNegative,
+                                }}
+                                onPress={handleDelete}
+                                disabled={isLoading}
+                                testID='wallet_connect_details_confirm_delete_button'
+                            />
+                            <Dialog.Button
+                                title={t('common.cancel.label')}
+                                onPress={deleteModalState.close}
+                                disabled={isLoading}
+                                testID='wallet_connect_details_cancel_button'
+                            />
+                        </Dialog.Actions>
+                    </Dialog>
+                </PWView>
+            }
+        />
     )
 }

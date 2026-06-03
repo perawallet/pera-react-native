@@ -89,45 +89,52 @@ export const LedgerScanScreen = () => {
     }
 
     return (
-        <PWScreen scroll={false}>
-            <ScreenHeader
-                icon='ledger'
-                title={t('ledger.scan.title')}
-                description={t('ledger.scan.description')}
-            />
-
-            {isPermissionDenied ? (
-                <PWView
-                    style={styles.errorContainer}
-                    testID='ledger_scan_permission_denied'
-                >
-                    <PWText
-                        variant='body'
-                        style={styles.errorText}
-                    >
-                        {t('ledger.instructions.permission_required_message')}
-                    </PWText>
-                    <PWButton
-                        testID='ledger_scan_grant_permission_button'
-                        title={t(
-                            isPermissionBlocked
-                                ? 'ledger.scan.open_settings'
-                                : 'ledger.scan.grant_permission',
-                        )}
-                        onPress={handleRequestPermissions}
-                        variant='link'
+        <PWScreen
+            scroll='never'
+            body={
+                <>
+                    <ScreenHeader
+                        icon='ledger'
+                        title={t('ledger.scan.title')}
+                        description={t('ledger.scan.description')}
                     />
-                </PWView>
-            ) : (
-                <PWFlatList
-                    data={devices}
-                    renderItem={renderItem}
-                    keyExtractor={item => item.id}
-                    ListEmptyComponent={renderEmptyState}
-                    contentContainerStyle={styles.listContent}
-                    showsVerticalScrollIndicator={false}
-                />
-            )}
-        </PWScreen>
+
+                    {isPermissionDenied ? (
+                        <PWView
+                            style={styles.errorContainer}
+                            testID='ledger_scan_permission_denied'
+                        >
+                            <PWText
+                                variant='body'
+                                style={styles.errorText}
+                            >
+                                {t(
+                                    'ledger.instructions.permission_required_message',
+                                )}
+                            </PWText>
+                            <PWButton
+                                testID='ledger_scan_grant_permission_button'
+                                title={t(
+                                    isPermissionBlocked
+                                        ? 'ledger.scan.open_settings'
+                                        : 'ledger.scan.grant_permission',
+                                )}
+                                onPress={handleRequestPermissions}
+                                variant='link'
+                            />
+                        </PWView>
+                    ) : (
+                        <PWFlatList
+                            data={devices}
+                            renderItem={renderItem}
+                            keyExtractor={item => item.id}
+                            ListEmptyComponent={renderEmptyState}
+                            contentContainerStyle={styles.listContent}
+                            showsVerticalScrollIndicator={false}
+                        />
+                    )}
+                </>
+            }
+        />
     )
 }

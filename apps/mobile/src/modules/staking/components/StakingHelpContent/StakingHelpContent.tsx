@@ -26,24 +26,25 @@ export const StakingHelpContent = () => {
 
     return (
         <PWSheetLayout
+            testID='staking-help-sheet'
             header={
                 <SheetHeader
                     title={t('staking.help.title')}
                     testID='staking-help-sheet'
                 />
             }
-            testID='staking-help-sheet'
-        >
-            <PWView style={styles.contentContainer}>
-                {STAKING_TYPES.map((type, index) => (
-                    <StakingTypeRow
-                        key={type}
-                        type={type}
-                        isLast={index === STAKING_TYPES.length - 1}
-                        onClose={dismiss}
-                    />
-                ))}
-            </PWView>
-        </PWSheetLayout>
+            body={
+                <PWView style={styles.contentContainer}>
+                    {STAKING_TYPES.map((type, index) => (
+                        <StakingTypeRow
+                            key={type}
+                            type={type}
+                            isLast={index === STAKING_TYPES.length - 1}
+                            onClose={dismiss}
+                        />
+                    ))}
+                </PWView>
+            }
+        />
     )
 }

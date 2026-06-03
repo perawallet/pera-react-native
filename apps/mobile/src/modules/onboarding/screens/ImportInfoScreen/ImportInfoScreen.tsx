@@ -35,7 +35,16 @@ export const ImportInfoScreen = () => {
 
     return (
         <PWScreen
-            scroll={false}
+            scroll='never'
+            body={
+                <PWView style={styles.content}>
+                    <ScreenHeader
+                        icon='key'
+                        title={t('onboarding.import_info.title')}
+                        description={t('onboarding.import_info.body')}
+                    />
+                </PWView>
+            }
             footer={
                 <PWButton
                     variant='primary'
@@ -44,14 +53,6 @@ export const ImportInfoScreen = () => {
                     testID='import_info_recover_button'
                 />
             }
-        >
-            <PWView style={styles.content}>
-                <ScreenHeader
-                    icon='key'
-                    title={t('onboarding.import_info.title')}
-                    description={t('onboarding.import_info.body')}
-                />
-            </PWView>
-        </PWScreen>
+        />
     )
 }

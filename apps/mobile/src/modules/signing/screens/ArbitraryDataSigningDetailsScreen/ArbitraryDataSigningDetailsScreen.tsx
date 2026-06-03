@@ -27,11 +27,14 @@ export const ArbitraryDataSigningDetailsScreen = ({
     if (!request) return null
 
     return (
-        <PWScreen scroll={false}>
-            <ArbitraryDataSigningDetailsView
-                request={request}
-                dataMessage={route.params.message}
-            />
-        </PWScreen>
+        <PWScreen
+            scroll='never'
+            body={
+                <ArbitraryDataSigningDetailsView
+                    request={request}
+                    dataMessage={route.params.message}
+                />
+            }
+        />
     )
 }

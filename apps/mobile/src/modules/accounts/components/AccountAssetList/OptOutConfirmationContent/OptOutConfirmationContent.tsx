@@ -69,105 +69,106 @@ export const OptOutConfirmationContent = ({
     return (
         <PWSheetLayout
             header={<SheetHeader title={t('asset_opt_out.title')} />}
-        >
-            <PWView style={styles.body}>
-                <PWView style={styles.assetNameRow}>
-                    <PWText
-                        variant='h3'
-                        style={styles.assetName}
-                    >
-                        {assetDisplayName}
-                    </PWText>
-                </PWView>
-                {!!unitName && (
-                    <PWView style={styles.unitNameRow}>
+            body={
+                <PWView style={styles.body}>
+                    <PWView style={styles.assetNameRow}>
                         <PWText
-                            variant='body'
-                            style={styles.unitName}
+                            variant='h3'
+                            style={styles.assetName}
                         >
-                            {unitName}
+                            {assetDisplayName}
                         </PWText>
                     </PWView>
-                )}
+                    {!!unitName && (
+                        <PWView style={styles.unitNameRow}>
+                            <PWText
+                                variant='body'
+                                style={styles.unitName}
+                            >
+                                {unitName}
+                            </PWText>
+                        </PWView>
+                    )}
 
-                <PWView style={styles.divider} />
+                    <PWView style={styles.divider} />
 
-                <PWView style={styles.row}>
+                    <PWView style={styles.row}>
+                        <PWText
+                            variant='body'
+                            style={styles.rowLabel}
+                        >
+                            {accountBalance.assetId}
+                        </PWText>
+                        <PWButton
+                            title={t('asset_opt_out.copy_id')}
+                            variant='secondary'
+                            paddingStyle='dense'
+                            onPress={handleCopyId}
+                            testID='opt_out_copy_id'
+                            rounded
+                        />
+                    </PWView>
+
+                    <PWView style={styles.divider} />
+
+                    <PWView style={styles.row}>
+                        <PWText
+                            variant='body'
+                            style={styles.rowLabel}
+                        >
+                            {t('asset_opt_out.account_label')}
+                        </PWText>
+                        <AddressDisplay
+                            address={accountAddress}
+                            showCopy={false}
+                            textProps={{ style: styles.rowAddress }}
+                        />
+                    </PWView>
+
+                    <PWView style={styles.divider} />
+
+                    <PWView style={styles.row}>
+                        <PWText
+                            variant='body'
+                            style={styles.rowLabel}
+                        >
+                            {t('asset_opt_out.fee_label')}
+                        </PWText>
+                        <CurrencyDisplay
+                            currency='ALGO'
+                            precision={ALGO_ASSET.decimals}
+                            minPrecision={DEFAULT_PRECISION}
+                            value={MIN_FEE_WHOLE_UNITS}
+                            showSymbol
+                            style={styles.rowValue}
+                        />
+                    </PWView>
+
                     <PWText
                         variant='body'
-                        style={styles.rowLabel}
+                        style={styles.description}
                     >
-                        {accountBalance.assetId}
+                        {t('asset_opt_out.description', {
+                            assetName: unitName ?? assetDisplayName,
+                            accountName,
+                        })}
                     </PWText>
-                    <PWButton
-                        title={t('asset_opt_out.copy_id')}
-                        variant='secondary'
-                        paddingStyle='dense'
-                        onPress={handleCopyId}
-                        testID='opt_out_copy_id'
-                        rounded
-                    />
+
+                    <PWView style={styles.buttonContainer}>
+                        <PWSlideToConfirm
+                            title={t('common.slide_to_confirm.label')}
+                            onConfirm={() => resolve('confirm')}
+                            testID='opt_out_confirm'
+                        />
+                        <PWButton
+                            title={t('asset_opt_out.keep')}
+                            variant='linkNeutral'
+                            onPress={dismiss}
+                            testID='opt_out_cancel'
+                        />
+                    </PWView>
                 </PWView>
-
-                <PWView style={styles.divider} />
-
-                <PWView style={styles.row}>
-                    <PWText
-                        variant='body'
-                        style={styles.rowLabel}
-                    >
-                        {t('asset_opt_out.account_label')}
-                    </PWText>
-                    <AddressDisplay
-                        address={accountAddress}
-                        showCopy={false}
-                        textProps={{ style: styles.rowAddress }}
-                    />
-                </PWView>
-
-                <PWView style={styles.divider} />
-
-                <PWView style={styles.row}>
-                    <PWText
-                        variant='body'
-                        style={styles.rowLabel}
-                    >
-                        {t('asset_opt_out.fee_label')}
-                    </PWText>
-                    <CurrencyDisplay
-                        currency='ALGO'
-                        precision={ALGO_ASSET.decimals}
-                        minPrecision={DEFAULT_PRECISION}
-                        value={MIN_FEE_WHOLE_UNITS}
-                        showSymbol
-                        style={styles.rowValue}
-                    />
-                </PWView>
-
-                <PWText
-                    variant='body'
-                    style={styles.description}
-                >
-                    {t('asset_opt_out.description', {
-                        assetName: unitName ?? assetDisplayName,
-                        accountName,
-                    })}
-                </PWText>
-
-                <PWView style={styles.buttonContainer}>
-                    <PWSlideToConfirm
-                        title={t('common.slide_to_confirm.label')}
-                        onConfirm={() => resolve('confirm')}
-                        testID='opt_out_confirm'
-                    />
-                    <PWButton
-                        title={t('asset_opt_out.keep')}
-                        variant='linkNeutral'
-                        onPress={dismiss}
-                        testID='opt_out_cancel'
-                    />
-                </PWView>
-            </PWView>
-        </PWSheetLayout>
+            }
+        />
     )
 }

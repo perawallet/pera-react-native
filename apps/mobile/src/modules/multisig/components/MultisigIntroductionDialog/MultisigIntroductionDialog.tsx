@@ -46,6 +46,7 @@ export const MultisigIntroductionDialog = ({
             isVisible={isVisible}
             onBackdropPress={onDismiss}
             maxHeightRatio={0.75}
+            accessibilityLabel={t('multisig.introduction.title')}
             testID='multisig_introduction_dialog'
             footer={
                 <PWButton

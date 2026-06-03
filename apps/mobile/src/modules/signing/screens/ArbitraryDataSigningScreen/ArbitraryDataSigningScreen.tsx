@@ -34,10 +34,29 @@ export const ArbitraryDataSigningScreen = () => {
 
     return (
         <PWScreen
-            scroll={false}
-            footerStyle={styles.buttonContainer}
-            footer={
+            scroll='never'
+            body={
                 <>
+                    {!!request.sourceMetadata && (
+                        <SourceMetadataView metadata={request.sourceMetadata} />
+                    )}
+                    <PWView style={styles.bodyContainer}>
+                        {isSingleSignRequest ? (
+                            <SingleArbitrarySignRequestView
+                                request={request.data[0]}
+                                onDetailsPress={handleDetailsPress}
+                            />
+                        ) : (
+                            <MultipleArbitrarySignRequestView
+                                requests={request.data}
+                                onDetailsPress={handleDetailsPress}
+                            />
+                        )}
+                    </PWView>
+                </>
+            }
+            footer={
+                <PWView style={styles.buttonContainer}>
                     <PWSlideToConfirm
                         title={t('common.slide_to_confirm.label')}
                         onConfirm={handleApprove}
@@ -50,25 +69,8 @@ export const ArbitraryDataSigningScreen = () => {
                         onPress={handleReject}
                         isDisabled={isPending}
                     />
-                </>
+                </PWView>
             }
-        >
-            {!!request.sourceMetadata && (
-                <SourceMetadataView metadata={request.sourceMetadata} />
-            )}
-            <PWView style={styles.bodyContainer}>
-                {isSingleSignRequest ? (
-                    <SingleArbitrarySignRequestView
-                        request={request.data[0]}
-                        onDetailsPress={handleDetailsPress}
-                    />
-                ) : (
-                    <MultipleArbitrarySignRequestView
-                        requests={request.data}
-                        onDetailsPress={handleDetailsPress}
-                    />
-                )}
-            </PWView>
-        </PWScreen>
+        />
     )
 }

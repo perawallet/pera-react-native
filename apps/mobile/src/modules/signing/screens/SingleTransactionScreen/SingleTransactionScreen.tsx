@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWDivider, PWScreen } from '@components/core'
+import { PWDivider, PWScreen, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { useTheme } from '@rneui/themed'
 import { useLanguage } from '@hooks/useLanguage'
@@ -55,24 +55,26 @@ export const SingleTransactionScreen = () => {
 
     return (
         <PWScreen
-            contentContainerStyle={styles.contentContainer}
+            body={
+                <PWView style={styles.contentContainer}>
+                    <TransactionSummaryHeader
+                        transaction={transaction}
+                        metadata={request?.sourceMetadata}
+                    />
+
+                    <SigningWarnings />
+
+                    <PWDivider
+                        color={theme.colors.layerGray}
+                        style={styles.paddedDivider}
+                    />
+
+                    <SigningAccountDisplay transaction={transaction} />
+
+                    <FeeDisplay transaction={transaction} />
+                </PWView>
+            }
             footer={<SigningActionButtons />}
-        >
-            <TransactionSummaryHeader
-                transaction={transaction}
-                metadata={request?.sourceMetadata}
-            />
-
-            <SigningWarnings />
-
-            <PWDivider
-                color={theme.colors.layerGray}
-                style={styles.paddedDivider}
-            />
-
-            <SigningAccountDisplay transaction={transaction} />
-
-            <FeeDisplay transaction={transaction} />
-        </PWScreen>
+        />
     )
 }

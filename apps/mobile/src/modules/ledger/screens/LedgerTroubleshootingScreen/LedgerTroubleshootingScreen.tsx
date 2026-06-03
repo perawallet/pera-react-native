@@ -23,7 +23,64 @@ export const LedgerTroubleshootingScreen = () => {
     return (
         <PWScreen
             testID='ledger-troubleshooting-screen'
-            contentContainerStyle={styles.content}
+            body={
+                <>
+                    <ScreenHeader
+                        title={t('ledger.troubleshooting.title')}
+                        description={t('ledger.troubleshooting.description')}
+                    />
+
+                    <PWText
+                        variant='h3'
+                        style={styles.sectionTitle}
+                    >
+                        {t('ledger.troubleshooting.pairing_steps_title')}
+                    </PWText>
+                    <PWView style={styles.list}>
+                        {pairingStepKeys.map((key, index) => (
+                            <PWView
+                                key={key}
+                                style={styles.listItem}
+                            >
+                                <PWView style={styles.stepCircle}>
+                                    <PWText variant='bodySemibold'>
+                                        {String(index + 1)}
+                                    </PWText>
+                                </PWView>
+                                <PWText
+                                    variant='body'
+                                    style={styles.listItemText}
+                                >
+                                    {t(key)}
+                                </PWText>
+                            </PWView>
+                        ))}
+                    </PWView>
+
+                    <PWText
+                        variant='h3'
+                        style={styles.sectionTitle}
+                    >
+                        {t('ledger.troubleshooting.common_issues_title')}
+                    </PWText>
+                    <PWView style={styles.list}>
+                        {commonIssueKeys.map(key => (
+                            <PWView
+                                key={key}
+                                style={styles.listItem}
+                            >
+                                <PWView style={styles.bullet} />
+                                <PWText
+                                    variant='body'
+                                    style={styles.listItemText}
+                                >
+                                    {t(key)}
+                                </PWText>
+                            </PWView>
+                        ))}
+                    </PWView>
+                </>
+            }
             footer={
                 <PWButton
                     testID='ledger_troubleshooting_done_button'
@@ -32,61 +89,6 @@ export const LedgerTroubleshootingScreen = () => {
                     variant='primary'
                 />
             }
-        >
-            <ScreenHeader
-                title={t('ledger.troubleshooting.title')}
-                description={t('ledger.troubleshooting.description')}
-            />
-
-            <PWText
-                variant='h3'
-                style={styles.sectionTitle}
-            >
-                {t('ledger.troubleshooting.pairing_steps_title')}
-            </PWText>
-            <PWView style={styles.list}>
-                {pairingStepKeys.map((key, index) => (
-                    <PWView
-                        key={key}
-                        style={styles.listItem}
-                    >
-                        <PWView style={styles.stepCircle}>
-                            <PWText variant='bodySemibold'>
-                                {String(index + 1)}
-                            </PWText>
-                        </PWView>
-                        <PWText
-                            variant='body'
-                            style={styles.listItemText}
-                        >
-                            {t(key)}
-                        </PWText>
-                    </PWView>
-                ))}
-            </PWView>
-
-            <PWText
-                variant='h3'
-                style={styles.sectionTitle}
-            >
-                {t('ledger.troubleshooting.common_issues_title')}
-            </PWText>
-            <PWView style={styles.list}>
-                {commonIssueKeys.map(key => (
-                    <PWView
-                        key={key}
-                        style={styles.listItem}
-                    >
-                        <PWView style={styles.bullet} />
-                        <PWText
-                            variant='body'
-                            style={styles.listItemText}
-                        >
-                            {t(key)}
-                        </PWText>
-                    </PWView>
-                ))}
-            </PWView>
-        </PWScreen>
+        />
     )
 }

@@ -18,9 +18,10 @@ import { PWSheetLayout } from '../PWSheetLayout'
 describe('PWSheetLayout', () => {
     it('renders the header above the body', () => {
         render(
-            <PWSheetLayout header={<PWText>Header</PWText>}>
-                <PWText>Body</PWText>
-            </PWSheetLayout>,
+            <PWSheetLayout
+                header={<PWText>Header</PWText>}
+                body={<PWText>Body</PWText>}
+            />,
         )
 
         expect(screen.getByText('Header')).toBeTruthy()
@@ -28,20 +29,17 @@ describe('PWSheetLayout', () => {
     })
 
     it('renders the body without a header', () => {
-        render(
-            <PWSheetLayout>
-                <PWText>Body</PWText>
-            </PWSheetLayout>,
-        )
+        render(<PWSheetLayout body={<PWText>Body</PWText>} />)
 
         expect(screen.getByText('Body')).toBeTruthy()
     })
 
     it('renders the pinned footer alongside the body', () => {
         render(
-            <PWSheetLayout footer={<PWText>Footer</PWText>}>
-                <PWText>Body</PWText>
-            </PWSheetLayout>,
+            <PWSheetLayout
+                footer={<PWText>Footer</PWText>}
+                body={<PWText>Body</PWText>}
+            />,
         )
 
         expect(screen.getByText('Body')).toBeTruthy()

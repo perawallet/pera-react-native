@@ -31,7 +31,52 @@ export const SetThresholdScreen = () => {
 
     return (
         <PWScreen
-            scroll={false}
+            scroll='never'
+            body={
+                <>
+                    <ScreenHeader
+                        title={t('multisig.threshold.title')}
+                        description={t('multisig.threshold.description')}
+                    />
+
+                    <PWView style={styles.summaryContainer}>
+                        <PWView style={styles.row}>
+                            <PWText
+                                variant='body'
+                                style={styles.label}
+                            >
+                                {t('multisig.threshold.number_of_accounts')}
+                            </PWText>
+                            <PWView style={styles.countGroup}>
+                                <ParticipantCount
+                                    count={participantCount}
+                                    size='h1'
+                                    testID='participant_count_value'
+                                />
+                                {/* Aligns the count value under the stepper's value
+                                    column by reserving the width of the + button. */}
+                                <PWView style={styles.buttonSpacer} />
+                            </PWView>
+                        </PWView>
+
+                        <PWView style={styles.row}>
+                            <PWText
+                                variant='body'
+                                style={styles.label}
+                            >
+                                {t('multisig.threshold.required_signatures')}
+                            </PWText>
+                            <ThresholdStepper
+                                value={threshold}
+                                min={1}
+                                max={participantCount}
+                                onIncrement={handleIncrement}
+                                onDecrement={handleDecrement}
+                            />
+                        </PWView>
+                    </PWView>
+                </>
+            }
             footer={
                 <PWButton
                     variant='primary'
@@ -40,48 +85,6 @@ export const SetThresholdScreen = () => {
                     testID='set_threshold_continue_button'
                 />
             }
-        >
-            <ScreenHeader
-                title={t('multisig.threshold.title')}
-                description={t('multisig.threshold.description')}
-            />
-
-            <PWView style={styles.summaryContainer}>
-                <PWView style={styles.row}>
-                    <PWText
-                        variant='body'
-                        style={styles.label}
-                    >
-                        {t('multisig.threshold.number_of_accounts')}
-                    </PWText>
-                    <PWView style={styles.countGroup}>
-                        <ParticipantCount
-                            count={participantCount}
-                            size='h1'
-                            testID='participant_count_value'
-                        />
-                        {/* Aligns the count value under the stepper's value
-                            column by reserving the width of the + button. */}
-                        <PWView style={styles.buttonSpacer} />
-                    </PWView>
-                </PWView>
-
-                <PWView style={styles.row}>
-                    <PWText
-                        variant='body'
-                        style={styles.label}
-                    >
-                        {t('multisig.threshold.required_signatures')}
-                    </PWText>
-                    <ThresholdStepper
-                        value={threshold}
-                        min={1}
-                        max={participantCount}
-                        onIncrement={handleIncrement}
-                        onDecrement={handleDecrement}
-                    />
-                </PWView>
-            </PWView>
-        </PWScreen>
+        />
     )
 }

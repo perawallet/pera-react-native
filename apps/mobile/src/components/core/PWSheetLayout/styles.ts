@@ -12,8 +12,10 @@
 
 import { makeStyles } from '@rneui/themed'
 
+import type { HorizontalPaddingMode } from '../PWScreen'
+
 type StyleProps = {
-    horizontalPadding: 'xl' | 'none'
+    horizontalPadding: HorizontalPaddingMode
     bottomInset: number
     hasFooter: boolean
     isKeyboardVisible: boolean
@@ -40,15 +42,15 @@ export const useStyles = makeStyles(
         header: {
             backgroundColor: theme.colors.background,
         },
-        body: {
-            paddingHorizontal:
-                horizontalPadding === 'none' ? 0 : theme.spacing.xl,
-            paddingTop: theme.spacing.xl,
-        },
         // gorhom draws the sheet edge-to-edge, so with no footer the safe-area
         // inset must live inside the scroll. Dropped when the keyboard is open
         // (it already covers the home indicator).
-        bodyBottom: {
+        body: {
+            paddingHorizontal:
+                horizontalPadding === 'none'
+                    ? 0
+                    : theme.spacing[horizontalPadding],
+            paddingTop: theme.spacing.xl,
             paddingBottom:
                 hasFooter || isKeyboardVisible
                     ? theme.spacing.xl

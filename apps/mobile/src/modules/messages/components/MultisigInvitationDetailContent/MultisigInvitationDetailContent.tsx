@@ -10,12 +10,11 @@
  limitations under the License
  */
 
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { PWButton, PWScrollView, PWText, PWView } from '@components/core'
+import { PWButton, PWSheetLayout, PWText, PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { MultisigInfoCard } from '@components/MultisigInfoCard'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import type { MultisigInvitationParam } from '../../routes/types'
 import { useMultisigInvitationDetailContent } from './useMultisigInvitationDetailContent'
@@ -30,8 +29,7 @@ export type MultisigInvitationDetailContentProps = {
 export const MultisigInvitationDetailContent = ({
     invitation,
 }: MultisigInvitationDetailContentProps) => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles({ bottomInset: insets.bottom })
+    const styles = useStyles()
     const { t } = useLanguage()
     const { resolve } =
         useBottomSheetResult<MultisigInvitationDetailContentResult>()
@@ -52,86 +50,79 @@ export const MultisigInvitationDetailContent = ({
     if (!renderedInvitation) return null
 
     return (
-        <>
-            <PWScrollView
-                inBottomSheet
-                style={styles.scrollView}
-                contentContainerStyle={styles.scrollContent}
-            >
-                <PWView style={styles.header}>
+        <PWSheetLayout
+            header={
+                <SheetHeader
+                    title={t('multisig.invitation.sheet_title')}
+                    subtitle={truncateAlgorandAddress(
+                        renderedInvitation.address,
+                    )}
+                    testID='multisig_invitation_sheet'
+                />
+            }
+            body={
+                <PWView style={styles.body}>
+                    <MultisigInfoCard
+                        threshold={renderedInvitation.threshold}
+                        totalParticipants={totalParticipants}
+                        isUserIncluded={isUserIncluded}
+                        participantCountTestID='multisig_invitation_participant_count'
+                        thresholdTestID='multisig_invitation_threshold_value'
+                    />
+
                     <PWText
                         variant='h4'
-                        style={styles.headerTitle}
+                        style={styles.sectionHeading}
                     >
-                        {t('multisig.invitation.sheet_title')}
+                        {t('multisig.invitation.accounts_heading', {
+                            count: totalParticipants,
+                        })}
                     </PWText>
-                    <PWText
-                        style={styles.headerSubtitle}
-                        testID='multisig_invitation_sheet_address'
-                    >
-                        {truncateAlgorandAddress(renderedInvitation.address)}
-                    </PWText>
+
+                    <PWView>
+                        {renderedInvitation.participantAddresses.map(
+                            (address, index, arr) => (
+                                <AddressDisplay
+                                    // A multisig can repeat an address, so address
+                                    // alone isn't a unique key.
+                                    key={`${address}-${index}`}
+                                    address={address}
+                                    forceShowIcon
+                                    contactAvatarVariant='highlighted'
+                                    textProps={{ variant: 'h4' }}
+                                    style={[
+                                        styles.participantRow,
+                                        index === arr.length - 1 &&
+                                            styles.participantRowLast,
+                                    ]}
+                                    testID={`participant_row_${address}_${index}`}
+                                />
+                            ),
+                        )}
+                    </PWView>
                 </PWView>
-
-                <MultisigInfoCard
-                    threshold={renderedInvitation.threshold}
-                    totalParticipants={totalParticipants}
-                    isUserIncluded={isUserIncluded}
-                    participantCountTestID='multisig_invitation_participant_count'
-                    thresholdTestID='multisig_invitation_threshold_value'
-                />
-
-                <PWText
-                    variant='h4'
-                    style={styles.sectionHeading}
-                >
-                    {t('multisig.invitation.accounts_heading', {
-                        count: totalParticipants,
-                    })}
-                </PWText>
-
-                <PWView>
-                    {renderedInvitation.participantAddresses.map(
-                        (address, index, arr) => (
-                            <AddressDisplay
-                                // A multisig can repeat an address, so address
-                                // alone isn't a unique key.
-                                key={`${address}-${index}`}
-                                address={address}
-                                forceShowIcon
-                                contactAvatarVariant='highlighted'
-                                textProps={{ variant: 'h4' }}
-                                style={[
-                                    styles.participantRow,
-                                    index === arr.length - 1 &&
-                                        styles.participantRowLast,
-                                ]}
-                                testID={`participant_row_${address}_${index}`}
-                            />
-                        ),
-                    )}
+            }
+            footer={
+                <PWView style={styles.bottomBar}>
+                    <PWButton
+                        variant='secondary'
+                        title={t('multisig.invitation.ignore')}
+                        onPress={handleIgnore}
+                        isLoading={isIgnoring}
+                        isDisabled={isIgnoring}
+                        style={styles.ignoreButton}
+                        testID='multisig_invitation_ignore_button'
+                    />
+                    <PWButton
+                        variant='primary'
+                        title={t('multisig.invitation.add_to_accounts')}
+                        onPress={handleAccept}
+                        isDisabled={isIgnoring}
+                        style={styles.acceptButton}
+                        testID='multisig_invitation_accept_button'
+                    />
                 </PWView>
-            </PWScrollView>
-
-            <PWView style={styles.bottomBar}>
-                <PWButton
-                    variant='secondary'
-                    title={t('multisig.invitation.ignore')}
-                    onPress={handleIgnore}
-                    isLoading={isIgnoring}
-                    isDisabled={isIgnoring}
-                    style={styles.ignoreButton}
-                    testID='multisig_invitation_ignore_button'
-                />
-                <PWButton
-                    variant='primary'
-                    title={t('multisig.invitation.add_to_accounts')}
-                    onPress={handleAccept}
-                    isDisabled={isIgnoring}
-                    style={styles.acceptButton}
-                    testID='multisig_invitation_accept_button'
-                />
-            </PWView>
-        </>
+            }
+        />
     )
 }

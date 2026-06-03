@@ -28,6 +28,7 @@ export type PWTextProps = {
     adjustsFontSizeToFit?: TextProps['adjustsFontSizeToFit']
     minimumFontScale?: TextProps['minimumFontScale']
     selectable?: TextProps['selectable']
+    accessibilityLabel?: TextProps['accessibilityLabel']
     testID?: string
     onPress?: () => void
 }

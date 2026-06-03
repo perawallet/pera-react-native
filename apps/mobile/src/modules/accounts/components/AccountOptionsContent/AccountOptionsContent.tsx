@@ -111,42 +111,56 @@ export const AccountOptionsContent = ({
 
     return (
         <PWSheetLayout
+            horizontalPadding='none'
             header={<SheetHeader title={account.name} />}
-            bodyStyle={styles.container}
-        >
-            <PWView style={styles.accountInfoContainer}>
-                <AccountInfoCard
-                    account={account}
-                    onClose={dismiss}
-                    rekeyedTo={
-                        isRekeyed && authAddress
-                            ? {
-                                  authAccount,
-                                  authAddress,
-                                  onUndoRekey: canUndoRekey
-                                      ? handleUndoRekey
-                                      : undefined,
-                              }
-                            : undefined
-                    }
-                />
-            </PWView>
-
-            <PWView>
-                {generalOptions.map(option => (
-                    <OptionRow
-                        key={option.id}
-                        option={option}
-                        styles={styles}
-                    />
-                ))}
-            </PWView>
-
-            {rekeyOptions.length > 0 && (
+            body={
                 <>
+                    <PWView style={styles.accountInfoContainer}>
+                        <AccountInfoCard
+                            account={account}
+                            onClose={dismiss}
+                            rekeyedTo={
+                                isRekeyed && authAddress
+                                    ? {
+                                          authAccount,
+                                          authAddress,
+                                          onUndoRekey: canUndoRekey
+                                              ? handleUndoRekey
+                                              : undefined,
+                                      }
+                                    : undefined
+                            }
+                        />
+                    </PWView>
+
+                    <PWView>
+                        {generalOptions.map(option => (
+                            <OptionRow
+                                key={option.id}
+                                option={option}
+                                styles={styles}
+                            />
+                        ))}
+                    </PWView>
+
+                    {rekeyOptions.length > 0 && (
+                        <>
+                            <PWDivider style={styles.divider} />
+                            <PWView>
+                                {rekeyOptions.map(option => (
+                                    <OptionRow
+                                        key={option.id}
+                                        option={option}
+                                        styles={styles}
+                                    />
+                                ))}
+                            </PWView>
+                        </>
+                    )}
+
                     <PWDivider style={styles.divider} />
                     <PWView>
-                        {rekeyOptions.map(option => (
+                        {managementOptions.map(option => (
                             <OptionRow
                                 key={option.id}
                                 option={option}
@@ -155,18 +169,7 @@ export const AccountOptionsContent = ({
                         ))}
                     </PWView>
                 </>
-            )}
-
-            <PWDivider style={styles.divider} />
-            <PWView>
-                {managementOptions.map(option => (
-                    <OptionRow
-                        key={option.id}
-                        option={option}
-                        styles={styles}
-                    />
-                ))}
-            </PWView>
-        </PWSheetLayout>
+            }
+        />
     )
 }

@@ -24,6 +24,8 @@ import type { ReactNode } from 'react'
 export type PWDialogProps = {
     isVisible: boolean
     title?: ReactNode
+    /** Accessibility label for dialogs that render their own title content. */
+    accessibilityLabel?: string
     children: ReactNode
     footer?: ReactNode
     maxHeightRatio?: number
@@ -35,6 +37,7 @@ export type PWDialogProps = {
 export const PWDialog = ({
     isVisible,
     title,
+    accessibilityLabel,
     children,
     footer,
     maxHeightRatio = 0.7,
@@ -45,7 +48,8 @@ export const PWDialog = ({
     const { width, height } = useWindowDimensions()
     const insets = useSafeAreaInsets()
     const styles = useStyles({ width, height, insets, maxHeightRatio })
-    const titleLabel = typeof title === 'string' ? title : undefined
+    const titleLabel =
+        accessibilityLabel ?? (typeof title === 'string' ? title : undefined)
 
     return (
         <PWOverlay

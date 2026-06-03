@@ -84,6 +84,7 @@ export const EmptyView = (props: EmptyViewProps) => {
                     </PWText>
                 )}
                 <PWText
+                    variant='body'
                     style={[styles.text, bodyStyle]}
                     numberOfLines={3}
                     truncate

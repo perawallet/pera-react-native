@@ -45,7 +45,37 @@ export const LedgerInstructionsScreen = () => {
 
     return (
         <PWScreen
-            scroll={false}
+            scroll='never'
+            body={
+                <>
+                    <ScreenHeader
+                        icon='ledger'
+                        title={t(titleKey)}
+                        description={t(descriptionKey)}
+                    />
+
+                    <PWView style={styles.instructionsList}>
+                        {instructions.map(({ step, key }) => (
+                            <PWView
+                                key={step}
+                                style={styles.instructionItem}
+                            >
+                                <PWView style={styles.stepCircle}>
+                                    <PWText variant='bodySemibold'>
+                                        {String(step)}
+                                    </PWText>
+                                </PWView>
+                                <PWText
+                                    variant='body'
+                                    style={styles.instructionText}
+                                >
+                                    {t(key)}
+                                </PWText>
+                            </PWView>
+                        ))}
+                    </PWView>
+                </>
+            }
             footer={
                 <PWButton
                     testID='ledger_instructions_continue_button'
@@ -55,33 +85,6 @@ export const LedgerInstructionsScreen = () => {
                     isDisabled={isChecking}
                 />
             }
-        >
-            <ScreenHeader
-                icon='ledger'
-                title={t(titleKey)}
-                description={t(descriptionKey)}
-            />
-
-            <PWView style={styles.instructionsList}>
-                {instructions.map(({ step, key }) => (
-                    <PWView
-                        key={step}
-                        style={styles.instructionItem}
-                    >
-                        <PWView style={styles.stepCircle}>
-                            <PWText variant='bodySemibold'>
-                                {String(step)}
-                            </PWText>
-                        </PWView>
-                        <PWText
-                            variant='body'
-                            style={styles.instructionText}
-                        >
-                            {t(key)}
-                        </PWText>
-                    </PWView>
-                ))}
-            </PWView>
-        </PWScreen>
+        />
     )
 }

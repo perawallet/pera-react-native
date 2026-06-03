@@ -46,27 +46,35 @@ export const EditParticipantScreen = () => {
     })
 
     return (
-        <PWScreen>
-            <ContactForm
-                control={control}
-                address={address}
-                nameLabel={t('multisig.edit_participant.nickname_label')}
-                addressLabel={t('multisig.edit_participant.address_label')}
-                imageUri={imageUri}
-                onPickImage={onPickImage}
-            >
-                <PWButton
-                    variant='destructiveLight'
-                    title={t('multisig.edit_participant.remove')}
-                    onPress={handleRemove}
-                    style={styles.removeButton}
-                />
-            </ContactForm>
-            <PhotoPermissionDeniedSheet
-                isVisible={permissionDenied.isVisible}
-                onClose={permissionDenied.close}
-                onOpenSettings={permissionDenied.openSettings}
-            />
-        </PWScreen>
+        <PWScreen
+            body={
+                <>
+                    <ContactForm
+                        control={control}
+                        address={address}
+                        nameLabel={t(
+                            'multisig.edit_participant.nickname_label',
+                        )}
+                        addressLabel={t(
+                            'multisig.edit_participant.address_label',
+                        )}
+                        imageUri={imageUri}
+                        onPickImage={onPickImage}
+                    >
+                        <PWButton
+                            variant='destructiveLight'
+                            title={t('multisig.edit_participant.remove')}
+                            onPress={handleRemove}
+                            style={styles.removeButton}
+                        />
+                    </ContactForm>
+                    <PhotoPermissionDeniedSheet
+                        isVisible={permissionDenied.isVisible}
+                        onClose={permissionDenied.close}
+                        onOpenSettings={permissionDenied.openSettings}
+                    />
+                </>
+            }
+        />
     )
 }

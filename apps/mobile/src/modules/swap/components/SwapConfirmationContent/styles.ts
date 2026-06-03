@@ -18,10 +18,6 @@ export const useStyles = makeStyles(theme => {
         lineHeight: theme.spacing.lg,
     }
     return {
-        body: {
-            paddingHorizontal: 0,
-            paddingVertical: 0,
-        },
         headerCenter: {
             alignItems: 'center',
         },

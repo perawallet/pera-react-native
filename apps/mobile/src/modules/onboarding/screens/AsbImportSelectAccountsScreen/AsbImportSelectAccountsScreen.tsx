@@ -71,7 +71,61 @@ export const AsbImportSelectAccountsScreen = () => {
     return (
         <>
             <PWScreen
-                scroll={false}
+                scroll='never'
+                body={
+                    <PWView style={styles.content}>
+                        <ScreenHeader
+                            title={t('onboarding.asb_import.select.title')}
+                            description={t(
+                                'onboarding.asb_import.select.body',
+                                {
+                                    count: items.length,
+                                },
+                            )}
+                        />
+
+                        {!areAllImported && (
+                            <PWView style={styles.headerRow}>
+                                <PWText
+                                    variant='bodySemibold'
+                                    style={styles.headerCount}
+                                    truncate
+                                >
+                                    {t('onboarding.asb_import.select.count', {
+                                        count: importableCount,
+                                    })}
+                                </PWText>
+                                <PWTouchableOpacity
+                                    onPress={toggleSelectAll}
+                                    style={styles.selectAll}
+                                    testID='asb_import_select_select_all'
+                                >
+                                    <PWText
+                                        variant='link'
+                                        style={styles.selectAllText}
+                                    >
+                                        {t(
+                                            'onboarding.asb_import.select.select_all',
+                                        )}
+                                    </PWText>
+                                    <PWCheckbox
+                                        checked={isAllSelected}
+                                        onPress={toggleSelectAll}
+                                    />
+                                </PWTouchableOpacity>
+                            </PWView>
+                        )}
+
+                        <PWFlatList
+                            data={items}
+                            renderItem={renderItem}
+                            keyExtractor={item => item.address}
+                            extraData={selectedAddresses}
+                            cardLayout
+                            showsVerticalScrollIndicator={false}
+                        />
+                    </PWView>
+                }
                 footer={
                     <PWButton
                         variant='primary'
@@ -81,57 +135,7 @@ export const AsbImportSelectAccountsScreen = () => {
                         testID='asb_import_select_continue_button'
                     />
                 }
-            >
-                <PWView style={styles.content}>
-                    <ScreenHeader
-                        title={t('onboarding.asb_import.select.title')}
-                        description={t('onboarding.asb_import.select.body', {
-                            count: items.length,
-                        })}
-                    />
-
-                    {!areAllImported && (
-                        <PWView style={styles.headerRow}>
-                            <PWText
-                                variant='bodySemibold'
-                                style={styles.headerCount}
-                                truncate
-                            >
-                                {t('onboarding.asb_import.select.count', {
-                                    count: importableCount,
-                                })}
-                            </PWText>
-                            <PWTouchableOpacity
-                                onPress={toggleSelectAll}
-                                style={styles.selectAll}
-                                testID='asb_import_select_select_all'
-                            >
-                                <PWText
-                                    variant='link'
-                                    style={styles.selectAllText}
-                                >
-                                    {t(
-                                        'onboarding.asb_import.select.select_all',
-                                    )}
-                                </PWText>
-                                <PWCheckbox
-                                    checked={isAllSelected}
-                                    onPress={toggleSelectAll}
-                                />
-                            </PWTouchableOpacity>
-                        </PWView>
-                    )}
-
-                    <PWFlatList
-                        data={items}
-                        renderItem={renderItem}
-                        keyExtractor={item => item.address}
-                        extraData={selectedAddresses}
-                        cardLayout
-                        showsVerticalScrollIndicator={false}
-                    />
-                </PWView>
-            </PWScreen>
+            />
 
             <PWLoadingOverlay
                 isVisible={isProcessing}

@@ -106,8 +106,7 @@ export const ViewTextDetailsContent = ({
                     </PWView>
                 </>
             }
-        >
-            <PWText>{textToDisplay}</PWText>
-        </PWSheetLayout>
+            body={<PWText>{textToDisplay}</PWText>}
+        />
     )
 }

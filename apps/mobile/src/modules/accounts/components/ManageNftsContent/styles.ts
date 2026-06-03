@@ -13,11 +13,6 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    contentContainer: {
-        paddingHorizontal: theme.spacing.lg,
-        paddingTop: 0,
-        paddingBottom: theme.spacing.xl,
-    },
     menuRow: {
         flexDirection: 'row',
         alignItems: 'center',

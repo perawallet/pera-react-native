@@ -102,26 +102,31 @@ export const ContactListScreen = () => {
     }
 
     return (
-        <PWScreen scroll={false}>
-            <PWView style={styles.searchWrapper}>
-                <SearchInput
-                    placeholder={t('contacts.list.search_placeholder')}
-                    value={search}
-                    onChangeText={onSearchChange}
-                />
-            </PWView>
-            <PWFlatList
-                data={contacts}
-                keyExtractor={keyExtractor}
-                renderItem={renderItem}
-                ItemSeparatorComponent={renderSeparator}
-                ListEmptyComponent={
-                    <EmptyView
-                        title={t('contacts.list.no_matching_title')}
-                        body={t('contacts.list.no_matching_body')}
+        <PWScreen
+            scroll='never'
+            body={
+                <>
+                    <PWView style={styles.searchWrapper}>
+                        <SearchInput
+                            placeholder={t('contacts.list.search_placeholder')}
+                            value={search}
+                            onChangeText={onSearchChange}
+                        />
+                    </PWView>
+                    <PWFlatList
+                        data={contacts}
+                        keyExtractor={keyExtractor}
+                        renderItem={renderItem}
+                        ItemSeparatorComponent={renderSeparator}
+                        ListEmptyComponent={
+                            <EmptyView
+                                title={t('contacts.list.no_matching_title')}
+                                body={t('contacts.list.no_matching_body')}
+                            />
+                        }
                     />
-                }
-            />
-        </PWScreen>
+                </>
+            }
+        />
     )
 }

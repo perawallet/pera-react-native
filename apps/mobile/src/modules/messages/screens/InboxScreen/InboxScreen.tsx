@@ -48,30 +48,33 @@ export const InboxScreen = () => {
     )
 
     return (
-        <PWScreen scroll={false}>
-            <PWFlatList
-                data={inboxItems}
-                renderItem={renderItem}
-                keyExtractor={keyExtractor}
-                ItemSeparatorComponent={ListItemDivider}
-                ListEmptyComponent={
-                    <EmptyView
-                        isLoading={isPending}
-                        style={styles.emptyView}
-                        icon='inbox'
-                        title={t('messages.inbox.empty_title')}
-                        body={t('messages.inbox.empty_body')}
-                    />
-                }
-                refreshControl={
-                    <RefreshControl
-                        refreshing={isRefetching}
-                        onRefresh={refetch}
-                        colors={[theme.colors.primary]}
-                        progressBackgroundColor={theme.colors.background}
-                    />
-                }
-            />
-        </PWScreen>
+        <PWScreen
+            scroll='never'
+            body={
+                <PWFlatList
+                    data={inboxItems}
+                    renderItem={renderItem}
+                    keyExtractor={keyExtractor}
+                    ItemSeparatorComponent={ListItemDivider}
+                    ListEmptyComponent={
+                        <EmptyView
+                            isLoading={isPending}
+                            style={styles.emptyView}
+                            icon='inbox'
+                            title={t('messages.inbox.empty_title')}
+                            body={t('messages.inbox.empty_body')}
+                        />
+                    }
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={isRefetching}
+                            onRefresh={refetch}
+                            colors={[theme.colors.primary]}
+                            progressBackgroundColor={theme.colors.background}
+                        />
+                    }
+                />
+            }
+        />
     )
 }

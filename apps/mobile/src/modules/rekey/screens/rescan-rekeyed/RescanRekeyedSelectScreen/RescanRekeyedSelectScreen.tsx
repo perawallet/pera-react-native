@@ -110,10 +110,81 @@ export const RescanRekeyedSelectScreen = () => {
     return (
         <PWScreen
             testID='rescan-rekeyed-select-screen'
-            contentContainerStyle={styles.scrollContent}
-            footerStyle={styles.footer}
+            body={
+                <PWView style={styles.scrollContent}>
+                    <ScreenHeader
+                        title={t('rekey.rescan.title')}
+                        description={t('rekey.rescan.subtitle')}
+                    />
+
+                    {hasCandidates && (
+                        <PWView style={styles.section}>
+                            <PWView style={styles.sectionHeaderRow}>
+                                <PWText
+                                    variant='bodySemibold'
+                                    style={styles.sectionLabel}
+                                >
+                                    {t('rekey.rescan.candidates_section')}
+                                </PWText>
+                                <PWTouchableOpacity
+                                    onPress={toggleSelectAll}
+                                    style={styles.selectAllRow}
+                                >
+                                    <PWText
+                                        variant='link'
+                                        style={styles.selectAllText}
+                                    >
+                                        {t('rekey.rescan.select_all')}
+                                    </PWText>
+                                    <PWCheckbox
+                                        checked={isAllSelected}
+                                        containerStyle={
+                                            styles.checkboxContainer
+                                        }
+                                        testID='rescan-rekeyed-select-all-checkbox'
+                                    />
+                                </PWTouchableOpacity>
+                            </PWView>
+
+                            {candidateAddresses.map(address => (
+                                <RescanCandidateRow
+                                    key={address}
+                                    address={address}
+                                    isSelected={selectedAddresses.has(address)}
+                                    onToggle={toggleAddress}
+                                />
+                            ))}
+                        </PWView>
+                    )}
+
+                    {hasImported && (
+                        <PWView style={styles.section}>
+                            <PWText
+                                variant='bodySemibold'
+                                style={styles.sectionLabel}
+                            >
+                                {t('rekey.rescan.imported_section')}
+                            </PWText>
+
+                            {importedAddresses.map(address => (
+                                <PWView
+                                    key={address}
+                                    style={importedRowStyle}
+                                >
+                                    <PWText
+                                        variant='bodyLarge'
+                                        style={styles.disabledText}
+                                    >
+                                        {truncateAlgorandAddress(address)}
+                                    </PWText>
+                                </PWView>
+                            ))}
+                        </PWView>
+                    )}
+                </PWView>
+            }
             footer={
-                <>
+                <PWView style={styles.footer}>
                     {hasCandidates && (
                         <PWButton
                             variant='primary'
@@ -132,76 +203,8 @@ export const RescanRekeyedSelectScreen = () => {
                         style={styles.cta}
                         testID='rescan-rekeyed-skip'
                     />
-                </>
+                </PWView>
             }
-        >
-            <ScreenHeader
-                title={t('rekey.rescan.title')}
-                description={t('rekey.rescan.subtitle')}
-            />
-
-            {hasCandidates && (
-                <PWView style={styles.section}>
-                    <PWView style={styles.sectionHeaderRow}>
-                        <PWText
-                            variant='bodySemibold'
-                            style={styles.sectionLabel}
-                        >
-                            {t('rekey.rescan.candidates_section')}
-                        </PWText>
-                        <PWTouchableOpacity
-                            onPress={toggleSelectAll}
-                            style={styles.selectAllRow}
-                        >
-                            <PWText
-                                variant='link'
-                                style={styles.selectAllText}
-                            >
-                                {t('rekey.rescan.select_all')}
-                            </PWText>
-                            <PWCheckbox
-                                checked={isAllSelected}
-                                containerStyle={styles.checkboxContainer}
-                                testID='rescan-rekeyed-select-all-checkbox'
-                            />
-                        </PWTouchableOpacity>
-                    </PWView>
-
-                    {candidateAddresses.map(address => (
-                        <RescanCandidateRow
-                            key={address}
-                            address={address}
-                            isSelected={selectedAddresses.has(address)}
-                            onToggle={toggleAddress}
-                        />
-                    ))}
-                </PWView>
-            )}
-
-            {hasImported && (
-                <PWView style={styles.section}>
-                    <PWText
-                        variant='bodySemibold'
-                        style={styles.sectionLabel}
-                    >
-                        {t('rekey.rescan.imported_section')}
-                    </PWText>
-
-                    {importedAddresses.map(address => (
-                        <PWView
-                            key={address}
-                            style={importedRowStyle}
-                        >
-                            <PWText
-                                variant='bodyLarge'
-                                style={styles.disabledText}
-                            >
-                                {truncateAlgorandAddress(address)}
-                            </PWText>
-                        </PWView>
-                    ))}
-                </PWView>
-            )}
-        </PWScreen>
+        />
     )
 }

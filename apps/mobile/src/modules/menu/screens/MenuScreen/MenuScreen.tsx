@@ -83,88 +83,91 @@ export const MenuScreen = () => {
 
     return (
         <PWScreen
-            scroll={false}
+            scroll='never'
             keyboard='none'
             style={styles.container}
             testID='menu_screen'
-        >
-            <PWView style={styles.iconBar}>
-                <PWView style={styles.iconBarSide} />
-                <PWView style={styles.titleContainer}>
-                    <PWText
-                        variant='h4'
-                        style={styles.title}
-                        truncate
-                    >
-                        {t('menu.title')}
-                    </PWText>
-                </PWView>
-                <PWView style={styles.iconBarActions}>
-                    <PWTouchableOpacity
-                        onPress={scanner.open}
-                        testID='menu_button'
-                    >
-                        <PWIcon
-                            name='camera'
-                            variant='primary'
-                        />
-                    </PWTouchableOpacity>
-                    <PWTouchableOpacity
-                        onPress={goToSettings}
-                        testID='menu_settings_button'
-                    >
-                        <PWIcon
-                            name='gear'
-                            variant='primary'
-                        />
-                    </PWTouchableOpacity>
-                </PWView>
-            </PWView>
+            body={
+                <>
+                    <PWView style={styles.iconBar}>
+                        <PWView style={styles.iconBarSide} />
+                        <PWView style={styles.titleContainer}>
+                            <PWText
+                                variant='h4'
+                                style={styles.title}
+                                truncate
+                            >
+                                {t('menu.title')}
+                            </PWText>
+                        </PWView>
+                        <PWView style={styles.iconBarActions}>
+                            <PWTouchableOpacity
+                                onPress={scanner.open}
+                                testID='menu_button'
+                            >
+                                <PWIcon
+                                    name='camera'
+                                    variant='primary'
+                                />
+                            </PWTouchableOpacity>
+                            <PWTouchableOpacity
+                                onPress={goToSettings}
+                                testID='menu_settings_button'
+                            >
+                                <PWIcon
+                                    name='gear'
+                                    variant='primary'
+                                />
+                            </PWTouchableOpacity>
+                        </PWView>
+                    </PWView>
 
-            <PWView style={styles.menuContainer}>
-                <PanelButton
-                    title={t('menu.staking')}
-                    titleWeight='h3'
-                    leftIcon='dot-stack'
-                    rightIcon='chevron-right'
-                    onPress={goToStaking}
-                    testID='menu_staking_button'
-                />
-                <PanelButton
-                    title={t('menu.buy_gift_card')}
-                    titleWeight='h3'
-                    leftIcon='gift'
-                    rightIcon='chevron-right'
-                    onPress={openBidali}
-                />
-                <PanelButton
-                    title={t('menu.receive')}
-                    titleWeight='h3'
-                    leftIcon='inflow'
-                    rightIcon='chevron-right'
-                    onPress={openReceiveFunds}
-                />
-                <PanelButton
-                    title={t('menu.contacts')}
-                    titleWeight='h3'
-                    leftIcon='person-menu'
-                    rightIcon='chevron-right'
-                    onPress={goToContacts}
-                />
-                <PanelButton
-                    title={t('menu.get_help')}
-                    titleWeight='h3'
-                    leftIcon='feedback'
-                    rightIcon='chevron-right'
-                    onPress={openHelpCenter}
-                />
-            </PWView>
-            <QRScannerView
-                isVisible={scanner.isOpen}
-                onSuccess={scanner.close}
-                onClose={scanner.close}
-                animationType='slide'
-            />
-        </PWScreen>
+                    <PWView style={styles.menuContainer}>
+                        <PanelButton
+                            title={t('menu.staking')}
+                            titleWeight='h3'
+                            leftIcon='dot-stack'
+                            rightIcon='chevron-right'
+                            onPress={goToStaking}
+                            testID='menu_staking_button'
+                        />
+                        <PanelButton
+                            title={t('menu.buy_gift_card')}
+                            titleWeight='h3'
+                            leftIcon='gift'
+                            rightIcon='chevron-right'
+                            onPress={openBidali}
+                        />
+                        <PanelButton
+                            title={t('menu.receive')}
+                            titleWeight='h3'
+                            leftIcon='inflow'
+                            rightIcon='chevron-right'
+                            onPress={openReceiveFunds}
+                        />
+                        <PanelButton
+                            title={t('menu.contacts')}
+                            titleWeight='h3'
+                            leftIcon='person-menu'
+                            rightIcon='chevron-right'
+                            onPress={goToContacts}
+                        />
+                        <PanelButton
+                            title={t('menu.get_help')}
+                            titleWeight='h3'
+                            leftIcon='feedback'
+                            rightIcon='chevron-right'
+                            onPress={openHelpCenter}
+                        />
+                    </PWView>
+                    <QRScannerView
+                        isVisible={scanner.isOpen}
+                        onSuccess={scanner.close}
+                        onClose={scanner.close}
+                        animationType='slide'
+                    />
+                </>
+            }
+        />
     )
 }

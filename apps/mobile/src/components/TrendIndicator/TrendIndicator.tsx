@@ -50,13 +50,14 @@ export const TrendIndicator = ({
 }: TrendIndicatorProps) => {
     const styles = useStyles()
 
-    const isPositive = percentage.greaterThanOrEqualTo(0)
+    const isPositive = percentage.greaterThan(0)
     const isZero = percentage.isZero()
-    const itemStyle = hasNeutralText
-        ? styles.itemNeutral
-        : isPositive
-          ? styles.itemUp
-          : styles.itemDown
+    const itemStyle =
+        hasNeutralText || isZero
+            ? styles.itemNeutral
+            : isPositive
+              ? styles.itemUp
+              : styles.itemDown
 
     return (
         <PWView style={styles.container}>
@@ -93,7 +94,7 @@ export const TrendIndicator = ({
                     variant={absolute.variant ?? 'h4'}
                     truncate
                 >
-                    {isPositive ? '+' : '-'}
+                    {isZero ? '' : isPositive ? '+' : '-'}
                     {formatCurrency(
                         absolute.amount.abs(),
                         absolute.precision ?? 2,

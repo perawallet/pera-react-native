@@ -13,9 +13,6 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    body: {
-        paddingTop: 0,
-    },
     heroImage: {
         width: '100%',
         aspectRatio: 16 / 9,
