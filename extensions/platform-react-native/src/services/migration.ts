@@ -11,7 +11,11 @@
  */
 
 import { NativeModules, Platform } from 'react-native'
-import { logger } from '@perawallet/wallet-core-shared'
+import {
+    decodeFromBase64,
+    decodeLongString,
+    logger,
+} from '@perawallet/wallet-core-shared'
 import {
     type KeyValueStorageService,
     LEGACY_MIGRATION_SCHEMA_VERSION,
@@ -263,27 +267,7 @@ const getNativeModule = (): NativeLegacyMigrationModule | null => {
 const decodeBase64 = (value: unknown): Uint8Array | null => {
     if (value == null) return null
     if (typeof value !== 'string') return null
-    if (value.length === 0) return new Uint8Array(0)
-    const binary = globalThis.atob(value)
-    const bytes = new Uint8Array(binary.length)
-    for (let i = 0; i < binary.length; i += 1) {
-        bytes[i] = binary.charCodeAt(i)
-    }
-    return bytes
-}
-
-const decodeLongString = (value: unknown): number | null => {
-    if (value == null) return null
-    if (typeof value === 'number') return Number.isFinite(value) ? value : null
-    if (typeof value !== 'string' || value.length === 0) return null
-    const parsed = Number(value)
-    if (!Number.isFinite(parsed)) return null
-    if (!Number.isSafeInteger(parsed)) {
-        warn(
-            `decodeLongString: value "${value}" exceeds Number.MAX_SAFE_INTEGER; precision will be lost`,
-        )
-    }
-    return parsed
+    return decodeFromBase64(value)
 }
 
 type Base64 = string | null
@@ -371,12 +355,15 @@ const decodeLegacyMigrationData = (
             ...raw.preferences,
             lockPenaltyRemainingMs: decodeLongString(
                 raw.preferences.lockPenaltyRemainingMs,
+                'lockPenaltyRemainingMs',
             ),
             appAtBackgroundMs: decodeLongString(
                 raw.preferences.appAtBackgroundMs,
+                'appAtBackgroundMs',
             ),
             notificationRefreshTimestampMs: decodeLongString(
                 raw.preferences.notificationRefreshTimestampMs,
+                'notificationRefreshTimestampMs',
             ),
         },
         auth: { pin: decodeBase64(raw.auth.pin) },
@@ -392,6 +379,7 @@ const decodeLegacyMigrationData = (
             ...raw.deviceIdentifiers,
             lastSeenNotificationId: decodeLongString(
                 raw.deviceIdentifiers.lastSeenNotificationId,
+                'lastSeenNotificationId',
             ),
         },
         tooltipPreferences: {
@@ -436,19 +424,21 @@ const decodeWalletConnectV1Session = (
     raw: RawLegacyWalletConnectV1Session,
 ): LegacyWalletConnectV1Session => ({
     ...raw,
-    dateTimestampMs: decodeLongString(raw.dateTimestampMs) ?? 0,
+    dateTimestampMs:
+        decodeLongString(raw.dateTimestampMs, 'dateTimestampMs') ?? 0,
 })
 
 const decodeWalletConnectV2Session = (
     raw: RawLegacyWalletConnectV2Session,
 ): LegacyWalletConnectV2Session => ({
     ...raw,
-    dateTimestampMs: decodeLongString(raw.dateTimestampMs) ?? 0,
+    dateTimestampMs:
+        decodeLongString(raw.dateTimestampMs, 'dateTimestampMs') ?? 0,
 })
 
 const decodePasskey = (raw: RawLegacyPasskey): LegacyPasskey => ({
     ...raw,
-    lastUsedAtMs: decodeLongString(raw.lastUsedAtMs),
+    lastUsedAtMs: decodeLongString(raw.lastUsedAtMs, 'lastUsedAtMs'),
 })
 
 const emptyLegacyMigrationData = (): LegacyMigrationData => ({

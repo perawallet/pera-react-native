@@ -36,9 +36,16 @@ vi.mock('react-native', () => ({
     Platform: platformMock,
 }))
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
-    logger: loggerMock,
-}))
+vi.mock('@perawallet/wallet-core-shared', async () => {
+    const actual =
+        await vi.importActual<typeof import('@perawallet/wallet-core-shared')>(
+            '@perawallet/wallet-core-shared',
+        )
+    return {
+        ...actual,
+        logger: loggerMock,
+    }
+})
 
 import { RNMigrationService } from '../services/migration'
 
@@ -371,7 +378,7 @@ describe('RNMigrationService', () => {
             expect(data.accounts[0].secretKey).toBeNull()
         })
 
-        test('decodeLongString warns on values exceeding MAX_SAFE_INTEGER', async () => {
+        test('decodeLongString still parses values exceeding MAX_SAFE_INTEGER (with precision loss)', async () => {
             const raw = buildRawPayload({
                 deviceIdentifiers: {
                     notificationUserId: null,
@@ -385,11 +392,10 @@ describe('RNMigrationService', () => {
                 getLegacyData: vi.fn().mockResolvedValue(raw),
             })
 
-            await service.getLegacyData()
+            const data = await service.getLegacyData()
 
-            expect(loggerMock.warn).toHaveBeenCalledWith(
-                expect.stringContaining('exceeds Number.MAX_SAFE_INTEGER'),
-                undefined,
+            expect(data.deviceIdentifiers.lastSeenNotificationId).toBe(
+                Number('9999999999999999'),
             )
         })
 

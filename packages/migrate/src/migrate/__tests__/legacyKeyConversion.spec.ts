@@ -12,78 +12,22 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-vi.mock('@algorandfoundation/algokit-utils/algo25', () => ({
-    mnemonicFromSeed: vi.fn(
-        (seed: Uint8Array) => `mnemonic-from-${seed.length}-bytes`,
-    ),
-}))
-
-vi.mock('@scure/bip39', () => ({
+vi.mock('@perawallet/wallet-core-kms', () => ({
+    algo25SecretKeyToMnemonic: vi.fn(),
     entropyToMnemonic: vi.fn(
         (entropy: Uint8Array) => `bip39-mnemonic-${entropy.length}B`,
     ),
 }))
 
-import { mnemonicFromSeed } from '@algorandfoundation/algokit-utils/algo25'
-import { entropyToMnemonic } from '@scure/bip39'
+import { entropyToMnemonic } from '@perawallet/wallet-core-kms'
 import type { LegacyHDWallet } from '@perawallet/wallet-extension-platform'
 import {
-    algo25SecretKeyToMnemonic,
     hdWalletEntropyToMnemonic,
     describeBytes,
 } from '../legacyKeyConversion'
 
 beforeEach(() => {
-    vi.mocked(mnemonicFromSeed).mockClear()
     vi.mocked(entropyToMnemonic).mockClear()
-})
-
-describe('algo25SecretKeyToMnemonic', () => {
-    it('truncates a 64-byte keypair to a 32-byte seed before deriving', () => {
-        const secretKey = new Uint8Array(64).fill(7)
-
-        const mnemonic = algo25SecretKeyToMnemonic(secretKey)
-
-        expect(mnemonic).toBe('mnemonic-from-32-bytes')
-        const seedArg = vi.mocked(mnemonicFromSeed).mock.calls[0][0]
-        expect(seedArg).toHaveLength(32)
-    })
-
-    it('uses the full buffer when it is shorter than 32 bytes', () => {
-        const secretKey = new Uint8Array(16).fill(3)
-
-        const mnemonic = algo25SecretKeyToMnemonic(secretKey)
-
-        expect(mnemonic).toBe('mnemonic-from-16-bytes')
-    })
-
-    it('zeroes the derived seed slice after deriving the mnemonic', () => {
-        let capturedSeed: Uint8Array | null = null
-        vi.mocked(mnemonicFromSeed).mockImplementationOnce(seed => {
-            capturedSeed = seed
-            return 'words'
-        })
-        const secretKey = new Uint8Array(64).fill(0xff)
-
-        algo25SecretKeyToMnemonic(secretKey)
-
-        expect(capturedSeed).not.toBeNull()
-        expect(Array.from(capturedSeed!)).toEqual(Array(32).fill(0))
-    })
-
-    it('still zeroes the seed when mnemonicFromSeed throws', () => {
-        let capturedSeed: Uint8Array | null = null
-        vi.mocked(mnemonicFromSeed).mockImplementationOnce(seed => {
-            capturedSeed = seed
-            throw new Error('derive failure')
-        })
-        const secretKey = new Uint8Array(32).fill(0x42)
-
-        expect(() => algo25SecretKeyToMnemonic(secretKey)).toThrow(
-            'derive failure',
-        )
-        expect(Array.from(capturedSeed!)).toEqual(Array(32).fill(0))
-    })
 })
 
 describe('hdWalletEntropyToMnemonic', () => {
@@ -97,7 +41,7 @@ describe('hdWalletEntropyToMnemonic', () => {
         ...overrides,
     })
 
-    it('delegates to @scure/bip39 entropyToMnemonic with the entropy bytes', () => {
+    it('delegates to kms entropyToMnemonic with the entropy bytes', () => {
         const entropy = new Uint8Array(32).fill(0xab)
 
         const mnemonic = hdWalletEntropyToMnemonic(buildWallet({ entropy }))

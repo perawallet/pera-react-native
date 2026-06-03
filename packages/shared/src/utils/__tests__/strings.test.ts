@@ -10,10 +10,11 @@
  limitations under the License
  */
 
-import { describe, test, expect } from 'vitest'
+import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { encodeToBase64, decodeFromBase64 } from '../strings'
 import { hexToBytes, bytesToHex } from '../strings'
 import {
+    decodeLongString,
     formatCurrency,
     formatDatetime,
     formatRelativeTime,
@@ -21,6 +22,7 @@ import {
     getInitials,
     formatTime,
 } from '../strings'
+import { logger } from '../logging'
 
 describe('utils/strings - base64 encoding', () => {
     test('encodeToBase64 encodes bytes correctly', () => {
@@ -337,5 +339,71 @@ describe('utils/strings - formatTime', () => {
 
     test('formats with HH:MM:SS once an hour or more has elapsed', () => {
         expect(formatTime(3661)).toBe('01:01:01')
+    })
+})
+
+describe('utils/strings - decodeLongString', () => {
+    beforeEach(() => {
+        vi.spyOn(logger, 'warn').mockImplementation(() => {})
+        vi.mocked(logger.warn).mockClear()
+    })
+
+    test('returns null for null and undefined', () => {
+        expect(decodeLongString(null)).toBeNull()
+        expect(decodeLongString(undefined)).toBeNull()
+    })
+
+    test('returns null for non-string non-number inputs', () => {
+        expect(decodeLongString(true)).toBeNull()
+        expect(decodeLongString({})).toBeNull()
+        expect(decodeLongString([])).toBeNull()
+    })
+
+    test('returns null for empty string', () => {
+        expect(decodeLongString('')).toBeNull()
+    })
+
+    test('passes finite numbers through unchanged', () => {
+        expect(decodeLongString(42)).toBe(42)
+        expect(decodeLongString(0)).toBe(0)
+        expect(decodeLongString(-1.5)).toBe(-1.5)
+    })
+
+    test('returns null for non-finite numbers', () => {
+        expect(decodeLongString(Number.NaN)).toBeNull()
+        expect(decodeLongString(Number.POSITIVE_INFINITY)).toBeNull()
+        expect(decodeLongString(Number.NEGATIVE_INFINITY)).toBeNull()
+    })
+
+    test('parses string-encoded integers', () => {
+        expect(decodeLongString('123')).toBe(123)
+        expect(decodeLongString('0')).toBe(0)
+        expect(decodeLongString('-999')).toBe(-999)
+    })
+
+    test('returns null for non-numeric strings', () => {
+        expect(decodeLongString('not-a-number')).toBeNull()
+        expect(decodeLongString('12abc')).toBeNull()
+    })
+
+    test('warns with the supplied field name when input exceeds MAX_SAFE_INTEGER', () => {
+        decodeLongString('9999999999999999', 'lastSeenNotificationId')
+        expect(logger.warn).toHaveBeenCalledWith(
+            expect.stringContaining(
+                'lastSeenNotificationId: value "9999999999999999" exceeds Number.MAX_SAFE_INTEGER',
+            ),
+        )
+    })
+
+    test('uses "decodeLongString" as the label when fieldName is omitted', () => {
+        decodeLongString('9999999999999999')
+        expect(logger.warn).toHaveBeenCalledWith(
+            expect.stringContaining('decodeLongString: value'),
+        )
+    })
+
+    test('does not warn for safe-integer string values', () => {
+        decodeLongString('123', 'someField')
+        expect(logger.warn).not.toHaveBeenCalled()
     })
 })
