@@ -15,6 +15,7 @@ import { renderHook, act } from '@testing-library/react'
 import { useImportAccount } from '../useImportAccount'
 import { useAccountsStore } from '../../store'
 import { SeedScheme } from '@perawallet/wallet-core-kms'
+import { DuplicateAccountError } from '../../errors'
 
 const uuidSpies = vi.hoisted(() => ({ v7: vi.fn() }))
 
@@ -279,5 +280,32 @@ describe('useImportAccount', () => {
                 }),
             ).rejects.toThrow('Import failed')
         })
+    })
+
+    test('rejects a second import of the same address within one batch (no re-render between calls)', async () => {
+        kmsMock.createAlgo25Key.mockResolvedValue({
+            seedKey: {
+                id: 'WALLET1',
+                type: 'seed',
+                algorithm: 'raw',
+                extractable: true,
+                metadata: { scheme: SeedScheme.Algo25 },
+            },
+            address: 'SAME_ADDRESS',
+        })
+        uuidSpies.v7.mockImplementation(() => 'ACC1')
+
+        const { result } = renderHook(() => useImportAccount())
+
+        // Two back-to-back imports, no re-render between them — mirrors the
+        // Pera Web / ASB import loop.
+        await act(async () => {
+            await result.current({ mnemonic: 'a', type: 'algo25' })
+            await expect(
+                result.current({ mnemonic: 'a', type: 'algo25' }),
+            ).rejects.toBeInstanceOf(DuplicateAccountError)
+        })
+
+        expect(useAccountsStore.getState().accounts).toHaveLength(1)
     })
 })
