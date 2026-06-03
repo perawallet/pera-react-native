@@ -11,11 +11,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const {
-    patchMainApplication,
-} = require('../withMainApplicationLegacyMigration')
+import { patchMainApplication } from '../withMainApplicationLegacyMigration'
 
 const IMPORT_LINE =
     'import com.algorand.perarn.migration.bridge.LegacyMigrationPackage'

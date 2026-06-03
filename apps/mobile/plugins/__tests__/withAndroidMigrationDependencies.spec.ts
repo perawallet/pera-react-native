@@ -11,9 +11,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { patchAppBuildGradle } = require('../withAndroidMigrationDependencies')
+import { patchAppBuildGradle } from '../withAndroidMigrationDependencies'
 
 // Mirrors the relevant portion of the Expo / RN template app/build.gradle.
 const TEMPLATE = `apply plugin: "com.android.application"
