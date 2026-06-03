@@ -53,7 +53,7 @@ final class LegacyDataBuilder {
         if let reader = sqliteReader {
             contactRows = (try? reader.readContacts()) ?? []
             passkeyRows = (try? reader.readPasskeys()) ?? []
-            wcHistoryBlob = (try? reader.readWalletConnectHistoryBlob()) ?? nil
+            wcHistoryBlob = try? reader.readWalletConnectHistoryBlob()
         } else {
             contactRows = []
             passkeyRows = []
@@ -153,7 +153,7 @@ final class LegacyDataBuilder {
 
     private func buildAuth() -> [String: Any] {
         var m = BridgeMap()
-        let pin = (try? keychain.readPin()) ?? nil
+        let pin = try? keychain.readPin()
         m.putBytes("pin", pin)
         return m.dict
     }

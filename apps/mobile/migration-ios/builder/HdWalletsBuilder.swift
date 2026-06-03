@@ -76,7 +76,7 @@ enum HdWalletsBuilder {
     }
 
     private static func readWalletEntropy(walletId: String, keychain: KeychainReader) -> Data? {
-        let seed = (try? keychain.readHDWalletSeed(walletId: walletId)) ?? nil
+        let seed = try? keychain.readHDWalletSeed(walletId: walletId)
         guard let entropy = seed?.entropy else { return nil }
         return Data(base64Encoded: entropy)
     }
@@ -86,7 +86,7 @@ enum HdWalletsBuilder {
         address: String,
         keychain: KeychainReader
     ) -> Data? {
-        let entry = (try? keychain.readHDAddress(walletId: walletId, address: address)) ?? nil
+        let entry = try? keychain.readHDAddress(walletId: walletId, address: address)
         guard let pkB64 = entry?.privateKey else { return nil }
         return Data(base64Encoded: pkB64)
     }
