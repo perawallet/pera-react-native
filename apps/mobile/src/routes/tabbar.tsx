@@ -120,7 +120,7 @@ export const TabBarStackNavigator = () => {
                 name='Menu'
                 layout={safeAreaLayout}
                 component={MenuScreen}
-                options={{ tabBarTestID: 'tab_menu_button' }}
+                options={{ tabBarButtonTestID: 'tab_menu_button' }}
             />
         </TabBarStack.Navigator>
     )
