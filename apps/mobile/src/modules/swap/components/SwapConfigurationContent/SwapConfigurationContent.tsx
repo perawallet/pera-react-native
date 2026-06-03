@@ -11,9 +11,14 @@
  */
 
 import { useCallback } from 'react'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { SwapConfigurationResult } from '@perawallet/wallet-core-swaps'
-import { PWButton, PWIcon, PWText, PWToolbar } from '@components/core'
+import {
+    PWButton,
+    PWIcon,
+    PWSheetLayout,
+    PWText,
+    PWToolbar,
+} from '@components/core'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { BalancePercentageSection } from './BalancePercentageSection'
@@ -27,7 +32,6 @@ export const SwapConfigurationContent = (
     _: SwapConfigurationContentProps = {},
 ) => {
     const { t } = useLanguage()
-    const insets = useSafeAreaInsets()
     const { resolve, dismiss } = useBottomSheetResult<SwapConfigurationResult>()
 
     const handleApplyInternal = useCallback(
@@ -53,49 +57,55 @@ export const SwapConfigurationContent = (
     })
 
     return (
-        <>
-            <PWToolbar
-                left={
-                    <PWIcon
-                        name='cross'
-                        onPress={dismiss}
+        <PWSheetLayout
+            horizontalPadding='none'
+            header={
+                <PWToolbar
+                    left={
+                        <PWIcon
+                            name='cross'
+                            onPress={dismiss}
+                        />
+                    }
+                    center={
+                        <PWText
+                            variant='h4'
+                            truncate
+                        >
+                            {t('swap.configuration.title')}
+                        </PWText>
+                    }
+                    right={
+                        <PWButton
+                            variant='linkPositive'
+                            title={t('swap.configuration.apply')}
+                            onPress={handleApply}
+                            isDisabled={!isApplyEnabled}
+                            paddingStyle='none'
+                            testID='swap-config-apply'
+                        />
+                    }
+                    paddingStyle='dense'
+                />
+            }
+            body={
+                <>
+                    <BalancePercentageSection
+                        text={balanceText}
+                        onTextChange={setBalanceText}
+                        isError={isBalanceError}
                     />
-                }
-                center={
-                    <PWText
-                        variant='h4'
-                        truncate
-                    >
-                        {t('swap.configuration.title')}
-                    </PWText>
-                }
-                right={
-                    <PWButton
-                        variant='linkPositive'
-                        title={t('swap.configuration.apply')}
-                        onPress={handleApply}
-                        isDisabled={!isApplyEnabled}
-                        paddingStyle='none'
-                        testID='swap-config-apply'
+                    <SlippageToleranceSection
+                        text={slippageText}
+                        onTextChange={setSlippageText}
+                        isError={isSlippageError}
                     />
-                }
-                paddingStyle='dense'
-            />
-            <BalancePercentageSection
-                text={balanceText}
-                onTextChange={setBalanceText}
-                isError={isBalanceError}
-            />
-            <SlippageToleranceSection
-                text={slippageText}
-                onTextChange={setSlippageText}
-                isError={isSlippageError}
-            />
-            <PrimaryCurrencyToggle
-                value={useLocalCurrency}
-                onValueChange={setUseLocalCurrency}
-                bottomInset={insets.bottom}
-            />
-        </>
+                    <PrimaryCurrencyToggle
+                        value={useLocalCurrency}
+                        onValueChange={setUseLocalCurrency}
+                    />
+                </>
+            }
+        />
     )
 }

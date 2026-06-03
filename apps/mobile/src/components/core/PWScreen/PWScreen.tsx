@@ -28,11 +28,11 @@ import type { ReactNode } from 'react'
 import type { StyleProp, ViewStyle } from 'react-native'
 
 export type PWScreenProps = {
-    /** Scrollable body — the only required zone. */
-    body: ReactNode
     /** Sticky top zone, above the body. Most screens leave this to the
      * navigation header and omit it. */
     header?: ReactNode
+    /** Scrollable body — the only required zone. */
+    body: ReactNode
     /** Sticky bottom zone, pinned above the keyboard when it opens. */
     footer?: ReactNode
     /** Body scroll behavior. `'auto'` (default) wraps the body in a scroll
@@ -42,7 +42,6 @@ export type PWScreenProps = {
      * not scroll. */
     scroll?: 'auto' | 'never'
     horizontalPadding?: HorizontalPaddingMode
-    keyboard?: 'avoid' | 'none'
     style?: StyleProp<ViewStyle>
     testID?: string
 }
@@ -55,12 +54,11 @@ export type PWScreenProps = {
  * `header`/`body`/`footer` slots for sheets.
  */
 export const PWScreen = ({
-    body,
     header,
+    body,
     footer,
     scroll = 'auto',
     horizontalPadding = 'xl',
-    keyboard = 'avoid',
     style,
     testID,
 }: PWScreenProps) => {
@@ -72,8 +70,6 @@ export const PWScreen = ({
         bottomInset,
         hasFooter: footer != null,
     })
-
-    const keyboardEnabled = keyboard === 'avoid'
 
     // Dismiss the keyboard on navigating away so it doesn't linger over the
     // next screen during the transition.
@@ -90,20 +86,24 @@ export const PWScreen = ({
     const footerEdges =
         isInTabNavigator || isKeyboardVisible ? [] : (['bottom'] as const)
 
-    const renderedBody = scroll === 'auto' ? (
-        <ScrollView
-            style={styles.body}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-            showsHorizontalScrollIndicator={false}
-            keyboardShouldPersistTaps='handled'
-            keyboardDismissMode='interactive'
-        >
-            {body}
-        </ScrollView>
-    ) : (
-        <PWView style={styles.fixedBody}>{body}</PWView>
-    )
+    const renderedHeader =
+        header == null ? null : <PWView style={styles.header}>{header}</PWView>
+
+    const renderedBody =
+        scroll === 'auto' ? (
+            <ScrollView
+                style={styles.body}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+                showsHorizontalScrollIndicator={false}
+                keyboardShouldPersistTaps='handled'
+                keyboardDismissMode='interactive'
+            >
+                {body}
+            </ScrollView>
+        ) : (
+            <PWView style={styles.fixedBody}>{body}</PWView>
+        )
 
     const renderedFooter =
         footer == null ? null : (
@@ -123,9 +123,8 @@ export const PWScreen = ({
             <KeyboardAvoidingView
                 style={styles.keyboardView}
                 behavior='padding'
-                enabled={keyboardEnabled}
             >
-                {header}
+                {renderedHeader}
                 {renderedBody}
                 {renderedFooter}
             </KeyboardAvoidingView>

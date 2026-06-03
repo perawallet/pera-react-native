@@ -380,10 +380,13 @@ export const useSwapForm = (): UseSwapFormResult => {
                     selectedProviderName={selectedProviderName}
                 />
             ),
-            // autoCreateContainer:false: PWSheetLayout owns the scroll view, so
-            // skip the content-sized wrapper or the list can't scroll.
+            // PWSheetLayout owns the scroll view, so it needs a bounded size
+            // (not 'auto'): when the sheet hugs its content the scroll view has
+            // no height to scroll within and a long provider list would clip.
+            // autoCreateContainer:false so the layout (not the sheet) owns the
+            // scroll container.
             options: {
-                size: 'auto',
+                size: 'modal',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },

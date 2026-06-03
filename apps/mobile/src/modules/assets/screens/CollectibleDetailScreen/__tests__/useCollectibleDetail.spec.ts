@@ -397,7 +397,12 @@ describe('useCollectibleDetail', () => {
         it('is true when only a primaryImage is present (no image media)', () => {
             mockUseSingleAssetDetailsQuery.mockReturnValue({
                 data: makeAssetWithMedia(
-                    [{ type: 'video', downloadUrl: 'https://example.com/v.mp4' }],
+                    [
+                        {
+                            type: 'video',
+                            downloadUrl: 'https://example.com/v.mp4',
+                        },
+                    ],
                     'https://example.com/primary.png',
                 ),
                 isPending: false,
@@ -470,7 +475,12 @@ describe('useCollectibleDetail', () => {
         it('falls back to primaryImage when no media is directly saveable', () => {
             mockUseSingleAssetDetailsQuery.mockReturnValue({
                 data: makeAssetWithMedia(
-                    [{ type: 'model', downloadUrl: 'https://example.com/m.glb' }],
+                    [
+                        {
+                            type: 'model',
+                            downloadUrl: 'https://example.com/m.glb',
+                        },
+                    ],
                     'https://example.com/primary.png',
                 ),
                 isPending: false,
@@ -521,9 +531,7 @@ describe('useCollectibleDetail', () => {
 
             await result.current.handleSaveImage()
 
-            expect(
-                MediaLibrary.requestPermissionsAsync,
-            ).not.toHaveBeenCalled()
+            expect(MediaLibrary.requestPermissionsAsync).not.toHaveBeenCalled()
             expect(MediaLibrary.saveToLibraryAsync).not.toHaveBeenCalled()
         })
     })

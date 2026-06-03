@@ -21,8 +21,6 @@ export const useStyles = makeStyles((_theme, { width, height }: StyleProps) => {
     const isFixed = width != null && height != null
     return {
         container: isFixed ? { width, height } : { flex: 1, width: '100%' },
-        video: isFixed
-            ? { width, height }
-            : { width: '100%', height: '100%' },
+        video: isFixed ? { width, height } : { width: '100%', height: '100%' },
     }
 })

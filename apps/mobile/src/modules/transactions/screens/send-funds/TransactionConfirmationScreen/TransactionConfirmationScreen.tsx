@@ -182,7 +182,7 @@ export const TransactionConfirmationScreen = () => {
                 </PWView>
             }
             footer={
-                <PWView style={styles.buttonContainer}>
+                <>
                     {isCloseAccount && <CloseAccountWarning />}
                     {isRecipientBelowMbr && (
                         <RecipientBelowMbrWarning
@@ -198,7 +198,7 @@ export const TransactionConfirmationScreen = () => {
                         }
                         testID='send_confirm_button'
                     />
-                </PWView>
+                </>
             }
         />
     )

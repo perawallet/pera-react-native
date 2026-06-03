@@ -30,7 +30,6 @@ export const Arc60SigningDetailsScreen = () => {
 
     return (
         <PWScreen
-            scroll='never'
             body={
                 <Arc60DataSigningDetailsView
                     request={request}

@@ -76,7 +76,6 @@ export const TransactionDetailsScreen = () => {
     if (transaction) {
         return (
             <PWScreen
-                keyboard='none'
                 body={
                     <>
                         <TransactionDisplay

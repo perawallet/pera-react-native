@@ -11,14 +11,7 @@
  */
 
 import { ActivityIndicator } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import {
-    PWButton,
-    PWIcon,
-    PWScrollView,
-    PWText,
-    PWView,
-} from '@components/core'
+import { PWButton, PWIcon, PWScreen, PWText, PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { MultisigInfoCard } from '@components/MultisigInfoCard'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
@@ -112,74 +105,73 @@ export const ImportSharedAccountScreen = () => {
     }
 
     return (
-        <PWView
+        <PWScreen
             style={styles.container}
             testID='import-shared-account-screen'
-        >
-            <PWScrollView contentContainerStyle={styles.scrollContent}>
-                <MultisigInfoCard
-                    totalParticipants={totalParticipants}
-                    threshold={threshold}
-                    isUserIncluded={isUserIncluded}
-                    canUserSign={canUserSign}
-                    participantCountTestID='import-shared-account-participant-count'
-                    thresholdTestID='import-shared-account-threshold'
-                />
+            body={
+                <PWView style={styles.bodyContent}>
+                    <MultisigInfoCard
+                        totalParticipants={totalParticipants}
+                        threshold={threshold}
+                        isUserIncluded={isUserIncluded}
+                        canUserSign={canUserSign}
+                        participantCountTestID='import-shared-account-participant-count'
+                        thresholdTestID='import-shared-account-threshold'
+                    />
 
-                <PWText
-                    variant='h4'
-                    style={styles.sectionHeading}
-                >
-                    {t('multisig.import.accounts_heading', {
-                        count: totalParticipants,
-                    })}
-                </PWText>
-
-                <PWView>
-                    {participantAddresses.map(participant => (
-                        <AddressDisplay
-                            key={participant}
-                            address={participant}
-                            showCopy={false}
-                            forceShowIcon
-                            contactAvatarVariant='highlighted'
-                            textProps={{ variant: 'h4' }}
-                            style={styles.participantRow}
-                            testID={`import-participant-row-${participant}`}
-                        />
-                    ))}
-                </PWView>
-            </PWScrollView>
-
-            <SafeAreaView
-                edges={['bottom']}
-                style={styles.bottomBar}
-            >
-                {isAlreadyImported && (
-                    <PWText style={styles.alreadyImportedNote}>
-                        {t('multisig.import.already_imported')}
+                    <PWText
+                        variant='h4'
+                        style={styles.sectionHeading}
+                    >
+                        {t('multisig.import.accounts_heading', {
+                            count: totalParticipants,
+                        })}
                     </PWText>
-                )}
-                <PWView style={styles.bottomActions}>
-                    <PWButton
-                        variant='secondary'
-                        title={t('multisig.import.ignore')}
-                        onPress={handleIgnore}
-                        paddingStyle='dense'
-                        style={styles.ignoreButton}
-                        testID='import-shared-account-ignore-button'
-                    />
-                    <PWButton
-                        variant='primary'
-                        title={t('multisig.import.add_to_accounts')}
-                        onPress={handleAddAccount}
-                        isDisabled={isAddDisabled}
-                        paddingStyle='dense'
-                        style={styles.addButton}
-                        testID='import-shared-account-add-button'
-                    />
+
+                    <PWView>
+                        {participantAddresses.map(participant => (
+                            <AddressDisplay
+                                key={participant}
+                                address={participant}
+                                showCopy={false}
+                                forceShowIcon
+                                contactAvatarVariant='highlighted'
+                                textProps={{ variant: 'h4' }}
+                                style={styles.participantRow}
+                                testID={`import-participant-row-${participant}`}
+                            />
+                        ))}
+                    </PWView>
                 </PWView>
-            </SafeAreaView>
-        </PWView>
+            }
+            footer={
+                <PWView style={styles.footerContent}>
+                    {isAlreadyImported && (
+                        <PWText style={styles.alreadyImportedNote}>
+                            {t('multisig.import.already_imported')}
+                        </PWText>
+                    )}
+                    <PWView style={styles.bottomActions}>
+                        <PWButton
+                            variant='secondary'
+                            title={t('multisig.import.ignore')}
+                            onPress={handleIgnore}
+                            paddingStyle='dense'
+                            style={styles.ignoreButton}
+                            testID='import-shared-account-ignore-button'
+                        />
+                        <PWButton
+                            variant='primary'
+                            title={t('multisig.import.add_to_accounts')}
+                            onPress={handleAddAccount}
+                            isDisabled={isAddDisabled}
+                            paddingStyle='dense'
+                            style={styles.addButton}
+                            testID='import-shared-account-add-button'
+                        />
+                    </PWView>
+                </PWView>
+            }
+        />
     )
 }

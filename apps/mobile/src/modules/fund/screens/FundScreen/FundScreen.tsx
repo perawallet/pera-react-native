@@ -23,7 +23,6 @@ export const FundScreen = () => {
         <PWScreen
             scroll='never'
             horizontalPadding='none'
-            keyboard='none'
             style={styles.container}
             body={
                 <PWWebView

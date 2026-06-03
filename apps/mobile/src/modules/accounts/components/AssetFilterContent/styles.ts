@@ -18,7 +18,6 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingBottom: theme.spacing.xl,
-        paddingHorizontal: theme.spacing.md,
     },
     filterRowDisabled: {
         opacity: 0.5,

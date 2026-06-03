@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWButton, PWScreen, PWScrollView, PWText } from '@components/core'
+import { PWButton, PWScreen, PWText, PWView } from '@components/core'
 import { ScreenHeader } from '@components/ScreenHeader'
 import { useLanguage } from '@hooks/useLanguage'
 import { ParticipantListItem } from '../../components/ParticipantListItem'
@@ -32,48 +32,43 @@ export const CreateMultisigScreen = () => {
 
     return (
         <PWScreen
-            scroll='never'
+            header={
+                <ScreenHeader
+                    title={t('multisig.create.title')}
+                    description={t('multisig.create.description')}
+                />
+            }
             body={
-                <>
-                    <ScreenHeader
-                        title={t('multisig.create.title')}
-                        description={t('multisig.create.description')}
-                    />
+                <PWView style={styles.scrollArea}>
+                    <PWText variant='h4'>
+                        {t('multisig.create.accounts_section')}
+                    </PWText>
+                    <PWText style={styles.description}>
+                        {t('multisig.create.accounts_subtitle')}
+                    </PWText>
 
-                    <PWScrollView
-                        style={styles.listFlex}
-                        contentContainerStyle={styles.scrollArea}
-                    >
-                        <PWText variant='h4'>
-                            {t('multisig.create.accounts_section')}
-                        </PWText>
-                        <PWText style={styles.description}>
-                            {t('multisig.create.accounts_subtitle')}
-                        </PWText>
-
-                        {participants.map((participant, index) => (
-                            <ParticipantListItem
-                                key={`${index}-${participant.address}`}
-                                participant={participant}
-                                index={index}
-                                isInWallet={isParticipantInWallet(
-                                    participant.address,
-                                )}
-                                onEdit={handleEditParticipant}
-                                onRemove={handleRemoveParticipant}
-                            />
-                        ))}
-                        <PWButton
-                            variant='linkPositive'
-                            icon='plus'
-                            title={t('multisig.create.add_account')}
-                            onPress={handleOpenAddParticipant}
-                            testID='add_participant_button'
-                            paddingStyle='none'
-                            style={styles.addButton}
+                    {participants.map((participant, index) => (
+                        <ParticipantListItem
+                            key={`${index}-${participant.address}`}
+                            participant={participant}
+                            index={index}
+                            isInWallet={isParticipantInWallet(
+                                participant.address,
+                            )}
+                            onEdit={handleEditParticipant}
+                            onRemove={handleRemoveParticipant}
                         />
-                    </PWScrollView>
-                </>
+                    ))}
+                    <PWButton
+                        variant='linkPositive'
+                        icon='plus'
+                        title={t('multisig.create.add_account')}
+                        onPress={handleOpenAddParticipant}
+                        testID='add_participant_button'
+                        paddingStyle='none'
+                        style={styles.addButton}
+                    />
+                </PWView>
             }
             footer={
                 <PWButton

@@ -101,7 +101,6 @@ export const CollectibleDetailScreen = ({
         <>
             <PWScreen
                 horizontalPadding='none'
-                keyboard='none'
                 style={styles.container}
                 body={
                     <>

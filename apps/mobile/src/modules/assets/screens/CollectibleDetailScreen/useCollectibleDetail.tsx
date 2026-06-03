@@ -326,7 +326,11 @@ export const useCollectibleDetail = (
             if (m.type === 'video') {
                 items.push({ uri, type: 'video' })
             } else if (m.type === 'audio') {
-                items.push({ uri, type: 'audio', posterUri: m.previewUrl ?? posterFallback })
+                items.push({
+                    uri,
+                    type: 'audio',
+                    posterUri: m.previewUrl ?? posterFallback,
+                })
             } else {
                 items.push({ uri, type: 'image' })
             }

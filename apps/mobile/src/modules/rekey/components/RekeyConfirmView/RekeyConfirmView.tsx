@@ -11,15 +11,8 @@
  */
 
 import { useCallback } from 'react'
-import { SafeAreaView } from 'react-native-safe-area-context'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
-import {
-    PWButton,
-    PWIcon,
-    PWScrollView,
-    PWText,
-    PWView,
-} from '@components/core'
+import { PWButton, PWIcon, PWScreen, PWText, PWView } from '@components/core'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { ScreenHeader } from '@components/ScreenHeader'
 import { useWebView } from '@modules/webview'
@@ -69,93 +62,90 @@ export const RekeyConfirmView = ({
     }, [pushWebView, supportUrl])
 
     return (
-        <PWView
+        <PWScreen
             style={styles.container}
             testID={`${testIDPrefix}-confirm-screen`}
-        >
-            <PWView style={styles.header}>
-                <ScreenHeader
-                    title={t(`${i18nPrefix}.title`)}
-                    description={
-                        <>
-                            {t(`${i18nPrefix}.body`)}{' '}
+            body={
+                <PWView style={styles.scrollContent}>
+                    <ScreenHeader
+                        title={t(`${i18nPrefix}.title`)}
+                        description={
+                            <>
+                                {t(`${i18nPrefix}.body`)}{' '}
+                                <PWText
+                                    variant='bodyLarge'
+                                    style={styles.learnMore}
+                                    onPress={handleLearnMore}
+                                >
+                                    {t(`${i18nPrefix}.learn_more`)}
+                                </PWText>
+                            </>
+                        }
+                    />
+                    <PWView style={styles.summarySection}>
+                        <PWText
+                            variant='bodyLarge'
+                            style={styles.summaryLabel}
+                        >
+                            {t(`${i18nPrefix}.summary_label`)}
+                        </PWText>
+
+                        <PWView style={styles.summaryCard}>
+                            <RekeySummaryRow account={source} />
+                            <PWView style={styles.arrowRow}>
+                                <PWIcon
+                                    name='arrow-down'
+                                    size='sm'
+                                    variant='secondary'
+                                />
+                            </PWView>
+                            <RekeySummaryRow account={target} />
+                        </PWView>
+                    </PWView>
+
+                    <PWView style={styles.spacer} />
+                </PWView>
+            }
+            footer={
+                <PWView style={styles.footer}>
+                    {hasPreviousRekey && currentAuth && (
+                        <PWView style={styles.currentAuthRow}>
                             <PWText
                                 variant='bodyLarge'
-                                style={styles.learnMore}
-                                onPress={handleLearnMore}
+                                style={styles.rowLabel}
                             >
-                                {t(`${i18nPrefix}.learn_more`)}
+                                {t(`${i18nPrefix}.current_auth_label`)}
                             </PWText>
-                        </>
-                    }
-                />
-            </PWView>
-            <PWScrollView contentContainerStyle={styles.scrollContent}>
-                <PWView style={styles.summarySection}>
-                    <PWText
-                        variant='bodyLarge'
-                        style={styles.summaryLabel}
-                    >
-                        {t(`${i18nPrefix}.summary_label`)}
-                    </PWText>
-
-                    <PWView style={styles.summaryCard}>
-                        <RekeySummaryRow account={source} />
-                        <PWView style={styles.arrowRow}>
-                            <PWIcon
-                                name='arrow-down'
-                                size='sm'
-                                variant='secondary'
-                            />
+                            <RekeySummaryRow account={currentAuth} />
                         </PWView>
-                        <RekeySummaryRow account={target} />
-                    </PWView>
-                </PWView>
-
-                <PWView style={styles.spacer} />
-            </PWScrollView>
-
-            <SafeAreaView
-                edges={['bottom']}
-                style={styles.footer}
-            >
-                {hasPreviousRekey && currentAuth && (
-                    <PWView style={styles.currentAuthRow}>
+                    )}
+                    <PWView style={styles.row}>
                         <PWText
                             variant='bodyLarge'
                             style={styles.rowLabel}
                         >
-                            {t(`${i18nPrefix}.current_auth_label`)}
+                            {t(`${i18nPrefix}.fee_label`)}
                         </PWText>
-                        <RekeySummaryRow account={currentAuth} />
+                        <CurrencyDisplay
+                            currency='ALGO'
+                            value={feeAlgos}
+                            precision={ALGO_ASSET.decimals}
+                            minPrecision={3}
+                            variant='bodyLarge'
+                        />
                     </PWView>
-                )}
-                <PWView style={styles.row}>
-                    <PWText
-                        variant='bodyLarge'
-                        style={styles.rowLabel}
-                    >
-                        {t(`${i18nPrefix}.fee_label`)}
-                    </PWText>
-                    <CurrencyDisplay
-                        currency='ALGO'
-                        value={feeAlgos}
-                        precision={ALGO_ASSET.decimals}
-                        minPrecision={3}
-                        variant='bodyLarge'
+
+                    <PWButton
+                        variant='primary'
+                        title={t(`${i18nPrefix}.cta`)}
+                        onPress={onConfirmPress}
+                        isLoading={isSubmitting}
+                        isDisabled={!source || !target || feePending}
+                        style={styles.cta}
+                        testID={`${testIDPrefix}-confirm-cta`}
                     />
                 </PWView>
-
-                <PWButton
-                    variant='primary'
-                    title={t(`${i18nPrefix}.cta`)}
-                    onPress={onConfirmPress}
-                    isLoading={isSubmitting}
-                    isDisabled={!source || !target || feePending}
-                    style={styles.cta}
-                    testID={`${testIDPrefix}-confirm-cta`}
-                />
-            </SafeAreaView>
-        </PWView>
+            }
+        />
     )
 }

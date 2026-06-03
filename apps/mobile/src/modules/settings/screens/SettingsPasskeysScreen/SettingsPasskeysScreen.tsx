@@ -72,9 +72,15 @@ export const SettingsPasskeyScreen = () => {
             break
     }
 
+    // The populated list owns its bottom safe-area inset (so rows scroll under
+    // the home indicator); every other state is centered or bottom-anchored and
+    // relies on the screen to supply the inset.
+    const bottomEdges =
+        screen.state === 'populated' ? [] : (['bottom'] as const)
+
     return (
         <SafeAreaView
-            edges={['bottom']}
+            edges={bottomEdges}
             style={styles.safeArea}
             testID='settings_passkeys_screen'
         >

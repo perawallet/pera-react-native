@@ -64,19 +64,6 @@ describe('PWScreen', () => {
         expect(screen.getByTestId('child-list')).toBeTruthy()
     })
 
-    it('renders without keyboard awareness when keyboard="none"', () => {
-        render(
-            <PWScreen
-                testID='screen'
-                keyboard='none'
-                footer={<Text>Continue</Text>}
-                body={<Text>Body</Text>}
-            />,
-        )
-        expect(screen.getByText('Body')).toBeTruthy()
-        expect(screen.getByText('Continue')).toBeTruthy()
-    })
-
     it('renders inside a tab navigator without crashing', () => {
         render(
             <BottomTabBarHeightContext.Provider value={49}>

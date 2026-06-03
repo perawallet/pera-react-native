@@ -57,7 +57,6 @@ export const SwapProviderContent = ({
 
     return (
         <PWSheetLayout
-            horizontalPadding='lg'
             header={
                 <SheetHeader
                     title={t('swap.provider.change_title')}

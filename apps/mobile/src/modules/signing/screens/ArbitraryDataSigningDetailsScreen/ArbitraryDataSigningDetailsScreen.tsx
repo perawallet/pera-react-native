@@ -28,7 +28,6 @@ export const ArbitraryDataSigningDetailsScreen = ({
 
     return (
         <PWScreen
-            scroll='never'
             body={
                 <ArbitraryDataSigningDetailsView
                     request={request}

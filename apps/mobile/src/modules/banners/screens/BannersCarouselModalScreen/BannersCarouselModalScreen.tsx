@@ -31,7 +31,6 @@ export const BannersCarouselModalScreen = () => {
         <PWScreen
             scroll='never'
             horizontalPadding='none'
-            keyboard='none'
             style={styles.root}
             testID='banners_carousel_modal'
             body={

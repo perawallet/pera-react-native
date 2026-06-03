@@ -17,9 +17,6 @@ export const useStyles = makeStyles(theme => {
         secondaryAmount: {
             color: theme.colors.textGray,
         },
-        buttonContainer: {
-            paddingTop: theme.spacing.md,
-        },
         linkContainer: {
             flexDirection: 'row',
             alignItems: 'center',

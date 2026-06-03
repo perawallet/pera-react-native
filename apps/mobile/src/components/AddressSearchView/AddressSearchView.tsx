@@ -64,9 +64,7 @@ export const AddressSearchView = ({
         ({ item }: { item: AddressSearchItem }) => {
             switch (item.type) {
                 case 'section_header':
-                    return (
-                        <PWText variant='h4'>{t(item.title)}</PWText>
-                    )
+                    return <PWText variant='h4'>{t(item.title)}</PWText>
                 case 'contact':
                     return (
                         <PWTouchableOpacity

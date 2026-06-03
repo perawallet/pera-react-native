@@ -24,9 +24,13 @@ import type { DexSwapAsset } from '@perawallet/wallet-core-swaps'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { PWTouchableOpacityProps } from '@components/core'
 
-const VERIFICATION_TIERS = new Set<string>(Object.values(PeraAssetVerificationTier))
+const VERIFICATION_TIERS = new Set<string>(
+    Object.values(PeraAssetVerificationTier),
+)
 
-const isVerificationTier = (value: unknown): value is PeraAssetVerificationTier =>
+const isVerificationTier = (
+    value: unknown,
+): value is PeraAssetVerificationTier =>
     typeof value === 'string' && VERIFICATION_TIERS.has(value)
 
 export type SwapToAssetItemViewProps = {

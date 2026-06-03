@@ -64,7 +64,12 @@ beforeEach(() => {
 
 describe('PWFlatList', () => {
     it('uses the inset row divider separator for default vertical lists', () => {
-        render(<PWFlatList data={[1, 2]} renderItem={() => null} />)
+        render(
+            <PWFlatList
+                data={[1, 2]}
+                renderItem={() => null}
+            />,
+        )
 
         expect(separatorName(capturedProps.ItemSeparatorComponent)).toBe(
             'ListSeparator',
@@ -130,17 +135,27 @@ describe('PWFlatList', () => {
             />,
         )
 
-        expect(capturedContentStyle().paddingVertical).toBeUndefined()
+        expect(capturedContentStyle().paddingBottom).toBeUndefined()
     })
 
     it('applies vertical content padding for vertical lists', () => {
-        render(<PWFlatList data={[1, 2]} renderItem={() => null} />)
+        render(
+            <PWFlatList
+                data={[1, 2]}
+                renderItem={() => null}
+            />,
+        )
 
-        expect(capturedContentStyle().paddingVertical).toBeGreaterThan(0)
+        expect(capturedContentStyle().paddingBottom).toBeGreaterThan(0)
     })
 
     it("defaults keyboardShouldPersistTaps to 'handled'", () => {
-        render(<PWFlatList data={[1, 2]} renderItem={() => null} />)
+        render(
+            <PWFlatList
+                data={[1, 2]}
+                renderItem={() => null}
+            />,
+        )
 
         expect(capturedProps.keyboardShouldPersistTaps).toBe('handled')
     })
@@ -158,7 +173,12 @@ describe('PWFlatList', () => {
     })
 
     it('does not wire the sheet scrollable when rendered outside a bottom sheet', () => {
-        render(<PWFlatList data={[1, 2]} renderItem={() => null} />)
+        render(
+            <PWFlatList
+                data={[1, 2]}
+                renderItem={() => null}
+            />,
+        )
 
         expect(capturedProps.renderScrollComponent).toBeUndefined()
     })
@@ -166,7 +186,10 @@ describe('PWFlatList', () => {
     it('auto-detects a surrounding bottom sheet via context and wires the sheet scrollable', () => {
         render(
             <PWInBottomSheetContext.Provider value={true}>
-                <PWFlatList data={[1, 2]} renderItem={() => null} />
+                <PWFlatList
+                    data={[1, 2]}
+                    renderItem={() => null}
+                />
             </PWInBottomSheetContext.Provider>,
         )
 

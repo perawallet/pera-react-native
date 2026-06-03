@@ -16,7 +16,6 @@ export const useStyles = makeStyles(theme => {
     return {
         container: {
             backgroundColor: theme.colors.background,
-            flex: 1,
         },
         errorContainer: {
             alignItems: 'center',

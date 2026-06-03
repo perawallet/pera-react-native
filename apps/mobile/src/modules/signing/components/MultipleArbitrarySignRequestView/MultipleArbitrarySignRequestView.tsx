@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWButton, PWScrollView, PWText, PWView } from '@components/core'
+import { PWButton, PWText, PWView } from '@components/core'
 import type { PeraArbitraryDataMessage } from '@perawallet/wallet-core-signing'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
@@ -31,10 +31,7 @@ export const MultipleArbitrarySignRequestView = ({
     const accounts = useAllAccounts()
 
     return (
-        <PWScrollView
-            style={styles.container}
-            contentContainerStyle={styles.contentContainer}
-        >
+        <PWView style={styles.contentContainer}>
             {requests.map((request, index) => (
                 <PWView
                     key={index}
@@ -58,6 +55,6 @@ export const MultipleArbitrarySignRequestView = ({
                     />
                 </PWView>
             ))}
-        </PWScrollView>
+        </PWView>
     )
 }

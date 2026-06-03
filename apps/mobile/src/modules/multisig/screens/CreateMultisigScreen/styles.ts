@@ -16,13 +16,9 @@ export const useStyles = makeStyles(theme => ({
     description: {
         color: theme.colors.textGray,
     },
-    listFlex: {
-        flex: 1,
-    },
     scrollArea: {
         marginTop: theme.spacing.sm,
         alignItems: 'flex-start',
-        paddingBottom: theme.spacing.md,
     },
     addButton: {
         marginTop: theme.spacing.lg,

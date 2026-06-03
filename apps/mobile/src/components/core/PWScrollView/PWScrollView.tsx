@@ -42,8 +42,7 @@ export const PWScrollView = ({
     // scroll there otherwise.
     const isInSheet = useContext(PWInBottomSheetContext)
     const isInBottomSheet = inBottomSheet ?? isInSheet
-    const bottomInset =
-        isInBottomSheet || !isInTabNavigator ? insets.bottom : 0
+    const bottomInset = isInBottomSheet || !isInTabNavigator ? insets.bottom : 0
     const styles = useStyles({ bottomInset })
 
     // Skip the default bottom padding if the caller set any bottom-affecting

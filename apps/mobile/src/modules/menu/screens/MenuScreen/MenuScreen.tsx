@@ -84,7 +84,6 @@ export const MenuScreen = () => {
     return (
         <PWScreen
             scroll='never'
-            keyboard='none'
             style={styles.container}
             testID='menu_screen'
             body={

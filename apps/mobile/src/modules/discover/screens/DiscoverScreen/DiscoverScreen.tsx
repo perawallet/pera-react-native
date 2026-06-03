@@ -41,7 +41,6 @@ export const DiscoverScreen = () => {
         <PWScreen
             scroll='never'
             horizontalPadding='none'
-            keyboard='none'
             style={styles.container}
             body={
                 <PWWebView

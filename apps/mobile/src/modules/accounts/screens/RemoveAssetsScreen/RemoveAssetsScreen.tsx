@@ -93,7 +93,6 @@ export const RemoveAssetsScreen = () => {
     return (
         <PWScreen
             scroll='never'
-            keyboard='none'
             body={
                 <PWFlatList
                     ref={listRef}

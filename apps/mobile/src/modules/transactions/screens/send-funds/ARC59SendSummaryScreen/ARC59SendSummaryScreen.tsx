@@ -12,12 +12,11 @@
 
 import {
     PWButton,
-    PWScrollView,
+    PWScreen,
     PWSlideToConfirm,
     PWText,
     PWView,
 } from '@components/core'
-import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useARC59SendSummaryScreen } from './useARC59SendSummaryScreen'
@@ -50,89 +49,89 @@ export const ARC59SendSummaryScreen = () => {
     }
 
     return (
-        <PWView style={styles.container}>
-            <PWScrollView contentContainerStyle={styles.content}>
-                <PWText
-                    variant='h3'
-                    style={styles.title}
-                >
-                    {t('send_funds.arc59_summary.title')}
-                </PWText>
-
-                <PWView style={styles.header}>
-                    <HeaderImageComponent style={styles.inboxIcon} />
-
-                    <PWText style={styles.description}>
-                        {t('send_funds.arc59_summary.description')}{' '}
-                        <PWText
-                            style={styles.readMoreText}
-                            onPress={handleReadMore}
-                        >
-                            {t('send_funds.arc59_summary.read_more')}
-                        </PWText>
+        <PWScreen
+            body={
+                <PWView style={styles.content}>
+                    <PWText
+                        variant='h3'
+                        style={styles.title}
+                    >
+                        {t('send_funds.arc59_summary.title')}
                     </PWText>
-                </PWView>
 
-                <PWView style={styles.bottomContainer}>
-                    <PWView style={styles.row}>
-                        <PWView style={styles.rowAssetContainer}>
-                            {asset ? (
-                                <AssetTitle
-                                    asset={asset}
-                                    nameVariant='h4'
-                                />
-                            ) : (
-                                <PWText variant='h4'>{assetId}</PWText>
-                            )}
+                    <PWView style={styles.header}>
+                        <HeaderImageComponent style={styles.inboxIcon} />
+
+                        <PWText style={styles.description}>
+                            {t('send_funds.arc59_summary.description')}{' '}
+                            <PWText
+                                style={styles.readMoreText}
+                                onPress={handleReadMore}
+                            >
+                                {t('send_funds.arc59_summary.read_more')}
+                            </PWText>
+                        </PWText>
+                    </PWView>
+
+                    <PWView style={styles.details}>
+                        <PWView style={styles.row}>
+                            <PWView style={styles.rowAssetContainer}>
+                                {asset ? (
+                                    <AssetTitle
+                                        asset={asset}
+                                        nameVariant='h4'
+                                    />
+                                ) : (
+                                    <PWText variant='h4'>{assetId}</PWText>
+                                )}
+                            </PWView>
+                            <CurrencyDisplay
+                                value={amount}
+                                currency={asset?.unitName ?? ''}
+                                precision={asset?.decimals ?? DEFAULT_PRECISION}
+                                minPrecision={DEFAULT_PRECISION}
+                                variant='h4'
+                                ignorePrivacyMode
+                            />
                         </PWView>
-                        <CurrencyDisplay
-                            value={amount}
-                            currency={asset?.unitName ?? ''}
-                            precision={asset?.decimals ?? DEFAULT_PRECISION}
-                            minPrecision={DEFAULT_PRECISION}
-                            variant='h4'
-                            ignorePrivacyMode
-                        />
-                    </PWView>
 
-                    <PWView style={styles.divider} />
+                        <PWView style={styles.divider} />
 
-                    <PWView style={styles.row}>
-                        <PWText style={styles.rowLabel}>
-                            {t('send_funds.arc59_summary.fees_label')}
+                        <PWView style={styles.row}>
+                            <PWText style={styles.rowLabel}>
+                                {t('send_funds.arc59_summary.fees_label')}
+                            </PWText>
+                            <CurrencyDisplay
+                                value={fee}
+                                currency={'ALGO'}
+                                precision={ALGO_ASSET.decimals}
+                                minPrecision={DEFAULT_PRECISION}
+                                ignorePrivacyMode
+                            />
+                        </PWView>
+
+                        <PWText style={styles.disclaimer}>
+                            {t('send_funds.arc59_summary.disclaimer')}
                         </PWText>
-                        <CurrencyDisplay
-                            value={fee}
-                            currency={'ALGO'}
-                            precision={ALGO_ASSET.decimals}
-                            minPrecision={DEFAULT_PRECISION}
-                            ignorePrivacyMode
-                        />
                     </PWView>
-
-                    <PWText style={styles.disclaimer}>
-                        {t('send_funds.arc59_summary.disclaimer')}
-                    </PWText>
                 </PWView>
-            </PWScrollView>
-
-            <SafeAreaView
-                edges={['bottom']}
-                style={styles.footer}
-            >
-                <PWSlideToConfirm
-                    key={sliderResetKey}
-                    title={t('common.slide_to_confirm.label')}
-                    onConfirm={handleSend}
-                    isDisabled={!summary}
-                    testID='arc59_send_confirm_slide'
-                />
-                <PWButton
-                    title={t('common.go_back.label')}
-                    variant='linkNeutral'
-                    onPress={handleClose}
-                />
-            </SafeAreaView>
-        </PWView>
+            }
+            footer={
+                <PWView style={styles.footer}>
+                    <PWSlideToConfirm
+                        key={sliderResetKey}
+                        title={t('common.slide_to_confirm.label')}
+                        onConfirm={handleSend}
+                        isDisabled={!summary}
+                        testID='arc59_send_confirm_slide'
+                    />
+                    <PWButton
+                        title={t('common.go_back.label')}
+                        variant='linkNeutral'
+                        onPress={handleClose}
+                    />
+                </PWView>
+            }
+        />
     )
 }

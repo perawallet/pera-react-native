@@ -30,51 +30,52 @@ type UseSettingsCurrencyScreenResult = {
     fallbackCurrency: string
 }
 
-export const useSettingsCurrencyScreen = (): UseSettingsCurrencyScreenResult => {
-    const {
-        setPreferredCurrency,
-        setFallbackCurrency,
-        fallbackCurrency,
-        preferredCurrency,
-    } = useCurrency()
-    const [search, setSearch] = useState<string>()
-    const [filteredData, setFilteredData] = useState<Currency[]>([])
+export const useSettingsCurrencyScreen =
+    (): UseSettingsCurrencyScreenResult => {
+        const {
+            setPreferredCurrency,
+            setFallbackCurrency,
+            fallbackCurrency,
+            preferredCurrency,
+        } = useCurrency()
+        const [search, setSearch] = useState<string>()
+        const [filteredData, setFilteredData] = useState<Currency[]>([])
 
-    const { data } = useCurrenciesQuery()
-    const { invalidateAssetPrices } = useInvalidateAssetPrices()
+        const { data } = useCurrenciesQuery()
+        const { invalidateAssetPrices } = useInvalidateAssetPrices()
 
-    useEffect(() => {
-        if (!search?.length) {
-            setFilteredData(data ?? [])
-        } else {
-            const lowercaseSearch = search.toLowerCase()
-            setFilteredData(
-                (data ?? []).filter(
-                    d =>
-                        d.name.toLowerCase().includes(lowercaseSearch) ||
-                        d.id.toLowerCase().includes(lowercaseSearch),
-                ),
-            )
+        useEffect(() => {
+            if (!search?.length) {
+                setFilteredData(data ?? [])
+            } else {
+                const lowercaseSearch = search.toLowerCase()
+                setFilteredData(
+                    (data ?? []).filter(
+                        d =>
+                            d.name.toLowerCase().includes(lowercaseSearch) ||
+                            d.id.toLowerCase().includes(lowercaseSearch),
+                    ),
+                )
+            }
+        }, [data, search])
+
+        const setCurrency = (currency: Currency) => {
+            if (currency.id === 'ALGO') {
+                setPreferredCurrency('ALGO')
+                setFallbackCurrency('USD')
+            } else {
+                setPreferredCurrency(currency.id)
+                setFallbackCurrency(ALGO_ASSET_UNIT_NAME)
+            }
+            invalidateAssetPrices()
         }
-    }, [data, search])
 
-    const setCurrency = (currency: Currency) => {
-        if (currency.id === 'ALGO') {
-            setPreferredCurrency('ALGO')
-            setFallbackCurrency('USD')
-        } else {
-            setPreferredCurrency(currency.id)
-            setFallbackCurrency(ALGO_ASSET_UNIT_NAME)
+        return {
+            setCurrency,
+            search,
+            setSearch,
+            filteredData,
+            preferredCurrency,
+            fallbackCurrency,
         }
-        invalidateAssetPrices()
     }
-
-    return {
-        setCurrency,
-        search,
-        setSearch,
-        filteredData,
-        preferredCurrency,
-        fallbackCurrency,
-    }
-}

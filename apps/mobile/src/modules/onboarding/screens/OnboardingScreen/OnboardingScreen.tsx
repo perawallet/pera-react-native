@@ -43,7 +43,6 @@ export const OnboardingScreen = () => {
     return (
         <>
             <PWScreen
-                keyboard='none'
                 horizontalPadding='none'
                 body={
                     <PWView style={styles.rootContainer}>

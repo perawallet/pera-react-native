@@ -12,55 +12,51 @@
 
 import { makeStyles } from '@rneui/themed'
 
-type StyleProps = { bottomInset?: number }
-
-export const useStyles = makeStyles(
-    (theme, { bottomInset = 0 }: StyleProps = {}) => ({
-        section: {
-            paddingHorizontal: theme.spacing.lg,
-            marginBottom: theme.spacing.xl + bottomInset,
-        },
-        sectionTitle: {
-            color: theme.colors.textGray,
-            marginBottom: theme.spacing.sm,
-        },
-        inputContainer: {
-            paddingHorizontal: 0,
-        },
-        inputInnerContainer: {
-            borderRadius: theme.spacing.xs,
-            paddingHorizontal: theme.spacing.sm,
-        },
-        input: {
-            paddingLeft: 0,
-        },
-        errorRow: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            marginTop: theme.spacing.xs,
-        },
-        errorText: {
-            color: theme.colors.negative,
-            marginLeft: theme.spacing.sm,
-        },
-        chipRow: {
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            gap: theme.spacing.sm,
-            marginTop: theme.spacing.md,
-        },
-        currencyToggleRow: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginTop: theme.spacing.md,
-        },
-        currencyToggleLabel: {
-            color: theme.colors.textMain,
-            flex: 1,
-        },
-    }),
-)
+export const useStyles = makeStyles(theme => ({
+    section: {
+        paddingHorizontal: theme.spacing.lg,
+        marginBottom: theme.spacing.xl,
+    },
+    sectionTitle: {
+        color: theme.colors.textGray,
+        marginBottom: theme.spacing.sm,
+    },
+    inputContainer: {
+        paddingHorizontal: 0,
+    },
+    inputInnerContainer: {
+        borderRadius: theme.spacing.xs,
+        paddingHorizontal: theme.spacing.sm,
+    },
+    input: {
+        paddingLeft: 0,
+    },
+    errorRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: theme.spacing.xs,
+    },
+    errorText: {
+        color: theme.colors.negative,
+        marginLeft: theme.spacing.sm,
+    },
+    chipRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: theme.spacing.sm,
+        marginTop: theme.spacing.md,
+    },
+    currencyToggleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginTop: theme.spacing.md,
+    },
+    currencyToggleLabel: {
+        color: theme.colors.textMain,
+        flex: 1,
+    },
+}))
 
 type ChipStyleProps = {
     isSelected: boolean

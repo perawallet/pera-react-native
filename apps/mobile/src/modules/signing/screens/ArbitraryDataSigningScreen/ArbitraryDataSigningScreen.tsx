@@ -34,7 +34,6 @@ export const ArbitraryDataSigningScreen = () => {
 
     return (
         <PWScreen
-            scroll='never'
             body={
                 <>
                     {!!request.sourceMetadata && (

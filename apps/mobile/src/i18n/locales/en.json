@@ -57,7 +57,6 @@
             "account_label": "Account",
             "fee_label": "Transaction Fee",
             "description": "Before interacting with an asset, you must opt-in to it from your account. This prevents unauthorized asset transactions to be sent to you.",
-            "close": "Close",
             "copy_id": "Copy ID"
         },
         "collectible_title": "Opt-in to NFT",
@@ -2213,8 +2212,7 @@
             "tip_nearby": "Make sure the device is nearby",
             "tip_bluetooth": "Make sure Bluetooth is enabled",
             "tip_app_open": "Make sure the Algorand app is open on your Ledger",
-            "tip_repair": "If problems persist, try re-pairing the device from Settings",
-            "close": "Close"
+            "tip_repair": "If problems persist, try re-pairing the device from Settings"
         },
         "scan_header": {
             "having_issues": "Having issues?"

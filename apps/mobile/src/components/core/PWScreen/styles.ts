@@ -12,7 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export type HorizontalPaddingMode = 'xl' | 'lg' | 'md' | 'none'
+export type HorizontalPaddingMode = 'xl' | 'none'
 
 type StyleProps = {
     horizontalPadding: HorizontalPaddingMode
@@ -31,6 +31,11 @@ export const useStyles = makeStyles(
             },
             keyboardView: {
                 flex: 1,
+            },
+            // Sticky header zone. Matches the body's horizontal padding so a
+            // header (e.g. ScreenHeader) aligns with the scrollable content.
+            header: {
+                paddingHorizontal,
             },
             body: {
                 flex: 1,

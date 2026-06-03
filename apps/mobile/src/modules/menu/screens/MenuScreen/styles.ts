@@ -22,7 +22,6 @@ export const useStyles = makeStyles(theme => {
             flexDirection: 'row',
             alignItems: 'center',
             gap: theme.spacing.lg,
-            paddingHorizontal: theme.spacing.sm,
             flexShrink: 0,
             width: '100%',
         },

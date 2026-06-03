@@ -16,7 +16,6 @@ export const useStyles = makeStyles(theme => ({
     qrSection: {
         alignItems: 'center',
         gap: theme.spacing.md,
-        marginTop: theme.spacing.xl,
     },
     label: {
         textAlign: 'center',

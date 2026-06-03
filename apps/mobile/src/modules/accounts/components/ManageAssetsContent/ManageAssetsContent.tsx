@@ -35,7 +35,6 @@ export const ManageAssetsContent = ({
 
     return (
         <PWSheetLayout
-            horizontalPadding='lg'
             header={<SheetHeader title={t('manage_assets.title')} />}
             body={
                 <>

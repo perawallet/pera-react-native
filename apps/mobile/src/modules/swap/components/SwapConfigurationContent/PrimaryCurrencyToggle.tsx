@@ -17,16 +17,14 @@ import { useStyles } from './styles'
 type PrimaryCurrencyToggleProps = {
     value: boolean
     onValueChange: (value: boolean) => void
-    bottomInset?: number
 }
 
 export const PrimaryCurrencyToggle = ({
     value,
     onValueChange,
-    bottomInset,
 }: PrimaryCurrencyToggleProps) => {
     const { t } = useLanguage()
-    const styles = useStyles({ bottomInset })
+    const styles = useStyles()
 
     return (
         <PWView style={styles.section}>

@@ -18,7 +18,8 @@ type StyleProps = {
 
 export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
     content: {
-        paddingVertical: theme.spacing.xl,
+        paddingBottom: theme.spacing.xl,
+        paddingTop: theme.spacing.sm,
     },
     // Hosting sheets use autoCreateContainer:false (no inner-container inset),
     // so in-sheet content must carry the bottom safe-area inset itself.

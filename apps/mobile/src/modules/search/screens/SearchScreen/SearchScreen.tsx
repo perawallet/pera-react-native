@@ -162,7 +162,6 @@ export const SearchScreen = () => {
     return (
         <PWScreen
             scroll='never'
-            keyboard='avoid'
             body={
                 <>
                     <SearchInput

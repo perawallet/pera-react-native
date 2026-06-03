@@ -11,23 +11,17 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { EdgeInsets } from 'react-native-safe-area-context'
 
-type StyleProps = { insets: EdgeInsets }
-
-export const useStyles = makeStyles((theme, { insets }: StyleProps) => ({
-    container: {
-        flex: 1,
-    },
-    scrollContent: {
-        flexGrow: 1,
-    },
-    heroSection: {
-        backgroundColor: theme.colors.background,
-    },
+export const useStyles = makeStyles(theme => ({
     toolbarTitle: {
         color: theme.colors.textMain,
         textAlign: 'center',
+    },
+    // Pull the hero up under the sticky toolbar to cancel PWSheetLayout's body
+    // paddingTop, so the full-bleed banner sits flush instead of leaving a gap.
+    heroSection: {
+        marginTop: -theme.spacing.xl,
+        backgroundColor: theme.colors.background,
     },
     heroImage: {
         backgroundColor: theme.colors.dappBidali,
@@ -36,11 +30,6 @@ export const useStyles = makeStyles((theme, { insets }: StyleProps) => ({
         flexGrow: 1,
         paddingHorizontal: theme.spacing.xl,
         marginTop: theme.spacing.xl,
-        backgroundColor: theme.colors.background,
-    },
-    footer: {
-        paddingHorizontal: theme.spacing.xl,
-        paddingBottom: theme.spacing.xl + insets.bottom,
         backgroundColor: theme.colors.background,
     },
 }))

@@ -12,12 +12,11 @@
 
 import { useWindowDimensions } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
     PWButton,
     PWIcon,
     PWImage,
-    PWScrollView,
+    PWSheetLayout,
     PWText,
     PWToolbar,
     PWView,
@@ -35,8 +34,7 @@ const BG_IMAGE_ASPECT_RATIO = 0.784
 
 export const BidaliIntroScreen = () => {
     const { width } = useWindowDimensions()
-    const insets = useSafeAreaInsets()
-    const styles = useStyles({ insets })
+    const styles = useStyles()
     const { t } = useLanguage()
     const { onClose } = useBidali()
     const navigation =
@@ -47,57 +45,57 @@ export const BidaliIntroScreen = () => {
     }
 
     return (
-        <PWView style={styles.container}>
-            <PWToolbar
-                left={
-                    <PWIcon
-                        name='cross'
-                        variant='primary'
-                        onPress={onClose}
-                    />
-                }
-                center={
-                    <PWText
-                        variant='h4'
-                        style={styles.toolbarTitle}
-                    >
-                        {t('giftCard.intro.navigation_title')}
-                    </PWText>
-                }
-                paddingStyle='dense'
-            />
+        <PWSheetLayout
+            horizontalPadding='none'
+            header={
+                <PWToolbar
+                    left={
+                        <PWIcon
+                            name='cross'
+                            variant='primary'
+                            onPress={onClose}
+                        />
+                    }
+                    center={
+                        <PWText
+                            variant='h4'
+                            style={styles.toolbarTitle}
+                        >
+                            {t('giftCard.intro.navigation_title')}
+                        </PWText>
+                    }
+                    paddingStyle='dense'
+                />
+            }
+            body={
+                <>
+                    <PWView style={styles.heroSection}>
+                        <PWView style={styles.heroImage}>
+                            <PWImage
+                                source={bidaliBackground}
+                                width={width}
+                                height={width * BG_IMAGE_ASPECT_RATIO}
+                                resizeMode='contain'
+                            />
+                        </PWView>
+                    </PWView>
 
-            <PWScrollView
-                inBottomSheet
-                contentContainerStyle={styles.scrollContent}
-            >
-                <PWView style={styles.heroSection}>
-                    <PWView style={styles.heroImage}>
-                        <PWImage
-                            source={bidaliBackground}
-                            width={width}
-                            height={width * BG_IMAGE_ASPECT_RATIO}
-                            resizeMode='contain'
+                    <PWView style={styles.contentSection}>
+                        <ScreenHeader
+                            title={t('giftCard.intro.title')}
+                            description={t('giftCard.intro.body')}
                         />
                     </PWView>
-                </PWView>
-
-                <PWView style={styles.contentSection}>
-                    <ScreenHeader
-                        title={t('giftCard.intro.title')}
-                        description={t('giftCard.intro.body')}
-                    />
-                </PWView>
-            </PWScrollView>
-
-            <PWView style={styles.footer}>
+                </>
+            }
+            footer={
                 <PWButton
                     variant='primary'
                     title={t('giftCard.intro.buy_gift_cards')}
                     onPress={handleBuyGiftCards}
                     testID='bidali_intro_buy_button'
                 />
-            </PWView>
-        </PWView>
+            }
+        />
     )
 }

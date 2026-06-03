@@ -31,7 +31,6 @@ export const ManageNftsContent = (_: ManageNftsContentProps = {}) => {
 
     return (
         <PWSheetLayout
-            horizontalPadding='lg'
             header={
                 <SheetHeader title={t('account_details.nfts.manage_title')} />
             }

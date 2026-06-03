@@ -23,7 +23,6 @@ export const useStyles = makeStyles(theme => {
     }
     return {
         container: {
-            paddingHorizontal: theme.spacing.lg,
             gap: theme.spacing.lg,
         },
         flagContainer: {

@@ -50,7 +50,6 @@ export const PassphraseAcknowledgeContent = ({
 
     return (
         <PWSheetLayout
-            horizontalPadding='lg'
             testID={testID}
             header={
                 <SheetHeader title={t('view_passphrase.acknowledge.title')} />

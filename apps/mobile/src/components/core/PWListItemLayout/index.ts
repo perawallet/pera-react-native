@@ -8,17 +8,7 @@
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  See the License for the specific language governing permissions and
  limitations under the License
- */
+*/
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => ({
-    nfdStatus: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.sm,
-    },
-    nfdStatusText: {
-        color: theme.colors.textGray,
-    },
-}))
+export { PWListItemLayout } from './PWListItemLayout'
+export type { PWListItemLayoutProps } from './PWListItemLayout'

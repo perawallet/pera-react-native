@@ -52,7 +52,7 @@ export const WatchAccountScreen = () => {
         <PWScreen
             scroll='never'
             body={
-                <PWView style={styles.contentContainer}>
+                <>
                     <ScreenHeader
                         title={t('onboarding.watch_account.title')}
                         description={t('onboarding.watch_account.description')}
@@ -94,7 +94,7 @@ export const WatchAccountScreen = () => {
                             </PWText>
                         </PWView>
                     )}
-                </PWView>
+                </>
             }
             footer={
                 <PWButton
