@@ -322,6 +322,8 @@ module.exports = {
     // the autofill plugin. Remove once the fixes land upstream.
     './plugins/withPasskeyAutofillFixes',
 
+    './plugins/withMigrationModule.js',
+
     './plugins/withAndroidMigrationDependencies.js',
     './plugins/withAndroidMigrationSources.js',
     './plugins/withMainApplicationLegacyMigration.js',
