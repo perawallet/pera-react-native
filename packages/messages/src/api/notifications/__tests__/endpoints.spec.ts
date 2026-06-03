@@ -232,16 +232,14 @@ describe('fetchMessageStatus', () => {
         const invalidData = { hasUnreadItems: 'not-a-boolean' }
         ;(queryClient as Mock).mockResolvedValue({ data: invalidData })
 
-        await expect(
-            fetchMessageStatus('testnet', DEVICE_ID),
-        ).rejects.toThrow()
+        await expect(fetchMessageStatus('testnet', DEVICE_ID)).rejects.toThrow()
     })
 
     test('propagates errors from queryClient', async () => {
         ;(queryClient as Mock).mockRejectedValue(new Error('Network error'))
 
-        await expect(
-            fetchMessageStatus('testnet', DEVICE_ID),
-        ).rejects.toThrow('Network error')
+        await expect(fetchMessageStatus('testnet', DEVICE_ID)).rejects.toThrow(
+            'Network error',
+        )
     })
 })
