@@ -88,7 +88,6 @@ export const ContactListScreen = () => {
                         title={t('contacts.list.add_contact')}
                         onPress={goToAddContact}
                         variant='primary'
-                        style={styles.emptyButton}
                     />
                 }
             />

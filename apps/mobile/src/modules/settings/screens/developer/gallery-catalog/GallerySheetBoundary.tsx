@@ -10,13 +10,19 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
+import { BaseErrorBoundary } from '@components/BaseErrorBoundary'
+import { useLanguage } from '@hooks/useLanguage'
 
-export const useStyles = makeStyles(theme => {
-    return {
-        searchWrapper: {
-            paddingTop: theme.spacing.sm,
-            paddingBottom: theme.spacing.sm,
-        }
-    }
-})
+import type { ReactNode } from 'react'
+
+type GallerySheetBoundaryProps = {
+    children: ReactNode
+}
+
+export const GallerySheetBoundary = ({
+    children,
+}: GallerySheetBoundaryProps) => {
+    const { t } = useLanguage()
+
+    return <BaseErrorBoundary t={t}>{children}</BaseErrorBoundary>
+}

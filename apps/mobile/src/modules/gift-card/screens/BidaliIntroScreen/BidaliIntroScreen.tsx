@@ -76,17 +76,16 @@ export const BidaliIntroScreen = () => {
                 />
             }
         >
-            <PWView style={styles.heroSection}>
-                <PWView style={styles.heroImage}>
-                    <PWImage
-                        source={bidaliBackground}
-                        width={width}
-                        height={width * BG_IMAGE_ASPECT_RATIO}
-                        resizeMode='contain'
-                    />
-                </PWView>
+            <PWView style={styles.heroImage}>
+                <PWImage
+                    source={bidaliBackground}
+                    width={width}
+                    height={width * BG_IMAGE_ASPECT_RATIO}
+                    resizeMode='contain'
+                />
             </PWView>
             <ScreenHeader
+                style={styles.headerSection}
                 title={t('giftCard.intro.title')}
                 description={t('giftCard.intro.body')}
             />

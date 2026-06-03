@@ -10,13 +10,18 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
+import type { GalleryPreviewEntry } from './types'
 
-export const useStyles = makeStyles(theme => {
-    return {
-        searchWrapper: {
-            paddingTop: theme.spacing.sm,
-            paddingBottom: theme.spacing.sm,
-        }
+const registry = new Map<string, GalleryPreviewEntry>()
+
+export const registerPreview = (entry: GalleryPreviewEntry): void => {
+    if (registry.has(entry.id)) {
+        throw new Error(`Duplicate gallery preview id: ${entry.id}`)
     }
-})
+    registry.set(entry.id, entry)
+}
+
+export const getPreviewEntry = (id: string): GalleryPreviewEntry | undefined =>
+    registry.get(id)
+
+export const resetPreviewRegistry = (): void => registry.clear()

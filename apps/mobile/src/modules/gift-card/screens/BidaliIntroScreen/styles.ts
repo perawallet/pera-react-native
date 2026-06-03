@@ -17,11 +17,9 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textMain,
         textAlign: 'center',
     },
-    // Pull the hero up under the sticky toolbar to cancel PWSheetLayout's body
-    // paddingTop, so the full-bleed banner sits flush instead of leaving a gap.
-    heroSection: {
-        marginTop: -theme.spacing.xl,
-        backgroundColor: theme.colors.background,
+    headerSection: {
+        paddingHorizontal: theme.spacing.xl,
+        paddingVertical: theme.spacing.sm,
     },
     heroImage: {
         backgroundColor: theme.colors.dappBidali,

@@ -1573,6 +1573,7 @@
             "debug_webview": "Test Webview API",
             "debug_dapp": "Test Dapp",
             "manage_cache": "Manage Cache",
+            "screen_gallery": "Screen Gallery",
             "app_integrity": "App Integrity",
             "app_integrity_run": "Run registration handshake",
             "app_integrity_verify": "Verify token",

@@ -10,13 +10,4 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => {
-    return {
-        searchWrapper: {
-            paddingTop: theme.spacing.sm,
-            paddingBottom: theme.spacing.sm,
-        }
-    }
-})
+export { GalleryComponentPreviewScreen } from './GalleryComponentPreviewScreen'

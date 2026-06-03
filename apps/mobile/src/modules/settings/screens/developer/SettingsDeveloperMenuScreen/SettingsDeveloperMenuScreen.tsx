@@ -70,6 +70,12 @@ export const SettingsDeveloperMenuScreen = () => {
                 icon='shield-check'
                 title={t('settings.developer.app_integrity')}
             />
+            <PWListItem
+                onPress={() => handleTapEvent('Gallery')}
+                icon='dot-stack'
+                title={t('settings.developer.screen_gallery')}
+                testID='developer_menu_gallery_item'
+            />
         </PWScreen>
     )
 }
