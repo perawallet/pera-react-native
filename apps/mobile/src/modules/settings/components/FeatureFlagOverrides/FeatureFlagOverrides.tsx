@@ -12,6 +12,8 @@
 
 import { PWSwitch, PWText, PWView } from '@components/core'
 import { RemoteConfigKeys } from '@perawallet/wallet-core-remote-config'
+import { usePreferences } from '@perawallet/wallet-core-settings'
+import { UserPreferences } from '@constants/user-preferences'
 import { useStyles } from './styles'
 import { useFeatureFlagOverrides } from './useFeatureFlagOverrides'
 import { useLanguage } from '@hooks/useLanguage'
@@ -19,6 +21,7 @@ import { useLanguage } from '@hooks/useLanguage'
 export const FeatureFlagOverrides = () => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const { getPreference, setPreference } = usePreferences()
     const {
         configOverrides,
         expanded,
@@ -27,8 +30,44 @@ export const FeatureFlagOverrides = () => {
         prettifyKey,
     } = useFeatureFlagOverrides()
 
+    const isScreenCapturePreventionDisabled = Boolean(
+        getPreference(UserPreferences.disableScreenCapturePrevention),
+    )
+
     return (
         <PWView style={styles.container}>
+            <PWView
+                style={[styles.flagContainer, styles.row]}
+                testID='developer_settings_disable_screen_capture_item'
+            >
+                <PWView style={styles.textColumn}>
+                    <PWText
+                        variant='h4'
+                        style={styles.flagTitle}
+                    >
+                        Disable Screen Capture Prevention
+                    </PWText>
+                    <PWText
+                        variant='caption'
+                        style={styles.flagCaption}
+                    >
+                        {isScreenCapturePreventionDisabled
+                            ? t('settings.developer.enabled')
+                            : t('settings.developer.disabled')}
+                    </PWText>
+                </PWView>
+                <PWSwitch
+                    value={isScreenCapturePreventionDisabled}
+                    onValueChange={value =>
+                        setPreference(
+                            UserPreferences.disableScreenCapturePrevention,
+                            value,
+                        )
+                    }
+                    testID='developer_settings_disable_screen_capture_toggle'
+                />
+            </PWView>
+
             {Object.keys(RemoteConfigKeys).map(key => (
                 <PWView
                     key={key}
