@@ -12,7 +12,6 @@
 
 import { useState } from 'react'
 import { PWButton, PWScrollView, PWText, PWView } from '@components/core'
-import { useLanguage } from '@hooks/useLanguage'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { getProvider } from '@perawallet/wallet-extension-provider'
@@ -47,7 +46,6 @@ import { useRNMigrationSnapshot } from './useRNMigrationSnapshot'
 
 export const SettingsDeveloperMigrationViewerScreen = () => {
     const styles = useStyles()
-    const { t } = useLanguage()
     const { data, isLoading, error, isMigrationComplete, refresh } =
         useSettingsDeveloperMigrationViewerScreen()
     const {
@@ -70,7 +68,7 @@ export const SettingsDeveloperMigrationViewerScreen = () => {
     if (isLoading) {
         return (
             <PWView style={styles.centered}>
-                <PWText>{t('common.loading.label')}</PWText>
+                <PWText>Loading…</PWText>
             </PWView>
         )
     }

@@ -11,7 +11,6 @@
  */
 
 import { PWScrollView, PWText, PWView } from '@components/core'
-import { useLanguage } from '@hooks/useLanguage'
 import type {
     BundledMigrationSummary,
     MigrationPlanSummary,
@@ -21,13 +20,12 @@ import { useMigrationPlans } from './useMigrationPlans'
 
 export const SettingsDeveloperMigrationInfoScreen = () => {
     const styles = useStyles()
-    const { t } = useLanguage()
     const { plans, isLoading, error } = useMigrationPlans()
 
     if (isLoading) {
         return (
             <PWView style={styles.centered}>
-                <PWText>{t('common.loading.label')}</PWText>
+                <PWText>Loading…</PWText>
             </PWView>
         )
     }

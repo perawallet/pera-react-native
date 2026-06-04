@@ -85,7 +85,7 @@ describe('SettingsDeveloperMigrationViewerScreen', () => {
 
         render(<SettingsDeveloperMigrationViewerScreen />)
 
-        expect(screen.getByText('common.loading.label')).toBeTruthy()
+        expect(screen.getByText('Loading…')).toBeTruthy()
     })
 
     it('renders the error state with the error message and a refresh button', () => {
@@ -124,7 +124,7 @@ describe('SettingsDeveloperMigrationViewerScreen', () => {
 
         render(<SettingsDeveloperMigrationViewerScreen />)
 
-        expect(screen.getByText('common.loading.label')).toBeTruthy()
+        expect(screen.getByText('Loading…')).toBeTruthy()
         expect(screen.queryByText('Failed to read legacy data')).toBeNull()
         expect(screen.queryByText('should not be shown')).toBeNull()
     })
