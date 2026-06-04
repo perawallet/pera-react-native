@@ -264,6 +264,29 @@ describe('useGlobalSearch', () => {
         expect(result.current.isLoading).toBe(true)
     })
 
+    test('does not report loading while debouncing a client-side (no remote) query', () => {
+        mockAllAccounts.mockReturnValue([])
+        mockFindContacts.mockReturnValue([])
+        setOwnedAssets([makeAsset('1', { name: 'USDC', unitName: 'USDC' })])
+
+        const { result } = renderHook(
+            () => useGlobalSearch({ debounceMs: 100, scopes: ['assets'] }),
+            { wrapper: makeWrapper() },
+        )
+
+        // Set a query without advancing the debounce timer: value is updated
+        // but debouncedValue has not caught up, so isDebouncing is true.
+        act(() => {
+            result.current.setValue('usd')
+        })
+
+        // No remote fetch will run for a purely in-memory filter, so the
+        // debounce window must not be reported as loading (otherwise the
+        // consumer flashes its skeleton on every keystroke).
+        expect(result.current.value).toBe('usd')
+        expect(result.current.isLoading).toBe(false)
+    })
+
     test('remoteAssets option surfaces backend search results', async () => {
         mockAllAccounts.mockReturnValue([])
         mockFindContacts.mockReturnValue([])
