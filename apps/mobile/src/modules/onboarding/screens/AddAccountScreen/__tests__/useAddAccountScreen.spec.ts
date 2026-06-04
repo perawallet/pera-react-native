@@ -125,6 +125,11 @@ vi.mock('react-i18next', async () => {
     }
 })
 
+const mockUseCardSession = vi.fn(() => ({ isAuthenticated: false }))
+vi.mock('@perawallet/wallet-core-card', () => ({
+    useCardSession: () => mockUseCardSession(),
+}))
+
 const HD_ACCOUNT = {
     id: 'hd-1',
     address: 'HD_ADDRESS',
@@ -142,6 +147,7 @@ describe('useAddAccountScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockUseAllAccounts.mockReturnValue([])
+        mockUseCardSession.mockReturnValue({ isAuthenticated: false })
     })
 
     it('mainOptions excludes add account option when no HD wallet exists', () => {
@@ -331,6 +337,18 @@ describe('useAddAccountScreen', () => {
         expect(mockNavigate).toHaveBeenCalledWith('PeraCard', {
             screen: 'PeraCardIntro',
         })
+    })
+
+    it('mainOptions excludes pera card option when the user already has a card', () => {
+        mockUseCardSession.mockReturnValue({ isAuthenticated: true })
+
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        expect(
+            result.current.mainOptions.find(
+                o => o.testID === 'add_account_pera_card_button',
+            ),
+        ).toBeUndefined()
     })
 
     it('shared account option opens introduction dialog without navigating', () => {

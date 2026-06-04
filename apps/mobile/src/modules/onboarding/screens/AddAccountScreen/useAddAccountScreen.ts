@@ -25,6 +25,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { deferToNextCycle, type Nullable } from '@perawallet/wallet-core-shared'
 import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
+import { useCardSession } from '@perawallet/wallet-core-card'
 import { type IconName } from '@components/core'
 import { useMultisigCreationStore } from '@modules/multisig/hooks/useMultisigCreation'
 import { type AccountOption } from '@modules/onboarding/types'
@@ -39,6 +40,7 @@ export const useAddAccountScreen = () => {
     const { showToast } = useToast()
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
+    const { isAuthenticated: hasCardAccount } = useCardSession()
 
     const {
         isOpen: isCreatingAccount,
@@ -185,7 +187,7 @@ export const useAddAccountScreen = () => {
                     leftIcon: 'people' as IconName,
                     onPress: openMultisigIntroduction,
                 },
-                {
+                !hasCardAccount && {
                     testID: 'add_account_pera_card_button',
                     titleKey: 'onboarding.add_account.pera_card_option_title',
                     descriptionKey:
@@ -209,6 +211,7 @@ export const useAddAccountScreen = () => {
             handleCreateUniversalWallet,
             isCreatingAccount,
             openMultisigIntroduction,
+            hasCardAccount,
             handleAddPeraCard,
             handleOpenImportAccountOptions,
         ],
