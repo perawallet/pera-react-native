@@ -169,11 +169,13 @@ const SearchableListInner = <T,>(
     }, [handleSearchFocus])
 
     const handleOverlayFocus = useCallback(() => setIsSearching(true), [])
-    const handleOverlayBlur = useCallback(() => setIsSearching(false), [])
 
-    // Dragging dismisses the keyboard (blurs the overlay, which exits search
-    // mode), handing the bar back to the native sticky display.
+    // Exit search mode (hide overlay → native sticky takes over) only on drag,
+    // NOT on blur: the clear (X) button can momentarily blur the input, and
+    // exiting on that blur would flash the overlay away mid-clear so the cleared
+    // value never visibly lands. Dragging also dismisses the keyboard.
     const handleListScrollBeginDrag = useCallback(() => {
+        setIsSearching(false)
         overlayRef.current?.blur()
     }, [])
 
@@ -362,7 +364,6 @@ const SearchableListInner = <T,>(
                     ref={overlayRef as any}
                     value={currentValue}
                     onFocus={handleOverlayFocus}
-                    onBlur={handleOverlayBlur}
                     placeholder={searchPlaceholder}
                     onChangeText={handleQueryChange}
                     testID={SEARCH_INPUT_TEST_ID}
