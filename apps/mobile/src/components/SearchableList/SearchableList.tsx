@@ -138,6 +138,7 @@ const SearchableListInner = <T,>(
     const scrollOffset = useScrollViewOffset(scrollViewRef)
 
     const headerHeightSV = useSharedValue(0)
+    const isSearchFocusedSV = useSharedValue(false)
 
     const handleHeaderLayoutWithSV = useCallback(
         (event: LayoutChangeEvent) => {
@@ -147,13 +148,15 @@ const SearchableListInner = <T,>(
         [handleHeaderLayout, headerHeightSV],
     )
 
-    // Sits at the header's bottom edge at rest, slides up with the scroll, then
-    // pins at the top — purely a function of the (UI-thread) scroll offset, so
-    // it tracks the header both directions. While typing the user isn't
-    // scrolling, so the offset stays put and CLAMP keeps it pinned.
+    // Tracks the (UI-thread) scroll offset: sits below the header at rest,
+    // slides up, pins at top. While focused (typing) it's force-pinned so the
+    // filtered re-layout's transient scroll offset can't flash it. Dragging the
+    // list dismisses the keyboard (keyboardDismissMode below), which blurs the
+    // input and releases the pin — so scrolling down rides the header down with
+    // the search instead of jumping.
     const searchOverlayStyle = useAnimatedStyle(() => {
         const headerH = headerHeightSV.value
-        if (headerH <= 0) {
+        if (isSearchFocusedSV.value || headerH <= 0) {
             return { transform: [{ translateY: 0 }] }
         }
         return {
@@ -169,6 +172,15 @@ const SearchableListInner = <T,>(
             ],
         }
     })
+
+    const handleSearchInputFocus = useCallback(() => {
+        handleSearchFocus()
+        isSearchFocusedSV.value = true
+    }, [handleSearchFocus, isSearchFocusedSV])
+
+    const handleSearchInputBlur = useCallback(() => {
+        isSearchFocusedSV.value = false
+    }, [isSearchFocusedSV])
 
     // Reanimated Animated.ScrollView as FlashList's scroll component: forward
     // FlashList's own ref (scroll control) AND the animated ref (UI-thread
@@ -332,6 +344,10 @@ const SearchableListInner = <T,>(
         ItemSeparatorComponent: augmentedSeparator,
         ListFooterComponent: augmentedFooter,
         renderScrollComponent,
+        // Dragging dismisses the keyboard, which blurs the search and releases
+        // the focus-pin so the overlay tracks the scroll while the header
+        // returns (no slide-under / jump).
+        keyboardDismissMode: 'on-drag',
         // Zero PWFlatList's default paddingTop, else the search overlay pins a
         // gap above the in-flow header.
         contentContainerStyle: [
@@ -355,7 +371,8 @@ const SearchableListInner = <T,>(
             >
                 <SearchInputComponent
                     value={searchValue}
-                    onFocus={handleSearchFocus}
+                    onFocus={handleSearchInputFocus}
+                    onBlur={handleSearchInputBlur}
                     placeholder={searchPlaceholder}
                     onChangeText={onSearchChange}
                 />
