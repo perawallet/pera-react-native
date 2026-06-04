@@ -31,7 +31,8 @@ import type { NotificationsOptionalPayloads } from './contexts/notifications'
  * they are forwarded to Firebase unchanged.
  */
 export interface RequiredEventPayloads
-    extends OnboardingRequiredPayloads,
+    extends
+        OnboardingRequiredPayloads,
         BannersRequiredPayloads,
         AssetDetailsRequiredPayloads,
         SwapRequiredPayloads,
@@ -43,8 +44,7 @@ export interface RequiredEventPayloads
 
 /** Events that MAY carry a payload (all fields optional in iOS). */
 export interface OptionalEventPayloads
-    extends SwapOptionalPayloads,
-        NotificationsOptionalPayloads {}
+    extends SwapOptionalPayloads, NotificationsOptionalPayloads {}
 
 /** Event names that require a payload argument. */
 export type RequiredPayloadEvent = keyof RequiredEventPayloads
