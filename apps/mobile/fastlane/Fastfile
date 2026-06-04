@@ -376,7 +376,12 @@ def android_firebase_app_id
   UI.message("[firebase-app-id] cwd=#{Dir.pwd} ANDROID_APPLICATION_ID=#{pkg.inspect}")
   if pkg && !pkg.empty?
     require 'json'
-    ["config/google-services.json", "android/app/google-services.json"].each do |path|
+    [
+      "../config/google-services.json",
+      "../android/app/google-services.json",
+      "config/google-services.json",
+      "android/app/google-services.json",
+    ].each do |path|
       unless File.exist?(path)
         UI.message("[firebase-app-id] #{path} NOT FOUND")
         next
