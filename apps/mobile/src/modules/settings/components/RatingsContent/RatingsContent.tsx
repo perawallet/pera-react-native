@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+
 import { PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
 import RateApp, { AndroidMarket } from 'react-native-rate-app'
@@ -22,7 +24,8 @@ import { usePeraProvider } from '@perawallet/wallet-extension-provider'
 export type RatingsContentProps = Record<string, never>
 
 export const RatingsContent = () => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles({ bottomInset: insets.bottom })
     const { t } = useLanguage()
     const provider = usePeraProvider()
     const deviceInfoService = provider.deviceInfo
@@ -53,20 +56,32 @@ export const RatingsContent = () => {
 
     return (
         <PWView style={styles.bottomSheetContainer}>
+            <PWText
+                variant='h3'
+                style={styles.title}
+                truncate
+            >
+                {t('settings.rating.title')}
+            </PWText>
+            <PWText
+                style={styles.bottomSheetMessage}
+                numberOfLines={2}
+                ellipsizeMode='tail'
+            >
+                {t('settings.rating.body')}
+            </PWText>
             <PWView style={styles.buttonContainer}>
                 <RoundButton
-                    icon='thumb_up'
+                    icon='thumb_down'
+                    size='xl'
                     onPress={handleRatingClick}
                 />
                 <RoundButton
-                    icon='thumb_down'
+                    icon='thumb_up'
+                    size='xl'
                     onPress={handleRatingClick}
                 />
             </PWView>
-            <PWText variant='h3'>{t('settings.rating.title')}</PWText>
-            <PWText style={styles.bottomSheetMessage}>
-                {t('settings.rating.body')}
-            </PWText>
         </PWView>
     )
 }

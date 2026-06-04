@@ -10,27 +10,52 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { fetchMessageStatus } from '../api/notifications'
 import { config } from '@perawallet/wallet-core-config'
-import { getMessageStatusQueryKey } from './querykeys'
+import {
+    fetchNotificationStatus,
+    type NotificationStatusResponse,
+} from '../api/notifications'
+import { getNotificationStatusQueryKey } from './querykeys'
+import { useInboxQuery } from './useInboxQuery'
 
-export const useInboxStatus = () => {
+type UseInboxStatusResult = {
+    hasUnreadItems: boolean
+    hasUnreadInboxItems: boolean
+    hasUnreadNotifications: boolean
+    unreadInboxCount: number
+}
+
+export const useInboxStatus = (): UseInboxStatusResult => {
     const { network } = useNetwork()
     const deviceID = useDeviceID(network)
 
-    const { data } = useQuery({
-        queryKey: getMessageStatusQueryKey(network, deviceID ?? ''),
-        queryFn: () => fetchMessageStatus(network, deviceID ?? ''),
+    const { data: inboxData } = useInboxQuery()
+
+    const { data: notificationStatusData } = useQuery({
+        queryKey: getNotificationStatusQueryKey(network, deviceID ?? ''),
+        queryFn: () => fetchNotificationStatus(network, deviceID ?? ''),
         enabled: !!deviceID,
-        refetchInterval: config.notificationRefreshTime,
+        refetchInterval: config.pollingEnabled
+            ? config.notificationRefreshTime
+            : false,
+        select: useCallback(
+            (data: NotificationStatusResponse) => data.has_new_notification,
+            [],
+        ),
     })
 
+    const unreadInboxCount = inboxData?.length ?? 0
+    const hasUnreadInboxItems = unreadInboxCount > 0
+    const hasUnreadNotifications = notificationStatusData ?? false
+
     return {
-        hasUnreadItems: data?.hasUnreadItems ?? false,
-        hasUnreadInboxItems: data?.hasUnreadInboxItems ?? false,
-        hasUnreadNotifications: data?.hasUnreadNotifications ?? false,
+        hasUnreadItems: hasUnreadInboxItems || hasUnreadNotifications,
+        hasUnreadInboxItems,
+        hasUnreadNotifications,
+        unreadInboxCount,
     }
 }

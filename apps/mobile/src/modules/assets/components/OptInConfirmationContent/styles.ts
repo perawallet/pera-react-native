@@ -13,18 +13,17 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        paddingHorizontal: theme.spacing.lg,
-    },
     body: {
         gap: theme.spacing.md,
+        width: '100%',
+        minWidth: 0,
     },
     assetNameRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        flexWrap: 'wrap',
         gap: theme.spacing.sm,
-        marginTop: theme.spacing.sm,
+        width: '100%',
+        minWidth: 0,
     },
     unitNameRow: {
         flexDirection: 'row',
@@ -42,21 +41,35 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        gap: theme.spacing.md,
         minHeight: theme.spacing.xxl,
+        minWidth: 0,
     },
     rowLabel: {
         color: theme.colors.textGrayLighter,
         flexShrink: 1,
+        minWidth: 0,
     },
     rowValue: {
         color: theme.colors.textMain,
+        flexShrink: 0,
+    },
+    rowAddressContainer: {
+        flexGrow: 0,
+        flexShrink: 1,
+        flexBasis: 'auto',
+        justifyContent: 'flex-end',
+    },
+    rowAddress: {
+        flex: 1,
+        textAlign: 'right',
     },
     description: {
         color: theme.colors.textMain,
         marginTop: theme.spacing.sm,
+        width: '100%',
     },
-    buttonContainer: {
-        gap: theme.spacing.sm,
+    confirmButton: {
         marginTop: theme.spacing.md,
     },
 }))

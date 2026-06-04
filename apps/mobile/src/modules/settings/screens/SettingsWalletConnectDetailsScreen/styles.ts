@@ -12,11 +12,10 @@
 
 import { makeStyles } from '@rneui/themed'
 import { getTypography } from '@theme/typography'
-import type { EdgeInsets } from 'react-native-safe-area-context'
 
 const NETWORK_TEXT_FONT_SIZE = 10
 
-export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
+export const useStyles = makeStyles(theme => {
     const mainnetText = {
         ...getTypography(theme, 'caption'),
         color: theme.colors.positive,
@@ -32,10 +31,8 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
     return {
         container: {
             flex: 1,
-            paddingHorizontal: theme.spacing.xl,
             gap: theme.spacing.lg,
             alignItems: 'flex-start',
-            marginBottom: insets.bottom,
         },
         versionContainer: {
             flexDirection: 'row',

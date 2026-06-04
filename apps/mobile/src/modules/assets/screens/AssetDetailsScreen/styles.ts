@@ -21,6 +21,8 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         justifyContent: 'center',
         gap: theme.spacing.xs,
+        minWidth: 0,
+        maxWidth: '100%',
     },
     headerSubtitle: {
         color: theme.colors.textGray,

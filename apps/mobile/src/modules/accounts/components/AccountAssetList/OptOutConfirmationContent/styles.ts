@@ -13,9 +13,6 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        paddingHorizontal: theme.spacing.lg,
-    },
     body: {
         gap: theme.spacing.md,
     },
@@ -54,6 +51,10 @@ export const useStyles = makeStyles(theme => ({
     },
     rowValue: {
         color: theme.colors.textMain,
+    },
+    rowAddress: {
+        flex: 1,
+        textAlign: 'right',
     },
     description: {
         color: theme.colors.textMain,

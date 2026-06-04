@@ -12,24 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles((theme, bottomPadding: number) => ({
-    rootContainer: {
-        flex: 1,
-        flexDirection: 'column',
-    },
-    contentContainer: {
-        flex: 1,
-        paddingHorizontal: theme.spacing.xl,
-        paddingTop: theme.spacing.xl,
-        gap: theme.spacing.xl,
-    },
-    description: {
-        color: theme.colors.textGray,
-    },
-    footerContainer: {
-        paddingHorizontal: theme.spacing.xl,
-        paddingBottom: bottomPadding,
-    },
+export const useStyles = makeStyles(theme => ({
     nfdStatus: {
         flexDirection: 'row',
         alignItems: 'center',

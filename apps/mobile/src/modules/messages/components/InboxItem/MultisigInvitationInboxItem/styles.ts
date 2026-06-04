@@ -13,23 +13,6 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        gap: theme.spacing.md,
-    },
-    indicatorSlot: {
-        height: theme.spacing.xxl,
-        justifyContent: 'center',
-    },
-    content: {
-        flex: 1,
-        gap: theme.spacing.sm,
-    },
-    title: {
-        flexShrink: 1,
-        flexWrap: 'wrap',
-    },
     cta: {
         alignSelf: 'flex-start',
         flexDirection: 'row',

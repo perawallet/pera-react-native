@@ -15,10 +15,17 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     container: {
         flex: 1,
+        paddingHorizontal: theme.spacing.xl,
+        width: '100%',
+        minWidth: 0,
+    },
+    content: {
+        flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        textAlign: 'center',
         gap: theme.spacing.xl,
+        width: '100%',
+        minWidth: 0,
     },
     iconContainer: {
         width: theme.spacing['4xl'],
@@ -31,5 +38,13 @@ export const useStyles = makeStyles(theme => ({
     text: {
         color: theme.colors.textMain,
         textAlign: 'center',
+        width: '100%',
+        minWidth: 0,
+    },
+    titleText: {
+        color: theme.colors.textMain,
+        textAlign: 'center',
+        width: '100%',
+        minWidth: 0,
     },
 }))

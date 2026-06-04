@@ -59,7 +59,11 @@ export const useHandleInboxItemPress = (): UseHandleInboxItemPressResult => {
                                 invitation={invitation}
                             />
                         ),
-                        options: { size: 'auto', enablePanDownToClose: true },
+                        options: {
+                            size: 'auto',
+                            enablePanDownToClose: true,
+                            autoCreateContainer: false,
+                        },
                     },
                 )
 

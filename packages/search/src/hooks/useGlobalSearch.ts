@@ -16,7 +16,10 @@ import {
     useOwnedAssets,
 } from '@perawallet/wallet-core-accounts'
 import { useAssetSearchQuery } from '@perawallet/wallet-core-assets'
-import type { AssetSearchItem, PeraAsset } from '@perawallet/wallet-core-assets'
+import type {
+    DisplayableAsset,
+    PeraAsset,
+} from '@perawallet/wallet-core-assets'
 import { useContacts } from '@perawallet/wallet-core-contacts'
 import { Nullable, useDebouncedValue } from '@perawallet/wallet-core-shared'
 import {
@@ -148,7 +151,7 @@ export const useGlobalSearch = (
                   )
             : []
 
-        const remoteAssets: AssetSearchItem[] = shouldRunRemoteAssets
+        const remoteAssets: DisplayableAsset[] = shouldRunRemoteAssets
             ? (remoteAssetQuery.results ?? [])
             : []
 

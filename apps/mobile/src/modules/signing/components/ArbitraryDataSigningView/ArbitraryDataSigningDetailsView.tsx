@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWScrollView, PWText, PWView } from '@components/core'
+import { PWText, PWView } from '@components/core'
 import {
     ArbitraryDataSignRequest,
     PeraArbitraryDataMessage,
@@ -40,75 +40,62 @@ export const ArbitraryDataSigningDetailsView = ({
     const styles = useStyles()
 
     return (
-        <PWView style={styles.container}>
+        <PWView>
             <PWView style={[styles.section, styles.titleSection]}>
                 <PWText style={styles.description}>
                     {t('signing.arbitrary_data_details.description')}
                 </PWText>
             </PWView>
-            <PWScrollView
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.scrollContainer}
-            >
-                <PWView style={styles.section}>
-                    <KeyValueRow
-                        title={t('signing.arbitrary_data_details.from')}
-                    >
-                        <AccountDisplay
-                            account={account}
-                            showChevron={false}
-                        />
-                    </KeyValueRow>
-                    <KeyValueRow title={t('signing.arbitrary_data_details.to')}>
-                        <PWText>
-                            {request?.sourceMetadata?.name ??
-                                t('signing.arbitrary_data_details.unnamed')}
-                        </PWText>
-                    </KeyValueRow>
-                </PWView>
-                <PWView style={styles.section}>
-                    <KeyValueRow
-                        title={t('signing.arbitrary_data_details.amount')}
-                    >
-                        <CurrencyDisplay
-                            currency='ALGO'
-                            value={Decimal(0)}
-                            showSymbol
-                            precision={2}
-                            minPrecision={2}
-                            ignorePrivacyMode
-                        />
-                    </KeyValueRow>
-                    <KeyValueRow
-                        title={t('signing.arbitrary_data_details.fee')}
-                    >
-                        <CurrencyDisplay
-                            currency='ALGO'
-                            value={Decimal(0)}
-                            showSymbol
-                            precision={2}
-                            minPrecision={2}
-                            ignorePrivacyMode
-                        />
-                    </KeyValueRow>
-                </PWView>
-                <PWView style={styles.section}>
-                    <KeyValueRow
-                        title={t('signing.arbitrary_data_details.message')}
-                    >
-                        <PWText>{dataMessage.message}</PWText>
-                    </KeyValueRow>
-                    <KeyValueRow
-                        title={t('signing.arbitrary_data_details.data')}
-                    >
-                        <PWText style={styles.data}>
-                            {Buffer.from(dataMessage.data, 'base64').toString(
-                                'utf-8',
-                            )}
-                        </PWText>
-                    </KeyValueRow>
-                </PWView>
-            </PWScrollView>
+            <PWView style={styles.section}>
+                <KeyValueRow title={t('signing.arbitrary_data_details.from')}>
+                    <AccountDisplay
+                        account={account}
+                        showChevron={false}
+                    />
+                </KeyValueRow>
+                <KeyValueRow title={t('signing.arbitrary_data_details.to')}>
+                    <PWText>
+                        {request?.sourceMetadata?.name ??
+                            t('signing.arbitrary_data_details.unnamed')}
+                    </PWText>
+                </KeyValueRow>
+            </PWView>
+            <PWView style={styles.section}>
+                <KeyValueRow title={t('signing.arbitrary_data_details.amount')}>
+                    <CurrencyDisplay
+                        currency='ALGO'
+                        value={Decimal(0)}
+                        showSymbol
+                        precision={2}
+                        minPrecision={2}
+                        ignorePrivacyMode
+                    />
+                </KeyValueRow>
+                <KeyValueRow title={t('signing.arbitrary_data_details.fee')}>
+                    <CurrencyDisplay
+                        currency='ALGO'
+                        value={Decimal(0)}
+                        showSymbol
+                        precision={2}
+                        minPrecision={2}
+                        ignorePrivacyMode
+                    />
+                </KeyValueRow>
+            </PWView>
+            <PWView style={styles.section}>
+                <KeyValueRow
+                    title={t('signing.arbitrary_data_details.message')}
+                >
+                    <PWText>{dataMessage.message}</PWText>
+                </KeyValueRow>
+                <KeyValueRow title={t('signing.arbitrary_data_details.data')}>
+                    <PWText style={styles.data}>
+                        {Buffer.from(dataMessage.data, 'base64').toString(
+                            'utf-8',
+                        )}
+                    </PWText>
+                </KeyValueRow>
+            </PWView>
         </PWView>
     )
 }

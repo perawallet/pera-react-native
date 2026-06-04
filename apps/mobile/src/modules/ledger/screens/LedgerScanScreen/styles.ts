@@ -12,31 +12,11 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles((theme, bottomPadding: number) => ({
-    container: {
-        flex: 1,
-        backgroundColor: theme.colors.background,
-    },
-    header: {
-        paddingHorizontal: theme.spacing.xl,
-        paddingTop: theme.spacing.lg,
-        paddingBottom: theme.spacing.lg,
-    },
-    icon: {
-        marginBottom: theme.spacing.lg,
-    },
-    title: {
-        marginBottom: theme.spacing.sm,
-    },
-    description: {
-        color: theme.colors.textGray,
-    },
+export const useStyles = makeStyles(theme => ({
     listContent: {
         paddingTop: theme.spacing.md,
-        paddingBottom: bottomPadding,
     },
     errorContainer: {
-        paddingHorizontal: theme.spacing.xl,
         paddingTop: theme.spacing.xl,
         alignItems: 'center',
         gap: theme.spacing.md,

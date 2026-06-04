@@ -12,7 +12,6 @@
 
 import React, { useState, useCallback, useMemo } from 'react'
 import { Linking } from 'react-native'
-import * as Clipboard from 'expo-clipboard'
 
 import { RouteProp, useRoute } from '@react-navigation/native'
 import { OnboardingStackParamList } from '../../routes/types'
@@ -30,6 +29,7 @@ import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { deferToNextCycle, logger } from '@perawallet/wallet-core-shared'
+import { useClipboard } from '@hooks/useClipboard'
 import { useModalState } from '@hooks/useModalState'
 import { useDeepLink } from '@hooks/useDeepLink'
 import { DeeplinkType } from '@hooks/deeplink/types'
@@ -51,6 +51,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     const { t } = useLanguage()
     const { parseDeeplink } = useDeepLink()
     const { request: requestBottomSheet } = useBottomSheet()
+    const { readText } = useClipboard()
 
     const mnemonicLength = MNEMONIC_WORD_COUNT[accountType]
 
@@ -91,13 +92,6 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         close: handleCloseQRScanner,
     } = useModalState()
 
-    // Strict wordlist validation is deferred to `useImportAccount`, which
-    // surfaces typed errors (DuplicateAccountError, validation failures) the
-    // catch block translates into toasts. The button only gates on
-    // non-empty slots so the user can try the import and see the real
-    // failure, rather than the button silently never becoming tappable.
-    // (Contrast with ASB key entry, where pre-validating against the
-    // wordlist avoids an opaque decryption failure later.)
     const canImport = useMemo(() => words.every(w => w.length > 0), [words])
 
     const handleImportAccount = useCallback(() => {
@@ -111,23 +105,13 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
                     type: accountType,
                 })
 
-                // `replace` (not `push`) so this screen unmounts and the typed
-                // mnemonic held in the input hook is dropped for GC. Strings
-                // can't be zeroed in JS, but the reference goes away — and
-                // back-navigating from later steps no longer lands on a
-                // stale Import screen with prefilled words.
                 if (result.type === 'hdWallet' && 'walletKeyId' in result) {
-                    // HD import: jump into the discovery flow. Backup is marked
-                    // only after the user commits a selection (see
-                    // ImportSelectAddressesScreen).
                     navigation.replace('SearchAccounts', {
                         mode: 'import',
                         walletKeyId: result.walletKeyId,
                         derivationType: result.derivationType,
                     })
                 } else {
-                    // algo25 import: the account already exists. Mark backup and
-                    // route through the existing post-create discovery.
                     markBackupComplete(result as WalletAccount)
                     navigation.replace('SearchAccounts', {
                         account: result as WalletAccount,
@@ -135,9 +119,6 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
                 }
             } catch (e) {
                 logger.error('Import account failed', { error: e })
-                // Duplicate-account attempts get a tailored toast so the
-                // user understands the import was a no-op rather than a
-                // generic failure.
                 const isDuplicate = e instanceof DuplicateAccountError
                 // guardrails-ignore-next-line no-error-toast-in-catch reason: localized import_account.{failed,duplicate_account}_body preserved; raw error not surfaced to user
                 showToast({
@@ -168,12 +149,12 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     ])
 
     const handlePastePassphrase = useCallback(async () => {
-        const content = await Clipboard.getStringAsync()
+        const content = await readText()
 
         if (content) {
             updateWord(content, 0)
         }
-    }, [updateWord])
+    }, [updateWord, readText])
 
     const handleScanQRCode = useCallback(() => {
         openQRScanner()
@@ -206,7 +187,11 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         const result =
             await requestBottomSheet<ImportAccountSupportOptionsContentResult>({
                 contents: <ImportAccountSupportOptionsContent />,
-                options: { size: 'auto', enablePanDownToClose: true },
+                options: {
+                    size: 'auto',
+                    enablePanDownToClose: true,
+                    autoCreateContainer: false,
+                },
             })
         if (!result) return
         if (result === 'paste') {

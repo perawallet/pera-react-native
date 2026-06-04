@@ -14,6 +14,7 @@ import React from 'react'
 import {
     PWChip,
     PWIcon,
+    PWSheetLayout,
     PWText,
     PWTouchableOpacity,
     PWView,
@@ -33,9 +34,11 @@ export const ImportOptionsContent = () => {
     const { resolve } = useBottomSheetResult<ImportOptionsContentResult>()
 
     return (
-        <>
-            <SheetHeader title={t('onboarding.import_options.title')} />
-
+        <PWSheetLayout
+            header={
+                <SheetHeader title={t('onboarding.import_options.title')} />
+            }
+        >
             <PWView style={styles.optionsContainer}>
                 <PWTouchableOpacity
                     onPress={() => resolve('hdWallet')}
@@ -45,21 +48,31 @@ export const ImportOptionsContent = () => {
                     <PWView style={styles.optionContent}>
                         <PWView style={styles.optionTopContent}>
                             <PWView style={styles.optionHeader}>
-                                <PWText variant='h4'>
-                                    {t(
-                                        'onboarding.import_options.hd_wallet.title',
-                                    )}
-                                </PWText>
-                                <PWChip
-                                    title={t(
-                                        'onboarding.import_options.hd_wallet.chip',
-                                    )}
-                                    variant='helper'
-                                />
+                                <PWView style={styles.optionTitleContainer}>
+                                    <PWText
+                                        variant='h4'
+                                        numberOfLines={2}
+                                        ellipsizeMode='tail'
+                                    >
+                                        {t(
+                                            'onboarding.import_options.hd_wallet.title',
+                                        )}
+                                    </PWText>
+                                </PWView>
+                                <PWView style={styles.optionChipContainer}>
+                                    <PWChip
+                                        title={t(
+                                            'onboarding.import_options.hd_wallet.chip',
+                                        )}
+                                        variant='helper'
+                                    />
+                                </PWView>
                             </PWView>
                             <PWText
                                 variant='body'
                                 style={styles.optionBody}
+                                numberOfLines={3}
+                                ellipsizeMode='tail'
                             >
                                 {t(
                                     'onboarding.import_options.hd_wallet.description',
@@ -69,6 +82,8 @@ export const ImportOptionsContent = () => {
                         <PWText
                             variant='link'
                             style={styles.optionLink}
+                            numberOfLines={2}
+                            ellipsizeMode='tail'
                         >
                             {t('onboarding.import_options.mnemonic_info')}
                         </PWText>
@@ -91,20 +106,30 @@ export const ImportOptionsContent = () => {
                     <PWView style={styles.optionContent}>
                         <PWView style={styles.optionTopContent}>
                             <PWView style={styles.optionHeader}>
-                                <PWText variant='h4'>
-                                    {t(
-                                        'onboarding.import_options.algo25.title',
-                                    )}
-                                </PWText>
-                                <PWChip
-                                    title={t(
-                                        'onboarding.import_options.algo25.chip',
-                                    )}
-                                />
+                                <PWView style={styles.optionTitleContainer}>
+                                    <PWText
+                                        variant='h4'
+                                        numberOfLines={2}
+                                        ellipsizeMode='tail'
+                                    >
+                                        {t(
+                                            'onboarding.import_options.algo25.title',
+                                        )}
+                                    </PWText>
+                                </PWView>
+                                <PWView style={styles.optionChipContainer}>
+                                    <PWChip
+                                        title={t(
+                                            'onboarding.import_options.algo25.chip',
+                                        )}
+                                    />
+                                </PWView>
                             </PWView>
                             <PWText
                                 variant='body'
                                 style={styles.optionBody}
+                                numberOfLines={3}
+                                ellipsizeMode='tail'
                             >
                                 {t(
                                     'onboarding.import_options.algo25.description',
@@ -114,6 +139,8 @@ export const ImportOptionsContent = () => {
                         <PWText
                             variant='link'
                             style={styles.optionLink}
+                            numberOfLines={2}
+                            ellipsizeMode='tail'
                         >
                             {t(
                                 'onboarding.import_options.algo25.mnemonic_info',
@@ -130,6 +157,6 @@ export const ImportOptionsContent = () => {
                     </PWView>
                 </PWTouchableOpacity>
             </PWView>
-        </>
+        </PWSheetLayout>
     )
 }

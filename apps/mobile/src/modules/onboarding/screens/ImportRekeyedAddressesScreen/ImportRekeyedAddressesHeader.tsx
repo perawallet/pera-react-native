@@ -11,9 +11,8 @@
  */
 
 import React from 'react'
-import { PWView, PWText, PWIcon } from '@components/core'
+import { ScreenHeader } from '@components/ScreenHeader'
 import { useLanguage } from '@hooks/useLanguage'
-import { useStyles } from './styles'
 
 type ImportRekeyedAddressesHeaderProps = {
     accountsCount: number
@@ -22,39 +21,21 @@ type ImportRekeyedAddressesHeaderProps = {
 export const ImportRekeyedAddressesHeader = ({
     accountsCount,
 }: ImportRekeyedAddressesHeaderProps) => {
-    const styles = useStyles()
     const { t } = useLanguage()
 
     return (
-        <PWView style={styles.headerContainer}>
-            <PWView style={styles.headerIconContainer}>
-                <PWIcon
-                    name='wallet'
-                    size='lg'
-                />
-            </PWView>
-            <PWText
-                variant='h3'
-                style={styles.title}
-            >
-                {t('onboarding.import_rekeyed_addresses.title', {
+        <ScreenHeader
+            icon='wallet'
+            title={t('onboarding.import_rekeyed_addresses.title', {
+                count: accountsCount,
+            })}
+            description={
+                t('onboarding.import_rekeyed_addresses.description_line_1', {
                     count: accountsCount,
-                })}
-            </PWText>
-            <PWText
-                variant='h4'
-                style={styles.description}
-            >
-                {t('onboarding.import_rekeyed_addresses.description_line_1', {
-                    count: accountsCount,
-                })}
-            </PWText>
-            <PWText
-                variant='h4'
-                style={styles.description}
-            >
-                {t('onboarding.import_rekeyed_addresses.description_line_2')}
-            </PWText>
-        </PWView>
+                }) +
+                '\n' +
+                t('onboarding.import_rekeyed_addresses.description_line_2')
+            }
+        />
     )
 }

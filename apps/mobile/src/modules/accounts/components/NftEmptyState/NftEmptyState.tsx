@@ -11,10 +11,9 @@
  */
 
 import React from 'react'
-import { PWButton, PWText, PWView } from '@components/core'
+import { PWButton } from '@components/core'
+import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
-import { useStyles } from './styles'
-import NftEmptyIllustration from '@assets/images/nft-empty-state.svg'
 
 type NftEmptyStateProps = {
     /**
@@ -25,35 +24,23 @@ type NftEmptyStateProps = {
 }
 
 export const NftEmptyState = ({ onOptInPress }: NftEmptyStateProps) => {
-    const styles = useStyles()
     const { t } = useLanguage()
 
     return (
-        <PWView style={styles.container}>
-            <PWView style={styles.illustrationContainer}>
-                <NftEmptyIllustration
-                    width={192}
-                    height={192}
-                />
-            </PWView>
-            <PWText
-                variant='h2'
-                style={styles.title}
-            >
-                {t('account_details.nfts.empty_title')}
-            </PWText>
-            <PWText style={styles.body}>
-                {t('account_details.nfts.empty_body')}
-            </PWText>
-            {onOptInPress && (
-                <PWButton
-                    title={t('account_details.nfts.empty_optin')}
-                    icon='plus'
-                    variant='primary'
-                    style={styles.button}
-                    onPress={onOptInPress}
-                />
-            )}
-        </PWView>
+        <EmptyView
+            icon='grid-view'
+            title={t('account_details.nfts.empty_title')}
+            body={t('account_details.nfts.empty_body')}
+            button={
+                onOptInPress ? (
+                    <PWButton
+                        title={t('account_details.nfts.empty_optin')}
+                        icon='plus'
+                        variant='primary'
+                        onPress={onOptInPress}
+                    />
+                ) : undefined
+            }
+        />
     )
 }

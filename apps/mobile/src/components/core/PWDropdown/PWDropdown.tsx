@@ -11,16 +11,13 @@
  */
 
 import { IconName, PWIcon } from '@components/core/PWIcon'
-import { PWScrollView } from '@components/core/PWScrollView'
 import { PWText } from '@components/core/PWText'
 import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
+import { PWView } from '@components/core/PWView'
 import { useRef, useState } from 'react'
-import { Modal, Pressable, View, Dimensions } from 'react-native'
-import { useStyles } from './styles'
-
-// Gap kept between the dropdown's bottom edge and the screen edge so the menu
-// never runs off-screen; beyond this the item list scrolls.
-const SCREEN_EDGE_MARGIN = 24
+import { Modal, Pressable, View, useWindowDimensions } from 'react-native'
+import { useTheme } from '@rneui/themed'
+import { DROPDOWN_MIN_WIDTH, useStyles } from './styles'
 
 export type PWDropdownItem = {
     label: string
@@ -40,14 +37,15 @@ export const PWDropdown = ({
     items,
     align = 'right',
 }: PWDropdownProps) => {
+    const { width: windowWidth } = useWindowDimensions()
+    const { theme } = useTheme()
+    const styles = useStyles({ windowWidth })
     const [visible, setVisible] = useState(false)
     const [position, setPosition] = useState<{
         top: number
         left?: number
         right?: number
     }>({ top: 0 })
-    const [maxHeight, setMaxHeight] = useState<number | undefined>(undefined)
-    const styles = useStyles({ maxHeight })
     const triggerContainerRef = useRef<View>(null)
 
     const handleOpen = () => {
@@ -55,21 +53,26 @@ export const PWDropdown = ({
         if (!view) return
 
         if (view.measure) {
-            view.measure((_x, _y, width, height, pageX, pageY) => {
-                const window = Dimensions.get('window')
+            view.measure((_x, _y, _width, height, pageX, pageY) => {
+                const horizontalInset = theme.spacing.xl
                 const top = pageY + height
-
-                setMaxHeight(window.height - top - SCREEN_EDGE_MARGIN)
 
                 if (align === 'right') {
                     setPosition({
                         top,
-                        right: window.width - (pageX + width),
+                        right: horizontalInset,
                     })
                 } else {
+                    const left = Math.max(
+                        horizontalInset,
+                        Math.min(
+                            pageX,
+                            windowWidth - horizontalInset - DROPDOWN_MIN_WIDTH,
+                        ),
+                    )
                     setPosition({
                         top,
-                        left: pageX,
+                        left,
                     })
                 }
                 setVisible(true)
@@ -114,30 +117,27 @@ export const PWDropdown = ({
                         style={[styles.dropdown, position]}
                         onPress={e => e.stopPropagation()}
                     >
-                        <PWScrollView
-                            style={styles.scrollArea}
-                            nestedScrollEnabled
-                            keyboardShouldPersistTaps='handled'
-                        >
-                            {items.map((item, index) => (
-                                <PWTouchableOpacity
-                                    key={index}
-                                    style={styles.item}
-                                    onPress={() => handleSelect(item)}
-                                >
-                                    {item.icon && (
-                                        <PWIcon
-                                            name={item.icon}
-                                            size='sm'
-                                            variant={
-                                                item.variant === 'destructive'
-                                                    ? 'error'
-                                                    : 'primary'
-                                            }
-                                        />
-                                    )}
+                        {items.map((item, index) => (
+                            <PWTouchableOpacity
+                                key={index}
+                                style={styles.item}
+                                onPress={() => handleSelect(item)}
+                            >
+                                {item.icon && (
+                                    <PWIcon
+                                        name={item.icon}
+                                        size='sm'
+                                        variant={
+                                            item.variant === 'destructive'
+                                                ? 'error'
+                                                : 'primary'
+                                        }
+                                    />
+                                )}
+                                <PWView style={styles.labelContainer}>
                                     <PWText
                                         variant='h4'
+                                        truncate
                                         style={
                                             item.variant === 'destructive'
                                                 ? styles.labelDestructive
@@ -146,9 +146,9 @@ export const PWDropdown = ({
                                     >
                                         {item.label}
                                     </PWText>
-                                </PWTouchableOpacity>
-                            ))}
-                        </PWScrollView>
+                                </PWView>
+                            </PWTouchableOpacity>
+                        ))}
                     </Pressable>
                 </Pressable>
             </Modal>

@@ -37,6 +37,7 @@ export const ThresholdStepper = ({
                 icon='minus'
                 paddingStyle='none'
                 onPress={onDecrement}
+                allowRapidPress
                 isDisabled={value <= min}
                 style={styles.button}
                 testID='threshold_decrement_button'
@@ -56,6 +57,7 @@ export const ThresholdStepper = ({
                 icon='plus'
                 paddingStyle='none'
                 onPress={onIncrement}
+                allowRapidPress
                 isDisabled={value >= max}
                 style={styles.button}
                 testID='threshold_increment_button'

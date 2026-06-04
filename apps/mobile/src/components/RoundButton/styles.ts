@@ -14,13 +14,18 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => {
     return {
+        container: {
+            alignItems: 'center',
+            minWidth: 0,
+            flexShrink: 0,
+        },
         buttonWrapper: {
             marginBottom: theme.spacing.sm,
         },
         titleStyle: {
-            alignItems: 'center',
-            justifyContent: 'center',
             textAlign: 'center',
+            width: '100%',
+            minWidth: 0,
         },
     }
 })

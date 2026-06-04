@@ -200,13 +200,11 @@ describe('useGlobalSearch', () => {
                 assetId: '31566704',
                 name: 'USD Coin',
                 unitName: 'USDC',
-                logo: null,
-                verificationTier: 'trusted',
-                usdValue: null,
-                type: 'standard_asset',
-                collectibleTitle: null,
-                collectibleImage: null,
-                collectionName: null,
+                peraMetadata: {
+                    logo: null,
+                    verificationTier: 'verified',
+                    type: 'standard_asset',
+                },
             },
         ]
         mockUseAssetSearchQuery.mockReturnValue({
@@ -274,14 +272,15 @@ describe('useGlobalSearch', () => {
             {
                 assetId: '999',
                 name: 'Remote NFT',
-                unitName: null,
-                logo: null,
-                verificationTier: 'verified',
-                usdValue: null,
-                type: 'collectible',
-                collectibleTitle: 'Remote NFT',
-                collectibleImage: null,
-                collectionName: 'Remote Collection',
+                unitName: undefined,
+                peraMetadata: {
+                    verificationTier: 'verified',
+                    type: 'collectible',
+                    collectible: {
+                        title: 'Remote NFT',
+                        collection: { name: 'Remote Collection' },
+                    },
+                },
             },
         ]
         const fetchNextPage = vi.fn()

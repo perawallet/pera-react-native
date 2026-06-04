@@ -18,7 +18,13 @@ import {
 import AlgoAssetIcon from '@assets/icons/assets/algo.svg'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { SvgProps } from 'react-native-svg'
-import { PWIconSize, PWImage, PWText, PWView } from '@components/core'
+import {
+    getIconPixelSize,
+    PWIconSize,
+    PWImage,
+    PWText,
+    PWView,
+} from '@components/core'
 import { useStyles } from './styles'
 import { useTheme } from '@rneui/themed'
 
@@ -28,31 +34,19 @@ export type AssetIconProps = {
     /** Direct logo URL — used as-is, bypasses Prism optimization.
      *  Takes precedence over `asset.peraMetadata?.logo`. */
     logoUrl?: string
+    /** Icon outline shape. Defaults to 'circle'; collectibles use 'square'. */
+    shape?: 'circle' | 'square'
 } & SvgProps
 
 //TODO: we may want a few more "local" asset icons for popular icons (e.g. USDC, DEFLY, etc)
 export const AssetIcon = (props: AssetIconProps) => {
-    const { asset, size, style, logoUrl, ...rest } = props
+    const { asset, size, style, logoUrl, shape = 'circle', ...rest } = props
     const { theme } = useTheme()
     const [loadFailed, setLoadFailed] = useState(false)
 
-    const sizeMap: Record<PWIconSize, number> = useMemo(
-        () => ({
-            xs: theme.spacing.md,
-            sm: theme.spacing.lg,
-            md: theme.spacing.xl,
-            lg: theme.spacing.xxl,
-            xl: theme.spacing['3xl'],
-            xxl: theme.spacing['4xl'],
-        }),
-        [theme],
-    )
+    const iconSize = getIconPixelSize(theme, size ?? 'md')
 
-    const iconSize = useMemo(() => {
-        return sizeMap[size ?? 'md']
-    }, [size, sizeMap])
-
-    const styles = useStyles(iconSize)
+    const styles = useStyles({ resolvedSize: iconSize, shape })
 
     useEffect(() => {
         setLoadFailed(false)
@@ -68,7 +62,12 @@ export const AssetIcon = (props: AssetIconProps) => {
             asset.peraMetadata?.logo ??
             asset.peraMetadata?.collectible?.primaryImage
         return peraLogo ? buildPrismUrl(peraLogo, iconSize) : null
-    }, [logoUrl, asset.peraMetadata?.logo, iconSize])
+    }, [
+        logoUrl,
+        asset.peraMetadata?.logo,
+        asset.peraMetadata?.collectible?.primaryImage,
+        iconSize,
+    ])
 
     const hasLogo = Boolean(resolvedLogoUrl) && !loadFailed
 

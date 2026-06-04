@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWButton, PWIcon, PWText, PWView } from '@components/core'
+import { PWButton, PWIcon, PWScreen, PWText, PWView } from '@components/core'
 import { Decimal } from 'decimal.js'
 
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
@@ -59,14 +59,22 @@ export const InputScreen = () => {
     const openNote = useCallback(() => {
         void requestBottomSheet({
             contents: <AddNoteContent />,
-            options: { size: 'auto', enablePanDownToClose: true },
+            options: {
+                size: 'auto',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
         })
     }, [requestBottomSheet])
 
     const openInfo = useCallback(() => {
         void requestBottomSheet({
             contents: <SendFundsInfoContent />,
-            options: { size: 'auto', enablePanDownToClose: true },
+            options: {
+                size: 'auto',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
         })
     }, [requestBottomSheet])
 
@@ -126,78 +134,88 @@ export const InputScreen = () => {
     }
 
     return (
-        <PWView style={styles.container}>
-            <PWView style={styles.mainContentContainer}>
-                <CurrencyDisplay
-                    currency={asset.unitName ?? ''}
-                    precision={asset.decimals}
-                    value={
-                        cryptoValue ? new Decimal(cryptoValue) : new Decimal(0)
-                    }
-                    rawValue={cryptoValue ?? undefined}
-                    ignorePrivacyMode
-                    variant='h1'
-                    style={[
-                        cryptoValue ? styles.amount : styles.amountPlaceholder,
-                        styles.h1,
-                    ]}
-                    showSymbol={false}
-                    minPrecision={asset.decimals ? 2 : 0}
+        <PWScreen
+            scroll='never'
+            horizontalPadding='none'
+            footer={
+                <PWButton
+                    variant='primary'
+                    title={t('send_funds.input.next')}
+                    style={styles.nextButton}
+                    onPress={handleNext}
+                    isDisabled={!cryptoValue}
                 />
-                {!isCollectible && (
-                    <PreferredCurrencyDisplay
-                        sourceAmount={
-                            cryptoValue ? new Decimal(cryptoValue) : null
+            }
+        >
+            <PWView style={styles.contentContainer}>
+                <PWView style={styles.mainContentContainer}>
+                    <CurrencyDisplay
+                        currency={asset.unitName ?? ''}
+                        precision={asset.decimals}
+                        value={
+                            cryptoValue
+                                ? new Decimal(cryptoValue)
+                                : new Decimal(0)
                         }
+                        rawValue={cryptoValue ?? undefined}
                         ignorePrivacyMode
-                        sourceAssetId={accountAssetBalance?.assetId ?? ''}
-                        precision={6}
-                        showSymbol
-                        minPrecision={2}
                         variant='h1'
-                        style={styles.amountPlaceholder}
+                        style={[
+                            cryptoValue
+                                ? styles.amount
+                                : styles.amountPlaceholder,
+                            styles.h1,
+                        ]}
+                        showSymbol={false}
+                        minPrecision={asset.decimals ? 2 : 0}
                     />
-                )}
+                    {!isCollectible && (
+                        <PreferredCurrencyDisplay
+                            sourceAmount={
+                                cryptoValue ? new Decimal(cryptoValue) : null
+                            }
+                            ignorePrivacyMode
+                            sourceAssetId={accountAssetBalance?.assetId ?? ''}
+                            precision={6}
+                            showSymbol
+                            minPrecision={2}
+                            variant='h1'
+                            style={styles.amountPlaceholder}
+                        />
+                    )}
 
-                <PWView style={styles.buttonContainer}>
-                    <PWButton
-                        title={
-                            note
-                                ? t('send_funds.confirmation.edit')
-                                : t('send_funds.add_note.button')
-                        }
-                        variant='secondary'
-                        style={styles.secondaryButton}
-                        onPress={openNote}
-                    />
-                    <PWButton
-                        title={t('send_funds.input.max')}
-                        variant='secondary'
-                        style={styles.secondaryButton}
-                        onPress={setMax}
-                    />
+                    <PWView style={styles.buttonContainer}>
+                        <PWButton
+                            title={
+                                note
+                                    ? t('send_funds.confirmation.edit')
+                                    : t('send_funds.add_note.button')
+                            }
+                            variant='secondary'
+                            style={styles.secondaryButton}
+                            onPress={openNote}
+                        />
+                        <PWButton
+                            title={t('send_funds.input.max')}
+                            variant='secondary'
+                            style={styles.secondaryButton}
+                            onPress={setMax}
+                        />
+                    </PWView>
+
+                    <PWView style={styles.numpadContainer}>
+                        <NumberPad
+                            onPress={handleKey}
+                            allowDecimal={(asset.decimals ?? 0) > 0}
+                        />
+                    </PWView>
                 </PWView>
 
-                <PWView style={styles.numpadContainer}>
-                    <NumberPad
-                        onPress={handleKey}
-                        allowDecimal={(asset.decimals ?? 0) > 0}
-                    />
-                </PWView>
+                <AccountAssetItemView
+                    accountBalance={accountAssetBalance}
+                    style={styles.assetDisplay}
+                />
             </PWView>
-
-            <AccountAssetItemView
-                accountBalance={accountAssetBalance}
-                style={styles.assetDisplay}
-            />
-
-            <PWButton
-                variant='primary'
-                title={t('send_funds.input.next')}
-                style={styles.nextButton}
-                onPress={handleNext}
-                isDisabled={!cryptoValue}
-            />
-        </PWView>
+        </PWScreen>
     )
 }

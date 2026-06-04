@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useLayoutEffect } from 'react'
+import { useCallback, useLayoutEffect, useState } from 'react'
 import { Decimal } from 'decimal.js'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import {
@@ -24,6 +24,7 @@ import { useSendFunds } from '@modules/transactions/hooks'
 
 type UseSendFundsContentResult = {
     selectedAccount: ReturnType<typeof useSelectedAccount>
+    isReady: boolean
     handleFinished: () => void
 }
 
@@ -45,6 +46,8 @@ export const useSendFundsContent = (
     const { data: assets } = useAssetsQuery(assetId ? [assetId] : [])
     const asset = assetId ? assets.get(assetId) : undefined
 
+    const [isReady, setIsReady] = useState(assetId == null)
+
     useLayoutEffect(() => {
         if (assetId != null) {
             if (canSelectAsset) {
@@ -60,6 +63,8 @@ export const useSendFundsContent = (
             if (asset && isCollectible(asset) && isPureNft(asset)) {
                 setAmount(new Decimal(1))
             }
+
+            setIsReady(true)
         }
     }, [
         assetId,
@@ -82,6 +87,7 @@ export const useSendFundsContent = (
 
     return {
         selectedAccount,
+        isReady,
         handleFinished,
     }
 }

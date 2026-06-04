@@ -58,7 +58,6 @@ export type PWInputProps = {
     adjustsFontSizeToFit?: boolean
     minimumFontScale?: number
     editable?: boolean
-    multiline?: boolean
 }
 
 export const PWInput = forwardRef<PWInputRef, PWInputProps>(
@@ -72,6 +71,7 @@ export const PWInput = forwardRef<PWInputRef, PWInputProps>(
             testID,
             adjustsFontSizeToFit,
             minimumFontScale,
+            numberOfLines,
             ...props
         },
         ref,
@@ -102,11 +102,12 @@ export const PWInput = forwardRef<PWInputRef, PWInputProps>(
                 ref={inputRef as any}
                 {...getTestProps(testID)}
                 {...props}
+                numberOfLines={numberOfLines}
                 {...{
                     adjustsFontSizeToFit,
                     minimumFontScale: resolvedMinimumFontScale,
                 }}
-                containerStyle={containerStyle}
+                containerStyle={[styles.container, containerStyle]}
                 inputContainerStyle={[
                     styles.inputContainer,
                     inputContainerStyle,

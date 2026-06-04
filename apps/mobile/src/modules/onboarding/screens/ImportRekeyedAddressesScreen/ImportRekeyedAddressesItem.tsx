@@ -10,28 +10,17 @@
  limitations under the License
  */
 
-import React, { useCallback } from 'react'
-import {
-    PWView,
-    PWText,
-    PWIcon,
-    PWTouchableOpacity,
-    PWCheckbox,
-    PWChip,
-    PWRoundIcon,
-} from '@components/core'
+import { useCallback } from 'react'
+import { PWRoundIcon } from '@components/core'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
-import { CopyableText } from '@components/CopyableText'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { SelectableAccountCheckboxRow } from '@modules/accounts/components/SelectableAccountCheckboxRow'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { getContainerTestProps } from '@utils/test-id-helper'
-import { useStyles } from './styles'
 import { RekeyedAccountInfoContent } from './RekeyedAccountInfoContent'
 
 type ImportRekeyedAddressesItemProps = {
     account: WalletAccount
-    itemIndex: number
     isImported: boolean
     isSelected: boolean
     onToggle: (address: string) => void
@@ -39,12 +28,10 @@ type ImportRekeyedAddressesItemProps = {
 
 export const ImportRekeyedAddressesItem = ({
     account,
-    itemIndex,
     isImported,
     isSelected,
     onToggle,
 }: ImportRekeyedAddressesItemProps) => {
-    const styles = useStyles()
     const { t } = useLanguage()
     const { request: requestBottomSheet } = useBottomSheet()
 
@@ -52,84 +39,42 @@ export const ImportRekeyedAddressesItem = ({
         requestBottomSheet<void>({
             contents: <RekeyedAccountInfoContent account={account} />,
             options: {
-                size: 'lg',
+                size: 'modal',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },
         })
     }, [requestBottomSheet, account])
 
+    const handleToggle = useCallback(
+        () => onToggle(account.address),
+        [onToggle, account.address],
+    )
+
     return (
-        <PWView
-            style={styles.itemContainer}
-            {...getContainerTestProps(
-                `import_rekeyed_addresses_item_${itemIndex}`,
+        <SelectableAccountCheckboxRow
+            title={truncateAlgorandAddress(account.address)}
+            titleCopyValue={account.address}
+            subtitle={t(
+                'onboarding.import_rekeyed_addresses.rekeyed_account_subtitle',
             )}
-        >
-            {!isImported && (
-                <PWView style={styles.checkboxWrapper}>
-                    <PWCheckbox
-                        checked={isSelected}
-                        onPress={() => onToggle(account.address)}
-                        containerStyle={styles.checkboxContainer}
-                        testID={`import_rekeyed_addresses_item_checkbox_${itemIndex}`}
-                    />
-                </PWView>
-            )}
-
-            <PWTouchableOpacity
-                style={styles.itemContent}
-                onPress={() => onToggle(account.address)}
-                disabled={isImported}
-            >
-                <PWView style={styles.iconContainer}>
-                    <PWRoundIcon
-                        icon='account-rekeyed'
-                        variant='helper'
-                        size='md'
-                    />
-                </PWView>
-
-                <PWView style={styles.itemTextContainer}>
-                    <CopyableText copyValue={account.address}>
-                        <PWText
-                            variant='body'
-                            style={styles.itemTitle}
-                        >
-                            {truncateAlgorandAddress(account.address)}
-                        </PWText>
-                    </CopyableText>
-                    <PWText
-                        variant='caption'
-                        style={styles.itemSubtitle}
-                    >
-                        {t(
-                            'onboarding.import_rekeyed_addresses.rekeyed_account_subtitle',
-                        )}
-                    </PWText>
-                </PWView>
-            </PWTouchableOpacity>
-
-            <PWTouchableOpacity
-                style={styles.infoIconContainer}
-                onPress={handleOpenInfo}
-                testID={`import_rekeyed_addresses_item_info_${itemIndex}`}
-            >
-                <PWIcon
-                    name='info'
+            leadingIcon={
+                <PWRoundIcon
+                    icon='account-rekeyed'
+                    variant='helper'
                     size='md'
-                    variant='secondary'
                 />
-            </PWTouchableOpacity>
-
-            {isImported && (
-                <PWChip
-                    title={t(
-                        'onboarding.import_rekeyed_addresses.already_imported',
-                    )}
-                    variant='secondary'
-                />
+            }
+            isSelected={isSelected}
+            isImported={isImported}
+            importedLabel={t(
+                'onboarding.import_rekeyed_addresses.already_imported',
             )}
-        </PWView>
+            onToggle={handleToggle}
+            onInfoPress={handleOpenInfo}
+            testID={`import_rekeyed_addresses_item_${account.address}`}
+            checkboxTestID={`import_rekeyed_addresses_item_checkbox_${account.address}`}
+            infoTestID={`import_rekeyed_addresses_item_info_${account.address}`}
+        />
     )
 }

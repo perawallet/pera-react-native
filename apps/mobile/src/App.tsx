@@ -52,11 +52,12 @@ import {
     PeraWalletProvider,
     usePeraProvider,
 } from '@perawallet/wallet-extension-provider'
+import { useAppIntegrityBootstrap } from '@perawallet/wallet-core-app-integrity'
 import {
     runPasskeyAutofillBootstrap,
     usePasskeyAutofillLifecycle,
 } from './bootstrap/passkey-autofill'
-import { SafeAreaProvider } from 'react-native-safe-area-context'
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { RootComponent } from '@components/RootComponent'
 // Side-effect: binds every entry in the bottom-sheet manager's typed
 // registry (see modules/bottom-sheet/registrations.ts) before anything in
@@ -71,6 +72,7 @@ SplashScreen.preventAutoHideAsync()
 
 import { NotifierWrapper } from 'react-native-notifier'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { KeyboardProvider } from 'react-native-keyboard-controller'
 import { logger, updateBackendHeaders } from '@perawallet/wallet-core-shared'
 import { EmptyView } from '@components/EmptyView/EmptyView'
 
@@ -99,6 +101,7 @@ const AppContent = () => {
     const [initError, setInitError] = useState<boolean>(false)
 
     usePasskeyAutofillLifecycle()
+    useAppIntegrityBootstrap()
 
     useEffect(() => {
         logger.setErrorReporter(
@@ -175,11 +178,17 @@ const AppContent = () => {
                 {!bootstrapped && <PWText>{t('common.loading.label')}</PWText>}
                 {bootstrapped && persister && (
                     <GestureHandlerRootView>
-                        <NotifierWrapper>
-                            <QueryProvider persister={persister}>
-                                <RootComponent fcmToken={fcmToken} />
-                            </QueryProvider>
-                        </NotifierWrapper>
+                        <KeyboardProvider>
+                            <NotifierWrapper
+                                componentProps={{
+                                    ContainerComponent: SafeAreaView,
+                                }}
+                            >
+                                <QueryProvider persister={persister}>
+                                    <RootComponent fcmToken={fcmToken} />
+                                </QueryProvider>
+                            </NotifierWrapper>
+                        </KeyboardProvider>
                     </GestureHandlerRootView>
                 )}
             </SafeAreaProvider>

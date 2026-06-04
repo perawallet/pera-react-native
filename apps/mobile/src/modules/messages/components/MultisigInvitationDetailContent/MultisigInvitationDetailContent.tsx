@@ -10,11 +10,11 @@
  limitations under the License
  */
 
-import { PWButton, PWScrollView, PWText, PWView } from '@components/core'
+import { PWButton, PWSheetLayout, PWText, PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { MultisigInfoCard } from '@components/MultisigInfoCard'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import type { MultisigInvitationParam } from '../../routes/types'
 import { useMultisigInvitationDetailContent } from './useMultisigInvitationDetailContent'
@@ -50,26 +50,39 @@ export const MultisigInvitationDetailContent = ({
     if (!renderedInvitation) return null
 
     return (
-        <>
-            <PWScrollView
-                style={styles.scrollView}
-                contentContainerStyle={styles.scrollContent}
-            >
-                <PWView style={styles.header}>
-                    <PWText
-                        variant='h4'
-                        style={styles.headerTitle}
-                    >
-                        {t('multisig.invitation.sheet_title')}
-                    </PWText>
-                    <PWText
-                        style={styles.headerAddress}
-                        testID='multisig_invitation_sheet_address'
-                    >
-                        {truncateAlgorandAddress(renderedInvitation.address)}
-                    </PWText>
+        <PWSheetLayout
+            header={
+                <SheetHeader
+                    title={t('multisig.invitation.sheet_title')}
+                    subtitle={truncateAlgorandAddress(
+                        renderedInvitation.address,
+                    )}
+                    testID='multisig_invitation_sheet'
+                />
+            }
+            footer={
+                <PWView style={styles.bottomBar}>
+                    <PWButton
+                        variant='secondary'
+                        title={t('multisig.invitation.ignore')}
+                        onPress={handleIgnore}
+                        isLoading={isIgnoring}
+                        isDisabled={isIgnoring}
+                        style={styles.ignoreButton}
+                        testID='multisig_invitation_ignore_button'
+                    />
+                    <PWButton
+                        variant='primary'
+                        title={t('multisig.invitation.add_to_accounts')}
+                        onPress={handleAccept}
+                        isDisabled={isIgnoring}
+                        style={styles.acceptButton}
+                        testID='multisig_invitation_accept_button'
+                    />
                 </PWView>
-
+            }
+        >
+            <PWView style={styles.body}>
                 <MultisigInfoCard
                     threshold={renderedInvitation.threshold}
                     totalParticipants={totalParticipants}
@@ -91,7 +104,9 @@ export const MultisigInvitationDetailContent = ({
                     {renderedInvitation.participantAddresses.map(
                         (address, index, arr) => (
                             <AddressDisplay
-                                key={address}
+                                // A multisig can repeat an address, so address
+                                // alone isn't a unique key.
+                                key={`${address}-${index}`}
                                 address={address}
                                 forceShowIcon
                                 contactAvatarVariant='highlighted'
@@ -101,34 +116,12 @@ export const MultisigInvitationDetailContent = ({
                                     index === arr.length - 1 &&
                                         styles.participantRowLast,
                                 ]}
-                                testID={`participant_row_${address}`}
+                                testID={`participant_row_${address}_${index}`}
                             />
                         ),
                     )}
                 </PWView>
-            </PWScrollView>
-
-            <PWView style={styles.bottomBar}>
-                <PWButton
-                    variant='secondary'
-                    title={t('multisig.invitation.ignore')}
-                    onPress={handleIgnore}
-                    isLoading={isIgnoring}
-                    isDisabled={isIgnoring}
-                    paddingStyle='dense'
-                    style={styles.ignoreButton}
-                    testID='multisig_invitation_ignore_button'
-                />
-                <PWButton
-                    variant='primary'
-                    title={t('multisig.invitation.add_to_accounts')}
-                    onPress={handleAccept}
-                    isDisabled={isIgnoring}
-                    paddingStyle='dense'
-                    style={styles.acceptButton}
-                    testID='multisig_invitation_accept_button'
-                />
             </PWView>
-        </>
+        </PWSheetLayout>
     )
 }

@@ -13,26 +13,16 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    layout: {
-        flex: 1,
-    },
+    // Sticky header owns its own padding (PWSheetLayout's header slot adds none).
     header: {
-        paddingHorizontal: theme.spacing.lg,
+        paddingHorizontal: theme.spacing.xl,
         paddingTop: theme.spacing.md,
         paddingBottom: theme.spacing.lg,
         gap: theme.spacing.lg,
     },
-    scrollView: {
-        flex: 1,
-    },
-    scrollContent: {
-        paddingHorizontal: theme.spacing.lg,
-        paddingBottom: theme.spacing.lg,
+    // Header already supplies the top gap, so cancel PWSheetLayout's body paddingTop.
+    body: {
         gap: theme.spacing.lg,
-    },
-    footer: {
-        paddingHorizontal: theme.spacing.lg,
-        paddingTop: theme.spacing.md,
     },
     title: {
         textAlign: 'center',

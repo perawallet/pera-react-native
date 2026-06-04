@@ -10,14 +10,13 @@
  limitations under the License
  */
 
-import { SafeAreaView } from 'react-native-safe-area-context'
 import {
-    PWView,
-    PWText,
-    PWIcon,
     PWButton,
-    PWScrollView,
+    PWIcon,
     PWResultView,
+    PWScreen,
+    PWText,
+    PWView,
 } from '@components/core'
 
 import { useStyles } from './styles'
@@ -58,46 +57,8 @@ export const LedgerVerifyScreen = () => {
     }
 
     return (
-        <PWView style={styles.container}>
-            <PWScrollView contentContainerStyle={styles.scrollContent}>
-                <PWView style={styles.heroIcon}>
-                    <PWIcon
-                        name='ledger'
-                        size='xl'
-                    />
-                </PWView>
-
-                <PWText
-                    variant='h2'
-                    style={styles.title}
-                >
-                    {t('ledger.verify.title')}
-                </PWText>
-                <PWText
-                    variant='body'
-                    style={styles.description}
-                >
-                    {t('ledger.verify.description')}
-                </PWText>
-
-                <PWView style={styles.cardList}>
-                    {verifyTargets.map((acc, i) => (
-                        <LedgerVerificationCard
-                            key={acc.address}
-                            address={acc.address}
-                            status={
-                                verifiedIndices.has(i) ? 'verified' : 'awaiting'
-                            }
-                            testID={`ledger_verify_card_${i}`}
-                        />
-                    ))}
-                </PWView>
-            </PWScrollView>
-
-            <SafeAreaView
-                edges={['bottom']}
-                style={styles.footer}
-            >
+        <PWScreen
+            footer={
                 <PWButton
                     testID='ledger_verify_add_accounts_button'
                     title={t('ledger.verify.add_accounts', {
@@ -107,7 +68,40 @@ export const LedgerVerifyScreen = () => {
                     variant='primary'
                     isDisabled={!areAllVerified}
                 />
-            </SafeAreaView>
-        </PWView>
+            }
+        >
+            <PWView style={styles.heroIcon}>
+                <PWIcon
+                    name='ledger'
+                    size='xl'
+                />
+            </PWView>
+
+            <PWText
+                variant='h2'
+                style={styles.title}
+            >
+                {t('ledger.verify.title')}
+            </PWText>
+            <PWText
+                variant='body'
+                style={styles.description}
+            >
+                {t('ledger.verify.description')}
+            </PWText>
+
+            <PWView style={styles.cardList}>
+                {verifyTargets.map((acc, i) => (
+                    <LedgerVerificationCard
+                        key={acc.address}
+                        address={acc.address}
+                        status={
+                            verifiedIndices.has(i) ? 'verified' : 'awaiting'
+                        }
+                        testID={`ledger_verify_card_${i}`}
+                    />
+                ))}
+            </PWView>
+        </PWScreen>
     )
 }

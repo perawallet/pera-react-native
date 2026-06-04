@@ -60,7 +60,11 @@ export const WalletConnectSessionItem = ({
             />
             <PWView style={styles.sessionInfo}>
                 <PWView style={styles.sessionNameContainer}>
-                    <PWText variant='h4'>
+                    <PWText
+                        variant='h4'
+                        numberOfLines={1}
+                        style={styles.sessionName}
+                    >
                         {session.session?.peerMeta?.name ?? 'Unknown'}
                     </PWText>
                     <PWBadge

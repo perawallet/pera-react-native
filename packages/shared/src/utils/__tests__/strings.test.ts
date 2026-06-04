@@ -11,12 +11,14 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { Decimal } from 'decimal.js'
 import { encodeToBase64, decodeFromBase64 } from '../strings'
 import { hexToBytes, bytesToHex } from '../strings'
 import {
     decodeLongString,
     formatCurrency,
     formatDatetime,
+    formatPercentage,
     formatRelativeTime,
     formatRawNumberInput,
     getInitials,
@@ -339,6 +341,24 @@ describe('utils/strings - formatTime', () => {
 
     test('formats with HH:MM:SS once an hour or more has elapsed', () => {
         expect(formatTime(3661)).toBe('01:01:01')
+    })
+})
+
+describe('utils/strings - formatPercentage', () => {
+    test('formats with two decimals and a trailing percent sign by default', () => {
+        expect(formatPercentage(new Decimal('12.345'))).toBe('12.35%')
+    })
+
+    test('preserves the sign for negative values', () => {
+        expect(formatPercentage(new Decimal('-7.5'))).toBe('-7.50%')
+    })
+
+    test('accepts a custom precision', () => {
+        expect(formatPercentage(new Decimal('12.345'), 1)).toBe('12.3%')
+    })
+
+    test('accepts a plain number', () => {
+        expect(formatPercentage(50)).toBe('50.00%')
     })
 })
 

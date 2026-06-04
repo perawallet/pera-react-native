@@ -10,12 +10,10 @@
  limitations under the License
  */
 
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-
 import {
     PWButton,
     PWListItem,
-    PWScrollView,
+    PWScreen,
     PWText,
     PWView,
 } from '@components/core'
@@ -28,18 +26,13 @@ import { useStyles } from './styles'
 import type { IconName } from '@components/core'
 
 export const SettingsScreen = () => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles(insets)
+    const styles = useStyles()
     const { t } = useLanguage()
     const { settingsOptions, handleTapEvent, openDeleteConfirm } =
         useSettingsScreen()
 
     return (
-        <PWScrollView
-            style={styles.scrollView}
-            showsVerticalScrollIndicator={false}
-            testID='settings_screen'
-        >
+        <PWScreen testID='settings_screen'>
             <PWView style={styles.sectionContainer}>
                 {settingsOptions.map(item => (
                     <PWView
@@ -70,6 +63,6 @@ export const SettingsScreen = () => {
                 {...getTestProps('settings_remove_all_accounts_button')}
             />
             <AppVersion enableSecretTaps />
-        </PWScrollView>
+        </PWScreen>
     )
 }

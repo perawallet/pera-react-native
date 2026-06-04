@@ -11,14 +11,7 @@
  */
 
 import { ActivityIndicator } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import {
-    PWButton,
-    PWIcon,
-    PWScrollView,
-    PWText,
-    PWView,
-} from '@components/core'
+import { PWButton, PWIcon, PWScreen, PWText, PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { MultisigInfoCard } from '@components/MultisigInfoCard'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
@@ -112,11 +105,39 @@ export const ImportSharedAccountScreen = () => {
     }
 
     return (
-        <PWView
+        <PWScreen
             style={styles.container}
             testID='import-shared-account-screen'
+            footer={
+                <PWView style={styles.footerContent}>
+                    {isAlreadyImported && (
+                        <PWText style={styles.alreadyImportedNote}>
+                            {t('multisig.import.already_imported')}
+                        </PWText>
+                    )}
+                    <PWView style={styles.bottomActions}>
+                        <PWButton
+                            variant='secondary'
+                            title={t('multisig.import.ignore')}
+                            onPress={handleIgnore}
+                            paddingStyle='dense'
+                            style={styles.ignoreButton}
+                            testID='import-shared-account-ignore-button'
+                        />
+                        <PWButton
+                            variant='primary'
+                            title={t('multisig.import.add_to_accounts')}
+                            onPress={handleAddAccount}
+                            isDisabled={isAddDisabled}
+                            paddingStyle='dense'
+                            style={styles.addButton}
+                            testID='import-shared-account-add-button'
+                        />
+                    </PWView>
+                </PWView>
+            }
         >
-            <PWScrollView contentContainerStyle={styles.scrollContent}>
+            <PWView style={styles.bodyContent}>
                 <MultisigInfoCard
                     totalParticipants={totalParticipants}
                     threshold={threshold}
@@ -149,37 +170,7 @@ export const ImportSharedAccountScreen = () => {
                         />
                     ))}
                 </PWView>
-            </PWScrollView>
-
-            <SafeAreaView
-                edges={['bottom']}
-                style={styles.bottomBar}
-            >
-                {isAlreadyImported && (
-                    <PWText style={styles.alreadyImportedNote}>
-                        {t('multisig.import.already_imported')}
-                    </PWText>
-                )}
-                <PWView style={styles.bottomActions}>
-                    <PWButton
-                        variant='secondary'
-                        title={t('multisig.import.ignore')}
-                        onPress={handleIgnore}
-                        paddingStyle='dense'
-                        style={styles.ignoreButton}
-                        testID='import-shared-account-ignore-button'
-                    />
-                    <PWButton
-                        variant='primary'
-                        title={t('multisig.import.add_to_accounts')}
-                        onPress={handleAddAccount}
-                        isDisabled={isAddDisabled}
-                        paddingStyle='dense'
-                        style={styles.addButton}
-                        testID='import-shared-account-add-button'
-                    />
-                </PWView>
-            </SafeAreaView>
-        </PWView>
+            </PWView>
+        </PWScreen>
     )
 }

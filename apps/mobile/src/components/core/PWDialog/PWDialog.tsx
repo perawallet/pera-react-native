@@ -10,83 +10,93 @@
  limitations under the License
  */
 
-import { Dialog as RNEDialog } from '@rneui/themed'
-import { StyleProp, ViewStyle, TextStyle } from 'react-native'
+import { useWindowDimensions } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { getTestProps } from '@utils/test-id-helper'
+import { PWOverlay } from '../PWOverlay'
+import { PWScrollView } from '../PWScrollView'
+import { PWText } from '../PWText'
+import { PWView } from '../PWView'
+import { useStyles } from './styles'
+
+import type { ReactNode } from 'react'
 
 export type PWDialogProps = {
     isVisible: boolean
+    title?: ReactNode
+    /** Accessibility label for dialogs that render their own title content. */
+    accessibilityLabel?: string
+    children: ReactNode
+    footer?: ReactNode
+    maxHeightRatio?: number
+    dismissOnBackdropPress?: boolean
     onBackdropPress?: () => void
-    children?: React.ReactNode
-    overlayStyle?: StyleProp<ViewStyle>
+    testID?: string
 }
 
-const PWDialogComponent = ({
+export const PWDialog = ({
     isVisible,
+    title,
+    accessibilityLabel,
+    children,
+    footer,
+    maxHeightRatio = 0.7,
+    dismissOnBackdropPress = true,
     onBackdropPress,
-    children,
-    overlayStyle,
-    ...props
+    testID,
 }: PWDialogProps) => {
+    const { width, height } = useWindowDimensions()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles({ width, height, insets, maxHeightRatio })
+    const titleLabel =
+        accessibilityLabel ?? (typeof title === 'string' ? title : undefined)
+
     return (
-        <RNEDialog
+        <PWOverlay
             isVisible={isVisible}
-            onBackdropPress={onBackdropPress}
-            overlayStyle={overlayStyle}
-            {...props}
+            onBackdropPress={
+                dismissOnBackdropPress ? onBackdropPress : undefined
+            }
+            overlayStyle={styles.overlay}
+            backdropStyle={styles.backdrop}
         >
-            {children}
-        </RNEDialog>
+            <PWView
+                style={styles.dialog}
+                accessibilityViewIsModal
+                accessibilityLabel={titleLabel}
+                {...getTestProps(testID)}
+            >
+                {title != null ? (
+                    <PWView
+                        style={styles.header}
+                        accessibilityRole='header'
+                    >
+                        {typeof title === 'string' ? (
+                            <PWText
+                                variant='h3'
+                                style={styles.title}
+                            >
+                                {title}
+                            </PWText>
+                        ) : (
+                            title
+                        )}
+                    </PWView>
+                ) : null}
+
+                <PWScrollView
+                    style={styles.scrollArea}
+                    contentContainerStyle={styles.content}
+                    showsVerticalScrollIndicator={false}
+                    bounces={false}
+                >
+                    {children}
+                </PWScrollView>
+
+                {footer != null ? (
+                    <PWView style={styles.footer}>{footer}</PWView>
+                ) : null}
+            </PWView>
+        </PWOverlay>
     )
 }
-
-const PWDialogTitle = ({
-    title,
-    titleStyle,
-    ...props
-}: {
-    title: string
-    titleStyle?: StyleProp<TextStyle>
-}) => {
-    return (
-        <RNEDialog.Title
-            title={title}
-            titleStyle={titleStyle}
-            {...props}
-        />
-    )
-}
-
-const PWDialogActions = ({
-    children,
-    ...props
-}: {
-    children: React.ReactNode
-}) => {
-    return <RNEDialog.Actions {...props}>{children}</RNEDialog.Actions>
-}
-
-const PWDialogButton = ({
-    title,
-    onPress,
-    titleStyle,
-    ...props
-}: {
-    title: string
-    onPress?: () => void
-    titleStyle?: StyleProp<TextStyle>
-}) => {
-    return (
-        <RNEDialog.Button
-            title={title}
-            onPress={onPress}
-            titleStyle={titleStyle}
-            {...props}
-        />
-    )
-}
-
-export const PWDialog = Object.assign(PWDialogComponent, {
-    Title: PWDialogTitle,
-    Actions: PWDialogActions,
-    Button: PWDialogButton,
-})

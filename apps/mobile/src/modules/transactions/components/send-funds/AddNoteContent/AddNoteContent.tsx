@@ -10,11 +10,10 @@
  limitations under the License
  */
 
-import { PWInput, PWText, PWView } from '@components/core'
+import { PWInput, PWSheetLayout, PWText } from '@components/core'
 import { BottomSheetTextInput } from '@gorhom/bottom-sheet'
 import { useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
-import { useStyles } from './styles'
 import { useSendFunds } from '@modules/transactions/hooks'
 import { useLanguage } from '@hooks/useLanguage'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -22,7 +21,6 @@ import { noteSchema } from '@perawallet/wallet-core-blockchain'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 
 export const AddNoteContent = () => {
-    const styles = useStyles()
     const { note, setNote } = useSendFunds()
     const [isEdit] = useState(!!note)
     const { t } = useLanguage()
@@ -43,36 +41,37 @@ export const AddNoteContent = () => {
     }
 
     return (
-        <PWView style={styles.container}>
-            <SheetHeader
-                title={
-                    isEdit
-                        ? t('send_funds.add_note.edit')
-                        : t('send_funds.add_note.button')
-                }
-                rightAction={
-                    <PWText onPress={handleSubmit(done)}>
-                        {t('send_funds.add_note.done')}
-                    </PWText>
-                }
-            />
-            <PWView style={styles.container}>
-                <Controller
-                    control={control}
-                    name='note'
-                    render={({ field: { onChange, onBlur, value } }) => (
-                        <PWInput
-                            onBlur={onBlur}
-                            onChangeText={onChange}
-                            value={value}
-                            label={t('send_funds.add_note.placeholder')}
-                            errorMessage={errors.note?.message}
-                            autoFocus
-                            InputComponent={BottomSheetTextInput}
-                        />
-                    )}
+        <PWSheetLayout
+            header={
+                <SheetHeader
+                    title={
+                        isEdit
+                            ? t('send_funds.add_note.edit')
+                            : t('send_funds.add_note.button')
+                    }
+                    rightAction={
+                        <PWText onPress={handleSubmit(done)}>
+                            {t('send_funds.add_note.done')}
+                        </PWText>
+                    }
                 />
-            </PWView>
-        </PWView>
+            }
+        >
+            <Controller
+                control={control}
+                name='note'
+                render={({ field: { onChange, onBlur, value } }) => (
+                    <PWInput
+                        onBlur={onBlur}
+                        onChangeText={onChange}
+                        value={value}
+                        label={t('send_funds.add_note.placeholder')}
+                        errorMessage={errors.note?.message}
+                        autoFocus
+                        InputComponent={BottomSheetTextInput}
+                    />
+                )}
+            />
+        </PWSheetLayout>
     )
 }

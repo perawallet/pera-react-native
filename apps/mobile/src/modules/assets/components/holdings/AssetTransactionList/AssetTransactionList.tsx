@@ -67,6 +67,7 @@ export const AssetTransactionList = ({
         <>
             <SectionList
                 sections={sections}
+                showsVerticalScrollIndicator={false}
                 renderItem={renderItem}
                 renderSectionHeader={renderSectionHeader}
                 keyExtractor={keyExtractor}
@@ -78,9 +79,14 @@ export const AssetTransactionList = ({
                     <PWView>
                         {children}
                         <PWView style={styles.header}>
-                            <PWText variant='h4'>
-                                {t('asset_details.transaction_list.title')}
-                            </PWText>
+                            <PWView style={styles.headerTitleContainer}>
+                                <PWText
+                                    variant='h4'
+                                    truncate
+                                >
+                                    {t('asset_details.transaction_list.title')}
+                                </PWText>
+                            </PWView>
                             <PWView style={styles.actions}>
                                 <PWButton
                                     title={t(
@@ -90,6 +96,7 @@ export const AssetTransactionList = ({
                                     icon='sliders'
                                     paddingStyle='dense'
                                     onPress={handleOpenFilter}
+                                    style={styles.actionButton}
                                 />
                                 {isCsvExportVisible && (
                                     <PWButton
@@ -101,6 +108,7 @@ export const AssetTransactionList = ({
                                         paddingStyle='dense'
                                         onPress={handleExportCsv}
                                         isLoading={isExportingCsv}
+                                        style={styles.actionButton}
                                     />
                                 )}
                             </PWView>

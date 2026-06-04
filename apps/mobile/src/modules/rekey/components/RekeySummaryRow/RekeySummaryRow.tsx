@@ -11,7 +11,7 @@
  */
 
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
-import { PWText, PWView } from '@components/core'
+import { PWListItemLayout, PWText, PWView } from '@components/core'
 import { AccountIcon } from '@modules/accounts/components/AccountIcon'
 import { useStyles } from './styles'
 
@@ -38,13 +38,17 @@ export const RekeySummaryRow = ({
     const truncated = truncateAlgorandAddress(account.address)
 
     return (
-        <PWView style={styles.row}>
-            <AccountIcon
-                account={account}
-                size='lg'
-                ignoreRekey={ignoreRekey}
-            />
-            <PWView style={styles.text}>
+        <PWListItemLayout
+            style={styles.row}
+            left={
+                <AccountIcon
+                    account={account}
+                    size='lg'
+                    ignoreRekey={ignoreRekey}
+                />
+            }
+        >
+            <PWView>
                 <PWText
                     variant='bodyLarge'
                     numberOfLines={1}
@@ -61,6 +65,6 @@ export const RekeySummaryRow = ({
                     </PWText>
                 )}
             </PWView>
-        </PWView>
+        </PWListItemLayout>
     )
 }

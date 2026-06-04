@@ -12,17 +12,16 @@
 
 import React from 'react'
 import { ActivityIndicator } from 'react-native'
-import { PWButton, PWText, PWView } from '@components/core'
+import { PWButton, PWScreen, PWText, PWView } from '@components/core'
 import { AddressEntryField } from '@components/AddressEntryField'
-import { useBottomSafeAreaPadding } from '@hooks/useBottomSafeAreaPadding'
+import { ScreenHeader } from '@components/ScreenHeader'
 import { useWatchAccountScreen } from './useWatchAccountScreen'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 
 export const WatchAccountScreen = () => {
-    const bottomPadding = useBottomSafeAreaPadding()
-    const styles = useStyles(bottomPadding)
+    const styles = useStyles()
     const { t } = useLanguage()
     const {
         address,
@@ -50,53 +49,8 @@ export const WatchAccountScreen = () => {
               : undefined
 
     return (
-        <PWView style={styles.rootContainer}>
-            <PWView style={styles.contentContainer}>
-                <PWText variant='h1'>
-                    {t('onboarding.watch_account.title')}
-                </PWText>
-
-                <PWText style={styles.description}>
-                    {t('onboarding.watch_account.description')}
-                </PWText>
-
-                <AddressEntryField
-                    testID='watch_account_address_input'
-                    placeholder={t(
-                        'onboarding.watch_account.address_placeholder',
-                    )}
-                    value={address}
-                    onChangeText={handleAddressChange}
-                    allowQRCode
-                    onScanned={handleAddressChange}
-                    errorMessage={errorMessage}
-                />
-                {isNfdResolving && (
-                    <PWView style={styles.nfdStatus}>
-                        <ActivityIndicator size='small' />
-                        <PWText
-                            variant='caption'
-                            style={styles.nfdStatusText}
-                        >
-                            {t('address_entry.nfd_resolving')}
-                        </PWText>
-                    </PWView>
-                )}
-                {isNfdResolved && nfdName && (
-                    <PWView style={styles.nfdStatus}>
-                        <PWText
-                            variant='caption'
-                            style={styles.nfdStatusText}
-                        >
-                            {t('address_entry.nfd_resolved', { name: nfdName })}
-                            {' — '}
-                            {truncateAlgorandAddress(resolvedAddress)}
-                        </PWText>
-                    </PWView>
-                )}
-            </PWView>
-
-            <PWView style={styles.footerContainer}>
+        <PWScreen
+            footer={
                 <PWButton
                     testID='watch_account_submit_button'
                     variant='primary'
@@ -104,7 +58,47 @@ export const WatchAccountScreen = () => {
                     onPress={handleWatchAccount}
                     isDisabled={!isValidAddress || isDuplicateAddress}
                 />
-            </PWView>
-        </PWView>
+            }
+        >
+            <ScreenHeader
+                title={t('onboarding.watch_account.title')}
+                description={t('onboarding.watch_account.description')}
+            />
+
+            <AddressEntryField
+                testID='watch_account_address_input'
+                placeholder={t('onboarding.watch_account.address_placeholder')}
+                value={address}
+                onChangeText={handleAddressChange}
+                allowQRCode
+                onScanned={handleAddressChange}
+                errorMessage={errorMessage}
+            />
+            {isNfdResolving && (
+                <PWView style={styles.nfdStatus}>
+                    <ActivityIndicator size='small' />
+                    <PWText
+                        variant='caption'
+                        style={styles.nfdStatusText}
+                    >
+                        {t('address_entry.nfd_resolving')}
+                    </PWText>
+                </PWView>
+            )}
+            {isNfdResolved && nfdName && (
+                <PWView style={styles.nfdStatus}>
+                    <PWText
+                        variant='caption'
+                        style={styles.nfdStatusText}
+                    >
+                        {t('address_entry.nfd_resolved', {
+                            name: nfdName,
+                        })}
+                        {' — '}
+                        {truncateAlgorandAddress(resolvedAddress)}
+                    </PWText>
+                </PWView>
+            )}
+        </PWScreen>
     )
 }

@@ -37,14 +37,25 @@ export type AccountMenuProps = {
 export const AccountMenu = (props: AccountMenuProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { sortedAccounts, selectedAccountAddress, sortMode, handleTap } =
-        useAccountMenu(props)
+    const {
+        sortedAccounts,
+        selectedAccountAddress,
+        sortMode,
+        handleTap,
+        isChartCollapsed,
+        handleListScroll,
+        handleExpandChart,
+    } = useAccountMenu(props)
     const { onAddAccount, onOpenSort, headerContent, hideDefaultHeader } = props
 
     return (
         <PWView style={styles.container}>
             {headerContent ?? (
-                <PortfolioView style={styles.portfolioContainer} />
+                <PortfolioView
+                    style={styles.portfolioContainer}
+                    isCollapsed={isChartCollapsed}
+                    onExpandChart={handleExpandChart}
+                />
             )}
 
             <PWView style={styles.mainContent}>
@@ -53,12 +64,15 @@ export const AccountMenu = (props: AccountMenuProps) => {
                         style={styles.titleBar}
                         accessible={false}
                     >
-                        <PWText
-                            variant='h3'
-                            style={styles.activeTitle}
-                        >
-                            {t('account_menu.title')}
-                        </PWText>
+                        <PWView style={styles.titleBarTitleContainer}>
+                            <PWText
+                                variant='h3'
+                                style={styles.activeTitle}
+                                truncate
+                            >
+                                {t('account_menu.title')}
+                            </PWText>
+                        </PWView>
                         <PWView
                             style={styles.titleBarButtonContainer}
                             accessible={false}
@@ -98,7 +112,8 @@ export const AccountMenu = (props: AccountMenuProps) => {
                     )}
                     ItemSeparatorComponent={ListSeparator}
                     showsVerticalScrollIndicator={false}
-                    contentContainerStyle={styles.accountContainer}
+                    onScroll={handleListScroll}
+                    scrollEventThrottle={16}
                     inBottomSheet
                 />
             </PWView>

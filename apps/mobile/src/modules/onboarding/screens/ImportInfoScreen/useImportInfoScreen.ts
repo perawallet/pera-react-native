@@ -13,16 +13,11 @@
 import { useCallback } from 'react'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { RouteProp, useRoute } from '@react-navigation/native'
-import { useTheme } from '@rneui/themed'
 import { OnboardingStackParamList } from '../../routes/types'
 import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
 
-import KeyImage from '@assets/images/key.svg'
-import KeyInvertedImage from '@assets/images/key-inverted.svg'
-
 export const useImportInfoScreen = () => {
-    const { theme } = useTheme()
     const navigation = useAppNavigation()
     const { pushWebView } = useWebView()
     const {
@@ -41,13 +36,9 @@ export const useImportInfoScreen = () => {
         pushWebView({ url: config.recoveryPassphraseSupportUrl })
     }, [pushWebView])
 
-    const KeyImageComponent =
-        theme.mode === 'dark' ? KeyInvertedImage : KeyImage
-
     return {
         handleBackPress,
         handleRecoverPress,
         handleInfoPress,
-        KeyImageComponent,
     }
 }

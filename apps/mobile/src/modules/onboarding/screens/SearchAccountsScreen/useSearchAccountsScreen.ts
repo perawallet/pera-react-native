@@ -29,7 +29,7 @@ import {
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { logger } from '@perawallet/wallet-core-shared'
 import { OnboardingStackParamList } from '../../routes/types'
-import { useExitAccountFlow } from '../../hooks'
+import { useExitAccountFlow, useShouldPlayConfetti } from '../../hooks'
 
 export type UseSearchAccountsScreenResult = {
     t: (key: string) => string
@@ -52,6 +52,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
     const { discoverAccounts, discoverRekeyedAccounts } = useAccountDiscovery()
     const { discoverImportAccounts, cancelImport } = useHDImportSession()
     const { exitAccountFlow } = useExitAccountFlow()
+    const { setShouldPlayConfetti } = useShouldPlayConfetti()
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
     const { buildHdWalletAccount } = useCreateAccount()
     const allAccounts = useAllAccounts()
@@ -217,6 +218,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
 
                 if (discoveredRekeyedAccounts.length === 0) {
                     setSelectedAccountAddress(account.address)
+                    setShouldPlayConfetti(true)
                     exitAccountFlow()
                 } else {
                     setSelectedAccountAddress(account.address)
@@ -250,6 +252,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
         t,
         showToast,
         exitAccountFlow,
+        setShouldPlayConfetti,
         setSelectedAccountAddress,
         buildHdWalletAccount,
         allAccounts,

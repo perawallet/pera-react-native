@@ -63,6 +63,7 @@ export const useContactListScreen = ({
 
     const showQR = useCallback(
         (contact: Contact) => {
+            // Presenting a sheet isn't a nav blur, so dismiss the keyboard ourselves.
             Keyboard.dismiss()
             void requestBottomSheet<void>({
                 contents: <ContactQRContent contact={contact} />,

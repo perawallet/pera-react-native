@@ -118,6 +118,10 @@ module.exports = {
         `webcredentials:${PASSKEY_AUTOFILL_HOST}`,
       ],
       'com.apple.developer.authentication-services.autofill-credential-provider': true,
+      // Distributed builds (staging + production) attest against Apple's
+      // production environment; only local dev builds use the sandbox.
+      'com.apple.developer.devicecheck.appattest-environment':
+        variant === 'dev' ? 'development' : 'production',
     },
     // Firebase config - stored in config/ directory (not in native folder)
     googleServicesFile: './config/GoogleService-Info.plist',

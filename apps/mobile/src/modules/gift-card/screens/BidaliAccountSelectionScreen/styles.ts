@@ -13,20 +13,12 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
+    // Bare flex container instead of PWScreen: this screen lives inside a
+    // bottom sheet, so the nested AccountPicker (PWFlatList) already owns the
+    // bottom safe-area inset. Wrapping it in PWScreen would add the inset a
+    // second time, leaving an oversized empty band below the list.
     container: {
         flex: 1,
-    },
-    header: {
         paddingHorizontal: theme.spacing.xl,
-        paddingTop: theme.spacing.md,
-        paddingBottom: theme.spacing.xl,
-        gap: theme.spacing.sm,
-    },
-    subtitle: {
-        color: theme.colors.textGray,
-    },
-    list: {
-        paddingHorizontal: theme.spacing.xl,
-        gap: theme.spacing.md,
     },
 }))

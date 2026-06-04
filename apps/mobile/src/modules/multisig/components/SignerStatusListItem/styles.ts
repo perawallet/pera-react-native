@@ -13,9 +13,9 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
+    // Card skin merged onto the layout row; overrides its default vertical
+    // padding/gap and adds the trailing horizontal padding + border.
     container: {
-        flexDirection: 'row',
-        alignItems: 'center',
         paddingVertical: theme.spacing.md,
         paddingHorizontal: theme.spacing.md,
         gap: theme.spacing.md,
@@ -23,8 +23,5 @@ export const useStyles = makeStyles(theme => ({
         borderWidth: theme.borders.sm,
         borderColor: theme.colors.layerGray,
         backgroundColor: theme.colors.background,
-    },
-    addressDisplay: {
-        flex: 1,
     },
 }))

@@ -12,18 +12,9 @@
 
 import { makeStyles } from '@rneui/themed'
 
-type StyleProps = {
-    // Bottom safe-area inset; pads the modal body so the carousel's pager
-    // dots and the banner card's dismiss link sit clear of the iOS home
-    // indicator / Android nav bar.
-    bottomInset: number
-}
-
-export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
+export const useStyles = makeStyles(theme => ({
     root: {
-        flex: 1,
         backgroundColor: theme.colors.bannerContentBg,
-        paddingBottom: bottomInset,
     },
     // The carousel takes the full screen; banner art covers the modal. The
     // close X is absolutely positioned above the banner content so it does

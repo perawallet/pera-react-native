@@ -12,7 +12,7 @@
 
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 
-import { PWText, PWTouchableIcon, PWView } from '@components/core'
+import { PWScreen, PWText, PWTouchableIcon, PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { ContactAvatar } from '@components/ContactAvatar'
 import { EmptyView } from '@components/EmptyView'
@@ -56,68 +56,70 @@ export const ViewContactScreen = () => {
     }
 
     return (
-        <PWView style={styles.container}>
-            <PWView style={styles.header}>
-                <ContactAvatar
-                    contact={selectedContact}
-                    size='xxl'
-                />
-                <PWText
-                    variant='h3'
-                    style={styles.name}
-                >
-                    {selectedContact.name}
-                </PWText>
-                <PWText
-                    variant='body'
-                    style={styles.shortAddress}
-                >
-                    {truncateAlgorandAddress(selectedContact.address)}
-                </PWText>
-            </PWView>
-            <PWView style={styles.divider} />
-            <PWView style={styles.addressSection}>
-                <PWText
-                    variant='h4'
-                    style={styles.addressLabel}
-                >
-                    {t('contacts.view_contact.account_address')}
-                </PWText>
-                <PWView style={styles.addressRow}>
-                    <AddressDisplay
-                        address={selectedContact.address}
-                        addressFormat='full'
-                        displayType='address-only'
-                        showCopy={false}
-                        textProps={{
-                            variant: 'body',
-                            style: styles.fullAddress,
-                        }}
-                        style={styles.addressTextWrapper}
+        <PWScreen>
+            <PWView style={styles.container}>
+                <PWView style={styles.header}>
+                    <ContactAvatar
+                        contact={selectedContact}
+                        size='xxl'
                     />
-                    <PWTouchableIcon
-                        name='qr'
-                        variant='primary'
-                        onPress={openQR}
-                    />
+                    <PWText
+                        variant='h3'
+                        style={styles.name}
+                    >
+                        {selectedContact.name}
+                    </PWText>
+                    <PWText
+                        variant='body'
+                        style={styles.shortAddress}
+                    >
+                        {truncateAlgorandAddress(selectedContact.address)}
+                    </PWText>
                 </PWView>
-            </PWView>
-            {nfdName && (
-                <PWView style={[styles.addressSection, styles.nfdSection]}>
+                <PWView style={styles.divider} />
+                <PWView style={styles.addressSection}>
                     <PWText
                         variant='h4'
                         style={styles.addressLabel}
                     >
-                        {t('contacts.view_contact.nfd_label')}
+                        {t('contacts.view_contact.account_address')}
                     </PWText>
-                    <PWText
-                        variant='body'
-                        style={styles.fullAddress}
-                    >
-                        {nfdName}
-                    </PWText>
+                    <PWView style={styles.addressRow}>
+                        <AddressDisplay
+                            address={selectedContact.address}
+                            addressFormat='full'
+                            displayType='address-only'
+                            showCopy={false}
+                            textProps={{
+                                variant: 'body',
+                                style: styles.fullAddress,
+                            }}
+                            style={styles.addressTextWrapper}
+                        />
+                        <PWTouchableIcon
+                            name='qr'
+                            variant='primary'
+                            onPress={openQR}
+                        />
+                    </PWView>
                 </PWView>
-            )}
-        </PWView>
+                {nfdName && (
+                    <PWView style={[styles.addressSection, styles.nfdSection]}>
+                        <PWText
+                            variant='h4'
+                            style={styles.addressLabel}
+                        >
+                            {t('contacts.view_contact.nfd_label')}
+                        </PWText>
+                        <PWText
+                            variant='body'
+                            style={styles.fullAddress}
+                        >
+                            {nfdName}
+                        </PWText>
+                    </PWView>
+                )}
+            </PWView>
+        </PWScreen>
     )
 }

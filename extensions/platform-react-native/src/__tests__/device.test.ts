@@ -14,6 +14,17 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { RNDeviceInfoStorageService } from '../services/device'
 import * as RN from 'react-native'
 
+// Override the build channel; getAppEnvironment reads config.appEnvironment.
+vi.mock('@perawallet/wallet-core-config', async () => {
+    const actual = await vi.importActual<
+        typeof import('@perawallet/wallet-core-config')
+    >('@perawallet/wallet-core-config')
+    return {
+        ...actual,
+        config: { ...actual.config, appEnvironment: 'staging' },
+    }
+})
+
 // Mock expo-application
 vi.mock('expo-application', () => ({
     applicationName: 'Pera Wallet',
@@ -230,6 +241,14 @@ describe('RNDeviceInfoStorageService', () => {
             const { getLocales } = await import('expo-localization')
             vi.mocked(getLocales).mockReturnValue([])
             expect(service.getDeviceCountry()).toBe('US')
+        })
+    })
+
+    describe('build environment', () => {
+        it('returns the configured app environment', () => {
+            const service = new RNDeviceInfoStorageService()
+            expect(service.getAppEnvironment()).toBe('staging')
+            expect(service.isStoreBuild()).toBe(false)
         })
     })
 })

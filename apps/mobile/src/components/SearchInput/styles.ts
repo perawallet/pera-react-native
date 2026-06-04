@@ -16,15 +16,19 @@ export const useStyles = makeStyles(theme => {
     return {
         container: {
             paddingHorizontal: 0,
+            width: '100%',
+            minWidth: 0,
         },
         search: {
             backgroundColor: theme.colors.layerGrayLighter,
-            borderRadius: theme.borderRadius.xs,
+            borderRadius: theme.borderRadius.sm,
             paddingHorizontal: theme.spacing.md,
+            minWidth: 0,
         },
         input: {
             color: theme.colors.textMain,
             paddingVertical: 0,
+            minWidth: 0,
         },
         rightIconContainer: {
             margin: 0,

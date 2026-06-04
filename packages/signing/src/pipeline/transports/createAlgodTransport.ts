@@ -11,7 +11,7 @@
  */
 
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
-import type { Network } from '@perawallet/wallet-core-shared'
+import { toError, type Network } from '@perawallet/wallet-core-shared'
 import type {
     DataTransport,
     SigningResult,
@@ -80,8 +80,7 @@ export const createAlgodTransport = (
                     txIds,
                 }
             } catch (error) {
-                const err =
-                    error instanceof Error ? error : new Error(String(error))
+                const err = toError(error)
                 throw new TransportError(err.message, err)
             }
         },

@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { ActivityIndicator } from 'react-native'
 import { PWHeader, PWText, PWView } from '@components/core'
+import { LoadingView } from '@components/LoadingView'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
@@ -63,7 +63,10 @@ export const ViewPassphraseContent = ({
 
                 {isLoading && (
                     <PWView style={styles.loading}>
-                        <ActivityIndicator />
+                        <LoadingView
+                            variant='circle'
+                            size='sm'
+                        />
                     </PWView>
                 )}
 

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
+import { toError, type Network } from '@perawallet/wallet-core-shared'
 import {
     useNetworkStore,
     type PeraSignedTransaction,
@@ -234,8 +234,7 @@ export const createMultisigProposeTransport = (
             } catch (error) {
                 if (error instanceof NetworkChangedError) throw error
                 if (error instanceof TransportError) throw error
-                const err =
-                    error instanceof Error ? error : new Error(String(error))
+                const err = toError(error)
                 throw new TransportError(err.message, err)
             }
         },

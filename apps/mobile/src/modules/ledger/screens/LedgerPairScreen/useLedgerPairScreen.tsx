@@ -37,7 +37,11 @@ export const useLedgerPairScreen = (): UseLedgerPairScreenResult => {
     const handleOpenHowDoesItWork = useCallback(() => {
         void requestBottomSheet({
             contents: <LedgerHowItWorksContent />,
-            options: { size: 'auto', enablePanDownToClose: true },
+            options: {
+                size: 'auto',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
         })
     }, [requestBottomSheet])
 

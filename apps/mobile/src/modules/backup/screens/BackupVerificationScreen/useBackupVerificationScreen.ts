@@ -45,8 +45,6 @@ export type UseBackupVerificationScreenResult = {
     error: Error | null
 }
 
-// Exposed for tests to bypass the KMS fetch.
-
 export const useBackupVerificationScreen =
     (): UseBackupVerificationScreenResult => {
         const navigation =

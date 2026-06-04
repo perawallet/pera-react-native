@@ -17,7 +17,6 @@ export const useStyles = makeStyles(
     (theme, { noBorder }: AccountDisplayProps) => {
         const addressText = {
             color: theme.colors.textGray,
-            lineHeight: theme.spacing.lg,
         }
         return {
             container: {

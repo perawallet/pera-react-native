@@ -12,7 +12,7 @@
 
 import LottieView from 'lottie-react-native'
 
-import { PWText, PWView } from '@components/core'
+import { PWScreen, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import peraTransactionLoading from '@assets/animations/pera-transaction-loading.json'
 import { useStyles } from './styles'
@@ -44,24 +44,26 @@ export const TransactionProcessingScreen = () => {
             : undefined
 
     return (
-        <PWView style={styles.container}>
-            <PWView style={styles.spinnerCircle}>
-                <LottieView
-                    autoPlay
-                    loop
-                    source={peraTransactionLoading}
-                    style={styles.animation}
-                />
+        <PWScreen scroll='never'>
+            <PWView style={styles.contentContainer}>
+                <PWView style={styles.spinnerCircle}>
+                    <LottieView
+                        autoPlay
+                        loop
+                        source={peraTransactionLoading}
+                        style={styles.animation}
+                    />
+                </PWView>
+                <PWText
+                    variant='h3'
+                    style={styles.title}
+                >
+                    {t(titleKey)}
+                </PWText>
+                <PWText style={styles.subtitle}>
+                    {t(subtitleKey, subtitleParams)}
+                </PWText>
             </PWView>
-            <PWText
-                variant='h3'
-                style={styles.title}
-            >
-                {t(titleKey)}
-            </PWText>
-            <PWText style={styles.subtitle}>
-                {t(subtitleKey, subtitleParams)}
-            </PWText>
-        </PWView>
+        </PWScreen>
     )
 }

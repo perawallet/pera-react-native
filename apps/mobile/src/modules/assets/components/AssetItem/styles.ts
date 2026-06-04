@@ -25,24 +25,11 @@ export const useStyles = makeStyles(theme => {
             flex: 1,
             gap: theme.spacing.md,
         },
-        unitContainer: {
-            flex: 1,
-        },
         amountContainer: {
             alignItems: 'flex-end',
         },
-        suspiciousName: {
-            color: theme.colors.error,
-            flexShrink: 1,
-        },
         deletedLabel: {
             color: theme.colors.negative,
-        },
-        primaryUnit: {
-            flexShrink: 1,
-        },
-        secondaryUnit: {
-            color: theme.colors.textGrayLighter,
         },
         primaryAmount: {
             textAlign: 'right',
@@ -52,11 +39,32 @@ export const useStyles = makeStyles(theme => {
             color: theme.colors.textGray,
             alignSelf: 'flex-end',
         },
-        row: {
+        itemContainer: {
             flexDirection: 'row',
-            gap: theme.spacing.xs,
             alignItems: 'center',
+            gap: theme.spacing.lg,
+        },
+        infoContainer: {
+            flex: 1,
+        },
+        titleRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: theme.spacing.xs,
             flexShrink: 1,
+        },
+        titleText: {
+            flexShrink: 1,
+        },
+        suspiciousTitle: {
+            color: theme.colors.error,
+            flexShrink: 1,
+        },
+        subtitle: {
+            color: theme.colors.textGray,
+        },
+        rightSlot: {
+            marginLeft: theme.spacing.md,
         },
     }
 })

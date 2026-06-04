@@ -10,11 +10,22 @@
  limitations under the License
  */
 
-import type { ReactNode } from 'react'
+import type { ComponentType, ReactNode } from 'react'
+import { useTheme } from '@rneui/themed'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { PWButton } from '@components/core/PWButton'
+import { PWScrollView } from '@components/core/PWScrollView'
 import { PWText } from '@components/core/PWText'
 import { PWView } from '@components/core/PWView'
 import { useStyles } from './styles'
+
+const ILLUSTRATION_SIZE = 160
+
+export type PWInfoViewIllustration = ComponentType<{
+    width: number
+    height: number
+    color?: string
+}>
 
 export type PWInfoViewAction = {
     label: string
@@ -25,7 +36,7 @@ export type PWInfoViewAction = {
 }
 
 export type PWInfoViewProps = {
-    illustration?: ReactNode
+    illustration?: PWInfoViewIllustration
     title: string
     body: string
     /**
@@ -40,7 +51,7 @@ export type PWInfoViewProps = {
 }
 
 export const PWInfoView = ({
-    illustration,
+    illustration: Illustration,
     title,
     body,
     footerExtras,
@@ -49,29 +60,37 @@ export const PWInfoView = ({
     testID = 'pw-info-view',
 }: PWInfoViewProps) => {
     const styles = useStyles()
+    const { theme } = useTheme()
 
     return (
         <PWView
             style={styles.root}
             testID={testID}
         >
-            <PWView style={styles.content}>
-                {illustration}
-                <PWText
-                    variant='h1'
-                    style={styles.title}
-                >
-                    {title}
-                </PWText>
+            <PWScrollView
+                style={styles.scroll}
+                contentContainerStyle={styles.content}
+            >
+                {Illustration ? (
+                    <Illustration
+                        width={ILLUSTRATION_SIZE}
+                        height={ILLUSTRATION_SIZE}
+                        color={theme.colors.textMain}
+                    />
+                ) : null}
+                <PWText variant='h1'>{title}</PWText>
                 <PWText
                     variant='h4'
                     style={styles.description}
                 >
                     {body}
                 </PWText>
-            </PWView>
+            </PWScrollView>
 
-            <PWView style={styles.footer}>
+            <SafeAreaView
+                edges={['bottom']}
+                style={styles.footer}
+            >
                 {footerExtras}
                 <PWButton
                     variant='primary'
@@ -91,7 +110,7 @@ export const PWInfoView = ({
                         testID={secondaryAction.testID ?? `${testID}-secondary`}
                     />
                 )}
-            </PWView>
+            </SafeAreaView>
         </PWView>
     )
 }

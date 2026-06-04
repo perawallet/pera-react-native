@@ -33,9 +33,15 @@ import { SettingsWalletConnectDetailsScreen } from '@modules/settings/screens/Se
 import { SettingsDeveloperMenuScreen } from '../screens/developer/SettingsDeveloperMenuScreen/SettingsDeveloperMenuScreen'
 import { SettingsDeveloperFeatureFlagsScreen } from '../screens/developer/SettingsDeveloperFeatureFlagsScreen/SettingsDeveloperFeatureFlagsScreen'
 import { SettingsDeveloperManageCacheScreen } from '../screens/developer/SettingsDeveloperManageCacheScreen'
+import { SettingsDeveloperAppIntegrityScreen } from '../screens/developer/SettingsDeveloperAppIntegrityScreen'
+import { SettingsDeveloperGalleryScreen } from '../screens/developer/SettingsDeveloperGalleryScreen'
+import { GalleryCategoryScreen } from '../screens/developer/GalleryCategoryScreen'
+import { GalleryComponentPreviewScreen } from '../screens/developer/GalleryComponentPreviewScreen'
 import { SettingsDeveloperMigrationViewerScreen } from '../screens/developer/SettingsDeveloperMigrationViewerScreen'
 import { SettingsDeveloperMigrationInfoScreen } from '../screens/developer/SettingsDeveloperMigrationInfoScreen'
 import { SettingsDeveloperMigrationSimulatorScreen } from '../screens/developer/SettingsDeveloperMigrationSimulatorScreen'
+
+import type { GalleryCategoryId } from '@modules/settings/screens/developer/gallery-catalog'
 
 export type DeveloperSettingsStackParamsList = {
     DeveloperSettingsHome: undefined
@@ -43,6 +49,10 @@ export type DeveloperSettingsStackParamsList = {
     DevMenu: undefined
     FeatureFlags: undefined
     ManageCache: undefined
+    AppIntegrity: undefined
+    Gallery: undefined
+    GalleryCategory: { categoryId: GalleryCategoryId }
+    GalleryPreview: { entryId: string }
     MigrationViewer: undefined
     MigrationInfo: undefined
     MigrationSimulator: undefined
@@ -99,6 +109,30 @@ const DeveloperSettingsStackNavigator = () => {
                     title: 'screens.manage_cache',
                 }}
                 component={SettingsDeveloperManageCacheScreen}
+            />
+            <DeveloperSettingsStack.Screen
+                name='AppIntegrity'
+                options={{
+                    title: 'screens.app_integrity',
+                }}
+                component={SettingsDeveloperAppIntegrityScreen}
+            />
+            <DeveloperSettingsStack.Screen
+                name='Gallery'
+                options={{
+                    title: 'Screen Gallery',
+                }}
+                component={SettingsDeveloperGalleryScreen}
+            />
+            <DeveloperSettingsStack.Screen
+                name='GalleryCategory'
+                options={{ title: 'UI Catalog' }}
+                component={GalleryCategoryScreen}
+            />
+            <DeveloperSettingsStack.Screen
+                name='GalleryPreview'
+                options={{ title: 'Preview' }}
+                component={GalleryComponentPreviewScreen}
             />
             <DeveloperSettingsStack.Screen
                 name='MigrationViewer'

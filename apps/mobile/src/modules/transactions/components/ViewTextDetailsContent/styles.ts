@@ -11,32 +11,12 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { getTypography } from '@theme/typography'
 
-export const useStyles = makeStyles(theme => {
-    const { color: _color, ...typography } = getTypography(theme, 'caption')
-    const buttonText = {
-        ...typography,
-        fontSize: theme.spacing.md,
-    }
-    return {
-        container: {
-            flex: 1,
-            paddingBottom: theme.spacing.xxl,
-            borderTopStartRadius: theme.spacing.sm,
-            borderTopEndRadius: theme.spacing.sm,
-            overflow: 'hidden',
-            gap: theme.spacing.xl,
-        },
-        buttonContainer: {
-            flexDirection: 'row',
-            gap: theme.spacing.sm,
-            paddingHorizontal: theme.spacing.xl,
-        },
-        buttonText,
-        noteText: {
-            marginBottom: theme.spacing.xl,
-            paddingHorizontal: theme.spacing.xl,
-        },
-    }
-})
+export const useStyles = makeStyles(theme => ({
+    buttonContainer: {
+        flexDirection: 'row',
+        gap: theme.spacing.sm,
+        paddingHorizontal: theme.spacing.xl,
+        paddingBottom: theme.spacing.md,
+    },
+}))

@@ -10,9 +10,20 @@
  limitations under the License
  */
 
-import React, { forwardRef, useImperativeHandle, useRef } from 'react'
+import React, {
+    forwardRef,
+    useContext,
+    useImperativeHandle,
+    useRef,
+} from 'react'
+import { StyleSheet } from 'react-native'
 import { FlashList, FlashListProps, FlashListRef } from '@shopify/flash-list'
 import { useBottomSheetScrollableCreator } from '@gorhom/bottom-sheet'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+
+import { PWView } from '../PWView'
+import { PWInBottomSheetContext } from '../PWBottomSheet/inSheetContext'
+import { useStyles } from './styles'
 
 export type PWFlatListRef = {
     scrollToOffset: (params: { offset: number; animated?: boolean }) => void
@@ -27,12 +38,46 @@ export type PWFlatListRef = {
 
 export type PWFlatListProps<T> = FlashListProps<T> & {
     inBottomSheet?: boolean
+    cardLayout?: boolean
+}
+
+const ListSeparator = () => {
+    const styles = useStyles()
+
+    return <PWView style={styles.itemSeparator} />
+}
+
+const CardSeparator = () => {
+    const styles = useStyles()
+
+    return <PWView style={styles.cardSeparator} />
 }
 
 export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
-    ({ inBottomSheet, ...props }, ref) => {
+    (
+        {
+            inBottomSheet,
+            cardLayout,
+            ItemSeparatorComponent,
+            contentContainerStyle,
+            showsVerticalScrollIndicator = false,
+            showsHorizontalScrollIndicator = false,
+            // RN's default ('never') makes the first tap dismiss the keyboard
+            // instead of hitting the row; 'handled' lets the row receive it.
+            keyboardShouldPersistTaps = 'handled',
+            ...props
+        },
+        ref,
+    ) => {
         const innerRef = useRef<FlashListRef<unknown>>(null)
+        const insets = useSafeAreaInsets()
+        const styles = useStyles({ bottomInset: insets.bottom })
         const BottomSheetScrollable = useBottomSheetScrollableCreator()
+
+        // Auto-detect a surrounding sheet: a missing flag silently breaks
+        // scrolling, so the gesture can't cooperate with the sheet pan.
+        const isInSheet = useContext(PWInBottomSheetContext)
+        const isInBottomSheet = inBottomSheet ?? isInSheet
 
         useImperativeHandle(ref, () => ({
             scrollToOffset: params => innerRef.current?.scrollToOffset(params),
@@ -42,22 +87,48 @@ export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
             scrollToEnd: options => innerRef.current?.scrollToEnd(options),
         }))
 
-        if (inBottomSheet) {
+        const isHorizontal = props.horizontal === true
+        const fillEmpty =
+            (props.data?.length ?? 0) === 0 && props.ListEmptyComponent != null
+        const isVerticalList = !isHorizontal && !fillEmpty
+
+        const defaultSeparator = cardLayout ? CardSeparator : ListSeparator
+        const resolvedSeparator = isHorizontal
+            ? ItemSeparatorComponent
+            : ItemSeparatorComponent === undefined
+              ? defaultSeparator
+              : ItemSeparatorComponent
+
+        const flashProps: FlashListProps<unknown> = {
+            ...props,
+            showsVerticalScrollIndicator,
+            showsHorizontalScrollIndicator,
+            keyboardShouldPersistTaps,
+            ItemSeparatorComponent: resolvedSeparator,
+            contentContainerStyle: StyleSheet.flatten([
+                isVerticalList && styles.content,
+                fillEmpty && styles.fillEmpty,
+                contentContainerStyle,
+                isInBottomSheet && isVerticalList && styles.sheetBottomInset,
+            ]),
+        }
+
+        if (isInBottomSheet) {
             return (
                 <FlashList
-                    {...(props ?? {})}
+                    {...flashProps}
                     ref={innerRef}
                     renderScrollComponent={BottomSheetScrollable}
                 />
             )
-        } else {
-            return (
-                <FlashList
-                    {...(props ?? {})}
-                    ref={innerRef}
-                />
-            )
         }
+
+        return (
+            <FlashList
+                {...flashProps}
+                ref={innerRef}
+            />
+        )
     },
 ) as <T>(
     props: PWFlatListProps<T> & React.RefAttributes<PWFlatListRef>,

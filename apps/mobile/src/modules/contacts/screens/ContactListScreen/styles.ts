@@ -12,50 +12,11 @@
 
 import { makeStyles } from '@rneui/themed'
 
-type StyleProps = {
-    listPaddingBottom?: number
-}
-
-export const useStyles = makeStyles((theme, props: StyleProps = {}) => {
-    const listPaddingBottom = props.listPaddingBottom ?? 0
+export const useStyles = makeStyles(theme => {
     return {
-        flex: {
-            flex: 1,
-        },
         searchWrapper: {
-            paddingHorizontal: theme.spacing.xl,
-            paddingTop: theme.spacing.xl,
+            paddingTop: theme.spacing.sm,
             paddingBottom: theme.spacing.sm,
-        },
-        listContent: {
-            paddingHorizontal: theme.spacing.xl,
-            paddingTop: theme.spacing.xl,
-            paddingBottom: listPaddingBottom,
-            flexGrow: 1,
-        },
-        contactContainer: {
-            flexDirection: 'row',
-            gap: theme.spacing.lg,
-            alignItems: 'center',
-            paddingVertical: theme.spacing.lg,
-        },
-        contactTextContainer: {
-            flex: 1,
-            gap: theme.spacing.xxs,
-        },
-        contactName: {
-            color: theme.colors.textMain,
-        },
-        contactAddress: {
-            color: theme.colors.textGrayLighter,
-        },
-        emptyButton: {
-            minHeight: theme.spacing['3xl'],
-            borderRadius: theme.borderRadius.xs,
-            marginTop: theme.spacing.xl,
-        },
-        emptyViewBody: {
-            paddingHorizontal: theme.spacing['3xl'],
         },
     }
 })

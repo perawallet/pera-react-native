@@ -53,9 +53,13 @@ export const TabBarStackNavigator = () => {
                     borderTopWidth: theme.borders.none,
                     height:
                         insets.bottom +
+                        theme.spacing.md +
                         (Platform.OS === 'android'
                             ? BOTTOM_TAB_HEIGHT_ANDROID
                             : BOTTOM_TAB_HEIGHT_IOS),
+                    // Overriding `height` drops React Navigation's default
+                    // safe-area padding, so reserve it back here.
+                    paddingBottom: insets.bottom + theme.spacing.md,
                 },
                 tabBarIcon: ({ focused }) => {
                     const style = focused ? 'primary' : 'secondary'
@@ -120,6 +124,7 @@ export const TabBarStackNavigator = () => {
                 name='Menu'
                 layout={safeAreaLayout}
                 component={MenuScreen}
+                options={{ tabBarButtonTestID: 'tab_menu_button' }}
             />
         </TabBarStack.Navigator>
     )

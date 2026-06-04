@@ -11,19 +11,28 @@
  */
 
 import type { AssetSearchResultResponse } from '../api/assets/search-schema'
-import type { AssetSearchItem } from '../models/search'
+import type { DisplayableAsset } from '../models/assets'
 
+/** Maps a raw `/v1/assets/search/` result to the shared DisplayableAsset shape,
+ *  nesting metadata exactly like PeraAsset so one UI can render both. */
 export const transformSearchResult = (
     item: AssetSearchResultResponse,
-): AssetSearchItem => ({
+): DisplayableAsset => ({
     assetId: String(item.asset_id),
-    name: item.name ?? null,
-    unitName: item.unit_name ?? null,
-    logo: item.logo ?? null,
-    verificationTier: item.verification_tier,
-    usdValue: item.usd_value ?? null,
-    type: item.type ?? null,
-    collectibleTitle: item.collectible?.title ?? null,
-    collectibleImage: item.collectible?.primary_image ?? null,
-    collectionName: item.collectible?.collection?.name ?? null,
+    name: item.name ?? undefined,
+    unitName: item.unit_name ?? undefined,
+    peraMetadata: {
+        logo: item.logo ?? null,
+        verificationTier: item.verification_tier,
+        type: item.type ?? undefined,
+        collectible: item.collectible
+            ? {
+                  title: item.collectible.title ?? undefined,
+                  primaryImage: item.collectible.primary_image ?? undefined,
+                  collection: item.collectible.collection?.name
+                      ? { name: item.collectible.collection.name }
+                      : undefined,
+              }
+            : undefined,
+    },
 })

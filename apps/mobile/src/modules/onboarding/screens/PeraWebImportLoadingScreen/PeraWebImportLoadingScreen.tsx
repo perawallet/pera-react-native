@@ -11,8 +11,8 @@
  */
 
 import React from 'react'
-import { ActivityIndicator } from 'react-native'
-import { PWRoundIcon, PWText, PWView } from '@components/core'
+import { PWRoundIcon, PWScreen, PWText, PWView } from '@components/core'
+import { LoadingView } from '@components/LoadingView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { usePeraWebImportLoadingScreen } from './usePeraWebImportLoadingScreen'
@@ -26,21 +26,25 @@ export const PeraWebImportLoadingScreen = () => {
     usePeraWebImportLoadingScreen()
 
     return (
-        <PWView style={styles.container}>
-            <PWRoundIcon
-                icon='globe'
-                size='xxl'
-            />
-            <PWText
-                variant='h2'
-                style={styles.title}
-            >
-                {t('onboarding.pera_web_import.loading.title')}
-            </PWText>
-            <ActivityIndicator
-                size='large'
-                testID='pera_web_import_loading_indicator'
-            />
-        </PWView>
+        <PWScreen scroll='never'>
+            <PWView style={styles.container}>
+                <PWRoundIcon
+                    icon='globe'
+                    size='xxl'
+                />
+                <PWText
+                    variant='h2'
+                    style={styles.title}
+                >
+                    {t('onboarding.pera_web_import.loading.title')}
+                </PWText>
+                <PWView testID='pera_web_import_loading_indicator'>
+                    <LoadingView
+                        variant='circle'
+                        size='lg'
+                    />
+                </PWView>
+            </PWView>
+        </PWScreen>
     )
 }

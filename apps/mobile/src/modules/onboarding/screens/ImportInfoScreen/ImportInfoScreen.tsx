@@ -11,19 +11,15 @@
  */
 
 import React from 'react'
-import { PWButton, PWIcon, PWText, PWView } from '@components/core'
-import { useStyles } from './styles'
+import { PWButton, PWIcon, PWScreen } from '@components/core'
+import { ScreenHeader } from '@components/ScreenHeader'
 import { useLanguage } from '@hooks/useLanguage'
 import { useImportInfoScreen } from './useImportInfoScreen'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export const ImportInfoScreen = () => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles(insets)
     const { t } = useLanguage()
-    const { handleRecoverPress, handleInfoPress, KeyImageComponent } =
-        useImportInfoScreen()
+    const { handleRecoverPress, handleInfoPress } = useImportInfoScreen()
 
     useNavigationHeader({
         right: (
@@ -36,35 +32,21 @@ export const ImportInfoScreen = () => {
     })
 
     return (
-        <PWView style={styles.root}>
-            <PWView style={styles.content}>
-                <KeyImageComponent
-                    style={styles.image}
-                    width={160}
-                    height={160}
-                />
-                <PWText
-                    variant='h1'
-                    style={styles.title}
-                >
-                    {t('onboarding.import_info.title')}
-                </PWText>
-                <PWText
-                    variant='h4'
-                    style={styles.description}
-                >
-                    {t('onboarding.import_info.body')}
-                </PWText>
-            </PWView>
-
-            <PWView style={styles.footer}>
+        <PWScreen
+            footer={
                 <PWButton
                     variant='primary'
                     title={t('onboarding.import_info.button')}
                     onPress={handleRecoverPress}
                     testID='import_info_recover_button'
                 />
-            </PWView>
-        </PWView>
+            }
+        >
+            <ScreenHeader
+                icon='key'
+                title={t('onboarding.import_info.title')}
+                description={t('onboarding.import_info.body')}
+            />
+        </PWScreen>
     )
 }

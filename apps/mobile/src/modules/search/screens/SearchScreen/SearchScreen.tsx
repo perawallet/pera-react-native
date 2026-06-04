@@ -14,6 +14,7 @@ import { useCallback, useEffect, useRef } from 'react'
 import {
     PWFlatList,
     PWIcon,
+    PWScreen,
     PWText,
     PWTouchableOpacity,
     PWView,
@@ -159,11 +160,12 @@ export const SearchScreen = () => {
     const showNoResults = hasQuery && !isLoading && !hasResults
 
     return (
-        <PWView style={styles.container}>
+        <PWScreen scroll='never'>
             <SearchInput
                 value={value}
                 onChangeText={setValue}
                 placeholder={t('search.placeholder')}
+                containerStyle={styles.searchContainer}
                 inputContainerStyle={styles.searchField}
                 testID='search_input'
             />
@@ -172,6 +174,8 @@ export const SearchScreen = () => {
                 ref={listRef}
                 data={rows}
                 renderItem={renderItem}
+                // Mixed rows incl. section headers / show-more — no blanket divider.
+                ItemSeparatorComponent={null}
                 keyExtractor={keyExtractor}
                 style={styles.list}
                 contentContainerStyle={styles.contentContainer}
@@ -202,6 +206,6 @@ export const SearchScreen = () => {
                     )
                 }
             />
-        </PWView>
+        </PWScreen>
     )
 }

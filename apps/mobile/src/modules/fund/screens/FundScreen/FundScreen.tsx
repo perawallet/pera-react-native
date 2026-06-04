@@ -11,23 +11,25 @@
  */
 
 import { config } from '@perawallet/wallet-core-config'
-import { PWView } from '@components/core'
-import { useStyles } from './styles'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { PWScreen } from '@components/core'
 import { PWWebView } from '@modules/webview/components/PWWebView'
+import { useStyles } from './styles'
 
 export const FundScreen = () => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles(insets)
+    const styles = useStyles()
     const url = config.onrampBaseUrl
 
     return (
-        <PWView style={styles.container}>
+        <PWScreen
+            scroll='never'
+            horizontalPadding='none'
+            style={styles.container}
+        >
             <PWWebView
                 url={url}
                 enablePeraConnect={true}
                 containerStyle={styles.webview}
             />
-        </PWView>
+        </PWScreen>
     )
 }

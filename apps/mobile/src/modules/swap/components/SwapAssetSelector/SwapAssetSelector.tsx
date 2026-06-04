@@ -47,10 +47,22 @@ export const SwapAssetSelector = ({
                             asset={asset}
                             style={styles.icon}
                         />
-                        <PWText variant='h4'>{asset.unitName}</PWText>
+                        <PWText
+                            variant='h4'
+                            truncate
+                            style={styles.assetName}
+                        >
+                            {asset.unitName}
+                        </PWText>
                     </>
                 ) : (
-                    <PWText variant='h4'>{t('swap.form.select_asset')}</PWText>
+                    <PWText
+                        variant='h4'
+                        truncate
+                        style={styles.assetName}
+                    >
+                        {t('swap.form.select_asset')}
+                    </PWText>
                 )}
                 <PWIcon name='chevron-right' />
             </PWView>

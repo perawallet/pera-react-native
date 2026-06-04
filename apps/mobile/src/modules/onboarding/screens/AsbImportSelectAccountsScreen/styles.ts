@@ -13,30 +13,18 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    root: {
-        flex: 1,
-        backgroundColor: theme.colors.background,
-    },
     content: {
         flex: 1,
-        paddingHorizontal: theme.spacing.xl,
-        paddingTop: theme.spacing.xl,
-        gap: theme.spacing.md,
-    },
-    title: {
-        textAlign: 'left',
-    },
-    description: {
-        color: theme.colors.textGray,
     },
     headerRow: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginTop: theme.spacing.md,
     },
     headerCount: {
         color: theme.colors.textGray,
+        flexShrink: 1,
+        marginRight: theme.spacing.md,
     },
     selectAll: {
         flexDirection: 'row',
@@ -45,31 +33,5 @@ export const useStyles = makeStyles(theme => ({
     },
     selectAllText: {
         color: theme.colors.textMain,
-    },
-    list: {
-        paddingBottom: theme.spacing.xl,
-        gap: theme.spacing.sm,
-    },
-    row: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingVertical: theme.spacing.md,
-        paddingHorizontal: theme.spacing.md,
-        borderRadius: theme.borderRadius.md,
-        backgroundColor: theme.colors.layerGrayLighter,
-        gap: theme.spacing.md,
-    },
-    rowText: {
-        flex: 1,
-    },
-    rowTitle: {
-        color: theme.colors.textMain,
-    },
-    rowSubtitle: {
-        color: theme.colors.textGray,
-    },
-    footer: {
-        padding: theme.spacing.xl,
     },
 }))

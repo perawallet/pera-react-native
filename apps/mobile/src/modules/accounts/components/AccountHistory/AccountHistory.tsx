@@ -13,19 +13,14 @@
 import { useCallback } from 'react'
 import { PWButton, PWText, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
+import { LoadingView } from '@components/LoadingView'
 import { useLanguage } from '@hooks/useLanguage'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
-import {
-    ActivityIndicator,
-    KeyboardAvoidingView,
-    SectionList,
-} from 'react-native'
+import { ActivityIndicator, SectionList } from 'react-native'
 import { useStyles } from './styles'
 import { useAccountHistory, type TransactionSection } from './useAccountHistory'
 import { TransactionListItem } from '@modules/transactions/components/TransactionListItem'
 import { TransactionDateHeader } from '@modules/transactions/components/TransactionDateHeader'
-
-const TAB_AND_HEADER_HEIGHT = 100
 
 export type AccountHistoryProps = {
     scrollEnabled?: boolean
@@ -77,85 +72,98 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
                 </PWView>
             )
         }
-        return <PWView style={styles.footer} />
-    }, [isFetchingNextPage, styles.loadingFooter, styles.footer])
+        return null
+    }, [isFetchingNextPage, styles.loadingFooter])
 
     const renderEmptyComponent = useCallback(() => {
         if (isLoading) {
             return (
-                <PWView style={styles.loadingContainer}>
-                    <ActivityIndicator size='large' />
-                </PWView>
+                <LoadingView
+                    variant='circle'
+                    size='lg'
+                    style={styles.loadingContainer}
+                />
             )
         }
         return (
-            <EmptyView body={t('asset_details.transaction_list.empty_body')} />
+            <EmptyView
+                body={t('asset_details.transaction_list.empty_body')}
+                style={styles.emptyView}
+            />
         )
-    }, [isLoading, styles.loadingContainer, t])
+    }, [isLoading, styles.loadingContainer, styles.emptyView, t])
 
     return (
-        <KeyboardAvoidingView
-            keyboardVerticalOffset={TAB_AND_HEADER_HEIGHT}
-            enabled
-            behavior='padding'
-            style={styles.keyboardAvoidingViewContainer}
-        >
-            <PWView style={styles.keyboardAvoidingViewContainer}>
-                <SectionList
-                    sections={sections}
-                    renderItem={renderItem}
-                    renderSectionHeader={renderSectionHeader}
-                    keyExtractor={keyExtractor}
-                    scrollEnabled={scrollEnabled}
-                    contentContainerStyle={styles.rootContainer}
-                    stickySectionHeadersEnabled={false}
-                    onEndReached={handleLoadMore}
-                    onEndReachedThreshold={0.5}
-                    keyboardDismissMode='on-drag'
-                    ListHeaderComponent={
-                        <PWView style={styles.headerContainer}>
-                            <PWView style={styles.titleBar}>
-                                <PWText variant='h4'>
+        <PWView style={styles.container}>
+            <SectionList
+                sections={sections}
+                showsVerticalScrollIndicator={false}
+                renderItem={renderItem}
+                renderSectionHeader={renderSectionHeader}
+                keyExtractor={keyExtractor}
+                scrollEnabled={scrollEnabled}
+                contentContainerStyle={styles.rootContainer}
+                ItemSeparatorComponent={ItemSeparator}
+                stickySectionHeadersEnabled={false}
+                onEndReached={handleLoadMore}
+                onEndReachedThreshold={0.5}
+                keyboardDismissMode='on-drag'
+                ListHeaderComponent={
+                    <PWView style={styles.headerContainer}>
+                        <PWView style={styles.titleBar}>
+                            <PWView style={styles.titleBarTitleContainer}>
+                                <PWText
+                                    variant='h4'
+                                    truncate
+                                >
                                     {t('asset_details.transaction_list.title')}
                                 </PWText>
-                                <PWView style={styles.titleBarButtonContainer}>
+                            </PWView>
+                            <PWView style={styles.titleBarButtonContainer}>
+                                <PWButton
+                                    icon='sliders'
+                                    title={t(
+                                        'asset_details.transaction_list.filter',
+                                    )}
+                                    variant='helper'
+                                    style={styles.transparentButton}
+                                    paddingStyle='dense'
+                                    onPress={handleOpenFilter}
+                                />
+                                {isCsvExportVisible && (
                                     <PWButton
-                                        icon='sliders'
+                                        icon='document-download'
                                         title={t(
-                                            'asset_details.transaction_list.filter',
+                                            'asset_details.transaction_list.csv',
                                         )}
                                         variant='helper'
-                                        style={styles.transparentButton}
                                         paddingStyle='dense'
-                                        onPress={handleOpenFilter}
+                                        onPress={handleExportCsv}
+                                        isLoading={isExportingCsv}
                                     />
-                                    {isCsvExportVisible && (
-                                        <PWButton
-                                            icon='document-download'
-                                            title={t(
-                                                'asset_details.transaction_list.csv',
-                                            )}
-                                            variant='helper'
-                                            paddingStyle='dense'
-                                            onPress={handleExportCsv}
-                                            isLoading={isExportingCsv}
-                                        />
-                                    )}
-                                </PWView>
+                                )}
                             </PWView>
                         </PWView>
-                    }
-                    ListEmptyComponent={
-                        !isLoading && isEmpty ? renderEmptyComponent() : null
-                    }
-                    ListFooterComponent={renderFooter}
-                />
-                {isLoading && !sections.length && (
-                    <PWView style={styles.loadingOverlay}>
-                        <ActivityIndicator size='large' />
                     </PWView>
-                )}
-            </PWView>
-        </KeyboardAvoidingView>
+                }
+                ListEmptyComponent={
+                    !isLoading && isEmpty ? renderEmptyComponent() : null
+                }
+                ListFooterComponent={renderFooter}
+            />
+            {isLoading && !sections.length && (
+                <LoadingView
+                    variant='circle'
+                    size='lg'
+                    style={styles.loadingOverlay}
+                />
+            )}
+        </PWView>
     )
+}
+
+const ItemSeparator = () => {
+    const styles = useStyles()
+
+    return <PWView style={styles.separator} />
 }

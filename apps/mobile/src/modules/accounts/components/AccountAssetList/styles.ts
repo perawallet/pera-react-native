@@ -13,14 +13,21 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    keyboardAvoidingViewContainer: {
-        flexGrow: 1,
+    container: {
+        flex: 1,
         backgroundColor: theme.colors.background,
+        // Inset on the wrapper, not contentContainerStyle: FlashList renders the
+        // sticky-search overlay edge-to-edge, so it must stay inset when pinned.
+        paddingHorizontal: theme.spacing.xl,
     },
     rootContainer: {
-        flexGrow: 1,
-        paddingHorizontal: theme.spacing.md,
-        paddingBottom: theme.spacing.xl,
+        gap: 0,
+    },
+    separator: {
+        height: theme.borders.sm,
+        backgroundColor: theme.colors.layerGrayLighter,
+        // Inset to align with the asset name: icon width (lg = xxl) + row gap (lg).
+        marginLeft: theme.spacing.xxl + theme.spacing.lg,
     },
     headerContainer: {
         marginTop: theme.spacing.sm,
@@ -30,14 +37,27 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.md,
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
         marginTop: theme.spacing.lg,
         marginBottom: theme.spacing.sm,
+        width: '100%',
+        minWidth: 0,
+    },
+    titleBarTitleContainer: {
+        flex: 1,
+        minWidth: 0,
     },
     titleBarButtonContainer: {
         flexDirection: 'row',
-        gap: theme.spacing.md,
-        alignItems: 'center',
+        gap: theme.spacing.sm,
+    },
+    manageButton: {
+        paddingHorizontal: theme.spacing.md,
+        flexShrink: 0,
+    },
+    addAssetButton: {
+        paddingVertical: theme.spacing.sm,
+        paddingHorizontal: theme.spacing.md,
+        flexShrink: 0,
     },
     loading: {
         justifyContent: 'flex-start',

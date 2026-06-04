@@ -10,15 +10,9 @@
  limitations under the License
  */
 
-import {
-    useAccountBalancesQuery,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
-import { ALGO_ASSET, ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
-import { PWView } from '@components/core'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
+import { AccountWithBalance } from '@modules/accounts/components/AccountWithBalance'
 import { useStyles } from './styles'
 
 type AccountResultRowProps = {
@@ -31,8 +25,6 @@ export const AccountResultRow = ({
     showBalance,
 }: AccountResultRowProps) => {
     const styles = useStyles()
-    const { accountBalances } = useAccountBalancesQuery([account], showBalance)
-    const algoValue = accountBalances.get(account.address)?.algoValue
 
     if (!showBalance) {
         return (
@@ -44,30 +36,5 @@ export const AccountResultRow = ({
         )
     }
 
-    return (
-        <PWView style={styles.accountRow}>
-            <AccountDisplay
-                account={account}
-                showChevron={false}
-                style={styles.accountDisplayInRow}
-            />
-            <PWView style={styles.balanceContainer}>
-                <CurrencyDisplay
-                    currency='ALGO'
-                    value={algoValue}
-                    precision={ALGO_ASSET.decimals}
-                    minPrecision={2}
-                    variant='bodyCompact'
-                />
-                <PreferredCurrencyDisplay
-                    sourceAssetId={ALGO_ASSET_ID}
-                    sourceAmount={algoValue}
-                    precision={2}
-                    minPrecision={2}
-                    variant='bodyCompact'
-                    style={styles.fiatBalance}
-                />
-            </PWView>
-        </PWView>
-    )
+    return <AccountWithBalance account={account} />
 }

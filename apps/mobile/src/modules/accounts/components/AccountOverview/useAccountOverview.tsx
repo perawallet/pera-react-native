@@ -56,7 +56,7 @@ export const useAccountOverview = ({
         void requestBottomSheet({
             contents: <SendFundsContent />,
             options: {
-                size: 'lg',
+                size: 'modal',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },
@@ -71,7 +71,7 @@ export const useAccountOverview = ({
         void requestBottomSheet({
             contents: <ReceiveFundsContent account={account} />,
             options: {
-                size: 'lg',
+                size: 'modal',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },
@@ -93,7 +93,7 @@ export const useAccountOverview = ({
                 />
             ),
             options: {
-                size: 'lg',
+                size: 'modal',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },

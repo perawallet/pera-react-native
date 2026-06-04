@@ -23,6 +23,7 @@ import {
     getAppStatePlatform,
     getAppStateTransition,
 } from '@utils/app-state'
+import { useIsMounted } from '@hooks/useIsMounted'
 
 type UseAutoLockListenerResult = {
     isLocked: boolean
@@ -35,6 +36,7 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
     const { checkAutoLock, setAutoLockStartedAt, checkPinEnabled } =
         usePinCode()
     const { deleteAllData } = useDeleteAllData()
+    const isMounted = useIsMounted()
     const lockRequestVersion = useSecurityStore(
         state => state.lockRequestVersion,
     )
@@ -113,19 +115,18 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
 
     useEffect(() => {
         if (!isInitialized) {
-            let isMounted = true
             setIsChecking(true)
 
             void checkPinEnabled()
                 .then(enabled => {
-                    if (!isMounted) {
+                    if (!isMounted()) {
                         return
                     }
 
                     setIsLocked(enabled)
                 })
                 .catch(error => {
-                    if (!isMounted) {
+                    if (!isMounted()) {
                         return
                     }
 
@@ -138,19 +139,15 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
                     // Keep current lock state on errors.
                 })
                 .finally(() => {
-                    if (!isMounted) {
+                    if (!isMounted()) {
                         return
                     }
 
                     setIsInitialized(true)
                     setIsChecking(false)
                 })
-
-            return () => {
-                isMounted = false
-            }
         }
-    }, [checkPinEnabled, isInitialized])
+    }, [checkPinEnabled, isInitialized, isMounted])
 
     // Honour explicit lock requests (currently emitted by the shake-to-lock
     // listener; see ShakeToLockHandler). The first observation seeds the ref

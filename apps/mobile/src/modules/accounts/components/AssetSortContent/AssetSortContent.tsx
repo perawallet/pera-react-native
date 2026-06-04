@@ -10,59 +10,53 @@
  limitations under the License
  */
 
-import {
-    PWButton,
-    PWIcon,
-    PWRadioButton,
-    PWText,
-    PWToolbar,
-    PWView,
-} from '@components/core'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { useCallback } from 'react'
+import { PWButton, PWRadioButton, PWSheetLayout } from '@components/core'
+import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useAssetSortContent } from './useAssetSortContent'
-import { useStyles } from './styles'
 
 export type AssetSortContentProps = Record<string, never>
 
 export const AssetSortContent = (_: AssetSortContentProps = {}) => {
-    const styles = useStyles()
     const { dismiss } = useBottomSheetResult<void>()
-    const { sortOptions, assetSortMode, handleSortModeChange, t } =
-        useAssetSortContent()
+    const {
+        sortOptions,
+        assetSortMode,
+        handleSortModeChange,
+        commitChanges,
+        t,
+    } = useAssetSortContent()
+
+    const handleDone = useCallback(() => {
+        commitChanges()
+        dismiss()
+    }, [commitChanges, dismiss])
 
     return (
-        <>
-            <PWToolbar
-                left={
-                    <PWIcon
-                        name='cross'
-                        onPress={dismiss}
-                    />
-                }
-                center={<PWText variant='h4'>{t('asset_sort.title')}</PWText>}
-                right={
-                    <PWButton
-                        variant='linkPositive'
-                        title={t('asset_sort.done')}
-                        onPress={dismiss}
-                        paddingStyle='none'
-                    />
-                }
-                paddingStyle='dense'
-                style={styles.toolbar}
-            />
-
-            <PWView style={styles.contentContainer}>
-                {sortOptions.map(option => (
-                    <PWRadioButton
-                        key={option.mode}
-                        title={t(option.labelKey)}
-                        isSelected={assetSortMode === option.mode}
-                        onPress={() => handleSortModeChange(option.mode)}
-                        testID={`asset_sort_option_${option.mode}`}
-                    />
-                ))}
-            </PWView>
-        </>
+        <PWSheetLayout
+            header={
+                <SheetHeader
+                    title={t('asset_sort.title')}
+                    rightAction={
+                        <PWButton
+                            variant='linkPositive'
+                            title={t('common.apply')}
+                            onPress={handleDone}
+                            paddingStyle='none'
+                        />
+                    }
+                />
+            }
+        >
+            {sortOptions.map(option => (
+                <PWRadioButton
+                    key={option.mode}
+                    title={t(option.labelKey)}
+                    isSelected={assetSortMode === option.mode}
+                    onPress={() => handleSortModeChange(option.mode)}
+                    testID={`asset_sort_option_${option.mode}`}
+                />
+            ))}
+        </PWSheetLayout>
     )
 }

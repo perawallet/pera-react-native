@@ -12,59 +12,47 @@
 
 import { makeStyles } from '@rneui/themed'
 
-type StyleProps = {
-    scrollPaddingBottom: number
-}
+export const useStyles = makeStyles(theme => {
+    const BADGE_SIZE = theme.spacing.lg * 2
 
-export const useStyles = makeStyles(
-    (theme, { scrollPaddingBottom }: StyleProps) => {
-        const BADGE_SIZE = theme.spacing.lg * 2
-
-        return {
-            flex: { flex: 1 },
-            container: {
-                paddingHorizontal: theme.spacing.xl,
-                paddingBottom: scrollPaddingBottom,
-            },
-            avatarWrapper: {
-                alignItems: 'center',
-                marginTop: theme.spacing.xxl,
-                marginBottom: theme.spacing['4xl'],
-                paddingHorizontal: theme.spacing.lg,
-                gap: theme.spacing.xl,
-            },
-            avatarTouchable: {
-                position: 'relative',
-            },
-            avatarBadge: {
-                position: 'absolute',
-                top: 0,
-                right: 0,
-                width: BADGE_SIZE,
-                height: BADGE_SIZE,
-                borderRadius: BADGE_SIZE / 2,
-                backgroundColor: theme.colors.buttonPrimaryBg,
-                alignItems: 'center',
-                justifyContent: 'center',
-            },
-            addPhotoLabel: {
-                color: theme.colors.textMain,
-                textAlign: 'center',
-            },
-            formContainer: {
-                gap: theme.spacing.xl,
-            },
-            nfdStatus: {
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: theme.spacing.sm,
-            },
-            nfdStatusText: {
-                color: theme.colors.textGray,
-            },
-            scanIconWrapper: {
-                marginLeft: theme.spacing.sm,
-            },
-        }
-    },
-)
+    return {
+        avatarWrapper: {
+            alignItems: 'center',
+            marginTop: theme.spacing.lg,
+            marginBottom: theme.spacing['4xl'],
+            gap: theme.spacing.xl,
+        },
+        avatarTouchable: {
+            position: 'relative',
+        },
+        avatarBadge: {
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            width: BADGE_SIZE,
+            height: BADGE_SIZE,
+            borderRadius: BADGE_SIZE / 2,
+            backgroundColor: theme.colors.buttonPrimaryBg,
+            alignItems: 'center',
+            justifyContent: 'center',
+        },
+        addPhotoLabel: {
+            color: theme.colors.textMain,
+            textAlign: 'center',
+        },
+        formContainer: {
+            gap: theme.spacing.xl,
+        },
+        nfdStatus: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: theme.spacing.sm,
+        },
+        nfdStatusText: {
+            color: theme.colors.textGray,
+        },
+        scanIconWrapper: {
+            marginLeft: theme.spacing.sm,
+        },
+    }
+})

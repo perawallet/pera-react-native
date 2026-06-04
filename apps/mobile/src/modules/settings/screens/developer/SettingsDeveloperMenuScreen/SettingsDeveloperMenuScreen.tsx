@@ -10,17 +10,16 @@
  limitations under the License
  */
 
-import { PWListItem, PWView } from '@components/core'
+import { ParamListBase, useNavigation } from '@react-navigation/native'
+import { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { config } from '@perawallet/wallet-core-config'
+
+import { PWListItem, PWScreen } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@modules/webview/hooks'
-import { config } from '@perawallet/wallet-core-config'
-import { useStyles } from './styles'
-import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { ParamListBase, useNavigation } from '@react-navigation/native'
 
 export const SettingsDeveloperMenuScreen = () => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
-    const styles = useStyles()
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
 
@@ -45,7 +44,7 @@ export const SettingsDeveloperMenuScreen = () => {
     }
 
     return (
-        <PWView style={styles.container}>
+        <PWScreen>
             <PWListItem
                 onPress={() => handleTapEvent('FeatureFlags')}
                 icon='sliders'
@@ -71,6 +70,17 @@ export const SettingsDeveloperMenuScreen = () => {
                 icon='reload'
                 title={t('settings.developer.manage_cache')}
             />
-        </PWView>
+            <PWListItem
+                onPress={() => handleTapEvent('AppIntegrity')}
+                icon='shield-check'
+                title={t('settings.developer.app_integrity')}
+            />
+            <PWListItem
+                onPress={() => handleTapEvent('Gallery')}
+                icon='dot-stack'
+                title={t('settings.developer.screen_gallery')}
+                testID='developer_menu_gallery_item'
+            />
+        </PWScreen>
     )
 }

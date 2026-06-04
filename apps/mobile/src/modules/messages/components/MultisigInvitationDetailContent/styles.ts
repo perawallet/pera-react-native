@@ -13,26 +13,8 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    scrollView: {
-        flex: 1,
-    },
-    scrollContent: {
-        paddingHorizontal: theme.spacing.xl,
-        paddingBottom: theme.spacing.xxl,
+    body: {
         gap: theme.spacing.lg,
-    },
-    header: {
-        alignItems: 'center',
-        paddingTop: theme.spacing.sm,
-        paddingBottom: theme.spacing.md,
-        gap: theme.spacing.xxs,
-    },
-    headerTitle: {
-        textAlign: 'center',
-    },
-    headerAddress: {
-        color: theme.colors.textGray,
-        textAlign: 'center',
     },
     sectionHeading: {
         color: theme.colors.textGray,
@@ -50,9 +32,6 @@ export const useStyles = makeStyles(theme => ({
     bottomBar: {
         flexDirection: 'row',
         gap: theme.spacing.md,
-        paddingHorizontal: theme.spacing.xl,
-        paddingTop: theme.spacing.md,
-        paddingBottom: theme.spacing.md,
     },
     ignoreButton: {
         flex: 1,

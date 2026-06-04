@@ -334,7 +334,7 @@ export const useSwapForm = (): UseSwapFormResult => {
                 />
             ),
             options: {
-                size: 'lg',
+                size: 'modal',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },
@@ -358,7 +358,7 @@ export const useSwapForm = (): UseSwapFormResult => {
                 />
             ),
             options: {
-                size: 'lg',
+                size: 'modal',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },
@@ -380,7 +380,16 @@ export const useSwapForm = (): UseSwapFormResult => {
                     selectedProviderName={selectedProviderName}
                 />
             ),
-            options: { size: 'auto', enablePanDownToClose: true },
+            // PWSheetLayout owns the scroll view, so it needs a bounded size
+            // (not 'auto'): when the sheet hugs its content the scroll view has
+            // no height to scroll within and a long provider list would clip.
+            // autoCreateContainer:false so the layout (not the sheet) owns the
+            // scroll container.
+            options: {
+                size: 'modal',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
         })
         // undefined means the sheet was dismissed; null means Auto was applied.
         if (result === undefined) return
@@ -396,6 +405,7 @@ export const useSwapForm = (): UseSwapFormResult => {
                 size: 'auto',
                 enablePanDownToClose: false,
                 enableCloseOnBackdropPress: false,
+                autoCreateContainer: false,
             },
         })
         if (!result || result.kind === 'cancelled') return
@@ -435,7 +445,7 @@ export const useSwapForm = (): UseSwapFormResult => {
         const result = await requestBottomSheet<SwapConfigurationResult>({
             contents: <SwapConfigurationContent />,
             options: {
-                size: 'lg',
+                size: 'modal',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },

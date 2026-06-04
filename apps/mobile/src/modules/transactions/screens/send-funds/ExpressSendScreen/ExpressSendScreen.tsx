@@ -10,13 +10,7 @@
  limitations under the License
  */
 
-import {
-    PWButton,
-    PWIcon,
-    PWScrollView,
-    PWText,
-    PWView,
-} from '@components/core'
+import { PWButton, PWIcon, PWScreen, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useExpressSendScreen } from './useExpressSendScreen'
@@ -33,8 +27,23 @@ export const ExpressSendScreen = () => {
     const { handleContinue, handleDontShowAgain } = useExpressSendScreen()
 
     return (
-        <PWView style={styles.container}>
-            <PWScrollView contentContainerStyle={styles.content}>
+        <PWScreen
+            footer={
+                <PWView style={styles.footer}>
+                    <PWButton
+                        title={t('send_funds.express_send.continue')}
+                        variant='primary'
+                        onPress={handleContinue}
+                    />
+                    <PWButton
+                        title={t('send_funds.express_send.dont_show_again')}
+                        variant='secondary'
+                        onPress={handleDontShowAgain}
+                    />
+                </PWView>
+            }
+        >
+            <PWView style={styles.content}>
                 <PWView style={styles.iconRow}>
                     <PWIcon
                         name='wallet'
@@ -78,26 +87,13 @@ export const ExpressSendScreen = () => {
                         key={stepKey}
                         style={styles.stepRow}
                     >
-                        <PWText style={styles.stepNumber}>
-                            {`${index + 1}.`}
-                        </PWText>
+                        <PWText
+                            style={styles.stepNumber}
+                        >{`${index + 1}.`}</PWText>
                         <PWText style={styles.stepText}>{t(stepKey)}</PWText>
                     </PWView>
                 ))}
-            </PWScrollView>
-
-            <PWView style={styles.footer}>
-                <PWButton
-                    title={t('send_funds.express_send.continue')}
-                    variant='primary'
-                    onPress={handleContinue}
-                />
-                <PWButton
-                    title={t('send_funds.express_send.dont_show_again')}
-                    variant='secondary'
-                    onPress={handleDontShowAgain}
-                />
             </PWView>
-        </PWView>
+        </PWScreen>
     )
 }

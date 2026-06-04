@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { toError } from '@perawallet/wallet-core-shared'
+
 import type {
     DataSource,
     SignableData,
@@ -48,8 +50,7 @@ export const createLocalSource = <TParams>(
                 signerAddress,
             }
         } catch (error) {
-            const err =
-                error instanceof Error ? error : new Error(String(error))
+            const err = toError(error)
             throw new SourceError(err.message, err)
         }
     },
@@ -90,8 +91,7 @@ export const createExternalSource = <TRequest>(
                 signerAddress,
             }
         } catch (error) {
-            const err =
-                error instanceof Error ? error : new Error(String(error))
+            const err = toError(error)
             throw new SourceError(err.message, err)
         }
     },
@@ -131,8 +131,7 @@ export const createFetchSource = <TParams>(
                 signerAddress,
             }
         } catch (error) {
-            const err =
-                error instanceof Error ? error : new Error(String(error))
+            const err = toError(error)
             throw new SourceError(err.message, err)
         }
     },

@@ -11,17 +11,15 @@
  */
 
 import React from 'react'
-import { KeyboardAvoidingView, Platform } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useHeaderHeight } from '@react-navigation/elements'
 import {
     PWButton,
     PWInput,
     PWLoadingOverlay,
-    PWScrollView,
+    PWScreen,
     PWText,
     PWView,
 } from '@components/core'
+import { ScreenHeader } from '@components/ScreenHeader'
 import { useLanguage } from '@hooks/useLanguage'
 import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
 import { MnemonicSuggestionBar } from '@modules/onboarding/components/MnemonicSuggestionBar'
@@ -32,9 +30,7 @@ const SCREEN_CAPTURE_TAG = 'asb-import-key'
 
 export const AsbImportKeyScreen = () => {
     usePreventScreenCapture(SCREEN_CAPTURE_TAG)
-    const insets = useSafeAreaInsets()
-    const headerHeight = useHeaderHeight()
-    const styles = useStyles(insets)
+    const styles = useStyles()
     const { t } = useLanguage()
     const {
         words,
@@ -54,26 +50,30 @@ export const AsbImportKeyScreen = () => {
     const wordsPerColumn = Math.ceil(wordCount / 2)
 
     return (
-        <PWView style={styles.root}>
-            <KeyboardAvoidingView
-                style={styles.root}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                keyboardVerticalOffset={headerHeight}
+        <>
+            <PWScreen
+                footer={
+                    <>
+                        <MnemonicSuggestionBar
+                            suggestions={suggestions}
+                            onSelectSuggestion={handleSelectSuggestion}
+                            testIDPrefix='asb_import_key_suggestion'
+                        />
+                        <PWButton
+                            variant='primary'
+                            title={t('onboarding.asb_import.key.continue')}
+                            onPress={handleContinue}
+                            isDisabled={!canContinue}
+                            testID='asb_import_key_continue_button'
+                        />
+                    </>
+                }
             >
-                <PWScrollView
-                    style={styles.scroll}
-                    contentContainerStyle={styles.scrollContent}
-                    keyboardShouldPersistTaps='handled'
-                >
-                    <PWText variant='h1'>
-                        {t('onboarding.asb_import.key.title')}
-                    </PWText>
-                    <PWText
-                        variant='h4'
-                        style={styles.description}
-                    >
-                        {t('onboarding.asb_import.key.body')}
-                    </PWText>
+                <PWView style={styles.scrollContent}>
+                    <ScreenHeader
+                        title={t('onboarding.asb_import.key.title')}
+                        description={t('onboarding.asb_import.key.body')}
+                    />
 
                     <PWView style={styles.columns}>
                         {[0, 1].map(column => {
@@ -170,29 +170,13 @@ export const AsbImportKeyScreen = () => {
                             )
                         })}
                     </PWView>
-                </PWScrollView>
-
-                <MnemonicSuggestionBar
-                    suggestions={suggestions}
-                    onSelectSuggestion={handleSelectSuggestion}
-                    testIDPrefix='asb_import_key_suggestion'
-                />
-
-                <PWView style={styles.footer}>
-                    <PWButton
-                        variant='primary'
-                        title={t('onboarding.asb_import.key.continue')}
-                        onPress={handleContinue}
-                        isDisabled={!canContinue}
-                        testID='asb_import_key_continue_button'
-                    />
                 </PWView>
-            </KeyboardAvoidingView>
+            </PWScreen>
 
             <PWLoadingOverlay
                 isVisible={isProcessing}
                 title={t('onboarding.asb_import.key.decrypting')}
             />
-        </PWView>
+        </>
     )
 }

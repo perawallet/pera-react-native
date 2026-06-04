@@ -13,25 +13,12 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        flex: 1,
-    },
-    closeButton: {
-        position: 'absolute',
-        top: theme.spacing.md,
-        left: theme.spacing.md,
-        zIndex: 1,
-    },
     heroImage: {
         width: '100%',
         aspectRatio: 16 / 9,
     },
-    scrollContent: {
-        flex: 1,
-    },
     content: {
         paddingHorizontal: theme.spacing.lg,
-        paddingTop: theme.spacing.xl,
     },
     title: {
         marginVertical: theme.spacing.xl,
@@ -39,9 +26,5 @@ export const useStyles = makeStyles(theme => ({
     paragraph: {
         color: theme.colors.textGray,
         marginBottom: theme.spacing.xl,
-    },
-    footer: {
-        paddingHorizontal: theme.spacing.lg,
-        paddingBottom: theme.spacing.xl,
     },
 }))

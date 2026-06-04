@@ -138,7 +138,7 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         void requestBottomSheet<void>({
             contents: <AddAssetContent variant='collectible' />,
             options: {
-                size: 'lg',
+                size: 'modal',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },
@@ -147,35 +147,34 @@ export const useAccountNfts = (): UseAccountNftsResult => {
 
     const openFilterSheet = useCallback(() => {
         void requestBottomSheet<void>({
-            contents: (
-                <NftFilterContent
-                    showOptedIn={showOptedIn}
-                    showWatchAccounts={showWatchAccounts}
-                    onToggleOptedIn={setShowOptedIn}
-                    onToggleWatchAccounts={setShowWatchAccounts}
-                />
-            ),
-            options: { size: 'auto', enablePanDownToClose: true },
+            contents: <NftFilterContent />,
+            options: {
+                size: 'auto',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
         })
-    }, [
-        requestBottomSheet,
-        showOptedIn,
-        showWatchAccounts,
-        setShowOptedIn,
-        setShowWatchAccounts,
-    ])
+    }, [requestBottomSheet])
 
     const openSortSheet = useCallback(() => {
         void requestBottomSheet<void>({
             contents: <NftSortContent />,
-            options: { size: 'auto', enablePanDownToClose: true },
+            options: {
+                size: 'auto',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
         })
     }, [requestBottomSheet])
 
     const openManageSheet = useCallback(async () => {
         const action = await requestBottomSheet<ManageNftsAction>({
             contents: <ManageNftsContent />,
-            options: { size: 'auto', enablePanDownToClose: true },
+            options: {
+                size: 'auto',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
         })
         if (action === 'sort') {
             openSortSheet()

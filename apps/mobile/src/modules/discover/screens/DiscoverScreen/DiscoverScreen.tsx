@@ -13,12 +13,11 @@
 import { config } from '@perawallet/wallet-core-config'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import { logger } from '@perawallet/wallet-core-shared'
-import { PWView } from '@components/core'
-import { useStyles } from './styles'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { PWScreen } from '@components/core'
 import { PWWebView } from '@modules/webview/components/PWWebView'
 import { isSafeRelativePath } from '@modules/webview/hooks/handlers'
 import type { TabBarStackParamList } from '@routes/tabbar'
+import { useStyles } from './styles'
 
 const joinDiscoverPath = (baseUrl: string, path?: string): string => {
     if (!path) return baseUrl
@@ -34,18 +33,21 @@ const joinDiscoverPath = (baseUrl: string, path?: string): string => {
 }
 
 export const DiscoverScreen = () => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles(insets)
+    const styles = useStyles()
     const route = useRoute<RouteProp<TabBarStackParamList, 'Discover'>>()
     const url = joinDiscoverPath(config.discoverBaseUrl, route.params?.path)
 
     return (
-        <PWView style={styles.container}>
+        <PWScreen
+            scroll='never'
+            horizontalPadding='none'
+            style={styles.container}
+        >
             <PWWebView
                 url={url}
                 enablePeraConnect={true}
                 containerStyle={styles.webview}
             />
-        </PWView>
+        </PWScreen>
     )
 }

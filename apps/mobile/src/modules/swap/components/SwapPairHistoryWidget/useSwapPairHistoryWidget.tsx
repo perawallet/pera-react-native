@@ -57,7 +57,7 @@ export const useSwapPairHistoryWidget = (): UseSwapPairHistoryWidgetResult => {
         void requestBottomSheet<void>({
             contents: <SwapHistoryContent address={address} />,
             options: {
-                size: 'lg',
+                size: 'modal',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },

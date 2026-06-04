@@ -21,6 +21,7 @@ const placeholderIconSize = {
     lg: 'md',
     xl: 'lg',
     xxl: 'xl',
+    '3xl': 'xxl',
 } as const satisfies Record<PWIconSize, PWIconSize>
 
 export type ContactAvatarProps = {

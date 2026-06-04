@@ -13,14 +13,9 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        paddingHorizontal: theme.spacing.xl,
-        paddingBottom: theme.spacing.xxl,
-    },
     qrSection: {
         alignItems: 'center',
         gap: theme.spacing.md,
-        marginTop: theme.spacing.xl,
     },
     label: {
         textAlign: 'center',
@@ -31,6 +26,5 @@ export const useStyles = makeStyles(theme => ({
     },
     actions: {
         gap: theme.spacing.md,
-        marginTop: theme.spacing.xl,
     },
 }))

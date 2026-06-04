@@ -115,15 +115,12 @@ export const SwapToAssetSelectionList = ({
             <PWFlatList
                 data={listData}
                 renderItem={renderItem}
+                cardLayout
+                keyboardDismissMode='on-drag'
                 inBottomSheet={inBottomSheet}
                 keyExtractor={item =>
                     isSkeletonItem(item) ? item.id : item.dexAsset.assetId
                 }
-                ItemSeparatorComponent={() => (
-                    <PWView style={styles.separator} />
-                )}
-                keyboardDismissMode='on-drag'
-                contentContainerStyle={styles.listContent}
                 ListEmptyComponent={
                     !isLoading && debouncedSearchFilter ? (
                         <EmptyView

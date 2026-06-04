@@ -10,89 +10,61 @@
  limitations under the License
  */
 
-import React from 'react'
-import {
-    PWButton,
-    PWIcon,
-    PWRadioButton,
-    PWText,
-    PWToolbar,
-    PWView,
-} from '@components/core'
-import {
-    useCollectiblePreferencesStore,
-    type CollectibleSortMode,
-} from '@perawallet/wallet-core-assets'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import React, { useCallback } from 'react'
+import { PWButton, PWRadioButton, PWSheetLayout } from '@components/core'
+import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
-import { useStyles } from './styles'
+import { useNftSortContent } from './useNftSortContent'
 
 export type NftSortContentProps = Record<string, never>
 
 export const NftSortContent = (_: NftSortContentProps = {}) => {
-    const styles = useStyles()
     const { t } = useLanguage()
     const { dismiss } = useBottomSheetResult<void>()
+    const { sortMode, handleSortModeChange, commitChanges } =
+        useNftSortContent()
 
-    const sortMode = useCollectiblePreferencesStore(
-        state => state.collectibleSortMode,
-    )
-    const setSortMode = useCollectiblePreferencesStore(
-        state => state.setCollectibleSortMode,
-    )
-
-    const handleChange = (mode: CollectibleSortMode) => {
-        setSortMode(mode)
-    }
+    const handleDone = useCallback(() => {
+        commitChanges()
+        dismiss()
+    }, [commitChanges, dismiss])
 
     return (
-        <>
-            <PWToolbar
-                left={
-                    <PWIcon
-                        name='cross'
-                        onPress={dismiss}
-                    />
-                }
-                center={
-                    <PWText variant='h4'>
-                        {t('account_details.nfts.sort')}
-                    </PWText>
-                }
-                right={
-                    <PWButton
-                        variant='linkPositive'
-                        title={t('account_details.nfts.filter_done')}
-                        onPress={dismiss}
-                        paddingStyle='none'
-                    />
-                }
-                paddingStyle='dense'
-                style={styles.toolbar}
+        <PWSheetLayout
+            header={
+                <SheetHeader
+                    title={t('account_details.nfts.sort')}
+                    rightAction={
+                        <PWButton
+                            variant='linkPositive'
+                            title={t('common.apply')}
+                            onPress={handleDone}
+                            paddingStyle='none'
+                        />
+                    }
+                />
+            }
+        >
+            <PWRadioButton
+                title={t('account_details.nfts.sort_newest_first')}
+                isSelected={sortMode === 'newestFirst'}
+                onPress={() => handleSortModeChange('newestFirst')}
             />
-
-            <PWView style={styles.contentContainer}>
-                <PWRadioButton
-                    title={t('account_details.nfts.sort_newest_first')}
-                    isSelected={sortMode === 'newestFirst'}
-                    onPress={() => handleChange('newestFirst')}
-                />
-                <PWRadioButton
-                    title={t('account_details.nfts.sort_oldest_first')}
-                    isSelected={sortMode === 'oldestFirst'}
-                    onPress={() => handleChange('oldestFirst')}
-                />
-                <PWRadioButton
-                    title={t('account_details.nfts.sort_title_asc')}
-                    isSelected={sortMode === 'titleAsc'}
-                    onPress={() => handleChange('titleAsc')}
-                />
-                <PWRadioButton
-                    title={t('account_details.nfts.sort_title_desc')}
-                    isSelected={sortMode === 'titleDesc'}
-                    onPress={() => handleChange('titleDesc')}
-                />
-            </PWView>
-        </>
+            <PWRadioButton
+                title={t('account_details.nfts.sort_oldest_first')}
+                isSelected={sortMode === 'oldestFirst'}
+                onPress={() => handleSortModeChange('oldestFirst')}
+            />
+            <PWRadioButton
+                title={t('account_details.nfts.sort_title_asc')}
+                isSelected={sortMode === 'titleAsc'}
+                onPress={() => handleSortModeChange('titleAsc')}
+            />
+            <PWRadioButton
+                title={t('account_details.nfts.sort_title_desc')}
+                isSelected={sortMode === 'titleDesc'}
+                onPress={() => handleSortModeChange('titleDesc')}
+            />
+        </PWSheetLayout>
     )
 }

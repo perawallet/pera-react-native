@@ -11,20 +11,17 @@
  */
 
 import { useCallback } from 'react'
-import {
-    PWFlatList,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
-import { useLanguage } from '@hooks/useLanguage'
 import { useNavigation } from '@react-navigation/native'
-import type { StackNavigationProp } from '@react-navigation/stack'
 import { useAllAccounts, WalletAccount } from '@perawallet/wallet-core-accounts'
-import { AccountWithBalance } from '@modules/accounts/components/AccountWithBalance'
+import { PWView } from '@components/core'
+import { ScreenHeader } from '@components/ScreenHeader'
+import { useLanguage } from '@hooks/useLanguage'
+import { AccountPicker } from '@modules/accounts/components/AccountPicker'
 import { useBidali } from '../../hooks/useBidali'
-import type { BidaliStackParamList } from '../../routes/types'
 import { useStyles } from './styles'
+
+import type { StackNavigationProp } from '@react-navigation/stack'
+import type { BidaliStackParamList } from '../../routes/types'
 
 export const BidaliAccountSelectionScreen = () => {
     const styles = useStyles()
@@ -42,33 +39,16 @@ export const BidaliAccountSelectionScreen = () => {
         [setSelectedAccount, navigation],
     )
 
-    const renderItem = useCallback(
-        ({ item }: { item: WalletAccount }) => (
-            <PWTouchableOpacity onPress={() => handleSelected(item)}>
-                <AccountWithBalance account={item} />
-            </PWTouchableOpacity>
-        ),
-        [handleSelected],
-    )
-
-    const keyExtractor = useCallback((item: WalletAccount) => item.address, [])
-
     return (
         <PWView style={styles.container}>
-            <PWView style={styles.header}>
-                <PWText variant='h1'>
-                    {t('giftCard.accountSelection.title')}
-                </PWText>
-                <PWText style={styles.subtitle}>
-                    {t('giftCard.accountSelection.subtitle')}
-                </PWText>
-            </PWView>
+            <ScreenHeader
+                title={t('giftCard.accountSelection.title')}
+                description={t('giftCard.accountSelection.subtitle')}
+            />
 
-            <PWFlatList
-                contentContainerStyle={styles.list}
-                data={accounts}
-                renderItem={renderItem}
-                keyExtractor={keyExtractor}
+            <AccountPicker
+                accounts={accounts}
+                onSelect={handleSelected}
             />
         </PWView>
     )

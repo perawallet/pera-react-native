@@ -11,26 +11,26 @@
  */
 
 import { useCallback, useLayoutEffect } from 'react'
-import {
-    PWView,
-    PWText,
-    PWFlatList,
-    PWButton,
-    PWIcon,
-    PWTouchableOpacity,
-} from '@components/core'
 import { useNavigation } from '@react-navigation/native'
-import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wallet'
-
-import { useBottomSafeAreaPadding } from '@hooks/useBottomSafeAreaPadding'
+import {
+    PWButton,
+    PWFlatList,
+    PWIcon,
+    PWScreen,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
+import { EmptyView } from '@components/EmptyView'
+import { ScreenHeader } from '@components/ScreenHeader'
 import { LedgerDeviceItem } from '../../components/LedgerDeviceItem'
-import { LedgerCompositeIcon } from '../../components/LedgerCompositeIcon'
 import { useStyles } from './styles'
 import { useLedgerScanScreen } from './useLedgerScanScreen'
 
+import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wallet'
+
 export const LedgerScanScreen = () => {
-    const bottomPadding = useBottomSafeAreaPadding()
-    const styles = useStyles(bottomPadding)
+    const styles = useStyles()
     const navigation = useNavigation()
     const {
         devices,
@@ -73,42 +73,28 @@ export const LedgerScanScreen = () => {
             return null
         }
         return (
-            <PWView style={styles.errorContainer}>
-                <PWText
-                    variant='body'
-                    style={styles.errorText}
-                >
-                    {t('ledger.scan.error')}
-                </PWText>
-                <PWButton
-                    testID='ledger_scan_retry_button'
-                    title={t('ledger.scan.retry')}
-                    onPress={handleRetry}
-                    variant='link'
-                />
-            </PWView>
+            <EmptyView
+                icon='warning'
+                body={t('ledger.scan.error')}
+                button={
+                    <PWButton
+                        testID='ledger_scan_retry_button'
+                        title={t('ledger.scan.retry')}
+                        onPress={handleRetry}
+                        variant='link'
+                    />
+                }
+            />
         )
     }
 
     return (
-        <PWView style={styles.container}>
-            <PWView style={styles.header}>
-                <PWView style={styles.icon}>
-                    <LedgerCompositeIcon />
-                </PWView>
-                <PWText
-                    variant='h1'
-                    style={styles.title}
-                >
-                    {t('ledger.scan.title')}
-                </PWText>
-                <PWText
-                    variant='h4'
-                    style={styles.description}
-                >
-                    {t('ledger.scan.description')}
-                </PWText>
-            </PWView>
+        <PWScreen scroll='never'>
+            <ScreenHeader
+                icon='ledger'
+                title={t('ledger.scan.title')}
+                description={t('ledger.scan.description')}
+            />
 
             {isPermissionDenied ? (
                 <PWView
@@ -142,6 +128,6 @@ export const LedgerScanScreen = () => {
                     showsVerticalScrollIndicator={false}
                 />
             )}
-        </PWView>
+        </PWScreen>
     )
 }

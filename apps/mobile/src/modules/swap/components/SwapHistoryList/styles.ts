@@ -18,7 +18,6 @@ export const useStyles = makeStyles(theme => ({
     },
     listContent: {
         paddingHorizontal: theme.spacing.xl,
-        paddingBottom: theme.spacing.xl,
     },
     footer: {
         paddingVertical: theme.spacing.md,

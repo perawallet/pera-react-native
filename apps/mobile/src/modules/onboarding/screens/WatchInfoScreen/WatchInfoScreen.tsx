@@ -11,19 +11,17 @@
  */
 
 import React from 'react'
-import { PWButton, PWIcon, PWText, PWView } from '@components/core'
+import { PWButton, PWIcon, PWScreen, PWText, PWView } from '@components/core'
+import { ScreenHeader } from '@components/ScreenHeader'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWatchInfoScreen } from './useWatchInfoScreen'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export const WatchInfoScreen = () => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles(insets)
+    const styles = useStyles()
     const { t } = useLanguage()
-    const { handleCreateWatchAccount, handleInfoPress, EyeImageComponent } =
-        useWatchInfoScreen()
+    const { handleCreateWatchAccount, handleInfoPress } = useWatchInfoScreen()
 
     useNavigationHeader({
         right: (
@@ -36,46 +34,34 @@ export const WatchInfoScreen = () => {
     })
 
     return (
-        <PWView style={styles.root}>
-            <PWView style={styles.content}>
-                <EyeImageComponent
-                    style={styles.image}
-                    width={160}
-                    height={160}
-                />
-                <PWText
-                    variant='h1'
-                    style={styles.title}
-                >
-                    {t('onboarding.watch_account.info_title')}
-                </PWText>
-                <PWText
-                    variant='h4'
-                    style={styles.description}
-                >
-                    {t('onboarding.watch_account.info_description')}
-                </PWText>
-            </PWView>
-
-            <PWView style={styles.footer}>
-                <PWView style={styles.warningRow}>
-                    <PWIcon
-                        name='warning'
-                        variant='error'
+        <PWScreen
+            footer={
+                <PWView style={styles.footerInner}>
+                    <PWView style={styles.warningRow}>
+                        <PWIcon
+                            name='warning'
+                            variant='error'
+                        />
+                        <PWText
+                            variant='body'
+                            style={styles.warning}
+                        >
+                            {t('onboarding.watch_account.info_warning')}
+                        </PWText>
+                    </PWView>
+                    <PWButton
+                        variant='primary'
+                        title={t('onboarding.watch_account.info_button')}
+                        onPress={handleCreateWatchAccount}
                     />
-                    <PWText
-                        variant='body'
-                        style={styles.warning}
-                    >
-                        {t('onboarding.watch_account.info_warning')}
-                    </PWText>
                 </PWView>
-                <PWButton
-                    variant='primary'
-                    title={t('onboarding.watch_account.info_button')}
-                    onPress={handleCreateWatchAccount}
-                />
-            </PWView>
-        </PWView>
+            }
+        >
+            <ScreenHeader
+                icon='eye'
+                title={t('onboarding.watch_account.info_title')}
+                description={t('onboarding.watch_account.info_description')}
+            />
+        </PWScreen>
     )
 }

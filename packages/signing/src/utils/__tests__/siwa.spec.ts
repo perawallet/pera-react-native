@@ -13,7 +13,15 @@
 import { describe, expect, test } from 'vitest'
 import { canonify } from 'canonify'
 import { Arc60BadJsonError } from '../arc60'
-import { parseSiwa, SIWA_CHAIN_ID } from '../siwa'
+import {
+    parseSiwa,
+    SIWA_CHAIN_ID,
+    SIWA_MAX_PAYLOAD_BYTES,
+    SIWA_MAX_RESOURCE_BYTES,
+    SIWA_MAX_RESOURCES,
+    SIWA_MAX_STATEMENT_BYTES,
+    SIWA_MAX_FIELD_BYTES,
+} from '../siwa'
 
 const baseSiwa = {
     domain: 'arc60.io',
@@ -96,5 +104,73 @@ describe('parseSiwa', () => {
     test('rejects wrong signature type', () => {
         const canonical = canonify({ ...baseSiwa, type: 'secp256k1' })!
         expect(() => parseSiwa(canonical)).toThrow(Arc60BadJsonError)
+    })
+})
+
+describe('parseSiwa — size limits (ARC-60 DoS hardening)', () => {
+    test('accepts a statement at the byte cap', () => {
+        const statement = 'x'.repeat(SIWA_MAX_STATEMENT_BYTES)
+        const canonical = canonify({ ...baseSiwa, statement })!
+        expect(parseSiwa(canonical).statement).toBe(statement)
+    })
+
+    test('rejects a statement one byte over the cap', () => {
+        const statement = 'x'.repeat(SIWA_MAX_STATEMENT_BYTES + 1)
+        const canonical = canonify({ ...baseSiwa, statement })!
+        expect(() => parseSiwa(canonical)).toThrow(Arc60BadJsonError)
+    })
+
+    test('accepts the maximum number of resources', () => {
+        const resources = Array.from(
+            { length: SIWA_MAX_RESOURCES },
+            (_, i) => `https://arc60.io/${i}`,
+        )
+        const canonical = canonify({ ...baseSiwa, resources })!
+        expect(parseSiwa(canonical).resources).toHaveLength(SIWA_MAX_RESOURCES)
+    })
+
+    test('rejects one resource over the entry-count cap', () => {
+        const resources = Array.from(
+            { length: SIWA_MAX_RESOURCES + 1 },
+            (_, i) => `https://arc60.io/${i}`,
+        )
+        const canonical = canonify({ ...baseSiwa, resources })!
+        expect(() => parseSiwa(canonical)).toThrow(Arc60BadJsonError)
+    })
+
+    test('accepts a resource entry at the byte cap', () => {
+        const resources = ['x'.repeat(SIWA_MAX_RESOURCE_BYTES)]
+        const canonical = canonify({ ...baseSiwa, resources })!
+        expect(parseSiwa(canonical).resources).toEqual(resources)
+    })
+
+    test('rejects a resource entry one byte over the cap', () => {
+        const resources = ['x'.repeat(SIWA_MAX_RESOURCE_BYTES + 1)]
+        const canonical = canonify({ ...baseSiwa, resources })!
+        expect(() => parseSiwa(canonical)).toThrow(Arc60BadJsonError)
+    })
+
+    test('rejects a descriptor field one byte over the per-field cap', () => {
+        const canonical = canonify({
+            ...baseSiwa,
+            domain: 'x'.repeat(SIWA_MAX_FIELD_BYTES + 1),
+        })!
+        expect(() => parseSiwa(canonical)).toThrow(Arc60BadJsonError)
+    })
+
+    test('rejects an oversized payload before parsing (Layer 3 guard)', () => {
+        // A raw string over the cap is rejected by the size guard, not the
+        // JSON parser — so even non-JSON junk never reaches JSON.parse/canonify.
+        const oversized = 'x'.repeat(SIWA_MAX_PAYLOAD_BYTES + 1)
+        expect(() => parseSiwa(oversized)).toThrow(Arc60BadJsonError)
+    })
+
+    test('rejects deeply nested input without freezing', () => {
+        // A field sent as a deeply nested object is rejected by the zod shape
+        // check before canonify ever recurses over it.
+        let nested: unknown = 'leaf'
+        for (let i = 0; i < 500; i++) nested = { a: nested }
+        const json = JSON.stringify({ ...baseSiwa, statement: nested })
+        expect(() => parseSiwa(json)).toThrow(Arc60BadJsonError)
     })
 })

@@ -11,9 +11,9 @@
  */
 
 import { useCallback } from 'react'
-import { Keyboard, KeyboardAvoidingView, Platform } from 'react-native'
+import { Keyboard } from 'react-native'
 
-import { PWButton, PWView } from '@components/core'
+import { PWButton, PWScreen } from '@components/core'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { ContactForm } from '@components/ContactForm'
 import { PhotoPermissionDeniedSheet } from '@components/PhotoPermissionDeniedSheet'
@@ -21,10 +21,8 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useEditContactForm } from '@modules/contacts/hooks'
-import { useStyles } from './styles'
 
 export const EditContactScreen = () => {
-    const styles = useStyles()
     const { t } = useLanguage()
     const {
         selectedContact,
@@ -57,6 +55,7 @@ export const EditContactScreen = () => {
     })
 
     const openDeleteConfirm = useCallback(async () => {
+        // Presenting a sheet isn't a nav blur, so dismiss the keyboard ourselves.
         Keyboard.dismiss()
         const confirmed = await requestBottomSheet<boolean>({
             contents: (
@@ -75,9 +74,14 @@ export const EditContactScreen = () => {
     }, [requestBottomSheet, t, removeContact])
 
     return (
-        <KeyboardAvoidingView
-            style={styles.flex}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        <PWScreen
+            footer={
+                <PWButton
+                    onPress={openDeleteConfirm}
+                    title={t('contacts.edit_contact.delete_this')}
+                    variant='destructive'
+                />
+            }
         >
             <ContactForm
                 control={control}
@@ -96,22 +100,12 @@ export const EditContactScreen = () => {
                 rawAddressInput={rawAddressInput}
                 imageUri={imageUri}
                 onPickImage={onPickImage}
-            >
-                <PWView style={styles.deletePillWrapper}>
-                    <PWButton
-                        onPress={openDeleteConfirm}
-                        title={t('contacts.edit_contact.delete_this')}
-                        variant='destructive'
-                        style={styles.deletePill}
-                        rounded
-                    />
-                </PWView>
-            </ContactForm>
+            />
             <PhotoPermissionDeniedSheet
                 isVisible={permissionDenied.isVisible}
                 onClose={permissionDenied.close}
                 onOpenSettings={permissionDenied.openSettings}
             />
-        </KeyboardAvoidingView>
+        </PWScreen>
     )
 }

@@ -11,20 +11,10 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { EdgeInsets } from 'react-native-safe-area-context'
 
-export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
+export const useStyles = makeStyles(theme => ({
     container: {
+        paddingTop: theme.spacing.sm,
         flex: 1,
-        // Clear the top safe-area / testnet banner so the close icon isn't
-        // hidden behind them on full-screen sheets.
-        paddingTop: insets.top,
-    },
-    closeButtonContainer: {
-        paddingVertical: theme.spacing.sm,
-        paddingHorizontal: theme.spacing.md,
-    },
-    closeButton: {
-        padding: theme.spacing.sm,
     },
 }))

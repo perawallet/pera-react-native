@@ -28,6 +28,7 @@ export const useStyles = makeStyles(
                 borderRadius: theme.spacing.sm,
                 borderWidth: theme.borders.sm,
                 flexDirection: 'row',
+                flexShrink: 0,
                 gap: theme.spacing.xs,
                 paddingHorizontal: theme.spacing.sm,
             },

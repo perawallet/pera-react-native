@@ -14,18 +14,10 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     searchContainer: {
-        paddingHorizontal: theme.spacing.md,
         marginBottom: theme.spacing.md,
-    },
-    separator: {
-        height: theme.spacing.md,
-    },
-    listContent: {
-        paddingBottom: theme.spacing['3xl'],
     },
     item: {
         width: '100%',
-        paddingHorizontal: theme.spacing.md,
     },
     skeletonRow: {
         flexDirection: 'row',

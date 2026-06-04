@@ -248,6 +248,8 @@ describe('env-loader', () => {
             algodApiKey: 'base-algod-key',
             indexerApiKey: 'base-indexer-key',
             appStoreAppID: 'base-app-store-id',
+            playIntegrityCloudProjectNumber:
+                'base-play-integrity-project-number',
             mainnetExplorerUrl: 'https://explorer.example.com',
             testnetExplorerUrl: 'https://testnet-explorer.example.com',
             notificationRefreshTime: 30000,
@@ -306,6 +308,7 @@ describe('env-loader', () => {
                 },
             },
             defaultNetwork: 'mainnet',
+            appEnvironment: 'development',
         }
 
         test('returns base config when no environment variables are set', () => {

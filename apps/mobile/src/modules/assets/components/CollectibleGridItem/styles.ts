@@ -15,8 +15,6 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     container: {
         flex: 1,
-        paddingHorizontal: theme.spacing.xs,
-        paddingBottom: theme.spacing.md,
     },
     imageContainer: {
         aspectRatio: 1,

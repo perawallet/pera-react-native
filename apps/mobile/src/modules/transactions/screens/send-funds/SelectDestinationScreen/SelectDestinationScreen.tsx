@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWText, PWView } from '@components/core'
+import { PWScreen, PWText, PWView } from '@components/core'
 import { AddressSearchView } from '@components/AddressSearchView'
 import { useStyles } from './styles'
 import { AssetIcon } from '@modules/assets/components/AssetIcon'
@@ -53,8 +53,11 @@ export const SelectDestinationScreen = () => {
     }
 
     return (
-        <PWView style={styles.container}>
+        <PWScreen
+            scroll='never'
+            horizontalPadding='none'
+        >
             <AddressSearchView onSelected={handleSelected} />
-        </PWView>
+        </PWScreen>
     )
 }

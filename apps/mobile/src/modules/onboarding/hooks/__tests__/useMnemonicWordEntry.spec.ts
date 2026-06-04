@@ -11,6 +11,7 @@
  */
 
 import { renderHook, act } from '@testing-library/react'
+import { Keyboard } from 'react-native'
 import * as Clipboard from 'expo-clipboard'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 
@@ -84,6 +85,17 @@ describe('useMnemonicWordEntry — paste distribution', () => {
         })
 
         expect(result.current.words).toEqual(TWELVE_WORDS)
+    })
+
+    it('dismisses the keyboard once a complete mnemonic is filled', async () => {
+        const dismissSpy = vi.spyOn(Keyboard, 'dismiss')
+        const { result } = renderEntry()
+
+        await act(async () => {
+            await result.current.handleWordChange(TWELVE_WORDS.join(' '), 0)
+        })
+
+        expect(dismissSpy).toHaveBeenCalled()
     })
 
     it.each([

@@ -43,6 +43,7 @@ export const PWChip = ({
             <PWText
                 variant={textVariant}
                 style={styles.titleStyle}
+                truncate
             >
                 {forceUppercase ? title.toUpperCase() : title}
             </PWText>

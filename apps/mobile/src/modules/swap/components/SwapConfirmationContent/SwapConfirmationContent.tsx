@@ -13,12 +13,12 @@
 import { useCallback } from 'react'
 import {
     PWDivider,
-    PWIcon,
+    PWSheetLayout,
     PWSlideToConfirm,
     PWText,
-    PWToolbar,
     PWView,
 } from '@components/core'
+import { SheetHeader } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
@@ -70,34 +70,31 @@ export const SwapConfirmationContent = ({
     )
 
     return (
-        <PWView style={styles.container}>
-            <PWToolbar
-                left={
-                    <PWIcon
-                        name='cross'
-                        onPress={isProcessing ? undefined : onClosePress}
-                        testID='swap-confirm-close'
-                    />
-                }
-                center={
-                    <PWView style={styles.headerCenter}>
-                        <PWText variant='h4'>
-                            {t('swap.quote.confirm_swap')}
-                        </PWText>
-                        {selectedAccount && (
-                            <AccountDisplay
-                                account={selectedAccount}
-                                iconProps={{ size: 'sm' }}
-                                textProps={{ variant: 'caption' }}
-                                showChevron={false}
-                                style={styles.accountRow}
-                            />
-                        )}
-                    </PWView>
-                }
-                paddingStyle='dense'
-            />
-
+        <PWSheetLayout
+            horizontalPadding='none'
+            header={
+                <SheetHeader
+                    onClose={onClosePress}
+                    testID='swap-confirm'
+                    title={
+                        <PWView style={styles.headerCenter}>
+                            <PWText variant='h4'>
+                                {t('swap.quote.confirm_swap')}
+                            </PWText>
+                            {selectedAccount && (
+                                <AccountDisplay
+                                    account={selectedAccount}
+                                    iconProps={{ size: 'sm' }}
+                                    textProps={{ variant: 'caption' }}
+                                    showChevron={false}
+                                    style={styles.accountRow}
+                                />
+                            )}
+                        </PWView>
+                    }
+                />
+            }
+        >
             <PWView style={styles.assetsGroup}>
                 <SwapAssetSection
                     asset={inAsset}
@@ -158,6 +155,6 @@ export const SwapConfirmationContent = ({
                 style={styles.confirmButton}
                 testID='swap-confirm-slide'
             />
-        </PWView>
+        </PWSheetLayout>
     )
 }

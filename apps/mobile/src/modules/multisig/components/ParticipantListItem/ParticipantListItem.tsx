@@ -10,10 +10,9 @@
  limitations under the License
  */
 
-import { PWTouchableIcon, PWView } from '@components/core'
-import { AddressDisplay } from '@components/AddressDisplay'
+import { PWTouchableIcon } from '@components/core'
+import { AddressListItem } from '@components/AddressListItem'
 import type { Participant } from '../../hooks/useMultisigCreation'
-import { useStyles } from './styles'
 
 type ParticipantListItemProps = {
     participant: Participant
@@ -30,37 +29,30 @@ export const ParticipantListItem = ({
     onEdit,
     onRemove,
 }: ParticipantListItemProps) => {
-    const styles = useStyles()
-
     return (
-        <PWView
-            style={styles.container}
+        <AddressListItem
+            address={participant.address}
+            avatarVariant='highlighted'
             testID={`participant_item_${index}_${participant.address}`}
-        >
-            <AddressDisplay
-                address={participant.address}
-                showCopy={false}
-                forceShowIcon
-                contactAvatarVariant='highlighted'
-                style={styles.addressDisplay}
-            />
-            {isInWallet ? (
-                <PWTouchableIcon
-                    name='trash'
-                    size='md'
-                    variant='secondary'
-                    onPress={() => onRemove(index)}
-                    testID={`participant_remove_${index}_${participant.address}`}
-                />
-            ) : (
-                <PWTouchableIcon
-                    name='edit-pen'
-                    size='md'
-                    variant='positive'
-                    onPress={() => onEdit(index)}
-                    testID={`participant_edit_${index}_${participant.address}`}
-                />
-            )}
-        </PWView>
+            right={
+                isInWallet ? (
+                    <PWTouchableIcon
+                        name='trash'
+                        size='md'
+                        variant='secondary'
+                        onPress={() => onRemove(index)}
+                        testID={`participant_remove_${index}_${participant.address}`}
+                    />
+                ) : (
+                    <PWTouchableIcon
+                        name='edit-pen'
+                        size='md'
+                        variant='positive'
+                        onPress={() => onEdit(index)}
+                        testID={`participant_edit_${index}_${participant.address}`}
+                    />
+                )
+            }
+        />
     )
 }

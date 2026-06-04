@@ -44,6 +44,38 @@ const renderLoadingSkeleton = () => {
     )
 }
 
+const ListSeparator = () => {
+    const styles = useStyles()
+
+    return <PWView style={styles.listSeparator} />
+}
+
+type GridCellProps = {
+    item: CollectibleDisplayItem
+    index: number
+    onPress: (item: CollectibleDisplayItem) => void
+}
+
+const GridCell = ({ item, index, onPress }: GridCellProps) => {
+    const styles = useStyles()
+
+    return (
+        <PWView
+            style={[
+                styles.gridColumn,
+                index % GRID_COLUMNS === 0
+                    ? styles.gridColumnLeft
+                    : styles.gridColumnRight,
+            ]}
+        >
+            <CollectibleGridItem
+                item={item}
+                onPress={() => onPress(item)}
+            />
+        </PWView>
+    )
+}
+
 export const AccountNfts = () => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -68,11 +100,12 @@ export const AccountNfts = () => {
     const isGrid = galleryLayout === 'grid'
 
     const renderItem = useCallback(
-        ({ item }: { item: CollectibleDisplayItem }) =>
+        ({ item, index }: { item: CollectibleDisplayItem; index: number }) =>
             isGrid ? (
-                <CollectibleGridItem
+                <GridCell
                     item={item}
-                    onPress={() => handlePress(item)}
+                    index={index}
+                    onPress={handlePress}
                 />
             ) : (
                 <CollectibleListItem
@@ -100,11 +133,16 @@ export const AccountNfts = () => {
                 <>
                     <PWView style={styles.headerContainer}>
                         <PWView style={styles.titleBar}>
-                            <PWText variant='body'>
-                                {t('account_details.nfts.count', {
-                                    count: collectibleCount,
-                                })}
-                            </PWText>
+                            <PWView style={styles.titleBarTitleContainer}>
+                                <PWText
+                                    variant='body'
+                                    truncate
+                                >
+                                    {t('account_details.nfts.count', {
+                                        count: collectibleCount,
+                                    })}
+                                </PWText>
+                            </PWView>
                             <PWView style={styles.titleBarActions}>
                                 <PWTouchableOpacity
                                     style={styles.manageButton}
@@ -176,8 +214,10 @@ export const AccountNfts = () => {
                         key={`${galleryLayout}:${sortMode}:${debouncedSearchFilter}`}
                         data={collectibles}
                         renderItem={renderItem}
+                        ItemSeparatorComponent={isGrid ? null : ListSeparator}
                         numColumns={isGrid ? GRID_COLUMNS : 1}
                         keyExtractor={item => item.assetId}
+                        automaticallyAdjustKeyboardInsets
                         contentContainerStyle={styles.contentContainer}
                         ListEmptyComponent={
                             <EmptyView

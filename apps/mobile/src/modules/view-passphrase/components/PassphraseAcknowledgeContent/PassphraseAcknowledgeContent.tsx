@@ -14,11 +14,12 @@ import {
     PWButton,
     PWCheckbox,
     PWIcon,
+    PWSheetLayout,
     PWText,
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { usePassphraseAcknowledgeContent } from './usePassphraseAcknowledgeContent'
 import { useStyles } from './styles'
@@ -48,67 +49,69 @@ export const PassphraseAcknowledgeContent = ({
     })
 
     return (
-        <PWView
-            style={styles.body}
+        <PWSheetLayout
             testID={testID}
+            header={
+                <SheetHeader title={t('view_passphrase.acknowledge.title')} />
+            }
+            footer={
+                <PWView style={styles.actions}>
+                    <PWButton
+                        variant='primary'
+                        title={t('view_passphrase.acknowledge.cta_reveal')}
+                        onPress={() => resolve('confirm')}
+                        isDisabled={!allChecked}
+                        testID={`${testID}_reveal`}
+                    />
+                    <PWButton
+                        variant='secondary'
+                        title={t('view_passphrase.acknowledge.cta_cancel')}
+                        onPress={dismiss}
+                        testID={`${testID}_cancel`}
+                    />
+                </PWView>
+            }
         >
-            <PWIcon
-                name='account-rekeyed'
-                variant='positive'
-                size='xxl'
-                style={styles.icon}
-            />
-            <PWText
-                variant='h3'
-                style={styles.title}
-            >
-                {t('view_passphrase.acknowledge.title')}
-            </PWText>
-            <PWText
-                variant='body'
-                style={styles.description}
-            >
-                {t('view_passphrase.acknowledge.description')}
-            </PWText>
-            <PWView style={styles.rows}>
-                {ACKNOWLEDGE_ROW_KEYS.map((key, index) => (
-                    <PWTouchableOpacity
-                        key={key}
-                        style={[
-                            styles.row,
-                            index !== 0 ? styles.separatorBorder : undefined,
-                        ]}
-                        onPress={() => toggle(index)}
-                        testID={`${testID}_row_${index}`}
-                    >
-                        <PWText
-                            variant='body'
-                            style={styles.rowText}
-                        >
-                            {t(key)}
-                        </PWText>
-                        <PWCheckbox
-                            checked={checked[index]}
+            <PWView style={styles.body}>
+                <PWIcon
+                    name='account-rekeyed'
+                    variant='positive'
+                    size='xxl'
+                    style={styles.icon}
+                />
+                <PWText
+                    variant='body'
+                    style={styles.description}
+                >
+                    {t('view_passphrase.acknowledge.description')}
+                </PWText>
+                <PWView style={styles.rows}>
+                    {ACKNOWLEDGE_ROW_KEYS.map((key, index) => (
+                        <PWTouchableOpacity
+                            key={key}
+                            style={[
+                                styles.row,
+                                index !== 0
+                                    ? styles.separatorBorder
+                                    : undefined,
+                            ]}
                             onPress={() => toggle(index)}
-                        />
-                    </PWTouchableOpacity>
-                ))}
+                            testID={`${testID}_row_${index}`}
+                        >
+                            <PWText
+                                variant='body'
+                                style={styles.rowText}
+                            >
+                                {t(key)}
+                            </PWText>
+                            <PWCheckbox
+                                checked={checked[index]}
+                                onPress={() => toggle(index)}
+                            />
+                        </PWTouchableOpacity>
+                    ))}
+                </PWView>
             </PWView>
-            <PWView style={styles.actions}>
-                <PWButton
-                    variant='primary'
-                    title={t('view_passphrase.acknowledge.cta_reveal')}
-                    onPress={() => resolve('confirm')}
-                    isDisabled={!allChecked}
-                    testID={`${testID}_reveal`}
-                />
-                <PWButton
-                    variant='secondary'
-                    title={t('view_passphrase.acknowledge.cta_cancel')}
-                    onPress={dismiss}
-                    testID={`${testID}_cancel`}
-                />
-            </PWView>
-        </PWView>
+        </PWSheetLayout>
     )
 }

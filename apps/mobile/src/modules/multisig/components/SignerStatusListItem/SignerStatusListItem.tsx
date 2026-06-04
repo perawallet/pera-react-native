@@ -14,7 +14,7 @@ import type { ReactNode } from 'react'
 import { ActivityIndicator } from 'react-native'
 import { useTheme } from '@rneui/themed'
 import { PWButton, PWIcon, PWView } from '@components/core'
-import { AddressDisplay } from '@components/AddressDisplay'
+import { AddressListItem } from '@components/AddressListItem'
 import { useStyles } from './styles'
 
 export type SignerStatus = 'signed' | 'declined' | 'pending' | 'unsigned'
@@ -72,32 +72,28 @@ export const SignerStatusListItem = ({
     }
 
     return (
-        <PWView
+        <AddressListItem
+            address={address}
+            avatarVariant='highlighted'
             style={styles.container}
             testID={`signer_status_item_${address}`}
-        >
-            <AddressDisplay
-                address={address}
-                showCopy={false}
-                forceShowIcon
-                contactAvatarVariant='highlighted'
-                style={styles.addressDisplay}
-            />
-            {action ? (
-                <PWButton
-                    variant='primary'
-                    paddingStyle='dense'
-                    title={action.label}
-                    onPress={action.onPress}
-                    isLoading={action.isLoading}
-                    isDisabled={action.isDisabled}
-                    testID={`signer_status_action_${address}`}
-                />
-            ) : (
-                <PWView testID={`signer_status_icon_${status}_${address}`}>
-                    {statusIcons[status]}
-                </PWView>
-            )}
-        </PWView>
+            right={
+                action ? (
+                    <PWButton
+                        variant='primary'
+                        paddingStyle='dense'
+                        title={action.label}
+                        onPress={action.onPress}
+                        isLoading={action.isLoading}
+                        isDisabled={action.isDisabled}
+                        testID={`signer_status_action_${address}`}
+                    />
+                ) : (
+                    <PWView testID={`signer_status_icon_${status}_${address}`}>
+                        {statusIcons[status]}
+                    </PWView>
+                )
+            }
+        />
     )
 }

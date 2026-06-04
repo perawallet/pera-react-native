@@ -107,6 +107,13 @@ export const algosToMicroAlgos = (
     return displayUnitsToBaseUnits(algos, 6)
 }
 
+export const percentChange = (first: Decimal, last: Decimal): Decimal => {
+    if (first.isZero()) {
+        return new Decimal(0)
+    }
+    return last.minus(first).div(first).mul(100)
+}
+
 export {
     TransactionType,
     Transaction,

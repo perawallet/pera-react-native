@@ -12,10 +12,7 @@
 
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import {
-    deleteDatabase,
-    initializeDatabase,
-} from '@perawallet/wallet-core-database'
+import { clearDatabase } from '@perawallet/wallet-core-database'
 import { useDeleteDeviceMutation } from '@perawallet/wallet-core-device'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { usePinCode } from '@perawallet/wallet-core-security'
@@ -101,13 +98,16 @@ export const useDeleteAllData = (): UseDeleteAllDataResult => {
         // 6. Clear PIN and biometrics from secure storage
         await savePin(null)
 
-        // 7. Delete SQLite database file, then re-initialize with empty DB
-        // so the app remains functional after cleanup
+        // 7. Empty every table on the live connection. We deliberately do NOT
+        // close + delete + reopen the database: tearing the native connection
+        // down while the sync service (or any other caller) still has a
+        // statement in flight frees the sqlite3 handle out from under it and
+        // crashes libexpo-sqlite.so with a SIGSEGV. Clearing in place keeps the
+        // handle valid; expo-sqlite serializes the deletes behind in-flight work.
         try {
-            await deleteDatabase(getProvider().database)
-            await initializeDatabase(getProvider().database)
+            await clearDatabase()
         } catch (e) {
-            logger.error('Failed to delete database', { error: e })
+            logger.error('Failed to clear database', { error: e })
         }
 
         // 8. Clear all registered stores (this will redirect to onboarding, then show the success popup)

@@ -11,21 +11,18 @@
  */
 
 import React, { useState } from 'react'
-import {
-    PWIcon,
-    PWText,
-    PWButton,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
+import { Platform } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import DateTimePicker, {
-    DateTimePickerEvent,
+    DateTimePickerChangeEvent,
 } from '@react-native-community/datetimepicker'
+import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useStyles } from './styles'
 import { TransactionFilter, CustomDateRange } from './types'
 import { useLanguage } from '@hooks/useLanguage'
+import { useIsDarkMode } from '@hooks/useIsDarkMode'
 
 export type TransactionsFilterResult = {
     filter: TransactionFilter
@@ -41,10 +38,11 @@ export const TransactionsFilterContent = ({
     activeFilter,
     initialCustomRange,
 }: TransactionsFilterContentProps) => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles({ bottomInset: insets.bottom })
     const { t } = useLanguage()
-    const { resolve, dismiss } =
-        useBottomSheetResult<TransactionsFilterResult>()
+    const isDarkMode = useIsDarkMode()
+    const { resolve } = useBottomSheetResult<TransactionsFilterResult>()
 
     // Internal state
     const [view, setView] = useState<'main' | 'custom_range'>('main')
@@ -59,6 +57,7 @@ export const TransactionsFilterContent = ({
     const [activeDateInput, setActiveDateInput] = useState<'from' | 'to'>(
         'from',
     )
+    const [isPickerVisible, setIsPickerVisible] = useState(false)
 
     const formatDate = (date: Date) => {
         return date.toLocaleDateString('en-GB').replace(/\//g, '.')
@@ -110,13 +109,34 @@ export const TransactionsFilterContent = ({
         }
     }
 
-    const handleDateChange = (event: DateTimePickerEvent, date?: Date) => {
-        if (!date) return
+    const handleDatePress = (input: 'from' | 'to') => {
+        setActiveDateInput(input)
+        setIsPickerVisible(true)
+    }
 
-        setCustomRange(prev => ({
-            ...prev,
-            [activeDateInput]: date,
-        }))
+    const handleDateValueChange = (
+        _event: DateTimePickerChangeEvent,
+        date: Date,
+    ) => {
+        if (Platform.OS === 'android') {
+            setIsPickerVisible(false)
+        }
+
+        setCustomRange(prev => {
+            const next = { ...prev, [activeDateInput]: date }
+            if (next.from > next.to) {
+                if (activeDateInput === 'from') {
+                    next.to = date
+                } else {
+                    next.from = date
+                }
+            }
+            return next
+        })
+    }
+
+    const handlePickerDismiss = () => {
+        setIsPickerVisible(false)
     }
 
     const handleApplyCustomRange = () => {
@@ -127,12 +147,15 @@ export const TransactionsFilterContent = ({
         <>
             <PWView style={styles.header}>
                 <PWView style={styles.headerSpacer} />
-                <PWText
-                    variant='h4'
-                    style={styles.title}
-                >
-                    {t('transactions.filter.title')}
-                </PWText>
+                <PWView style={styles.titleContainer}>
+                    <PWText
+                        variant='h4'
+                        style={styles.title}
+                        truncate
+                    >
+                        {t('transactions.filter.title')}
+                    </PWText>
+                </PWView>
                 <PWView style={styles.headerSpacer} />
             </PWView>
 
@@ -186,6 +209,7 @@ export const TransactionsFilterContent = ({
                             <PWText
                                 variant='h4'
                                 style={styles.listTitle}
+                                truncate
                             >
                                 {item.title}
                             </PWText>
@@ -193,6 +217,7 @@ export const TransactionsFilterContent = ({
                                 <PWText
                                     variant='body'
                                     style={styles.listSubtitle}
+                                    truncate
                                 >
                                     {subtitle}
                                 </PWText>
@@ -210,34 +235,37 @@ export const TransactionsFilterContent = ({
                     </PWTouchableOpacity>
                 )
             })}
-            <PWButton
-                title={t('common.close.label')}
-                variant='secondary'
-                onPress={dismiss}
-                style={styles.closeButton}
-            />
+
+            <PWView style={styles.bottomSpacer} />
         </>
     )
 
     const renderCustomRangeView = () => (
         <>
             <PWView style={styles.header}>
-                <PWTouchableOpacity onPress={() => setView('main')}>
-                    <PWIcon
-                        name='chevron-left'
-                        size='xl'
-                    />
-                </PWTouchableOpacity>
-                <PWText
-                    variant='h4'
-                    style={styles.title}
+                <PWTouchableOpacity
+                    style={styles.headerAction}
+                    onPress={() => setView('main')}
                 >
-                    {t('transactions.filter.custom_range')}
-                </PWText>
-                <PWTouchableOpacity onPress={handleApplyCustomRange}>
+                    <PWIcon name='chevron-left' />
+                </PWTouchableOpacity>
+                <PWView style={styles.titleContainer}>
+                    <PWText
+                        variant='h4'
+                        style={styles.title}
+                        truncate
+                    >
+                        {t('transactions.filter.custom_range')}
+                    </PWText>
+                </PWView>
+                <PWTouchableOpacity
+                    style={styles.headerAction}
+                    onPress={handleApplyCustomRange}
+                >
                     <PWText
                         variant='h4'
                         style={styles.doneButton}
+                        truncate
                     >
                         {t('common.done')}
                     </PWText>
@@ -252,17 +280,19 @@ export const TransactionsFilterContent = ({
                             activeDateInput === 'from' &&
                                 styles.activeDateInput,
                         ]}
-                        onPress={() => setActiveDateInput('from')}
+                        onPress={() => handleDatePress('from')}
                     >
                         <PWText
                             variant='body'
                             style={styles.dateLabel}
+                            truncate
                         >
                             {t('transactions.common.from')}
                         </PWText>
                         <PWText
                             variant='h4'
                             style={styles.dateValue}
+                            truncate
                         >
                             {formatDate(customRange.from)}
                         </PWText>
@@ -272,24 +302,26 @@ export const TransactionsFilterContent = ({
                             styles.dateInputWrapper,
                             activeDateInput === 'to' && styles.activeDateInput,
                         ]}
-                        onPress={() => setActiveDateInput('to')}
+                        onPress={() => handleDatePress('to')}
                     >
                         <PWText
                             variant='body'
                             style={styles.dateLabel}
+                            truncate
                         >
                             {t('transactions.common.to')}
                         </PWText>
                         <PWText
                             variant='h4'
                             style={styles.dateValue}
+                            truncate
                         >
                             {formatDate(customRange.to)}
                         </PWText>
                     </PWTouchableOpacity>
                 </PWView>
 
-                <PWView style={styles.datePickerContainer}>
+                {isPickerVisible && (
                     <DateTimePicker
                         value={
                             activeDateInput === 'from'
@@ -297,13 +329,12 @@ export const TransactionsFilterContent = ({
                                 : customRange.to
                         }
                         mode='date'
-                        display='spinner'
-                        onChange={handleDateChange}
-                        style={styles.datePicker}
-                        textColor={styles.dateValue.color as string}
-                        themeVariant='light'
+                        display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                        onValueChange={handleDateValueChange}
+                        onDismiss={handlePickerDismiss}
+                        themeVariant={isDarkMode ? 'dark' : 'light'}
                     />
-                </PWView>
+                )}
             </PWView>
         </>
     )

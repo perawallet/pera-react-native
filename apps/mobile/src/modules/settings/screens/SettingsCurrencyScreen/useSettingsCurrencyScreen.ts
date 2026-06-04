@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import { useInvalidateAssetPrices } from '@perawallet/wallet-core-assets'
+import {
+    ALGO_ASSET_UNIT_NAME,
+    useInvalidateAssetPrices,
+} from '@perawallet/wallet-core-assets'
 import {
     Currency,
     useCurrenciesQuery,
@@ -18,51 +21,61 @@ import {
 } from '@perawallet/wallet-core-currencies'
 import { useEffect, useState } from 'react'
 
-export const useSettingsCurrencyScreen = () => {
-    const {
-        setPreferredCurrency,
-        setFallbackCurrency,
-        fallbackCurrency,
-        preferredCurrency,
-    } = useCurrency()
-    const [search, setSearch] = useState<string>()
-    const [filteredData, setFilteredData] = useState<Currency[]>([])
-
-    const { data } = useCurrenciesQuery()
-    const { invalidateAssetPrices } = useInvalidateAssetPrices()
-
-    useEffect(() => {
-        if (!search?.length) {
-            setFilteredData(data ?? [])
-        } else {
-            const lowercaseSearch = search.toLowerCase()
-            setFilteredData(
-                (data ?? []).filter(
-                    d =>
-                        d.name.toLowerCase().includes(lowercaseSearch) ||
-                        d.id.toLowerCase().includes(lowercaseSearch),
-                ),
-            )
-        }
-    }, [data, search])
-
-    const setCurrency = (currency: Currency) => {
-        if (currency.id === 'ALGO') {
-            setPreferredCurrency('ALGO')
-            setFallbackCurrency('USD')
-        } else {
-            setPreferredCurrency(currency.id)
-            setFallbackCurrency(currency.id)
-        }
-        invalidateAssetPrices()
-    }
-
-    return {
-        setCurrency,
-        search,
-        setSearch,
-        filteredData,
-        preferredCurrency,
-        fallbackCurrency,
-    }
+type UseSettingsCurrencyScreenResult = {
+    setCurrency: (currency: Currency) => void
+    search: string | undefined
+    setSearch: (v?: string) => void
+    filteredData: Currency[]
+    preferredCurrency: string
+    fallbackCurrency: string
 }
+
+export const useSettingsCurrencyScreen =
+    (): UseSettingsCurrencyScreenResult => {
+        const {
+            setPreferredCurrency,
+            setFallbackCurrency,
+            fallbackCurrency,
+            preferredCurrency,
+        } = useCurrency()
+        const [search, setSearch] = useState<string>()
+        const [filteredData, setFilteredData] = useState<Currency[]>([])
+
+        const { data } = useCurrenciesQuery()
+        const { invalidateAssetPrices } = useInvalidateAssetPrices()
+
+        useEffect(() => {
+            if (!search?.length) {
+                setFilteredData(data ?? [])
+            } else {
+                const lowercaseSearch = search.toLowerCase()
+                setFilteredData(
+                    (data ?? []).filter(
+                        d =>
+                            d.name.toLowerCase().includes(lowercaseSearch) ||
+                            d.id.toLowerCase().includes(lowercaseSearch),
+                    ),
+                )
+            }
+        }, [data, search])
+
+        const setCurrency = (currency: Currency) => {
+            if (currency.id === 'ALGO') {
+                setPreferredCurrency('ALGO')
+                setFallbackCurrency('USD')
+            } else {
+                setPreferredCurrency(currency.id)
+                setFallbackCurrency(ALGO_ASSET_UNIT_NAME)
+            }
+            invalidateAssetPrices()
+        }
+
+        return {
+            setCurrency,
+            search,
+            setSearch,
+            filteredData,
+            preferredCurrency,
+            fallbackCurrency,
+        }
+    }

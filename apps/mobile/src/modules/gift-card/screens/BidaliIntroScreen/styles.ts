@@ -13,32 +13,15 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        flex: 1,
-    },
-    heroSection: {
-        backgroundColor: theme.colors.background,
-    },
     toolbarTitle: {
         color: theme.colors.textMain,
+        textAlign: 'center',
+    },
+    headerSection: {
+        paddingHorizontal: theme.spacing.xl,
+        paddingVertical: theme.spacing.sm,
     },
     heroImage: {
         backgroundColor: theme.colors.dappBidali,
-    },
-    contentSection: {
-        flexGrow: 1,
-        paddingHorizontal: theme.spacing.xl,
-        paddingTop: theme.spacing['3xl'],
-        gap: theme.spacing.lg,
-        backgroundColor: theme.colors.background,
-    },
-    description: {
-        color: theme.colors.textGray,
-    },
-    footer: {
-        marginTop: theme.spacing.md,
-        paddingHorizontal: theme.spacing.xl,
-        paddingBottom: theme.spacing['3xl'],
-        backgroundColor: theme.colors.background,
     },
 }))

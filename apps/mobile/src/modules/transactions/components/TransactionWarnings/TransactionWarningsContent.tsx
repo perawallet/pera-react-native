@@ -10,7 +10,13 @@
  limitations under the License
  */
 
-import { PWDivider, PWRoundIcon, PWText, PWView } from '@components/core'
+import {
+    PWDivider,
+    PWRoundIcon,
+    PWSheetLayout,
+    PWText,
+    PWView,
+} from '@components/core'
 import { SheetHeader } from '@modules/bottom-sheet'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
@@ -34,13 +40,15 @@ export const TransactionWarningsContent = ({
     const { warningCount, warningsByType } = useTransactionWarnings(transaction)
 
     return (
-        <PWView style={styles.sheetContainer}>
-            <SheetHeader
-                title={t('transactions.warning.title', {
-                    count: warningCount,
-                })}
-            />
-
+        <PWSheetLayout
+            header={
+                <SheetHeader
+                    title={t('transactions.warning.title', {
+                        count: warningCount,
+                    })}
+                />
+            }
+        >
             {warningsByType.close.map((warning, index) => (
                 <PWView
                     key={`close-${warning.senderAddress}`}
@@ -109,6 +117,6 @@ export const TransactionWarningsContent = ({
                     </PWView>
                 </PWView>
             ))}
-        </PWView>
+        </PWSheetLayout>
     )
 }

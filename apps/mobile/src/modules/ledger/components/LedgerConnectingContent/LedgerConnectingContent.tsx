@@ -11,6 +11,7 @@
  */
 
 import { useCallback } from 'react'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWView, PWText, PWButton } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
@@ -18,7 +19,8 @@ import { LedgerCompositeIcon } from '../LedgerCompositeIcon'
 import { useStyles } from './styles'
 
 export const LedgerConnectingContent = () => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles({ bottomInset: insets.bottom })
     const { t } = useLanguage()
     const { resolve } = useBottomSheetResult<'cancel'>()
 

@@ -16,7 +16,7 @@ import { PWText } from '@components/core/PWText'
 import { PWView, PWViewProps } from '@components/core/PWView'
 import { LoadingView } from '@components/LoadingView'
 import { useStyles } from './styles'
-import { TextStyle, ViewStyle } from 'react-native'
+import { ViewStyle } from 'react-native'
 
 export type EmptyViewProps = {
     title?: string
@@ -26,7 +26,6 @@ export type EmptyViewProps = {
     isLoading?: boolean
     loadingView?: ReactNode
     loadingStyle?: ViewStyle
-    bodyStyle?: TextStyle
 } & PWViewProps
 
 export const EmptyView = (props: EmptyViewProps) => {
@@ -40,7 +39,6 @@ export const EmptyView = (props: EmptyViewProps) => {
         isLoading,
         loadingView,
         loadingStyle,
-        bodyStyle,
         ...rest
     } = props
 
@@ -63,25 +61,36 @@ export const EmptyView = (props: EmptyViewProps) => {
             {...rest}
             style={[styles.container, style]}
         >
-            {!!icon && (
-                <PWView style={styles.iconContainer}>
-                    <PWIcon
-                        name={icon}
-                        variant='secondary'
-                        size='xl'
-                    />
-                </PWView>
-            )}
-            {!!title && (
+            <PWView style={styles.content}>
+                {!!icon && (
+                    <PWView style={styles.iconContainer}>
+                        <PWIcon
+                            name={icon}
+                            variant='secondary'
+                            size='xl'
+                        />
+                    </PWView>
+                )}
+                {!!title && (
+                    <PWText
+                        variant='h3'
+                        style={styles.titleText}
+                        numberOfLines={2}
+                        truncate
+                    >
+                        {title}
+                    </PWText>
+                )}
                 <PWText
-                    variant='h3'
-                    style={styles.text}
+                    variant='body'
+                    style={[styles.text]}
+                    numberOfLines={3}
+                    truncate
                 >
-                    {title}
+                    {body}
                 </PWText>
-            )}
-            <PWText style={[styles.text, bodyStyle]}>{body}</PWText>
-            {button}
+                {button}
+            </PWView>
         </PWView>
     )
 }

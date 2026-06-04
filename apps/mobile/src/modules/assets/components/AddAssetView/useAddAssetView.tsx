@@ -15,7 +15,7 @@ import {
     useAccountBalancesQuery,
     useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
-import type { AssetSearchItem } from '@perawallet/wallet-core-assets'
+import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
 import { useGlobalSearch } from '@perawallet/wallet-core-search'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { useAssetOptInMutation } from '@perawallet/wallet-core-transactions'
@@ -34,7 +34,7 @@ type UseAddAssetViewOptions = {
 type UseAddAssetViewResult = {
     searchQuery: string
     handleSearchChange: (text: string) => void
-    results: AssetSearchItem[]
+    results: DisplayableAsset[]
     isLoading: boolean
     isError: boolean
     isFetchingNextPage: boolean
@@ -85,7 +85,6 @@ export const useAddAssetView = (
     const results = searchResults.remoteAssets
     const isError = false
 
-    // Build set of already opted-in asset IDs
     const optedInAssetIds = useMemo(() => {
         const ids = new Set<string>()
         if (selectedAccount) {
@@ -96,7 +95,6 @@ export const useAddAssetView = (
                 }
             }
         }
-        // Include assets opted in during this session
         for (const id of recentlyOptedIn) {
             ids.add(id)
         }
@@ -119,7 +117,11 @@ export const useAddAssetView = (
             const result = await requestByType<'asset-opt-in', 'confirm'>(
                 'asset-opt-in',
                 { assetId, accountAddress: selectedAccount.address },
-                { size: 'auto', enablePanDownToClose: true },
+                {
+                    size: 'auto',
+                    enablePanDownToClose: true,
+                    autoCreateContainer: false,
+                },
             )
             if (result !== 'confirm') return
 
@@ -149,7 +151,6 @@ export const useAddAssetView = (
                 })
             } catch (err) {
                 if (err instanceof UserRejectedSigningError) {
-                    // User dismissed the LedgerSigningContent sheet — sheet already went away; no toast.
                     return
                 }
                 showError(err, t('add_asset.opt_in.failed_title'))

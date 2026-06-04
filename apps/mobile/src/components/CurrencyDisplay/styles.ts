@@ -11,25 +11,19 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { StyleSheet } from 'react-native'
+import { getTypography } from '@theme/typography'
+
 import type { CurrencyDisplayProps } from './CurrencyDisplay'
 
 const SKELETON_MAX_WIDTH = 150
 
 export const useStyles = makeStyles((theme, props: CurrencyDisplayProps) => {
-    const variantSizes: Record<string, number> = {
-        h1: theme.spacing.xxl,
-        h2: theme.spacing.xxl,
-        h3: theme.spacing.xl,
-        h4: theme.spacing.lg,
-        body: theme.spacing.lg,
-        bodyCompact: theme.spacing.lg,
-        bodySemibold: theme.spacing.lg,
-        caption: theme.spacing.md,
-        link: theme.spacing.lg,
-        mono: theme.spacing.lg,
-    }
-
-    const size = variantSizes[props.variant ?? 'body'] ?? theme.spacing.lg
+    // Sizes the skeleton bar to match the rendered text.
+    const fontSize =
+        StyleSheet.flatten(props.style)?.fontSize ??
+        getTypography(theme, props.variant ?? 'body').fontSize ??
+        theme.spacing.lg
 
     return {
         container: {
@@ -38,18 +32,22 @@ export const useStyles = makeStyles((theme, props: CurrencyDisplayProps) => {
             justifyContent: 'flex-start',
             gap: theme.spacing.xs,
             backgroundColor: 'transparent',
+            flexShrink: 1,
+            minWidth: 0,
+            maxWidth: '100%',
         },
         skeleton: {
             maxWidth: SKELETON_MAX_WIDTH,
-            height: size,
+            height: fontSize,
         },
         textContainer: {
             alignItems: props.alignRight ? 'flex-end' : 'flex-start',
+            flexShrink: 1,
+            minWidth: 0,
         },
-        algoIcon: {
-            width: size,
-            height: size,
-            marginBottom: theme.spacing.xs,
+        // The Algo glyph must never shrink/clip — the amount text yields first.
+        symbol: {
+            flexShrink: 0,
         },
     }
 })

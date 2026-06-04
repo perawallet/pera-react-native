@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWText } from '@components/core'
+import { PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
@@ -22,12 +22,16 @@ export type TabLabelProps = {
 export const TabLabel = ({ i18nKey, active }: TabLabelProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
+
     return (
-        <PWText
-            variant='caption'
-            style={active ? styles.active : styles.inactive}
-        >
-            {t(i18nKey)}
-        </PWText>
+        <PWView style={styles.container}>
+            <PWText
+                variant='caption'
+                truncate
+                style={[styles.label, active ? styles.active : styles.inactive]}
+            >
+                {t(i18nKey)}
+            </PWText>
+        </PWView>
     )
 }

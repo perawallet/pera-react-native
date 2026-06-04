@@ -31,7 +31,12 @@ export const TransactionStatusBadge = ({
     )
     return (
         <PWView style={styles.container}>
-            <PWText style={styles.text}>{badgeText}</PWText>
+            <PWText
+                style={styles.text}
+                truncate
+            >
+                {badgeText}
+            </PWText>
         </PWView>
     )
 }

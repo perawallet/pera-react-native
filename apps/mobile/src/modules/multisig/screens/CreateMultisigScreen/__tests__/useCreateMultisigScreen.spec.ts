@@ -172,7 +172,7 @@ describe('useCreateMultisigScreen', () => {
         expect(result.current.participants).toHaveLength(0)
     })
 
-    it('requests the add-participant sheet with size=lg', async () => {
+    it('requests the add-participant sheet with size=modal', async () => {
         mockRequestBottomSheet.mockResolvedValueOnce(undefined)
         const { result } = renderHook(() => useCreateMultisigScreen())
 
@@ -183,7 +183,7 @@ describe('useCreateMultisigScreen', () => {
         expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
         const arg = mockRequestBottomSheet.mock.calls[0][0]
         expect(arg.options).toEqual({
-            size: 'lg',
+            size: 'modal',
             enablePanDownToClose: true,
             autoCreateContainer: false,
         })

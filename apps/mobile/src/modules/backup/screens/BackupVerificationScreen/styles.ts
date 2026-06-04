@@ -13,28 +13,11 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    root: {
-        flex: 1,
-        backgroundColor: theme.colors.background,
-    },
-    scroll: {
-        flex: 1,
-    },
     scrollContent: {
-        paddingHorizontal: theme.spacing.xl,
-        paddingTop: theme.spacing.xl,
-        paddingBottom: theme.spacing.xl,
         gap: theme.spacing.lg,
-    },
-    title: {
-        textAlign: 'left',
     },
     quizList: {
         marginTop: theme.spacing.md,
         gap: theme.spacing.xxl,
-    },
-    footer: {
-        padding: theme.spacing.xl,
-        paddingBottom: theme.spacing.xxl,
     },
 }))

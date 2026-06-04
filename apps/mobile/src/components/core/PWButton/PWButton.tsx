@@ -11,10 +11,10 @@
  */
 
 import { PWText } from '@components/core/PWText'
+import { PWView } from '@components/core/PWView'
 import { useStyles } from './styles'
 import { PWIcon, IconName, PWIconVariant } from '@components/core/PWIcon'
 import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
-import { PWView } from '@components/core/PWView'
 import {
     ActivityIndicator,
     StyleProp,
@@ -43,7 +43,18 @@ export type PWButtonProps = TouchableOpacityProps & {
     isLoading?: boolean
     rounded?: boolean
     paddingStyle?: 'none' | 'dense' | 'normal'
+    /** Opt out of the double-press guard for rapid-tap surfaces (e.g. steppers). */
+    allowRapidPress?: boolean
 }
+
+// Text buttons render their title at weight 500 per the design spec; filled
+// buttons keep the heavier h4 (600).
+const TEXT_BUTTON_VARIANTS = new Set<PWButtonProps['variant']>([
+    'link',
+    'linkNeutral',
+    'linkPositive',
+    'errorLink',
+])
 
 const ICON_VARIANT_MAP: Record<string, PWIconVariant> = {
     primary: 'buttonPrimary',
@@ -69,6 +80,7 @@ export const PWButton = ({
     rounded,
     paddingStyle,
     testID,
+    allowRapidPress,
     ...props
 }: PWButtonProps) => {
     const styles = useStyles({
@@ -84,12 +96,14 @@ export const PWButton = ({
     })
 
     const iconVariant = ICON_VARIANT_MAP[variant]
+    const isTextButton = TEXT_BUTTON_VARIANTS.has(variant)
 
     return (
         <PWTouchableOpacity
             style={[styles.buttonStyle, style]}
             onPress={onPress}
             disabled={isDisabled || isLoading}
+            allowRapidPress={allowRapidPress}
             {...getTestProps(testID)}
             {...props}
         >
@@ -105,13 +119,16 @@ export const PWButton = ({
                 />
             )}
             {!!title && !isLoading && (
-                <PWText
-                    variant='h4'
-                    style={styles.titleStyle}
-                    numberOfLines={1}
-                >
-                    {title}
-                </PWText>
+                <PWView style={styles.titleContainer}>
+                    <PWText
+                        variant='h4'
+                        weight={isTextButton ? 500 : undefined}
+                        style={styles.titleStyle}
+                        truncate
+                    >
+                        {title}
+                    </PWText>
+                </PWView>
             )}
             {!!iconRight && !isLoading && (
                 <PWIcon

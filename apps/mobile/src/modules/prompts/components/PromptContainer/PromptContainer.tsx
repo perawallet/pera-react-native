@@ -14,6 +14,7 @@ import { usePromptContainer } from './usePromptContainer'
 import { useCallback } from 'react'
 import { useStyles } from './styles'
 import { Modal } from 'react-native'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWView } from '@components/core'
 
@@ -44,12 +45,14 @@ export const PromptContainer = () => {
             statusBarTranslucent
             style={styles.modal}
         >
-            <PWView style={styles.container}>
-                <PromptComponent
-                    onDismiss={handleDismiss}
-                    onHide={handleHide}
-                />
-            </PWView>
+            <GestureHandlerRootView style={styles.root}>
+                <PWView style={styles.container}>
+                    <PromptComponent
+                        onDismiss={handleDismiss}
+                        onHide={handleHide}
+                    />
+                </PWView>
+            </GestureHandlerRootView>
         </Modal>
     )
 }

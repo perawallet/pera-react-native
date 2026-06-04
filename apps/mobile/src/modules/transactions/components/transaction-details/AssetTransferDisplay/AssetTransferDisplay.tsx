@@ -69,7 +69,11 @@ export const AssetTransferDisplay = ({
                     title={t('transactions.common.view_metadata')}
                 />
             ),
-            options: { size: 'auto', enablePanDownToClose: true },
+            options: {
+                size: 'auto',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
         })
     }, [metadataHash, requestBottomSheet, t])
 

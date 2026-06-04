@@ -18,6 +18,9 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
         flex: 1,
         backgroundColor: theme.colors.background,
     },
+    root: {
+        flex: 1,
+    },
     container: {
         flex: 1,
         paddingRight: insets.right,

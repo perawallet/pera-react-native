@@ -18,35 +18,32 @@ export const useStyles = makeStyles(theme => {
         color: theme.colors.textGray,
     }
     return {
-        container: {
-            padding: theme.spacing.xl,
-            paddingTop: theme.spacing.xxl,
-            borderTopStartRadius: theme.spacing.sm,
-            borderTopEndRadius: theme.spacing.sm,
+        body: {
             alignItems: 'center',
         },
         bodyContainer: {
-            paddingHorizontal: theme.spacing.xl,
+            width: '100%',
         },
         title: {
             marginTop: theme.spacing.lg,
             textAlign: 'center',
         },
         preamble: {
-            textAlign: 'center',
+            textAlign: 'left',
             color: theme.colors.textGray,
-            marginVertical: theme.spacing.xl,
+            marginVertical: theme.spacing.lg,
         },
         postamble: {
             marginVertical: theme.spacing.lg,
         },
         tipsContainer: {
             gap: theme.spacing.xl,
+            paddingBottom: theme.spacing.xl,
         },
         tip: {
             flexDirection: 'row',
             gap: theme.spacing.lg,
-            alignItems: 'center',
+            alignItems: 'flex-start',
         },
         tipNumberContainer: {
             borderRadius: theme.spacing.xxl,

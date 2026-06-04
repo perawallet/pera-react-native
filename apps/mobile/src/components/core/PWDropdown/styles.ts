@@ -12,11 +12,16 @@
 
 import { makeStyles } from '@rneui/themed'
 
-const DROPDOWN_MIN_WIDTH = 200
+export const DROPDOWN_MIN_WIDTH = 200
 
-type StyleProps = { maxHeight?: number }
+// Caps width so long labels truncate instead of pushing the menu edge-to-edge.
+export const DROPDOWN_MAX_WIDTH_RATIO = 0.8
 
-export const useStyles = makeStyles((theme, { maxHeight }: StyleProps) => ({
+type StyleProps = {
+    windowWidth: number
+}
+
+export const useStyles = makeStyles((theme, { windowWidth }: StyleProps) => ({
     modalOverlay: {
         flex: 1,
         backgroundColor: 'transparent',
@@ -28,12 +33,11 @@ export const useStyles = makeStyles((theme, { maxHeight }: StyleProps) => ({
         paddingVertical: theme.spacing.sm,
         paddingHorizontal: theme.spacing.md,
         minWidth: DROPDOWN_MIN_WIDTH,
+        maxWidth: windowWidth * DROPDOWN_MAX_WIDTH_RATIO,
+        overflow: 'hidden',
         ...theme.shadows.md,
         borderWidth: theme.borders.sm,
         borderColor: theme.colors.layerGray,
-    },
-    scrollArea: {
-        maxHeight,
     },
     item: {
         flexDirection: 'row',
@@ -41,6 +45,11 @@ export const useStyles = makeStyles((theme, { maxHeight }: StyleProps) => ({
         paddingVertical: theme.spacing.md,
         paddingHorizontal: theme.spacing.md,
         gap: theme.spacing.md,
+        minWidth: 0,
+    },
+    labelContainer: {
+        flexShrink: 1,
+        minWidth: 0,
     },
     label: {
         color: theme.colors.textMain,

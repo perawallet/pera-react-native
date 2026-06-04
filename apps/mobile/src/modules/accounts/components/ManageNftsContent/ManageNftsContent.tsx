@@ -10,15 +10,13 @@
  limitations under the License
  */
 
-import React from 'react'
 import {
     PWIcon,
+    PWSheetLayout,
     PWText,
-    PWToolbar,
     PWTouchableOpacity,
-    PWView,
 } from '@components/core'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
@@ -29,53 +27,37 @@ export type ManageNftsContentProps = Record<string, never>
 export const ManageNftsContent = (_: ManageNftsContentProps = {}) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { resolve, dismiss } = useBottomSheetResult<ManageNftsAction>()
+    const { resolve } = useBottomSheetResult<ManageNftsAction>()
 
     return (
-        <>
-            <PWToolbar
-                left={
-                    <PWIcon
-                        name='cross'
-                        onPress={dismiss}
-                    />
-                }
-                center={
-                    <PWText variant='h4'>
-                        {t('account_details.nfts.manage_title')}
-                    </PWText>
-                }
-                paddingStyle='dense'
-                style={styles.toolbar}
-            />
+        <PWSheetLayout
+            header={
+                <SheetHeader title={t('account_details.nfts.manage_title')} />
+            }
+        >
+            <PWTouchableOpacity
+                style={styles.menuRow}
+                onPress={() => resolve('sort')}
+            >
+                <PWIcon
+                    name='list-arrow-down'
+                    size='md'
+                />
+                <PWText variant='body'>{t('account_details.nfts.sort')}</PWText>
+            </PWTouchableOpacity>
 
-            <PWView style={styles.contentContainer}>
-                <PWTouchableOpacity
-                    style={styles.menuRow}
-                    onPress={() => resolve('sort')}
-                >
-                    <PWIcon
-                        name='list-arrow-down'
-                        size='md'
-                    />
-                    <PWText variant='body'>
-                        {t('account_details.nfts.sort')}
-                    </PWText>
-                </PWTouchableOpacity>
-
-                <PWTouchableOpacity
-                    style={styles.menuRow}
-                    onPress={() => resolve('filter')}
-                >
-                    <PWIcon
-                        name='funnel'
-                        size='md'
-                    />
-                    <PWText variant='body'>
-                        {t('account_details.nfts.filter')}
-                    </PWText>
-                </PWTouchableOpacity>
-            </PWView>
-        </>
+            <PWTouchableOpacity
+                style={styles.menuRow}
+                onPress={() => resolve('filter')}
+            >
+                <PWIcon
+                    name='funnel'
+                    size='md'
+                />
+                <PWText variant='body'>
+                    {t('account_details.nfts.filter')}
+                </PWText>
+            </PWTouchableOpacity>
+        </PWSheetLayout>
     )
 }

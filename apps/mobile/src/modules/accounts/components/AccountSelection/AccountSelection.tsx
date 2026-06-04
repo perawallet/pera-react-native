@@ -35,7 +35,6 @@ export type AccountSelectionProps = {
     triggerIconProps?: Omit<AccountIconProps, 'account'>
     triggerChevronProps?: Partial<PWIconProps>
     triggerTextProps?: PWTextProps
-    closeIconPosition?: 'left' | 'right'
     hideDefaultHeader?: boolean
     showSearch?: boolean
     accountFilter?: (account: WalletAccount) => boolean
@@ -48,7 +47,6 @@ export const AccountSelection = ({
     triggerIconProps,
     triggerChevronProps,
     triggerTextProps,
-    closeIconPosition,
     hideDefaultHeader,
     accountFilter,
     ...props
@@ -64,15 +62,15 @@ export const AccountSelection = ({
             contents: (
                 <AccountMenuContent
                     headerContent={headerContent}
-                    closeIconPosition={closeIconPosition}
                     hideDefaultHeader={hideDefaultHeader}
                     showSearch
                     accountFilter={accountFilter}
                 />
             ),
             options: {
-                size: 'lg',
-                enablePanDownToClose: true,
+                size: 'modal',
+                enablePanDownToClose: false,
+                enableContentPanningGesture: false,
                 autoCreateContainer: false,
             },
         })
@@ -92,7 +90,12 @@ export const AccountSelection = ({
             case 'sort':
                 await requestBottomSheet<void>({
                     contents: <AccountSortContent />,
-                    options: { size: 'lg', enablePanDownToClose: true },
+                    options: {
+                        size: 'modal',
+                        enablePanDownToClose: false,
+                        enableContentPanningGesture: false,
+                        autoCreateContainer: false,
+                    },
                 })
                 // After sorting, reopen the account menu so the user can pick.
                 void openAccountMenu()
@@ -101,7 +104,6 @@ export const AccountSelection = ({
     }, [
         requestBottomSheet,
         headerContent,
-        closeIconPosition,
         hideDefaultHeader,
         accountFilter,
         onSelected,

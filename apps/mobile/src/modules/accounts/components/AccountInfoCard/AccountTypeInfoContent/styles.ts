@@ -15,25 +15,41 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     container: {
         gap: theme.spacing.lg,
+        width: '100%',
+        minWidth: 0,
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.md,
+        minWidth: 0,
+    },
+    titleContainer: {
+        flex: 1,
+        minWidth: 0,
+        gap: theme.spacing.xxs,
     },
     title: {
         flexShrink: 1,
+        minWidth: 0,
     },
     titleQualifier: {
         color: theme.colors.textGray,
+        flexShrink: 1,
+        minWidth: 0,
     },
     description: {
         color: theme.colors.textGray,
+        width: '100%',
     },
     learnMoreRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        alignSelf: 'flex-start',
         gap: theme.spacing.sm,
+        minWidth: 0,
+    },
+    learnMoreText: {
+        flex: 1,
+        minWidth: 0,
     },
 }))

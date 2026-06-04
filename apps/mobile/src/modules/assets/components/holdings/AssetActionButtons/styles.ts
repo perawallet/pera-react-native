@@ -15,9 +15,24 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     container: {
         flexDirection: 'row',
+        alignItems: 'flex-start',
         justifyContent: 'center',
         gap: theme.spacing.md,
         paddingVertical: theme.spacing.xl,
-        paddingHorizontal: theme.spacing.md,
+        width: '100%',
+        minWidth: 0,
+        overflow: 'hidden',
+    },
+    buttonFour: {
+        flex: 1,
+        minWidth: 0,
+        maxWidth: '25%',
+        alignItems: 'center',
+    },
+    buttonTwo: {
+        flex: 1,
+        minWidth: 0,
+        maxWidth: '50%',
+        alignItems: 'center',
     },
 }))

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { AppIntegrityService } from './app-integrity'
 import type { AnalyticsService } from './analytics'
 import type { BiometricsService } from './biometrics'
 import type { DeviceInfoService } from './device'
@@ -32,6 +33,7 @@ export interface PlatformServices {
     analytics: AnalyticsService
     crashReporting: CrashReportingService
     deviceInfo: DeviceInfoService
+    appIntegrity: AppIntegrityService
     database: DatabaseService
     hardwareWalletRegistry: HardwareWalletRegistry
     migration: MigrationService

@@ -46,7 +46,9 @@ export const PWRadioButton = ({
             style={[styles.row, isDisabled && styles.disabled, containerStyle]}
             {...getTestProps(testID)}
         >
-            {children ?? <PWText>{title}</PWText>}
+            <PWView style={styles.content}>
+                {children ?? <PWText>{title}</PWText>}
+            </PWView>
             <PWView
                 style={[
                     styles.radioContainer,

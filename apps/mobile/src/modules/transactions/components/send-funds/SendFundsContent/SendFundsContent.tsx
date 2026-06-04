@@ -27,22 +27,22 @@ export type SendFundsContentProps = {
 
 export const SendFundsContent = ({ assetId }: SendFundsContentProps) => {
     const { t } = useLanguage()
-    const { selectedAccount } = useSendFundsContent(assetId)
+    const { selectedAccount, isReady } = useSendFundsContent(assetId)
 
     return (
         <TransactionErrorBoundary t={t}>
-            {selectedAccount ? (
+            {!selectedAccount ? (
+                <EmptyView
+                    title={t('send_funds.bottom_sheet.no_account_title')}
+                    body={t('send_funds.bottom_sheet.no_account_body')}
+                />
+            ) : isReady ? (
                 <NavigationIndependentTree>
                     <NavigationContainer>
                         <SendFundsRoutes />
                     </NavigationContainer>
                 </NavigationIndependentTree>
-            ) : (
-                <EmptyView
-                    title={t('send_funds.bottom_sheet.no_account_title')}
-                    body={t('send_funds.bottom_sheet.no_account_body')}
-                />
-            )}
+            ) : null}
         </TransactionErrorBoundary>
     )
 }

@@ -186,6 +186,14 @@ export const formatCurrency = (
     return `${sign}${currencySymbol ? `${currencySymbol} ` : ''}${integer}${fraction.length > 1 ? fraction : ''}${unit}`
 }
 
+// `value` is an already-computed percentage, not a fraction: `12.34` → `"12.34%"`.
+export const formatPercentage = (
+    value: Decimal | number,
+    precision: number = 2,
+): string => {
+    return `${new Decimal(value).toFixed(precision)}%`
+}
+
 export const formatDatetime = (
     datetime?: string | Date,
     locale: string = 'en-US',

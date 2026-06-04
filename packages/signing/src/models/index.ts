@@ -131,11 +131,6 @@ export type SignRequest =
     | ArbitraryDataSignRequest
     | Arc60SignRequest
 
-export type FailedSignRequest = {
-    request: SignRequest
-    error: Error
-}
-
 export type SigningStore = BaseStoreState & {
     pendingSignRequests: SignRequest[]
     addSignRequest: (request: SignRequest) => boolean

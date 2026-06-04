@@ -13,10 +13,6 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    scrollContent: {
-        paddingHorizontal: theme.spacing.lg,
-        paddingBottom: theme.spacing.xl,
-    },
     sectionTitle: {
         color: theme.colors.textGray,
         marginTop: theme.spacing.lg,

@@ -56,6 +56,7 @@ export const CollectibleInfoSection = ({
                     >
                         <PWText
                             variant='body'
+                            truncate
                             style={styles.infoLabel}
                         >
                             {t('asset_details.collectible.creator')}
@@ -77,6 +78,7 @@ export const CollectibleInfoSection = ({
             >
                 <PWText
                     variant='body'
+                    truncate
                     style={styles.infoLabel}
                 >
                     {t('asset_details.collectible.asset_id')}
@@ -93,6 +95,7 @@ export const CollectibleInfoSection = ({
             <PWView style={styles.infoRow}>
                 <PWText
                     variant='body'
+                    truncate
                     style={styles.infoLabel}
                 >
                     {t('asset_details.collectible.total_supply')}
@@ -113,6 +116,7 @@ export const CollectibleInfoSection = ({
             >
                 <PWText
                     variant='body'
+                    truncate
                     style={styles.infoLabel}
                 >
                     {t('asset_details.collectible.show_on')}

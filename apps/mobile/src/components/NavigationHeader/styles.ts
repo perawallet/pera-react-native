@@ -22,12 +22,15 @@ export const useStyles = makeStyles(
     (theme, { insets, safeArea }: StyleProps) => ({
         container: {
             marginTop: safeArea ? insets.top : 0,
+            paddingHorizontal: theme.spacing.lg,
         },
         title: {
             textAlign: 'center',
+            width: '100%',
+            minWidth: 0,
         },
         backButton: {
-            marginLeft: theme.spacing.md,
+            marginLeft: 0,
         },
     }),
 )

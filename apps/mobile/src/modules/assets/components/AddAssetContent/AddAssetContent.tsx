@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
+import { PWIcon, PWTouchableOpacity } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { useBottomSheet, useBottomSheetResult } from '@modules/bottom-sheet'
+import { SheetHeader, useBottomSheet } from '@modules/bottom-sheet'
 import { AddAssetView } from '@modules/assets/components/AddAssetView'
 import { AsaVerificationInfoContent } from '@modules/assets/components/AsaVerificationInfoContent'
 import { useStyles } from './styles'
@@ -29,7 +29,6 @@ export const AddAssetContent = ({
     const styles = useStyles()
     const { t } = useLanguage()
     const { request: requestBottomSheet } = useBottomSheet()
-    const { dismiss } = useBottomSheetResult<void>()
 
     const title =
         variant === 'collectible'
@@ -39,38 +38,30 @@ export const AddAssetContent = ({
     const handleOpenVerificationInfo = () => {
         void requestBottomSheet<void>({
             contents: <AsaVerificationInfoContent />,
-            options: { size: 'lg', enablePanDownToClose: true },
+            options: {
+                size: 'modal',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
         })
     }
 
     return (
         <>
-            <PWView style={styles.header}>
-                <PWTouchableOpacity
-                    style={styles.headerAction}
-                    onPress={dismiss}
-                >
-                    <PWIcon
-                        name='cross'
-                        size='md'
-                    />
-                </PWTouchableOpacity>
-                <PWText
-                    variant='h4'
-                    style={styles.headerTitle}
-                >
-                    {title}
-                </PWText>
-                <PWTouchableOpacity
-                    style={styles.headerAction}
-                    onPress={handleOpenVerificationInfo}
-                >
-                    <PWIcon
-                        name='info'
-                        size='sm'
-                    />
-                </PWTouchableOpacity>
-            </PWView>
+            <SheetHeader
+                title={title}
+                rightAction={
+                    <PWTouchableOpacity
+                        style={styles.headerAction}
+                        onPress={handleOpenVerificationInfo}
+                    >
+                        <PWIcon
+                            name='info'
+                            size='md'
+                        />
+                    </PWTouchableOpacity>
+                }
+            />
             <AddAssetView variant={variant} />
         </>
     )

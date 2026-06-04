@@ -10,16 +10,17 @@
  limitations under the License
  */
 
-import { useStyles } from './styles'
-import { PWView } from '@components/core'
-import { PWRadioButton } from '@components/core/PWRadioButton'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { Networks } from '@perawallet/wallet-core-shared'
-import { useSwitchNetwork } from '@perawallet/wallet-core-device'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { getSyncService } from '@perawallet/wallet-core-background'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useSwitchNetwork } from '@perawallet/wallet-core-device'
+import { Networks } from '@perawallet/wallet-core-shared'
+
+import { PWScreen, PWView } from '@components/core'
+import { PWRadioButton } from '@components/core/PWRadioButton'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
+import { useStyles } from './styles'
 
 export const SettingsDeveloperNodeSettingsScreen = () => {
     const styles = useStyles()
@@ -53,21 +54,26 @@ export const SettingsDeveloperNodeSettingsScreen = () => {
     }
 
     return (
-        <PWView style={styles.container}>
-            <PWRadioButton
-                testID='node_settings_mainnet_radio'
-                title={t('settings.developer.node_settings.mainnet_label')}
-                onPress={() => handleNetworkSwitch(Networks.mainnet)}
-                isSelected={isMainnet}
-                isDisabled={isSwitching}
-            />
-            <PWRadioButton
-                testID='node_settings_testnet_radio'
-                title={t('settings.developer.node_settings.testnet_label')}
-                onPress={() => handleNetworkSwitch(Networks.testnet)}
-                isSelected={isTestnet}
-                isDisabled={isSwitching}
-            />
-        </PWView>
+        <PWScreen>
+            <PWView
+                style={styles.container}
+                testID='node_settings_screen'
+            >
+                <PWRadioButton
+                    testID='node_settings_mainnet_radio'
+                    title={t('settings.developer.node_settings.mainnet_label')}
+                    onPress={() => handleNetworkSwitch(Networks.mainnet)}
+                    isSelected={isMainnet}
+                    isDisabled={isSwitching}
+                />
+                <PWRadioButton
+                    testID='node_settings_testnet_radio'
+                    title={t('settings.developer.node_settings.testnet_label')}
+                    onPress={() => handleNetworkSwitch(Networks.testnet)}
+                    isSelected={isTestnet}
+                    isDisabled={isSwitching}
+                />
+            </PWView>
+        </PWScreen>
     )
 }

@@ -7,7 +7,6 @@
     },
     "account_sort": {
         "title": "Sort",
-        "done": "Done",
         "alphabetical_asc": "Alphabetically A to Z",
         "alphabetical_desc": "Alphabetically Z to A",
         "balance_asc": "Lowest Value to Highest",
@@ -29,7 +28,6 @@
     },
     "asset_sort": {
         "title": "Sort",
-        "done": "Done",
         "balance_desc": "Highest Value to Lowest",
         "balance_asc": "Lowest Value to Highest",
         "alphabetical_asc": "Alphabetically A to Z",
@@ -37,7 +35,6 @@
     },
     "asset_filter": {
         "title": "Filter Assets",
-        "done": "Done",
         "hide_zero_balance": "Hide assets with no balance",
         "hide_zero_balance_description": "You can show/hide assets with zero balance",
         "display_nfts": "Display NFTs in asset list",
@@ -60,7 +57,6 @@
             "account_label": "Account",
             "fee_label": "Transaction Fee",
             "description": "Before interacting with an asset, you must opt-in to it from your account. This prevents unauthorized asset transactions to be sent to you.",
-            "close": "Close",
             "copy_id": "Copy ID"
         },
         "collectible_title": "Opt-in to NFT",
@@ -199,11 +195,11 @@
             "explorer": "Pera Explorer",
             "share_message": "",
             "image_copied": "Image copied to clipboard",
-            "image_saved": "Image saved to photo library",
+            "media_saved": "Saved to your library",
             "model_3d_mode": "3D Mode",
-            "image_save_failed": "Unable to save image",
+            "media_save_failed": "Unable to save",
             "image_copy_failed": "Unable to copy image",
-            "photo_permission_denied": "Photo library access is required to save images",
+            "media_permission_denied": "Library access is required to save media",
             "not_owner_notice": "You are not the owner of this NFT yet, however you opted-in for it. You can now transfer it to your account."
         },
         "verification_card": {
@@ -240,7 +236,6 @@
             "sort": "Sort",
             "filter_title": "Filter NFTs",
             "filter": "Filter",
-            "filter_done": "Done",
             "filter_opted_in": "Display opted-in NFTs",
             "filter_opted_in_description": "You can show/hide nfts that are opted-in but are not owned",
             "filter_watch_accounts": "Display NFTs from Watch Accounts",
@@ -501,6 +496,7 @@
         },
         "done": "Done",
         "save": "Save",
+        "apply": "Apply",
         "copy": "Copy",
         "send": "Send"
     },
@@ -1197,7 +1193,8 @@
             },
             "confirm": {
                 "title": "Confirm rekeying",
-                "body": "You are about to rekey this account to another authorized address. The new address will be able to sign transactions on its behalf. <0>Learn more</0>",
+                "body": "You are about to rekey this account to another authorized address. The new address will be able to sign transactions on its behalf.",
+                "learn_more": "Learn more",
                 "summary_label": "Summary of rekey",
                 "current_auth_label": "Currently rekeyed to",
                 "fee_label": "Transaction Fee",
@@ -1233,7 +1230,8 @@
             },
             "confirm": {
                 "title": "Confirm rekeying",
-                "body": "You are about to rekey this shared account to another shared account. <0>Learn more</0>",
+                "body": "You are about to rekey this shared account to another shared account.",
+                "learn_more": "Learn more",
                 "summary_label": "Summary of rekey",
                 "current_auth_label": "Currently rekeyed to",
                 "fee_label": "Transaction Fee",
@@ -1362,6 +1360,7 @@
         "feature_flags": "Feature Flags",
         "developer_menu": "Developer Options",
         "manage_cache": "Manage Cache",
+        "app_integrity": "App Integrity",
         "messages": "Messages"
     },
     "search": {
@@ -1526,7 +1525,7 @@
     "settings": {
         "currency": {
             "title": "Main Currency",
-            "description": "Your main currency is {{preferredCurrency}}, and secondary currency is {{fallbackCurrency}}.",
+            "description": "Your main currency is <0>{{preferredCurrency}}</0>, and secondary currency is <0>{{fallbackCurrency}}</0>.",
             "search_placeholder": "Search"
         },
         "main": {
@@ -1574,6 +1573,23 @@
             "debug_webview": "Test Webview API",
             "debug_dapp": "Test Dapp",
             "manage_cache": "Manage Cache",
+            "screen_gallery": "Screen Gallery",
+            "app_integrity": "App Integrity",
+            "app_integrity_run": "Run registration handshake",
+            "app_integrity_verify": "Verify token",
+            "app_integrity_clear": "Clear stored state",
+            "app_integrity_environment": "Environment: {{value}}",
+            "app_integrity_platform": "Platform: {{value}}",
+            "app_integrity_supported": "Supported:",
+            "app_integrity_status": "Status:",
+            "app_integrity_token": "Token: {{value}}",
+            "app_integrity_expiry": "Expiry: {{value}}",
+            "app_integrity_error": "Error: {{value}}",
+            "app_integrity_verify_label": "Verify:",
+            "app_integrity_verify_error": "Verify error: {{value}}",
+            "app_integrity_none": "none",
+            "app_integrity_verify_ok": "ok",
+            "app_integrity_verify_failed": "failed",
             "refresh_cache": "Refresh full cache",
             "refresh_cache_success_title": "Cache refreshed",
             "refresh_cache_success_body": "All accounts refetched and queries invalidated.",
@@ -2214,8 +2230,7 @@
             "tip_nearby": "Make sure the device is nearby",
             "tip_bluetooth": "Make sure Bluetooth is enabled",
             "tip_app_open": "Make sure the Algorand app is open on your Ledger",
-            "tip_repair": "If problems persist, try re-pairing the device from Settings",
-            "close": "Close"
+            "tip_repair": "If problems persist, try re-pairing the device from Settings"
         },
         "scan_header": {
             "having_issues": "Having issues?"

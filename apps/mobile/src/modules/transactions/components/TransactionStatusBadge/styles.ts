@@ -39,6 +39,9 @@ export const useStyles = makeStyles(
                 borderRadius: theme.spacing.xl,
                 alignItems: 'center',
                 justifyContent: 'center',
+                alignSelf: 'flex-start',
+                flexShrink: 0,
+                maxWidth: '100%',
             },
             text: {
                 color,

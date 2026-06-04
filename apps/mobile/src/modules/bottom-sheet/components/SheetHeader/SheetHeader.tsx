@@ -10,61 +10,100 @@
  limitations under the License
  */
 
-import type { ReactNode } from 'react'
-import { PWIcon, PWText, PWToolbar } from '@components/core'
+import { PWIcon, PWText, PWToolbar, PWView } from '@components/core'
 import { useBottomSheetResult } from '../../hooks/useBottomSheetResult'
+import { useBottomSheetPanDownEnabled } from '../../hooks/useBottomSheetPanDownEnabled'
+import { useBottomSheetSize } from '../../hooks/useBottomSheetSize'
+import { useStyles } from './styles'
+
+import type { ReactNode } from 'react'
+import type { StyleProp, ViewStyle } from 'react-native'
+import type { FontWeight, TypographyVariant } from '@theme/typography'
 
 export type SheetHeaderProps = {
     title: ReactNode
-    /** Optional element shown in the toolbar's right slot. */
+    titleVariant?: TypographyVariant
+    titleWeight?: FontWeight
+    subtitle?: string
     rightAction?: ReactNode
-    /** Override the default close behaviour (which calls `dismiss()`). */
     onClose?: () => void
     paddingStyle?: 'normal' | 'dense' | 'none'
+    style?: StyleProp<ViewStyle>
     testID?: string
 }
 
-/**
- * Standard header for managed bottom-sheet content. Wires the left close
- * icon to the host sheet's `dismiss()` so callers only need to supply a
- * title (and, optionally, a right-slot action). Designed for use inside
- * a sheet rendered by `BottomSheetManager` — must be mounted under a
- * `BottomSheetIdContext`.
- */
+/** Bottom-sheet toolbar header; close icon wired to `dismiss()`. */
 export const SheetHeader = ({
     title,
+    titleVariant = 'h4',
+    titleWeight,
+    subtitle,
     rightAction,
     onClose,
     paddingStyle = 'dense',
+    style,
     testID,
 }: SheetHeaderProps) => {
+    const styles = useStyles()
     const { dismiss } = useBottomSheetResult()
+    const isPanDownEnabled = useBottomSheetPanDownEnabled()
+    const size = useBottomSheetSize()
     const handleClose = onClose ?? dismiss
+
+    const isFullScreen = size === 'full' || size === 'modal'
+    const showClose = isFullScreen || !isPanDownEnabled
 
     return (
         <PWToolbar
             left={
-                <PWIcon
-                    name='cross'
-                    variant='secondary'
-                    onPress={handleClose}
-                    testID={testID ? `${testID}-close` : undefined}
-                />
+                showClose ? (
+                    <PWIcon
+                        name='cross'
+                        variant='primary'
+                        onPress={handleClose}
+                        testID={testID ? `${testID}-close` : undefined}
+                    />
+                ) : undefined
             }
             center={
-                typeof title === 'string' ? (
+                typeof title !== 'string' ? (
+                    title
+                ) : subtitle ? (
+                    <PWView style={styles.titleColumn}>
+                        <PWText
+                            variant={titleVariant}
+                            weight={titleWeight}
+                            truncate
+                            style={styles.title}
+                            testID={testID ? `${testID}-title` : undefined}
+                        >
+                            {title}
+                        </PWText>
+                        <PWText
+                            variant='footnoteMedium'
+                            weight={400}
+                            truncate
+                            style={styles.subtitle}
+                            testID={testID ? `${testID}-subtitle` : undefined}
+                        >
+                            {subtitle}
+                        </PWText>
+                    </PWView>
+                ) : (
                     <PWText
-                        variant='h4'
+                        variant={titleVariant}
+                        weight={titleWeight}
+                        truncate
+                        style={styles.title}
                         testID={testID ? `${testID}-title` : undefined}
                     >
                         {title}
                     </PWText>
-                ) : (
-                    title
                 )
             }
             right={rightAction}
             paddingStyle={paddingStyle}
+            style={[styles.toolbar, style]}
             testID={testID}
         />
     )

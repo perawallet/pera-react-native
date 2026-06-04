@@ -13,9 +13,6 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        flex: 1,
-    },
     titleSection: {
         alignItems: 'center',
         gap: theme.spacing.md,
@@ -28,9 +25,6 @@ export const useStyles = makeStyles(theme => ({
         borderBottomColor: theme.colors.layerGrayLightest,
         paddingVertical: theme.spacing.lg,
         gap: theme.spacing.md,
-    },
-    scrollContainer: {
-        flexGrow: 1,
     },
     resources: {
         gap: theme.spacing.xs,

@@ -14,7 +14,7 @@ import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useCreateAccount } from './useCreateAccount'
 import { useHDImportSession } from './useHDImportSession'
-import { useAllAccounts } from './useAllAccounts'
+import { useAccountsStore } from '../store'
 import { ImportAccountType, WalletAccount } from '../models'
 import { DuplicateAccountError } from '../errors'
 
@@ -30,7 +30,6 @@ export const useImportAccount = () => {
     const { createAlgo25Key, removeKeyAndChildren } = useKMS()
     const { createAlgo25WalletAccount } = useCreateAccount()
     const { prepareImport } = useHDImportSession()
-    const allAccounts = useAllAccounts()
 
     return async ({
         mnemonic,
@@ -54,7 +53,9 @@ export const useImportAccount = () => {
         // useImportSelectAddressesScreen, which filters already-imported
         // addresses out of the selectable set.
         const { seedKey, address } = await createAlgo25Key({ mnemonic })
-        const isDuplicate = allAccounts.some(a => a.address === address)
+        const isDuplicate = useAccountsStore
+            .getState()
+            .accounts.some(a => a.address === address)
         if (isDuplicate) {
             try {
                 // `createAlgo25Key` mints both the seed and its Ed25519

@@ -18,10 +18,29 @@ export const useStyles = makeStyles(theme => {
         lineHeight: theme.spacing.md,
     }
     return {
+        copyContainer: {
+            width: '100%',
+            minWidth: 0,
+            flexShrink: 1,
+        },
+        content: {
+            width: '100%',
+            minWidth: 0,
+            overflow: 'hidden',
+        },
         row: {
             flexDirection: 'row',
             alignItems: 'center',
             gap: theme.spacing.sm,
+            width: '100%',
+            minWidth: 0,
+            overflow: 'hidden',
+        },
+        appName: {
+            flex: 1,
+        },
+        verificationIcon: {
+            flexShrink: 0,
         },
         caption,
     }

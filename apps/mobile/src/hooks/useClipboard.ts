@@ -17,7 +17,12 @@ import * as Haptics from 'expo-haptics'
 import { useCallback } from 'react'
 import type { NotifierRoot } from 'react-native-notifier'
 
-export const useClipboard = () => {
+type UseClipboardResult = {
+    copyToClipboard: (text: string, notifier?: NotifierRoot) => Promise<void>
+    readText: () => Promise<string>
+}
+
+export const useClipboard = (): UseClipboardResult => {
     const { showToast } = useToast()
     const { t } = useLanguage()
 
@@ -39,7 +44,12 @@ export const useClipboard = () => {
         [showToast, t],
     )
 
+    const readText = useCallback(async (): Promise<string> => {
+        return Clipboard.getStringAsync()
+    }, [])
+
     return {
         copyToClipboard,
+        readText,
     }
 }

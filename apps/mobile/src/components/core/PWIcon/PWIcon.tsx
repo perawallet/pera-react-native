@@ -12,35 +12,38 @@
 
 import { SvgProps } from 'react-native-svg'
 import { useTheme } from '@rneui/themed'
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
+import { Keyboard, type GestureResponderEvent } from 'react-native'
 import { ICON_LIBRARY, IconName } from './constants'
-import { PWIconSize, PWIconVariant } from './types'
+import { getIconPixelSize, PWIconSize, PWIconVariant } from './types'
 
 export type PWIconProps = {
     name: IconName
     size?: PWIconSize
     variant?: PWIconVariant
+    dismissKeyboardOnPress?: boolean
 } & Omit<SvgProps, 'color' | 'width' | 'height'>
 
 export const PWIcon = ({
     name,
     size = 'md',
     variant = 'primary',
+    onPress,
+    dismissKeyboardOnPress = true,
     ...rest
 }: PWIconProps) => {
     const { theme } = useTheme()
     const IconComponent = ICON_LIBRARY[name]
 
-    const sizeMap: Record<PWIconSize, number> = useMemo(
-        () => ({
-            xs: theme.spacing.md,
-            sm: theme.spacing.lg,
-            md: theme.spacing.xl,
-            lg: theme.spacing.xxl,
-            xl: theme.spacing['3xl'],
-            xxl: theme.spacing['4xl'],
-        }),
-        [theme],
+    // onPress before Keyboard.dismiss — bottom-sheet open races if reversed.
+    const handlePress = useCallback(
+        (event: GestureResponderEvent) => {
+            onPress?.(event)
+            if (dismissKeyboardOnPress) {
+                Keyboard.dismiss()
+            }
+        },
+        [onPress, dismissKeyboardOnPress],
     )
 
     const variantColors: Record<PWIconVariant, string> = useMemo(
@@ -79,7 +82,7 @@ export const PWIcon = ({
 
     if (!IconComponent) return null
 
-    const resolvedSize = sizeMap[size] ?? theme.spacing.xl
+    const resolvedSize = getIconPixelSize(theme, size)
     const resolvedColor = rest.disabled
         ? disabledColors[variant]
         : variantColors[variant]
@@ -89,6 +92,7 @@ export const PWIcon = ({
             width={resolvedSize}
             height={resolvedSize}
             color={resolvedColor}
+            onPress={onPress ? handlePress : undefined}
             {...rest}
         />
     )

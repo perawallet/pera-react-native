@@ -11,4 +11,3 @@
  */
 
 export { NftFilterContent } from './NftFilterContent'
-export type { NftFilterContentProps } from './NftFilterContent'

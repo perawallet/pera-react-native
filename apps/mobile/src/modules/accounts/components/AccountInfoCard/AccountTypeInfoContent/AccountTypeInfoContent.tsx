@@ -38,21 +38,24 @@ export const AccountTypeInfoContent = ({
                     account={account}
                     size='xl'
                 />
-                <PWText
-                    variant='h3'
-                    style={styles.title}
-                >
-                    {title}
-                    {titleQualifier && (
+                <PWView style={styles.titleContainer}>
+                    <PWText
+                        variant='h3'
+                        style={styles.title}
+                        truncate
+                    >
+                        {title}
+                    </PWText>
+                    {titleQualifier ? (
                         <PWText
                             variant='body'
                             style={styles.titleQualifier}
+                            truncate
                         >
-                            {'\n'}
                             {titleQualifier}
                         </PWText>
-                    )}
-                </PWText>
+                    ) : null}
+                </PWView>
             </PWView>
 
             <PWText style={styles.description}>{description}</PWText>
@@ -67,7 +70,11 @@ export const AccountTypeInfoContent = ({
                     size='sm'
                     variant='link'
                 />
-                <PWText variant='link'>
+                <PWText
+                    variant='link'
+                    style={styles.learnMoreText}
+                    truncate
+                >
                     {t('account_type_info.learn_more')}
                 </PWText>
             </PWTouchableOpacity>

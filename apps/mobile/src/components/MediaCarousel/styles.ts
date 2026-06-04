@@ -17,34 +17,24 @@ const DOT_SIZE = 6
 const DOT_RADIUS = 3
 
 export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
-    const maxWidth = dimensions.width - 2 * theme.spacing.lg
-    const maxHeight = dimensions.width - 2 * theme.spacing.lg
+    const mediaSize = dimensions.width - 2 * theme.spacing.xl
 
     return {
         image: {
-            width: '100%',
-            height: '100%',
-            margin: theme.spacing.lg,
+            width: mediaSize,
+            height: mediaSize,
             borderRadius: theme.borderRadius.lg,
             overflow: 'hidden',
-            maxWidth,
-            maxHeight,
         },
         videoPlayer: {
-            width: '100%',
-            height: '100%',
-            margin: theme.spacing.lg,
+            width: mediaSize,
+            height: mediaSize,
             borderRadius: theme.borderRadius.lg,
             overflow: 'hidden',
-            maxWidth,
-            maxHeight,
-        },
-        imageContainer: {
-            width: '100%',
-            height: '100%',
         },
         placeholder: {
-            flex: 1,
+            width: mediaSize,
+            height: mediaSize / 2,
             alignItems: 'center',
             justifyContent: 'center',
         },
@@ -55,8 +45,8 @@ export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
             borderRadius: theme.borderRadius.full,
             paddingHorizontal: theme.spacing.sm,
             paddingVertical: theme.spacing.xs,
-            bottom: theme.spacing.sm,
-            left: theme.spacing.xl,
+            bottom: theme.spacing.md,
+            left: theme.spacing.md,
             backgroundColor: theme.colors.nftIconBg,
             alignItems: 'center',
             justifyContent: 'center',
@@ -66,17 +56,21 @@ export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
         },
         fullScreenButton: {
             position: 'absolute',
-            bottom: theme.spacing.xl,
-            right: 0,
+            bottom: theme.spacing.md,
+            right: theme.spacing.md,
             borderRadius: theme.borderRadius.sm,
             backgroundColor: theme.colors.nftIconBg,
             alignItems: 'center',
             justifyContent: 'center',
         },
         carouselItem: {
-            width: '100%',
-            maxWidth,
-            maxHeight,
+            alignSelf: 'center',
+            marginVertical: theme.spacing.lg,
+        },
+        page: {
+            flex: 1,
+            alignItems: 'center',
+            justifyContent: 'center',
         },
         indicator: {
             flexDirection: 'row',
@@ -94,8 +88,7 @@ export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
             backgroundColor: theme.colors.textMain,
         },
         pagerView: {
-            flex: 1,
-            height: dimensions.width,
+            height: mediaSize + 2 * theme.spacing.lg,
         },
     }
 })

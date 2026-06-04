@@ -79,7 +79,13 @@ export const ExpandablePanel = ({
     }))
 
     return (
-        <Animated.View style={[collapsableStyle, containerStyle]}>
+        <Animated.View
+            style={[
+                styles.collapsableContainer,
+                collapsableStyle,
+                containerStyle,
+            ]}
+        >
             <PWView
                 style={styles.wrapper}
                 onLayout={onLayout}

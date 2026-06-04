@@ -15,10 +15,10 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     container: {
         marginTop: theme.spacing.md,
-        marginLeft: theme.spacing.md,
         gap: theme.spacing.sm,
         flexShrink: 1,
         flexWrap: 'nowrap',
         overflow: 'hidden',
+        width: '100%',
     },
 }))

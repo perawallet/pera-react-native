@@ -46,7 +46,7 @@ export const MultisigOverlays = () => {
                     // Fixed snap point, not 'auto': the signers list is
                     // `flex: 1` (0 natural height), so 'auto' would collapse
                     // the sheet to header + footer.
-                    size: 'lg',
+                    size: 'modal',
                     enablePanDownToClose: true,
                     autoCreateContainer: false,
                 },

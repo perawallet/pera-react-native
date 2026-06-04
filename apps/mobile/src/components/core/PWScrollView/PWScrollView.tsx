@@ -10,19 +10,81 @@
  limitations under the License
  */
 
+import { useContext } from 'react'
 import { getTestProps } from '@utils/test-id-helper'
-import { ScrollViewProps } from 'react-native'
+import { ScrollViewProps, StyleSheet } from 'react-native'
 import { ScrollView } from 'react-native-gesture-handler'
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet'
+import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { PWInBottomSheetContext } from '../PWBottomSheet/inSheetContext'
+import { useStyles } from './styles'
 
 export type PWScrollViewProps = ScrollViewProps & {
     testID?: string
+    /** A plain ScrollView won't scroll inside a sheet; this swaps in gorhom's. */
+    inBottomSheet?: boolean
 }
 
-export const PWScrollView = ({ testID, ...props }: PWScrollViewProps) => {
+export const PWScrollView = ({
+    testID,
+    inBottomSheet,
+    children,
+    keyboardShouldPersistTaps,
+    contentContainerStyle,
+    showsVerticalScrollIndicator = false,
+    showsHorizontalScrollIndicator = false,
+    ...props
+}: PWScrollViewProps) => {
+    const insets = useSafeAreaInsets()
+    const isInTabNavigator = useContext(BottomTabBarHeightContext) !== undefined
+    // Auto-detect a surrounding sheet: a plain ScrollView silently fails to
+    // scroll there otherwise.
+    const isInSheet = useContext(PWInBottomSheetContext)
+    const isInBottomSheet = inBottomSheet ?? isInSheet
+    const bottomInset = isInBottomSheet || !isInTabNavigator ? insets.bottom : 0
+    const styles = useStyles({ bottomInset })
+
+    // Skip the default bottom padding if the caller set any bottom-affecting
+    // padding: RN edge-specificity would otherwise silently override theirs.
+    const callerPadding = StyleSheet.flatten(contentContainerStyle) ?? {}
+    const hasBottomPadding =
+        callerPadding.paddingBottom != null ||
+        callerPadding.paddingVertical != null ||
+        callerPadding.padding != null
+    const resolvedContentContainerStyle = hasBottomPadding
+        ? contentContainerStyle
+        : [styles.contentContainer, contentContainerStyle]
+
+    if (isInBottomSheet) {
+        return (
+            <BottomSheetScrollView
+                keyboardShouldPersistTaps={
+                    keyboardShouldPersistTaps ?? 'handled'
+                }
+                contentContainerStyle={resolvedContentContainerStyle}
+                showsVerticalScrollIndicator={showsVerticalScrollIndicator}
+                showsHorizontalScrollIndicator={showsHorizontalScrollIndicator}
+                {...getTestProps(testID)}
+                {...props}
+            >
+                {children}
+            </BottomSheetScrollView>
+        )
+    }
+
     return (
         <ScrollView
+            // RN's default ('never') swallows the first tap on a child while an
+            // input is focused; 'handled' lets the tap through.
+            keyboardShouldPersistTaps={keyboardShouldPersistTaps ?? 'handled'}
+            contentContainerStyle={resolvedContentContainerStyle}
+            showsVerticalScrollIndicator={showsVerticalScrollIndicator}
+            showsHorizontalScrollIndicator={showsHorizontalScrollIndicator}
             {...getTestProps(testID)}
             {...props}
-        />
+        >
+            {children}
+        </ScrollView>
     )
 }

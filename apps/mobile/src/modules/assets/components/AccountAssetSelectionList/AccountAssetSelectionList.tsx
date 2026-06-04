@@ -72,12 +72,11 @@ export const AccountAssetSelectionList = ({
                 />
             </PWView>
             <PWFlatList
-                contentContainerStyle={styles.listContent}
                 data={filteredBalanceData}
                 renderItem={renderItem}
                 keyExtractor={item => item.assetId}
-                keyboardDismissMode='on-drag'
                 showsVerticalScrollIndicator={false}
+                keyboardDismissMode='on-drag'
                 inBottomSheet={inBottomSheet}
                 ListEmptyComponent={
                     debouncedSearchFilter ? (

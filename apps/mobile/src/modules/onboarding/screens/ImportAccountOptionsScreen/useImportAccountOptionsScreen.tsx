@@ -70,7 +70,11 @@ export const useImportAccountOptionsScreen =
             const result = await requestBottomSheet<ImportOptionsContentResult>(
                 {
                     contents: <ImportOptionsContent />,
-                    options: { size: 'auto', enablePanDownToClose: true },
+                    options: {
+                        size: 'auto',
+                        enablePanDownToClose: true,
+                        autoCreateContainer: false,
+                    },
                 },
             )
             if (!result) return

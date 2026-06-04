@@ -20,21 +20,24 @@ export const useStyles = makeStyles(theme => {
     return {
         container: {
             flex: 1,
+            minHeight: 0,
         },
         valueBarContainer: {
             paddingVertical: theme.spacing.md,
-            paddingHorizontal: theme.spacing.md,
         },
         valueBar: {
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
+            minWidth: 0,
         },
         secondaryValueBar: {
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: theme.spacing.md,
+            minWidth: 0,
+            flexShrink: 1,
         },
         valueTitle: {
             color: theme.colors.textGray,
@@ -53,7 +56,6 @@ export const useStyles = makeStyles(theme => {
             maxWidth: '100%',
         },
         noBalanceContainer: {
-            paddingHorizontal: theme.spacing.xxl,
             paddingVertical: theme.spacing.xl,
             alignItems: 'center',
             justifyContent: 'center',

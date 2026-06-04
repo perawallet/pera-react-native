@@ -13,28 +13,6 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        flex: 1,
-        backgroundColor: theme.colors.background,
-    },
-    content: {
-        flex: 1,
-        paddingHorizontal: theme.spacing.xl,
-    },
-    iconContainer: {
-        alignItems: 'center',
-        marginTop: theme.spacing.xxl,
-        marginBottom: theme.spacing.xl,
-    },
-    title: {
-        textAlign: 'center',
-        marginBottom: theme.spacing.sm,
-    },
-    description: {
-        textAlign: 'center',
-        color: theme.colors.textGray,
-        marginBottom: theme.spacing.xxl,
-    },
     instructionsList: {
         gap: theme.spacing.lg,
     },
@@ -54,11 +32,5 @@ export const useStyles = makeStyles(theme => ({
     instructionText: {
         flex: 1,
         color: theme.colors.textMain,
-    },
-    footer: {
-        padding: theme.spacing.xl,
-        borderTopWidth: theme.borders.sm,
-        borderTopColor: theme.colors.layerGrayLighter,
-        backgroundColor: theme.colors.background,
     },
 }))

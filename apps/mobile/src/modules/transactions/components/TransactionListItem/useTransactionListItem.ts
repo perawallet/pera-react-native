@@ -21,11 +21,13 @@ import {
     microAlgosToAlgos,
     baseUnitsToDisplayUnits,
 } from '@perawallet/wallet-core-blockchain'
-import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
+import { formatNumber } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
-import type { TransactionIconType } from '@modules/transactions/components/TransactionIcon'
 import { getTransactionIconType } from './utils'
+
+import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
+import type { TransactionIconType } from '@modules/transactions/components/TransactionIcon'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type TFunction = ReturnType<typeof useLanguage>['t']
@@ -95,9 +97,11 @@ const createAssetAmount = (
     }
 }
 
-/**
- * Maps transaction type to icon type.
- */
+const formatAmount = (baseUnits: Decimal, decimals: number): string => {
+    const displayAmount = baseUnitsToDisplayUnits(baseUnits, decimals)
+    const { sign, integer, fraction } = formatNumber(displayAmount, 2)
+    return `${sign}${integer}${fraction}`
+}
 
 /**
  * Gets the display title for a transaction.
@@ -195,12 +199,8 @@ export const useTransactionListItem = ({
             const inDecimals = 6 // Default for ALGO or parsed from asset
             const outDecimals = 6
 
-            const inAmount = (
-                Number(amountIn) / Math.pow(10, inDecimals)
-            ).toFixed(2)
-            const outAmount = (
-                Number(amountOut) / Math.pow(10, outDecimals)
-            ).toFixed(2)
+            const inAmount = formatAmount(amountIn, inDecimals)
+            const outAmount = formatAmount(amountOut, outDecimals)
 
             return `${inAmount} ${assetInUnitName} for ${outAmount} ${assetOutUnitName}`
         }

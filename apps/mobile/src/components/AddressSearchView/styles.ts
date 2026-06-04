@@ -20,7 +20,6 @@ export const useStyles = makeStyles(theme => {
         searchField: {
             borderRadius: theme.spacing.sm,
             paddingHorizontal: theme.spacing.sm,
-            marginBottom: theme.spacing.xs,
         },
         searchContainer: {
             backgroundColor: theme.colors.background,
@@ -28,40 +27,19 @@ export const useStyles = makeStyles(theme => {
         list: {
             flex: 1,
         },
-        sectionHeader: {
-            marginTop: theme.spacing.lg,
-        },
-        contentContainer: {
-            flexGrow: 1,
-            paddingBottom: theme.spacing.xl,
-        },
         listSeparator: {
-            height: theme.spacing.lg,
+            height: theme.spacing.md,
         },
         accountDisplay: {
             flexDirection: 'row',
             alignItems: 'center',
             gap: theme.spacing.md,
         },
-        accountRow: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: theme.spacing.sm,
-            width: '100%',
-        },
         accountDisplayInRow: {
             flexDirection: 'row',
             alignItems: 'center',
             gap: theme.spacing.md,
             flexShrink: 1,
-        },
-        balanceContainer: {
-            gap: theme.spacing.xs,
-            alignItems: 'flex-end',
-        },
-        fiatBalance: {
-            color: theme.colors.textGray,
         },
         nfdItem: {
             flexDirection: 'row',

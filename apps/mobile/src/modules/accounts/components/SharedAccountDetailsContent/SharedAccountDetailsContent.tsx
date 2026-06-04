@@ -10,11 +10,16 @@
  limitations under the License
  */
 
-import { BottomSheetScrollView } from '@gorhom/bottom-sheet'
-import { PWText, PWToolbar, PWTouchableIcon, PWView } from '@components/core'
+import {
+    PWSheetLayout,
+    PWText,
+    PWTouchableIcon,
+    PWView,
+} from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { MultisigInfoCard } from '@components/MultisigInfoCard'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
+import { SheetHeader } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSharedAccountDetailsContent } from './useSharedAccountDetailsContent'
 import { useStyles } from './styles'
@@ -40,84 +45,81 @@ export const SharedAccountDetailsContent = ({
         useSharedAccountDetailsContent(details.addresses)
 
     return (
-        <PWView style={styles.container}>
-            <PWToolbar
-                center={
-                    <PWView style={styles.headerTitle}>
-                        {!!details.name && (
-                            <PWText variant='h4'>{details.name}</PWText>
-                        )}
-                        <PWText style={styles.headerAddress}>
-                            {truncateAlgorandAddress(details.address)}
-                        </PWText>
-                    </PWView>
-                }
-                paddingStyle='dense'
-            />
-            <BottomSheetScrollView
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}
+        <PWSheetLayout
+            header={
+                <SheetHeader
+                    title={
+                        details.name || truncateAlgorandAddress(details.address)
+                    }
+                    titleVariant='bodyLarge'
+                    subtitle={
+                        details.name
+                            ? truncateAlgorandAddress(details.address)
+                            : undefined
+                    }
+                />
+            }
+        >
+            <PWView
+                style={styles.details}
+                testID='shared_account_details_content'
             >
-                <PWView
-                    style={styles.details}
-                    testID='shared_account_details_content'
-                >
-                    <MultisigInfoCard
-                        totalParticipants={details.participantCount}
-                        threshold={details.threshold}
-                        isUserIncluded={isUserIncluded}
-                        participantCountTestID='shared_account_participant_count'
-                        thresholdTestID='shared_account_threshold'
-                    />
+                <MultisigInfoCard
+                    totalParticipants={details.participantCount}
+                    threshold={details.threshold}
+                    isUserIncluded={isUserIncluded}
+                    participantCountTestID='shared_account_participant_count'
+                    thresholdTestID='shared_account_threshold'
+                />
 
-                    <PWView style={styles.participants}>
-                        <PWText variant='h4'>
-                            {t('multisig.detail.accounts_title', {
-                                count: details.participantCount,
-                            })}
-                        </PWText>
-                        <PWView>
-                            {details.addresses.map(
-                                (participantAddress, index, arr) => {
-                                    const inWallet =
-                                        isAddressInWallet(participantAddress)
-                                    const isLast = index === arr.length - 1
-                                    return (
-                                        <AddressDisplay
-                                            key={participantAddress}
-                                            address={participantAddress}
-                                            forceShowIcon
-                                            contactAvatarVariant='highlighted'
-                                            textProps={{ variant: 'h4' }}
-                                            style={[
-                                                styles.participant,
-                                                isLast &&
-                                                    styles.participantLast,
-                                            ]}
-                                            testID={`shared_account_participant_${participantAddress}`}
-                                            trailing={
-                                                inWallet ? undefined : (
-                                                    <PWTouchableIcon
-                                                        name='edit-pen'
-                                                        size='md'
-                                                        variant='positive'
-                                                        onPress={() =>
-                                                            handleEditContact(
-                                                                participantAddress,
-                                                            )
-                                                        }
-                                                        testID={`shared_account_participant_edit_${participantAddress}`}
-                                                    />
-                                                )
-                                            }
-                                        />
-                                    )
-                                },
-                            )}
-                        </PWView>
+                <PWView style={styles.participants}>
+                    <PWText variant='h4'>
+                        {t('multisig.detail.accounts_title', {
+                            count: details.participantCount,
+                        })}
+                    </PWText>
+                    <PWView>
+                        {details.addresses.map(
+                            (participantAddress, index, arr) => {
+                                const inWallet =
+                                    isAddressInWallet(participantAddress)
+                                const isLast = index === arr.length - 1
+                                return (
+                                    <AddressDisplay
+                                        // A multisig can repeat a participant
+                                        // address, so address alone isn't unique.
+                                        key={`${participantAddress}-${index}`}
+                                        address={participantAddress}
+                                        forceShowIcon
+                                        contactAvatarVariant='highlighted'
+                                        textProps={{ variant: 'h4' }}
+                                        style={[
+                                            styles.participant,
+                                            isLast && styles.participantLast,
+                                        ]}
+                                        testID={`shared_account_participant_${participantAddress}_${index}`}
+                                        trailing={
+                                            inWallet ? undefined : (
+                                                <PWTouchableIcon
+                                                    name='edit-pen'
+                                                    size='md'
+                                                    variant='positive'
+                                                    onPress={() =>
+                                                        handleEditContact(
+                                                            participantAddress,
+                                                        )
+                                                    }
+                                                    testID={`shared_account_participant_edit_${participantAddress}_${index}`}
+                                                />
+                                            )
+                                        }
+                                    />
+                                )
+                            },
+                        )}
                     </PWView>
                 </PWView>
-            </BottomSheetScrollView>
-        </PWView>
+            </PWView>
+        </PWSheetLayout>
     )
 }

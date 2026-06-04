@@ -64,11 +64,7 @@ export const AddressSearchView = ({
         ({ item }: { item: AddressSearchItem }) => {
             switch (item.type) {
                 case 'section_header':
-                    return (
-                        <PWView style={styles.sectionHeader}>
-                            <PWText variant='h4'>{t(item.title)}</PWText>
-                        </PWView>
-                    )
+                    return <PWText variant='h4'>{t(item.title)}</PWText>
                 case 'contact':
                     return (
                         <PWTouchableOpacity
@@ -201,9 +197,7 @@ export const AddressSearchView = ({
                     ListEmptyComponent={listEmptyComponent}
                     ItemSeparatorComponent={renderSeparator}
                     inBottomSheet
-                    keyboardShouldPersistTaps='handled'
                     style={styles.list}
-                    contentContainerStyle={styles.contentContainer}
                 />
             </PWView>
         )
@@ -222,7 +216,6 @@ export const AddressSearchView = ({
                 ListEmptyComponent={listEmptyComponent}
                 ItemSeparatorComponent={renderSeparator}
                 style={styles.list}
-                contentContainerStyle={styles.contentContainer}
             />
         </PWView>
     )

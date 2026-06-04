@@ -11,7 +11,7 @@
  */
 
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
-import type { Network } from '@perawallet/wallet-core-shared'
+import { toError, type Network } from '@perawallet/wallet-core-shared'
 import type {
     DataTransport,
     SigningResult,
@@ -65,8 +65,7 @@ export const createWalletConnectTransport = (
                     requestId: source.requestId,
                 }
             } catch (error) {
-                const err =
-                    error instanceof Error ? error : new Error(String(error))
+                const err = toError(error)
 
                 // Try to call error callback if available
                 if (source.callbacks?.error) {

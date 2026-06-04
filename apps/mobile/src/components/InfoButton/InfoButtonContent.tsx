@@ -11,10 +11,7 @@
  */
 
 import { ReactNode } from 'react'
-import { PWButton, PWText, PWView } from '@components/core'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
-import { useLanguage } from '@hooks/useLanguage'
-import { useContentStyles } from './styles'
+import { ConfirmActionContent } from '@components/ConfirmActionContent'
 
 export type InfoButtonContentProps = {
     title?: string
@@ -24,28 +21,9 @@ export type InfoButtonContentProps = {
 export const InfoButtonContent = ({
     title,
     children,
-}: InfoButtonContentProps) => {
-    const styles = useContentStyles()
-    const { t } = useLanguage()
-    const { dismiss } = useBottomSheetResult<void>()
-
-    return (
-        <PWView style={styles.container}>
-            {!!title && (
-                <PWText
-                    variant='h3'
-                    style={styles.title}
-                >
-                    {title}
-                </PWText>
-            )}
-            <PWView style={styles.contentContainer}>{children}</PWView>
-            <PWButton
-                variant='secondary'
-                title={t('common.close.label')}
-                onPress={dismiss}
-                testID='info-button-confirm'
-            />
-        </PWView>
-    )
-}
+}: InfoButtonContentProps) => (
+    <ConfirmActionContent
+        title={title}
+        message={children}
+    />
+)

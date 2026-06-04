@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWButton, PWText, PWView } from '@components/core'
+import { PWButton, PWSheetLayout, PWText, PWView } from '@components/core'
 import { Trans } from 'react-i18next'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@modules/webview'
@@ -18,7 +18,6 @@ import { config } from '@perawallet/wallet-core-config'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useStakingDisclaimerSheet } from './useStakingDisclaimerContent'
 import { useStyles } from './styles'
-import { BottomSheetScrollView } from '@gorhom/bottom-sheet'
 
 const DISCLAIMER_BULLET_KEYS = [
     'staking.disclaimer.bullet_liability',
@@ -48,21 +47,17 @@ export const StakingDisclaimerContent = () => {
     }
 
     return (
-        <PWView
-            style={styles.container}
-            testID='staking-disclaimer-sheet'
+        <PWSheetLayout
+            onScroll={handleScroll}
+            testID='staking-disclaimer-content'
+            header={
+                <SheetHeader
+                    title={t('staking.disclaimer.title')}
+                    testID='staking-disclaimer'
+                />
+            }
         >
-            <SheetHeader
-                title={t('staking.disclaimer.title')}
-                testID='staking-disclaimer'
-            />
-
-            <BottomSheetScrollView
-                onScroll={handleScroll}
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.scrollViewContent}
-                testID='staking-disclaimer-content'
-            >
+            <PWView style={styles.scrollViewContent}>
                 <PWText
                     variant='bodyCompact'
                     style={styles.emphasizedText}
@@ -127,7 +122,7 @@ export const StakingDisclaimerContent = () => {
                     style={styles.acceptButton}
                     testID='staking-disclaimer-accept-button'
                 />
-            </BottomSheetScrollView>
-        </PWView>
+            </PWView>
+        </PWSheetLayout>
     )
 }

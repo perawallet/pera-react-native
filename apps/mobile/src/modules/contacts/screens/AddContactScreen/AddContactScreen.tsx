@@ -10,28 +10,16 @@
  limitations under the License
  */
 
-import { KeyboardAvoidingView, Platform } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useTheme } from '@rneui/themed'
-
-import { PWButton, PWView } from '@components/core'
+import { PWButton, PWScreen } from '@components/core'
 import { ContactForm } from '@components/ContactForm'
 import { PhotoPermissionDeniedSheet } from '@components/PhotoPermissionDeniedSheet'
-import { useKeyboardHeight } from '@hooks/useKeyboardHeight'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAddContactForm } from '@modules/contacts/hooks'
 import { useStyles } from './styles'
 
 export const AddContactScreen = () => {
     const { t } = useLanguage()
-    const { theme } = useTheme()
-    const { keyboardHeight } = useKeyboardHeight()
-    const insets = useSafeAreaInsets()
-    const footerPaddingBottom =
-        keyboardHeight > 0
-            ? theme.spacing.xxl
-            : Math.max(insets.bottom, theme.spacing.md)
-    const styles = useStyles({ footerPaddingBottom })
+    const styles = useStyles()
 
     const {
         control,
@@ -48,9 +36,16 @@ export const AddContactScreen = () => {
     } = useAddContactForm()
 
     return (
-        <KeyboardAvoidingView
-            style={styles.flex}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        <PWScreen
+            footer={
+                <PWButton
+                    onPress={handleSubmit(save)}
+                    title={t('contacts.edit_contact.add_contact')}
+                    variant='primary'
+                    isDisabled={!isValid}
+                    style={styles.footerButton}
+                />
+            }
         >
             <ContactForm
                 control={control}
@@ -66,20 +61,11 @@ export const AddContactScreen = () => {
                 imageUri={imageUri}
                 onPickImage={onPickImage}
             />
-            <PWView style={styles.footer}>
-                <PWButton
-                    onPress={handleSubmit(save)}
-                    title={t('contacts.edit_contact.add_contact')}
-                    variant='primary'
-                    isDisabled={!isValid}
-                    style={styles.footerButton}
-                />
-            </PWView>
             <PhotoPermissionDeniedSheet
                 isVisible={permissionDenied.isVisible}
                 onClose={permissionDenied.close}
                 onOpenSettings={permissionDenied.openSettings}
             />
-        </KeyboardAvoidingView>
+        </PWScreen>
     )
 }

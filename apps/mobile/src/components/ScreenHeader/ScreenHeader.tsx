@@ -10,7 +10,13 @@
  limitations under the License
  */
 
-import { PWText, PWView } from '@components/core'
+import {
+    PWIcon,
+    PWText,
+    PWView,
+    type IconName,
+    type PWIconVariant,
+} from '@components/core'
 import { useStyles } from './styles'
 
 import type { ReactNode } from 'react'
@@ -20,9 +26,11 @@ import type { StyleProp, ViewStyle } from 'react-native'
  * Large multi-line screen heading rendered below the navigation back arrow.
  * Use on top-level screens where the title doesn't fit a single-line toolbar
  * (e.g. "Select Ledger account"). The h1 wraps freely — no `numberOfLines`
- * — and the optional description appears as a muted bodyLarge below.
+ * — and the optional description appears as a muted h4 below.
  */
 export type ScreenHeaderProps = {
+    icon?: IconName
+    iconVariant?: PWIconVariant
     title: string
     description?: ReactNode
     style?: StyleProp<ViewStyle>
@@ -30,22 +38,37 @@ export type ScreenHeaderProps = {
 }
 
 export const ScreenHeader = ({
+    icon,
+    iconVariant,
     title,
     description,
     style,
     testID,
 }: ScreenHeaderProps) => {
-    const styles = useStyles()
+    const styles = useStyles({ hasIcon: !!icon })
 
     return (
         <PWView
             style={[styles.container, style]}
             testID={testID}
         >
-            <PWText variant='h1'>{title}</PWText>
-            {!!description && (
+            {!!icon && (
+                <PWIcon
+                    name={icon}
+                    size='3xl'
+                    variant={iconVariant}
+                    testID='screen-header-icon'
+                />
+            )}
+            <PWText
+                variant='h1'
+                style={styles.title}
+            >
+                {title}
+            </PWText>
+            {description != null && (
                 <PWText
-                    variant='bodyLarge'
+                    variant='h4'
                     style={styles.description}
                 >
                     {description}

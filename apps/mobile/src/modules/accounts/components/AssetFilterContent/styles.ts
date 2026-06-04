@@ -13,19 +13,11 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    toolbar: {
-        paddingHorizontal: theme.spacing.xl,
-    },
-    contentContainer: {
-        paddingHorizontal: theme.spacing.lg,
-        paddingBottom: theme.spacing.xl,
-    },
     filterRow: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingVertical: theme.spacing.md,
-        paddingHorizontal: theme.spacing.md,
+        paddingBottom: theme.spacing.xl,
     },
     filterRowDisabled: {
         opacity: 0.5,
@@ -35,7 +27,6 @@ export const useStyles = makeStyles(theme => ({
         marginRight: theme.spacing.md,
     },
     filterDescription: {
-        marginTop: theme.spacing.xs,
         color: theme.colors.textGray,
     },
 }))

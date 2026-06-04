@@ -12,10 +12,9 @@
 
 import { Trans } from 'react-i18next'
 import type { InboxItem as InboxItemModel } from '@perawallet/wallet-core-messages'
-import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
+import { PWIcon, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { UnreadIndicator } from '../../UnreadIndicator'
-import { isPendingAction } from '../isPendingAction'
+import { InboxItemShell } from '../InboxItemShell'
 import { useStyles } from './styles'
 import { useMultisigSignInboxItem } from './useMultisigSignInboxItem'
 
@@ -52,87 +51,87 @@ export const MultisigSignInboxItem = ({
           : styles.statusTextWaiting
 
     return (
-        <PWTouchableOpacity
-            style={styles.container}
+        <InboxItemShell
+            item={item}
+            align='top'
             onPress={onPress}
-            disabled={!onPress}
             testID='multisig_sign_inbox_item'
-        >
-            <PWView style={styles.indicatorSlot}>
-                <UnreadIndicator isUnread={isPendingAction(item)} />
-            </PWView>
-            <PWIcon
-                name={avatarIcon}
-                size='lg'
-            />
-            <PWView style={styles.content}>
-                <PWText style={styles.title}>
-                    <Trans
-                        i18nKey='messages.inbox.multisig_sign.title'
-                        values={{ address: truncatedAddress }}
-                        components={[
-                            <PWText
-                                key='bold'
-                                variant='bodySemibold'
-                            />,
-                        ]}
-                    />
-                </PWText>
-                <PWView style={styles.statusRow}>
-                    <PWText
-                        variant='caption'
-                        style={statusStyle}
-                        testID='multisig_sign_inbox_item_status'
-                    >
-                        {t(statusKey)}
-                    </PWText>
-                    <PWText
-                        variant='caption'
-                        style={styles.timestamp}
-                    >
-                        {`· ${relativeTime}`}
-                    </PWText>
-                </PWView>
-                {isWaiting && (
-                    <PWView style={styles.badgeRow}>
-                        <PWView
-                            style={styles.badge}
-                            testID='multisig_sign_inbox_item_signed_badge'
+            icon={
+                <PWIcon
+                    name={avatarIcon}
+                    size='lg'
+                />
+            }
+            title={
+                <Trans
+                    i18nKey='messages.inbox.multisig_sign.title'
+                    values={{ address: truncatedAddress }}
+                    components={[
+                        <PWText
+                            key='bold'
+                            variant='bodySemibold'
+                        />,
+                    ]}
+                />
+            }
+            body={
+                <>
+                    <PWView style={styles.statusRow}>
+                        <PWText
+                            variant='caption'
+                            style={statusStyle}
+                            testID='multisig_sign_inbox_item_status'
                         >
-                            <PWIcon
-                                name='check'
-                                size='sm'
-                                variant='secondary'
-                            />
-                            <PWText
-                                variant='caption'
-                                style={styles.badgeText}
-                            >
-                                {t('multisig.pending_signatures.x_of_y', {
-                                    signed: signedCount,
-                                    total: threshold,
-                                })}
-                            </PWText>
-                        </PWView>
-                        {!!timeRemaining && (
+                            {t(statusKey)}
+                        </PWText>
+                        <PWText
+                            variant='caption'
+                            style={styles.timestamp}
+                        >
+                            {`· ${relativeTime}`}
+                        </PWText>
+                    </PWView>
+                    {isWaiting && (
+                        <PWView style={styles.badgeRow}>
                             <PWView
                                 style={styles.badge}
-                                testID='multisig_sign_inbox_item_time_badge'
+                                testID='multisig_sign_inbox_item_signed_badge'
                             >
+                                <PWIcon
+                                    name='check'
+                                    size='sm'
+                                    variant='secondary'
+                                />
                                 <PWText
                                     variant='caption'
                                     style={styles.badgeText}
                                 >
-                                    {t(
-                                        'multisig.pending_signatures.time_left',
-                                        { time: timeRemaining },
-                                    )}
+                                    {t('multisig.pending_signatures.x_of_y', {
+                                        signed: signedCount,
+                                        total: threshold,
+                                    })}
                                 </PWText>
                             </PWView>
-                        )}
-                    </PWView>
-                )}
-            </PWView>
-        </PWTouchableOpacity>
+                            {!!timeRemaining && (
+                                <PWView
+                                    style={styles.badge}
+                                    testID='multisig_sign_inbox_item_time_badge'
+                                >
+                                    <PWText
+                                        variant='caption'
+                                        style={styles.badgeText}
+                                    >
+                                        {t(
+                                            'multisig.pending_signatures.time_left',
+                                            { time: timeRemaining },
+                                        )}
+                                    </PWText>
+                                </PWView>
+                            )}
+                        </PWView>
+                    )}
+                </>
+            }
+        />
     )
 }

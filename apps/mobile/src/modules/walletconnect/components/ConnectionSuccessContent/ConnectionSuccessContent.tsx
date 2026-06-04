@@ -10,11 +10,9 @@
  limitations under the License
  */
 
-import { PWButton, PWIcon, PWText, PWView } from '@components/core'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useLanguage } from '@hooks/useLanguage'
 import { WalletConnectSessionRequest } from '@perawallet/wallet-core-walletconnect'
-import { useStyles } from './styles'
 
 export type ConnectionSuccessContentProps = {
     request: WalletConnectSessionRequest
@@ -24,36 +22,20 @@ export const ConnectionSuccessContent = ({
     request,
 }: ConnectionSuccessContentProps) => {
     const { t } = useLanguage()
-    const styles = useStyles()
-    const { dismiss } = useBottomSheetResult<void>()
     const dAppName = request.peerMeta.name ?? ''
 
     return (
-        <PWView style={styles.container}>
-            <PWIcon
-                name='check'
-                variant='primary'
-                size='xl'
-                style={styles.icon}
-            />
-            <PWText
-                variant='h3'
-                style={styles.message}
-            >
-                {t('walletconnect.request.success_sheet_title', {
-                    name: dAppName,
-                })}
-            </PWText>
-            <PWText style={styles.message}>
-                {t('walletconnect.request.success_sheet_body', {
-                    name: dAppName,
-                })}
-            </PWText>
-            <PWButton
-                variant='secondary'
-                title={t('common.close.label')}
-                onPress={dismiss}
-            />
-        </PWView>
+        <ConfirmActionContent
+            icon='check'
+            iconVariant='primary'
+            title={t('walletconnect.request.success_sheet_title', {
+                name: dAppName,
+            })}
+            message={t('walletconnect.request.success_sheet_body', {
+                name: dAppName,
+            })}
+            confirmLabel={t('common.close.label')}
+            confirmVariant='secondary'
+        />
     )
 }

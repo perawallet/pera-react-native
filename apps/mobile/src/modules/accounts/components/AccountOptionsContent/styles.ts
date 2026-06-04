@@ -13,10 +13,6 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        paddingTop: theme.spacing.md,
-        paddingBottom: theme.spacing.lg,
-    },
     accountInfoContainer: {
         paddingHorizontal: theme.spacing.xl,
         marginBottom: theme.spacing.lg,
@@ -31,8 +27,11 @@ export const useStyles = makeStyles(theme => ({
         minHeight: theme.spacing['3xl'] + theme.spacing.lg,
         paddingHorizontal: theme.spacing.xl,
         gap: theme.spacing.lg,
+        minWidth: 0,
     },
     optionTextContainer: {
+        flex: 1,
+        minWidth: 0,
         flexDirection: 'column',
     },
     optionSubtitle: {

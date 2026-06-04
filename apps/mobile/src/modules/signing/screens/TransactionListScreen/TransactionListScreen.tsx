@@ -11,17 +11,15 @@
  */
 
 import { useCallback } from 'react'
-import { PWFlatList, PWView } from '@components/core'
+import { PWFlatList, PWScreen } from '@components/core'
 import type { TransactionListItem } from '@perawallet/wallet-core-signing'
 import { TransactionListHeader } from './TransactionListHeader'
 import { TransactionListFooter } from './TransactionListFooter'
 import { GroupPreviewItem } from './GroupPreviewItem'
-import { useStyles } from './styles'
 import { useTransactionListScreen } from './useTransactionListScreen'
 import { TransactionPreview } from '@modules/transactions/components/transaction-details'
 
 export const TransactionListScreen = () => {
-    const styles = useStyles()
     const {
         listItems,
         transactionCount,
@@ -53,14 +51,13 @@ export const TransactionListScreen = () => {
         [handleTransactionPress, handleGroupPress],
     )
 
-    const ItemSeparator = useCallback(
-        () => <PWView style={styles.itemSeparator} />,
-        [styles.itemSeparator],
-    )
-
     return (
-        <PWView style={styles.container}>
+        <PWScreen
+            scroll='never'
+            footer={<TransactionListFooter />}
+        >
             <PWFlatList
+                cardLayout
                 data={listItems}
                 renderItem={renderItem}
                 keyExtractor={keyExtractor}
@@ -70,12 +67,9 @@ export const TransactionListScreen = () => {
                         sourceMetadata={sourceMetadata}
                     />
                 }
-                ItemSeparatorComponent={ItemSeparator}
-                contentContainerStyle={styles.contentContainer}
                 showsVerticalScrollIndicator={false}
                 inBottomSheet
             />
-            <TransactionListFooter />
-        </PWView>
+        </PWScreen>
     )
 }

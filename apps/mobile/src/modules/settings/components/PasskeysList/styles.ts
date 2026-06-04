@@ -12,16 +12,23 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
-    container: {
-        flex: 1,
-        backgroundColor: theme.colors.background,
-    },
-    contentContainer: {
-        padding: theme.spacing.xl,
-        paddingBottom: theme.spacing.xxl,
-    },
-    separator: {
-        height: theme.spacing.md,
-    },
-}))
+type StyleProps = { bottomInset?: number }
+
+export const useStyles = makeStyles(
+    (theme, { bottomInset = 0 }: StyleProps = {}) => ({
+        container: {
+            flex: 1,
+            backgroundColor: theme.colors.background,
+        },
+        // Own the bottom safe-area inset so rows scroll *under* the home
+        // indicator instead of stopping above it (the screen drops its bottom
+        // SafeAreaView edge while the list is shown).
+        contentContainer: {
+            padding: theme.spacing.xl,
+            paddingBottom: theme.spacing.xxl + bottomInset,
+        },
+        separator: {
+            height: theme.spacing.md,
+        },
+    }),
+)

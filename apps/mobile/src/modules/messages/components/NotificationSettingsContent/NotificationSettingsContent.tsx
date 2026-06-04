@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { PWHeader, PWView } from '@components/core'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { PWView } from '@components/core'
+import { SheetHeader } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { NotificationSettingsList } from '@modules/settings/components/NotificationSettingsList'
 import { useStyles } from './styles'
@@ -21,18 +21,14 @@ export type NotificationSettingsContentProps = Record<string, never>
 export const NotificationSettingsContent = () => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const { dismiss } = useBottomSheetResult<void>()
 
     return (
         <PWView style={styles.container}>
-            <PWHeader
-                title={t('settings.main.notifications_title')}
-                leftIcon='cross'
-                onLeftPress={dismiss}
-            />
+            <SheetHeader title={t('settings.main.notifications_title')} />
 
             <NotificationSettingsList
-                scrollEnabled={false}
+                inBottomSheet
+                style={styles.list}
                 contentContainerStyle={styles.scrollContent}
             />
         </PWView>

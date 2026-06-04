@@ -96,8 +96,6 @@ export const useAccountAssetList = ({
     const displayOptedInNfts = useAssetPreferencesStore(
         state => state.displayOptedInNfts,
     )
-    // Opted-in NFT visibility is a subset of NFT visibility — if NFTs are
-    // hidden entirely, the opted-in toggle has no effect.
     const effectiveDisplayOptedInNfts = displayNfts && displayOptedInNfts
     const balanceFilters = useMemo(
         () => ({
@@ -179,7 +177,11 @@ export const useAccountAssetList = ({
                         accountAddress={account.address}
                     />
                 ),
-                options: { size: 'auto', enablePanDownToClose: true },
+                options: {
+                    size: 'auto',
+                    enablePanDownToClose: true,
+                    autoCreateContainer: false,
+                },
             })
             if (result !== 'confirm') return
 
@@ -197,7 +199,6 @@ export const useAccountAssetList = ({
                 })
             } catch (err) {
                 if (err instanceof UserRejectedSigningError) {
-                    // User dismissed the LedgerSigningContent sheet — sheet already went away; no toast.
                     return
                 }
                 showError(err, t('asset_opt_out.error'))
@@ -218,7 +219,7 @@ export const useAccountAssetList = ({
         void requestBottomSheet<void>({
             contents: <AddAssetContent />,
             options: {
-                size: 'lg',
+                size: 'modal',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },
@@ -228,18 +229,30 @@ export const useAccountAssetList = ({
     const handleOpenManage = useCallback(async () => {
         const action = await requestBottomSheet<ManageAssetsAction>({
             contents: <ManageAssetsContent isReadOnly={isReadOnly} />,
-            options: { size: 'auto', enablePanDownToClose: true },
+            options: {
+                size: 'auto',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
         })
         if (!action) return
         if (action === 'sort') {
             void requestBottomSheet<void>({
                 contents: <AssetSortContent />,
-                options: { size: 'auto', enablePanDownToClose: true },
+                options: {
+                    size: 'auto',
+                    enablePanDownToClose: true,
+                    autoCreateContainer: false,
+                },
             })
         } else if (action === 'filter') {
             void requestBottomSheet<void>({
                 contents: <AssetFilterContent />,
-                options: { size: 'auto', enablePanDownToClose: true },
+                options: {
+                    size: 'auto',
+                    enablePanDownToClose: true,
+                    autoCreateContainer: false,
+                },
             })
         } else if (action === 'remove') {
             navigation.navigate('RemoveAssets')

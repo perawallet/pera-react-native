@@ -11,23 +11,17 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { EdgeInsets } from 'react-native-safe-area-context'
 
 const HEADER_IMAGE_WIDTH = 137
 const HEADER_IMAGE_HEIGHT = 217
 
-export const useStyles = makeStyles(theme => {
-    const headerTitle = {
-        fontWeight: '600' as const,
-        paddingLeft: theme.spacing.xl,
-        alignSelf: 'flex-end' as const,
-    }
+export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
     return {
-        rootContainer: {
-            flex: 1,
-            flexDirection: 'column',
+        screen: {
+            paddingTop: insets.top,
         },
         imageContainer: {
-            display: 'flex',
             flexDirection: 'row',
             alignItems: 'flex-end',
             justifyContent: 'flex-end',
@@ -35,22 +29,19 @@ export const useStyles = makeStyles(theme => {
             top: 0,
             right: 0,
         },
-        headerContainer: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            paddingVertical: theme.spacing.xl,
+        header: {
+            paddingHorizontal: theme.spacing.xl,
         },
-        headerTitle,
         headerImage: {
             width: HEADER_IMAGE_WIDTH,
             height: HEADER_IMAGE_HEIGHT,
             resizeMode: 'contain',
         },
         scrollContent: {
-            paddingBottom: theme.spacing['3xl'],
+            flex: 1,
         },
         mainContainer: {
-            paddingHorizontal: theme.spacing.lg,
+            paddingHorizontal: theme.spacing.xl,
             flexDirection: 'column',
             gap: theme.spacing.md,
         },
@@ -72,7 +63,8 @@ export const useStyles = makeStyles(theme => {
             flex: 1,
             justifyContent: 'flex-end',
             alignItems: 'center',
-            padding: theme.spacing['3xl'],
+            paddingTop: theme.spacing['3xl'],
+            paddingHorizontal: theme.spacing['3xl'],
         },
         termsAndPrivacyText: {
             textAlign: 'center',
