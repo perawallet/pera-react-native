@@ -14,27 +14,23 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { VerificationState } from './user'
 
 /**
- * Non-sensitive session flags. The access/refresh tokens are NOT here — they
- * live in the encrypted KMS keystore. This shape is safe to persist.
+ * Non-sensitive session flag. The access/refresh tokens are NOT here — they
+ * live only in the encrypted KMS keystore. This shape is safe to persist.
  */
 export type CardSession = {
     isAuthenticated: boolean
-    /** Epoch ms when the access token expires, if known. */
-    expiresAt: Nullable<number>
 }
 
 /**
  * Transit-only token bundle. The full access+refresh pair comes from the OAuth
- * token endpoint (`POST /v1/auth/oauth/token`); direct login yields only a
- * 6-hour access token (no refresh). Written straight to the KMS keystore +
- * in-memory cache; never persisted to a Zustand store.
+ * token endpoint (`POST /v1/auth/oauth/token`); direct login yields only an
+ * access token (no refresh). Written straight to the KMS keystore; never held
+ * in app memory or persisted to a Zustand store.
  */
 export type CardSessionTokens = {
     accessToken: string
     /** Empty string for direct-login sessions (no refresh token issued). */
     refreshToken: string
-    /** Epoch ms. */
-    expiresAt: number
 }
 
 export const OnboardingPhase = {

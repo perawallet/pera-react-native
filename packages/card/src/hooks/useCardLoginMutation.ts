@@ -17,9 +17,6 @@ import { setCardSession } from '../session'
 import type { LoginResult } from '../models'
 import { toCardMutationResult, type CardMutationResult } from './types'
 
-// Direct login returns a 6-hour access token with no refresh token.
-const ACCESS_TOKEN_LIFETIME_MS = 21_600 * 1000
-
 export type CardLoginParams = {
     email: string
     password: string
@@ -40,12 +37,12 @@ export const useCardLoginMutation = (): UseCardLoginMutationResult => {
         onSuccess: async result => {
             // A null access token means OTP is still required; the caller
             // prompts for the code and logs in again. Direct login has no
-            // refresh token, so the session lasts ~6h before re-login.
+            // refresh token (only the OAuth flow issues one), so a 401 later
+            // can't be refreshed and the user is routed back to login.
             if (result.accessToken) {
                 await setCardSession({
                     accessToken: result.accessToken,
                     refreshToken: '',
-                    expiresAt: Date.now() + ACCESS_TOKEN_LIFETIME_MS,
                 })
             }
         },

@@ -62,6 +62,5 @@ describe('auth transformers', () => {
 
         expect(tokens.accessToken).toBe('x')
         expect(tokens.refreshToken).toBe('y')
-        expect(tokens.expiresAt).toBeGreaterThan(Date.now())
     })
 })

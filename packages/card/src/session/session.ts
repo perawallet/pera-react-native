@@ -14,67 +14,73 @@ import {
     commitSecret,
     removeSecret,
     withSecret,
+    zeroBytes,
 } from '@perawallet/wallet-core-kms'
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
-import { logger, type Nullable } from '@perawallet/wallet-core-shared'
+import { logger } from '@perawallet/wallet-core-shared'
 import { setRefreshHandler } from '../api/transport'
 import { refreshTokenRequest } from '../api/auth'
 import { useCardSessionStore } from '../store/session-store'
 import type { CardSessionTokens } from '../models'
-import { clearTokenCache, setCachedAccessToken } from './token-cache'
-
-const ACCESS_TOKEN_ID = 'baanx-access-token'
-const REFRESH_TOKEN_ID = 'baanx-refresh-token'
+import { ACCESS_TOKEN_SECRET_ID, REFRESH_TOKEN_SECRET_ID } from './secret-ids'
 
 const textEncoder = new TextEncoder()
 const textDecoder = new TextDecoder()
 
-const readSecretString = (id: string): Promise<Nullable<string>> =>
-    withSecret(id, bytes => textDecoder.decode(bytes))
+// Encodes a token, commits it to the keystore, then zeroes the byte buffer we
+// created. (The source JS string can't be zeroed — strings are immutable — but
+// it's never cached and is GC'd; the durable copy in the keystore is encrypted.)
+const commitTokenSecret = async (id: string, token: string): Promise<void> => {
+    const bytes = textEncoder.encode(token)
+    try {
+        await commitSecret({ id, bytes })
+    } finally {
+        zeroBytes(bytes)
+    }
+}
 
-/** Persists tokens to the keystore + memory cache and flips the session on. */
+/**
+ * Persists tokens to the encrypted keystore and flips the auth flag. The tokens
+ * are never cached in app memory — they are read back from the keystore on
+ * demand (see baanx-client). Direct-login sessions pass an empty refreshToken.
+ */
 export const setCardSession = async (
     tokens: CardSessionTokens,
 ): Promise<void> => {
-    await commitSecret({
-        id: ACCESS_TOKEN_ID,
-        bytes: textEncoder.encode(tokens.accessToken),
-    })
+    await commitTokenSecret(ACCESS_TOKEN_SECRET_ID, tokens.accessToken)
     if (tokens.refreshToken) {
-        await commitSecret({
-            id: REFRESH_TOKEN_ID,
-            bytes: textEncoder.encode(tokens.refreshToken),
-        })
+        await commitTokenSecret(REFRESH_TOKEN_SECRET_ID, tokens.refreshToken)
     }
-    setCachedAccessToken(tokens.accessToken, tokens.expiresAt)
-    useCardSessionStore.getState().setSession({
-        isAuthenticated: true,
-        expiresAt: tokens.expiresAt,
-    })
+    useCardSessionStore.getState().setAuthenticated(true)
 }
 
-/** Clears tokens from the keystore + cache and resets the session flags. */
+/** Removes the tokens from the keystore and resets the auth flag. */
 export const clearCardSession = async (): Promise<void> => {
-    await removeSecret(ACCESS_TOKEN_ID)
-    await removeSecret(REFRESH_TOKEN_ID)
-    clearTokenCache()
+    await removeSecret(ACCESS_TOKEN_SECRET_ID)
+    await removeSecret(REFRESH_TOKEN_SECRET_ID)
     useCardSessionStore.getState().resetState()
 }
 
 /**
- * Refresh handler invoked by the transport on a 401. Returns whether a usable
- * access token is now in place. On any failure the session is cleared so the
- * UI routes the user back to login.
+ * Refresh handler invoked by the transport on a 401. Reads the refresh token
+ * from the keystore and exchanges it (decoded only inside the `withSecret`
+ * handler). Returns whether a usable session is now in place; on any failure
+ * (including no refresh token — e.g. a direct-login session) it clears the
+ * session so the UI routes the user back to login.
  */
 export const refreshSession = async (): Promise<boolean> => {
     try {
-        const refreshToken = await readSecretString(REFRESH_TOKEN_ID)
-        if (!refreshToken) {
+        const { network } = useNetworkStore.getState()
+        const tokens = await withSecret(REFRESH_TOKEN_SECRET_ID, bytes =>
+            refreshTokenRequest({
+                refreshToken: textDecoder.decode(bytes),
+                network,
+            }),
+        )
+        if (!tokens) {
             await clearCardSession()
             return false
         }
-        const { network } = useNetworkStore.getState()
-        const tokens = await refreshTokenRequest({ refreshToken, network })
         await setCardSession(tokens)
         return true
     } catch (error) {
@@ -84,16 +90,7 @@ export const refreshSession = async (): Promise<boolean> => {
     }
 }
 
-/**
- * Bootstraps the session at app start: registers the refresh handler with the
- * transport and hydrates the in-memory access token from the keystore. Call
- * once after the keystore is hydrated (see App.tsx).
- */
-export const initCardSession = async (): Promise<void> => {
-    setRefreshHandler(refreshSession)
-    const accessToken = await readSecretString(ACCESS_TOKEN_ID)
-    if (accessToken) {
-        const { expiresAt } = useCardSessionStore.getState()
-        setCachedAccessToken(accessToken, expiresAt ?? 0)
-    }
-}
+// Register the refresh handler with the transport on module load (avoids a
+// transport → session import cycle, and removes the need for an app-startup
+// bootstrap that reads the keystore).
+setRefreshHandler(refreshSession)

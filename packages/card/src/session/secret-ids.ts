@@ -10,6 +10,7 @@
  limitations under the License
  */
 
-// Importing this barrel also registers the transport refresh handler (a
-// module-load side effect in ./session).
-export { setCardSession, clearCardSession, refreshSession } from './session'
+// KMS keystore ids for the Baanx tokens. The tokens live ONLY in the encrypted
+// keystore; they are read on demand via `withSecret` at the point of use.
+export const ACCESS_TOKEN_SECRET_ID = 'baanx-access-token'
+export const REFRESH_TOKEN_SECRET_ID = 'baanx-refresh-token'

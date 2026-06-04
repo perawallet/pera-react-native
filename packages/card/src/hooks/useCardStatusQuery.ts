@@ -13,34 +13,16 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { config } from '@perawallet/wallet-core-config'
-import type { Nullable } from '@perawallet/wallet-core-shared'
 import { fetchCardStatus } from '../api/card'
-import type { Card } from '../models'
 import { cardQueryKeys } from './querykeys'
 
-export type UseCardStatusQueryResult = {
-    /** `null` when no card has been ordered. */
-    card: Nullable<Card>
-    isLoading: boolean
-    isError: boolean
-    refetch: () => void
-}
-
-export const useCardStatusQuery = (): UseCardStatusQueryResult => {
+/** `data` is `null` when no card has been ordered. */
+export const useCardStatusQuery = () => {
     const { network } = useNetwork()
 
-    const query = useQuery({
+    return useQuery({
         queryKey: cardQueryKeys.status(network),
         queryFn: ({ signal }) => fetchCardStatus({ network, signal }),
         staleTime: config.reactQueryShortLivedStaleTime,
     })
-
-    return {
-        card: query.data ?? null,
-        isLoading: query.isLoading,
-        isError: query.isError,
-        refetch: () => {
-            void query.refetch()
-        },
-    }
 }

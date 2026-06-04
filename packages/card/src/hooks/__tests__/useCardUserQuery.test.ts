@@ -53,8 +53,8 @@ describe('useCardUserQuery', () => {
         const { result } = renderHook(() => useCardUserQuery(), { wrapper })
 
         await waitFor(() => expect(result.current.isLoading).toBe(false))
-        expect(result.current.user?.id).toBe('u1')
-        expect(result.current.verificationState).toBe(
+        expect(result.current.data?.id).toBe('u1')
+        expect(result.current.data?.verificationState).toBe(
             VerificationState.Verified,
         )
     })

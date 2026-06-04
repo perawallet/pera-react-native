@@ -16,25 +16,28 @@ import ky, {
     type SearchParamsOption,
 } from 'ky'
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
+import { hasSecret, withSecret } from '@perawallet/wallet-core-kms'
 import type { Network } from '@perawallet/wallet-core-shared'
-import { getAccessToken } from '../../session/token-cache'
-import type { CardTransportRequest, CardTransportResponse } from './types'
+import { ACCESS_TOKEN_SECRET_ID } from '../../session/secret-ids'
+import type {
+    CardResponseType,
+    CardTransportRequest,
+    CardTransportResponse,
+} from './types'
 
 // One ky instance per Algorand network (mainnet → Baanx prod, testnet →
-// Baanx sandbox). The base URL is fixed per instance; the Bearer is read
-// fresh on every request so token refreshes apply without rebuilding clients.
+// Baanx sandbox). Only the static `x-client-key` is attached at the client
+// level; the per-user Bearer is read from the keystore per request below.
 const clients = new Map<Network, KyInstance>()
 
-const attachHeaders =
+const textDecoder = new TextDecoder()
+
+const attachClientHeaders =
     (clientKey: string) =>
     ({ request }: BeforeRequestState) => {
         request.headers.set('Content-Type', 'application/json')
         if (clientKey) {
             request.headers.set('x-client-key', clientKey)
-        }
-        const token = getAccessToken()
-        if (token) {
-            request.headers.set('Authorization', `Bearer ${token}`)
         }
     }
 
@@ -45,34 +48,22 @@ const getClient = (network: Network): KyInstance => {
     const { baanxBaseUrl, baanxClientKey } = getNetworkConfig(network)
     const client = ky.create({
         prefix: baanxBaseUrl,
-        hooks: { beforeRequest: [attachHeaders(baanxClientKey)] },
+        hooks: { beforeRequest: [attachClientHeaders(baanxClientKey)] },
     })
     clients.set(network, client)
     return client
 }
 
-// ky's prefixUrl join rejects a leading slash on the path.
+// ky's prefix join rejects a leading slash on the path.
 const toKyPath = (path: string): string =>
     path.startsWith('/') ? path.slice(1) : path
 
-/**
- * Performs a direct call to Baanx. Non-2xx responses reject with ky's
- * `HTTPError` (the transport's 401-refresh wrapper relies on this). Reads the
- * body per `responseType`, tolerating empty bodies on JSON (204/empty 200).
- */
-export const baanxDirectRequest = async <TData, TVars = unknown>(
-    req: CardTransportRequest<TVars>,
+const parseResponse = async <TData>(
+    response: Response,
+    responseType?: CardResponseType,
 ): Promise<CardTransportResponse<TData>> => {
-    const response = await getClient(req.network)(toKyPath(req.path), {
-        method: req.method,
-        searchParams: req.params as SearchParamsOption,
-        ...(req.data !== undefined ? { json: req.data } : {}),
-        signal: req.signal,
-        headers: req.headers,
-    })
-
     let data: TData
-    switch (req.responseType ?? 'json') {
+    switch (responseType ?? 'json') {
         case 'text':
             data = (await response.text()) as unknown as TData
             break
@@ -87,8 +78,43 @@ export const baanxDirectRequest = async <TData, TVars = unknown>(
             data = (text.trim() ? JSON.parse(text) : undefined) as TData
         }
     }
-
     return { data, status: response.status, statusText: response.statusText }
+}
+
+/**
+ * Performs a direct call to Baanx. The access token is read from the encrypted
+ * keystore on demand via `withSecret` — the decoded value lives only inside the
+ * handler (its bytes are zeroed afterwards) and the request is made there, so
+ * the token is never cached in app memory. Pre-auth calls (login, register/*)
+ * run without a Bearer. Non-2xx responses reject with ky's `HTTPError`.
+ */
+export const baanxDirectRequest = async <TData, TVars = unknown>(
+    req: CardTransportRequest<TVars>,
+): Promise<CardTransportResponse<TData>> => {
+    const client = getClient(req.network)
+
+    const send = (authHeader?: string): Promise<Response> =>
+        client(toKyPath(req.path), {
+            method: req.method,
+            searchParams: req.params as SearchParamsOption,
+            ...(req.data !== undefined ? { json: req.data } : {}),
+            signal: req.signal,
+            headers: {
+                ...req.headers,
+                ...(authHeader ? { Authorization: authHeader } : {}),
+            },
+        })
+
+    if (hasSecret(ACCESS_TOKEN_SECRET_ID)) {
+        const result = await withSecret(ACCESS_TOKEN_SECRET_ID, bytes =>
+            send(`Bearer ${textDecoder.decode(bytes)}`).then(response =>
+                parseResponse<TData>(response, req.responseType),
+            ),
+        )
+        if (result) return result
+    }
+
+    return parseResponse<TData>(await send(), req.responseType)
 }
 
 /** Test-only: drops memoized clients so a new network config is picked up. */

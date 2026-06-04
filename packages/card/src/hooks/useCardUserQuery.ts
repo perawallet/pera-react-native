@@ -12,35 +12,15 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import type { Nullable } from '@perawallet/wallet-core-shared'
 import { fetchUser } from '../api/user'
-import type { CardUser, VerificationState } from '../models'
 import { cardQueryKeys } from './querykeys'
 
-export type UseCardUserQueryResult = {
-    user: Nullable<CardUser>
-    /** Convenience accessor for gating card access on KYC. */
-    verificationState: Nullable<VerificationState>
-    isLoading: boolean
-    isError: boolean
-    refetch: () => void
-}
-
-export const useCardUserQuery = (): UseCardUserQueryResult => {
+/** `data` is the `CardUser` (or `null`); read `data?.verificationState` to gate KYC. */
+export const useCardUserQuery = () => {
     const { network } = useNetwork()
 
-    const query = useQuery({
+    return useQuery({
         queryKey: cardQueryKeys.user(network),
         queryFn: ({ signal }) => fetchUser({ network, signal }),
     })
-
-    return {
-        user: query.data ?? null,
-        verificationState: query.data?.verificationState ?? null,
-        isLoading: query.isLoading,
-        isError: query.isError,
-        refetch: () => {
-            void query.refetch()
-        },
-    }
 }

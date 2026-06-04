@@ -19,6 +19,7 @@ const {
     withSecret,
     refreshTokenRequest,
     setRefreshHandler,
+    zeroBytes,
 } = vi.hoisted(() => {
     const secretStore = new Map<string, string>()
     return {
@@ -31,6 +32,8 @@ const {
         removeSecret: vi.fn(async (id: string) => {
             secretStore.delete(id)
         }),
+        // Mirrors the real withSecret: runs the handler with the secret bytes,
+        // returns null (without invoking the handler) when the secret is absent.
         withSecret: vi.fn(
             async (id: string, handler: (bytes: Uint8Array) => unknown) => {
                 const value = secretStore.get(id)
@@ -40,6 +43,7 @@ const {
         ),
         refreshTokenRequest: vi.fn(),
         setRefreshHandler: vi.fn(),
+        zeroBytes: vi.fn(),
     }
 })
 
@@ -47,25 +51,15 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
     commitSecret,
     removeSecret,
     withSecret,
+    zeroBytes,
 }))
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetworkStore: { getState: () => ({ network: 'mainnet' }) },
 }))
 vi.mock('../../api/auth', () => ({ refreshTokenRequest }))
 vi.mock('../../api/transport', () => ({ setRefreshHandler }))
-vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
-    const original =
-        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
-    return { ...original, registerStore: vi.fn() }
-})
 
-import {
-    setCardSession,
-    clearCardSession,
-    refreshSession,
-    initCardSession,
-} from '../session'
-import { getAccessToken } from '../token-cache'
+import { setCardSession, clearCardSession, refreshSession } from '../session'
 import { useCardSessionStore } from '../../store/session-store'
 
 describe('card session', () => {
@@ -75,12 +69,8 @@ describe('card session', () => {
         useCardSessionStore.getState().resetState()
     })
 
-    it('stores both tokens in the keystore and flips the session flags', async () => {
-        await setCardSession({
-            accessToken: 'a',
-            refreshToken: 'r',
-            expiresAt: 123,
-        })
+    it('stores both tokens in the keystore and flips the auth flag', async () => {
+        await setCardSession({ accessToken: 'a', refreshToken: 'r' })
 
         expect(commitSecret).toHaveBeenCalledWith(
             expect.objectContaining({ id: 'baanx-access-token' }),
@@ -88,17 +78,11 @@ describe('card session', () => {
         expect(commitSecret).toHaveBeenCalledWith(
             expect.objectContaining({ id: 'baanx-refresh-token' }),
         )
-        expect(getAccessToken()).toBe('a')
         expect(useCardSessionStore.getState().isAuthenticated).toBe(true)
-        expect(useCardSessionStore.getState().expiresAt).toBe(123)
     })
 
     it('does not store a refresh secret when none is provided', async () => {
-        await setCardSession({
-            accessToken: 'a',
-            refreshToken: '',
-            expiresAt: 1,
-        })
+        await setCardSession({ accessToken: 'a', refreshToken: '' })
 
         expect(commitSecret).toHaveBeenCalledTimes(1)
         expect(commitSecret).toHaveBeenCalledWith(
@@ -107,51 +91,28 @@ describe('card session', () => {
     })
 
     it('never writes tokens to the persisted session store', async () => {
-        await setCardSession({
-            accessToken: 'super-secret-token',
-            refreshToken: 'r',
-            expiresAt: 1,
-        })
+        await setCardSession({ accessToken: 'super-secret', refreshToken: 'r' })
 
         const state = useCardSessionStore.getState()
-        expect(JSON.stringify(state)).not.toContain('super-secret-token')
+        expect(JSON.stringify(state)).not.toContain('super-secret')
         expect('accessToken' in state).toBe(false)
     })
 
-    it('clears both secrets, the cache and the session flags on logout', async () => {
-        await setCardSession({
-            accessToken: 'a',
-            refreshToken: 'r',
-            expiresAt: 1,
-        })
+    it('clears both secrets and resets the auth flag on logout', async () => {
+        await setCardSession({ accessToken: 'a', refreshToken: 'r' })
 
         await clearCardSession()
 
         expect(removeSecret).toHaveBeenCalledWith('baanx-access-token')
         expect(removeSecret).toHaveBeenCalledWith('baanx-refresh-token')
-        expect(getAccessToken()).toBeNull()
         expect(useCardSessionStore.getState().isAuthenticated).toBe(false)
     })
 
-    it('registers the refresh handler and hydrates the cache at bootstrap', async () => {
-        secretStore.set('baanx-access-token', 'hydrated')
-        useCardSessionStore
-            .getState()
-            .setSession({ isAuthenticated: true, expiresAt: 999 })
-
-        await initCardSession()
-
-        expect(setRefreshHandler).toHaveBeenCalledTimes(1)
-        expect(typeof setRefreshHandler.mock.calls[0][0]).toBe('function')
-        expect(getAccessToken()).toBe('hydrated')
-    })
-
-    it('exchanges the refresh token and returns true on success', async () => {
+    it('exchanges the refresh token (read via withSecret) and returns true', async () => {
         secretStore.set('baanx-refresh-token', 'refresh-1')
         refreshTokenRequest.mockResolvedValue({
             accessToken: 'new',
             refreshToken: 'refresh-2',
-            expiresAt: 5000,
         })
 
         const refreshed = await refreshSession()
@@ -163,8 +124,8 @@ describe('card session', () => {
                 network: 'mainnet',
             }),
         )
-        expect(getAccessToken()).toBe('new')
         expect(useCardSessionStore.getState().isAuthenticated).toBe(true)
+        expect(secretStore.get('baanx-access-token')).toBe('new')
     })
 
     it('clears the session and returns false when there is no refresh token', async () => {
@@ -182,7 +143,6 @@ describe('card session', () => {
         const refreshed = await refreshSession()
 
         expect(refreshed).toBe(false)
-        expect(getAccessToken()).toBeNull()
         expect(useCardSessionStore.getState().isAuthenticated).toBe(false)
     })
 })

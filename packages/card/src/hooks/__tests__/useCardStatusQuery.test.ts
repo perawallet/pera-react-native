@@ -60,7 +60,7 @@ describe('useCardStatusQuery', () => {
         const { result } = renderHook(() => useCardStatusQuery(), { wrapper })
 
         await waitFor(() => expect(result.current.isLoading).toBe(false))
-        expect(result.current.card).toEqual(card)
+        expect(result.current.data).toEqual(card)
     })
 
     it('exposes null when the user has no card', async () => {
@@ -69,6 +69,6 @@ describe('useCardStatusQuery', () => {
         const { result } = renderHook(() => useCardStatusQuery(), { wrapper })
 
         await waitFor(() => expect(result.current.isLoading).toBe(false))
-        expect(result.current.card).toBeNull()
+        expect(result.current.data).toBeNull()
     })
 })

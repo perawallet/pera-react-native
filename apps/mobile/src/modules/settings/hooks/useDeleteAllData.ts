@@ -12,7 +12,6 @@
 
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { clearCardSession } from '@perawallet/wallet-core-card'
 import { clearDatabase } from '@perawallet/wallet-core-database'
 import { useDeleteDeviceMutation } from '@perawallet/wallet-core-device'
 import { useKMS } from '@perawallet/wallet-core-kms'
@@ -109,15 +108,6 @@ export const useDeleteAllData = (): UseDeleteAllDataResult => {
             await clearDatabase()
         } catch (e) {
             logger.error('Failed to clear database', { error: e })
-        }
-
-        // 7b. Clear the Baanx card session: keystore tokens, in-memory token
-        // cache, and session flags (removeSecret is tolerant of already-wiped
-        // keys after clearKeystore above).
-        try {
-            await clearCardSession()
-        } catch (e) {
-            logger.error('Failed to clear card session', { error: e })
         }
 
         // 8. Clear all registered stores (this will redirect to onboarding, then show the success popup)

@@ -32,12 +32,11 @@ export type CardUxState = BaseStoreState & {
     setTransactionFilters: (filters: CardTransactionFilters) => void
 }
 
-/** Non-sensitive session flags only. Tokens live in the KMS keystore. */
+/**
+ * Non-sensitive auth flag only — a convenience for the UI to gate on. Tokens
+ * live only in the KMS keystore; this never holds anything sensitive.
+ */
 export type CardSessionState = BaseStoreState & {
     isAuthenticated: boolean
-    expiresAt: Nullable<number>
-    setSession: (session: {
-        isAuthenticated: boolean
-        expiresAt: Nullable<number>
-    }) => void
+    setAuthenticated: (isAuthenticated: boolean) => void
 }

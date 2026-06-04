@@ -64,6 +64,6 @@ describe('useRegistrationSettingsQuery', () => {
         })
 
         await waitFor(() => expect(result.current.isLoading).toBe(false))
-        expect(result.current.settings?.countries[0].iso3166alpha2).toBe('GB')
+        expect(result.current.data?.countries[0].iso3166alpha2).toBe('GB')
     })
 })

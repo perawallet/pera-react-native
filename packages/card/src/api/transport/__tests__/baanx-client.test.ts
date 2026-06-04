@@ -12,9 +12,11 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { kyCreate, clientCall } = vi.hoisted(() => ({
+const { kyCreate, clientCall, hasSecret, withSecret } = vi.hoisted(() => ({
     kyCreate: vi.fn(),
     clientCall: vi.fn(),
+    hasSecret: vi.fn(),
+    withSecret: vi.fn(),
 }))
 
 vi.mock('ky', () => ({ default: { create: kyCreate } }))
@@ -24,12 +26,9 @@ vi.mock('@perawallet/wallet-core-config', () => ({
         baanxClientKey: 'CK_TEST',
     }),
 }))
+vi.mock('@perawallet/wallet-core-kms', () => ({ hasSecret, withSecret }))
 
 import { baanxDirectRequest, resetBaanxClients } from '../baanx-client'
-import {
-    setCachedAccessToken,
-    clearTokenCache,
-} from '../../../session/token-cache'
 
 type FakeRequest = { headers: Headers }
 
@@ -39,21 +38,23 @@ const fakeJsonResponse = (body: unknown, status = 200) => ({
     text: async () => JSON.stringify(body),
 })
 
-const firstBeforeRequestHook = (): ((state: {
-    request: FakeRequest
-}) => void) => kyCreate.mock.calls[0][0].hooks.beforeRequest[0]
-
 describe('baanxDirectRequest', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         resetBaanxClients()
-        clearTokenCache()
         kyCreate.mockReturnValue(clientCall)
+        clientCall.mockResolvedValue(fakeJsonResponse({ ok: true }))
+        hasSecret.mockReturnValue(false)
+        // withSecret runs the handler with the decoded token bytes.
+        withSecret.mockImplementation(
+            (_id: string, handler: (b: Uint8Array) => unknown) =>
+                Promise.resolve(
+                    handler(new TextEncoder().encode('ACCESS_TOKEN')),
+                ),
+        )
     })
 
     it('creates a client prefixed with the network Baanx base URL', async () => {
-        clientCall.mockResolvedValue(fakeJsonResponse({ ok: true }))
-
         await baanxDirectRequest({
             network: 'mainnet',
             method: 'GET',
@@ -65,8 +66,23 @@ describe('baanxDirectRequest', () => {
         )
     })
 
-    it('strips the leading slash from the path', async () => {
-        clientCall.mockResolvedValue(fakeJsonResponse({ ok: true }))
+    it('attaches x-client-key (not Authorization) in the client beforeRequest hook', async () => {
+        await baanxDirectRequest({
+            network: 'mainnet',
+            method: 'GET',
+            path: '/v1/card/status',
+        })
+
+        const hook = kyCreate.mock.calls[0][0].hooks.beforeRequest[0]
+        const request: FakeRequest = { headers: new Headers() }
+        hook({ request })
+
+        expect(request.headers.get('x-client-key')).toBe('CK_TEST')
+        expect(request.headers.get('Authorization')).toBeNull()
+    })
+
+    it('reads the access token from the keystore and attaches it per request', async () => {
+        hasSecret.mockReturnValue(true)
 
         await baanxDirectRequest({
             network: 'mainnet',
@@ -74,42 +90,33 @@ describe('baanxDirectRequest', () => {
             path: '/v1/card/status',
         })
 
+        expect(withSecret).toHaveBeenCalledWith(
+            'baanx-access-token',
+            expect.any(Function),
+        )
         expect(clientCall).toHaveBeenCalledWith(
             'v1/card/status',
-            expect.objectContaining({ method: 'GET' }),
+            expect.objectContaining({
+                headers: expect.objectContaining({
+                    Authorization: 'Bearer ACCESS_TOKEN',
+                }),
+            }),
         )
     })
 
-    it('attaches x-client-key and the Bearer token via beforeRequest', async () => {
-        setCachedAccessToken('ACCESS_TOKEN', Date.now() + 1_000)
-        clientCall.mockResolvedValue(fakeJsonResponse({ ok: true }))
+    it('sends pre-auth requests without a Bearer when no token is stored', async () => {
+        hasSecret.mockReturnValue(false)
 
         await baanxDirectRequest({
             network: 'mainnet',
-            method: 'GET',
-            path: '/v1/card/status',
+            method: 'POST',
+            path: '/v1/auth/login',
+            data: { email: 'e@x.com' },
         })
 
-        const request: FakeRequest = { headers: new Headers() }
-        firstBeforeRequestHook()({ request })
-
-        expect(request.headers.get('x-client-key')).toBe('CK_TEST')
-        expect(request.headers.get('Authorization')).toBe('Bearer ACCESS_TOKEN')
-    })
-
-    it('omits the Bearer header when no token is cached', async () => {
-        clientCall.mockResolvedValue(fakeJsonResponse({ ok: true }))
-
-        await baanxDirectRequest({
-            network: 'mainnet',
-            method: 'GET',
-            path: '/v1/card/status',
-        })
-
-        const request: FakeRequest = { headers: new Headers() }
-        firstBeforeRequestHook()({ request })
-
-        expect(request.headers.get('Authorization')).toBeNull()
+        expect(withSecret).not.toHaveBeenCalled()
+        const options = clientCall.mock.calls[0][1]
+        expect(options.headers.Authorization).toBeUndefined()
     })
 
     it('parses a JSON response into the transport response shape', async () => {
@@ -126,5 +133,22 @@ describe('baanxDirectRequest', () => {
             status: 200,
             statusText: 'OK',
         })
+    })
+
+    it('reads a blob response when requested', async () => {
+        clientCall.mockResolvedValue({
+            status: 200,
+            statusText: 'OK',
+            blob: async () => new Blob(['csv']),
+        })
+
+        const res = await baanxDirectRequest({
+            network: 'mainnet',
+            method: 'GET',
+            path: '/v1/card/transactions/statement',
+            responseType: 'blob',
+        })
+
+        expect(res.data).toBeInstanceOf(Blob)
     })
 })

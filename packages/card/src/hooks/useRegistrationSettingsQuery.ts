@@ -13,31 +13,15 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { config } from '@perawallet/wallet-core-config'
-import type { Nullable } from '@perawallet/wallet-core-shared'
 import { fetchRegistrationSettings } from '../api/onboarding'
-import type { RegistrationSettings } from '../models'
 import { cardQueryKeys } from './querykeys'
 
-export type UseRegistrationSettingsQueryResult = {
-    settings: Nullable<RegistrationSettings>
-    isLoading: boolean
-    isError: boolean
+export const useRegistrationSettingsQuery = () => {
+    const { network } = useNetwork()
+
+    return useQuery({
+        queryKey: cardQueryKeys.registrationSettings(network),
+        queryFn: ({ signal }) => fetchRegistrationSettings({ network, signal }),
+        staleTime: config.reactQueryLongLivedStaleTime,
+    })
 }
-
-export const useRegistrationSettingsQuery =
-    (): UseRegistrationSettingsQueryResult => {
-        const { network } = useNetwork()
-
-        const query = useQuery({
-            queryKey: cardQueryKeys.registrationSettings(network),
-            queryFn: ({ signal }) =>
-                fetchRegistrationSettings({ network, signal }),
-            staleTime: config.reactQueryLongLivedStaleTime,
-        })
-
-        return {
-            settings: query.data ?? null,
-            isLoading: query.isLoading,
-            isError: query.isError,
-        }
-    }

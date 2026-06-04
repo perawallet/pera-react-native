@@ -38,5 +38,4 @@ export const transformTokenResponse = (
 ): CardSessionTokens => ({
     accessToken: response.access_token,
     refreshToken: response.refresh_token,
-    expiresAt: Date.now() + response.expires_in * 1000,
 })

@@ -10,18 +10,14 @@
  limitations under the License
  */
 
-import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useCardSessionStore } from '../store/session-store'
 
 export type UseCardSessionResult = {
     isAuthenticated: boolean
-    /** Epoch ms when the access token expires, if known. */
-    expiresAt: Nullable<number>
 }
 
 export const useCardSession = (): UseCardSessionResult => {
     const isAuthenticated = useCardSessionStore(state => state.isAuthenticated)
-    const expiresAt = useCardSessionStore(state => state.expiresAt)
 
-    return { isAuthenticated, expiresAt }
+    return { isAuthenticated }
 }

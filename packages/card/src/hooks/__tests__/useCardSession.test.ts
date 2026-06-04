@@ -25,12 +25,9 @@ describe('useCardSession', () => {
         expect(result.current.isAuthenticated).toBe(false)
 
         act(() => {
-            useCardSessionStore
-                .getState()
-                .setSession({ isAuthenticated: true, expiresAt: 42 })
+            useCardSessionStore.getState().setAuthenticated(true)
         })
 
         expect(result.current.isAuthenticated).toBe(true)
-        expect(result.current.expiresAt).toBe(42)
     })
 })

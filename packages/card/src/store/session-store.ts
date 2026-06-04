@@ -18,11 +18,10 @@ import type { CardSessionState } from '../models'
 
 const STORE_NAME = 'card-session-store'
 
-// Only non-sensitive session flags live here. Tokens are stored in the
+// Only a non-sensitive auth flag lives here. Tokens are stored in the
 // encrypted KMS keystore (see session/session.ts), never in this store.
 const initialState = {
     isAuthenticated: false,
-    expiresAt: null,
 }
 
 export const useCardSessionStore: UseBoundStore<
@@ -31,8 +30,8 @@ export const useCardSessionStore: UseBoundStore<
     persist(
         set => ({
             ...initialState,
-            setSession: ({ isAuthenticated, expiresAt }) =>
-                set({ isAuthenticated, expiresAt }),
+            setAuthenticated: (isAuthenticated: boolean) =>
+                set({ isAuthenticated }),
             resetState: () => set(initialState),
         }),
         {
@@ -41,7 +40,6 @@ export const useCardSessionStore: UseBoundStore<
             version: 1,
             partialize: state => ({
                 isAuthenticated: state.isAuthenticated,
-                expiresAt: state.expiresAt,
             }),
         },
     ),
