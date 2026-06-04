@@ -161,9 +161,9 @@ const dump = (reason = 'manual'): void => {
         }
         const metaStr = m.meta ? ` ${JSON.stringify(m.meta)}` : ''
         lines.push(
-            `${LOG_PREFIX}   ${fmt(m.at).padStart(9)}  (+${fmt(m.delta).padStart(
-                8,
-            )})  ${m.label}${metaStr}`,
+            `${LOG_PREFIX}   ${fmt(m.at).padStart(9)}  (+${fmt(
+                m.delta,
+            ).padStart(8)})  ${m.label}${metaStr}`,
         )
     }
     const total = marks.length ? marks[marks.length - 1].at : 0
@@ -225,11 +225,14 @@ const instrumentQueryCache = (
         const durationMs = +(monotonic() - start).toFixed(1)
         const firstOfClass = !settledClasses.has(klass)
         settledClasses.add(klass)
-        mark(`query:${klass}${firstOfClass ? ':first' : ''}:${hash.slice(0, 40)}`, {
-            durationMs,
-            status: query.state.status,
-            firstOfClass,
-        })
+        mark(
+            `query:${klass}${firstOfClass ? ':first' : ''}:${hash.slice(0, 40)}`,
+            {
+                durationMs,
+                status: query.state.status,
+                firstOfClass,
+            },
+        )
     })
 
     setTimeout(() => {
