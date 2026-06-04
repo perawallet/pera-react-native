@@ -182,6 +182,13 @@ const SearchableListInner = <T,>(
         isSearchFocusedSV.value = false
     }, [isSearchFocusedSV])
 
+    // Releasing the pin the instant a drag starts (rather than waiting on the
+    // keyboard-dismiss blur, which is unreliable) hands the overlay back to the
+    // scroll offset immediately, so scrolling down rides the header down.
+    const handleListScrollBeginDrag = useCallback(() => {
+        isSearchFocusedSV.value = false
+    }, [isSearchFocusedSV])
+
     // Reanimated Animated.ScrollView as FlashList's scroll component: forward
     // FlashList's own ref (scroll control) AND the animated ref (UI-thread
     // offset). Memoized so FlashList doesn't recreate the scroll view.
@@ -358,6 +365,7 @@ const SearchableListInner = <T,>(
         onLayout: handleListLayout,
         onContentSizeChange: handleContentSizeChange,
         onScroll: handleScroll,
+        onScrollBeginDrag: handleListScrollBeginDrag,
         onScrollEndDrag: handleScrollEndDrag,
         scrollEventThrottle: SCROLL_EVENT_THROTTLE,
     })
