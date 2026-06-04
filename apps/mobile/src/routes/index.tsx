@@ -42,6 +42,7 @@ import { RootStackParamList } from './types'
 import { fullScreenLayout } from '@layouts/index'
 import { MessagesStackNavigator } from '@modules/messages/routes'
 import { MultisigStackNavigator } from '@modules/multisig'
+import { PeraCardStackNavigator } from '@modules/card'
 import { BackupStackNavigator } from '@modules/backup'
 import { RekeyToLedgerStackNavigator } from '@modules/rekey/routes/rekey-to-ledger'
 import { RekeyToSharedStackNavigator } from '@modules/rekey/routes/rekey-to-shared'
@@ -121,6 +122,10 @@ export const MainRoutes = () => {
                         <RootStack.Screen
                             name='Multisig'
                             component={MultisigStackNavigator}
+                        />
+                        <RootStack.Screen
+                            name='PeraCard'
+                            component={PeraCardStackNavigator}
                         />
                         <RootStack.Screen
                             name='BackupWallet'

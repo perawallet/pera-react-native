@@ -115,6 +115,11 @@ export const useAddAccountScreen = () => {
         [navigation],
     )
 
+    const handleAddPeraCard = useCallback(
+        () => navigation.navigate('PeraCard', { screen: 'PeraCardIntro' }),
+        [navigation],
+    )
+
     const handleTermsPress = useCallback(
         () =>
             pushWebView({
@@ -181,6 +186,14 @@ export const useAddAccountScreen = () => {
                     onPress: openMultisigIntroduction,
                 },
                 {
+                    testID: 'add_account_pera_card_button',
+                    titleKey: 'onboarding.add_account.pera_card_option_title',
+                    descriptionKey:
+                        'onboarding.add_account.pera_card_option_description',
+                    leftIcon: 'card' as IconName,
+                    onPress: handleAddPeraCard,
+                },
+                {
                     testID: 'add_account_import_button',
                     titleKey:
                         'onboarding.add_account.import_account_option_title',
@@ -196,6 +209,7 @@ export const useAddAccountScreen = () => {
             handleCreateUniversalWallet,
             isCreatingAccount,
             openMultisigIntroduction,
+            handleAddPeraCard,
             handleOpenImportAccountOptions,
         ],
     )

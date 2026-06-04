@@ -674,6 +674,15 @@
             "source_description": "Gift card purchase via Bidali"
         }
     },
+    "peraCard": {
+        "intro": {
+            "title": "Pera Card",
+            "body": "Spend your crypto in the real world. Get a Pera Card and pay anywhere, online or in store.",
+            "get_started": "Get started",
+            "coming_soon_title": "Coming soon",
+            "coming_soon_body": "Pera Card onboarding isn't available just yet. Check back soon."
+        }
+    },
     "notifications": {
         "empty_title": "No current notifications",
         "empty_body": "Your recent transactions, asset requests and other transactions will appear here"
@@ -980,6 +989,8 @@
             "terms_and_privacy": "By adding a wallet, you agree to Pera Wallet's <0>Terms and Conditions</0> and <1>Privacy Policy</1>",
             "create_multisig_option_title": "Add Shared Account",
             "create_multisig_option_description": "Create a new shared account with enhanced security that requires multiple signers",
+            "pera_card_option_title": "Add Pera Card Account",
+            "pera_card_option_description": "Spend your crypto in the real world with the Pera Card",
             "see_other_options": "See other options"
         },
         "import_account_options": {

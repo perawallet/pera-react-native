@@ -167,6 +167,9 @@ describe('useAddAccountScreen', () => {
             'add_account_create_multisig_button',
         )
         expect(result.current.mainOptions[2]?.testID).toBe(
+            'add_account_pera_card_button',
+        )
+        expect(result.current.mainOptions[3]?.testID).toBe(
             'add_account_import_button',
         )
     })
@@ -295,6 +298,39 @@ describe('useAddAccountScreen', () => {
                 o => o.testID === 'add_account_create_multisig_button',
             ),
         ).toBeDefined()
+    })
+
+    it('mainOptions places pera card option between shared account and import', () => {
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        const multisigIndex = result.current.mainOptions.findIndex(
+            o => o.testID === 'add_account_create_multisig_button',
+        )
+        const peraCardIndex = result.current.mainOptions.findIndex(
+            o => o.testID === 'add_account_pera_card_button',
+        )
+        const importIndex = result.current.mainOptions.findIndex(
+            o => o.testID === 'add_account_import_button',
+        )
+
+        expect(peraCardIndex).toBe(multisigIndex + 1)
+        expect(importIndex).toBe(peraCardIndex + 1)
+    })
+
+    it('pera card option navigates to the Pera Card intro screen', () => {
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        const peraCardOption = result.current.mainOptions.find(
+            o => o.testID === 'add_account_pera_card_button',
+        )!
+
+        act(() => {
+            peraCardOption.onPress()
+        })
+
+        expect(mockNavigate).toHaveBeenCalledWith('PeraCard', {
+            screen: 'PeraCardIntro',
+        })
     })
 
     it('shared account option opens introduction dialog without navigating', () => {
