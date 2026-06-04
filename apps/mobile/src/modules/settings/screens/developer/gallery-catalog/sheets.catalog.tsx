@@ -362,7 +362,17 @@ export const getSheetSections = (): GallerySection[] => [
                                 <AddAssetContent variant='asset' />
                             </GallerySheetBoundary>
                         ),
-                        options: { size: 'modal', enablePanDownToClose: true },
+                        // Match the real invocation: autoCreateContainer:false
+                        // keeps the content out of BottomSheetView so the inner
+                        // FlashList stays a bounded, virtualized scroll viewport.
+                        // Without it the list renders unbounded, onEndReached
+                        // loops through the whole remote asset catalog, and the
+                        // app grinds to a halt.
+                        options: {
+                            size: 'modal',
+                            enablePanDownToClose: true,
+                            autoCreateContainer: false,
+                        },
                     }),
                 },
             },
@@ -460,6 +470,7 @@ export const getSheetSections = (): GallerySection[] => [
                         options: {
                             size: 'modal',
                             enablePanDownToClose: true,
+                            autoCreateContainer: false,
                         },
                     }),
                 },
@@ -481,6 +492,7 @@ export const getSheetSections = (): GallerySection[] => [
                         options: {
                             size: 'modal',
                             enablePanDownToClose: true,
+                            autoCreateContainer: false,
                         },
                     }),
                 },
@@ -519,6 +531,7 @@ export const getSheetSections = (): GallerySection[] => [
                         options: {
                             size: 'modal',
                             enablePanDownToClose: true,
+                            autoCreateContainer: false,
                         },
                     }),
                 },
@@ -804,8 +817,9 @@ export const getSheetSections = (): GallerySection[] => [
                             </GallerySheetBoundary>
                         ),
                         options: {
-                            size: 'modal',
+                            size: 'auto',
                             enablePanDownToClose: true,
+                            autoCreateContainer: false,
                         },
                     }),
                 },
@@ -838,6 +852,7 @@ export const getSheetSections = (): GallerySection[] => [
                         options: {
                             size: 'modal',
                             enablePanDownToClose: true,
+                            autoCreateContainer: false,
                         },
                     }),
                 },
@@ -912,7 +927,7 @@ export const getSheetSections = (): GallerySection[] => [
                             </GallerySheetBoundary>
                         ),
                         options: {
-                            size: 'modal',
+                            size: 'auto',
                             enablePanDownToClose: true,
                         },
                     }),
@@ -1140,7 +1155,7 @@ export const getSheetSections = (): GallerySection[] => [
                             </GallerySheetBoundary>
                         ),
                         options: {
-                            size: 'modal',
+                            size: 'auto',
                             enablePanDownToClose: true,
                         },
                     }),

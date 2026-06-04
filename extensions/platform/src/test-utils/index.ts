@@ -11,5 +11,6 @@
  */
 
 export * from './database'
+export * from './migration'
 export * from './storage'
 export * from './wrapper'

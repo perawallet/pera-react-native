@@ -37,6 +37,9 @@ import { SettingsDeveloperAppIntegrityScreen } from '../screens/developer/Settin
 import { SettingsDeveloperGalleryScreen } from '../screens/developer/SettingsDeveloperGalleryScreen'
 import { GalleryCategoryScreen } from '../screens/developer/GalleryCategoryScreen'
 import { GalleryComponentPreviewScreen } from '../screens/developer/GalleryComponentPreviewScreen'
+import { SettingsDeveloperMigrationViewerScreen } from '../screens/developer/SettingsDeveloperMigrationViewerScreen'
+import { SettingsDeveloperMigrationInfoScreen } from '../screens/developer/SettingsDeveloperMigrationInfoScreen'
+import { SettingsDeveloperMigrationSimulatorScreen } from '../screens/developer/SettingsDeveloperMigrationSimulatorScreen'
 
 import type { GalleryCategoryId } from '@modules/settings/screens/developer/gallery-catalog'
 
@@ -50,6 +53,9 @@ export type DeveloperSettingsStackParamsList = {
     Gallery: undefined
     GalleryCategory: { categoryId: GalleryCategoryId }
     GalleryPreview: { entryId: string }
+    MigrationViewer: undefined
+    MigrationInfo: undefined
+    MigrationSimulator: undefined
 }
 
 const DeveloperSettingsStack =
@@ -127,6 +133,27 @@ const DeveloperSettingsStackNavigator = () => {
                 name='GalleryPreview'
                 options={{ title: 'Preview' }}
                 component={GalleryComponentPreviewScreen}
+            />
+            <DeveloperSettingsStack.Screen
+                name='MigrationViewer'
+                options={{
+                    title: 'Migration Viewer',
+                }}
+                component={SettingsDeveloperMigrationViewerScreen}
+            />
+            <DeveloperSettingsStack.Screen
+                name='MigrationInfo'
+                options={{
+                    title: 'Migration reference',
+                }}
+                component={SettingsDeveloperMigrationInfoScreen}
+            />
+            <DeveloperSettingsStack.Screen
+                name='MigrationSimulator'
+                options={{
+                    title: 'Migration simulator',
+                }}
+                component={SettingsDeveloperMigrationSimulatorScreen}
             />
         </DeveloperSettingsStack.Navigator>
     )

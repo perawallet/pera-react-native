@@ -59,6 +59,7 @@
     "@perawallet/wallet-core-kms": "workspace:*",
     "@perawallet/wallet-core-ledger": "workspace:*",
     "@perawallet/wallet-core-messages": "workspace:*",
+    "@perawallet/wallet-core-migrate": "workspace:*",
     "@perawallet/wallet-core-multisig": "workspace:*",
     "@perawallet/wallet-core-nfd": "workspace:*",
     "@perawallet/wallet-core-passkeys": "workspace:*",

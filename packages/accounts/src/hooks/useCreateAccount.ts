@@ -77,6 +77,48 @@ export const useCreateAccount = () => {
         }
     }
 
+    // Pure derivation primitive: given a seed that's already in the keystore,
+    // derive the child at (account, keyIndex) and build the WalletAccount.
+    // Skips `getKey()` so it's safe to call right after `createHDWalletKey`
+    // in the same React tick — the keystore snapshot from `useKeystoreKeys`
+    // would still be stale, but `getDerivedPublicKey` reads the live store.
+    const buildHdWalletAccountForSeed = async ({
+        seedKeyId,
+        account,
+        keyIndex,
+    }: {
+        seedKeyId: string
+        account: number
+        keyIndex: number
+    }): Promise<WalletAccount> => {
+        const derivationType = BIP32DerivationType.Peikert
+        const publicKey = await getDerivedPublicKey(
+            seedKeyId,
+            account,
+            keyIndex,
+            derivationType,
+        )
+        if (!publicKey) throw new NoHDWalletError(seedKeyId)
+
+        return {
+            id: generateOrderedUniqueId(),
+            address: encodeAlgorandAddress(publicKey),
+            type: AccountTypes.hdWallet,
+            hdWalletDetails: {
+                account,
+                change: 0,
+                keyIndex,
+                derivationType,
+            },
+            keyPairId: hdDerivedKeyId(
+                seedKeyId,
+                account,
+                keyIndex,
+                derivationType,
+            ),
+        }
+    }
+
     const buildHdWalletAccount = async ({
         walletId,
         account,
@@ -99,33 +141,11 @@ export const useCreateAccount = () => {
 
             if (!seedKeyId) throw new NoHDWalletError(rootWalletId)
 
-            const derivationType = BIP32DerivationType.Peikert
-            const publicKey = await getDerivedPublicKey(
+            const newAccount = await buildHdWalletAccountForSeed({
                 seedKeyId,
                 account,
                 keyIndex,
-                derivationType,
-            )
-
-            if (!publicKey) throw new NoHDWalletError(rootWalletId)
-
-            const newAccount: WalletAccount = {
-                id: generateOrderedUniqueId(),
-                address: encodeAlgorandAddress(publicKey),
-                type: AccountTypes.hdWallet,
-                hdWalletDetails: {
-                    account,
-                    change: 0,
-                    keyIndex,
-                    derivationType,
-                },
-                keyPairId: hdDerivedKeyId(
-                    seedKeyId,
-                    account,
-                    keyIndex,
-                    derivationType,
-                ),
-            }
+            })
 
             if (createdNewSeed) {
                 setPendingAccountRollback(() =>
@@ -214,6 +234,16 @@ export const useCreateAccount = () => {
         return newAccount
     }
 
+    const createHdWalletAccountForSeed = async (params: {
+        seedKeyId: string
+        account: number
+        keyIndex: number
+    }) => {
+        const newAccount = await buildHdWalletAccountForSeed(params)
+        await saveAndUpdateAccounts(newAccount)
+        return newAccount
+    }
+
     const createAlgo25WalletAccount = async (params: {
         seed?: Algo25SeedReference
         id?: string
@@ -225,8 +255,10 @@ export const useCreateAccount = () => {
 
     return {
         createHdWalletAccount,
+        createHdWalletAccountForSeed,
         createAlgo25WalletAccount,
         buildHdWalletAccount,
+        buildHdWalletAccountForSeed,
         buildAlgo25WalletAccount,
         saveAccount,
     }

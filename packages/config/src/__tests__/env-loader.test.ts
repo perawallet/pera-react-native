@@ -278,6 +278,7 @@ describe('env-loader', () => {
             privacyPolicyUrl: 'https://privacy.example.com',
             peraDemoDappUrl: 'https://demo.example.com',
             sendFundsFaqUrl: 'https://faq.example.com',
+            assetInboxSupportUrl: 'https://asset-inbox-support.example.com',
             swapSupportUrl: 'https://swap-support.example.com',
             multisigSupportUrl: 'https://multisig-support.example.com',
             dispenserUrl: 'https://dispenser.example.com',

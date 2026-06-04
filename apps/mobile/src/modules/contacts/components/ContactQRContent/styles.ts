@@ -12,9 +12,16 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
+type StyleProps = {
+    bottomInset: number
+}
+
+export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
+    // The sheet draws edge-to-edge, so carry the bottom safe-area inset here to
+    // keep the action buttons clear of the home indicator.
     container: {
         paddingHorizontal: theme.spacing.xl,
+        paddingBottom: theme.spacing.xl + bottomInset,
     },
     header: {
         height: theme.spacing['3xl'],
