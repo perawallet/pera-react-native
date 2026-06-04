@@ -10,16 +10,4 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => ({
-    container: {
-        paddingVertical: theme.spacing.xl,
-        flex: 1,
-    },
-    toolbar: {
-        minHeight: 0,
-        paddingBottom: theme.spacing.xl,
-        paddingTop: 0,
-    },
-}))
+export { FullScreenLoadingView } from './FullScreenLoadingView'

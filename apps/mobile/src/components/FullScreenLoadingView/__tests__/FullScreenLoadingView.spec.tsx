@@ -10,16 +10,14 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
+import { describe, it, expect } from 'vitest'
+import { render, screen } from '@test-utils/render'
+import { FullScreenLoadingView } from '../FullScreenLoadingView'
 
-export const useStyles = makeStyles(theme => ({
-    container: {
-        paddingVertical: theme.spacing.xl,
-        flex: 1,
-    },
-    toolbar: {
-        minHeight: 0,
-        paddingBottom: theme.spacing.xl,
-        paddingTop: 0,
-    },
-}))
+describe('FullScreenLoadingView', () => {
+    it('renders a loading spinner', () => {
+        render(<FullScreenLoadingView />)
+
+        expect(screen.getByTestId('activity-indicator')).toBeTruthy()
+    })
+})

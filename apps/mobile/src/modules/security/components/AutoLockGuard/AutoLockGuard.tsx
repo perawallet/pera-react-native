@@ -19,7 +19,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { LockoutView } from './LockoutView'
 import { useLockScreen } from './useLockScreen'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { LoadingView } from '@components/LoadingView'
+import { FullScreenLoadingView } from '@components/FullScreenLoadingView'
 
 export const AutoLockGuard = ({ children }: PropsWithChildren) => {
     const { isLocked, isChecking, unlock, handleResetData } =
@@ -52,7 +52,7 @@ export const AutoLockGuard = ({ children }: PropsWithChildren) => {
             </PWView>
             {showLoadingOverlay && (
                 <PWView style={styles.loadingOverlay}>
-                    <LoadingView variant='circle' />
+                    <FullScreenLoadingView />
                 </PWView>
             )}
             {showLockOverlay && (

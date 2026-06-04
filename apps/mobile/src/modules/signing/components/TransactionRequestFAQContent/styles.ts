@@ -12,17 +12,22 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => {
+type StyleProps = { bottomInset: number }
+
+export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => {
     const warning = {
         alignSelf: 'stretch' as const,
         textAlign: 'left' as const,
         fontWeight: 'bold' as const,
     }
     return {
+        // The sheet draws edge-to-edge, so add the bottom safe-area inset to
+        // keep the close button clear of the home indicator.
         container: {
             padding: theme.spacing.xl,
             gap: theme.spacing.xl,
             alignItems: 'center',
+            paddingBottom: theme.spacing.xl + bottomInset,
         },
         icon: {
             marginVertical: theme.spacing.md,
