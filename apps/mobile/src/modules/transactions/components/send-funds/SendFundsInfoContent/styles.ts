@@ -65,5 +65,10 @@ export const useStyles = makeStyles(theme => {
         link: {
             marginLeft: theme.spacing.xs,
         },
+        // body is center-aligned, so stretch the button to full width.
+        button: {
+            alignSelf: 'stretch',
+            marginTop: theme.spacing.lg,
+        },
     }
 })

@@ -60,7 +60,7 @@ export const useHandleInboxItemPress = (): UseHandleInboxItemPressResult => {
                             />
                         ),
                         options: {
-                            size: 'auto',
+                            size: 'modal',
                             enablePanDownToClose: true,
                             autoCreateContainer: false,
                         },

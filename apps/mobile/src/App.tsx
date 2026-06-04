@@ -29,7 +29,7 @@ initDecimalConfig()
 import React, { useEffect, useState } from 'react'
 import './i18n'
 import { ThemeProvider } from '@rneui/themed'
-import { PWText } from '@components/core'
+import { FullScreenLoadingView } from '@components/FullScreenLoadingView'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useLanguage } from '@hooks/useLanguage'
 import { getTheme } from '@theme/theme'
@@ -182,7 +182,7 @@ const AppContent = () => {
     return (
         <ThemeProvider theme={theme}>
             <SafeAreaProvider>
-                {!bootstrapped && <PWText>{t('common.loading.label')}</PWText>}
+                {!bootstrapped && <FullScreenLoadingView />}
                 {bootstrapped && persister && (
                     <GestureHandlerRootView>
                         <KeyboardProvider>

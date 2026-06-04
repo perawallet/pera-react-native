@@ -437,9 +437,6 @@
         "go_back": {
             "label": "Go Back"
         },
-        "loading": {
-            "label": "Loading..."
-        },
         "base64": {
             "label": "Base64"
         },
@@ -2174,6 +2171,16 @@
             "cancel": "Cancel",
             "retry": "Retry",
             "footnote": "Verification will continue on Ledger. To cancel verification, cancel from Ledger.",
+            "awaitingApproval": {
+                "title": "Ledger Approval",
+                "body": "Please review and sign the transaction on your Ledger device {{deviceName}}.",
+                "body_noDevice": "Please review and sign the transaction on your Ledger device."
+            },
+            "awaitingApprovalData": {
+                "title": "Approve on your Ledger",
+                "body": "Review and approve the signature request on your Ledger device {{deviceName}}.",
+                "body_noDevice": "Review and approve the signature request on your Ledger device."
+            },
             "progress": {
                 "label": "Signing {{current}} out of {{total}}…"
             }

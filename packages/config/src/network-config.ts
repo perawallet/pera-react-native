@@ -21,6 +21,8 @@ export type NetworkConfig = {
     explorerUrl: string
     bidaliBaseUrl: string
     bidaliApiKey: string
+    baanxBaseUrl: string
+    baanxClientKey: string
     isTestnet: boolean
     isMainnet: boolean
 }
@@ -51,5 +53,11 @@ export const getNetworkConfig = (network: Network): NetworkConfig => {
         bidaliApiKey: isMain
             ? config.mainnetBidaliApiKey
             : config.testnetBidaliApiKey,
+        baanxBaseUrl: isMain
+            ? config.mainnetBaanxBaseUrl
+            : config.testnetBaanxBaseUrl,
+        baanxClientKey: isMain
+            ? config.mainnetBaanxClientKey
+            : config.testnetBaanxClientKey,
     }
 }

@@ -35,15 +35,7 @@ export const SendFundsInfoContent = () => {
     )
 
     return (
-        <PWSheetLayout
-            footer={
-                <PWButton
-                    variant='secondary'
-                    onPress={handleClose}
-                    title={t('send_funds.info.i_understand')}
-                />
-            }
-        >
+        <PWSheetLayout>
             <PWView style={styles.body}>
                 <PWIcon
                     name='info'
@@ -114,6 +106,12 @@ export const SendFundsInfoContent = () => {
                         />
                     </PWText>
                 </PWView>
+                <PWButton
+                    variant='secondary'
+                    onPress={handleClose}
+                    title={t('send_funds.info.i_understand')}
+                    style={styles.button}
+                />
             </PWView>
         </PWSheetLayout>
     )

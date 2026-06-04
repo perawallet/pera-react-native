@@ -48,4 +48,20 @@ export const isDecimalEqual = (
     return a.equals(b)
 }
 
+/**
+ * Wraps a raw value (decimal string or number) in `Decimal`. Missing/empty
+ * values become `Decimal(0)` rather than throwing or producing `NaN`. Use at
+ * API boundaries where a numeric field may be null/undefined/'' — for fields
+ * that must be present, construct `new Decimal(value)` directly so a missing
+ * value surfaces as an error instead of being silently zeroed.
+ */
+export const toDecimal = (
+    value: string | number | null | undefined,
+): Decimal => {
+    if (value === null || value === undefined || value === '') {
+        return new Decimal(0)
+    }
+    return new Decimal(value)
+}
+
 export { Decimal }
