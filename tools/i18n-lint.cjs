@@ -44,6 +44,10 @@ const EXCLUDED_PREFIXES = [
     'errors.algod.',
     // Ledger error kinds: t(`ledger.errors.${kind}`) / t(`ledger.errors.${kind}_title`)
     'ledger.errors.',
+    // Ledger approval copy: LedgerAwaitingApprovalContent picks the namespace by
+    // operation and builds t(`${contentNs}.title`) / `.body` / `.body_noDevice`.
+    'ledger.signing.awaitingApproval.',
+    'ledger.signing.awaitingApprovalData.',
     // ASB import error reasons: t(`onboarding.asb_import.backup.errors.${reason}`) and key.errors
     'onboarding.asb_import.backup.errors.',
     'onboarding.asb_import.key.errors.',

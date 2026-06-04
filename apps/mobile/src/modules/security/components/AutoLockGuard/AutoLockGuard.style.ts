@@ -42,6 +42,8 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
         paddingLeft: insets.left,
         paddingRight: insets.right,
     },
+    // Positioning + stacking only; FullScreenLoadingView paints the background
+    // and centers the indicator so this matches the boot loading screen exactly.
     loadingOverlay: {
         position: 'absolute',
         top: 0,
@@ -49,8 +51,5 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
         right: 0,
         bottom: 0,
         zIndex: theme.zIndex.max,
-        backgroundColor: theme.colors.background,
-        alignItems: 'center',
-        justifyContent: 'center',
     },
 }))
