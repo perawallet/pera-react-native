@@ -323,6 +323,10 @@ module.exports = {
     './plugins/withPasskeyAutofillFixes',
 
     './plugins/withMigrationModule.js',
+
+    './plugins/withAndroidMigrationDependencies.js',
+    './plugins/withAndroidMigrationSources.js',
+    './plugins/withMainApplicationLegacyMigration.js',
   ],
 
   // Experiments (for bleeding edge features)

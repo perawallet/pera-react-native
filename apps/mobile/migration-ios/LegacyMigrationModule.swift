@@ -55,15 +55,6 @@ final class LegacyMigrationModule: NSObject {
         }
     }
 
-    @objc(clearLegacyData:rejecter:)
-    func clearLegacyData(
-        _ resolve: @escaping RCTPromiseResolveBlock,
-        rejecter reject: @escaping RCTPromiseRejectBlock
-    ) {
-        LegacyDataWiper().clear()
-        resolve(NSNull())
-    }
-
     // MARK: - Dev tools (Migration Simulator)
 
     @objc(getMigrationPlans:rejecter:)

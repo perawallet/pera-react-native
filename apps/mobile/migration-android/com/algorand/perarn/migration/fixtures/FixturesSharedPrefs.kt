@@ -1,0 +1,43 @@
+/*
+ * Copyright 2022-2025 Pera Wallet, LDA
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License
+ */
+package com.algorand.perarn.migration.fixtures
+
+import android.content.Context
+import com.algorand.perarn.migration.bridge.LegacyMigrationConstants
+
+internal object FixturesSharedPrefs {
+
+    private const val PIN_DIGITS = "123456"
+    private const val LOCK_ATTEMPT_COUNT = 2
+    private const val LOCK_PENALTY_REMAINING_MS = 30_000L
+
+    fun applyAuthState(context: Context, includeAuthState: Boolean) {
+        val prefs = context.getSharedPreferences(
+            LegacyMigrationConstants.SETTINGS_PREFS_FILE,
+            Context.MODE_PRIVATE,
+        )
+        val editor = prefs.edit()
+        if (includeAuthState) {
+            editor.putString("lock_password", PIN_DIGITS)
+            editor.putBoolean("use_biometric", true)
+            editor.putInt("lock_attempt_count", LOCK_ATTEMPT_COUNT)
+            editor.putLong("lock_penalty_remaining", LOCK_PENALTY_REMAINING_MS)
+        } else {
+            editor.remove("lock_password")
+            editor.remove("encrypted_pin")
+            editor.remove("use_biometric")
+            editor.remove("lock_attempt_count")
+            editor.remove("lock_penalty_remaining")
+        }
+        editor.apply()
+    }
+}

@@ -16,11 +16,6 @@ import Security
 /// DESTRUCTIVE: removes every legacy artifact (Core Data store + WAL/SHM, App Group UserDefaults, all legacy-service Keychain entries).
 final class LegacyDataWiper {
 
-    func clear() {
-        // Guarded no-op: DO NOT expose the destructive path to application code; forceClear() is the sanctioned dev-only entry point.
-        return
-    }
-
     /// DEV-ONLY destructive wipe. Runs the full wipe unconditionally.
     func forceClear() {
         performClear()

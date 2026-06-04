@@ -60,6 +60,44 @@ export const SettingsDeveloperMigrationSimulatorScreen = () => {
         )
     }
 
+    const handleGeneratePressed = () => {
+        Alert.alert(
+            'Generate legacy databases?',
+            'Overwrites any existing legacy database on this device with ' +
+                'synthetic QA fixtures. Existing legacy data will be replaced ' +
+                'and cannot be recovered.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Generate',
+                    style: 'destructive',
+                    onPress: () => {
+                        void generate()
+                    },
+                },
+            ],
+        )
+    }
+
+    const handleGeneratePreSixxPressed = () => {
+        Alert.alert(
+            'Generate pre-6.x accounts?',
+            'Overwrites the legacy pre-6.x accounts blob on this device with ' +
+                'synthetic QA data. Existing data will be replaced and cannot ' +
+                'be recovered.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Generate',
+                    style: 'destructive',
+                    onPress: () => {
+                        void generatePreSixxAccounts()
+                    },
+                },
+            ],
+        )
+    }
+
     const handleResetPressed = () => {
         Alert.alert(
             'Reset legacy data?',
@@ -168,9 +206,7 @@ export const SettingsDeveloperMigrationSimulatorScreen = () => {
                     <PWButton
                         variant='primary'
                         title={isWorking ? 'Working…' : 'Generate DBs'}
-                        onPress={() => {
-                            void generate()
-                        }}
+                        onPress={handleGeneratePressed}
                         isDisabled={isWorking || plans.length === 0}
                     />
                 </PWView>
@@ -181,9 +217,7 @@ export const SettingsDeveloperMigrationSimulatorScreen = () => {
                         <PWButton
                             variant='primary'
                             title={isWorking ? 'Working…' : 'Generate pre-6.x'}
-                            onPress={() => {
-                                void generatePreSixxAccounts()
-                            }}
+                            onPress={handleGeneratePreSixxPressed}
                             isDisabled={isWorking}
                         />
                     </PWView>

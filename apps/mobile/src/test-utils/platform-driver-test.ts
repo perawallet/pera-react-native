@@ -108,7 +108,6 @@ const buildServices = (): PlatformServices => {
         isMigrationComplete: async () => true,
         markMigrationComplete: async () => {},
         clearMigrationComplete: async () => {},
-        clearLegacyData: async () => {},
         getMigrationPlans: async () => [],
         simulateLegacyDatabase: async () => {},
         simulatePreSixxAccounts: async () => {},
