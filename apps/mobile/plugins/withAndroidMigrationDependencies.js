@@ -11,7 +11,7 @@
  */
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { withAppBuildGradle } = require('@expo/config-plugins');
+const { withAppBuildGradle } = require('expo/config-plugins');
 
 const TINK_DEPENDENCY = 'com.google.crypto.tink:tink-android:1.18.0';
 const TINK_LINE = `    implementation("${TINK_DEPENDENCY}")`;
