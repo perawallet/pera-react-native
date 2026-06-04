@@ -39,6 +39,8 @@ describe('network-config', () => {
             explorerUrl: config.mainnetExplorerUrl,
             bidaliBaseUrl: config.mainnetBidaliBaseUrl,
             bidaliApiKey: config.mainnetBidaliApiKey,
+            baanxBaseUrl: config.mainnetBaanxBaseUrl,
+            baanxClientKey: config.mainnetBaanxClientKey,
         })
     })
 
@@ -55,6 +57,8 @@ describe('network-config', () => {
             explorerUrl: config.testnetExplorerUrl,
             bidaliBaseUrl: config.testnetBidaliBaseUrl,
             bidaliApiKey: config.testnetBidaliApiKey,
+            baanxBaseUrl: config.testnetBaanxBaseUrl,
+            baanxClientKey: config.testnetBaanxClientKey,
         })
     })
 })

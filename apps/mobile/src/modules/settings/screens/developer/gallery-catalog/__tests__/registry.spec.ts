@@ -30,10 +30,13 @@ describe('preview registry', () => {
         expect(getPreviewEntry('missing')).toBeUndefined()
     })
 
-    it('throws on duplicate id registration', () => {
-        registerPreview({ id: 'dup', render: () => null })
+    it('re-registers an id without throwing, keeping the latest entry (Fast Refresh safe)', () => {
+        const first = () => null
+        const second = () => null
+        registerPreview({ id: 'dup', render: first })
         expect(() =>
-            registerPreview({ id: 'dup', render: () => null }),
-        ).toThrow()
+            registerPreview({ id: 'dup', render: second }),
+        ).not.toThrow()
+        expect(getPreviewEntry('dup')?.render).toBe(second)
     })
 })

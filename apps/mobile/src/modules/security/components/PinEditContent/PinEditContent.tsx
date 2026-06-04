@@ -51,6 +51,7 @@ export const PinEditContent = ({
                     />
                 }
                 paddingStyle='normal'
+                style={styles.toolbar}
             />
             <PinEditView
                 mode={mode}

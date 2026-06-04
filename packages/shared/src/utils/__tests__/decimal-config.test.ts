@@ -12,7 +12,7 @@
 
 import { describe, test, expect } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { isDecimalEqual } from '../decimal-config'
+import { isDecimalEqual, toDecimal } from '../decimal-config'
 
 describe('isDecimalEqual', () => {
     test('returns true when both are null', () => {
@@ -48,5 +48,23 @@ describe('isDecimalEqual', () => {
         expect(isDecimalEqual(new Decimal('1.0'), new Decimal('1.00'))).toBe(
             true,
         )
+    })
+})
+
+describe('toDecimal', () => {
+    test('wraps a decimal string preserving precision', () => {
+        const value = toDecimal('12.3456789')
+        expect(value).toBeInstanceOf(Decimal)
+        expect(value.toString()).toBe('12.3456789')
+    })
+
+    test('wraps a number', () => {
+        expect(toDecimal(42).toString()).toBe('42')
+    })
+
+    test('defaults null/undefined/empty to Decimal(0)', () => {
+        expect(toDecimal(null).toString()).toBe('0')
+        expect(toDecimal(undefined).toString()).toBe('0')
+        expect(toDecimal('').toString()).toBe('0')
     })
 })

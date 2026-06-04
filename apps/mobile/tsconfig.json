@@ -39,6 +39,9 @@
       "@utils/*": [
         "./src/utils/*"
       ],
+      "@perawallet/wallet-core-card/test-handlers": [
+        "../../packages/card/src/test-handlers.ts"
+      ],
       "@perawallet/wallet-core-currencies/test-handlers": [
         "../../packages/currencies/src/test-handlers.ts"
       ],

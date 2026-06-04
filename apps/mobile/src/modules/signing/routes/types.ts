@@ -18,6 +18,14 @@ export type SigningStackParamList = {
     SingleTransaction: undefined
     TransactionList: undefined
     TransactionDetails: {
+        /**
+         * In-memory-only param. PeraDisplayableTransaction holds bigint /
+         * Uint8Array / raw-txn fields that don't survive JSON serialization,
+         * so this signing stack must NOT enable nav-state persistence or deep
+         * linking — doing so would silently drop/corrupt the txn. Passing the
+         * object is intentional: an unsigned txn under review has no on-chain
+         * id, so it can't be re-fetched by id (indexer queries are history-only).
+         */
         transaction?: PeraDisplayableTransaction
         transactionId?: string
         groupId?: string

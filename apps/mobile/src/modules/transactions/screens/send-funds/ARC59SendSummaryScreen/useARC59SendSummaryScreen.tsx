@@ -27,8 +27,14 @@ import {
     toWholeUnits,
     useSingleAssetDetailsQuery,
 } from '@perawallet/wallet-core-assets'
-import { formatCurrency, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    formatCurrency,
+    generateOrderedUniqueId,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
+import { config } from '@perawallet/wallet-core-config'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { useWebView } from '@modules/webview/hooks'
 import { useSendFunds } from '@modules/transactions/hooks'
 import { ARC59WarningContent } from '@modules/transactions/components/send-funds/ARC59WarningContent'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
@@ -60,6 +66,7 @@ export const useARC59SendSummaryScreen =
             useSendFunds()
         const selectedAccount = useSelectedAccount()
         const { request: requestBottomSheet } = useBottomSheet()
+        const { pushWebView } = useWebView()
         const { mode } = useThemeMode()
 
         const assetId = selectedAssetId ?? ''
@@ -131,8 +138,11 @@ export const useARC59SendSummaryScreen =
         }, [navigation])
 
         const handleReadMore = useCallback(() => {
-            void showWarningSheet()
-        }, [showWarningSheet])
+            pushWebView({
+                id: generateOrderedUniqueId(),
+                url: config.assetInboxSupportUrl,
+            })
+        }, [pushWebView])
 
         return {
             summary,
