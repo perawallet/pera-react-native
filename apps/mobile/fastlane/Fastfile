@@ -369,20 +369,32 @@ end
 # google-services lookup keyed by ANDROID_APPLICATION_ID, then FIREBASE_APP_ID_ANDROID.
 def android_firebase_app_id
   override = ENV["FIREBASE_APP_ID_ANDROID_OVERRIDE"]
+  UI.message("[firebase-app-id] FIREBASE_APP_ID_ANDROID_OVERRIDE=#{override.inspect}")
   return override unless override.nil? || override.empty?
 
   pkg = ENV["ANDROID_APPLICATION_ID"]
+  UI.message("[firebase-app-id] cwd=#{Dir.pwd} ANDROID_APPLICATION_ID=#{pkg.inspect}")
   if pkg && !pkg.empty?
     require 'json'
     ["config/google-services.json", "android/app/google-services.json"].each do |path|
-      next unless File.exist?(path)
-      client = (JSON.parse(File.read(path))["client"] || []).find do |c|
+      unless File.exist?(path)
+        UI.message("[firebase-app-id] #{path} NOT FOUND")
+        next
+      end
+      data = JSON.parse(File.read(path))
+      pkgs = (data["client"] || []).map { |c| c.dig("client_info", "android_client_info", "package_name") }
+      UI.message("[firebase-app-id] #{path} packages=#{pkgs.inspect}")
+      client = (data["client"] || []).find do |c|
         c.dig("client_info", "android_client_info", "package_name") == pkg
       end
       app_id = client&.dig("client_info", "mobilesdk_app_id")
-      return app_id if app_id
+      if app_id
+        UI.message("[firebase-app-id] resolved #{pkg} -> #{app_id}")
+        return app_id
+      end
     end
   end
 
+  UI.message("[firebase-app-id] no match in google-services.json; falling back to FIREBASE_APP_ID_ANDROID")
   ENV["FIREBASE_APP_ID_ANDROID"]
 end
