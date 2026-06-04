@@ -11,7 +11,7 @@
  */
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { withDangerousMod, withXcodeProject } = require('@expo/config-plugins');
+const { withDangerousMod, withXcodeProject } = require('expo/config-plugins');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const fs = require('fs');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
