@@ -16,6 +16,15 @@ export const useStyles = makeStyles(theme => ({
     content: {
         paddingTop: 0,
     },
+    // Centers the empty component within the leftover viewport space (the
+    // footer is sized to searchFooterHeight) instead of letting it sit at the
+    // top. flexGrow is a fallback for the brief window before the space is
+    // measured.
+    emptyFill: {
+        flexGrow: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     // Opaque backing for the sticky search; without it rows scroll through the
     // transparent space around the pill (visible on iOS top overscroll).
     searchSticky: {

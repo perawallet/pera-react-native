@@ -122,16 +122,34 @@ const SearchableListInner = <T,>(
             ? renderHeaderNode(ListEmptyComponent)
             : null
         const callerFooter = renderHeaderNode(ListFooterComponent)
-        if (
-            emptyComponent == null &&
-            callerFooter == null &&
-            searchFooterHeight <= 0
-        ) {
+
+        // Empty list: host the empty component in a container sized to the
+        // leftover viewport space (searchFooterHeight) and center it, rather
+        // than rendering it at the top with the spacer below. The container
+        // itself supplies the fill, so the search bar still pins as before.
+        if (emptyComponent != null) {
+            return (
+                <>
+                    <PWView
+                        style={[
+                            styles.emptyFill,
+                            searchFooterHeight > 0 && {
+                                height: searchFooterHeight,
+                            },
+                        ]}
+                    >
+                        {emptyComponent}
+                    </PWView>
+                    {callerFooter}
+                </>
+            )
+        }
+
+        if (callerFooter == null && searchFooterHeight <= 0) {
             return null
         }
         return (
             <>
-                {emptyComponent}
                 {callerFooter}
                 {searchFooterHeight > 0 && (
                     <PWView style={{ height: searchFooterHeight }} />
@@ -143,6 +161,7 @@ const SearchableListInner = <T,>(
         ListFooterComponent,
         isListEmpty,
         searchFooterHeight,
+        styles.emptyFill,
     ])
 
     const augmentedRenderItem = useCallback<RenderItem<AugmentedItem<T>>>(
