@@ -320,7 +320,7 @@ platform :android do
     notes = unescape_changelog(ENV["RELEASE_NOTES"] || "Build #{ENV['BUILD_NUMBER'] || 'dev'}")
 
     firebase_app_distribution(
-      app: (ENV["FIREBASE_APP_ID_ANDROID_OVERRIDE"] || ENV["FIREBASE_APP_ID_ANDROID"])&.strip,
+      app: android_firebase_app_id&.strip,
       groups: (ENV["FIREBASE_TESTER_GROUPS"] || "qa-testers").strip,
       release_notes: notes,
       android_artifact_type: "APK",
@@ -359,4 +359,30 @@ end
 # Firebase and TestFlight need real newlines.
 def unescape_changelog(text)
   text.strip.gsub('\\n', "\n")
+end
+
+# Resolve the Android Firebase App ID to upload to. A migration build uses the
+# legacy applicationId, whose Firebase app differs from the default one in the
+# FIREBASE_APP_ID_ANDROID secret. Instead of hand-maintaining the id, look it up
+# in the (injected) google-services.json by package name so it always matches
+# the APK's package. Order: explicit FIREBASE_APP_ID_ANDROID_OVERRIDE, then the
+# google-services lookup keyed by ANDROID_APPLICATION_ID, then FIREBASE_APP_ID_ANDROID.
+def android_firebase_app_id
+  override = ENV["FIREBASE_APP_ID_ANDROID_OVERRIDE"]
+  return override unless override.nil? || override.empty?
+
+  pkg = ENV["ANDROID_APPLICATION_ID"]
+  if pkg && !pkg.empty?
+    require 'json'
+    ["config/google-services.json", "android/app/google-services.json"].each do |path|
+      next unless File.exist?(path)
+      client = (JSON.parse(File.read(path))["client"] || []).find do |c|
+        c.dig("client_info", "android_client_info", "package_name") == pkg
+      end
+      app_id = client&.dig("client_info", "mobilesdk_app_id")
+      return app_id if app_id
+    end
+  end
+
+  ENV["FIREBASE_APP_ID_ANDROID"]
 end
