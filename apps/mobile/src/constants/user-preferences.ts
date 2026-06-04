@@ -18,7 +18,6 @@ export const UserPreferences = {
     assetFreezeSupportEnabled: 'asset-freeze-support-enabled',
     shakeToLockEnabled: 'shake-to-lock-enabled',
     duressPinEnabled: 'duress-pin-enabled',
-    disableScreenCapturePrevention: 'disable-screen-capture-prevention',
 
     transactionRequestFaqShown: 'transaction-request-faq-shown',
     stakingDisclaimerAccepted: 'staking-disclaimer-accepted',

@@ -15,9 +15,9 @@ import {
     preventScreenCaptureAsync,
     allowScreenCaptureAsync,
 } from 'expo-screen-capture'
-import { usePreferences } from '@perawallet/wallet-core-settings'
+import { useRemoteConfig } from '@perawallet/wallet-core-remote-config'
+import { RemoteConfigKeys } from '@perawallet/wallet-core-remote-config'
 import { logger } from '@perawallet/wallet-core-shared'
-import { UserPreferences } from '@constants/user-preferences'
 
 // Blocks screenshots and screen recordings while the mounting component is
 // alive (or while `enabled` is true), re-enabling capture on unmount or when
@@ -29,9 +29,9 @@ export const usePreventScreenCapture = (
     tag: string,
     enabled: boolean = true,
 ): void => {
-    const { getPreference } = usePreferences()
-    const isDisabledByFlag = Boolean(
-        getPreference(UserPreferences.disableScreenCapturePrevention),
+    const remoteConfig = useRemoteConfig()
+    const isDisabledByFlag = remoteConfig.getBooleanValue(
+        RemoteConfigKeys.disable_screen_capture_prevention,
     )
 
     useEffect(() => {
