@@ -14,26 +14,16 @@ import React, {
     createElement,
     forwardRef,
     useCallback,
-    useEffect,
     useMemo,
     useRef,
     useState,
 } from 'react'
-import {
-    Pressable,
-    type NativeScrollEvent,
-    type NativeSyntheticEvent,
-} from 'react-native'
+import { Pressable } from 'react-native'
 import type { ListRenderItemInfo } from '@shopify/flash-list'
 
-import { PWFlatList, PWText, PWView } from '@components/core'
-import { PWIcon } from '@components/core/PWIcon'
+import { PWFlatList, PWView } from '@components/core'
 import type { PWFlatListProps, PWFlatListRef } from '@components/core'
 import { SearchInput, type SearchInputRef } from '@components/SearchInput'
-
-// How close to the pinned position counts as "pinned" (px tolerance).
-const PIN_EPSILON = 2
-const NOOP = () => {}
 import {
     isHeaderSentinel,
     isSearchSentinel,
@@ -45,6 +35,11 @@ import { DEFAULT_SNAP_THRESHOLD, SCROLL_EVENT_THROTTLE } from '@constants/ui'
 import { Maybe } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 
+const NOOP = () => {}
+// testID for the real (focusable) overlay input; the sticky bar is a
+// non-interactive display mirror.
+const SEARCH_INPUT_TEST_ID = 'searchable-list-search-input'
+
 type RenderItem<T> = (props: ListRenderItemInfo<T>) => React.ReactNode
 
 export type SearchableListSearchProps = {
@@ -52,6 +47,9 @@ export type SearchableListSearchProps = {
     placeholder?: string
     onChangeText?: (value: string) => void
     onFocus: () => void
+    onBlur?: () => void
+    editable?: boolean
+    testID?: string
 }
 
 const renderHeaderNode = (
@@ -116,7 +114,6 @@ const SearchableListInner = <T,>(
         augmentedKeyExtractor,
         toUserIndex,
         searchFooterHeight,
-        headerHeight,
         handleHeaderLayout,
         handleListLayout,
         handleContentSizeChange,
@@ -136,23 +133,21 @@ const SearchableListInner = <T,>(
 
     const isListEmpty = (data?.length ?? 0) === 0
 
-    // The search input lives in two places that mirror each other: a native
-    // sticky list item (display only — it scrolls/pins via FlashList) and a
-    // single focusable overlay shown only while pinned at the top and not
-    // dragging. Typing happens in the overlay (it never remounts, so it keeps
-    // focus); its value is mirrored into the sticky display. On drag the
-    // overlay hides and the native sticky takes over — no scroll-driven
-    // animation, so nothing fights FlashList's scroll under load.
+    // The search input lives in two places that mirror each other (same
+    // SearchInput component, so they look identical): a native sticky list item
+    // (display only — non-interactive, scrolls/pins via FlashList) and a single
+    // focusable overlay shown only while actively searching. Typing happens in
+    // the overlay (it lives outside the list, so list re-renders never remount
+    // it — focus and text are preserved); its value mirrors into the display.
+    //
+    // Visibility is focus-driven, NOT scroll-driven: tying it to the scroll
+    // offset blurs the input mid-type, because the animated scroll-to-pin
+    // momentarily reads an un-pinned offset.
     const overlayRef = useRef<SearchInputRef>(null)
     const [query, setQuery] = useState(searchValue ?? '')
-    const [isPinned, setIsPinned] = useState(false)
-    const [isDragging, setIsDragging] = useState(false)
-    // Measured height of the real input (the overlay), applied to the sticky
-    // display so the two are exactly the same height — otherwise the handoff
-    // between them jumps.
-    const [searchBarHeight, setSearchBarHeight] = useState(0)
+    const [isSearching, setIsSearching] = useState(false)
     const currentValue = searchValue ?? query
-    const showOverlay = isPinned && !isDragging
+    const showOverlay = isSearching
 
     const handleQueryChange = useCallback(
         (text: string) => {
@@ -168,40 +163,19 @@ const SearchableListInner = <T,>(
         // hook's collapsed latch, which arms its re-pin-on-content-change
         // backstop — without it, the first keystroke shrinks the list and the
         // header peeks back in.
-        setIsPinned(true)
+        setIsSearching(true)
         handleSearchFocus()
         requestAnimationFrame(() => overlayRef.current?.focus())
     }, [handleSearchFocus])
 
-    const handleListScroll = useCallback(
-        (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-            handleScroll(event)
-            const y = event.nativeEvent.contentOffset.y
-            setIsPinned(y >= headerHeight - PIN_EPSILON)
-        },
-        [handleScroll, headerHeight],
-    )
+    const handleOverlayFocus = useCallback(() => setIsSearching(true), [])
+    const handleOverlayBlur = useCallback(() => setIsSearching(false), [])
 
+    // Dragging dismisses the keyboard (blurs the overlay, which exits search
+    // mode), handing the bar back to the native sticky display.
     const handleListScrollBeginDrag = useCallback(() => {
-        setIsDragging(true)
+        overlayRef.current?.blur()
     }, [])
-
-    const handleListScrollEndDrag = useCallback(
-        (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-            handleScrollEndDrag(event)
-            setIsDragging(false)
-        },
-        [handleScrollEndDrag],
-    )
-
-    const handleMomentumScrollEnd = useCallback(() => {
-        setIsDragging(false)
-    }, [])
-
-    // Drop the keyboard whenever the overlay is hidden (e.g. on drag start).
-    useEffect(() => {
-        if (!showOverlay) overlayRef.current?.blur()
-    }, [showOverlay])
 
     const augmentedFooter = useMemo(() => {
         const emptyComponent = isListEmpty
@@ -260,36 +234,28 @@ const SearchableListInner = <T,>(
                 )
             }
             if (isSearchSentinel(info.item)) {
-                // Display-only mirror (not a real input, so there's a single
-                // search field): it scrolls/pins natively via FlashList and
-                // shows the current query. Tapping it pins to the top and
-                // focuses the overlay (the real input).
+                // Display mirror: the same SearchInput so it looks identical to
+                // the overlay, but non-interactive (editable=false + the
+                // Pressable wrapper swallows taps). It scrolls/pins natively via
+                // FlashList and shows the current query. Tapping pins to the top
+                // and focuses the overlay (the real input). Hidden from
+                // accessibility so there's a single announced search field.
                 return (
                     <PWView style={styles.searchSticky}>
                         <Pressable
-                            style={[
-                                styles.searchDisplay,
-                                searchBarHeight > 0 && {
-                                    height: searchBarHeight,
-                                },
-                            ]}
                             onPress={handleEnterSearch}
+                            accessibilityElementsHidden
+                            importantForAccessibility='no-hide-descendants'
                         >
-                            <PWIcon
-                                name='magnifying-glass'
-                                variant='secondary'
-                            />
-                            <PWText
-                                variant='body'
-                                numberOfLines={1}
-                                style={
-                                    currentValue
-                                        ? styles.searchDisplayText
-                                        : styles.searchDisplayPlaceholder
-                                }
-                            >
-                                {currentValue || searchPlaceholder}
-                            </PWText>
+                            <PWView pointerEvents='none'>
+                                <SearchInputComponent
+                                    value={currentValue}
+                                    editable={false}
+                                    placeholder={searchPlaceholder}
+                                    onFocus={NOOP}
+                                    onChangeText={NOOP}
+                                />
+                            </PWView>
                         </Pressable>
                     </PWView>
                 )
@@ -306,15 +272,12 @@ const SearchableListInner = <T,>(
             renderItem,
             currentValue,
             searchPlaceholder,
+            SearchInputComponent,
             handleEnterSearch,
-            searchBarHeight,
             toUserIndex,
             ListHeaderComponent,
             handleHeaderLayout,
             styles.searchSticky,
-            styles.searchDisplay,
-            styles.searchDisplayText,
-            styles.searchDisplayPlaceholder,
         ],
     )
 
@@ -378,10 +341,9 @@ const SearchableListInner = <T,>(
         extraData: augmentedExtraData,
         onLayout: handleListLayout,
         onContentSizeChange: handleContentSizeChange,
-        onScroll: handleListScroll,
+        onScroll: handleScroll,
         onScrollBeginDrag: handleListScrollBeginDrag,
-        onScrollEndDrag: handleListScrollEndDrag,
-        onMomentumScrollEnd: handleMomentumScrollEnd,
+        onScrollEndDrag: handleScrollEndDrag,
         scrollEventThrottle: SCROLL_EVENT_THROTTLE,
     })
 
@@ -394,20 +356,16 @@ const SearchableListInner = <T,>(
                     !showOverlay && styles.searchOverlayHidden,
                 ]}
                 pointerEvents={showOverlay ? 'auto' : 'none'}
-                onLayout={event => {
-                    const h = event.nativeEvent.layout.height
-                    if (h > 0) {
-                        setSearchBarHeight(prev => (prev === h ? prev : h))
-                    }
-                }}
             >
                 <SearchInputComponent
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     ref={overlayRef as any}
                     value={currentValue}
-                    onFocus={NOOP}
+                    onFocus={handleOverlayFocus}
+                    onBlur={handleOverlayBlur}
                     placeholder={searchPlaceholder}
                     onChangeText={handleQueryChange}
+                    testID={SEARCH_INPUT_TEST_ID}
                 />
             </PWView>
         </PWView>

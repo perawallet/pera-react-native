@@ -41,29 +41,11 @@ export const useStyles = makeStyles(theme => ({
         top: 0,
         left: 0,
         right: 0,
-        zIndex: 2,
+        zIndex: theme.zIndex.layer2,
         backgroundColor: theme.colors.background,
     },
-    // Hidden (but kept mounted) when not pinned or while dragging.
+    // Hidden (but kept mounted) when not actively searching.
     searchOverlayHidden: {
         opacity: 0,
-    },
-    // Display-only mirror of the search bar (the real input is the overlay).
-    // Mirrors SearchInput's look so the overlay/sticky handoff is seamless.
-    searchDisplay: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.sm,
-        backgroundColor: theme.colors.layerGrayLighter,
-        borderRadius: theme.borderRadius.sm,
-        paddingHorizontal: theme.spacing.md,
-    },
-    searchDisplayText: {
-        flex: 1,
-        color: theme.colors.textMain,
-    },
-    searchDisplayPlaceholder: {
-        flex: 1,
-        color: theme.colors.textGray,
     },
 }))

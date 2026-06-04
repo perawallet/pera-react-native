@@ -114,9 +114,12 @@ describe('AddressSearchView', () => {
 
         render(<AddressSearchView onSelected={mockOnSelected} />)
 
-        const input = screen.getByPlaceholderText(
+        // Two search fields render: the non-interactive sticky display mirror
+        // and the focusable overlay (last in document order) — type into the
+        // overlay.
+        const input = screen.getAllByPlaceholderText(
             'address_entry.search_placeholder',
-        )
+        )[1]
         fireEvent.change(input, { target: { value: 'Friend' } })
 
         expect(mockFindContacts).toHaveBeenCalledWith({ keyword: 'Friend' })
@@ -158,9 +161,12 @@ describe('AddressSearchView', () => {
 
         render(<AddressSearchView onSelected={mockOnSelected} />)
 
-        const input = screen.getByPlaceholderText(
+        // Two search fields render: the non-interactive sticky display mirror
+        // and the focusable overlay (last in document order) — type into the
+        // overlay.
+        const input = screen.getAllByPlaceholderText(
             'address_entry.search_placeholder',
-        )
+        )[1]
         fireEvent.change(input, { target: { value: validAddress } })
 
         expect(screen.getByText('address_entry.address')).toBeTruthy()
@@ -176,9 +182,12 @@ describe('AddressSearchView', () => {
             />,
         )
 
-        const input = screen.getByPlaceholderText(
+        // Two search fields render: the non-interactive sticky display mirror
+        // and the focusable overlay (last in document order) — type into the
+        // overlay.
+        const input = screen.getAllByPlaceholderText(
             'address_entry.search_placeholder',
-        )
+        )[1]
         fireEvent.change(input, { target: { value: 'VALID_ADDRESS' } })
 
         expect(screen.getByTestId('address-search-add-icon')).toBeTruthy()
@@ -189,9 +198,12 @@ describe('AddressSearchView', () => {
 
         render(<AddressSearchView onSelected={mockOnSelected} />)
 
-        const input = screen.getByPlaceholderText(
+        // Two search fields render: the non-interactive sticky display mirror
+        // and the focusable overlay (last in document order) — type into the
+        // overlay.
+        const input = screen.getAllByPlaceholderText(
             'address_entry.search_placeholder',
-        )
+        )[1]
         fireEvent.change(input, { target: { value: 'VALID_ADDRESS' } })
 
         expect(screen.queryByTestId('address-search-add-icon')).toBeNull()
@@ -209,9 +221,12 @@ describe('AddressSearchView', () => {
 
         render(<AddressSearchView onSelected={mockOnSelected} />)
 
-        const input = screen.getByPlaceholderText(
+        // Two search fields render: the non-interactive sticky display mirror
+        // and the focusable overlay (last in document order) — type into the
+        // overlay.
+        const input = screen.getAllByPlaceholderText(
             'address_entry.search_placeholder',
-        )
+        )[1]
         fireEvent.change(input, { target: { value: 'VALID_ADDRESS' } })
 
         expect(screen.getByText('address_entry.address')).toBeTruthy()
