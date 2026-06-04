@@ -14,7 +14,7 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
-        flexGrow: 1,
+        flex: 1,
         backgroundColor: theme.colors.background,
     },
     searchContainer: {

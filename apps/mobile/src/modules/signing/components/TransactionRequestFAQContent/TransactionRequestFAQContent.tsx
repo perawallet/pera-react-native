@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWButton, PWIcon, PWText, PWView } from '@components/core'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
@@ -21,7 +22,8 @@ export const TransactionRequestFAQContent = (
     _props: TransactionRequestFAQContentProps = {},
 ) => {
     const { t } = useLanguage()
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles({ bottomInset: insets.bottom })
     const { dismiss } = useBottomSheetResult<void>()
 
     return (
