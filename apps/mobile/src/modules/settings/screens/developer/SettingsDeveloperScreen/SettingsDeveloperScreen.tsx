@@ -74,32 +74,34 @@ export const SettingsDeveloperScreen = () => {
                 />
             )}
 
-            <PWView
-                style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    paddingHorizontal: 16,
-                    paddingVertical: 12,
-                }}
-                testID='developer_settings_disable_screen_capture_item'
-            >
+            {getPreference(UserPreferences.developerMenuEnabled) && (
                 <PWView
                     style={{
                         flexDirection: 'row',
                         alignItems: 'center',
-                        gap: 12,
+                        justifyContent: 'space-between',
+                        paddingHorizontal: 16,
+                        paddingVertical: 12,
                     }}
+                    testID='developer_settings_disable_screen_capture_item'
                 >
-                    <PWIcon name='locked' />
-                    <PWText>Disable Screen Capture Prevention</PWText>
+                    <PWView
+                        style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: 12,
+                        }}
+                    >
+                        <PWIcon name='locked' />
+                        <PWText>Disable Screen Capture Prevention</PWText>
+                    </PWView>
+                    <PWSwitch
+                        value={isScreenCapturePreventionDisabled}
+                        onValueChange={handleScreenCaptureToggle}
+                        testID='developer_settings_disable_screen_capture_toggle'
+                    />
                 </PWView>
-                <PWSwitch
-                    value={isScreenCapturePreventionDisabled}
-                    onValueChange={handleScreenCaptureToggle}
-                    testID='developer_settings_disable_screen_capture_toggle'
-                />
-            </PWView>
+            )}
 
             {getPreference(UserPreferences.developerMenuEnabled) && (
                 <PWListItem
