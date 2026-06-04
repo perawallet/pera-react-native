@@ -249,13 +249,18 @@ const SearchableListInner = <T,>(
                             accessibilityElementsHidden
                             importantForAccessibility='no-hide-descendants'
                         >
-                            <PWView pointerEvents='none'>
+                            {/* box-none: the input body isn't editable so its
+                                taps fall through to the Pressable (enter
+                                search), but the built-in clear (X) button is a
+                                touchable child and still receives its tap —
+                                clearing in place without pinning. */}
+                            <PWView pointerEvents='box-none'>
                                 <SearchInputComponent
                                     value={currentValue}
                                     editable={false}
                                     placeholder={searchPlaceholder}
                                     onFocus={NOOP}
-                                    onChangeText={NOOP}
+                                    onChangeText={handleQueryChange}
                                 />
                             </PWView>
                         </Pressable>
@@ -276,6 +281,7 @@ const SearchableListInner = <T,>(
             searchPlaceholder,
             SearchInputComponent,
             handleEnterSearch,
+            handleQueryChange,
             toUserIndex,
             ListHeaderComponent,
             handleHeaderLayout,
