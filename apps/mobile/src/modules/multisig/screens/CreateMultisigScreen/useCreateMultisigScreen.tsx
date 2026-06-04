@@ -17,6 +17,7 @@ import {
     useContacts,
 } from '@perawallet/wallet-core-contacts'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
+import { trackEvent, MultisigEvent } from '@perawallet/wallet-core-analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import {
@@ -96,6 +97,7 @@ export const useCreateMultisigScreen = (): UseCreateMultisigScreenResult => {
     )
 
     const handleOpenAddParticipant = useCallback(async () => {
+        trackEvent(MultisigEvent.AddAccount)
         const result = await requestBottomSheet<AddParticipantResult>({
             contents: <AddParticipantContent />,
             options: {
@@ -112,6 +114,7 @@ export const useCreateMultisigScreen = (): UseCreateMultisigScreenResult => {
         (index: number) => {
             const participant = participants[index]
             if (!participant) return
+            trackEvent(MultisigEvent.EditAccount)
             navigation.push('EditParticipant', {
                 index,
                 address: participant.address,
@@ -122,12 +125,14 @@ export const useCreateMultisigScreen = (): UseCreateMultisigScreenResult => {
 
     const handleRemoveParticipant = useCallback(
         (index: number) => {
+            trackEvent(MultisigEvent.RemoveAddress)
             removeParticipant(index)
         },
         [removeParticipant],
     )
 
     const handleContinue = useCallback(() => {
+        trackEvent(MultisigEvent.AddAccountContinue)
         navigation.push('SetThreshold')
     }, [navigation])
 

@@ -14,52 +14,38 @@ import { AnalyticsMetadataKey as Key } from '../metadata-keys'
 
 /** WalletConnect session and transaction events. */
 export enum WalletConnectEvent {
-    SessionApproved = 'wc_session_approved', // Approved a dapp connection (version, topic, dapp name/url, address, total accounts)
-    SessionDisconnected = 'wc_session_disconnected', // Disconnected a session (version, dapp name/url, opt. address)
-    SessionRejected = 'wc_session_rejected', // Rejected a connection request (version, topic, dapp name/url)
-    TransactionConfirmed = 'wc_transaction_confirmed', // Confirmed a dapp transaction (version, tx id, dapp name/url)
-    TransactionDeclined = 'wc_transaction_declined', // Declined a dapp transaction (version, tx count, dapp name/url, opt. address)
-    TransactionRequestDidAppear = 'wc_transaction_request_DidAppear', // Transaction-request screen appeared
-    TransactionRequestDidLoad = 'wc_transaction_request_DidLoad', // Transaction request finished loading
-    TransactionRequestReceived = 'wc_transaction_request_Received', // A transaction request was received
-    TransactionRequestValidated = 'wc_transaction_request_Validated', // A transaction request passed validation
+    SessionApproved = 'wc_session_approved', // Approved a dapp connection (dapp name/url, address, total accounts)
+    SessionDisconnected = 'wc_session_disconnected', // Disconnected a session (dapp name/url)
+    SessionRejected = 'wc_session_rejected', // Rejected a connection request (dapp name/url)
 }
 
 /** WalletConnect protocol version ('1' or '2'). */
 export type WalletConnectVersion = '1' | '2'
 
+/**
+ * Dapp name/url come from the session request's `peerMeta` and are always
+ * present. Wc version + topic aren't exposed by RN's WalletConnect types, so
+ * those (and address/counts) are optional.
+ */
 export interface WalletConnectRequiredPayloads {
     [WalletConnectEvent.SessionApproved]: {
-        [Key.WcVersion]: WalletConnectVersion
-        [Key.WcSessionTopic]: string
         [Key.DappName]: string
         [Key.DappUrl]: string
-        [Key.AccountAddress]: string
-        [Key.TotalAccount]: number
+        [Key.WcVersion]?: WalletConnectVersion
+        [Key.WcSessionTopic]?: string
+        [Key.AccountAddress]?: string
+        [Key.TotalAccount]?: number
     }
     [WalletConnectEvent.SessionRejected]: {
-        [Key.WcVersion]: WalletConnectVersion
-        [Key.WcSessionTopic]: string
         [Key.DappName]: string
         [Key.DappUrl]: string
+        [Key.WcVersion]?: WalletConnectVersion
+        [Key.WcSessionTopic]?: string
     }
     [WalletConnectEvent.SessionDisconnected]: {
-        [Key.WcVersion]: WalletConnectVersion
         [Key.DappName]: string
         [Key.DappUrl]: string
-        [Key.AccountAddress]?: string
-    }
-    [WalletConnectEvent.TransactionConfirmed]: {
-        [Key.WcVersion]: WalletConnectVersion
-        [Key.TransactionId]: string
-        [Key.DappName]: string
-        [Key.DappUrl]: string
-    }
-    [WalletConnectEvent.TransactionDeclined]: {
-        [Key.WcVersion]: WalletConnectVersion
-        [Key.TransactionCount]: number
-        [Key.DappName]: string
-        [Key.DappUrl]: string
+        [Key.WcVersion]?: WalletConnectVersion
         [Key.AccountAddress]?: string
     }
 }

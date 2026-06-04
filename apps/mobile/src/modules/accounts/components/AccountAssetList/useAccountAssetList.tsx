@@ -30,6 +30,10 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { useGlobalSearch } from '@perawallet/wallet-core-search'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
+import {
+    trackEvent,
+    AssetDetailsEvent,
+} from '@perawallet/wallet-core-analytics'
 import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useModalState, ModalState } from '@hooks/useModalState'
@@ -216,6 +220,7 @@ export const useAccountAssetList = ({
     )
 
     const handleOpenAddAsset = useCallback(() => {
+        trackEvent(AssetDetailsEvent.AddAsset)
         void requestBottomSheet<void>({
             contents: <AddAssetContent />,
             options: {
@@ -227,6 +232,7 @@ export const useAccountAssetList = ({
     }, [requestBottomSheet])
 
     const handleOpenManage = useCallback(async () => {
+        trackEvent(AssetDetailsEvent.ManageAsset)
         const action = await requestBottomSheet<ManageAssetsAction>({
             contents: <ManageAssetsContent isReadOnly={isReadOnly} />,
             options: {

@@ -44,7 +44,7 @@ export const SwapConfirmationContent = ({
     const styles = useStyles()
 
     const { swapStatus, handleSlideConfirm, handleClose } =
-        useSwapConfirmationActions({ quoteIdStr: quote.quoteIdStr })
+        useSwapConfirmationActions({ quote })
 
     const {
         selectedAccount,

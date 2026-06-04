@@ -14,6 +14,7 @@ import { Platform } from 'react-native'
 import { IconName, PWIcon } from '@components/core'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { useTheme } from '@rneui/themed'
+import { trackEvent, TabbarEvent } from '@perawallet/wallet-core-analytics'
 import { screenListeners } from './listeners'
 import { DiscoverScreen } from '@modules/discover/screens/DiscoverScreen'
 import { FundScreen } from '@modules/fund/screens/FundScreen'
@@ -104,27 +105,32 @@ export const TabBarStackNavigator = () => {
             <TabBarStack.Screen
                 name='Home'
                 component={AccountStackNavigator}
+                listeners={{ tabPress: () => trackEvent(TabbarEvent.Home) }}
             />
             <TabBarStack.Screen
                 name='Discover'
                 layout={headeredLayout}
                 component={DiscoverScreen}
+                listeners={{ tabPress: () => trackEvent(TabbarEvent.Discover) }}
             />
             <TabBarStack.Screen
                 name='Swap'
                 layout={safeAreaLayout}
                 component={SwapScreen}
+                listeners={{ tabPress: () => trackEvent(TabbarEvent.Swap) }}
             />
             <TabBarStack.Screen
                 name='Fund'
                 layout={headeredLayout}
                 component={FundScreen}
+                listeners={{ tabPress: () => trackEvent(TabbarEvent.Fund) }}
             />
             <TabBarStack.Screen
                 name='Menu'
                 layout={safeAreaLayout}
                 component={MenuScreen}
                 options={{ tabBarButtonTestID: 'tab_menu_button' }}
+                listeners={{ tabPress: () => trackEvent(TabbarEvent.Menu) }}
             />
         </TabBarStack.Navigator>
     )

@@ -18,6 +18,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
+import { trackEvent, SettingsEvent } from '@perawallet/wallet-core-analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -69,6 +70,9 @@ export const useSettingsScreen = () => {
         route?: keyof SettingsStackParamsList
     }) => {
         if (page.route) {
+            if (page.route === 'PasskeysSettings') {
+                trackEvent(SettingsEvent.PassKey)
+            }
             goToSettingsPage(page.route)
         } else if (page.url) {
             openWebView(page.url)

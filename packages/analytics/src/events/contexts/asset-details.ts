@@ -15,7 +15,6 @@ import { AnalyticsMetadataKey as Key } from '../metadata-keys'
 /** Asset detail screen actions. */
 export enum AssetDetailsEvent {
     Show = 'asset_detail_asset', // Viewed an asset's detail (includes asset id)
-    Change = 'asset_detail_asset_change', // Switched the selected asset in detail
     AddAsset = 'assetscr_asset_add', // Added an asset
     ManageAsset = 'assetscr_assets_manage', // Opened manage assets
     Receive = 'tap_asset_detail_receive', // Tapped Receive on asset detail

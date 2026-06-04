@@ -23,6 +23,11 @@ import {
 import { useDeepLink } from '@hooks/useDeepLink'
 import { navigateToScreen } from '@hooks/deeplink/navigateToScreen'
 import { useHandleInboxItemPress } from './useHandleInboxItemPress'
+import {
+    trackEvent,
+    NotificationsEvent,
+    AnalyticsMetadataKey,
+} from '@perawallet/wallet-core-analytics'
 
 type MultisigIntentKind = 'sign' | 'import'
 
@@ -66,6 +71,9 @@ export const useNotificationPress = (): UseNotificationPressResult => {
 
     const handleNotificationPress = useCallback(
         (notification: PeraNotification) => {
+            trackEvent(NotificationsEvent.Open, {
+                [AnalyticsMetadataKey.NotificationUrl]: notification.url,
+            })
             const intentKind = getMultisigIntentKind(notification.type)
             if (intentKind) {
                 // Switch to the Inbox tab first so the user lands there while

@@ -12,16 +12,13 @@
 
 /** Home screen actions. */
 export enum HomeEvent {
-    AccountAdd = 'homescr_account_add', // Tapped add-account on home
-    AssetInbox = 'homescr_asset_inbox_tap', // Opened the asset inbox from home
-    QrScan = 'homescr_qr_scan', // Tapped QR scan on home
-    QrConnected = 'homescr_qr_scan_connected', // A QR scan led to a connection
-    BuyAlgo = 'homescr_buysell_click', // Tapped buy/sell on home
-    Send = 'homescr_send_click', // Tapped Send on home
-    Fund = 'homescr_fund_click', // Tapped Fund on home
-    Sort = 'homescr_sort_tap', // Tapped sort on home
-    Stake = 'homescr_stake_click', // Tapped Stake on home
-    Swap = 'homescr_swap_click', // Tapped Swap on home
-    Notification = 'homescr_notification_tap', // Tapped the notifications bell on home
-    Chart = 'homescr_chart_tap', // Tapped the chart on home
+    AccountAdd = 'homescr_account_add', // Started adding an account from the account picker
+    QrScan = 'homescr_qr_scan', // Opened the QR scanner from the home header
+    QrConnected = 'homescr_qr_scan_connected', // A home QR scan established a WalletConnect session
+    Send = 'homescr_send_click', // Opened Send from the home overview
+    Fund = 'homescr_fund_click', // Tapped Buy on the no-funds panel (navigates to Fund)
+    Sort = 'homescr_sort_tap', // Sorted the account list
+    Swap = 'homescr_swap_click', // Tapped Swap on the home button panel
+    Notification = 'homescr_notification_tap', // Opened the inbox from the home notifications icon
+    Chart = 'homescr_chart_tap', // Toggled the portfolio chart on the home overview
 }

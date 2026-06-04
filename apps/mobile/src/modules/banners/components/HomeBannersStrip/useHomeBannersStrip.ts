@@ -18,6 +18,11 @@ import {
     useVisibleBanners,
     type Banner,
 } from '@perawallet/wallet-core-banners'
+import {
+    trackEvent,
+    BannersEvent,
+    AnalyticsMetadataKey,
+} from '@perawallet/wallet-core-analytics'
 import type { RootStackParamList } from '@routes/types'
 
 export type UseHomeBannersStripResult = {
@@ -45,8 +50,11 @@ export const useHomeBannersStrip = (): UseHomeBannersStripResult => {
     const hasAutoOpened = useBannersStore(state => state.hasAutoOpened)
 
     const onPress = useCallback(() => {
+        trackEvent(BannersEvent.Spot, {
+            [AnalyticsMetadataKey.BannerName]: String(banners[0]?.id ?? ''),
+        })
         navigation.navigate('BannersCarouselModal')
-    }, [navigation])
+    }, [navigation, banners])
 
     useEffect(() => {
         const candidate = findAutoOpenCandidate(banners)

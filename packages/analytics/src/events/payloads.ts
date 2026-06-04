@@ -19,10 +19,8 @@ import type {
     SwapOptionalPayloads,
 } from './contexts/swap'
 import type { WalletConnectRequiredPayloads } from './contexts/wallet-connect'
-import type { DiscoverRequiredPayloads } from './contexts/discover'
 import type { SettingsRequiredPayloads } from './contexts/settings'
 import type { TransactionsRequiredPayloads } from './contexts/transactions'
-import type { ReceiveRequiredPayloads } from './contexts/transfer'
 import type { NotificationsOptionalPayloads } from './contexts/notifications'
 
 /**
@@ -37,10 +35,8 @@ export interface RequiredEventPayloads
         AssetDetailsRequiredPayloads,
         SwapRequiredPayloads,
         WalletConnectRequiredPayloads,
-        DiscoverRequiredPayloads,
         SettingsRequiredPayloads,
-        TransactionsRequiredPayloads,
-        ReceiveRequiredPayloads {}
+        TransactionsRequiredPayloads {}
 
 /** Events that MAY carry a payload (all fields optional). */
 export interface OptionalEventPayloads

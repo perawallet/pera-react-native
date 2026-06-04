@@ -14,6 +14,10 @@ import { useState } from 'react'
 import { createPWTabNavigator } from '@components/core/PWTabView/PWTabView'
 import { useLanguage } from '@hooks/useLanguage'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    trackEvent,
+    AccountDetailsEvent,
+} from '@perawallet/wallet-core-analytics'
 import { AccountOverview } from '../AccountOverview'
 import { AccountNfts } from '../AccountNfts'
 import { AccountHistory } from '../AccountHistory'
@@ -49,6 +53,9 @@ export const AccountTabNavigator = ({
                 options={{
                     title: t('account_details.main_screen.overview_tab'),
                 }}
+                listeners={{
+                    tabPress: () => trackEvent(AccountDetailsEvent.Assets),
+                }}
             >
                 {() => (
                     <AccountOverview
@@ -63,6 +70,10 @@ export const AccountTabNavigator = ({
                 name='Nfts'
                 options={{ title: t('account_details.main_screen.nfts_tab') }}
                 component={AccountNfts}
+                listeners={{
+                    tabPress: () =>
+                        trackEvent(AccountDetailsEvent.Collectibles),
+                }}
             />
 
             <Tab.Screen
@@ -71,6 +82,9 @@ export const AccountTabNavigator = ({
                     title: t('account_details.main_screen.history_tab'),
                 }}
                 component={AccountHistory}
+                listeners={{
+                    tabPress: () => trackEvent(AccountDetailsEvent.History),
+                }}
             />
         </Tab.Navigator>
     )

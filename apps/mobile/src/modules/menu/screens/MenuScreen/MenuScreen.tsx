@@ -31,6 +31,11 @@ import { BidaliContent } from '@modules/gift-card/components/BidaliContent'
 import { useCallback } from 'react'
 import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
+import {
+    trackEvent,
+    MenuEvent,
+    FundEvent,
+} from '@perawallet/wallet-core-analytics'
 
 export const MenuScreen = () => {
     const styles = useStyles()
@@ -41,6 +46,7 @@ export const MenuScreen = () => {
     const { pushWebView } = useWebView()
 
     const openReceiveFunds = useCallback(() => {
+        trackEvent(MenuEvent.Receive)
         void requestBottomSheet({
             contents: <ReceiveFundsContent />,
             options: {
@@ -52,6 +58,7 @@ export const MenuScreen = () => {
     }, [requestBottomSheet])
 
     const openBidali = useCallback(() => {
+        trackEvent(FundEvent.BidaliSelected)
         void requestBottomSheet({
             contents: <BidaliContent />,
             options: {
@@ -78,6 +85,7 @@ export const MenuScreen = () => {
     }
 
     const goToStaking = () => {
+        trackEvent(MenuEvent.Stake)
         navigation.push('Staking')
     }
 
@@ -100,7 +108,10 @@ export const MenuScreen = () => {
                 </PWView>
                 <PWView style={styles.iconBarActions}>
                     <PWTouchableOpacity
-                        onPress={scanner.open}
+                        onPress={() => {
+                            trackEvent(MenuEvent.QrScan)
+                            scanner.open()
+                        }}
                         testID='menu_button'
                     >
                         <PWIcon

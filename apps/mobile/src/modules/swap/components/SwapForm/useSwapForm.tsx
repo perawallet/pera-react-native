@@ -20,6 +20,11 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import {
+    trackEvent,
+    SwapEvent,
+    AnalyticsMetadataKey,
+} from '@perawallet/wallet-core-analytics'
+import {
     baseUnitsToDisplayUnits,
     displayUnitsToBaseUnits,
     useNetwork,
@@ -326,6 +331,9 @@ export const useSwapForm = (): UseSwapFormResult => {
     }, [applyPercentageAmount])
 
     const handleOpenPayAssetSelection = useCallback(async () => {
+        trackEvent(SwapEvent.SelectFromToken, {
+            [AnalyticsMetadataKey.AssetId]: fromAsset,
+        })
         const assetId = await requestBottomSheet<string>({
             contents: (
                 <SwapAssetSelectionContent
@@ -349,6 +357,9 @@ export const useSwapForm = (): UseSwapFormResult => {
     }, [requestBottomSheet, toAsset, setFromAsset, resetQuoteMutation])
 
     const handleOpenReceiveAssetSelection = useCallback(async () => {
+        trackEvent(SwapEvent.SelectToToken, {
+            [AnalyticsMetadataKey.AssetId]: toAsset,
+        })
         const assetId = await requestBottomSheet<string>({
             contents: (
                 <SwapAssetSelectionContent
@@ -373,6 +384,10 @@ export const useSwapForm = (): UseSwapFormResult => {
     }, [requestBottomSheet, fromAsset, setToAsset, resetQuoteMutation])
 
     const handleOpenProvider = useCallback(async () => {
+        trackEvent(SwapEvent.SelectProviderOpen, {
+            [AnalyticsMetadataKey.RouterName]:
+                selectedProviderName ?? undefined,
+        })
         const result = await requestBottomSheet<SwapProviderResult>({
             contents: (
                 <SwapProviderContent
@@ -399,6 +414,7 @@ export const useSwapForm = (): UseSwapFormResult => {
     const handleOpenConfirm = useCallback(async () => {
         if (!selectedQuote) return
 
+        trackEvent(SwapEvent.ConfirmSwapButton)
         const result = await requestBottomSheet<SwapConfirmationResult>({
             contents: <SwapConfirmationContent quote={selectedQuote} />,
             options: {

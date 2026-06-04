@@ -12,7 +12,5 @@
 
 /** Fund / buy-crypto flow (Bidali only — MoonPay/Meld are excluded). */
 export enum FundEvent {
-    BuyAlgoTab = 'tap_tab_buy_algo', // Tapped the buy-algo option
-    BuyAlgoBottomsheet = 'bottommenu_algo_buy_tap', // Tapped buy algo in the bottom sheet
-    BidaliSelected = 'bidscr_algo_sell_tap', // Selected Bidali on the buy/sell screen
+    BidaliSelected = 'bidscr_algo_sell_tap', // Opened the gift-card (Bidali) flow from the menu
 }

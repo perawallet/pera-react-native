@@ -10,18 +10,17 @@
  limitations under the License
  */
 
-/** Account detail screen actions (incl. its joint-account menu items). */
+/**
+ * Account actions on the home surface that aren't covered by `HomeEvent`: the
+ * sub-tabs, history controls, the account options menu, and joint-account items.
+ * Actions shared with the home quick-actions (send, buy, swap, fund, chart, asset
+ * inbox) fire their `HomeEvent` counterpart instead.
+ */
 export enum AccountDetailsEvent {
-    Assets = 'accountscr_assets_tap', // Tapped the Assets tab on account detail
-    Collectibles = 'accountscr_collectibles_tap', // Tapped the Collectibles tab
-    History = 'accountscr_history_tap', // Tapped the History tab
-    BuyAlgo = 'acccountscr_buysell_click', // Tapped buy/sell
-    Fund = 'acccountscr_fund_click', // Tapped Fund
-    Swap = 'accountscr_swap_click', // Tapped Swap
-    AssetInbox = 'accountscr_tapmenu_asset_inbox_tap', // Opened the asset inbox from the account menu
-    Send = 'accountscr_tapmenu_send_tap', // Tapped Send from the account menu
-    More = 'accountscr_tapmenu_more_tap', // Tapped More in the account menu
-    Chart = 'accountscr_chart_tap', // Tapped the chart
+    Assets = 'accountscr_assets_tap', // Switched to the Overview/Assets tab
+    Collectibles = 'accountscr_collectibles_tap', // Switched to the NFTs tab
+    History = 'accountscr_history_tap', // Switched to the History tab
+    More = 'accountscr_tapmenu_more_tap', // Opened the account options menu
     TransactionDownload = 'historyscr_transactions_download', // Downloaded transaction history
     TransactionFilter = 'historyscr_transactions_filter', // Filtered transaction history
     JointAccountDetail = 'accountscr_jointAccount_detail_press', // Opened joint-account detail

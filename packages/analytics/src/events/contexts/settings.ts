@@ -15,7 +15,6 @@ import { AnalyticsMetadataKey as Key } from '../metadata-keys'
 /** Settings screen actions. */
 export enum SettingsEvent {
     ChangeCurrency = 'currency_change', // Changed the display currency (currency id)
-    ChangeLanguage = 'language_change', // Changed the app language
     ChangeNotificationFilter = 'notification_filter_change', // Changed notification setting for an account (address, on/off)
     PassKey = 'settingsscr_passkeys_tap', // Opened passkeys in settings
 }

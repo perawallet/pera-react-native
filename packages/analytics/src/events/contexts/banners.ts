@@ -14,19 +14,11 @@ import { AnalyticsMetadataKey as Key } from '../metadata-keys'
 
 /** Home screen banners. */
 export enum BannersEvent {
-    Governance = 'homescr_visitgovernance', // Tapped the governance banner
-    Retail = 'homescr_visitretail', // Tapped the retail banner
-    Staking = 'homescr_visitstaking', // Tapped the staking banner
-    Generic = 'homescr_visitgeneric', // Tapped a generic banner
-    Spot = 'homescr_banner_click', // Tapped a spot banner (includes which banner)
-    SpotClose = 'homescr_banner_close_click', // Closed a spot banner (includes which banner)
+    Spot = 'homescr_banner_click', // Tapped a home banner (includes which banner)
 }
 
 export interface BannersRequiredPayloads {
     [BannersEvent.Spot]: {
-        [Key.BannerName]: string
-    }
-    [BannersEvent.SpotClose]: {
         [Key.BannerName]: string
     }
 }

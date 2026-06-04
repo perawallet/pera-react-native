@@ -19,6 +19,7 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
+import { trackEvent, SwapEvent } from '@perawallet/wallet-core-analytics'
 
 type UseSwapAmountSectionParams = {
     variant: 'pay' | 'receive'
@@ -89,7 +90,12 @@ export const useSwapAmountSection = ({
 
     const hasPositiveAmount = amount !== null && amount.greaterThan(0)
 
-    const handleFocus = useCallback(() => setIsFocused(true), [])
+    const handleFocus = useCallback(() => {
+        if (isPay) {
+            trackEvent(SwapEvent.EnterNumbers)
+        }
+        setIsFocused(true)
+    }, [isPay])
     const handleBlur = useCallback(() => setIsFocused(false), [])
 
     const handleTextChange = useCallback(

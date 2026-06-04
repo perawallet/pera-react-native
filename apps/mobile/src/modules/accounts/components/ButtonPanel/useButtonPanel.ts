@@ -11,6 +11,7 @@
  */
 
 import { useCallback } from 'react'
+import { trackEvent, HomeEvent } from '@perawallet/wallet-core-analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useAccountOverviewModal } from '../AccountOverview/AccountOverviewModalContext'
 
@@ -27,6 +28,7 @@ export const useButtonPanel = (): UseButtonPanelResult => {
         useAccountOverviewModal()
 
     const handleSwap = useCallback(() => {
+        trackEvent(HomeEvent.Swap)
         navigation.replace('TabBar', { screen: 'Swap' })
     }, [navigation])
 

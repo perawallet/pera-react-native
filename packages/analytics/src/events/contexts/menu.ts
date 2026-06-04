@@ -13,12 +13,6 @@
 /** Menu screen actions. */
 export enum MenuEvent {
     QrScan = 'menuscr_qr_scan', // Tapped QR scan in menu
-    Nfts = 'menuscr_nfts_tap', // Tapped NFTs in menu
-    Transfer = 'menuscr_transfer_tap', // Tapped Transfer in menu
-    BuyAlgo = 'menuscr_buyalgo_tap', // Tapped buy algo in menu
     Receive = 'menuscr_receive_tap', // Tapped Receive in menu
     Stake = 'menuscr_stake_tap', // Tapped Stake in menu
-    InviteFriends = 'menuscr_invite_friends_tap', // Tapped invite friends in menu
-    CloseInviteFriends = 'menuscr_invite_close_tap', // Closed the invite-friends sheet
-    ShareInviteFriends = 'menuscr_invite_share_tap', // Shared the invite link
 }

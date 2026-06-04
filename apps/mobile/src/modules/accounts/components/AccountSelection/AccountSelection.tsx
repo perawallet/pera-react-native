@@ -22,6 +22,7 @@ import {
 } from '@modules/accounts/components/AccountMenuContent'
 import { AccountSortContent } from '@modules/accounts/components/AccountSortContent'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { trackEvent, HomeEvent } from '@perawallet/wallet-core-analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { StyleProp, TouchableOpacityProps, ViewStyle } from 'react-native'
 import { AccountDisplay } from '../AccountDisplay'
@@ -82,12 +83,14 @@ export const AccountSelection = ({
                 onSelected?.(result.account)
                 return
             case 'add-account':
+                trackEvent(HomeEvent.AccountAdd)
                 navigation.navigate('AddAccount', { screen: 'AddAccountHome' })
                 return
             case 'search':
                 navigation.navigate('Search', { screen: 'SearchScreen' })
                 return
             case 'sort':
+                trackEvent(HomeEvent.Sort)
                 await requestBottomSheet<void>({
                     contents: <AccountSortContent />,
                     options: {

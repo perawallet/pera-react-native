@@ -19,6 +19,11 @@ import {
     useCurrenciesQuery,
     useCurrency,
 } from '@perawallet/wallet-core-currencies'
+import {
+    trackEvent,
+    SettingsEvent,
+    AnalyticsMetadataKey,
+} from '@perawallet/wallet-core-analytics'
 import { useEffect, useState } from 'react'
 
 type UseSettingsCurrencyScreenResult = {
@@ -60,6 +65,9 @@ export const useSettingsCurrencyScreen =
         }, [data, search])
 
         const setCurrency = (currency: Currency) => {
+            trackEvent(SettingsEvent.ChangeCurrency, {
+                [AnalyticsMetadataKey.Id]: currency.id,
+            })
             if (currency.id === 'ALGO') {
                 setPreferredCurrency('ALGO')
                 setFallbackCurrency('USD')

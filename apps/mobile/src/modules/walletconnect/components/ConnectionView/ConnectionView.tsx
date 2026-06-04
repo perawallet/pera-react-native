@@ -32,6 +32,11 @@ import {
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { ConnectionViewHeader } from './ConnectionViewHeader'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import {
+    trackEvent,
+    WalletConnectEvent,
+    AnalyticsMetadataKey,
+} from '@perawallet/wallet-core-analytics'
 
 export type ConnectionViewProps = {
     request: WalletConnectSessionRequest
@@ -54,6 +59,10 @@ export const ConnectionView = ({
     const [selectedAccounts, setSelectedAccounts] = React.useState<string[]>([])
 
     const handleCancel = () => {
+        trackEvent(WalletConnectEvent.SessionRejected, {
+            [AnalyticsMetadataKey.DappName]: request.peerMeta.name,
+            [AnalyticsMetadataKey.DappUrl]: request.peerMeta.url,
+        })
         rejectSession(request.clientId)
         removeSessionRequest(request)
     }
@@ -61,6 +70,12 @@ export const ConnectionView = ({
     const handleConnect = () => {
         try {
             approveSession(request.clientId, request, selectedAccounts)
+            trackEvent(WalletConnectEvent.SessionApproved, {
+                [AnalyticsMetadataKey.DappName]: request.peerMeta.name,
+                [AnalyticsMetadataKey.DappUrl]: request.peerMeta.url,
+                [AnalyticsMetadataKey.AccountAddress]: selectedAccounts[0],
+                [AnalyticsMetadataKey.TotalAccount]: selectedAccounts.length,
+            })
             onSuccess(request)
             removeSessionRequest(request)
         } catch (error) {

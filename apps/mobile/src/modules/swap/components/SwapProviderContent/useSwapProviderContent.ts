@@ -15,6 +15,11 @@ import { Decimal } from 'decimal.js'
 import { formatAssetAmount } from '@perawallet/wallet-core-assets'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
+    trackEvent,
+    SwapEvent,
+    AnalyticsMetadataKey,
+} from '@perawallet/wallet-core-analytics'
+import {
     formatCurrency,
     type Nullable,
     type Optional,
@@ -55,6 +60,9 @@ export const useSwapProviderContent = ({
         useState<Nullable<string>>(selectedProviderName)
 
     const handleSelect = useCallback((providerName: Nullable<string>) => {
+        trackEvent(SwapEvent.SelectProviderRouter, {
+            [AnalyticsMetadataKey.RouterName]: providerName ?? undefined,
+        })
         setUserSelection(providerName)
     }, [])
 

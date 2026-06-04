@@ -16,6 +16,7 @@ import { SvgProps } from 'react-native-svg'
 import { PWBadge, PWIcon, PWTouchableOpacity, PWView } from '@components/core'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { trackEvent, HomeEvent } from '@perawallet/wallet-core-analytics'
 import { useStyles } from './styles'
 
 export type NotificationsIconProps = {} & SvgProps
@@ -33,6 +34,7 @@ export const NotificationsIcon = (props: NotificationsIconProps) => {
     const styles = useStyles()
 
     const goToNotifications = () => {
+        trackEvent(HomeEvent.Notification)
         navigation.navigate('Messages')
     }
 

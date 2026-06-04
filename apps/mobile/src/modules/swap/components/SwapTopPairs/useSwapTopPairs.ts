@@ -17,6 +17,11 @@ import {
     type TopPairItem,
 } from '@perawallet/wallet-core-swaps'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
+import {
+    trackEvent,
+    SwapEvent,
+    AnalyticsMetadataKey,
+} from '@perawallet/wallet-core-analytics'
 
 const TOP_PAIRS_LIMIT = 5
 
@@ -41,6 +46,9 @@ export const useSwapTopPairs = (): UseSwapTopPairsResult => {
             analytics.logEvent('swap_top_pair_selected', {
                 assetIn: pair.assetA.unitName,
                 assetOut: pair.assetB.unitName,
+            })
+            trackEvent(SwapEvent.SelectTopPair, {
+                [AnalyticsMetadataKey.SwapPairing]: `${pair.assetA.unitName}/${pair.assetB.unitName}`,
             })
             setFromAsset(pair.assetA.assetId)
             setToAsset(pair.assetB.assetId)

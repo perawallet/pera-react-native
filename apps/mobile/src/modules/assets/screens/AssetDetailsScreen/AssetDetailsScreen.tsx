@@ -16,7 +16,12 @@ import {
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import {
+    trackEvent,
+    AssetDetailsEvent,
+    AnalyticsMetadataKey,
+} from '@perawallet/wallet-core-analytics'
 import { useStyles } from './styles'
 import { AssetMarkets } from '@modules/assets/components/market/AssetMarkets'
 import { AssetHoldings } from '@modules/assets/components/holdings/AssetHoldings'
@@ -56,6 +61,14 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
     )
 
     const [swipeEnabled, setSwipeEnabled] = useState(true)
+
+    useEffect(() => {
+        if (assetId && !isCollectible) {
+            trackEvent(AssetDetailsEvent.Show, {
+                [AnalyticsMetadataKey.AssetId]: assetId,
+            })
+        }
+    }, [assetId, isCollectible])
 
     useNavigationHeader({
         title: (

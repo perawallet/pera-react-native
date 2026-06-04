@@ -23,6 +23,10 @@ import {
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
 import { shareCsvFile } from '@utils/shareCsvFile'
+import {
+    trackEvent,
+    AccountDetailsEvent,
+} from '@perawallet/wallet-core-analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import {
     TransactionFilter,
@@ -104,6 +108,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     const { request: requestBottomSheet } = useBottomSheet()
 
     const handleOpenFilter = useCallback(async () => {
+        trackEvent(AccountDetailsEvent.TransactionFilter)
         const result = await requestBottomSheet<TransactionsFilterResult>({
             contents: (
                 <TransactionsFilterContent
@@ -184,6 +189,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     })
 
     const handleExportCsv = useCallback(() => {
+        trackEvent(AccountDetailsEvent.TransactionDownload)
         if (account?.address) {
             exportCsv({ accountAddress: account.address })
         }

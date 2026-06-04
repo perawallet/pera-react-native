@@ -38,6 +38,10 @@ import { ExportShareAccountContent } from '@modules/multisig/components/ExportSh
 import { SharedAccountDetailsContent } from '../SharedAccountDetailsContent'
 import { IconName } from '@components/core'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
+import {
+    trackEvent,
+    AccountDetailsEvent,
+} from '@perawallet/wallet-core-analytics'
 import { RenameAccountContent } from './RenameAccountContent'
 
 import type { SharedAccountDetails } from '../SharedAccountDetailsContent'
@@ -140,6 +144,7 @@ export const useAccountOptions = ({
     }, [onClose, navigation, account.address])
 
     const handleRekeyToShared = useCallback(() => {
+        trackEvent(AccountDetailsEvent.JointAccountRekey)
         onClose()
         navigation.navigate('RekeyToShared', {
             screen: 'RekeyToSharedIntro',
@@ -148,6 +153,7 @@ export const useAccountOptions = ({
     }, [onClose, navigation, account.address])
 
     const handleExportShareAccount = useCallback(async () => {
+        trackEvent(AccountDetailsEvent.JointAccountExport)
         onClose()
         await requestBottomSheet<void>({
             contents: (
@@ -163,6 +169,7 @@ export const useAccountOptions = ({
 
     const handleOpenSharedAccountDetail = useCallback(async () => {
         if (!isMultisigAccount(account) || !account.multisigDetails) return
+        trackEvent(AccountDetailsEvent.JointAccountDetail)
         onClose()
         const details: SharedAccountDetails = {
             name: account.name ?? '',

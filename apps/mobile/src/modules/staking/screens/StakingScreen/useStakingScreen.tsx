@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
+import { trackEvent, StakingEvent } from '@perawallet/wallet-core-analytics'
 import { useWebView } from '@modules/webview'
 import {
     useStakingDisclaimer,
@@ -45,6 +46,10 @@ export const useStakingScreen = (): UseStakingScreenResult => {
     } = useStakingProjectsQuery()
     const { isDisclaimerAccepted, acceptDisclaimer } = useStakingDisclaimer()
     const { request: requestBottomSheet } = useBottomSheet()
+
+    useEffect(() => {
+        trackEvent(StakingEvent.Open)
+    }, [])
 
     const openProject = useCallback(
         (project: StakingProject) => {

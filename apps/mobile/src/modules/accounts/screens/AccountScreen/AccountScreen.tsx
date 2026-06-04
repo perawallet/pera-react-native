@@ -31,6 +31,7 @@ import { AccountTabNavigator } from '@modules/accounts/components/AccountTabNavi
 import { NotificationsIcon } from '@modules/messages/components/NotificationsIcon'
 import { AccountHeaderMenu } from '@components/AccountHeaderMenu'
 import { HomeBannersStrip } from '@modules/banners'
+import { trackEvent, HomeEvent } from '@perawallet/wallet-core-analytics'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 const AnimatedPWView = Animated.createAnimatedComponent(PWView)
@@ -90,7 +91,10 @@ export const AccountScreen = () => {
                         <PWView style={styles.iconBarSection}>
                             <AccountHeaderMenu testID='account_screen_dropdown' />
                             <PWTouchableOpacity
-                                onPress={scannerState.open}
+                                onPress={() => {
+                                    trackEvent(HomeEvent.QrScan)
+                                    scannerState.open()
+                                }}
                                 testID='account_screen_qr_scanner_button'
                             >
                                 <PWIcon name='camera' />

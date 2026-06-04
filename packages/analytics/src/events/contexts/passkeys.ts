@@ -12,7 +12,5 @@
 
 /** WebAuthn passkey lifecycle. */
 export enum PasskeysEvent {
-    Added = 'webauthn_passkey_added', // A passkey was added
-    Used = 'webauthn_passkey_used', // A passkey was used
     Deleted = 'webauthn_passkey_deleted', // A passkey was deleted
 }

@@ -17,12 +17,41 @@ import {
     useSwapExecution,
     type SwapExecutionStatus,
 } from '../../hooks/useSwapExecution'
+import {
+    trackEvent,
+    SwapEvent,
+    AnalyticsMetadataKey,
+    type RequiredEventPayloads,
+} from '@perawallet/wallet-core-analytics'
+import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 import type { SwapConfirmationResult } from './SwapConfirmationContent'
+
+const buildSwapStatusPayload = (
+    quote: SwapQuote,
+): RequiredEventPayloads[SwapEvent.Failed] => {
+    const usd = (value: string | null | undefined) =>
+        value != null ? Number(value) : undefined
+    return {
+        [AnalyticsMetadataKey.InputAsaId]: quote.assetIn.assetId,
+        [AnalyticsMetadataKey.InputAsaName]: quote.assetIn.unitName ?? '',
+        [AnalyticsMetadataKey.InputAmountAsAsa]:
+            quote.amountIn?.toNumber() ?? 0,
+        [AnalyticsMetadataKey.InputAmountAsUsd]: usd(quote.amountInUsdValue),
+        [AnalyticsMetadataKey.OutputAsaId]: quote.assetOut.assetId,
+        [AnalyticsMetadataKey.OutputAsaName]: quote.assetOut.unitName ?? '',
+        [AnalyticsMetadataKey.OutputAmountAsAsa]:
+            quote.amountOut?.toNumber() ?? 0,
+        [AnalyticsMetadataKey.OutputAmountAsUsd]: usd(quote.amountOutUsdValue),
+        [AnalyticsMetadataKey.SwapDate]: new Date().toISOString(),
+        [AnalyticsMetadataKey.SwapDateTimestamp]: Date.now(),
+        [AnalyticsMetadataKey.SwapAddress]: quote.swapperAddress ?? '',
+    }
+}
 
 const SUCCESS_DISPLAY_MS = 3000
 
 type UseSwapConfirmationActionsParams = {
-    quoteIdStr: string | undefined
+    quote: SwapQuote
 }
 
 type UseSwapConfirmationActionsResult = {
@@ -32,7 +61,7 @@ type UseSwapConfirmationActionsResult = {
 }
 
 export const useSwapConfirmationActions = ({
-    quoteIdStr,
+    quote,
 }: UseSwapConfirmationActionsParams): UseSwapConfirmationActionsResult => {
     const { resolve, dismiss } = useBottomSheetResult<SwapConfirmationResult>()
     const swapExecution = useSwapExecution()
@@ -40,13 +69,22 @@ export const useSwapConfirmationActions = ({
     const inFlightRef = useRef(false)
 
     const { execute, reset, status: swapStatus } = swapExecution
+    const quoteIdStr = quote.quoteIdStr
 
     const handleSlideConfirm = useCallback(async () => {
         if (!quoteIdStr || inFlightRef.current) return
+        trackEvent(SwapEvent.Confirm)
         inFlightRef.current = true
         try {
             const outcome = await execute(quoteIdStr)
             if (outcome.kind === 'success') {
+                trackEvent(SwapEvent.Completed, {
+                    ...buildSwapStatusPayload(quote),
+                    [AnalyticsMetadataKey.PeraFeeAsAlgo]:
+                        quote.peraFeeAmount?.toNumber(),
+                    [AnalyticsMetadataKey.NetworkFeeAsAlgo]:
+                        quote.transactionFees?.toNumber(),
+                })
                 successCloseTimer.schedule(() => {
                     resolve({ kind: 'confirm' })
                 }, SUCCESS_DISPLAY_MS)
@@ -56,11 +94,12 @@ export const useSwapConfirmationActions = ({
                 resolve({ kind: 'cancelled' })
                 return
             }
+            trackEvent(SwapEvent.Failed, buildSwapStatusPayload(quote))
             resolve({ kind: 'error', message: outcome.message })
         } finally {
             inFlightRef.current = false
         }
-    }, [quoteIdStr, execute, successCloseTimer, resolve])
+    }, [quote, quoteIdStr, execute, successCloseTimer, resolve])
 
     const handleClose = useCallback(
         (isProcessing: boolean) => {

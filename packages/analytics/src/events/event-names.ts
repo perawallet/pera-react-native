@@ -18,16 +18,14 @@ import type { AccountDetailsEvent } from './contexts/account-details'
 import type { AssetDetailsEvent } from './contexts/asset-details'
 import type { SwapEvent } from './contexts/swap'
 import type { WalletConnectEvent } from './contexts/wallet-connect'
-import type { DiscoverEvent } from './contexts/discover'
 import type { MenuEvent } from './contexts/menu'
 import type { SettingsEvent } from './contexts/settings'
 import type { PasskeysEvent } from './contexts/passkeys'
 import type { TransactionsEvent } from './contexts/transactions'
-import type { ReceiveEvent, SendEvent } from './contexts/transfer'
 import type { FundEvent } from './contexts/fund'
-import type { QuickActionsEvent } from './contexts/quick-actions'
 import type { MultisigEvent } from './contexts/multisig'
 import type { NotificationsEvent } from './contexts/notifications'
+import type { StakingEvent } from './contexts/staking'
 
 /**
  * Every analytics event, as a union of the per-context enums. Each enum lives in
@@ -44,14 +42,11 @@ export type AnalyticsEventName =
     | AssetDetailsEvent
     | SwapEvent
     | WalletConnectEvent
-    | DiscoverEvent
     | MenuEvent
     | SettingsEvent
     | PasskeysEvent
     | TransactionsEvent
-    | ReceiveEvent
-    | SendEvent
     | FundEvent
-    | QuickActionsEvent
     | MultisigEvent
     | NotificationsEvent
+    | StakingEvent

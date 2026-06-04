@@ -14,7 +14,6 @@ import { AnalyticsMetadataKey as Key } from '../metadata-keys'
 
 /** Swap flow. */
 export enum SwapEvent {
-    OpenSelectAccount = 'swapscr_account_select_open', // Opened the account selector
     SelectTopAsset = 'swapscr_asset_top_select', // Selected the top (from) asset (asset name)
     SelectBottomAsset = 'swapscr_asset_bot_select', // Selected the bottom (to) asset (asset name)
     HistorySeeAll = 'swapscr_swap_history_see_all', // Tapped "see all" on swap history (opt. pairing)
@@ -22,13 +21,8 @@ export enum SwapEvent {
     SelectHistoryInSeeAll = 'swapscr_swap_history_see_all_asset_select', // Picked a swap from the full history list (opt. pairing)
     SelectTopPair = 'swapscr_swap_top_select', // Selected a top trading pair (opt. pairing)
     SelectProviderOpen = 'swapscr_swap_select_provider', // Opened the provider selector (opt. router)
-    SelectProviderClose = 'swapscr_swap_select_provider_close', // Closed the provider selector (opt. router)
-    SelectProviderApply = 'swapscr_swap_select_provider_apply', // Applied a provider selection (opt. router)
     SelectProviderRouter = 'swapscr_swap_select_provider_router', // Chose a specific router (opt. router)
-    SettingsClose = 'swapscr_swap_settings_close', // Closed swap settings
     SettingsApply = 'swapscr_swap_settings_apply', // Applied swap settings
-    SettingsPercentage = 'swapscr_swap_settings_balance_percent', // Set a balance percentage
-    SettingsSlippage = 'swapscr_swap_settings_slippage_percent', // Set slippage tolerance
     SettingsLocalCurrencyOn = 'swapscr_swap_settings_local_currency_on', // Turned local-currency display on
     SettingsLocalCurrencyOff = 'swapscr_swap_settings_local_currency_off', // Turned local-currency display off
     Completed = 'swapscr_assets_completed', // A swap completed (full details: assets, amounts, fees)
@@ -38,22 +32,24 @@ export enum SwapEvent {
     EnterNumbers = 'swapscr_enter_amount_tap', // Started entering an amount
     SelectFromToken = 'swapscr_select_top_asset_tap', // Opened the from-token selector (asset id)
     SelectToToken = 'swapscr_select_lower_asset_tap', // Opened the to-token selector (asset id)
-    BannerLater = 'banner_swap_later', // Tapped "later" on the swap promo banner
-    BannerTry = 'banner_swap_tryswap', // Tapped "try swap" on the swap promo banner
 }
 
-/** Shared status metadata for completed / failed swaps. */
+/**
+ * Shared status metadata for completed / failed swaps. The `*AsUsd` and `*AsAlgo`
+ * fields are optional: RN sources these from the swap quote, which exposes ASA
+ * amounts and USD values but not ALGO-denominated amounts.
+ */
 type SwapStatusPayload = {
     [Key.InputAsaId]: string
     [Key.InputAsaName]: string
     [Key.InputAmountAsAsa]: number
-    [Key.InputAmountAsUsd]: number
-    [Key.InputAmountAsAlgo]: number
+    [Key.InputAmountAsUsd]?: number
+    [Key.InputAmountAsAlgo]?: number
     [Key.OutputAsaId]: string
     [Key.OutputAsaName]: string
     [Key.OutputAmountAsAsa]: number
-    [Key.OutputAmountAsUsd]: number
-    [Key.OutputAmountAsAlgo]: number
+    [Key.OutputAmountAsUsd]?: number
+    [Key.OutputAmountAsAlgo]?: number
     [Key.SwapDate]: string
     [Key.SwapDateTimestamp]: number
     [Key.SwapAddress]: string
@@ -73,10 +69,10 @@ export interface SwapRequiredPayloads {
         [Key.AssetId]: string
     }
     [SwapEvent.Completed]: SwapStatusPayload & {
-        [Key.PeraFeeAsAlgo]: number
-        [Key.PeraFeeAsUsd]: number
-        [Key.ExchangeFeeAsAlgo]: number
-        [Key.NetworkFeeAsAlgo]: number
+        [Key.PeraFeeAsAlgo]?: number
+        [Key.PeraFeeAsUsd]?: number
+        [Key.ExchangeFeeAsAlgo]?: number
+        [Key.NetworkFeeAsAlgo]?: number
     }
     [SwapEvent.Failed]: SwapStatusPayload
 }
@@ -95,12 +91,6 @@ export interface SwapOptionalPayloads {
         [Key.SwapPairing]?: string
     }
     [SwapEvent.SelectProviderOpen]: {
-        [Key.RouterName]?: string
-    }
-    [SwapEvent.SelectProviderClose]: {
-        [Key.RouterName]?: string
-    }
-    [SwapEvent.SelectProviderApply]: {
         [Key.RouterName]?: string
     }
     [SwapEvent.SelectProviderRouter]: {

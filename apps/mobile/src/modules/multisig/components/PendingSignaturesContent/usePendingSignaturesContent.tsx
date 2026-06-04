@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useMemo } from 'react'
+import { trackEvent, MultisigEvent } from '@perawallet/wallet-core-analytics'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import {
     useNetwork,
@@ -201,6 +202,7 @@ export const usePendingSignaturesContent =
             'multisig.pending_signatures.failed_default'
 
         const handleClose = useCallback(() => {
+            trackEvent(MultisigEvent.CloseForNow)
             closeSheet()
             dismiss()
         }, [closeSheet, dismiss])
@@ -223,6 +225,7 @@ export const usePendingSignaturesContent =
         const handleSign = useCallback(() => {
             if (!signRequest) return
             if (localKeyUnsignedSigners.length === 0) return
+            trackEvent(MultisigEvent.ConfirmTransaction)
             for (const signer of localKeyUnsignedSigners) {
                 dispatchCosign(signer.address)
             }
@@ -261,6 +264,7 @@ export const usePendingSignaturesContent =
         })
 
         const handleCancel = useCallback(async () => {
+            trackEvent(MultisigEvent.CancelTransaction)
             const confirmed = await requestBottomSheet<boolean>({
                 contents: (
                     <ConfirmActionContent

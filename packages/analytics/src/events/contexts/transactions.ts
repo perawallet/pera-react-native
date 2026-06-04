@@ -19,10 +19,11 @@ export enum TransactionsEvent {
 
 export interface TransactionsRequiredPayloads {
     [TransactionsEvent.Complete]: {
-        [Key.AccountType]: string
         [Key.AssetId]: string
-        [Key.IsMax]: boolean
         [Key.Amount]: number
         [Key.TransactionId]: string
+        // Optional: not always available at the RN send-completion point.
+        [Key.AccountType]?: string
+        [Key.IsMax]?: boolean
     }
 }

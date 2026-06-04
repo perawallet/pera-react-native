@@ -27,6 +27,6 @@ describe('analytics event catalog', () => {
 
     it('covers the full scoped catalog', () => {
         // Guards against accidental deletions during refactors.
-        expect(rawEventValues.length).toBeGreaterThanOrEqual(130)
+        expect(rawEventValues.length).toBeGreaterThanOrEqual(90)
     })
 })

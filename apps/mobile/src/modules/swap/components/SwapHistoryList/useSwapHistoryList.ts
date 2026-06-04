@@ -17,6 +17,11 @@ import {
     useSwapHistoryInfiniteQuery,
     type SwapHistoryItem,
 } from '@perawallet/wallet-core-swaps'
+import {
+    trackEvent,
+    SwapEvent,
+    AnalyticsMetadataKey,
+} from '@perawallet/wallet-core-analytics'
 import { useWebView } from '@modules/webview'
 
 import { VISIBLE_SWAP_STATUSES } from '../../constants'
@@ -62,6 +67,9 @@ export const useSwapHistoryList = ({
     const handleItemPress = useCallback(
         (item: SwapHistoryItem) => {
             if (!item.transactionGroupId || !networkConfig.explorerUrl) return
+            trackEvent(SwapEvent.SelectHistoryInSeeAll, {
+                [AnalyticsMetadataKey.SwapPairing]: `${item.assetIn.unitName}/${item.assetOut.unitName}`,
+            })
             onClose()
             pushWebView({
                 url: `${networkConfig.explorerUrl}/tx-group/${item.transactionGroupId}/`,
