@@ -26,6 +26,8 @@ import type { FundEvent } from './contexts/fund'
 import type { MultisigEvent } from './contexts/multisig'
 import type { NotificationsEvent } from './contexts/notifications'
 import type { StakingEvent } from './contexts/staking'
+import type { AccountOptionsEvent } from './contexts/account-options'
+import type { ContactsEvent } from './contexts/contacts'
 
 /**
  * Every analytics event, as a union of the per-context enums. Each enum lives in
@@ -50,3 +52,5 @@ export type AnalyticsEventName =
     | MultisigEvent
     | NotificationsEvent
     | StakingEvent
+    | AccountOptionsEvent
+    | ContactsEvent

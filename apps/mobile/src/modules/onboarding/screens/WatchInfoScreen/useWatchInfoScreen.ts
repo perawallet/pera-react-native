@@ -14,6 +14,7 @@ import { useCallback } from 'react'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
+import { trackEvent, OnboardingEvent } from '@perawallet/wallet-core-analytics'
 
 type UseWatchInfoScreenResult = {
     handleCreateWatchAccount: () => void
@@ -25,6 +26,7 @@ export const useWatchInfoScreen = (): UseWatchInfoScreenResult => {
     const { pushWebView } = useWebView()
 
     const handleCreateWatchAccount = useCallback(() => {
+        trackEvent(OnboardingEvent.CreateAccountWatch)
         navigation.push('WatchAccount')
     }, [navigation])
 

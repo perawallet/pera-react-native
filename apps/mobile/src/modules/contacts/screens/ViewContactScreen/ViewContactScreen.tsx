@@ -10,7 +10,12 @@
  limitations under the License
  */
 
+import { useEffect } from 'react'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
+import {
+    trackScreen,
+    AnalyticsScreenName,
+} from '@perawallet/wallet-core-analytics'
 
 import { PWScreen, PWText, PWTouchableIcon, PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
@@ -26,6 +31,10 @@ export const ViewContactScreen = () => {
     const { t } = useLanguage()
     const { selectedContact, nfdName, openQR, goToEdit, handleShare } =
         useViewContactScreen()
+
+    useEffect(() => {
+        trackScreen(AnalyticsScreenName.ContactDetail)
+    }, [])
 
     useNavigationHeader({
         enabled: true,

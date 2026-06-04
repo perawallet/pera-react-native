@@ -22,7 +22,7 @@ export enum OnboardingEvent {
     RecoverOneKey = 'onb_createacc_recover_24', // Chose recover with a 24-word (OneKey) passphrase
     CreateAccountSkip = 'onb_createacc_skip', // Skipped account creation
     CreateAccountWatch = 'onb_createacc_watch', // Chose to add a watch account
-    WatchAccountComplete = 'onb_welcome_watch_complete', // Completed adding a watch account (create/welcome flow)
+    WatchAccountComplete = 'onb_welcome_watch_complete', // Completed adding a watch account
     BeginPassphrase = 'onb_createacc_pass_begin', // Began the passphrase flow
     CopyPassphrase = 'onb_createacc_pass_copy', // Copied the passphrase
     UnderstandPassphrase = 'onb_createacc_pass_understand', // Acknowledged understanding the passphrase
@@ -37,7 +37,7 @@ export enum OnboardingEvent {
     WatchAccountCreateVerified = 'onb_watchacc_create_verified', // Watch-account creation verified
     WelcomeAccountCreate = 'onb_welcome_account_create', // Chose Create on the welcome screen
     WelcomeAccountRecover = 'onb_welcome_account_recover', // Chose Recover on the welcome screen
-    RegisterAccount = 'register', // Registered an account (type: create/ledger/recover/rekeyed/watch)
+    RegisterAccount = 'register', // Registered an account (type: create/ledger/watch)
     RekeyAccount = 'rekey', // Rekeyed an account
 }
 

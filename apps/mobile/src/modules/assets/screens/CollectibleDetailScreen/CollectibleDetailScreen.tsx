@@ -26,6 +26,10 @@ import { MediaCarousel } from '@components/MediaCarousel'
 import { ModelViewerBottomSheet } from '@components/ModelViewerBottomSheet'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
+import {
+    trackScreen,
+    AnalyticsScreenName,
+} from '@perawallet/wallet-core-analytics'
 import { useCollectibleDetail } from './useCollectibleDetail'
 import { useStyles } from './styles'
 import { CollectibleTraitsGrid } from './CollectibleTraitsGrid'
@@ -46,6 +50,10 @@ export const CollectibleDetailScreen = ({
 }: CollectibleDetailScreenProps) => {
     const assetId = route.params?.assetId ?? ''
     const { t } = useLanguage()
+
+    React.useEffect(() => {
+        trackScreen(AnalyticsScreenName.CollectibleList)
+    }, [])
 
     const {
         asset,

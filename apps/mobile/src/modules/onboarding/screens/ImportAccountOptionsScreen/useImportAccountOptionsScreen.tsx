@@ -19,6 +19,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 import { logger } from '@perawallet/wallet-core-shared'
+import { trackEvent, OnboardingEvent } from '@perawallet/wallet-core-analytics'
 import { type IconName } from '@components/core'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useModalState } from '@hooks/useModalState'
@@ -78,6 +79,11 @@ export const useImportAccountOptionsScreen =
                 },
             )
             if (!result) return
+            trackEvent(
+                result === 'algo25'
+                    ? OnboardingEvent.RecoverAlgo25
+                    : OnboardingEvent.RecoverOneKey,
+            )
             navigation.push('ImportInfo', { accountType: result })
         }, [requestBottomSheet, navigation])
 

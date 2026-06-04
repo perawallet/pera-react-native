@@ -19,6 +19,7 @@ import {
 } from '@perawallet/wallet-core-contacts'
 
 import { useLanguage } from '@hooks/useLanguage'
+import { trackEvent, ContactsEvent } from '@perawallet/wallet-core-analytics'
 import { useContactForm } from './useContactForm'
 
 import type { ParamListBase } from '@react-navigation/native'
@@ -45,6 +46,7 @@ export const useEditContactForm = (): UseEditContactFormResult => {
 
             try {
                 editContact(selectedContact.address, data)
+                trackEvent(ContactsEvent.Edit)
             } catch (e) {
                 if (e instanceof DuplicateAddressError) {
                     form.setError('address', {
@@ -77,6 +79,7 @@ export const useEditContactForm = (): UseEditContactFormResult => {
     const removeContact = useCallback(() => {
         if (selectedContact) {
             deleteContact(selectedContact)
+            trackEvent(ContactsEvent.Delete)
             setSelectedContact(null)
         }
         navigation.replace('Contacts')

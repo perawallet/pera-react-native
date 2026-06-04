@@ -10,8 +10,12 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 import { Contact } from '@perawallet/wallet-core-contacts'
+import {
+    trackScreen,
+    AnalyticsScreenName,
+} from '@perawallet/wallet-core-analytics'
 
 import {
     PWButton,
@@ -32,6 +36,10 @@ import { useStyles } from './styles'
 export const ContactListScreen = () => {
     const navigation = useAppNavigation()
     const { t } = useLanguage()
+
+    useEffect(() => {
+        trackScreen(AnalyticsScreenName.ContactList)
+    }, [])
     const styles = useStyles()
 
     const onNavigateAddContact = useCallback(

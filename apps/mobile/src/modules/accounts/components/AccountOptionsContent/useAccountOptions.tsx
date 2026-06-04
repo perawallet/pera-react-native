@@ -41,6 +41,7 @@ import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import {
     trackEvent,
     AccountDetailsEvent,
+    AccountOptionsEvent,
 } from '@perawallet/wallet-core-analytics'
 import { RenameAccountContent } from './RenameAccountContent'
 
@@ -103,6 +104,7 @@ export const useAccountOptions = ({
     const authAccount = useFindAccountByAddress(account.rekeyAddress ?? '')
 
     const handleCopyAddress = useCallback(() => {
+        trackEvent(AccountOptionsEvent.CopyAddress)
         copyToClipboard(account.address)
         onClose()
     }, [copyToClipboard, account.address, onClose])
@@ -113,6 +115,7 @@ export const useAccountOptions = ({
     }, [onClose, onShowAddress])
 
     const handleViewPassphrase = useCallback(() => {
+        trackEvent(AccountOptionsEvent.ViewPassphrase)
         // Dismiss the options menu first so we don't end up with the menu
         // sheet stacked under the PIN/acknowledge/display sheets.
         onClose()
@@ -128,6 +131,7 @@ export const useAccountOptions = ({
     }, [onClose, navigation, account.address])
 
     const handleRekeyToLedger = useCallback(() => {
+        trackEvent(AccountOptionsEvent.RekeyToLedger)
         onClose()
         navigation.navigate('RekeyToLedger', {
             screen: 'RekeyToLedgerIntro',
@@ -136,6 +140,7 @@ export const useAccountOptions = ({
     }, [onClose, navigation, account.address])
 
     const handleRekeyToStandard = useCallback(() => {
+        trackEvent(AccountOptionsEvent.RekeyToStandard)
         onClose()
         navigation.navigate('RekeyToStandard', {
             screen: 'RekeyToStandardIntro',
@@ -189,6 +194,7 @@ export const useAccountOptions = ({
     }, [onClose, requestBottomSheet, account])
 
     const handleOpenRename = useCallback(async () => {
+        trackEvent(AccountOptionsEvent.Rename)
         onClose()
         const newName = await requestBottomSheet<string>({
             contents: <RenameAccountContent accountAddress={account.address} />,
@@ -272,6 +278,7 @@ export const useAccountOptions = ({
     ])
 
     const handleOpenRemoveConfirm = useCallback(async () => {
+        trackEvent(AccountOptionsEvent.Remove)
         onClose()
         if (hasSigningKeys(account)) {
             const acknowledged = await requestBottomSheet<boolean>({

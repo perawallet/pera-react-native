@@ -24,6 +24,11 @@ import {
     clearPendingAccountRollback,
 } from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
+import {
+    trackEvent,
+    OnboardingEvent,
+    AnalyticsMetadataKey,
+} from '@perawallet/wallet-core-analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useRoute, RouteProp } from '@react-navigation/native'
@@ -101,6 +106,7 @@ export const useNameAccountScreen = () => {
     const handleFinish = async () => {
         if (isCreating) return
 
+        trackEvent(OnboardingEvent.NameAccount)
         try {
             setIsCreating(true)
 
@@ -121,6 +127,15 @@ export const useNameAccountScreen = () => {
             } else {
                 await saveAccount(namedAccount)
             }
+
+            trackEvent(OnboardingEvent.RegisterAccount, {
+                [AnalyticsMetadataKey.AccountCreationType]:
+                    targetAccount.type === 'hardware'
+                        ? 'ledger'
+                        : targetAccount.type === 'watch'
+                          ? 'watch'
+                          : 'create',
+            })
 
             // Explicitly select the new account to ensure it's ready for AccountScreen
             // This triggers navigation via useShowOnboarding(), which waits for selection

@@ -18,6 +18,7 @@ import { config } from '@perawallet/wallet-core-config'
 import { useModalState } from '@hooks/useModalState'
 import { useIsOnboarding } from '@modules/onboarding/hooks'
 import { useCreateAccount } from '@perawallet/wallet-core-accounts'
+import { trackEvent, OnboardingEvent } from '@perawallet/wallet-core-analytics'
 import { deferToNextCycle } from '@perawallet/wallet-core-shared'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -59,6 +60,7 @@ export const useOnboardingScreen = (): UseOnboardingScreenResult => {
     }, [pushWebView])
 
     const handleCreateAccount = useCallback(() => {
+        trackEvent(OnboardingEvent.CreateNewWallet)
         setIsOnboarding(true)
         openCreatingAccount()
         deferToNextCycle(async () => {
@@ -96,6 +98,7 @@ export const useOnboardingScreen = (): UseOnboardingScreenResult => {
     ])
 
     const handleImportAccount = useCallback(() => {
+        trackEvent(OnboardingEvent.ImportAccount)
         setIsOnboarding(true)
         navigation.push('ImportAccountOptions')
     }, [navigation, setIsOnboarding])

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useEffect } from 'react'
 import Animated from 'react-native-reanimated'
 import { PWIcon, PWToolbar, PWTouchableOpacity, PWView } from '@components/core'
 import { usePreferences } from '@perawallet/wallet-core-settings'
@@ -31,7 +32,12 @@ import { AccountTabNavigator } from '@modules/accounts/components/AccountTabNavi
 import { NotificationsIcon } from '@modules/messages/components/NotificationsIcon'
 import { AccountHeaderMenu } from '@components/AccountHeaderMenu'
 import { HomeBannersStrip } from '@modules/banners'
-import { trackEvent, HomeEvent } from '@perawallet/wallet-core-analytics'
+import {
+    trackEvent,
+    trackScreen,
+    HomeEvent,
+    AnalyticsScreenName,
+} from '@perawallet/wallet-core-analytics'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 const AnimatedPWView = Animated.createAnimatedComponent(PWView)
@@ -45,6 +51,10 @@ export const AccountScreen = () => {
 
     const { shouldPlayConfetti, setShouldPlayConfetti } =
         useShouldPlayConfetti()
+
+    useEffect(() => {
+        trackScreen(AnalyticsScreenName.AccountList)
+    }, [])
 
     const { getPreference } = usePreferences()
     const chartVisible = !!getPreference(UserPreferences.chartVisible)

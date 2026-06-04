@@ -15,8 +15,13 @@ import {
     NavigationIndependentTree,
 } from '@react-navigation/native'
 
+import { useEffect } from 'react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
+import {
+    trackScreen,
+    AnalyticsScreenName,
+} from '@perawallet/wallet-core-analytics'
 import { TransactionErrorBoundary } from '@modules/transactions/components/TransactionErrorBoundary/TransactionErrorBoundary'
 import { ReceiveFundsRoutes } from '../../../routes/receive-funds'
 import { useReceiveFundsContent } from './useReceiveFundsContent'
@@ -28,6 +33,10 @@ export type ReceiveFundsContentProps = {
 export const ReceiveFundsContent = ({ account }: ReceiveFundsContentProps) => {
     const { t } = useLanguage()
     useReceiveFundsContent(account)
+
+    useEffect(() => {
+        trackScreen(AnalyticsScreenName.ShowQr)
+    }, [])
 
     return (
         <TransactionErrorBoundary t={t}>

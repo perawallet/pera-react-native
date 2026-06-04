@@ -70,6 +70,7 @@ export const useAccountOverview = ({
     }, [requestBottomSheet])
 
     const openReceiveFunds = useCallback(() => {
+        trackEvent(HomeEvent.Receive)
         if (selectedAccount) {
             setCanSelectAccount(false)
             setSelectedAccount(selectedAccount)

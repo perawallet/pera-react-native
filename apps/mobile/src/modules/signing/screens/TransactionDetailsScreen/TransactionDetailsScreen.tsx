@@ -10,13 +10,17 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 
 import {
     useNavigation,
     useRoute,
     type RouteProp,
 } from '@react-navigation/native'
+import {
+    trackScreen,
+    AnalyticsScreenName,
+} from '@perawallet/wallet-core-analytics'
 import type { StackNavigationProp } from '@react-navigation/stack'
 
 import { PWScreen } from '@components/core'
@@ -47,6 +51,10 @@ export const TransactionDetailsScreen = () => {
     const navigation = useNavigation<NavigationProp>()
     const { t } = useLanguage()
     const route = useRoute<TransactionDetailsRouteProp>()
+
+    useEffect(() => {
+        trackScreen(AnalyticsScreenName.TransactionDetail)
+    }, [])
 
     const {
         transaction: paramTransaction,

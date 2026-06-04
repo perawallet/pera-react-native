@@ -19,8 +19,10 @@ import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { useEffect, useState } from 'react'
 import {
     trackEvent,
+    trackScreen,
     AssetDetailsEvent,
     AnalyticsMetadataKey,
+    AnalyticsScreenName,
 } from '@perawallet/wallet-core-analytics'
 import { useStyles } from './styles'
 import { AssetMarkets } from '@modules/assets/components/market/AssetMarkets'
@@ -64,6 +66,7 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
 
     useEffect(() => {
         if (assetId && !isCollectible) {
+            trackScreen(AnalyticsScreenName.AssetDetail)
             trackEvent(AssetDetailsEvent.Show, {
                 [AnalyticsMetadataKey.AssetId]: assetId,
             })

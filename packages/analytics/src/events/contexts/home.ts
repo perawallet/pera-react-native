@@ -16,6 +16,7 @@ export enum HomeEvent {
     QrScan = 'homescr_qr_scan', // Opened the QR scanner from the home header
     QrConnected = 'homescr_qr_scan_connected', // A home QR scan established a WalletConnect session
     Send = 'homescr_send_click', // Opened Send from the home overview
+    Receive = 'homescr_receive_click', // Opened Receive from the home overview (RN-specific)
     Fund = 'homescr_fund_click', // Tapped Buy on the no-funds panel (navigates to Fund)
     Sort = 'homescr_sort_tap', // Sorted the account list
     Swap = 'homescr_swap_click', // Tapped Swap on the home button panel
