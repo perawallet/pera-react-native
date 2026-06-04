@@ -91,7 +91,7 @@ export const SettingsDeveloperScreen = () => {
                         gap: 12,
                     }}
                 >
-                    <PWIcon name='eye-slash' />
+                    <PWIcon name='locked' />
                     <PWText>Disable Screen Capture Prevention</PWText>
                 </PWView>
                 <PWSwitch
