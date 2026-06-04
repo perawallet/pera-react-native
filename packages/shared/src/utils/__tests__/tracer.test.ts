@@ -164,9 +164,7 @@ describe('tracer', () => {
     })
 
     test('is a no-op when disabled via the global flag', async () => {
-        const consoleSpy = vi
-            .spyOn(console, 'log')
-            .mockImplementation(() => {})
+        const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
         const flagHolder = globalThis as { __PERA_TRACER__?: boolean }
         const original = flagHolder.__PERA_TRACER__
         flagHolder.__PERA_TRACER__ = false
