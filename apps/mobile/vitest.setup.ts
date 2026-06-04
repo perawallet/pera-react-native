@@ -173,8 +173,6 @@ vi.mock('react-native-reanimated', () => {
         },
         useSharedValue: (v: any) => ({ value: v }),
         useDerivedValue: (a: any) => ({ value: a() }),
-        useAnimatedRef: () => ({ current: null }),
-        useScrollViewOffset: () => ({ value: 0 }),
         useAnimatedStyle: () => ({}),
         useAnimatedProps: () => ({}),
         useAnimatedGestureHandler: () => {},
@@ -192,11 +190,6 @@ vi.mock('react-native-reanimated', () => {
         cancelAnimation: () => {},
         interpolate: () => 0,
         Extrapolate: { CLAMP: 'clamp' },
-        Extrapolation: {
-            CLAMP: 'clamp',
-            EXTEND: 'extend',
-            IDENTITY: 'identity',
-        },
         Layout: {
             springify: () => ({ damping: () => ({}) }),
         },
