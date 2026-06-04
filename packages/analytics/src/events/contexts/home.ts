@@ -12,16 +12,16 @@
 
 /** Home screen actions. */
 export enum HomeEvent {
-    AccountAdd = 'homescr_account_add',
-    AssetInbox = 'homescr_asset_inbox_tap',
-    QrScan = 'homescr_qr_scan',
-    QrConnected = 'homescr_qr_scan_connected',
-    BuyAlgo = 'homescr_buysell_click',
-    Send = 'homescr_send_click',
-    Fund = 'homescr_fund_click',
-    Sort = 'homescr_sort_tap',
-    Stake = 'homescr_stake_click',
-    Swap = 'homescr_swap_click',
-    Notification = 'homescr_notification_tap',
-    Chart = 'homescr_chart_tap',
+    AccountAdd = 'homescr_account_add', // Tapped add-account on home
+    AssetInbox = 'homescr_asset_inbox_tap', // Opened the asset inbox from home
+    QrScan = 'homescr_qr_scan', // Tapped QR scan on home
+    QrConnected = 'homescr_qr_scan_connected', // A QR scan led to a connection
+    BuyAlgo = 'homescr_buysell_click', // Tapped buy/sell on home
+    Send = 'homescr_send_click', // Tapped Send on home
+    Fund = 'homescr_fund_click', // Tapped Fund on home
+    Sort = 'homescr_sort_tap', // Tapped sort on home
+    Stake = 'homescr_stake_click', // Tapped Stake on home
+    Swap = 'homescr_swap_click', // Tapped Swap on home
+    Notification = 'homescr_notification_tap', // Tapped the notifications bell on home
+    Chart = 'homescr_chart_tap', // Tapped the chart on home
 }

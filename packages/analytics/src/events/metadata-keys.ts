@@ -13,9 +13,8 @@
 /**
  * Firebase event parameter keys.
  *
- * The enum *values* are the exact raw parameter names sent to Firebase (kept
- * identical to the iOS `ALGAnalyticsMetadataKey`), so they can be used directly
- * as the keys of an event payload object. Sorted by raw value.
+ * The enum *values* are the exact raw parameter names sent to Firebase, so they
+ * can be used directly as the keys of an event payload object. Sorted by raw value.
  */
 export enum AnalyticsMetadataKey {
     AccountType = 'account_type',

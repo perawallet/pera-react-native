@@ -42,7 +42,7 @@ export interface RequiredEventPayloads
         TransactionsRequiredPayloads,
         ReceiveRequiredPayloads {}
 
-/** Events that MAY carry a payload (all fields optional in iOS). */
+/** Events that MAY carry a payload (all fields optional). */
 export interface OptionalEventPayloads
     extends SwapOptionalPayloads, NotificationsOptionalPayloads {}
 

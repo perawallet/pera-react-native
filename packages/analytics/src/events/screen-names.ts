@@ -11,8 +11,8 @@
  */
 
 /**
- * Screen-view events. Values mirror the iOS `ALGAnalyticsScreenName` raw values.
- * Fired via `trackScreen`.
+ * Screen-view events, fired via `trackScreen`. Values are the raw Firebase
+ * screen names.
  */
 export enum AnalyticsScreenName {
     AccountList = 'screen_accounts',

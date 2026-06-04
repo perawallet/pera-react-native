@@ -14,10 +14,10 @@ import { AnalyticsMetadataKey as Key } from '../metadata-keys'
 
 /** Discover tab actions. */
 export enum DiscoverEvent {
-    Search = 'discover_markets_search',
-    AssetBuy = 'discover_token_detail_buy',
-    AssetSell = 'discover_token_detail_sell',
-    DappDetail = 'discover_dapps_visit_pages',
+    Search = 'discover_markets_search', // Searched in Discover markets (asset id, opt. query)
+    AssetBuy = 'discover_token_detail_buy', // Tapped Buy on a token detail
+    AssetSell = 'discover_token_detail_sell', // Tapped Sell on a token detail
+    DappDetail = 'discover_dapps_visit_pages', // Visited a dapp page (dapp url, opt. name)
 }
 
 export interface DiscoverRequiredPayloads {

@@ -28,7 +28,7 @@ const TESTNET_PREFIX = 't_'
 
 /**
  * Resolves the raw event/screen name to send, prepending the testnet prefix when
- * the active network is testnet — matching the iOS `ALGAnalyticsEventName` behavior.
+ * the active network is testnet.
  */
 const resolveName = (name: string): string => {
     const { network } = useNetworkStore.getState()

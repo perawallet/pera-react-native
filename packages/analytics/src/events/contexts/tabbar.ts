@@ -10,10 +10,11 @@
  limitations under the License
  */
 
-/** Lower tab bar presses. Only the tabs that exist in the RN app. */
+/** Lower tab bar presses. One per tab in the RN app. */
 export enum TabbarEvent {
-    Home = 'lowermenu_home_tap',
-    Discover = 'lowermenu_discover_tap',
-    Swap = 'lowermenu_swap_tap',
-    Menu = 'lowermenu_menu_tap',
+    Home = 'lowermenu_home_tap', // Tapped the Home tab
+    Discover = 'lowermenu_discover_tap', // Tapped the Discover tab
+    Swap = 'lowermenu_swap_tap', // Tapped the Swap tab
+    Fund = 'lowermenu_fund_tap', // Tapped the Fund tab
+    Menu = 'lowermenu_menu_tap', // Tapped the Menu tab
 }

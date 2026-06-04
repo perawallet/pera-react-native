@@ -12,21 +12,21 @@
 
 /** Account detail screen actions (incl. its joint-account menu items). */
 export enum AccountDetailsEvent {
-    Assets = 'accountscr_assets_tap',
-    Collectibles = 'accountscr_collectibles_tap',
-    History = 'accountscr_history_tap',
-    BuyAlgo = 'acccountscr_buysell_click',
-    Fund = 'acccountscr_fund_click',
-    Swap = 'accountscr_swap_click',
-    AssetInbox = 'accountscr_tapmenu_asset_inbox_tap',
-    Send = 'accountscr_tapmenu_send_tap',
-    More = 'accountscr_tapmenu_more_tap',
-    Chart = 'accountscr_chart_tap',
-    TransactionDownload = 'historyscr_transactions_download',
-    TransactionFilter = 'historyscr_transactions_filter',
-    JointAccountDetail = 'accountscr_jointAccount_detail_press',
-    JointAccountRekey = 'accountscr_tapmenu_rekeyJntAcc_tap',
-    JointAccountExport = 'accountscr_tapmenu_jntAccExport_tap',
-    JointAccountCopyUrl = 'accountscr_tapmenu_jntAccExpCopy_tap',
-    JointAccountShareUrl = 'accountscr_tapmenu_jntAccExpShare_tap',
+    Assets = 'accountscr_assets_tap', // Tapped the Assets tab on account detail
+    Collectibles = 'accountscr_collectibles_tap', // Tapped the Collectibles tab
+    History = 'accountscr_history_tap', // Tapped the History tab
+    BuyAlgo = 'acccountscr_buysell_click', // Tapped buy/sell
+    Fund = 'acccountscr_fund_click', // Tapped Fund
+    Swap = 'accountscr_swap_click', // Tapped Swap
+    AssetInbox = 'accountscr_tapmenu_asset_inbox_tap', // Opened the asset inbox from the account menu
+    Send = 'accountscr_tapmenu_send_tap', // Tapped Send from the account menu
+    More = 'accountscr_tapmenu_more_tap', // Tapped More in the account menu
+    Chart = 'accountscr_chart_tap', // Tapped the chart
+    TransactionDownload = 'historyscr_transactions_download', // Downloaded transaction history
+    TransactionFilter = 'historyscr_transactions_filter', // Filtered transaction history
+    JointAccountDetail = 'accountscr_jointAccount_detail_press', // Opened joint-account detail
+    JointAccountRekey = 'accountscr_tapmenu_rekeyJntAcc_tap', // Rekeyed a joint account
+    JointAccountExport = 'accountscr_tapmenu_jntAccExport_tap', // Exported a joint account
+    JointAccountCopyUrl = 'accountscr_tapmenu_jntAccExpCopy_tap', // Copied the joint-account export URL
+    JointAccountShareUrl = 'accountscr_tapmenu_jntAccExpShare_tap', // Shared the joint-account export URL
 }

@@ -14,16 +14,16 @@ import { AnalyticsMetadataKey as Key } from '../metadata-keys'
 
 /** Receive funds / QR sharing. */
 export enum ReceiveEvent {
-    QrCopy = 'tap_show_qr_copy',
-    QrShare = 'tap_show_qr_share',
-    QrShareComplete = 'tap_show_qr_share_complete',
-    NftReceive = 'nftscr_nft_receive',
-    ReceiveTab = 'tap_tab_receive',
+    QrCopy = 'tap_show_qr_copy', // Copied the address on the QR screen (address)
+    QrShare = 'tap_show_qr_share', // Shared the address on the QR screen (address)
+    QrShareComplete = 'tap_show_qr_share_complete', // Finished sharing the address (address)
+    NftReceive = 'nftscr_nft_receive', // Tapped receive on the NFT screen
+    ReceiveTab = 'tap_tab_receive', // Tapped the Receive option
 }
 
 /** Send funds flow. */
 export enum SendEvent {
-    SendTab = 'tap_tab_send',
+    SendTab = 'tap_tab_send', // Tapped the Send option
 }
 
 export interface ReceiveRequiredPayloads {

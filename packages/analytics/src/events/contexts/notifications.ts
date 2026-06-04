@@ -14,7 +14,7 @@ import { AnalyticsMetadataKey as Key } from '../metadata-keys'
 
 /** Push notification interactions. */
 export enum NotificationsEvent {
-    Open = 'notification_open',
+    Open = 'notification_open', // Opened a push notification (opt. id, opt. url)
 }
 
 export interface NotificationsOptionalPayloads {

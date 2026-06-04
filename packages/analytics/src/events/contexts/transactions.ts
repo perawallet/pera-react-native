@@ -14,7 +14,7 @@ import { AnalyticsMetadataKey as Key } from '../metadata-keys'
 
 /** Completed on-chain transactions. */
 export enum TransactionsEvent {
-    Complete = 'transaction',
+    Complete = 'transaction', // A transaction completed (account type, asset, max flag, amount, tx id)
 }
 
 export interface TransactionsRequiredPayloads {

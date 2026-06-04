@@ -12,37 +12,34 @@
 
 import { AnalyticsMetadataKey as Key } from '../metadata-keys'
 
-/**
- * Swap flow. Note: iOS defined `swapAssetFailed` mapped to the same raw string
- * as `Failed` (`swapscr_assets_failed`); the duplicate was dropped.
- */
+/** Swap flow. */
 export enum SwapEvent {
-    OpenSelectAccount = 'swapscr_account_select_open',
-    SelectTopAsset = 'swapscr_asset_top_select',
-    SelectBottomAsset = 'swapscr_asset_bot_select',
-    HistorySeeAll = 'swapscr_swap_history_see_all',
-    SelectHistory = 'swapscr_swap_history_select',
-    SelectHistoryInSeeAll = 'swapscr_swap_history_see_all_asset_select',
-    SelectTopPair = 'swapscr_swap_top_select',
-    SelectProviderOpen = 'swapscr_swap_select_provider',
-    SelectProviderClose = 'swapscr_swap_select_provider_close',
-    SelectProviderApply = 'swapscr_swap_select_provider_apply',
-    SelectProviderRouter = 'swapscr_swap_select_provider_router',
-    SettingsClose = 'swapscr_swap_settings_close',
-    SettingsApply = 'swapscr_swap_settings_apply',
-    SettingsPercentage = 'swapscr_swap_settings_balance_percent',
-    SettingsSlippage = 'swapscr_swap_settings_slippage_percent',
-    SettingsLocalCurrencyOn = 'swapscr_swap_settings_local_currency_on',
-    SettingsLocalCurrencyOff = 'swapscr_swap_settings_local_currency_off',
-    Completed = 'swapscr_assets_completed',
-    Failed = 'swapscr_assets_failed',
-    Confirm = 'swapscr_assets_confirm',
-    ConfirmSwapButton = 'swapscr_assets_swap',
-    EnterNumbers = 'swapscr_enter_amount_tap',
-    SelectFromToken = 'swapscr_select_top_asset_tap',
-    SelectToToken = 'swapscr_select_lower_asset_tap',
-    BannerLater = 'banner_swap_later',
-    BannerTry = 'banner_swap_tryswap',
+    OpenSelectAccount = 'swapscr_account_select_open', // Opened the account selector
+    SelectTopAsset = 'swapscr_asset_top_select', // Selected the top (from) asset (asset name)
+    SelectBottomAsset = 'swapscr_asset_bot_select', // Selected the bottom (to) asset (asset name)
+    HistorySeeAll = 'swapscr_swap_history_see_all', // Tapped "see all" on swap history (opt. pairing)
+    SelectHistory = 'swapscr_swap_history_select', // Picked a swap from history (opt. pairing)
+    SelectHistoryInSeeAll = 'swapscr_swap_history_see_all_asset_select', // Picked a swap from the full history list (opt. pairing)
+    SelectTopPair = 'swapscr_swap_top_select', // Selected a top trading pair (opt. pairing)
+    SelectProviderOpen = 'swapscr_swap_select_provider', // Opened the provider selector (opt. router)
+    SelectProviderClose = 'swapscr_swap_select_provider_close', // Closed the provider selector (opt. router)
+    SelectProviderApply = 'swapscr_swap_select_provider_apply', // Applied a provider selection (opt. router)
+    SelectProviderRouter = 'swapscr_swap_select_provider_router', // Chose a specific router (opt. router)
+    SettingsClose = 'swapscr_swap_settings_close', // Closed swap settings
+    SettingsApply = 'swapscr_swap_settings_apply', // Applied swap settings
+    SettingsPercentage = 'swapscr_swap_settings_balance_percent', // Set a balance percentage
+    SettingsSlippage = 'swapscr_swap_settings_slippage_percent', // Set slippage tolerance
+    SettingsLocalCurrencyOn = 'swapscr_swap_settings_local_currency_on', // Turned local-currency display on
+    SettingsLocalCurrencyOff = 'swapscr_swap_settings_local_currency_off', // Turned local-currency display off
+    Completed = 'swapscr_assets_completed', // A swap completed (full details: assets, amounts, fees)
+    Failed = 'swapscr_assets_failed', // A swap failed (asset/amount details)
+    Confirm = 'swapscr_assets_confirm', // Slid to confirm the swap
+    ConfirmSwapButton = 'swapscr_assets_swap', // Tapped the Swap button
+    EnterNumbers = 'swapscr_enter_amount_tap', // Started entering an amount
+    SelectFromToken = 'swapscr_select_top_asset_tap', // Opened the from-token selector (asset id)
+    SelectToToken = 'swapscr_select_lower_asset_tap', // Opened the to-token selector (asset id)
+    BannerLater = 'banner_swap_later', // Tapped "later" on the swap promo banner
+    BannerTry = 'banner_swap_tryswap', // Tapped "try swap" on the swap promo banner
 }
 
 /** Shared status metadata for completed / failed swaps. */

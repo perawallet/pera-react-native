@@ -12,7 +12,7 @@
 
 /** Quick-action bottom sheet. */
 export enum QuickActionsEvent {
-    BrowseDApps = 'bottommenu_browse_dapps_tap',
-    Stake = 'bottommenu_stake_tap',
-    Swap = 'quickaction_swap_click',
+    BrowseDApps = 'bottommenu_browse_dapps_tap', // Tapped browse dApps in quick actions
+    Stake = 'bottommenu_stake_tap', // Tapped Stake in quick actions
+    Swap = 'quickaction_swap_click', // Tapped Swap in quick actions
 }

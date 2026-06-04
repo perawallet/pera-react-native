@@ -14,18 +14,18 @@ import { AnalyticsMetadataKey as Key } from '../metadata-keys'
 
 /** WalletConnect session and transaction events. */
 export enum WalletConnectEvent {
-    SessionApproved = 'wc_session_approved',
-    SessionDisconnected = 'wc_session_disconnected',
-    SessionRejected = 'wc_session_rejected',
-    TransactionConfirmed = 'wc_transaction_confirmed',
-    TransactionDeclined = 'wc_transaction_declined',
-    TransactionRequestDidAppear = 'wc_transaction_request_DidAppear',
-    TransactionRequestDidLoad = 'wc_transaction_request_DidLoad',
-    TransactionRequestReceived = 'wc_transaction_request_Received',
-    TransactionRequestValidated = 'wc_transaction_request_Validated',
+    SessionApproved = 'wc_session_approved', // Approved a dapp connection (version, topic, dapp name/url, address, total accounts)
+    SessionDisconnected = 'wc_session_disconnected', // Disconnected a session (version, dapp name/url, opt. address)
+    SessionRejected = 'wc_session_rejected', // Rejected a connection request (version, topic, dapp name/url)
+    TransactionConfirmed = 'wc_transaction_confirmed', // Confirmed a dapp transaction (version, tx id, dapp name/url)
+    TransactionDeclined = 'wc_transaction_declined', // Declined a dapp transaction (version, tx count, dapp name/url, opt. address)
+    TransactionRequestDidAppear = 'wc_transaction_request_DidAppear', // Transaction-request screen appeared
+    TransactionRequestDidLoad = 'wc_transaction_request_DidLoad', // Transaction request finished loading
+    TransactionRequestReceived = 'wc_transaction_request_Received', // A transaction request was received
+    TransactionRequestValidated = 'wc_transaction_request_Validated', // A transaction request passed validation
 }
 
-/** WalletConnect protocol version. Mirrors iOS `WalletConnectProtocolID`. */
+/** WalletConnect protocol version ('1' or '2'). */
 export type WalletConnectVersion = '1' | '2'
 
 export interface WalletConnectRequiredPayloads {

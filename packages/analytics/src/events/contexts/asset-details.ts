@@ -14,13 +14,13 @@ import { AnalyticsMetadataKey as Key } from '../metadata-keys'
 
 /** Asset detail screen actions. */
 export enum AssetDetailsEvent {
-    Show = 'asset_detail_asset',
-    Change = 'asset_detail_asset_change',
-    AddAsset = 'assetscr_asset_add',
-    ManageAsset = 'assetscr_assets_manage',
-    Receive = 'tap_asset_detail_receive',
-    Send = 'tap_asset_detail_send',
-    SwapAlgo = 'algoasadetail_swap_click',
+    Show = 'asset_detail_asset', // Viewed an asset's detail (includes asset id)
+    Change = 'asset_detail_asset_change', // Switched the selected asset in detail
+    AddAsset = 'assetscr_asset_add', // Added an asset
+    ManageAsset = 'assetscr_assets_manage', // Opened manage assets
+    Receive = 'tap_asset_detail_receive', // Tapped Receive on asset detail
+    Send = 'tap_asset_detail_send', // Tapped Send on asset detail
+    SwapAlgo = 'algoasadetail_swap_click', // Tapped Swap on the ALGO asset detail
 }
 
 export interface AssetDetailsRequiredPayloads {
