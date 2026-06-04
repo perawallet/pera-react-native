@@ -16,7 +16,10 @@ import { Input as RNEInput, InputProps as RNEInputProps } from '@rneui/themed'
 import { TypographyVariant } from '@theme/typography'
 import { useStyles } from './styles'
 import { getTestProps } from '@utils/test-id-helper'
-import { DEFAULT_MINIMUM_FONT_SCALE } from '../constants'
+import {
+    DEFAULT_MINIMUM_FONT_SCALE,
+    MAX_FONT_SIZE_MULTIPLIER,
+} from '../constants'
 
 export type PWInputRef = {
     focus: () => void
@@ -106,6 +109,7 @@ export const PWInput = forwardRef<PWInputRef, PWInputProps>(
                 {...{
                     adjustsFontSizeToFit,
                     minimumFontScale: resolvedMinimumFontScale,
+                    maxFontSizeMultiplier: MAX_FONT_SIZE_MULTIPLIER,
                 }}
                 containerStyle={[styles.container, containerStyle]}
                 inputContainerStyle={[

@@ -11,3 +11,7 @@
  */
 
 export const DEFAULT_MINIMUM_FONT_SCALE = 0.5
+
+// Caps accessibility font scaling. Pera's UI is dense (rows, cards, tab bars);
+// beyond ~1.5x even correct line heights overflow fixed-height containers.
+export const MAX_FONT_SIZE_MULTIPLIER = 1.5
