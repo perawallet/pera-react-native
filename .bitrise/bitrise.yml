@@ -437,7 +437,7 @@ workflows:
                 set -ex
                 VERSION=$(jq -r '.version | split("-")[0]' apps/mobile/package.json)
                 envman add --key APP_VERSION --value "$VERSION"
-                envman add --key BUILD_NUMBER --value "$BITRISE_BUILD_NUMBER"
+                envman add --key BUILD_NUMBER --value "$((BITRISE_BUILD_NUMBER + ${BUILD_NUMBER_OFFSET:-0}))"
       - certificate-and-profile-installer@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
       - script@1:
@@ -507,6 +507,26 @@ workflows:
                 else
                   envman add --key SKIP_BUILD --value "false"
                 fi
+    after_run:
+      - _android-build
+      - _slack-notify-android
+    meta:
+      bitrise.io:
+        stack: linux-docker-android-22.04
+  android-staging-test:
+    description: Android Staging with LEGACY ids (installs over legacy app) → Firebase
+    envs:
+      - ENVIRONMENT: staging
+      - APP_ENV: staging
+      - ANDROID_FLAVOR: staging
+      - ANDROID_APPLICATION_ID: com.algorand.android.staging
+      - BUILD_NUMBER_OFFSET: "6000"
+      - FIREBASE_APP_ID_ANDROID: 1:270342103187:android:ee42b8f6363aefe8a1ad66
+      - NOTIFICATION_TITLE_PREFIX: QA Build (Migration Test)
+      - USE_CACHE: "true"
+      - PARENT_WORKFLOW: qa-build
+      - DISTRIBUTION: firebase
+      - SKIP_BUILD: "false"
     after_run:
       - _android-build
       - _slack-notify-android
@@ -673,7 +693,7 @@ workflows:
                 set -ex
                 VERSION=$(jq -r '.version | split("-")[0]' apps/mobile/package.json)
                 envman add --key APP_VERSION --value "$VERSION"
-                envman add --key BUILD_NUMBER --value "$BITRISE_BUILD_NUMBER"
+                envman add --key BUILD_NUMBER --value "$((BITRISE_BUILD_NUMBER + ${BUILD_NUMBER_OFFSET:-0}))"
       - script@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Expo Prebuild

@@ -41,6 +41,8 @@ const bundleIdentifiers = {
   },
 };
 
+const androidLegacyApplicationId = process.env.ANDROID_APPLICATION_ID || null;
+
 // App names per environment
 const appNames = {
   dev: 'Pera 7 Dev',
@@ -331,6 +333,18 @@ module.exports = {
     './plugins/withAndroidMigrationDependencies.js',
     './plugins/withAndroidMigrationSources.js',
     './plugins/withMainApplicationLegacyMigration.js',
+
+    ...(androidLegacyApplicationId
+      ? [
+          [
+            './plugins/withAndroidLegacyApplicationId.js',
+            {
+              applicationId: androidLegacyApplicationId,
+              debugSuffix: '.debug',
+            },
+          ],
+        ]
+      : []),
   ],
 
   // Experiments (for bleeding edge features)
