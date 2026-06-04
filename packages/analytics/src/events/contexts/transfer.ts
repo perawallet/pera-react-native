@@ -10,7 +10,30 @@
  limitations under the License
  */
 
+import { AnalyticsMetadataKey as Key } from '../metadata-keys'
+
+/** Receive funds / QR sharing. */
+export enum ReceiveEvent {
+    QrCopy = 'tap_show_qr_copy',
+    QrShare = 'tap_show_qr_share',
+    QrShareComplete = 'tap_show_qr_share_complete',
+    NftReceive = 'nftscr_nft_receive',
+    ReceiveTab = 'tap_tab_receive',
+}
+
 /** Send funds flow. */
 export enum SendEvent {
     SendTab = 'tap_tab_send',
+}
+
+export interface ReceiveRequiredPayloads {
+    [ReceiveEvent.QrCopy]: {
+        [Key.AccountAddress]: string
+    }
+    [ReceiveEvent.QrShare]: {
+        [Key.AccountAddress]: string
+    }
+    [ReceiveEvent.QrShareComplete]: {
+        [Key.AccountAddress]: string
+    }
 }

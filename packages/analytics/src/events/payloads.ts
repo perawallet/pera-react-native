@@ -22,7 +22,7 @@ import type { WalletConnectRequiredPayloads } from './contexts/wallet-connect'
 import type { DiscoverRequiredPayloads } from './contexts/discover'
 import type { SettingsRequiredPayloads } from './contexts/settings'
 import type { TransactionsRequiredPayloads } from './contexts/transactions'
-import type { ReceiveRequiredPayloads } from './contexts/receive'
+import type { ReceiveRequiredPayloads } from './contexts/transfer'
 import type { NotificationsOptionalPayloads } from './contexts/notifications'
 
 /**
