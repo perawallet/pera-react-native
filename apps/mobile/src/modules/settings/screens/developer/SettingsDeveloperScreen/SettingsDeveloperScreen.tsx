@@ -17,7 +17,7 @@ import { usePreferences } from '@perawallet/wallet-core-settings'
 import { config } from '@perawallet/wallet-core-config'
 import { generateUniqueId } from '@perawallet/wallet-core-shared'
 
-import { PWListItem, PWScreen } from '@components/core'
+import { PWIcon, PWListItem, PWScreen, PWSwitch, PWText, PWView } from '@components/core'
 import { UserPreferences } from '@constants/user-preferences'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@modules/webview'
@@ -25,9 +25,17 @@ import { useWebView } from '@modules/webview'
 export const SettingsDeveloperScreen = () => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { t } = useLanguage()
-    const { getPreference } = usePreferences()
+    const { getPreference, setPreference } = usePreferences()
     const { pushWebView } = useWebView()
     const { isTestnet } = useNetwork()
+
+    const isScreenCapturePreventionDisabled = Boolean(
+        getPreference(UserPreferences.disableScreenCapturePrevention),
+    )
+
+    const handleScreenCaptureToggle = (value: boolean) => {
+        setPreference(UserPreferences.disableScreenCapturePrevention, value)
+    }
 
     const handleTapEvent = (page: string) => {
         navigation.push(page)
@@ -58,6 +66,21 @@ export const SettingsDeveloperScreen = () => {
                     testID='developer_settings_dispenser_item'
                 />
             )}
+
+            <PWView
+                style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12}}
+                testID='developer_settings_disable_screen_capture_item'
+            >
+                <PWView style={{flexDirection: 'row', alignItems: 'center', gap: 12}}>
+                    <PWIcon name='eye-slash' />
+                    <PWText>Disable Screen Capture Prevention</PWText>
+                </PWView>
+                <PWSwitch
+                    value={isScreenCapturePreventionDisabled}
+                    onValueChange={handleScreenCaptureToggle}
+                    testID='developer_settings_disable_screen_capture_toggle'
+                />
+            </PWView>
 
             {getPreference(UserPreferences.developerMenuEnabled) && (
                 <PWListItem
