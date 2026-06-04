@@ -59,6 +59,7 @@ export const configSchema = z.object({
     dispenserUrl: z.url(),
 
     sendFundsFaqUrl: z.url(),
+    assetInboxSupportUrl: z.url(),
     swapSupportUrl: z.url(),
     multisigSupportUrl: z.url(),
     algorandDefiUrl: z.url(),
@@ -140,6 +141,8 @@ const productionConfig = {
     peraDemoDappUrl: 'https://perawallet.github.io/pera-demo-dapp/',
     sendFundsFaqUrl:
         'https://support.perawallet.app/en/category/transactions-1tq8s9h/',
+    assetInboxSupportUrl:
+        'https://support.perawallet.app/en/article/transacting-with-asset-inbox-1fbh60y/',
     swapSupportUrl:
         'https://support.perawallet.app/en/article/pera-swap-swapping-with-pera-1ep84ky/',
     multisigSupportUrl:
@@ -234,6 +237,7 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     privacyPolicyUrl: 'PRIVACY_POLICY_URL',
     peraDemoDappUrl: 'PERA_DEMO_DAPP_URL',
     sendFundsFaqUrl: 'SEND_FUNDS_FAQ_URL',
+    assetInboxSupportUrl: 'ASSET_INBOX_SUPPORT_URL',
     swapSupportUrl: 'SWAP_SUPPORT_URL',
     multisigSupportUrl: 'MULTISIG_SUPPORT_URL',
     algorandDefiUrl: 'ALGORAND_DEFI_URL',
