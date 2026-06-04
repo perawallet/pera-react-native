@@ -12,7 +12,7 @@
 
 import { PWButton, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import type { PWFlatListRef } from '@components/core'
-import React, { useCallback, useEffect, useMemo, useRef } from 'react'
+import React, { useCallback, useEffect, useRef } from 'react'
 import { useStyles } from './styles'
 
 import {
@@ -108,63 +108,49 @@ export const AccountAssetList = ({
         [renderItemProps],
     )
 
-    // Memoized to preven unnecessary list reenders
-    const listHeader = useMemo(
-        () => (
-            <PWView style={styles.headerContainer}>
-                <BackupReminderBanner
-                    account={account}
-                    isLoading={isLoading}
-                />
-                {headerState.isOpen && (
-                    <>
-                        {header}
-                        <PWView style={styles.titleBar}>
-                            <PWView style={styles.titleBarTitleContainer}>
-                                <PWText
-                                    variant='h3'
-                                    truncate
-                                >
-                                    {t('account_details.assets.title')}
-                                </PWText>
-                            </PWView>
-                            {!isReadOnly && (
-                                <PWView style={styles.titleBarButtonContainer}>
-                                    <PWButton
-                                        icon='sliders'
-                                        variant='helper'
-                                        paddingStyle='none'
-                                        onPress={handleOpenManage}
-                                        style={styles.manageButton}
-                                    />
-                                    <PWButton
-                                        icon='plus'
-                                        title={t(
-                                            'account_details.assets.add_asset',
-                                        )}
-                                        variant='helper'
-                                        paddingStyle='none'
-                                        onPress={handleOpenAddAsset}
-                                        style={styles.addAssetButton}
-                                    />
-                                </PWView>
-                            )}
+    const listHeader = (
+        <PWView style={styles.headerContainer}>
+            <BackupReminderBanner
+                account={account}
+                isLoading={isLoading}
+            />
+            {headerState.isOpen && (
+                <>
+                    {header}
+                    <PWView style={styles.titleBar}>
+                        <PWView style={styles.titleBarTitleContainer}>
+                            <PWText
+                                variant='h3'
+                                truncate
+                            >
+                                {t('account_details.assets.title')}
+                            </PWText>
                         </PWView>
-                    </>
-                )}
-            </PWView>
-        ),
-        [
-            styles,
-            account,
-            isLoading,
-            headerState.isOpen,
-            header,
-            isReadOnly,
-            t,
-            handleOpenManage,
-            handleOpenAddAsset,
-        ],
+                        {!isReadOnly && (
+                            <PWView style={styles.titleBarButtonContainer}>
+                                <PWButton
+                                    icon='sliders'
+                                    variant='helper'
+                                    paddingStyle='none'
+                                    onPress={handleOpenManage}
+                                    style={styles.manageButton}
+                                />
+                                <PWButton
+                                    icon='plus'
+                                    title={t(
+                                        'account_details.assets.add_asset',
+                                    )}
+                                    variant='helper'
+                                    paddingStyle='none'
+                                    onPress={handleOpenAddAsset}
+                                    style={styles.addAssetButton}
+                                />
+                            </PWView>
+                        )}
+                    </PWView>
+                </>
+            )}
+        </PWView>
     )
 
     return (

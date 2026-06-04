@@ -11,7 +11,6 @@
  */
 
 import React, { createElement, forwardRef, useCallback, useMemo } from 'react'
-import { Animated } from 'react-native'
 import type { ListRenderItemInfo } from '@shopify/flash-list'
 
 import { PWFlatList, PWView } from '@components/core'
@@ -99,10 +98,7 @@ const SearchableListInner = <T,>(
         augmentedKeyExtractor,
         toUserIndex,
         searchFooterHeight,
-        searchBarHeight,
-        searchOverlayTranslateY,
         handleHeaderLayout,
-        handleSearchBarLayout,
         handleListLayout,
         handleContentSizeChange,
         handleSearchFocus,
@@ -178,10 +174,18 @@ const SearchableListInner = <T,>(
                 )
             }
             if (isSearchSentinel(info.item)) {
-                // The real input is rendered once as an overlay (see below) so
-                // it survives list re-renders without losing focus/text. Here we
-                // just reserve its height so the rows sit below it.
-                return <PWView style={{ height: searchBarHeight }} />
+                const searchProps = {
+                    value: searchValue,
+                    onFocus: handleSearchFocus,
+                    placeholder: searchPlaceholder,
+                    onChangeText: onSearchChange,
+                }
+
+                return (
+                    <PWView style={styles.searchSticky}>
+                        <SearchInputComponent {...searchProps} />
+                    </PWView>
+                )
             }
             return (
                 renderItem?.({
@@ -193,10 +197,15 @@ const SearchableListInner = <T,>(
         },
         [
             renderItem,
-            searchBarHeight,
+            searchValue,
+            searchPlaceholder,
+            onSearchChange,
+            SearchInputComponent,
+            handleSearchFocus,
             toUserIndex,
             ListHeaderComponent,
             handleHeaderLayout,
+            styles.searchSticky,
         ],
     )
 
@@ -242,7 +251,7 @@ const SearchableListInner = <T,>(
     // keyExtractor, etc.) is properly typed above. FlashList enables
     // maintainVisibleContentPosition by default, so it isn't set explicitly.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const list = createElement(PWFlatList as any, {
+    return createElement(PWFlatList as any, {
         ...listProps,
         ref: listRef,
         data: augmentedData,
@@ -250,7 +259,8 @@ const SearchableListInner = <T,>(
         keyExtractor: augmentedKeyExtractor,
         ItemSeparatorComponent: augmentedSeparator,
         ListFooterComponent: augmentedFooter,
-        // Zero PWFlatList's default paddingTop, else the search overlay pins a
+        stickyHeaderIndices: isListEmpty ? undefined : [1],
+        // Zero PWFlatList's default paddingTop, else the sticky search pins a
         // gap above the in-flow header.
         contentContainerStyle: [
             listProps.contentContainerStyle,
@@ -263,30 +273,6 @@ const SearchableListInner = <T,>(
         onScrollEndDrag: handleScrollEndDrag,
         scrollEventThrottle: SCROLL_EVENT_THROTTLE,
     })
-
-    // The search input lives in a single, persistent overlay rather than as a
-    // recycled/sticky list item: list re-renders (e.g. filtering on each
-    // keystroke) would otherwise remount it, wiping its text and dropping
-    // focus. It tracks the scroll via translateY, then pins at the top.
-    return (
-        <PWView style={styles.root}>
-            {list}
-            <Animated.View
-                style={[
-                    styles.searchOverlay,
-                    { transform: [{ translateY: searchOverlayTranslateY }] },
-                ]}
-                onLayout={handleSearchBarLayout}
-            >
-                <SearchInputComponent
-                    value={searchValue}
-                    onFocus={handleSearchFocus}
-                    placeholder={searchPlaceholder}
-                    onChangeText={onSearchChange}
-                />
-            </Animated.View>
-        </PWView>
-    )
 }
 
 export const SearchableList = forwardRef(SearchableListInner) as <T>(

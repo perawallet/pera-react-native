@@ -25,18 +25,9 @@ export const useStyles = makeStyles(theme => ({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    // Wraps the list and the absolutely-positioned search overlay.
-    root: {
-        flex: 1,
-    },
-    // The single persistent search input, floated over the list. Opaque so the
-    // rows scrolling beneath it (once pinned) don't show through.
-    searchOverlay: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 2,
+    // Opaque backing for the sticky search; without it rows scroll through the
+    // transparent space around the pill (visible on iOS top overscroll).
+    searchSticky: {
         backgroundColor: theme.colors.background,
     },
 }))

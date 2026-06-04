@@ -19,7 +19,6 @@ import {
     useState,
 } from 'react'
 import {
-    Animated,
     type LayoutChangeEvent,
     type NativeScrollEvent,
     type NativeSyntheticEvent,
@@ -31,9 +30,6 @@ import { Nullable } from '@perawallet/wallet-core-shared'
 const SEARCH_KEY = '__searchable_list_search__'
 const HEADER_KEY = '__searchable_list_header__'
 const DEFAULT_ITEM_HEIGHT_ESTIMATE = 56
-// Reserve roughly a search bar's height before the overlay measures itself, so
-// the in-list spacer doesn't start at 0 and let the overlay overlap the rows.
-const DEFAULT_SEARCH_BAR_HEIGHT = 52
 
 export type SearchSentinel = {
     readonly __searchableListSearch: true
@@ -102,13 +98,7 @@ type UseSearchableListResult<T> = {
      * the viewport. 0 when the list already has enough scrollable content.
      */
     searchFooterHeight: number
-    /** Measured height of the search overlay; used to size the in-list spacer. */
-    searchBarHeight: number
-    /** translateY for the absolutely-positioned search overlay: it tracks the
-     *  scroll, then pins at the top once the header scrolls away. */
-    searchOverlayTranslateY: Animated.AnimatedInterpolation<number>
     handleHeaderLayout: (event: LayoutChangeEvent) => void
-    handleSearchBarLayout: (event: LayoutChangeEvent) => void
     handleListLayout: (event: LayoutChangeEvent) => void
     handleContentSizeChange: (width: number, height: number) => void
     handleSearchFocus: () => void
@@ -127,11 +117,7 @@ export const useSearchableList = <T>({
     onScrollEndDrag,
 }: UseSearchableListParams<T>): UseSearchableListResult<T> => {
     const listRef = useRef<PWFlatListRef>(null)
-    const scrollY = useRef(new Animated.Value(0)).current
     const [headerHeight, setHeaderHeight] = useState(0)
-    const [searchBarHeight, setSearchBarHeight] = useState(
-        DEFAULT_SEARCH_BAR_HEIGHT,
-    )
     const [listLayoutHeight, setListLayoutHeight] = useState(0)
     // Latest measured contentSize minus the spacer footer we set last —
     // i.e. the natural (item-driven) content height.
@@ -179,23 +165,6 @@ export const useSearchableList = <T>({
         return Math.max(0, listLayoutHeight + headerHeight - natural)
     }, [listLayoutHeight, headerHeight, naturalContentSize, itemCount])
 
-    // The search overlay sits at the header's bottom edge at rest and slides up
-    // with the scroll until it reaches the top, where it pins. headerHeight is
-    // 0 until the header measures; guard against a zero-width input range.
-    const searchOverlayTranslateY = useMemo(() => {
-        if (headerHeight <= 0) {
-            return scrollY.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0, 0],
-            })
-        }
-        return scrollY.interpolate({
-            inputRange: [0, headerHeight],
-            outputRange: [headerHeight, 0],
-            extrapolate: 'clamp',
-        })
-    }, [headerHeight, scrollY])
-
     // Mirror searchFooterHeight into a ref so handleContentSizeChange can
     // recover the natural size without depending on render closures.
     useLayoutEffect(() => {
@@ -213,12 +182,6 @@ export const useSearchableList = <T>({
         const height = event.nativeEvent.layout.height
         listLayoutHeightRef.current = height
         setListLayoutHeight(height)
-    }, [])
-
-    const handleSearchBarLayout = useCallback((event: LayoutChangeEvent) => {
-        const height = event.nativeEvent.layout.height
-        if (height <= 0) return
-        setSearchBarHeight(prev => (prev === height ? prev : height))
     }, [])
 
     const handleContentSizeChange = useCallback(
@@ -249,15 +212,12 @@ export const useSearchableList = <T>({
     const handleScroll = useCallback(
         (event: NativeSyntheticEvent<NativeScrollEvent>) => {
             onScroll?.(event)
-            const offsetY = event.nativeEvent.contentOffset.y
-            // Drive the search overlay's position from the scroll offset.
-            scrollY.setValue(offsetY)
             const headerH = headerHeightRef.current
-            if (headerH > 0 && offsetY >= headerH) {
+            if (headerH > 0 && event.nativeEvent.contentOffset.y >= headerH) {
                 isCollapsedRef.current = true
             }
         },
-        [onScroll, scrollY],
+        [onScroll],
     )
 
     const handleScrollEndDrag = useCallback(
@@ -319,10 +279,7 @@ export const useSearchableList = <T>({
         augmentedKeyExtractor,
         toUserIndex,
         searchFooterHeight,
-        searchBarHeight,
-        searchOverlayTranslateY,
         handleHeaderLayout,
-        handleSearchBarLayout,
         handleListLayout,
         handleContentSizeChange,
         handleSearchFocus,
