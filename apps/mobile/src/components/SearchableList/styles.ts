@@ -25,12 +25,17 @@ export const useStyles = makeStyles(theme => ({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    // Wraps the list and the search overlay floated on top of it.
+    // Opaque backing for the sticky search; without it rows scroll through the
+    // transparent space around the pill (visible on iOS top overscroll).
+    searchSticky: {
+        backgroundColor: theme.colors.background,
+    },
+    // Wraps the list and the pinned search overlay floated on top of it.
     root: {
         flex: 1,
     },
-    // The single persistent search input, floated over the list. Opaque so the
-    // rows scrolling beneath it (once pinned) don't show through.
+    // The focusable search input, floated over the sticky bar while pinned.
+    // Opaque so the rows beneath don't show through.
     searchOverlay: {
         position: 'absolute',
         top: 0,
@@ -38,5 +43,27 @@ export const useStyles = makeStyles(theme => ({
         right: 0,
         zIndex: 2,
         backgroundColor: theme.colors.background,
+    },
+    // Hidden (but kept mounted) when not pinned or while dragging.
+    searchOverlayHidden: {
+        opacity: 0,
+    },
+    // Display-only mirror of the search bar (the real input is the overlay).
+    // Mirrors SearchInput's look so the overlay/sticky handoff is seamless.
+    searchDisplay: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.sm,
+        backgroundColor: theme.colors.layerGrayLighter,
+        borderRadius: theme.borderRadius.sm,
+        paddingHorizontal: theme.spacing.md,
+    },
+    searchDisplayText: {
+        flex: 1,
+        color: theme.colors.textMain,
+    },
+    searchDisplayPlaceholder: {
+        flex: 1,
+        color: theme.colors.textGray,
     },
 }))

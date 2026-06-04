@@ -30,9 +30,6 @@ import { Nullable } from '@perawallet/wallet-core-shared'
 const SEARCH_KEY = '__searchable_list_search__'
 const HEADER_KEY = '__searchable_list_header__'
 const DEFAULT_ITEM_HEIGHT_ESTIMATE = 56
-// Reserve roughly a search bar's height before the overlay measures itself, so
-// the in-list spacer doesn't start at 0 and let the rows sit under the search.
-const DEFAULT_SEARCH_BAR_HEIGHT = 52
 
 export type SearchSentinel = {
     readonly __searchableListSearch: true
@@ -101,10 +98,9 @@ type UseSearchableListResult<T> = {
      * the viewport. 0 when the list already has enough scrollable content.
      */
     searchFooterHeight: number
-    /** Measured height of the search overlay; used to size the in-list spacer. */
-    searchBarHeight: number
+    /** Measured header height; the overlay uses it as the pin threshold. */
+    headerHeight: number
     handleHeaderLayout: (event: LayoutChangeEvent) => void
-    handleSearchBarLayout: (event: LayoutChangeEvent) => void
     handleListLayout: (event: LayoutChangeEvent) => void
     handleContentSizeChange: (width: number, height: number) => void
     handleSearchFocus: () => void
@@ -124,9 +120,6 @@ export const useSearchableList = <T>({
 }: UseSearchableListParams<T>): UseSearchableListResult<T> => {
     const listRef = useRef<PWFlatListRef>(null)
     const [headerHeight, setHeaderHeight] = useState(0)
-    const [searchBarHeight, setSearchBarHeight] = useState(
-        DEFAULT_SEARCH_BAR_HEIGHT,
-    )
     const [listLayoutHeight, setListLayoutHeight] = useState(0)
     // Latest measured contentSize minus the spacer footer we set last —
     // i.e. the natural (item-driven) content height.
@@ -191,12 +184,6 @@ export const useSearchableList = <T>({
         const height = event.nativeEvent.layout.height
         listLayoutHeightRef.current = height
         setListLayoutHeight(height)
-    }, [])
-
-    const handleSearchBarLayout = useCallback((event: LayoutChangeEvent) => {
-        const height = event.nativeEvent.layout.height
-        if (height <= 0) return
-        setSearchBarHeight(prev => (prev === height ? prev : height))
     }, [])
 
     const handleContentSizeChange = useCallback(
@@ -294,9 +281,8 @@ export const useSearchableList = <T>({
         augmentedKeyExtractor,
         toUserIndex,
         searchFooterHeight,
-        searchBarHeight,
+        headerHeight,
         handleHeaderLayout,
-        handleSearchBarLayout,
         handleListLayout,
         handleContentSizeChange,
         handleSearchFocus,

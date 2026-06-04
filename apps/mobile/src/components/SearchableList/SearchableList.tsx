@@ -10,21 +10,30 @@
  limitations under the License
  */
 
-import React, { createElement, forwardRef, useCallback, useMemo } from 'react'
-import { type LayoutChangeEvent, type ScrollViewProps } from 'react-native'
-import Animated, {
-    useAnimatedRef,
-    useScrollViewOffset,
-    useAnimatedStyle,
-    useSharedValue,
-    interpolate,
-    Extrapolation,
-} from 'react-native-reanimated'
+import React, {
+    createElement,
+    forwardRef,
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react'
+import {
+    Pressable,
+    type NativeScrollEvent,
+    type NativeSyntheticEvent,
+} from 'react-native'
 import type { ListRenderItemInfo } from '@shopify/flash-list'
 
-import { PWFlatList, PWView } from '@components/core'
+import { PWFlatList, PWText, PWView } from '@components/core'
+import { PWIcon } from '@components/core/PWIcon'
 import type { PWFlatListProps, PWFlatListRef } from '@components/core'
-import { SearchInput } from '@components/SearchInput'
+import { SearchInput, type SearchInputRef } from '@components/SearchInput'
+
+// How close to the pinned position counts as "pinned" (px tolerance).
+const PIN_EPSILON = 2
+const NOOP = () => {}
 import {
     isHeaderSentinel,
     isSearchSentinel,
@@ -43,7 +52,6 @@ export type SearchableListSearchProps = {
     placeholder?: string
     onChangeText?: (value: string) => void
     onFocus: () => void
-    onBlur?: () => void
 }
 
 const renderHeaderNode = (
@@ -108,9 +116,8 @@ const SearchableListInner = <T,>(
         augmentedKeyExtractor,
         toUserIndex,
         searchFooterHeight,
-        searchBarHeight,
+        headerHeight,
         handleHeaderLayout,
-        handleSearchBarLayout,
         handleListLayout,
         handleContentSizeChange,
         handleSearchFocus,
@@ -129,97 +136,72 @@ const SearchableListInner = <T,>(
 
     const isListEmpty = (data?.length ?? 0) === 0
 
-    // The search input is rendered once as an overlay (so list re-renders never
-    // remount it and drop focus). Its position is driven by the scroll offset
-    // read on the UI thread via reanimated. useScrollViewOffset needs the
-    // animated ref on a real host ScrollView, so we hand FlashList a reanimated
-    // Animated.ScrollView via renderScrollComponent and attach the ref there.
-    const scrollViewRef = useAnimatedRef<Animated.ScrollView>()
-    const scrollOffset = useScrollViewOffset(scrollViewRef)
+    // The search input lives in two places that mirror each other: a native
+    // sticky list item (display only — it scrolls/pins via FlashList) and a
+    // single focusable overlay shown only while pinned at the top and not
+    // dragging. Typing happens in the overlay (it never remounts, so it keeps
+    // focus); its value is mirrored into the sticky display. On drag the
+    // overlay hides and the native sticky takes over — no scroll-driven
+    // animation, so nothing fights FlashList's scroll under load.
+    const overlayRef = useRef<SearchInputRef>(null)
+    const [query, setQuery] = useState(searchValue ?? '')
+    const [isPinned, setIsPinned] = useState(false)
+    const [isDragging, setIsDragging] = useState(false)
+    // Measured height of the real input (the overlay), applied to the sticky
+    // display so the two are exactly the same height — otherwise the handoff
+    // between them jumps.
+    const [searchBarHeight, setSearchBarHeight] = useState(0)
+    const currentValue = searchValue ?? query
+    const showOverlay = isPinned && !isDragging
 
-    const headerHeightSV = useSharedValue(0)
-    const isSearchFocusedSV = useSharedValue(false)
-
-    const handleHeaderLayoutWithSV = useCallback(
-        (event: LayoutChangeEvent) => {
-            handleHeaderLayout(event)
-            headerHeightSV.value = event.nativeEvent.layout.height
+    const handleQueryChange = useCallback(
+        (text: string) => {
+            setQuery(text)
+            onSearchChange?.(text)
         },
-        [handleHeaderLayout, headerHeightSV],
+        [onSearchChange],
     )
 
-    // Tracks the (UI-thread) scroll offset: sits below the header at rest,
-    // slides up, pins at top. While focused (typing) it's force-pinned so the
-    // filtered re-layout's transient scroll offset can't flash it. Dragging the
-    // list dismisses the keyboard (keyboardDismissMode below), which blurs the
-    // input and releases the pin — so scrolling down rides the header down with
-    // the search instead of jumping.
-    const searchOverlayStyle = useAnimatedStyle(() => {
-        const headerH = headerHeightSV.value
-        if (isSearchFocusedSV.value || headerH <= 0) {
-            return { transform: [{ translateY: 0 }] }
-        }
-        return {
-            transform: [
-                {
-                    translateY: interpolate(
-                        scrollOffset.value,
-                        [0, headerH],
-                        [headerH, 0],
-                        Extrapolation.CLAMP,
-                    ),
-                },
-            ],
-        }
-    })
-
-    const handleSearchInputFocus = useCallback(() => {
+    const handleEnterSearch = useCallback(() => {
+        // Pin to the top and focus the overlay so a single tap on the sticky
+        // bar opens the keyboard on the real input. handleSearchFocus sets the
+        // hook's collapsed latch, which arms its re-pin-on-content-change
+        // backstop — without it, the first keystroke shrinks the list and the
+        // header peeks back in.
+        setIsPinned(true)
         handleSearchFocus()
-        isSearchFocusedSV.value = true
-    }, [handleSearchFocus, isSearchFocusedSV])
+        requestAnimationFrame(() => overlayRef.current?.focus())
+    }, [handleSearchFocus])
 
-    const handleSearchInputBlur = useCallback(() => {
-        isSearchFocusedSV.value = false
-    }, [isSearchFocusedSV])
-
-    // Releasing the pin the instant a drag starts (rather than waiting on the
-    // keyboard-dismiss blur, which is unreliable) hands the overlay back to the
-    // scroll offset immediately, so scrolling down rides the header down.
-    const handleListScrollBeginDrag = useCallback(() => {
-        isSearchFocusedSV.value = false
-    }, [isSearchFocusedSV])
-
-    // Reanimated Animated.ScrollView as FlashList's scroll component: forward
-    // FlashList's own ref (scroll control) AND the animated ref (UI-thread
-    // offset). Memoized so FlashList doesn't recreate the scroll view.
-    const renderScrollComponent = useMemo(
-        () =>
-            forwardRef<Animated.ScrollView, ScrollViewProps>(
-                (scrollProps, flashListScrollRef) => (
-                    <Animated.ScrollView
-                        {...scrollProps}
-                        ref={(node: Animated.ScrollView | null) => {
-                            if (typeof flashListScrollRef === 'function') {
-                                flashListScrollRef(node)
-                            } else if (flashListScrollRef) {
-                                flashListScrollRef.current = node
-                            }
-                            // reanimated's ref is callable (real) or a plain
-                            // object (test mock); support both.
-                            const animatedRef = scrollViewRef as unknown as
-                                | ((n: unknown) => void)
-                                | { current: unknown }
-                            if (typeof animatedRef === 'function') {
-                                animatedRef(node)
-                            } else if (animatedRef) {
-                                animatedRef.current = node
-                            }
-                        }}
-                    />
-                ),
-            ),
-        [scrollViewRef],
+    const handleListScroll = useCallback(
+        (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+            handleScroll(event)
+            const y = event.nativeEvent.contentOffset.y
+            setIsPinned(y >= headerHeight - PIN_EPSILON)
+        },
+        [handleScroll, headerHeight],
     )
+
+    const handleListScrollBeginDrag = useCallback(() => {
+        setIsDragging(true)
+    }, [])
+
+    const handleListScrollEndDrag = useCallback(
+        (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+            handleScrollEndDrag(event)
+            setIsDragging(false)
+        },
+        [handleScrollEndDrag],
+    )
+
+    const handleMomentumScrollEnd = useCallback(() => {
+        setIsDragging(false)
+    }, [])
+
+    // Drop the keyboard whenever the overlay is hidden (e.g. on drag start).
+    useEffect(() => {
+        if (!showOverlay) overlayRef.current?.blur()
+    }, [showOverlay])
 
     const augmentedFooter = useMemo(() => {
         const emptyComponent = isListEmpty
@@ -272,16 +254,45 @@ const SearchableListInner = <T,>(
         info => {
             if (isHeaderSentinel(info.item)) {
                 return (
-                    <PWView onLayout={handleHeaderLayoutWithSV}>
+                    <PWView onLayout={handleHeaderLayout}>
                         {renderHeaderNode(ListHeaderComponent)}
                     </PWView>
                 )
             }
             if (isSearchSentinel(info.item)) {
-                // Reserve the search bar's height; the real input is rendered
-                // once as an overlay (below) so it survives list re-renders
-                // without losing focus or its text.
-                return <PWView style={{ height: searchBarHeight }} />
+                // Display-only mirror (not a real input, so there's a single
+                // search field): it scrolls/pins natively via FlashList and
+                // shows the current query. Tapping it pins to the top and
+                // focuses the overlay (the real input).
+                return (
+                    <PWView style={styles.searchSticky}>
+                        <Pressable
+                            style={[
+                                styles.searchDisplay,
+                                searchBarHeight > 0 && {
+                                    height: searchBarHeight,
+                                },
+                            ]}
+                            onPress={handleEnterSearch}
+                        >
+                            <PWIcon
+                                name='magnifying-glass'
+                                variant='secondary'
+                            />
+                            <PWText
+                                variant='body'
+                                numberOfLines={1}
+                                style={
+                                    currentValue
+                                        ? styles.searchDisplayText
+                                        : styles.searchDisplayPlaceholder
+                                }
+                            >
+                                {currentValue || searchPlaceholder}
+                            </PWText>
+                        </Pressable>
+                    </PWView>
+                )
             }
             return (
                 renderItem?.({
@@ -293,10 +304,17 @@ const SearchableListInner = <T,>(
         },
         [
             renderItem,
+            currentValue,
+            searchPlaceholder,
+            handleEnterSearch,
             searchBarHeight,
             toUserIndex,
             ListHeaderComponent,
-            handleHeaderLayoutWithSV,
+            handleHeaderLayout,
+            styles.searchSticky,
+            styles.searchDisplay,
+            styles.searchDisplayText,
+            styles.searchDisplayPlaceholder,
         ],
     )
 
@@ -350,12 +368,8 @@ const SearchableListInner = <T,>(
         keyExtractor: augmentedKeyExtractor,
         ItemSeparatorComponent: augmentedSeparator,
         ListFooterComponent: augmentedFooter,
-        renderScrollComponent,
-        // Dragging dismisses the keyboard, which blurs the search and releases
-        // the focus-pin so the overlay tracks the scroll while the header
-        // returns (no slide-under / jump).
-        keyboardDismissMode: 'on-drag',
-        // Zero PWFlatList's default paddingTop, else the search overlay pins a
+        stickyHeaderIndices: isListEmpty ? undefined : [1],
+        // Zero PWFlatList's default paddingTop, else the sticky search pins a
         // gap above the in-flow header.
         contentContainerStyle: [
             listProps.contentContainerStyle,
@@ -364,27 +378,38 @@ const SearchableListInner = <T,>(
         extraData: augmentedExtraData,
         onLayout: handleListLayout,
         onContentSizeChange: handleContentSizeChange,
-        onScroll: handleScroll,
+        onScroll: handleListScroll,
         onScrollBeginDrag: handleListScrollBeginDrag,
-        onScrollEndDrag: handleScrollEndDrag,
+        onScrollEndDrag: handleListScrollEndDrag,
+        onMomentumScrollEnd: handleMomentumScrollEnd,
         scrollEventThrottle: SCROLL_EVENT_THROTTLE,
     })
 
     return (
         <PWView style={styles.root}>
             {list}
-            <Animated.View
-                style={[styles.searchOverlay, searchOverlayStyle]}
-                onLayout={handleSearchBarLayout}
+            <PWView
+                style={[
+                    styles.searchOverlay,
+                    !showOverlay && styles.searchOverlayHidden,
+                ]}
+                pointerEvents={showOverlay ? 'auto' : 'none'}
+                onLayout={event => {
+                    const h = event.nativeEvent.layout.height
+                    if (h > 0) {
+                        setSearchBarHeight(prev => (prev === h ? prev : h))
+                    }
+                }}
             >
                 <SearchInputComponent
-                    value={searchValue}
-                    onFocus={handleSearchInputFocus}
-                    onBlur={handleSearchInputBlur}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    ref={overlayRef as any}
+                    value={currentValue}
+                    onFocus={NOOP}
                     placeholder={searchPlaceholder}
-                    onChangeText={onSearchChange}
+                    onChangeText={handleQueryChange}
                 />
-            </Animated.View>
+            </PWView>
         </PWView>
     )
 }
