@@ -81,6 +81,14 @@ export const configSchema = z.object({
     mainnetBidaliBaseUrl: z.url(),
     testnetBidaliBaseUrl: z.url(),
 
+    // Baanx card integration. Per-environment base URL + PUBLIC client key
+    // (x-client-key). The Baanx x-secret-key is server-only and MUST NEVER be
+    // added here — secret-key calls are proxied through Pera's backend.
+    mainnetBaanxBaseUrl: z.url(),
+    testnetBaanxBaseUrl: z.url(),
+    mainnetBaanxClientKey: z.string(),
+    testnetBaanxClientKey: z.string(),
+
     arc59: z.object({
         testnet: z.object({
             appId: z.bigint(),
@@ -177,6 +185,11 @@ const productionConfig = {
     mainnetBidaliBaseUrl: 'https://commerce.bidali.com/dapp',
     testnetBidaliBaseUrl: 'https://commerce.staging.bidali.com/dapp',
 
+    mainnetBaanxBaseUrl: 'https://api.baanx.com',
+    testnetBaanxBaseUrl: 'https://dev.api.baanx.com',
+    mainnetBaanxClientKey: '',
+    testnetBaanxClientKey: '',
+
     arc59: {
         testnet: {
             appId: 643020148n,
@@ -243,6 +256,11 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     testnetBidaliApiKey: 'TESTNET_BIDALI_API_KEY',
     mainnetBidaliBaseUrl: 'MAINNET_BIDALI_BASE_URL',
     testnetBidaliBaseUrl: 'BIDALI_BASE_URL',
+
+    mainnetBaanxBaseUrl: 'MAINNET_BAANX_BASE_URL',
+    testnetBaanxBaseUrl: 'TESTNET_BAANX_BASE_URL',
+    mainnetBaanxClientKey: 'MAINNET_BAANX_CLIENT_KEY',
+    testnetBaanxClientKey: 'TESTNET_BAANX_CLIENT_KEY',
 
     defaultNetwork: 'DEFAULT_NETWORK',
     appEnvironment: 'APP_ENV',
