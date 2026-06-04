@@ -15,9 +15,6 @@ import type { GalleryPreviewEntry } from './types'
 const registry = new Map<string, GalleryPreviewEntry>()
 
 export const registerPreview = (entry: GalleryPreviewEntry): void => {
-    if (registry.has(entry.id)) {
-        throw new Error(`Duplicate gallery preview id: ${entry.id}`)
-    }
     registry.set(entry.id, entry)
 }
 
