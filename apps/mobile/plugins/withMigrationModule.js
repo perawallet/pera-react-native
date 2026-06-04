@@ -65,8 +65,14 @@ const copyFilesFlat = (filePaths, destDirAbs) => {
 
 // A bridging-header `#import <sqlite3.h>` must NOT be present: it resolves ambiguously against expo-sqlite's vendored header, breaking `sqlite3_*` calls. Strip it if present.
 const removeSqlite3ImportIfPresent = (bridgingHeaderAbs) => {
-  if (!fs.existsSync(bridgingHeaderAbs)) return;
-  const current = fs.readFileSync(bridgingHeaderAbs, 'utf8');
+  let current;
+  try {
+    current = fs.readFileSync(bridgingHeaderAbs, 'utf8');
+  } catch (error) {
+    // ENOENT: bridging header doesn't exist yet — nothing to strip. Re-throw anything else.
+    if (error.code === 'ENOENT') return;
+    throw error;
+  }
   if (!current.includes(SQLITE3_BRIDGING_LINE)) return;
   const stripped = current
     .split('\n')
