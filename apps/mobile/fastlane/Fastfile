@@ -320,7 +320,7 @@ platform :android do
     notes = unescape_changelog(ENV["RELEASE_NOTES"] || "Build #{ENV['BUILD_NUMBER'] || 'dev'}")
 
     firebase_app_distribution(
-      app: ENV["FIREBASE_APP_ID_ANDROID"]&.strip,
+      app: (ENV["FIREBASE_APP_ID_ANDROID_OVERRIDE"] || ENV["FIREBASE_APP_ID_ANDROID"])&.strip,
       groups: (ENV["FIREBASE_TESTER_GROUPS"] || "qa-testers").strip,
       release_notes: notes,
       android_artifact_type: "APK",

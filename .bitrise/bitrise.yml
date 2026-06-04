@@ -521,7 +521,7 @@ workflows:
       - ANDROID_FLAVOR: staging
       - ANDROID_APPLICATION_ID: com.algorand.android.staging
       - BUILD_NUMBER_OFFSET: "6000"
-      - FIREBASE_APP_ID_ANDROID: 1:270342103187:android:ee42b8f6363aefe8a1ad66
+      - FIREBASE_APP_ID_ANDROID_OVERRIDE: 1:270342103187:android:ee42b8f6363aefe8a1ad66
       - NOTIFICATION_TITLE_PREFIX: QA Build (Migration Test)
       - USE_CACHE: "true"
       - PARENT_WORKFLOW: qa-build
