@@ -18,6 +18,7 @@ import {
     RNKeyValueStorageService,
     RNFirebaseService,
     RNBiometricsService,
+    RNMigrationService,
     RNDeviceInfoStorageService,
 } from './services'
 
@@ -44,6 +45,7 @@ export const platformServices: PlatformServices = {
     deviceInfo: new RNDeviceInfoStorageService(),
     appIntegrity: new RNAppIntegrityService(),
     hardwareWalletRegistry,
+    migration: new RNMigrationService(keyValueStorage),
 }
 
 export const getPlatformServices = (): PlatformServices => platformServices

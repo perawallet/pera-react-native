@@ -12,6 +12,7 @@
 
 import { toByteArray, fromByteArray } from 'base64-js'
 import { Decimal } from './decimal-config'
+import { logger } from './logging'
 
 export const encodeToBase64 = (bytes: Uint8Array) => {
     return fromByteArray(bytes)
@@ -33,6 +34,37 @@ export const bytesToHex = (bytes: Uint8Array): string => {
     return Array.from(bytes)
         .map(b => b.toString(16).padStart(2, '0'))
         .join('')
+}
+
+/**
+ * Decode a value that may be a JS number, a string-encoded number, or null.
+ *
+ * Used at FFI / native-bridge boundaries where 64-bit integers are serialized
+ * as strings to dodge the JS `Number.MAX_SAFE_INTEGER` ceiling (~9 × 10^15).
+ *
+ * @param value     Raw input from the bridge / JSON payload.
+ * @param fieldName Caller-supplied label (typically the destination property
+ *                  name) surfaced in the warn log when precision would be
+ *                  lost, so engineers can grep the exact field.
+ * @returns         The parsed number, or `null` if input is null/undefined/
+ *                  non-string/empty/non-numeric.
+ */
+export const decodeLongString = (
+    value: unknown,
+    fieldName: string = '',
+): number | null => {
+    if (value == null) return null
+    if (typeof value === 'number') return Number.isFinite(value) ? value : null
+    if (typeof value !== 'string' || value.length === 0) return null
+    const parsed = Number(value)
+    if (!Number.isFinite(parsed)) return null
+    if (!Number.isSafeInteger(parsed)) {
+        const label = fieldName || 'decodeLongString'
+        logger.warn(
+            `${label}: value "${value}" exceeds Number.MAX_SAFE_INTEGER; precision will be lost`,
+        )
+    }
+    return parsed
 }
 
 const currencySymbols: Record<string, string> = {

@@ -18,13 +18,8 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
-import { zeroBytes } from '@perawallet/wallet-core-kms'
+import { ALGO25_SEED_LENGTH, zeroBytes } from '@perawallet/wallet-core-kms'
 import { useMarkMnemonicBackupComplete } from '../mnemonic'
-
-// Some legacy producers (ASB, older Pera Web) emit the full 64-byte
-// tweetnacl secret key (seed || pubKey); modern Pera Web emits the 32-byte
-// seed alone. The leading 32 bytes are always the seed in either case.
-const ALGO25_SEED_LENGTH = 32
 
 /**
  * Copy the first 32 bytes off `privateKey` so the caller's buffer is left

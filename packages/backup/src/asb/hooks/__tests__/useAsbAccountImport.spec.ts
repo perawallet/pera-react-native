@@ -39,6 +39,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
+    ALGO25_SEED_LENGTH: 32,
     zeroBytes: (...args: unknown[]) => mockZeroBytes(...args),
 }))
 

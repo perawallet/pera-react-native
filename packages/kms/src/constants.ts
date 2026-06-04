@@ -22,3 +22,11 @@ export const SeedScheme = {
 } as const
 
 export type SeedScheme = (typeof SeedScheme)[keyof typeof SeedScheme]
+
+/**
+ * Byte length of an Algo25 seed (the secret half of an Ed25519 keypair).
+ * Some legacy producers (ASB, older Pera Web) emit the full 64-byte
+ * tweetnacl secret key (seed || pubKey); modern producers emit the 32-byte
+ * seed alone. The leading 32 bytes are always the seed in either case.
+ */
+export const ALGO25_SEED_LENGTH = 32

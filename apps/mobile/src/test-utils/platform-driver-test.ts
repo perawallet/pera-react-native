@@ -22,7 +22,6 @@
 // The vitest config aliases `@perawallet/wallet-extension-platform-driver`
 // to this file, so any import of `WithPlatformExtension` /
 // `getPlatformServices` resolves here at test time.
-
 import {
     MemoryKeyValueStorage,
     DevicePlatforms,
@@ -33,6 +32,7 @@ import {
     type DatabaseService,
     type DeviceInfoService,
     type KeyValueStorageService,
+    type MigrationService,
     type PlatformExtensionFn,
     type PlatformServices,
     type PushNotificationService,
@@ -110,6 +110,22 @@ const buildServices = (): PlatformServices => {
         }),
     }
 
+    const migration: MigrationService = {
+        hasLegacyData: async () => false,
+        getLegacyData: async () => {
+            throw new Error(
+                'migration.getLegacyData not implemented in test driver',
+            )
+        },
+        isMigrationComplete: async () => true,
+        markMigrationComplete: async () => {},
+        clearMigrationComplete: async () => {},
+        getMigrationPlans: async () => [],
+        simulateLegacyDatabase: async () => {},
+        simulatePreSixxAccounts: async () => {},
+        resetLegacyData: async () => {},
+    }
+
     return {
         analytics,
         biometrics,
@@ -121,6 +137,7 @@ const buildServices = (): PlatformServices => {
         deviceInfo,
         appIntegrity,
         hardwareWalletRegistry: createHardwareWalletRegistry(),
+        migration,
     }
 }
 
