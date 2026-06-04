@@ -11,6 +11,15 @@
  */
 
 import React, { createElement, forwardRef, useCallback, useMemo } from 'react'
+import { type LayoutChangeEvent, type ScrollViewProps } from 'react-native'
+import Animated, {
+    useAnimatedRef,
+    useScrollViewOffset,
+    useAnimatedStyle,
+    useSharedValue,
+    interpolate,
+    Extrapolation,
+} from 'react-native-reanimated'
 import type { ListRenderItemInfo } from '@shopify/flash-list'
 
 import { PWFlatList, PWView } from '@components/core'
@@ -34,6 +43,7 @@ export type SearchableListSearchProps = {
     placeholder?: string
     onChangeText?: (value: string) => void
     onFocus: () => void
+    onBlur?: () => void
 }
 
 const renderHeaderNode = (
@@ -98,7 +108,9 @@ const SearchableListInner = <T,>(
         augmentedKeyExtractor,
         toUserIndex,
         searchFooterHeight,
+        searchBarHeight,
         handleHeaderLayout,
+        handleSearchBarLayout,
         handleListLayout,
         handleContentSizeChange,
         handleSearchFocus,
@@ -116,6 +128,88 @@ const SearchableListInner = <T,>(
     const styles = useStyles()
 
     const isListEmpty = (data?.length ?? 0) === 0
+
+    // The search input is rendered once as an overlay (so list re-renders never
+    // remount it and drop focus). Its position is driven by the scroll offset
+    // read on the UI thread via reanimated. useScrollViewOffset needs the
+    // animated ref on a real host ScrollView, so we hand FlashList a reanimated
+    // Animated.ScrollView via renderScrollComponent and attach the ref there.
+    const scrollViewRef = useAnimatedRef<Animated.ScrollView>()
+    const scrollOffset = useScrollViewOffset(scrollViewRef)
+
+    const headerHeightSV = useSharedValue(0)
+    const isSearchFocusedSV = useSharedValue(false)
+
+    const handleHeaderLayoutWithSV = useCallback(
+        (event: LayoutChangeEvent) => {
+            handleHeaderLayout(event)
+            headerHeightSV.value = event.nativeEvent.layout.height
+        },
+        [handleHeaderLayout, headerHeightSV],
+    )
+
+    // Sits at the header's bottom edge at rest, slides up with the scroll, then
+    // pins at the top. Stays pinned while focused so the filtered re-layout
+    // can't displace it mid-type.
+    const searchOverlayStyle = useAnimatedStyle(() => {
+        const headerH = headerHeightSV.value
+        if (isSearchFocusedSV.value || headerH <= 0) {
+            return { transform: [{ translateY: 0 }] }
+        }
+        return {
+            transform: [
+                {
+                    translateY: interpolate(
+                        scrollOffset.value,
+                        [0, headerH],
+                        [headerH, 0],
+                        Extrapolation.CLAMP,
+                    ),
+                },
+            ],
+        }
+    })
+
+    const handleSearchInputFocus = useCallback(() => {
+        handleSearchFocus()
+        isSearchFocusedSV.value = true
+    }, [handleSearchFocus, isSearchFocusedSV])
+
+    const handleSearchInputBlur = useCallback(() => {
+        isSearchFocusedSV.value = false
+    }, [isSearchFocusedSV])
+
+    // Reanimated Animated.ScrollView as FlashList's scroll component: forward
+    // FlashList's own ref (scroll control) AND the animated ref (UI-thread
+    // offset). Memoized so FlashList doesn't recreate the scroll view.
+    const renderScrollComponent = useMemo(
+        () =>
+            forwardRef<Animated.ScrollView, ScrollViewProps>(
+                (scrollProps, flashListScrollRef) => (
+                    <Animated.ScrollView
+                        {...scrollProps}
+                        ref={(node: Animated.ScrollView | null) => {
+                            if (typeof flashListScrollRef === 'function') {
+                                flashListScrollRef(node)
+                            } else if (flashListScrollRef) {
+                                flashListScrollRef.current = node
+                            }
+                            // reanimated's ref is callable (real) or a plain
+                            // object (test mock); support both.
+                            const animatedRef = scrollViewRef as unknown as
+                                | ((n: unknown) => void)
+                                | { current: unknown }
+                            if (typeof animatedRef === 'function') {
+                                animatedRef(node)
+                            } else if (animatedRef) {
+                                animatedRef.current = node
+                            }
+                        }}
+                    />
+                ),
+            ),
+        [scrollViewRef],
+    )
 
     const augmentedFooter = useMemo(() => {
         const emptyComponent = isListEmpty
@@ -168,24 +262,16 @@ const SearchableListInner = <T,>(
         info => {
             if (isHeaderSentinel(info.item)) {
                 return (
-                    <PWView onLayout={handleHeaderLayout}>
+                    <PWView onLayout={handleHeaderLayoutWithSV}>
                         {renderHeaderNode(ListHeaderComponent)}
                     </PWView>
                 )
             }
             if (isSearchSentinel(info.item)) {
-                const searchProps = {
-                    value: searchValue,
-                    onFocus: handleSearchFocus,
-                    placeholder: searchPlaceholder,
-                    onChangeText: onSearchChange,
-                }
-
-                return (
-                    <PWView style={styles.searchSticky}>
-                        <SearchInputComponent {...searchProps} />
-                    </PWView>
-                )
+                // Reserve the search bar's height; the real input is rendered
+                // once as an overlay (below) so it survives list re-renders
+                // without losing focus or its text.
+                return <PWView style={{ height: searchBarHeight }} />
             }
             return (
                 renderItem?.({
@@ -197,15 +283,10 @@ const SearchableListInner = <T,>(
         },
         [
             renderItem,
-            searchValue,
-            searchPlaceholder,
-            onSearchChange,
-            SearchInputComponent,
-            handleSearchFocus,
+            searchBarHeight,
             toUserIndex,
             ListHeaderComponent,
-            handleHeaderLayout,
-            styles.searchSticky,
+            handleHeaderLayoutWithSV,
         ],
     )
 
@@ -251,7 +332,7 @@ const SearchableListInner = <T,>(
     // keyExtractor, etc.) is properly typed above. FlashList enables
     // maintainVisibleContentPosition by default, so it isn't set explicitly.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return createElement(PWFlatList as any, {
+    const list = createElement(PWFlatList as any, {
         ...listProps,
         ref: listRef,
         data: augmentedData,
@@ -259,8 +340,8 @@ const SearchableListInner = <T,>(
         keyExtractor: augmentedKeyExtractor,
         ItemSeparatorComponent: augmentedSeparator,
         ListFooterComponent: augmentedFooter,
-        stickyHeaderIndices: isListEmpty ? undefined : [1],
-        // Zero PWFlatList's default paddingTop, else the sticky search pins a
+        renderScrollComponent,
+        // Zero PWFlatList's default paddingTop, else the search overlay pins a
         // gap above the in-flow header.
         contentContainerStyle: [
             listProps.contentContainerStyle,
@@ -273,6 +354,24 @@ const SearchableListInner = <T,>(
         onScrollEndDrag: handleScrollEndDrag,
         scrollEventThrottle: SCROLL_EVENT_THROTTLE,
     })
+
+    return (
+        <PWView style={styles.root}>
+            {list}
+            <Animated.View
+                style={[styles.searchOverlay, searchOverlayStyle]}
+                onLayout={handleSearchBarLayout}
+            >
+                <SearchInputComponent
+                    value={searchValue}
+                    onFocus={handleSearchInputFocus}
+                    onBlur={handleSearchInputBlur}
+                    placeholder={searchPlaceholder}
+                    onChangeText={onSearchChange}
+                />
+            </Animated.View>
+        </PWView>
+    )
 }
 
 export const SearchableList = forwardRef(SearchableListInner) as <T>(
