@@ -48,6 +48,7 @@ export const PaymentSummaryHeader = ({
                 </PWText>
                 <AddressDisplay
                     style={styles.address}
+                    hugContent
                     textProps={{ style: styles.addressText }}
                     iconProps={{ color: theme.colors.textMain }}
                     address={transaction.paymentTransaction?.receiver || ''}

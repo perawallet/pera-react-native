@@ -48,6 +48,7 @@ export const AssetTransferSummaryHeader = ({
                 <AddressDisplay
                     style={styles.address}
                     displayType='simple'
+                    hugContent
                     textProps={{ style: styles.addressText }}
                     iconProps={{ color: theme.colors.textMain }}
                     address={receiver}
