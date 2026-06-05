@@ -40,7 +40,10 @@ export const useAddAccountScreen = () => {
     const { showToast } = useToast()
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
-    const { isAuthenticated: hasCardAccount } = useCardSession()
+    // TODO(card): this only checks for a Baanx session, not actual card ownership —
+    // an authenticated-but-cardless user wrongly loses the entry. Swap to a real
+    // hasCard check (useCardStatusQuery, gated on isAuthenticated) once onboarding lands.
+    const { isAuthenticated: hasCardSession } = useCardSession()
 
     const {
         isOpen: isCreatingAccount,
@@ -187,7 +190,7 @@ export const useAddAccountScreen = () => {
                     leftIcon: 'people' as IconName,
                     onPress: openMultisigIntroduction,
                 },
-                !hasCardAccount && {
+                !hasCardSession && {
                     testID: 'add_account_pera_card_button',
                     titleKey: 'onboarding.add_account.pera_card_option_title',
                     descriptionKey:
@@ -211,7 +214,7 @@ export const useAddAccountScreen = () => {
             handleCreateUniversalWallet,
             isCreatingAccount,
             openMultisigIntroduction,
-            hasCardAccount,
+            hasCardSession,
             handleAddPeraCard,
             handleOpenImportAccountOptions,
         ],

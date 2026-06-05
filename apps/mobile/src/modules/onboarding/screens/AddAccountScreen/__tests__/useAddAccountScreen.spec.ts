@@ -339,7 +339,7 @@ describe('useAddAccountScreen', () => {
         })
     })
 
-    it('mainOptions excludes pera card option when the user already has a card', () => {
+    it('mainOptions excludes pera card option when the user has an authenticated card session', () => {
         mockUseCardSession.mockReturnValue({ isAuthenticated: true })
 
         const { result } = renderHook(() => useAddAccountScreen())
