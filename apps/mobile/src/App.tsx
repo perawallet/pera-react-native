@@ -19,6 +19,8 @@ NetInfo.fetch()
 
 import {
     initDecimalConfig,
+    logger,
+    updateBackendHeaders,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 // Initialize Decimal.js configuration before any other imports that may use it
@@ -73,7 +75,6 @@ SplashScreen.preventAutoHideAsync()
 import { NotifierWrapper } from 'react-native-notifier'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { KeyboardProvider } from 'react-native-keyboard-controller'
-import { logger, updateBackendHeaders } from '@perawallet/wallet-core-shared'
 import { EmptyView } from '@components/EmptyView/EmptyView'
 
 const updateQueryHeaders = () => {
@@ -118,21 +119,27 @@ const AppContent = () => {
             provider.initialize().then(async ({ token }) => {
                 setFcmToken(token ?? null)
 
-                try {
-                    await hydrateKeystore()
-                } catch (err) {
+                // do startup hydration and setup in parallel to speed up time to interactive
+                const keystoreBranch = hydrateKeystore().catch(err => {
                     setInitError(true)
                     logger.error('Keystore hydration failed', { error: err })
-                }
+                })
 
-                await runPasskeyAutofillBootstrap().catch(err =>
+                const passkeyBranch = runPasskeyAutofillBootstrap().catch(err =>
                     logger.error('Passkey autofill bootstrap failed', {
                         error: err,
                     }),
                 )
 
-                await initializeDatabase(provider.database)
-                await seedAlgoAsset(getDatabase())
+                const databaseBranch = initializeDatabase(
+                    provider.database,
+                ).then(() => seedAlgoAsset(getDatabase()))
+
+                await Promise.all([
+                    keystoreBranch,
+                    passkeyBranch,
+                    databaseBranch,
+                ])
 
                 initializeSyncService({
                     queryClient,
