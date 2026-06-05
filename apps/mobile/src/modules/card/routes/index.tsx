@@ -39,7 +39,7 @@ export const PeraCardStackNavigator = () => {
         >
             <PeraCardStack.Screen
                 name='PeraCardIntro'
-                options={{ title: '' }}
+                options={{ title: 'peraCard.intro.navigation_title' }}
                 component={PeraCardIntroScreen}
             />
         </PeraCardStack.Navigator>

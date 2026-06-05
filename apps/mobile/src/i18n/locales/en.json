@@ -676,9 +676,13 @@
     },
     "peraCard": {
         "intro": {
-            "title": "Pera Card",
-            "body": "Spend your crypto in the real world. Get a Pera Card and pay anywhere, online or in store.",
-            "get_started": "Get started",
+            "navigation_title": "Pera Card",
+            "title": "Your gateway to\nWeb3 payments",
+            "body": "Get your free Pera Card. The card will be immediately available to you.",
+            "powered_by": "Powered by",
+            "learn_more": "Learn more",
+            "create_account": "Create a Baanx Account",
+            "already_have_account": "I already have an account",
             "coming_soon_title": "Coming soon",
             "coming_soon_body": "Pera Card onboarding isn't available just yet. Check back soon."
         }

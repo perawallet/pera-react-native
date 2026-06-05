@@ -72,6 +72,7 @@ export const configSchema = z.object({
     rekeyToSharedSupportUrl: z.url(),
     rekeyToLedgerSupportUrl: z.url(),
     undoRekeySupportUrl: z.url(),
+    peraCardLearnMoreUrl: z.url(),
 
     debugEnabled: z.boolean(),
     profilingEnabled: z.boolean(),
@@ -165,6 +166,8 @@ const productionConfig = {
         'https://support.perawallet.app/en/article/how-to-rekey-an-algorand-account-with-pera-mobile-13ykjxs/',
     undoRekeySupportUrl:
         'https://support.perawallet.app/en/article/how-to-rekey-an-algorand-account-with-pera-mobile-13ykjxs/',
+    // TODO(card): replace with the final Pera Card learn-more URL
+    peraCardLearnMoreUrl: 'https://perawallet.app/pera-card/',
 
     notificationRefreshTime: THIRTY_SECONDS,
     remoteConfigRefreshTime: ONE_HOUR,
@@ -250,6 +253,7 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     rekeyToSharedSupportUrl: 'REKEY_TO_SHARED_SUPPORT_URL',
     rekeyToLedgerSupportUrl: 'REKEY_TO_LEDGER_SUPPORT_URL',
     undoRekeySupportUrl: 'UNDO_REKEY_SUPPORT_URL',
+    peraCardLearnMoreUrl: 'PERA_CARD_LEARN_MORE_URL',
     dispenserUrl: 'DISPENSER_URL',
 
     debugEnabled: 'DEBUG_ENABLED',
