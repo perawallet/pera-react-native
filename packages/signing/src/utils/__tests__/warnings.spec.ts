@@ -37,18 +37,27 @@ const makeTx = (
 
 describe('aggregateTransactionWarnings', () => {
     const userAccountAddresses = new Set(['ADDR1', 'ADDR2'])
+    const signableAddresses = new Set(['ADDR1', 'ADDR2'])
 
     test('returns empty array when no warnings', () => {
         const txs = [makeTx()]
-        expect(aggregateTransactionWarnings(txs, userAccountAddresses)).toEqual(
-            [],
-        )
+        expect(
+            aggregateTransactionWarnings(
+                txs,
+                userAccountAddresses,
+                signableAddresses,
+            ),
+        ).toEqual([])
     })
 
     test('returns empty array for empty transactions', () => {
-        expect(aggregateTransactionWarnings([], userAccountAddresses)).toEqual(
-            [],
-        )
+        expect(
+            aggregateTransactionWarnings(
+                [],
+                userAccountAddresses,
+                signableAddresses,
+            ),
+        ).toEqual([])
     })
 
     test('detects close-to warning from payment transaction', () => {
@@ -60,7 +69,11 @@ describe('aggregateTransactionWarnings', () => {
             }),
         ]
 
-        const warnings = aggregateTransactionWarnings(txs, userAccountAddresses)
+        const warnings = aggregateTransactionWarnings(
+            txs,
+            userAccountAddresses,
+            signableAddresses,
+        )
         expect(warnings).toEqual([
             {
                 type: 'close',
@@ -79,7 +92,11 @@ describe('aggregateTransactionWarnings', () => {
             }),
         ]
 
-        const warnings = aggregateTransactionWarnings(txs, userAccountAddresses)
+        const warnings = aggregateTransactionWarnings(
+            txs,
+            userAccountAddresses,
+            signableAddresses,
+        )
         expect(warnings).toEqual([
             {
                 type: 'close',
@@ -98,7 +115,11 @@ describe('aggregateTransactionWarnings', () => {
             }),
         ]
 
-        const warnings = aggregateTransactionWarnings(txs, userAccountAddresses)
+        const warnings = aggregateTransactionWarnings(
+            txs,
+            userAccountAddresses,
+            signableAddresses,
+        )
         expect(warnings).toEqual([
             {
                 type: 'rekey',
@@ -108,7 +129,7 @@ describe('aggregateTransactionWarnings', () => {
         ])
     })
 
-    test('skips close and freeze warnings from non-user addresses but keeps rekey', () => {
+    test('skips close, freeze and rekey warnings from non-user addresses', () => {
         const txs = [
             makeTx({
                 sender: 'UNKNOWN_ADDR',
@@ -121,17 +142,15 @@ describe('aggregateTransactionWarnings', () => {
             }),
         ]
 
-        const warnings = aggregateTransactionWarnings(txs, userAccountAddresses)
-        expect(warnings).toEqual([
-            {
-                type: 'rekey',
-                senderAddress: 'UNKNOWN_ADDR',
-                targetAddress: 'ENCODED_REKEY_TARGET',
-            },
-        ])
+        const warnings = aggregateTransactionWarnings(
+            txs,
+            userAccountAddresses,
+            signableAddresses,
+        )
+        expect(warnings).toEqual([])
     })
 
-    test('generates rekey warning even for non-signable addresses', () => {
+    test('does not generate rekey warning for non-user addresses', () => {
         const txs = [
             makeTx({
                 sender: 'UNKNOWN_ADDR',
@@ -141,12 +160,40 @@ describe('aggregateTransactionWarnings', () => {
             }),
         ]
 
-        const warnings = aggregateTransactionWarnings(txs, userAccountAddresses)
+        const warnings = aggregateTransactionWarnings(
+            txs,
+            userAccountAddresses,
+            signableAddresses,
+        )
+        expect(warnings).toEqual([])
+    })
+
+    test('flags close but not rekey for a user account that is not signable', () => {
+        // WATCH_ADDR is in the wallet (close/freeze relevant) but cannot be
+        // signed for (watch-only / no local multisig participant / rekeyed
+        // out), so it must NOT produce a rekey warning. [PERA-4348]
+        const txs = [
+            makeTx({
+                sender: 'WATCH_ADDR',
+                paymentTransaction: {
+                    closeRemainderTo: 'CLOSE_ADDR',
+                } as any,
+                rekeyTo: {
+                    publicKey: new TextEncoder().encode('REKEY_TARGET'),
+                } as any,
+            }),
+        ]
+
+        const warnings = aggregateTransactionWarnings(
+            txs,
+            new Set(['WATCH_ADDR']),
+            new Set(),
+        )
         expect(warnings).toEqual([
             {
-                type: 'rekey',
-                senderAddress: 'UNKNOWN_ADDR',
-                targetAddress: 'ENCODED_REKEY_TARGET',
+                type: 'close',
+                senderAddress: 'WATCH_ADDR',
+                targetAddress: 'CLOSE_ADDR',
             },
         ])
     })
@@ -161,7 +208,11 @@ describe('aggregateTransactionWarnings', () => {
             }),
         ]
 
-        const warnings = aggregateTransactionWarnings(txs, userAccountAddresses)
+        const warnings = aggregateTransactionWarnings(
+            txs,
+            userAccountAddresses,
+            signableAddresses,
+        )
         expect(warnings).toEqual([])
     })
 
@@ -180,7 +231,11 @@ describe('aggregateTransactionWarnings', () => {
             }),
         ]
 
-        const warnings = aggregateTransactionWarnings(txs, userAccountAddresses)
+        const warnings = aggregateTransactionWarnings(
+            txs,
+            userAccountAddresses,
+            signableAddresses,
+        )
         expect(warnings).toHaveLength(2)
         expect(warnings[0].type).toBe('close')
         expect(warnings[1].type).toBe('rekey')
@@ -198,7 +253,11 @@ describe('aggregateTransactionWarnings', () => {
             }),
         ]
 
-        const warnings = aggregateTransactionWarnings(txs, userAccountAddresses)
+        const warnings = aggregateTransactionWarnings(
+            txs,
+            userAccountAddresses,
+            signableAddresses,
+        )
         expect(warnings).toHaveLength(2)
         expect(warnings[0].type).toBe('close')
         expect(warnings[1].type).toBe('rekey')
@@ -215,7 +274,11 @@ describe('aggregateTransactionWarnings', () => {
             }),
         ]
 
-        const warnings = aggregateTransactionWarnings(txs, userAccountAddresses)
+        const warnings = aggregateTransactionWarnings(
+            txs,
+            userAccountAddresses,
+            signableAddresses,
+        )
         expect(warnings).toEqual([
             {
                 type: 'asset-freeze',
@@ -239,7 +302,11 @@ describe('aggregateTransactionWarnings', () => {
             }),
         ]
 
-        const warnings = aggregateTransactionWarnings(txs, userAccountAddresses)
+        const warnings = aggregateTransactionWarnings(
+            txs,
+            userAccountAddresses,
+            signableAddresses,
+        )
         expect(warnings).toHaveLength(2)
         expect(warnings[0].type).toBe('asset-freeze')
         expect(warnings[1].type).toBe('rekey')

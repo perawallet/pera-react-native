@@ -67,6 +67,7 @@ export const TransactionWarnings = ({
                     leftIcon='info'
                     rightIcon='chevron-right'
                     variant='error'
+                    style={styles.panelButton}
                 />
             </PWView>
         </>

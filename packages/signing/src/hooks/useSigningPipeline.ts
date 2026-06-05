@@ -109,6 +109,7 @@ export const useSigningPipeline = (
         const warnings = aggregateTransactionWarnings(
             allTransactions,
             userAccountAddresses,
+            signableAddresses,
         )
 
         const distinctWarnings = warnings.filter(
