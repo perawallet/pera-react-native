@@ -25,6 +25,7 @@ import {
 } from 'react-native'
 
 import type { PWFlatListRef } from '@components/core'
+import { type SearchInputRef } from '@components/SearchInput'
 import { Nullable } from '@perawallet/wallet-core-shared'
 
 const SEARCH_KEY = '__searchable_list_search__'
@@ -83,6 +84,8 @@ type UseSearchableListParams<T> = {
     data: readonly T[] | null | undefined
     keyExtractor?: (item: T, index: number) => string
     snapThreshold: number
+    searchValue?: string
+    onSearchChange?: (value: string) => void
     onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void
     onScrollEndDrag?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void
 }
@@ -98,16 +101,26 @@ type UseSearchableListResult<T> = {
      * the viewport. 0 when the list already has enough scrollable content.
      */
     searchFooterHeight: number
-    /** Measured header height; the overlay uses it as the pin threshold. */
-    headerHeight: number
+    /** The single focusable overlay input's ref (for programmatic focus/blur). */
+    overlayRef: React.RefObject<Nullable<SearchInputRef>>
+    /** Search value mirrored by both the overlay and the sticky display. */
+    currentValue: string
+    /** Whether the focusable overlay should be shown (i.e. search mode). */
+    showOverlay: boolean
     handleHeaderLayout: (event: LayoutChangeEvent) => void
     handleListLayout: (event: LayoutChangeEvent) => void
     handleContentSizeChange: (width: number, height: number) => void
-    handleSearchFocus: () => void
     handleScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => void
     handleScrollEndDrag: (
         event: NativeSyntheticEvent<NativeScrollEvent>,
     ) => void
+    /** Exits search mode on drag (hides overlay, dismisses keyboard). */
+    handleScrollBeginDrag: () => void
+    /** Enters search mode: pins to top and focuses the overlay. */
+    handleEnterSearch: () => void
+    handleQueryChange: (text: string) => void
+    handleClearQuery: () => void
+    handleOverlayFocus: () => void
 }
 
 export const useSearchableList = <T>({
@@ -115,10 +128,17 @@ export const useSearchableList = <T>({
     data,
     keyExtractor,
     snapThreshold,
+    searchValue,
+    onSearchChange,
     onScroll,
     onScrollEndDrag,
 }: UseSearchableListParams<T>): UseSearchableListResult<T> => {
     const listRef = useRef<PWFlatListRef>(null)
+    const overlayRef = useRef<SearchInputRef>(null)
+    const [query, setQuery] = useState(searchValue ?? '')
+    const [isSearching, setIsSearching] = useState(false)
+    const currentValue = searchValue ?? query
+    const showOverlay = isSearching
     const [headerHeight, setHeaderHeight] = useState(0)
     const [listLayoutHeight, setListLayoutHeight] = useState(0)
     // Latest measured contentSize minus the spacer footer we set last —
@@ -211,6 +231,37 @@ export const useSearchableList = <T>({
         })
     }, [])
 
+    const handleQueryChange = useCallback(
+        (text: string) => {
+            setQuery(text)
+            onSearchChange?.(text)
+        },
+        [onSearchChange],
+    )
+
+    const handleClearQuery = useCallback(() => {
+        setQuery('')
+        onSearchChange?.('')
+    }, [onSearchChange])
+
+    const handleOverlayFocus = useCallback(() => setIsSearching(true), [])
+
+    // Tapping the sticky display: enter search mode, pin to the top (via
+    // handleSearchFocus, which also arms the re-pin backstop), and focus the
+    // overlay so a single tap opens the keyboard on the real input.
+    const handleEnterSearch = useCallback(() => {
+        setIsSearching(true)
+        handleSearchFocus()
+        requestAnimationFrame(() => overlayRef.current?.focus())
+    }, [handleSearchFocus])
+
+    // Exit search mode on drag only (NOT on blur — the clear button blurs
+    // momentarily and exiting then would flash the overlay away mid-clear).
+    const handleScrollBeginDrag = useCallback(() => {
+        setIsSearching(false)
+        overlayRef.current?.blur()
+    }, [])
+
     const handleScroll = useCallback(
         (event: NativeSyntheticEvent<NativeScrollEvent>) => {
             onScroll?.(event)
@@ -281,12 +332,18 @@ export const useSearchableList = <T>({
         augmentedKeyExtractor,
         toUserIndex,
         searchFooterHeight,
-        headerHeight,
+        overlayRef,
+        currentValue,
+        showOverlay,
         handleHeaderLayout,
         handleListLayout,
         handleContentSizeChange,
-        handleSearchFocus,
         handleScroll,
         handleScrollEndDrag,
+        handleScrollBeginDrag,
+        handleEnterSearch,
+        handleQueryChange,
+        handleClearQuery,
+        handleOverlayFocus,
     }
 }

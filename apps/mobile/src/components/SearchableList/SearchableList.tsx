@@ -10,20 +10,13 @@
  limitations under the License
  */
 
-import React, {
-    createElement,
-    forwardRef,
-    useCallback,
-    useMemo,
-    useRef,
-    useState,
-} from 'react'
+import React, { createElement, forwardRef, useCallback, useMemo } from 'react'
 import { Pressable } from 'react-native'
 import type { ListRenderItemInfo } from '@shopify/flash-list'
 
 import { PWFlatList, PWView } from '@components/core'
 import type { PWFlatListProps, PWFlatListRef } from '@components/core'
-import { SearchInput, type SearchInputRef } from '@components/SearchInput'
+import { SearchInput } from '@components/SearchInput'
 import {
     isHeaderSentinel,
     isSearchSentinel,
@@ -106,23 +99,36 @@ const SearchableListInner = <T,>(
         ...listProps
     } = props
 
+    // The search input is mirrored (a focusable overlay + a non-interactive
+    // sticky display) to work around FlashList re-rendering the sticky cell and
+    // dropping focus while typing. All of that state/coordination lives in the
+    // hook; this component just renders it.
     const {
         listRef,
         augmentedData,
         augmentedKeyExtractor,
         toUserIndex,
         searchFooterHeight,
+        overlayRef,
+        currentValue,
+        showOverlay,
         handleHeaderLayout,
         handleListLayout,
         handleContentSizeChange,
-        handleSearchFocus,
         handleScroll,
         handleScrollEndDrag,
+        handleScrollBeginDrag,
+        handleEnterSearch,
+        handleQueryChange,
+        handleClearQuery,
+        handleOverlayFocus,
     } = useSearchableList<T>({
         forwardedRef: ref,
         data,
         keyExtractor,
         snapThreshold,
+        searchValue,
+        onSearchChange,
         onScroll,
         onScrollEndDrag,
     })
@@ -131,57 +137,6 @@ const SearchableListInner = <T,>(
 
     const isListEmpty = (data?.length ?? 0) === 0
 
-    // The search input lives in two places that mirror each other (same
-    // SearchInput component, so they look identical): a native sticky list item
-    // (display only — non-interactive, scrolls/pins via FlashList) and a single
-    // focusable overlay shown only while actively searching. Typing happens in
-    // the overlay (it lives outside the list, so list re-renders never remount
-    // it — focus and text are preserved); its value mirrors into the display.
-    //
-    // Visibility is focus-driven, NOT scroll-driven: tying it to the scroll
-    // offset blurs the input mid-type, because the animated scroll-to-pin
-    // momentarily reads an un-pinned offset.
-    const overlayRef = useRef<SearchInputRef>(null)
-    const [query, setQuery] = useState(searchValue ?? '')
-    const [isSearching, setIsSearching] = useState(false)
-    const currentValue = searchValue ?? query
-    const showOverlay = isSearching
-
-    const handleQueryChange = useCallback(
-        (text: string) => {
-            setQuery(text)
-            onSearchChange?.(text)
-        },
-        [onSearchChange],
-    )
-
-    const handleEnterSearch = useCallback(() => {
-        // Pin to the top and focus the overlay so a single tap on the sticky
-        // bar opens the keyboard on the real input. handleSearchFocus sets the
-        // hook's collapsed latch, which arms its re-pin-on-content-change
-        // backstop — without it, the first keystroke shrinks the list and the
-        // header peeks back in.
-        setIsSearching(true)
-        handleSearchFocus()
-        requestAnimationFrame(() => overlayRef.current?.focus())
-    }, [handleSearchFocus])
-
-    const handleClearQuery = useCallback(() => {
-        setQuery('')
-        onSearchChange?.('')
-    }, [onSearchChange])
-
-    const handleOverlayFocus = useCallback(() => setIsSearching(true), [])
-
-    // Exit search mode (hide overlay → native sticky takes over) only on drag,
-    // NOT on blur: the clear (X) button can momentarily blur the input, and
-    // exiting on that blur would flash the overlay away mid-clear so the cleared
-    // value never visibly lands. Dragging also dismisses the keyboard.
-    const handleListScrollBeginDrag = useCallback(() => {
-        setIsSearching(false)
-        overlayRef.current?.blur()
-    }, [])
-
     const augmentedFooter = useMemo(() => {
         const emptyComponent = isListEmpty
             ? renderHeaderNode(ListEmptyComponent)
@@ -189,9 +144,7 @@ const SearchableListInner = <T,>(
         const callerFooter = renderHeaderNode(ListFooterComponent)
 
         // Empty list: host the empty component in a container sized to the
-        // leftover viewport space (searchFooterHeight) and center it, rather
-        // than rendering it at the top with the spacer below. The container
-        // itself supplies the fill, so the search bar still pins as before.
+        // leftover viewport space (searchFooterHeight) and center it (to account for keyboard).
         if (emptyComponent != null) {
             return (
                 <>
@@ -251,7 +204,7 @@ const SearchableListInner = <T,>(
                             <PWView
                                 pointerEvents='none'
                                 style={[
-                                    isSearching && styles.searchOverlayHidden,
+                                    showOverlay && styles.searchOverlayHidden,
                                 ]}
                             >
                                 <SearchInputComponent
@@ -288,7 +241,7 @@ const SearchableListInner = <T,>(
             currentValue,
             searchPlaceholder,
             SearchInputComponent,
-            isSearching,
+            showOverlay,
             handleEnterSearch,
             handleClearQuery,
             toUserIndex,
@@ -337,10 +290,7 @@ const SearchableListInner = <T,>(
     )
 
     // PWFlatList's generic forwarded-ref signature doesn't unify with the
-    // prop object we build here via JSX, so we go through createElement with a
-    // single `any` to bridge it; everything we *write* (data, renderItem,
-    // keyExtractor, etc.) is properly typed above. FlashList enables
-    // maintainVisibleContentPosition by default, so it isn't set explicitly.
+    // prop object we build here via JSX.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const list = createElement(PWFlatList as any, {
         ...listProps,
@@ -361,7 +311,7 @@ const SearchableListInner = <T,>(
         onLayout: handleListLayout,
         onContentSizeChange: handleContentSizeChange,
         onScroll: handleScroll,
-        onScrollBeginDrag: handleListScrollBeginDrag,
+        onScrollBeginDrag: handleScrollBeginDrag,
         onScrollEndDrag: handleScrollEndDrag,
         scrollEventThrottle: SCROLL_EVENT_THROTTLE,
     })
