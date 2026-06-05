@@ -297,6 +297,7 @@ describe('env-loader', () => {
             rekeyToLedgerSupportUrl:
                 'https://rekey-to-ledger-support.example.com',
             undoRekeySupportUrl: 'https://undo-rekey-support.example.com',
+            peraCardLearnMoreUrl: 'https://pera-card-learn-more.example.com',
             debugEnabled: false,
             profilingEnabled: false,
             pollingEnabled: true,

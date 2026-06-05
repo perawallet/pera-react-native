@@ -24,6 +24,25 @@ vi.mock('@hooks/useToast', () => ({
     }),
 }))
 
+const mockPushWebView = vi.fn()
+vi.mock('@modules/webview', () => ({
+    useWebView: () => ({
+        pushWebView: mockPushWebView,
+    }),
+}))
+
+vi.mock('@perawallet/wallet-core-config', async () => {
+    const actual = await vi.importActual<object>(
+        '@perawallet/wallet-core-config',
+    )
+    return {
+        ...actual,
+        config: {
+            peraCardLearnMoreUrl: 'https://example.com/pera-card',
+        },
+    }
+})
+
 vi.mock('react-i18next', async () => {
     const actual = await vi.importActual<object>('react-i18next')
     return {
@@ -43,16 +62,41 @@ describe('usePeraCardIntroScreen', () => {
         vi.clearAllMocks()
     })
 
-    it('handleGetStarted surfaces the coming-soon info toast', () => {
+    it('handleCreateAccount surfaces the coming-soon info toast', () => {
         const { result } = renderHook(() => usePeraCardIntroScreen())
 
         act(() => {
-            result.current.handleGetStarted()
+            result.current.handleCreateAccount()
         })
 
         expect(mockInfoToast).toHaveBeenCalledWith(
             'peraCard.intro.coming_soon_title',
             'peraCard.intro.coming_soon_body',
         )
+    })
+
+    it('handleAlreadyHaveAccount surfaces the coming-soon info toast', () => {
+        const { result } = renderHook(() => usePeraCardIntroScreen())
+
+        act(() => {
+            result.current.handleAlreadyHaveAccount()
+        })
+
+        expect(mockInfoToast).toHaveBeenCalledWith(
+            'peraCard.intro.coming_soon_title',
+            'peraCard.intro.coming_soon_body',
+        )
+    })
+
+    it('handleLearnMore opens the Pera Card learn-more url in a webview', () => {
+        const { result } = renderHook(() => usePeraCardIntroScreen())
+
+        act(() => {
+            result.current.handleLearnMore()
+        })
+
+        expect(mockPushWebView).toHaveBeenCalledWith({
+            url: 'https://example.com/pera-card',
+        })
     })
 })
