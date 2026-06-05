@@ -13,6 +13,7 @@
 import { Theme } from '@rneui/themed'
 import { TextStyle } from 'react-native'
 import { fontFamilies } from '@constants/fonts'
+import { moderateScale } from './scaling'
 
 export type FontWeight = 400 | 500 | 600 | 700
 
@@ -48,92 +49,92 @@ export const getTypography = (
     const typography: Record<TypographyVariant, TextStyle> = {
         h1: {
             fontFamily: getFontFamily(500),
-            fontSize: 32,
-            lineHeight: 40,
+            fontSize: moderateScale(32),
+            lineHeight: moderateScale(40),
             color: theme.colors.textMain,
         },
         h2: {
             fontFamily: getFontFamily(500),
-            fontSize: 25,
-            lineHeight: 32,
+            fontSize: moderateScale(25),
+            lineHeight: moderateScale(32),
             color: theme.colors.textMain,
         },
         h3: {
             fontFamily: getFontFamily(500),
-            fontSize: 19,
-            lineHeight: 24,
+            fontSize: moderateScale(19),
+            lineHeight: moderateScale(24),
             color: theme.colors.textMain,
         },
         h4: {
             fontFamily: getFontFamily(600),
-            fontSize: 15,
-            lineHeight: 24,
+            fontSize: moderateScale(15),
+            lineHeight: moderateScale(24),
             color: theme.colors.textMain,
         },
         body: {
             fontFamily: getFontFamily(400),
-            fontSize: 13,
-            lineHeight: 24,
+            fontSize: moderateScale(13),
+            lineHeight: moderateScale(24),
             color: theme.colors.textMain,
         },
         bodyLarge: {
             fontFamily: getFontFamily(400),
-            fontSize: 15,
-            lineHeight: 24,
+            fontSize: moderateScale(15),
+            lineHeight: moderateScale(24),
             color: theme.colors.textMain,
         },
         bodyCompact: {
             fontFamily: getFontFamily(400),
-            fontSize: 13,
-            lineHeight: 16,
+            fontSize: moderateScale(13),
+            lineHeight: moderateScale(16),
             color: theme.colors.textMain,
         },
         bodySemibold: {
             fontFamily: getFontFamily(600),
-            fontSize: 13,
-            lineHeight: 24,
+            fontSize: moderateScale(13),
+            lineHeight: moderateScale(24),
             color: theme.colors.textMain,
         },
         footnoteMedium: {
             fontFamily: getFontFamily(500),
-            fontSize: 13,
-            lineHeight: 20,
+            fontSize: moderateScale(13),
+            lineHeight: moderateScale(20),
             color: theme.colors.textMain,
         },
         caption: {
             fontFamily: getFontFamily(400),
-            fontSize: 11,
-            lineHeight: 24,
+            fontSize: moderateScale(11),
+            lineHeight: moderateScale(24),
             color: theme.colors.textMain,
         },
         captionMedium: {
             fontFamily: getFontFamily(500),
-            fontSize: 11,
-            lineHeight: 16,
+            fontSize: moderateScale(11),
+            lineHeight: moderateScale(16),
             color: theme.colors.textMain,
         },
         captionSmall: {
             fontFamily: getFontFamily(500),
-            fontSize: 9,
-            lineHeight: 12,
+            fontSize: moderateScale(9),
+            lineHeight: moderateScale(12),
             color: theme.colors.textMain,
         },
         link: {
             fontFamily: getFontFamily(500),
-            fontSize: 13,
-            lineHeight: 24,
+            fontSize: moderateScale(13),
+            lineHeight: moderateScale(24),
             color: theme.colors.linkPrimary,
         },
         linkPositive: {
             fontFamily: getFontFamily(500),
-            fontSize: 13,
-            lineHeight: 24,
+            fontSize: moderateScale(13),
+            lineHeight: moderateScale(24),
             color: theme.colors.positive,
         },
         mono: {
             fontFamily: getMonoFontFamily(400),
-            fontSize: 13,
-            lineHeight: 24,
+            fontSize: moderateScale(13),
+            lineHeight: moderateScale(24),
             color: theme.colors.textMain,
         },
     }

@@ -16,6 +16,7 @@ import { MaterialTopTabBarProps } from '@react-navigation/material-top-tabs' // 
 import { useStyles } from './tabBarStyles'
 import { PWView } from '@components/core/PWView'
 import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
+import { PWText } from '@components/core/PWText'
 
 export type PWTabBarProps = MaterialTopTabBarProps
 
@@ -129,11 +130,13 @@ export const PWTabBar = ({
                                         styles.labelTextContainer,
                                     ]}
                                 >
-                                    <Animated.Text
-                                        numberOfLines={1}
+                                    <PWText
+                                        variant='bodyLarge'
+                                        weight={500}
+                                        numberOfLines={2}
                                         ellipsizeMode='tail'
                                         style={[
-                                            styles.title,
+                                            styles.label,
                                             {
                                                 color: styles.inactiveTitle
                                                     .color,
@@ -144,7 +147,7 @@ export const PWTabBar = ({
                                             false,
                                             styles.inactiveTitle.color!,
                                         )}
-                                    </Animated.Text>
+                                    </PWText>
                                     <Animated.View
                                         style={{ opacity: inactiveOpacity }}
                                     >
@@ -159,11 +162,13 @@ export const PWTabBar = ({
                                         { opacity: activeOpacity },
                                     ]}
                                 >
-                                    <Animated.Text
-                                        numberOfLines={1}
+                                    <PWText
+                                        variant='bodyLarge'
+                                        weight={500}
+                                        numberOfLines={2}
                                         ellipsizeMode='tail'
                                         style={[
-                                            styles.title,
+                                            styles.label,
                                             { color: styles.activeTitle.color },
                                         ]}
                                     >
@@ -171,7 +176,7 @@ export const PWTabBar = ({
                                             true,
                                             styles.activeTitle.color!,
                                         )}
-                                    </Animated.Text>
+                                    </PWText>
                                     <Animated.View
                                         style={{ opacity: activeOpacity }}
                                     >

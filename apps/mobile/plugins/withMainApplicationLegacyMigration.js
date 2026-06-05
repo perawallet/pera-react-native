@@ -11,7 +11,7 @@
  */
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const {withMainApplication} = require('@expo/config-plugins');
+const {withMainApplication} = require('expo/config-plugins');
 
 const PACKAGE_FQN = 'com.algorand.perarn.migration.bridge.LegacyMigrationPackage';
 const PACKAGE_CLASS = 'LegacyMigrationPackage';
