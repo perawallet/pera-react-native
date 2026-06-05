@@ -73,6 +73,26 @@ vi.unmock('@perawallet/wallet-core-kms')
 vi.unmock('@perawallet/wallet-core-accounts')
 vi.unmock('@perawallet/wallet-core-blockchain')
 
+// The send/swap pipelines spawn a fire-and-forget background task
+// (`submitAndAutoRefreshCore`) that awaits chain confirmation *after*
+// submission has already returned. Flow tests only assert the submit + screen
+// transition; the real algod confirmation poll never resolves against the MSW
+// mocks and fires a late `logger.warn` after the test has finished. During
+// worker teardown that surfaces as `EnvironmentTeardownError: Closing rpc
+// while "onUserConsoleLog" was pending` and fails the whole run on CI. Resolve
+// confirmation immediately so the background task completes silently — no flow
+// test wires an onConfirmed handler, so this only removes the teardown race.
+// `submitAndAutoRefresh` is the sole production importer of this export.
+vi.mock('@algorandfoundation/algokit-utils', async () => {
+    const actual = await vi.importActual<
+        typeof import('@algorandfoundation/algokit-utils')
+    >('@algorandfoundation/algokit-utils')
+    return {
+        ...actual,
+        waitForConfirmation: vi.fn().mockResolvedValue(undefined),
+    }
+})
+
 // Replace the unit-test navigator stubs with a real-ish stack-based test
 // navigator (apps/mobile/src/test-utils/test-navigator.tsx). The unit mocks
 // just render the initial screen; the test navigator maintains a stack and
