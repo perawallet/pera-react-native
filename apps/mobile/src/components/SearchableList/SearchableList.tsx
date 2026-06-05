@@ -240,26 +240,20 @@ const SearchableListInner = <T,>(
             }
             if (isSearchSentinel(info.item)) {
                 // Display mirror: the same SearchInput so it looks identical to
-                // the overlay, but non-interactive (editable=false + the
-                // Pressable wrapper swallows taps). It scrolls/pins natively via
-                // FlashList and shows the current query. Tapping pins to the top
-                // and focuses the overlay (the real input). Hidden from
-                // accessibility so there's a single announced search field.
+                // the overlay, but non-interactive
                 return (
                     <PWView style={styles.searchSticky}>
-                        {/* Body tap → enter search. The input is purely visual
-                            (pointerEvents none), so its built-in clear button
-                            isn't tappable; we overlay our own hit-area on it. */}
                         <Pressable
                             onPress={handleEnterSearch}
                             accessibilityElementsHidden
                             importantForAccessibility='no-hide-descendants'
                         >
-                            {/* No editable={false}: a disabled input dims its
-                                placeholder/icon, which wouldn't match the live
-                                overlay. pointerEvents='none' already makes it
-                                non-interactive. */}
-                            <PWView pointerEvents='none'>
+                            <PWView
+                                pointerEvents='none'
+                                style={[
+                                    isSearching && styles.searchOverlayHidden,
+                                ]}
+                            >
                                 <SearchInputComponent
                                     value={currentValue}
                                     placeholder={searchPlaceholder}
@@ -294,6 +288,7 @@ const SearchableListInner = <T,>(
             currentValue,
             searchPlaceholder,
             SearchInputComponent,
+            isSearching,
             handleEnterSearch,
             handleClearQuery,
             toUserIndex,
@@ -301,6 +296,7 @@ const SearchableListInner = <T,>(
             handleHeaderLayout,
             styles.searchSticky,
             styles.searchClearHitArea,
+            styles.searchOverlayHidden,
         ],
     )
 
