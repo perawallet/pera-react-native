@@ -10,10 +10,20 @@
  limitations under the License
  */
 
-import { NavigatorScreenParams } from '@react-navigation/native'
-import { CardOnboardingStackParamList } from './card-onboarding/types'
+const REGIONAL_INDICATOR_A = 0x1f1e6
+const LETTER_A = 'A'.charCodeAt(0)
 
-export type PeraCardStackParamList = {
-    PeraCardIntro: undefined
-    CardOnboarding: NavigatorScreenParams<CardOnboardingStackParamList>
+/**
+ * Convert an ISO 3166-1 alpha-2 code (e.g. "GB") to its flag emoji — two
+ * regional-indicator symbols. Returns '' for anything that isn't a 2-letter code.
+ */
+export const isoToFlagEmoji = (iso: string): string => {
+    if (!/^[A-Za-z]{2}$/.test(iso)) {
+        return ''
+    }
+    const [first, second] = iso.toUpperCase()
+    return String.fromCodePoint(
+        REGIONAL_INDICATOR_A + (first.charCodeAt(0) - LETTER_A),
+        REGIONAL_INDICATOR_A + (second.charCodeAt(0) - LETTER_A),
+    )
 }

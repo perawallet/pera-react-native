@@ -685,6 +685,24 @@
             "already_have_account": "I already have an account",
             "coming_soon_title": "Coming soon",
             "coming_soon_body": "Pera Card onboarding isn't available just yet. Check back soon."
+        },
+        "create_account": {
+            "navigation_title": "Create Baanx Account",
+            "email_label": "Email Address",
+            "email_placeholder": "Enter your email address",
+            "email_invalid": "Enter a valid email address",
+            "country_label": "Country of Residence",
+            "country_placeholder": "Select Country",
+            "confirm_button": "Confirm your Email Address",
+            "country_picker_title": "Country of Residence",
+            "country_search_placeholder": "Search countries",
+            "country_empty_title": "No countries found",
+            "country_empty_body": "Try a different search.",
+            "country_error_title": "Couldn't load countries",
+            "country_error_body": "Please check your connection and try again.",
+            "country_retry": "Try again",
+            "error_title": "Something went wrong",
+            "error_body": "We couldn't send your verification email. Please try again."
         }
     },
     "notifications": {

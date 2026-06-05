@@ -10,10 +10,4 @@
  limitations under the License
  */
 
-import { NavigatorScreenParams } from '@react-navigation/native'
-import { CardOnboardingStackParamList } from './card-onboarding/types'
-
-export type PeraCardStackParamList = {
-    PeraCardIntro: undefined
-    CardOnboarding: NavigatorScreenParams<CardOnboardingStackParamList>
-}
+export { CardOnboardingEmailScreen } from './CardOnboardingEmailScreen'

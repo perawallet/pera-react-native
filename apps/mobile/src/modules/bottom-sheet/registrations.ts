@@ -34,6 +34,7 @@ import { SendFundsContent } from '@modules/transactions/components/send-funds/Se
 import { BidaliContent } from '@modules/gift-card/components/BidaliContent'
 import { PasskeyBiometricRequiredContent } from '@modules/settings/components/PasskeyBiometricRequiredContent'
 import { PasskeyHDWalletRequiredContent } from '@modules/settings/components/PasskeyHDWalletRequiredContent'
+import { CardCountryPickerContent } from '@modules/card/components/CardCountryPicker'
 
 registerBottomSheet('asset-opt-in', OptInConfirmationContent)
 registerBottomSheet('account-actions', AccountActionsContent)
@@ -47,6 +48,7 @@ registerBottomSheet(
     'passkey-hd-wallet-required',
     PasskeyHDWalletRequiredContent,
 )
+registerBottomSheet('card-country-picker', CardCountryPickerContent)
 
 declare module '@modules/bottom-sheet' {
     interface BottomSheetRegistry {
@@ -67,6 +69,7 @@ declare module '@modules/bottom-sheet' {
         // No props — the sheet is purely informational.
         'passkey-biometric-required': Record<string, never>
         'passkey-hd-wallet-required': Record<string, never>
+        'card-country-picker': Record<string, never>
     }
 }
 

@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { z } from 'zod'
+
 export const OnboardingStep = {
     EmailSend: 'EMAIL_SEND',
     EmailVerify: 'EMAIL_VERIFY',
@@ -74,3 +76,12 @@ export type AddressInput = {
     /** When true, the mailing address equals the residential address. */
     isSameMailingAddress: boolean
 }
+
+/** Validation for the email-send onboarding step (email + country). */
+export const emailSendSchema = z.object({
+    email: z.string().trim().email(),
+    /** ISO 3166-1 alpha-2 of the selected country of residence. */
+    countryIso: z.string().length(2),
+})
+
+export type EmailSendFormValues = z.infer<typeof emailSendSchema>

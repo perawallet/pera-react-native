@@ -1,0 +1,134 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { renderHook, act } from '@test-utils/render'
+import { waitFor } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import type { SupportedCountry } from '@perawallet/wallet-core-card'
+
+const mockMutateAsync = vi.fn()
+const mockSetOnboardingStep = vi.fn()
+vi.mock('@perawallet/wallet-core-card', async () => {
+    const actual = await vi.importActual<
+        typeof import('@perawallet/wallet-core-card')
+    >('@perawallet/wallet-core-card')
+    return {
+        ...actual,
+        useSendEmailVerificationMutation: () => ({
+            mutate: vi.fn(),
+            mutateAsync: mockMutateAsync,
+            isPending: false,
+            isError: false,
+            isSuccess: false,
+            error: null,
+            data: null,
+            reset: vi.fn(),
+        }),
+        useCardStore: (
+            selector: (state: { setOnboardingStep: unknown }) => unknown,
+        ) => selector({ setOnboardingStep: mockSetOnboardingStep }),
+    }
+})
+
+const mockRequestByType = vi.fn()
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({
+        requestByType: mockRequestByType,
+        request: vi.fn(),
+        dismiss: vi.fn(),
+        dismissAll: vi.fn(),
+    }),
+}))
+
+const mockNavigate = vi.fn()
+vi.mock('@hooks/useAppNavigation', () => ({
+    useAppNavigation: () => ({ navigate: mockNavigate }),
+}))
+
+const mockErrorToast = vi.fn()
+vi.mock('@hooks/useToast', () => ({
+    useToast: () => ({
+        errorToast: mockErrorToast,
+        infoToast: vi.fn(),
+        showToast: vi.fn(),
+        successToast: vi.fn(),
+    }),
+}))
+
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({ t: (key: string) => key }),
+}))
+
+import { useCardOnboardingEmailScreen } from '../useCardOnboardingEmailScreen'
+
+const france: SupportedCountry = {
+    id: 'FR',
+    iso3166alpha2: 'FR',
+    name: 'France',
+    callingCode: '33',
+    canSignUp: true,
+}
+
+describe('useCardOnboardingEmailScreen', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
+
+    it('starts with an invalid form and no selected country', () => {
+        const { result } = renderHook(() => useCardOnboardingEmailScreen())
+
+        expect(result.current.isValid).toBe(false)
+        expect(result.current.selectedCountry).toBeUndefined()
+        expect(result.current.isSubmitting).toBe(false)
+    })
+
+    it('stores the country chosen from the picker', async () => {
+        mockRequestByType.mockResolvedValue(france)
+        const { result } = renderHook(() => useCardOnboardingEmailScreen())
+
+        act(() => {
+            result.current.handleSelectCountry()
+        })
+
+        await waitFor(() =>
+            expect(result.current.selectedCountry).toEqual(france),
+        )
+        expect(mockRequestByType).toHaveBeenCalledWith(
+            'card-country-picker',
+            {},
+            { size: 'full' },
+        )
+    })
+
+    it('leaves the country unset when the picker is dismissed', async () => {
+        mockRequestByType.mockResolvedValue(undefined)
+        const { result } = renderHook(() => useCardOnboardingEmailScreen())
+
+        act(() => {
+            result.current.handleSelectCountry()
+        })
+
+        await waitFor(() => expect(mockRequestByType).toHaveBeenCalled())
+        expect(result.current.selectedCountry).toBeUndefined()
+    })
+
+    it('does not send the code while the form is invalid', async () => {
+        const { result } = renderHook(() => useCardOnboardingEmailScreen())
+
+        await act(async () => {
+            result.current.handleConfirm()
+        })
+
+        expect(mockMutateAsync).not.toHaveBeenCalled()
+        expect(mockNavigate).not.toHaveBeenCalled()
+    })
+})

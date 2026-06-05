@@ -10,10 +10,11 @@
  limitations under the License
  */
 
-import { NavigatorScreenParams } from '@react-navigation/native'
-import { CardOnboardingStackParamList } from './card-onboarding/types'
+import { makeStyles } from '@rneui/themed'
 
-export type PeraCardStackParamList = {
-    PeraCardIntro: undefined
-    CardOnboarding: NavigatorScreenParams<CardOnboardingStackParamList>
-}
+export const useStyles = makeStyles(theme => ({
+    content: {
+        paddingTop: theme.spacing.xl,
+        alignItems: 'center',
+    },
+}))
