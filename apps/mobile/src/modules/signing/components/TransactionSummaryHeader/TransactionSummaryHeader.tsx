@@ -41,6 +41,7 @@ export const TransactionSummaryHeader = ({
             {!!metadata && <SourceMetadataBadge metadata={metadata} />}
 
             <TransactionIcon
+                style={styles.transactionIcon}
                 type={txType}
                 size='lg'
             />
