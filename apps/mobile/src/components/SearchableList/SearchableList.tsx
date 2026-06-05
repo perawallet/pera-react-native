@@ -47,8 +47,6 @@ export type SearchableListSearchProps = {
     placeholder?: string
     onChangeText?: (value: string) => void
     onFocus: () => void
-    onBlur?: () => void
-    editable?: boolean
     testID?: string
 }
 
@@ -257,10 +255,13 @@ const SearchableListInner = <T,>(
                             accessibilityElementsHidden
                             importantForAccessibility='no-hide-descendants'
                         >
+                            {/* No editable={false}: a disabled input dims its
+                                placeholder/icon, which wouldn't match the live
+                                overlay. pointerEvents='none' already makes it
+                                non-interactive. */}
                             <PWView pointerEvents='none'>
                                 <SearchInputComponent
                                     value={currentValue}
-                                    editable={false}
                                     placeholder={searchPlaceholder}
                                     onFocus={NOOP}
                                     onChangeText={NOOP}
