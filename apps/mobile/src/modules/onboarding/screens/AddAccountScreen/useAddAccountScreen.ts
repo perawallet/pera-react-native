@@ -25,6 +25,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { deferToNextCycle, type Nullable } from '@perawallet/wallet-core-shared'
 import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
+import { useCardSession } from '@perawallet/wallet-core-card'
 import { type IconName } from '@components/core'
 import { useMultisigCreationStore } from '@modules/multisig/hooks/useMultisigCreation'
 import { type AccountOption } from '@modules/onboarding/types'
@@ -39,6 +40,10 @@ export const useAddAccountScreen = () => {
     const { showToast } = useToast()
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
+    // TODO(card): this only checks for a Baanx session, not actual card ownership —
+    // an authenticated-but-cardless user wrongly loses the entry. Swap to a real
+    // hasCard check (useCardStatusQuery, gated on isAuthenticated) once onboarding lands.
+    const { isAuthenticated: hasCardSession } = useCardSession()
 
     const {
         isOpen: isCreatingAccount,
@@ -115,6 +120,11 @@ export const useAddAccountScreen = () => {
         [navigation],
     )
 
+    const handleAddPeraCard = useCallback(
+        () => navigation.navigate('PeraCard', { screen: 'PeraCardIntro' }),
+        [navigation],
+    )
+
     const handleTermsPress = useCallback(
         () =>
             pushWebView({
@@ -180,6 +190,14 @@ export const useAddAccountScreen = () => {
                     leftIcon: 'people' as IconName,
                     onPress: openMultisigIntroduction,
                 },
+                !hasCardSession && {
+                    testID: 'add_account_pera_card_button',
+                    titleKey: 'onboarding.add_account.pera_card_option_title',
+                    descriptionKey:
+                        'onboarding.add_account.pera_card_option_description',
+                    leftIcon: 'card' as IconName,
+                    onPress: handleAddPeraCard,
+                },
                 {
                     testID: 'add_account_import_button',
                     titleKey:
@@ -196,6 +214,8 @@ export const useAddAccountScreen = () => {
             handleCreateUniversalWallet,
             isCreatingAccount,
             openMultisigIntroduction,
+            hasCardSession,
+            handleAddPeraCard,
             handleOpenImportAccountOptions,
         ],
     )
