@@ -48,4 +48,13 @@ export const useStyles = makeStyles(theme => ({
     searchOverlayHidden: {
         opacity: 0,
     },
+    // Transparent tap target over the display's visible clear (X) so it can be
+    // tapped to clear in place, without first pinning/focusing.
+    searchClearHitArea: {
+        position: 'absolute',
+        top: 0,
+        bottom: 0,
+        right: 0,
+        width: theme.spacing['3xl'],
+    },
 }))

@@ -168,6 +168,11 @@ const SearchableListInner = <T,>(
         requestAnimationFrame(() => overlayRef.current?.focus())
     }, [handleSearchFocus])
 
+    const handleClearQuery = useCallback(() => {
+        setQuery('')
+        onSearchChange?.('')
+    }, [onSearchChange])
+
     const handleOverlayFocus = useCallback(() => setIsSearching(true), [])
 
     // Exit search mode (hide overlay → native sticky takes over) only on drag,
@@ -244,26 +249,34 @@ const SearchableListInner = <T,>(
                 // accessibility so there's a single announced search field.
                 return (
                     <PWView style={styles.searchSticky}>
+                        {/* Body tap → enter search. The input is purely visual
+                            (pointerEvents none), so its built-in clear button
+                            isn't tappable; we overlay our own hit-area on it. */}
                         <Pressable
                             onPress={handleEnterSearch}
                             accessibilityElementsHidden
                             importantForAccessibility='no-hide-descendants'
                         >
-                            {/* box-none: the input body isn't editable so its
-                                taps fall through to the Pressable (enter
-                                search), but the built-in clear (X) button is a
-                                touchable child and still receives its tap —
-                                clearing in place without pinning. */}
-                            <PWView pointerEvents='box-none'>
+                            <PWView pointerEvents='none'>
                                 <SearchInputComponent
                                     value={currentValue}
                                     editable={false}
                                     placeholder={searchPlaceholder}
                                     onFocus={NOOP}
-                                    onChangeText={handleQueryChange}
+                                    onChangeText={NOOP}
                                 />
                             </PWView>
                         </Pressable>
+                        {/* Transparent tap target over the visible clear (X):
+                            clears in place without pinning. Rendered last so it
+                            sits above the body Pressable. */}
+                        {currentValue ? (
+                            <Pressable
+                                style={styles.searchClearHitArea}
+                                onPress={handleClearQuery}
+                                accessibilityLabel='Clear search'
+                            />
+                        ) : null}
                     </PWView>
                 )
             }
@@ -281,11 +294,12 @@ const SearchableListInner = <T,>(
             searchPlaceholder,
             SearchInputComponent,
             handleEnterSearch,
-            handleQueryChange,
+            handleClearQuery,
             toUserIndex,
             ListHeaderComponent,
             handleHeaderLayout,
             styles.searchSticky,
+            styles.searchClearHitArea,
         ],
     )
 
