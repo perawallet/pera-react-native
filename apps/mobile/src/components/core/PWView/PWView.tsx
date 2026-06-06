@@ -11,7 +11,7 @@
  */
 
 import { View, ViewProps } from 'react-native'
-import { getTestProps } from '@utils/test-id-helper'
+import { getContainerTestProps } from '@utils/test-id-helper'
 
 export type PWViewProps = ViewProps & {
     testID?: string
@@ -21,7 +21,7 @@ export const PWView = ({ children, style, testID, ...props }: PWViewProps) => {
     return (
         <View
             style={[style]}
-            {...getTestProps(testID)}
+            {...getContainerTestProps(testID)}
             {...props}
         >
             {children}

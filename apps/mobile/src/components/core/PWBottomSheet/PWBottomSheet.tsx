@@ -14,6 +14,7 @@ import {
     BottomSheetModal,
     BottomSheetBackdrop,
     BottomSheetBackdropProps,
+    BottomSheetBackgroundProps,
     BottomSheetView,
 } from '@gorhom/bottom-sheet'
 import { PWView } from '@components/core/PWView'
@@ -29,6 +30,7 @@ import {
     Keyboard,
     StyleProp,
     useWindowDimensions,
+    View,
     ViewStyle,
 } from 'react-native'
 import { NotifierRoot, NotifierWrapper } from 'react-native-notifier'
@@ -125,6 +127,17 @@ export const PWBottomSheet = ({
         }
     }, [])
 
+    const renderBackground = useCallback(
+        ({ style, pointerEvents }: BottomSheetBackgroundProps) => (
+            <View
+                accessible={false}
+                pointerEvents={pointerEvents}
+                style={style}
+            />
+        ),
+        [],
+    )
+
     const renderBackdrop = useCallback(
         (props: BottomSheetBackdropProps) => (
             <BottomSheetBackdrop
@@ -179,6 +192,8 @@ export const PWBottomSheet = ({
             stackBehavior='push'
             topInset={size === 'full' ? 0 : insets.top}
             bottomInset={0}
+            accessible={false}
+            backgroundComponent={renderBackground}
             backdropComponent={renderBackdrop}
             onDismiss={handleDismiss}
             onAnimate={handleAnimate}
