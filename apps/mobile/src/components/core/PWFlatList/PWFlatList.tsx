@@ -17,7 +17,11 @@ import React, {
     useRef,
 } from 'react'
 import { StyleSheet } from 'react-native'
-import { FlashList, type FlashListProps, type FlashListRef } from '@shopify/flash-list'
+import {
+    FlashList,
+    type FlashListProps,
+    type FlashListRef,
+} from '@shopify/flash-list'
 import { useBottomSheetScrollableCreator } from '@gorhom/bottom-sheet'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 

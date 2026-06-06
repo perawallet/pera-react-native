@@ -13,7 +13,11 @@
 import { PWText } from '@components/core/PWText'
 import { PWView } from '@components/core/PWView'
 import { useStyles } from './styles'
-import { PWIcon, type IconName, type PWIconVariant } from '@components/core/PWIcon'
+import {
+    PWIcon,
+    type IconName,
+    type PWIconVariant,
+} from '@components/core/PWIcon'
 import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
 import {
     ActivityIndicator,

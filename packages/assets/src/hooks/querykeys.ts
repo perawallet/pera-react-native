@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import { type HistoryPeriod, type Network } from '@perawallet/wallet-core-shared'
+import {
+    type HistoryPeriod,
+    type Network,
+} from '@perawallet/wallet-core-shared'
 import { type QueryClient, type QueryKey } from '@tanstack/react-query'
 import { ALGO_ASSET_ID } from '../models'
 

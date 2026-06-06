@@ -10,9 +10,17 @@
  limitations under the License
  */
 
-import { type ComponentType, forwardRef, useImperativeHandle, useRef } from 'react'
+import {
+    type ComponentType,
+    forwardRef,
+    useImperativeHandle,
+    useRef,
+} from 'react'
 import { type TextInput, type TextInputProps } from 'react-native'
-import { Input as RNEInput, type InputProps as RNEInputProps } from '@rneui/themed'
+import {
+    Input as RNEInput,
+    type InputProps as RNEInputProps,
+} from '@rneui/themed'
 import { type TypographyVariant } from '@theme/typography'
 import { useStyles } from './styles'
 import { getTestProps } from '@utils/test-id-helper'

@@ -10,7 +10,12 @@
  limitations under the License
  */
 
-import { Image, type ImageProps, type ImageSource, type ImageContentFit } from 'expo-image'
+import {
+    Image,
+    type ImageProps,
+    type ImageSource,
+    type ImageContentFit,
+} from 'expo-image'
 
 import React, { useCallback, useState } from 'react'
 import {

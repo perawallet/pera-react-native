@@ -12,7 +12,10 @@
 
 import { ErrorSeverity } from '@perawallet/wallet-core-shared'
 import { BlockchainError } from './BlockchainError'
-import { type AlgodErrorCode, type AlgodErrorParamsByCode } from './algodErrorCodes'
+import {
+    type AlgodErrorCode,
+    type AlgodErrorParamsByCode,
+} from './algodErrorCodes'
 
 /**
  * Structured algod/indexer error carrying a stable {@link AlgodErrorCode} and

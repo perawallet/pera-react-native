@@ -13,7 +13,10 @@
 import { useCallback, useMemo } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import type { Arc59AssetRequest } from '@perawallet/wallet-core-asa-inbox'
-import { useAllAccounts, type WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useAllAccounts,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { useClipboard } from '@hooks/useClipboard'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useClaimAssets } from '@modules/transactions/hooks'

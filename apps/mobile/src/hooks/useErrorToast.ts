@@ -14,7 +14,10 @@ import { useCallback } from 'react'
 import { AlgodError, toAlgodError } from '@perawallet/wallet-core-blockchain'
 import { config } from '@perawallet/wallet-core-config'
 import { AppError, type Optional } from '@perawallet/wallet-core-shared'
-import { type ShowNotificationParams, type NotifierRoot } from 'react-native-notifier'
+import {
+    type ShowNotificationParams,
+    type NotifierRoot,
+} from 'react-native-notifier'
 import { useToast } from './useToast'
 import { useAlgodErrorMessage } from './useAlgodErrorMessage'
 import { useLanguage } from './useLanguage'

@@ -23,10 +23,18 @@ import {
 import { AccountSortContent } from '@modules/accounts/components/AccountSortContent'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { type StyleProp, type TouchableOpacityProps, type ViewStyle } from 'react-native'
+import {
+    type StyleProp,
+    type TouchableOpacityProps,
+    type ViewStyle,
+} from 'react-native'
 import { AccountDisplay } from '../AccountDisplay'
 import { type AccountIconProps } from '../AccountIcon'
-import { type PWIconProps, type PWTextProps, PWTouchableOpacity } from '@components/core'
+import {
+    type PWIconProps,
+    type PWTextProps,
+    PWTouchableOpacity,
+} from '@components/core'
 
 export type AccountSelectionProps = {
     onSelected?: (account: WalletAccount) => void

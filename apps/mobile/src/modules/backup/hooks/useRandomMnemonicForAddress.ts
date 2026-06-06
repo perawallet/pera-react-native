@@ -16,7 +16,11 @@ import {
     pickDistinctIndexes,
     type MnemonicWordAtPosition,
 } from '@perawallet/wallet-core-kms'
-import { logger, type Nullable, type Optional } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import { useMnemonicForAddress } from './useMnemonicForAddress'
 
 export type UseRandomMnemonicForAddressResult = {

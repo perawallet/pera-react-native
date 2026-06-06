@@ -11,7 +11,11 @@
  */
 
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
-import { type RouteProp, useNavigation, useRoute } from '@react-navigation/native'
+import {
+    type RouteProp,
+    useNavigation,
+    useRoute,
+} from '@react-navigation/native'
 import {
     useAllAccounts,
     useSetAccounts,
