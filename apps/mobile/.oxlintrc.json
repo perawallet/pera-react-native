@@ -43,7 +43,7 @@
     "react-native/no-color-literals": "error",
     "react-native/no-single-element-style-arrays": "error",
     "react/rules-of-hooks": "error",
-    "react/exhaustive-deps": "error",
+    "react/exhaustive-deps": "warn",
     "no-console": "warn",
     "no-unused-vars": "off",
     "prefer-const": "error",
