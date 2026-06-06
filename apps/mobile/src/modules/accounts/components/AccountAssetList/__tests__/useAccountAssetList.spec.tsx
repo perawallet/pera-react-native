@@ -45,13 +45,20 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     return {
         ...actual,
         useAccountAssetsQuery: vi.fn(() => ({
-            balances: [
+            holdings: [
                 {
                     assetId: '123',
                     amount: new Decimal(0),
-                    algoValue: new Decimal(0),
-                    asset: undefined,
-                    usdPrice: undefined,
+                    decimals: null,
+                    creatorAddress: null,
+                    totalSupply: null,
+                    name: null,
+                    unitName: null,
+                    url: null,
+                    metadata: null,
+                    peraMetadataJson: null,
+                    isFavorited: false,
+                    usdPrice: null,
                 },
             ],
             isPending: false,
@@ -139,7 +146,16 @@ describe('useAccountAssetList', () => {
             await result.current.handleOptOut({
                 assetId: '123',
                 amount: new Decimal(0),
-                algoValue: new Decimal(0),
+                decimals: null,
+                creatorAddress: null,
+                totalSupply: null,
+                name: null,
+                unitName: null,
+                url: null,
+                metadata: null,
+                peraMetadataJson: null,
+                isFavorited: false,
+                usdPrice: null,
             })
         })
 
@@ -159,7 +175,16 @@ describe('useAccountAssetList', () => {
             await result.current.handleOptOut({
                 assetId: '123',
                 amount: new Decimal(0),
-                algoValue: new Decimal(0),
+                decimals: null,
+                creatorAddress: null,
+                totalSupply: null,
+                name: null,
+                unitName: null,
+                url: null,
+                metadata: null,
+                peraMetadataJson: null,
+                isFavorited: false,
+                usdPrice: null,
             })
         })
 

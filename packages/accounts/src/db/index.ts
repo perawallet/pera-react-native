@@ -16,6 +16,8 @@ export {
     getAccountHoldings,
     getAccountPortfolioTotals,
     getAccountHoldingsPage,
+    getAccountHoldingsLite,
+    assetFromHoldingLiteRow,
     insertAssetHolding,
     deleteAssetHoldings,
     upsertAccountBalance,
@@ -27,5 +29,6 @@ export {
     type AccountHoldingsFilters,
     type AccountPortfolioTotals,
     type AccountHoldingsPageRow,
+    type AccountHoldingsLiteRow,
     type GetAccountHoldingsPageParams,
 } from './repository'

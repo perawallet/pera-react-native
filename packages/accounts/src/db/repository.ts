@@ -417,12 +417,11 @@ export type GetAccountHoldingsPageParams = {
 } & AccountHoldingsFilters
 
 /**
- * One sorted, filtered, searched, windowed page of an account's holdings —
- * enriched with asset metadata + price via joins. Favorites sort first (the
- * denormalized `is_favorited` column), then by value or name with NULLs
- * (unsynced rows) last. Only the returned page materializes `PeraAsset`s.
+ * Shared holdings query: sorted (favorites first, then value/name with unsynced
+ * NULLs last), filtered, searched and optionally windowed — all in SQL. Returns
+ * the raw joined columns; callers decide how much of each row to materialize.
  */
-export async function getAccountHoldingsPage({
+async function queryHoldingRows({
     db = getDatabase(),
     accountAddress,
     network,
@@ -434,7 +433,7 @@ export async function getAccountHoldingsPage({
     excludeAssetTypes,
     limit,
     offset,
-}: GetAccountHoldingsPageParams): Promise<AccountHoldingsPageRow[]> {
+}: GetAccountHoldingsPageParams) {
     const conditions = [
         eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
         eq(AccountAssetHoldingsSchema.network, network),
@@ -532,8 +531,18 @@ export async function getAccountHoldingsPage({
         query = query.limit(limit).offset(offset ?? 0)
     }
 
-    const rows = await query.all()
+    return query.all()
+}
 
+/**
+ * One sorted/filtered/searched/windowed page of holdings, fully enriched: every
+ * returned row materializes its `PeraAsset` (parsing metadata). Use where the
+ * whole result is consumed at once (e.g. multi-account balance aggregates).
+ */
+export async function getAccountHoldingsPage(
+    params: GetAccountHoldingsPageParams,
+): Promise<AccountHoldingsPageRow[]> {
+    const rows = await queryHoldingRows(params)
     return rows.map(r => ({
         assetId: r.assetId.toString(),
         amount: r.amount,
@@ -555,6 +564,75 @@ export async function getAccountHoldingsPage({
         isFavorited: !!r.isFavorited,
     }))
 }
+
+/** Raw holdings row that defers `PeraAsset` materialization to the consumer. */
+export type AccountHoldingsLiteRow = {
+    assetId: string
+    /** Amount in base units (microalgos for ALGO). */
+    amount: Decimal
+    decimals: Nullable<number>
+    creatorAddress: Nullable<string>
+    totalSupply: Nullable<string>
+    name: Nullable<string>
+    unitName: Nullable<string>
+    url: Nullable<string>
+    metadata: Nullable<string>
+    peraMetadataJson: Nullable<string>
+    isFavorited: boolean
+    /** USD price per whole unit, or null until the price syncs. */
+    usdPrice: Nullable<Decimal>
+}
+
+/**
+ * Same sorted/filtered/searched/windowed read as {@link getAccountHoldingsPage}
+ * but WITHOUT building a `PeraAsset` per row — it returns raw columns (notably
+ * the unparsed `peraMetadataJson`). The held-assets list uses this so a re-read
+ * of thousands of rows doesn't parse metadata and build objects for every row
+ * on the JS thread (the burst that blanked the list during sync); the visible
+ * rows build their `PeraAsset` lazily via {@link assetFromHoldingLiteRow}.
+ */
+export async function getAccountHoldingsLite(
+    params: GetAccountHoldingsPageParams,
+): Promise<AccountHoldingsLiteRow[]> {
+    const rows = await queryHoldingRows(params)
+    return rows.map(r => ({
+        assetId: r.assetId.toString(),
+        amount: r.amount,
+        decimals: r.decimals,
+        creatorAddress: r.creatorAddress,
+        totalSupply: r.totalSupply,
+        name: r.name,
+        unitName: r.unitName,
+        url: r.url,
+        metadata: r.metadata,
+        peraMetadataJson: r.peraMetadataJson,
+        isFavorited: !!r.isFavorited,
+        usdPrice: r.usdPrice != null ? new Decimal(r.usdPrice) : null,
+    }))
+}
+
+/**
+ * Builds the full `PeraAsset` for a single lite row (parsing its metadata).
+ * Call only for rows you actually render or act on — the parse is cached by raw
+ * JSON, so scrolling re-renders stay cheap. Returns null until the asset's node
+ * metadata has synced.
+ */
+export const assetFromHoldingLiteRow = (
+    row: AccountHoldingsLiteRow,
+): Nullable<PeraAsset> =>
+    row.decimals !== null && row.totalSupply !== null
+        ? peraAssetFromColumns({
+              assetId: row.assetId,
+              decimals: row.decimals,
+              creatorAddress: row.creatorAddress ?? '',
+              totalSupply: new Decimal(row.totalSupply),
+              name: row.name,
+              unitName: row.unitName,
+              url: row.url,
+              metadata: row.metadata,
+              peraMetadataJson: row.peraMetadataJson,
+          })
+        : null
 
 export type AccountBalanceRow = {
     accountAddress: string

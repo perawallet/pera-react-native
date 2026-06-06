@@ -60,7 +60,4 @@ export const useStyles = makeStyles(theme => ({
         paddingHorizontal: theme.spacing.md,
         flexShrink: 0,
     },
-    loading: {
-        justifyContent: 'flex-start',
-    },
 }))

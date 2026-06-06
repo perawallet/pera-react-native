@@ -13,10 +13,15 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    searchContainer: {
-        marginBottom: theme.spacing.md,
+    amountContainer: {
+        alignItems: 'flex-end',
     },
-    item: {
-        width: '100%',
+    primaryAmount: {
+        textAlign: 'right',
+    },
+    secondaryAmount: {
+        textAlign: 'right',
+        color: theme.colors.textGray,
+        alignSelf: 'flex-end',
     },
 }))

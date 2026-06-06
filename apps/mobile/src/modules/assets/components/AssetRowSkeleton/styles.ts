@@ -13,10 +13,26 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    searchContainer: {
-        marginBottom: theme.spacing.md,
+    container: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.lg,
+        paddingVertical: theme.spacing.sm,
     },
-    item: {
-        width: '100%',
+    // Matches the loaded asset icon (AssetIcon size 'lg').
+    icon: {
+        width: theme.spacing.xxl,
+    },
+    textColumn: {
+        flex: 1,
+        gap: theme.spacing.xs,
+    },
+    nameBar: {
+        height: theme.spacing.md,
+        width: '55%',
+    },
+    subtitleBar: {
+        height: theme.spacing.sm,
+        width: '35%',
     },
 }))

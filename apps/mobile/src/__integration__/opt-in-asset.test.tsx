@@ -137,7 +137,7 @@ const OptOutHost = ({
         void request<'confirm'>({
             contents: (
                 <OptOutConfirmationContent
-                    accountBalance={accountBalance}
+                    assetId={accountBalance.assetId}
                     accountAddress={sender.address}
                 />
             ),

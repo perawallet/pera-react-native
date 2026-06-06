@@ -10,13 +10,7 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => ({
-    searchContainer: {
-        marginBottom: theme.spacing.md,
-    },
-    item: {
-        width: '100%',
-    },
-}))
+export {
+    AssetListItemView,
+    type AssetListItemViewProps,
+} from './AssetListItemView'

@@ -31,6 +31,30 @@ import {
 // thousands. Kept well under SQLite's bound-parameter limit.
 const ASSET_WRITE_CHUNK_SIZE = 200
 
+// The held-assets list re-reads every row on each holdings/asset/price
+// invalidation, and during a large account's background-sync warm-up that
+// happens several times. Parsing the pera-metadata JSON for thousands of rows
+// on each pass is a synchronous burst that can starve the JS thread (blank
+// rows / unresponsive taps mid-fling). Cache the parsed result by the raw JSON
+// string so repeated reads of unchanged metadata skip the parse. A changed
+// blob is a different string → a new entry, so there's no staleness risk; the
+// returned objects are treated as read-only. Bounded to cap memory.
+const PERA_METADATA_CACHE_MAX = 8000
+const peraMetadataCache = new Map<string, PeraAssetMetadata>()
+
+function parsePeraMetadata(json: string): PeraAssetMetadata {
+    const cached = peraMetadataCache.get(json)
+    if (cached) return cached
+
+    const parsed = JSON.parse(json) as PeraAssetMetadata
+    if (peraMetadataCache.size >= PERA_METADATA_CACHE_MAX) {
+        const oldest = peraMetadataCache.keys().next().value
+        if (oldest !== undefined) peraMetadataCache.delete(oldest)
+    }
+    peraMetadataCache.set(json, parsed)
+    return parsed
+}
+
 /**
  * Builds a {@link PeraAsset} from raw `assets_node` + `assets_pera` columns.
  * Exported so other packages (e.g. the accounts holdings-page read) can enrich
@@ -48,7 +72,7 @@ export function peraAssetFromColumns(row: {
     peraMetadataJson: Nullable<string>
 }): PeraAsset {
     const peraMetadata: Optional<PeraAssetMetadata> = row.peraMetadataJson
-        ? (JSON.parse(row.peraMetadataJson) as PeraAssetMetadata)
+        ? parsePeraMetadata(row.peraMetadataJson)
         : undefined
 
     return {

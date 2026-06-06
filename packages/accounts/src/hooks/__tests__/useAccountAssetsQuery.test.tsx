@@ -17,10 +17,10 @@ import { Decimal } from 'decimal.js'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useAccountAssetsQuery } from '../useAccountAssetsQuery'
 
-const mockGetAccountHoldingsPage = vi.fn()
+const mockGetAccountHoldingsLite = vi.fn()
 vi.mock('../../db', () => ({
-    getAccountHoldingsPage: (...args: unknown[]) =>
-        mockGetAccountHoldingsPage(...args),
+    getAccountHoldingsLite: (...args: unknown[]) =>
+        mockGetAccountHoldingsLite(...args),
 }))
 vi.mock('../../sync/account-syncer', () => ({
     ensureAccountFetched: vi.fn(() => Promise.resolve()),
@@ -28,11 +28,9 @@ vi.mock('../../sync/account-syncer', () => ({
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
 }))
-const mockAlgoPrices = new Map<string, { usdPrice: Decimal }>()
 vi.mock('@perawallet/wallet-core-assets', () => ({
     ALGO_ASSET_ID: '0',
     ALGO_ASSET: { assetId: '0', decimals: 6 },
-    useAssetPricesQuery: () => ({ data: mockAlgoPrices }),
 }))
 
 const wrapper = () => {
@@ -46,27 +44,26 @@ const wrapper = () => {
 describe('useAccountAssetsQuery', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockAlgoPrices.clear()
     })
 
-    it('reads all holdings in one pass and maps them to balances', async () => {
-        mockAlgoPrices.set('0', { usdPrice: new Decimal(2) })
-        mockGetAccountHoldingsPage.mockResolvedValue([
+    it('returns the lite holdings rows in one unbounded read', async () => {
+        const rows = [
             {
                 assetId: '0',
                 amount: new Decimal(5_000_000),
-                asset: { assetId: '0', decimals: 6, name: 'Algo' },
+                decimals: 6,
+                creatorAddress: null,
+                totalSupply: '1',
+                name: 'Algo',
+                unitName: 'ALGO',
+                url: null,
+                metadata: null,
+                peraMetadataJson: null,
+                isFavorited: false,
                 usdPrice: new Decimal(2),
-                isFavorited: false,
             },
-            {
-                assetId: '100',
-                amount: new Decimal(1000),
-                asset: { assetId: '100', decimals: 2, name: 'Token' },
-                usdPrice: new Decimal(10),
-                isFavorited: false,
-            },
-        ])
+        ]
+        mockGetAccountHoldingsLite.mockResolvedValue(rows)
 
         const { result } = renderHook(() => useAccountAssetsQuery('ADDR1'), {
             wrapper: wrapper(),
@@ -74,21 +71,18 @@ describe('useAccountAssetsQuery', () => {
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
-        // No limit/offset is passed — it's a single, unbounded read.
-        const call = mockGetAccountHoldingsPage.mock.calls[0][0]
+        // The list query reads everything in one pass (FlashList virtualizes),
+        // so no limit/offset is passed.
+        const call = mockGetAccountHoldingsLite.mock.calls[0][0]
         expect(call.limit).toBeUndefined()
         expect(call.offset).toBeUndefined()
 
-        const algo = result.current.balances.find(b => b.assetId === '0')
-        expect(algo?.amount).toEqual(new Decimal(5)) // 5_000_000 / 10^6
-        expect(algo?.algoValue).toEqual(new Decimal(5)) // ALGO 1:1
-        const token = result.current.balances.find(b => b.assetId === '100')
-        expect(token?.amount).toEqual(new Decimal(10)) // 1000 / 10^2
-        expect(token?.algoValue).toEqual(new Decimal(50)) // 10 * $10 / $2
+        // Rows are returned as-is — materialization is deferred to the rows.
+        expect(result.current.holdings).toEqual(rows)
     })
 
     it('passes sort, search and filters through to the DB read', async () => {
-        mockGetAccountHoldingsPage.mockResolvedValue([])
+        mockGetAccountHoldingsLite.mockResolvedValue([])
 
         renderHook(
             () =>
@@ -101,9 +95,9 @@ describe('useAccountAssetsQuery', () => {
         )
 
         await waitFor(() =>
-            expect(mockGetAccountHoldingsPage).toHaveBeenCalled(),
+            expect(mockGetAccountHoldingsLite).toHaveBeenCalled(),
         )
-        expect(mockGetAccountHoldingsPage).toHaveBeenCalledWith(
+        expect(mockGetAccountHoldingsLite).toHaveBeenCalledWith(
             expect.objectContaining({
                 accountAddress: 'ADDR1',
                 network: 'mainnet',
@@ -112,26 +106,5 @@ describe('useAccountAssetsQuery', () => {
                 hideZeroBalance: true,
             }),
         )
-    })
-
-    it('emits zeros for holdings whose metadata has not synced', async () => {
-        mockGetAccountHoldingsPage.mockResolvedValue([
-            {
-                assetId: '999',
-                amount: new Decimal(1000),
-                asset: null,
-                usdPrice: null,
-                isFavorited: false,
-            },
-        ])
-
-        const { result } = renderHook(() => useAccountAssetsQuery('ADDR1'), {
-            wrapper: wrapper(),
-        })
-
-        await waitFor(() => expect(result.current.isPending).toBe(false))
-        const row = result.current.balances.find(b => b.assetId === '999')
-        expect(row?.amount).toEqual(new Decimal(0))
-        expect(row?.asset).toBeUndefined()
     })
 })
