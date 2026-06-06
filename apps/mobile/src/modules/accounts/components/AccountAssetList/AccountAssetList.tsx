@@ -13,6 +13,7 @@
 import { PWButton, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import type { PWFlatListRef } from '@components/core'
 import React, { useCallback, useEffect, useRef } from 'react'
+import { ActivityIndicator } from 'react-native'
 import { useStyles } from './styles'
 
 import {
@@ -49,6 +50,9 @@ export const AccountAssetList = ({
     const {
         balances,
         isPending,
+        isFetchingNextPage,
+        hasNextPage,
+        fetchNextPage,
         isReadOnly,
         assetSortMode,
         headerState,
@@ -97,9 +101,7 @@ export const AccountAssetList = ({
                 <SwipeableAssetItem
                     item={item}
                     isSwipeEnabled={isSwipeable}
-                    usdPrice={
-                        renderItemProps.assetPrices.get(item.assetId)?.usdPrice
-                    }
+                    usdPrice={item.usdPrice}
                     onPress={renderItemProps.goToAssetScreen}
                     onOptOut={renderItemProps.handleOptOut}
                 />
@@ -107,6 +109,12 @@ export const AccountAssetList = ({
         },
         [renderItemProps],
     )
+
+    const listFooter = isFetchingNextPage ? (
+        <PWView style={styles.footerLoader}>
+            <ActivityIndicator />
+        </PWView>
+    ) : undefined
 
     const listHeader = (
         <PWView style={styles.headerContainer}>
@@ -168,6 +176,9 @@ export const AccountAssetList = ({
                 automaticallyAdjustKeyboardInsets
                 contentContainerStyle={styles.rootContainer}
                 ListHeaderComponent={listHeader}
+                ListFooterComponent={listFooter}
+                onEndReached={hasNextPage ? fetchNextPage : undefined}
+                onEndReachedThreshold={0.5}
                 searchPlaceholder={t(
                     'account_details.assets.search_placeholder',
                 )}

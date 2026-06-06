@@ -32,22 +32,12 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         >()
     return {
         ...actual,
-        useAccountBalancesQuery: vi.fn(() => ({
+        useAccountSummaryQuery: vi.fn(() => ({
             portfolioAlgoValue: new Decimal('100'),
-            isPending: false,
-            accountBalances: new Map(),
-            isFetched: true,
-            isRefetching: false,
-            isError: false,
-        })),
-        useAccountBalancesHistoryQuery: vi.fn(() => ({
-            data: undefined,
-            isPending: false,
-        })),
-        usePortfolioTotals: vi.fn(() => ({
             portfolioUsdValue: new Decimal('200'),
-            accountUsdValues: new Map(),
+            holdingsCount: 3,
             isPending: false,
+            isError: false,
         })),
         useAllAccounts: vi.fn(() => []),
         useCanSignWith: vi.fn(() => true),
@@ -143,14 +133,13 @@ describe('useAccountOverviewHeader', () => {
     })
 
     it('determines hasBalance correctly when balance is zero', async () => {
-        const { useAccountBalancesQuery } =
+        const { useAccountSummaryQuery } =
             await import('@perawallet/wallet-core-accounts')
-        vi.mocked(useAccountBalancesQuery).mockReturnValue({
+        vi.mocked(useAccountSummaryQuery).mockReturnValue({
             portfolioAlgoValue: new Decimal('0'),
+            portfolioUsdValue: new Decimal('0'),
+            holdingsCount: 0,
             isPending: false,
-            accountBalances: new Map(),
-            isFetched: true,
-            isRefetching: false,
             isError: false,
         })
 

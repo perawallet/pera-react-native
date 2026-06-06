@@ -14,9 +14,8 @@ import { useCallback, useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import {
     AccountBalanceHistoryItem,
-    useAccountBalancesQuery,
+    useAccountSummaryQuery,
     useCanSignWith,
-    usePortfolioTotals,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
@@ -45,9 +44,9 @@ export const useAccountOverviewHeader = (
 ): UseAccountOverviewHeaderResult => {
     const { usdToPreferred } = useCurrency()
     const canSign = useCanSignWith(account)
-    const { portfolioAlgoValue, accountBalances, isPending } =
-        useAccountBalancesQuery(account ? [account] : [])
-    const { portfolioUsdValue } = usePortfolioTotals(accountBalances)
+    // Cheap SQL-aggregate total — no full-holdings materialization for the header.
+    const { portfolioAlgoValue, portfolioUsdValue, isPending } =
+        useAccountSummaryQuery(account?.address)
     const portfolioPreferredValue = useMemo(
         () => usdToPreferred(portfolioUsdValue),
         [usdToPreferred, portfolioUsdValue],

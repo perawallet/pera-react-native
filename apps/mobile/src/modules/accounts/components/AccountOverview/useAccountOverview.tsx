@@ -13,7 +13,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
     useAccountBalancesHistoryQuery,
-    useAccountBalancesQuery,
+    useAccountSummaryQuery,
     useSelectedAccount,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -109,8 +109,8 @@ export const useAccountOverview = ({
     // Combine balance + history pending into one sticky `isLoading` flag so the
     // skeleton header reveals as a single beat and doesn't reappear when the
     // user later changes period.
-    const { isPending: isBalancesPending } = useAccountBalancesQuery(
-        account ? [account] : [],
+    const { isPending: isBalancesPending } = useAccountSummaryQuery(
+        account?.address,
     )
     const { isPending: isHistoryPending } = useAccountBalancesHistoryQuery(
         account ? [account.address] : [],

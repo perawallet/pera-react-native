@@ -58,7 +58,7 @@ vi.mock('@modules/transactions/components/send-funds/SendFundsContent', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(() => ({ address: 'selected-address' })),
-    useAccountBalancesQuery: vi.fn(() => ({
+    useAccountSummaryQuery: vi.fn(() => ({
         isPending: mockBalancesPending.value,
     })),
     useAccountBalancesHistoryQuery: vi.fn(() => ({

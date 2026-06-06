@@ -62,4 +62,8 @@ export const useStyles = makeStyles(theme => ({
     loading: {
         justifyContent: 'flex-start',
     },
+    footerLoader: {
+        paddingVertical: theme.spacing.lg,
+        alignItems: 'center',
+    },
 }))

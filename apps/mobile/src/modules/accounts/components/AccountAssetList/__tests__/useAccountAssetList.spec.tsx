@@ -44,26 +44,22 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         >()
     return {
         ...actual,
-        useAccountBalancesQuery: vi.fn(() => ({
-            accountBalances: new Map([
-                [
-                    'test-address',
-                    {
-                        assetBalances: [
-                            {
-                                assetId: '123',
-                                amount: new Decimal(0),
-                                algoValue: new Decimal(0),
-                            },
-                        ],
-                    },
-                ],
-            ]),
+        useAccountAssetsInfiniteQuery: vi.fn(() => ({
+            balances: [
+                {
+                    assetId: '123',
+                    amount: new Decimal(0),
+                    algoValue: new Decimal(0),
+                    asset: undefined,
+                    usdPrice: undefined,
+                },
+            ],
             isPending: false,
-        })),
-        useSortedAssetBalances: vi.fn(() => ({
-            sortedBalances: [],
-            assetSortMode: 'balanceDesc',
+            isFetchingNextPage: false,
+            hasNextPage: false,
+            fetchNextPage: vi.fn(),
+            isError: false,
+            isRefetching: false,
         })),
     }
 })
@@ -97,28 +93,18 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
         await importOriginal<typeof import('@perawallet/wallet-core-assets')>()
     return {
         ...actual,
-        useAssetsQuery: vi.fn(() => ({ data: new Map() })),
-        useAssetPricesQuery: vi.fn(() => ({ data: new Map() })),
         useAssetPreferencesStore: vi.fn(
             (selector: (state: unknown) => unknown) =>
                 selector({
                     hideZeroBalance: false,
                     displayNfts: true,
                     displayOptedInNfts: true,
+                    assetSortMode: 'balanceDesc',
                 }),
         ),
         isCollectible: vi.fn(() => false),
     }
 })
-
-vi.mock('@perawallet/wallet-core-search', () => ({
-    useGlobalSearch: vi.fn(() => ({
-        value: '',
-        setValue: vi.fn(),
-        results: { assets: [] },
-        isLoading: false,
-    })),
-}))
 
 vi.mock('@constants/ui', () => ({
     SEARCH_DEBOUNCE_TIME_SHORT: 150,

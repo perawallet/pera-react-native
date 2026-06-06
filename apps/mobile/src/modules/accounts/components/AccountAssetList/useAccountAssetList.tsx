@@ -10,25 +10,22 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
-    useAccountBalancesQuery,
+    useAccountAssetsInfiniteQuery,
     useCanSignWith,
-    useSortedAssetBalances,
     WalletAccount,
     AssetWithAccountBalance,
 } from '@perawallet/wallet-core-accounts'
 import {
-    useAssetsQuery,
-    useAssetPricesQuery,
     useAssetPreferencesStore,
     isCollectible,
-    type AssetPrices,
+    type PeraAsset,
     type AssetSortMode,
 } from '@perawallet/wallet-core-assets'
-import { useGlobalSearch } from '@perawallet/wallet-core-search'
+import { useDebouncedValue } from '@perawallet/wallet-core-shared'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
 import { useErrorToast } from '@hooks/useErrorToast'
@@ -48,6 +45,9 @@ import { OptOutConfirmationContent } from './OptOutConfirmationContent'
 type UseAccountAssetListResult = {
     balances: AssetWithAccountBalance[]
     isPending: boolean
+    isFetchingNextPage: boolean
+    hasNextPage: boolean
+    fetchNextPage: () => void
     isReadOnly: boolean
     hideZeroBalance: boolean
     assetSortMode: AssetSortMode
@@ -63,7 +63,6 @@ type UseAccountAssetListResult = {
     getEmptyBody: () => string
     renderItemProps: {
         isReadOnly: boolean
-        assetPrices: AssetPrices
         goToAssetScreen: (asset: AssetWithAccountBalance) => void
         handleOptOut: (item: AssetWithAccountBalance) => void
     }
@@ -80,15 +79,15 @@ export const useAccountAssetList = ({
 }: UseAccountAssetListParams): UseAccountAssetListResult => {
     const headerState = useModalState(true)
     const { request: requestBottomSheet } = useBottomSheet()
-    const {
-        value: searchFilter,
-        setValue: setSearchFilter,
-        results: searchResults,
-        isLoading,
-    } = useGlobalSearch({
-        scopes: ['assets'],
-        debounceMs: SEARCH_DEBOUNCE_TIME_SHORT,
-    })
+
+    // Search is debounced locally and pushed into the DB query so pagination
+    // stays correct over the whole held set (rather than filtering a window).
+    const [searchFilter, setSearchFilter] = useState('')
+    const debouncedSearch = useDebouncedValue(
+        searchFilter,
+        SEARCH_DEBOUNCE_TIME_SHORT,
+    )
+
     const hideZeroBalance = useAssetPreferencesStore(
         state => state.hideZeroBalance,
     )
@@ -96,6 +95,7 @@ export const useAccountAssetList = ({
     const displayOptedInNfts = useAssetPreferencesStore(
         state => state.displayOptedInNfts,
     )
+    const assetSortMode = useAssetPreferencesStore(state => state.assetSortMode)
     const effectiveDisplayOptedInNfts = displayNfts && displayOptedInNfts
     const balanceFilters = useMemo(
         () => ({
@@ -105,49 +105,33 @@ export const useAccountAssetList = ({
         }),
         [hideZeroBalance, displayNfts, effectiveDisplayOptedInNfts],
     )
-    const { accountBalances, isPending } = useAccountBalancesQuery(
-        [account],
-        undefined,
-        balanceFilters,
-    )
-    const balanceData = useMemo(
-        () => accountBalances.get(account.address),
-        [accountBalances, account.address],
-    )
-    const assetIDs = useMemo(
-        () => balanceData?.assetBalances.map(b => b.assetId) ?? [],
-        [balanceData],
-    )
-    const { data: assets } = useAssetsQuery(assetIDs)
-    const { data: assetPrices } = useAssetPricesQuery(assetIDs)
+
+    // DB does the sort + filter + search + pagination; only the loaded pages
+    // are materialized, and each row already carries its asset metadata + price.
+    const { balances, isPending, isFetchingNextPage, hasNextPage, fetchNextPage } =
+        useAccountAssetsInfiniteQuery(account.address, {
+            filters: balanceFilters,
+            sortMode: assetSortMode,
+            search: debouncedSearch,
+        })
+
+    // Lookup of the loaded rows' metadata, used by navigation + opt-out.
+    const assets = useMemo(() => {
+        const map = new Map<string, PeraAsset>()
+        balances.forEach(b => {
+            if (b.asset) map.set(b.assetId, b.asset)
+        })
+        return map
+    }, [balances])
+
     const { optOut, isLoading: isOptingOut } = useAssetOptOutMutation()
     const { showToast } = useToast()
     const { showError } = useErrorToast()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
 
-    const { sortedBalances, assetSortMode } = useSortedAssetBalances(
-        balanceData?.assetBalances ?? [],
-        assets,
-    )
-
     useEffect(() => {
         setSearchFilter('')
-    }, [account.address, setSearchFilter])
-
-    const matchingAssetIds = useMemo(
-        () => new Set(searchResults.assets.map(a => a.assetId)),
-        [searchResults.assets],
-    )
-
-    const balances = useMemo(() => {
-        if (!sortedBalances.length) {
-            return []
-        }
-        if (!searchFilter) {
-            return sortedBalances
-        }
-        return sortedBalances.filter(b => matchingAssetIds.has(b.assetId))
-    }, [sortedBalances, searchFilter, matchingAssetIds])
+    }, [account.address])
 
     const isReadOnly = !useCanSignWith(account)
 
@@ -279,16 +263,18 @@ export const useAccountAssetList = ({
     const renderItemProps = useMemo(
         () => ({
             isReadOnly,
-            assetPrices,
             goToAssetScreen,
             handleOptOut,
         }),
-        [isReadOnly, assetPrices, goToAssetScreen, handleOptOut],
+        [isReadOnly, goToAssetScreen, handleOptOut],
     )
 
     return {
         balances,
-        isPending: isPending || isLoading,
+        isPending,
+        isFetchingNextPage,
+        hasNextPage,
+        fetchNextPage,
         isReadOnly,
         hideZeroBalance,
         assetSortMode,
