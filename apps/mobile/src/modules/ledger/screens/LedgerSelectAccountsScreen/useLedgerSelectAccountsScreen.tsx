@@ -11,7 +11,7 @@
  */
 
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react'
-import { RouteProp, useRoute } from '@react-navigation/native'
+import { type RouteProp, useRoute } from '@react-navigation/native'
 import { useQueryClient } from '@tanstack/react-query'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {

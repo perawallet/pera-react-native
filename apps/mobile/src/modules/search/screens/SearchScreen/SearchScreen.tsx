@@ -71,7 +71,7 @@ export const SearchScreen = () => {
     const renderItem = useCallback(
         ({ item }: { item: SearchRow }) => {
             switch (item.type) {
-                case 'section_header':
+                case 'section_header': {
                     return (
                         <PWView style={styles.sectionHeader}>
                             <PWText variant='h4'>
@@ -79,7 +79,8 @@ export const SearchScreen = () => {
                             </PWText>
                         </PWView>
                     )
-                case 'account':
+                }
+                case 'account': {
                     return (
                         <PWTouchableOpacity
                             onPress={() => onAccountPress(item.account)}
@@ -92,7 +93,8 @@ export const SearchScreen = () => {
                             />
                         </PWTouchableOpacity>
                     )
-                case 'contact':
+                }
+                case 'contact': {
                     return (
                         <PWTouchableOpacity
                             onPress={() => onContactPress(item.contact)}
@@ -105,7 +107,8 @@ export const SearchScreen = () => {
                             />
                         </PWTouchableOpacity>
                     )
-                case 'asset':
+                }
+                case 'asset': {
                     return (
                         <PWTouchableOpacity
                             onPress={() => onAssetPress(item.asset)}
@@ -119,7 +122,8 @@ export const SearchScreen = () => {
                             />
                         </PWTouchableOpacity>
                     )
-                case 'show_more':
+                }
+                case 'show_more': {
                     return (
                         <PWTouchableOpacity
                             onPress={() => onExpandSection(item.kind)}
@@ -141,6 +145,7 @@ export const SearchScreen = () => {
                             />
                         </PWTouchableOpacity>
                     )
+                }
             }
         },
         [

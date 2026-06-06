@@ -265,7 +265,7 @@ describe('useKeyregDeeplink', () => {
                 expect.objectContaining({
                     sender: VALID_ADDRESS,
                     voteFirst: 1300n,
-                    voteLast: 11300n,
+                    voteLast: 11_300n,
                     voteKeyDilution: 100n,
                 }),
             )

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { Network, Networks } from '@perawallet/wallet-core-config'
+import { type Network, Networks } from '@perawallet/wallet-core-config'
 
 export { Networks }
 export type { Network }

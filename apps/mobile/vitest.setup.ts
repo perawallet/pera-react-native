@@ -199,11 +199,11 @@ vi.mock('react-native-reanimated', () => {
             inOut: (fn: any) => fn,
             out: (fn: any) => fn,
             in: (fn: any) => fn,
-            ease: () => undefined,
-            linear: () => undefined,
-            quad: () => undefined,
-            cubic: () => undefined,
-            bezier: () => () => undefined,
+            ease: () => {},
+            linear: () => {},
+            quad: () => {},
+            cubic: () => {},
+            bezier: () => () => {},
         },
         FadeIn: {
             duration: () => ({}),
@@ -878,7 +878,7 @@ vi.mock('expo-video', () => {
 // request + save). Defaults to granted so the save path can be exercised.
 vi.mock('expo-media-library/legacy', () => ({
     requestPermissionsAsync: vi.fn().mockResolvedValue({ status: 'granted' }),
-    saveToLibraryAsync: vi.fn().mockResolvedValue(undefined),
+    saveToLibraryAsync: vi.fn().mockResolvedValue(),
 }))
 
 vi.mock('expo-clipboard', () => ({
@@ -900,8 +900,8 @@ vi.mock('expo-clipboard', () => ({
 ;(globalThis as { __DEV__?: boolean }).__DEV__ = false
 
 vi.mock('expo-screen-capture', () => ({
-    preventScreenCaptureAsync: vi.fn().mockResolvedValue(undefined),
-    allowScreenCaptureAsync: vi.fn().mockResolvedValue(undefined),
+    preventScreenCaptureAsync: vi.fn().mockResolvedValue(),
+    allowScreenCaptureAsync: vi.fn().mockResolvedValue(),
     addScreenshotListener: vi.fn(() => ({ remove: vi.fn() })),
     removeScreenshotListener: vi.fn(),
 }))
@@ -914,14 +914,14 @@ vi.mock('expo-screen-capture', () => ({
 // none of those native imports run inside unit/integration tests.
 vi.mock('@perawallet/wallet-extension-passkey-autofill', () => {
     const passkeyAutofill = {
-        setMasterKey: vi.fn().mockResolvedValue(undefined),
-        setHdRootKeyId: vi.fn().mockResolvedValue(undefined),
-        setDerivedMainKey: vi.fn().mockResolvedValue(undefined),
-        configureIntentActions: vi.fn().mockResolvedValue(undefined),
-        clearCredentials: vi.fn().mockResolvedValue(undefined),
-        deleteCredential: vi.fn().mockResolvedValue(undefined),
+        setMasterKey: vi.fn().mockResolvedValue(),
+        setHdRootKeyId: vi.fn().mockResolvedValue(),
+        setDerivedMainKey: vi.fn().mockResolvedValue(),
+        configureIntentActions: vi.fn().mockResolvedValue(),
+        clearCredentials: vi.fn().mockResolvedValue(),
+        deleteCredential: vi.fn().mockResolvedValue(),
         getStoredCredentials: vi.fn().mockResolvedValue([]),
-        refreshCredentialIdentities: vi.fn().mockResolvedValue(undefined),
+        refreshCredentialIdentities: vi.fn().mockResolvedValue(),
         isProviderActive: vi.fn().mockResolvedValue(false),
         openProviderSettings: vi.fn().mockResolvedValue(false),
         onPasskeyAdded: vi.fn().mockReturnValue({ remove: vi.fn() }),
@@ -1928,7 +1928,7 @@ vi.mock('@rneui/themed', () => {
             layer1: 10,
             layer2: 20,
             overlay1: 100,
-            max: 10000,
+            max: 10_000,
         },
         borderRadius: {
             none: 0,
@@ -2208,7 +2208,7 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     },
     ErrorSeverity: { LOW: 'low', MEDIUM: 'medium', HIGH: 'high' },
     ErrorCategory: { WALLETCONNECT: 'walletconnect', UI: 'ui' },
-    useClearAllData: vi.fn(() => vi.fn().mockResolvedValue(undefined)),
+    useClearAllData: vi.fn(() => vi.fn().mockResolvedValue()),
     registerStore: vi.fn(),
     clearAllStores: vi.fn(),
     resetStoreRegistry: vi.fn(),
@@ -2312,7 +2312,7 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
     // override via their own vi.mock call.
     useKMS: vi.fn(() => ({
         keys: new Map(),
-        seedIdOf: vi.fn(() => undefined),
+        seedIdOf: vi.fn(() => {}),
         deleteKey: vi.fn(async () => {}),
         getKey: vi.fn(() => null),
         getKeyOrThrow: vi.fn(() => {
@@ -2679,7 +2679,7 @@ class MockAlgodError extends Error {
 }
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    MIN_TXN_FEE: 1_000n,
+    MIN_TXN_FEE: 1000n,
     useAlgorandClient: vi.fn(),
     useSigningRequest: vi.fn(() => ({ addSignRequest: vi.fn() })),
     useTransactionEncoder: vi.fn(() => ({ encodeSignedTransaction: vi.fn() })),

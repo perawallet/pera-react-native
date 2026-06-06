@@ -25,7 +25,7 @@ import {
     type AugmentedItem,
 } from './useSearchableList'
 import { DEFAULT_SNAP_THRESHOLD, SCROLL_EVENT_THROTTLE } from '@constants/ui'
-import { Maybe } from '@perawallet/wallet-core-shared'
+import { type Maybe } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 
 const NOOP = () => {}
@@ -203,9 +203,7 @@ const SearchableListInner = <T,>(
                         >
                             <PWView
                                 pointerEvents='none'
-                                style={[
-                                    showOverlay && styles.searchOverlayHidden,
-                                ]}
+                                style={showOverlay && styles.searchOverlayHidden}
                             >
                                 <SearchInputComponent
                                     value={currentValue}

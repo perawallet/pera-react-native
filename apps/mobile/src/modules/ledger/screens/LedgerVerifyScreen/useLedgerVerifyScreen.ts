@@ -11,7 +11,7 @@
  */
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
-import { RouteProp, useRoute } from '@react-navigation/native'
+import { type RouteProp, useRoute } from '@react-navigation/native'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     useAccountsStore,

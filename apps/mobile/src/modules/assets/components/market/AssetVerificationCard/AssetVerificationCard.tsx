@@ -11,9 +11,9 @@
  */
 
 import { useStyles } from './styles'
-import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
+import { ALGO_ASSET_ID, type PeraAsset } from '@perawallet/wallet-core-assets'
 import { useTheme } from '@rneui/themed'
-import { IconName, PWButton, PWIcon, PWText, PWView } from '@components/core'
+import { type IconName, PWButton, PWIcon, PWText, PWView } from '@components/core'
 import { useMemo, useCallback } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@modules/webview'

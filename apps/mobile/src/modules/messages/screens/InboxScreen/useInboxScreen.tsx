@@ -28,12 +28,15 @@ export type UseInboxScreenResult = {
 
 const getItemKey = (item: InboxItem, index: number): string => {
     switch (item.type) {
-        case 'multisig_import':
+        case 'multisig_import': {
             return `import-${item.data.customId}-${item.data.address}`
-        case 'multisig_sign':
+        }
+        case 'multisig_sign': {
             return `sign-${item.data.id}`
-        case 'asa_inbox':
+        }
+        case 'asa_inbox': {
             return `asa-${item.data.address}-${index}`
+        }
     }
 }
 

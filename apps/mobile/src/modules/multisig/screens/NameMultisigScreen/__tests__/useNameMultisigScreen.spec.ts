@@ -135,7 +135,7 @@ describe('useNameMultisigScreen', () => {
         )
         mockUseAllAccounts.mockReturnValue([])
         mockUseDeviceID.mockReturnValue('device-id')
-        mockMutateAsync.mockResolvedValue(undefined)
+        mockMutateAsync.mockResolvedValue()
         mockGenerateMultisigAddress.mockReturnValue('MULTISIG_ADDR')
         mockAddListener.mockReturnValue(vi.fn())
         mockUseRoute.mockReturnValue({ params: undefined })
@@ -352,7 +352,7 @@ describe('useNameMultisigScreen', () => {
         expect(mockMutateAsync).toHaveBeenCalledTimes(1)
 
         await act(async () => {
-            resolveMutation(undefined)
+            resolveMutation()
             await new Promise(resolve => setTimeout(resolve, 0))
         })
     })
@@ -384,7 +384,7 @@ describe('useNameMultisigScreen', () => {
         })
 
         await act(async () => {
-            resolveMutation(undefined)
+            resolveMutation()
             await new Promise(resolve => setTimeout(resolve, 0))
         })
 
@@ -539,7 +539,7 @@ describe('useNameMultisigScreen', () => {
         expect(preventDefault).toHaveBeenCalled()
 
         await act(async () => {
-            resolveMutation(undefined)
+            resolveMutation()
         })
     })
 

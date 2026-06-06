@@ -68,16 +68,21 @@ export const usePinEditView = ({
 
     const title = useMemo(() => {
         switch (currentMode) {
-            case 'setup':
+            case 'setup': {
                 return t('security.pin.setup_title')
-            case 'confirm':
+            }
+            case 'confirm': {
                 return t('security.pin.confirm_title')
-            case 'verify':
+            }
+            case 'verify': {
                 return t('security.pin.verify_title')
-            case 'change_old':
+            }
+            case 'change_old': {
                 return t('security.pin.change_old_title')
-            default:
+            }
+            default: {
                 return ''
+            }
         }
     }, [currentMode, t])
 
@@ -132,12 +137,13 @@ export const usePinEditView = ({
     const handlePinComplete = useCallback(
         async (pin: string) => {
             switch (currentMode) {
-                case 'setup':
+                case 'setup': {
                     setStoredPin(pin)
                     setHasError(false)
                     setCurrentMode('confirm')
                     break
-                case 'confirm':
+                }
+                case 'confirm': {
                     if (pin === storedPin) {
                         if (savePinHandler) {
                             const result = await savePinHandler(pin)
@@ -162,6 +168,7 @@ export const usePinEditView = ({
                         setHasError(true)
                     }
                     break
+                }
                 case 'change_old':
                 case 'verify': {
                     const result = await verifyPin(pin)

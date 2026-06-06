@@ -35,7 +35,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { getTheme } from '@theme/theme'
 import { QueryProvider, queryClient } from './providers/QueryProvider'
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
-import { Persister } from '@tanstack/react-query-persist-client'
+import { type Persister } from '@tanstack/react-query-persist-client'
 import {
     algorandSafeQuerySerialize,
     algorandSafeQueryParse,

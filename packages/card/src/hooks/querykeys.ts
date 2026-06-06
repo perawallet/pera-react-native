@@ -11,7 +11,7 @@
  */
 
 import type { Network } from '@perawallet/wallet-core-shared'
-import { QueryClient, type QueryKey } from '@tanstack/react-query'
+import { type QueryClient, type QueryKey } from '@tanstack/react-query'
 import type { CardTransactionFilters } from '../models'
 
 export const MODULE_PREFIX = 'card'

@@ -11,7 +11,7 @@
  */
 
 import React, { useCallback } from 'react'
-import { StyleProp, useWindowDimensions, ViewStyle } from 'react-native'
+import { type StyleProp, useWindowDimensions, type ViewStyle } from 'react-native'
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio'
 import {
     PWIcon,

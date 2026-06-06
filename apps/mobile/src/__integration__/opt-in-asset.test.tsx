@@ -69,7 +69,7 @@ import {
 } from './__fixtures__/onboarding'
 import { USDC_TEST_ASSET, USDC_TEST_ASSET_ID } from './__fixtures__/assets'
 
-const SLOW_TEST_TIMEOUT_MS = 30000
+const SLOW_TEST_TIMEOUT_MS = 30_000
 
 // Test host that mirrors what AddAssetView does for the "approve
 // opt-in" step: open the confirmation sheet via `requestBottomSheet`
@@ -259,7 +259,7 @@ describe('Flow: Opt into an asset', () => {
                 () => {
                     expect(sendSpy).toHaveBeenCalled()
                 },
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
         },
         SLOW_TEST_TIMEOUT_MS,
@@ -458,7 +458,7 @@ describe('Flow: Opt out of an asset', () => {
                 () => {
                     expect(onResolved).toHaveBeenCalled()
                 },
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
             expect(onRejected).not.toHaveBeenCalled()
 

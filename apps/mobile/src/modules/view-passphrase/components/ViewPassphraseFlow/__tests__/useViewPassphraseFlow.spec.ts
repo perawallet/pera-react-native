@@ -81,7 +81,7 @@ describe('useViewPassphraseFlow', () => {
 
     it('aborts the flow when the PIN sheet is dismissed', async () => {
         mockCheckPinEnabled.mockResolvedValue(true)
-        mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+        mockRequestBottomSheet.mockResolvedValueOnce()
 
         const { result } = renderHook(() => useViewPassphraseFlow())
         await act(async () => {
@@ -122,7 +122,7 @@ describe('useViewPassphraseFlow', () => {
 
     it('aborts the flow when the acknowledge sheet does not resolve with confirm', async () => {
         mockCheckPinEnabled.mockResolvedValue(false)
-        mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+        mockRequestBottomSheet.mockResolvedValueOnce()
 
         const { result } = renderHook(() => useViewPassphraseFlow())
         await act(async () => {

@@ -17,10 +17,10 @@ import {
 } from '@perawallet/wallet-core-assets'
 import AlgoAssetIcon from '@assets/icons/assets/algo.svg'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { SvgProps } from 'react-native-svg'
+import { type SvgProps } from 'react-native-svg'
 import {
     getIconPixelSize,
-    PWIconSize,
+    type PWIconSize,
     PWImage,
     PWText,
     PWView,

@@ -12,7 +12,7 @@
 
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import { useNfdSearchQuery } from '@perawallet/wallet-core-nfd'
-import { Optional, useDebouncedValue } from '@perawallet/wallet-core-shared'
+import { type Optional, useDebouncedValue } from '@perawallet/wallet-core-shared'
 import { SEARCH_DEBOUNCE_TIME } from '@constants/ui'
 
 type UseNfdResolveResult = {

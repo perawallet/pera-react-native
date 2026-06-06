@@ -11,7 +11,7 @@
  */
 
 import { type Network } from '@perawallet/wallet-core-shared'
-import { Query } from '@tanstack/react-query'
+import { type Query } from '@tanstack/react-query'
 
 export const BANNERS_MODULE_PREFIX = 'banners'
 

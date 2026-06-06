@@ -13,7 +13,7 @@
 import { useMemo } from 'react'
 import {
     getAssetTransferType,
-    PeraDisplayableTransaction,
+    type PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
 import { Decimal } from 'decimal.js'
@@ -51,7 +51,7 @@ export const useAssetTransferDisplay = (
         } else if (receiverAddress === referenceAddress) {
             return styles.amountPositive
         }
-        return undefined
+        return
     }, [amount])
 
     const metadataHash = useMemo(() => asset?.metadata, [asset])

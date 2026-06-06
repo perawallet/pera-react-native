@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { FC, useCallback, useEffect, useState } from 'react'
+import { type FC, useCallback, useEffect, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import {
@@ -23,7 +23,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     ALGO_ASSET,
-    PeraAsset,
+    type PeraAsset,
     toWholeUnits,
     useSingleAssetDetailsQuery,
 } from '@perawallet/wallet-core-assets'
@@ -41,8 +41,8 @@ import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 import LightHeaderImage from '@assets/images/asset-inbox-send-light.svg'
 import DarkHeaderImage from '@assets/images/asset-inbox-send-dark.svg'
 import { useThemeMode } from '@rneui/themed'
-import { SvgProps } from 'react-native-svg'
-import { Decimal } from 'decimal.js'
+import { type SvgProps } from 'react-native-svg'
+import { type Decimal } from 'decimal.js'
 
 type UseARC59SendSummaryScreenResult = {
     summary?: Arc59SendSummaryResponse

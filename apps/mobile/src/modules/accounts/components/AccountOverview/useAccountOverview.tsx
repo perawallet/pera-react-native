@@ -15,15 +15,15 @@ import {
     useAccountBalancesHistoryQuery,
     useAccountBalancesQuery,
     useSelectedAccount,
-    WalletAccount,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { HistoryPeriod } from '@perawallet/wallet-core-shared'
+import { type HistoryPeriod } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { ReceiveFundsContent } from '@modules/transactions/components/receive-funds/ReceiveFundsContent'
 import { SendFundsContent } from '@modules/transactions/components/send-funds/SendFundsContent'
 import { useReceiveFunds } from '@modules/transactions/hooks'
 import { AccountOptionsContent } from '../AccountOptionsContent'
-import { UseAccountOverviewModalResult } from './AccountOverviewModalContext'
+import { type UseAccountOverviewModalResult } from './AccountOverviewModalContext'
 
 // Matches the default in useChartInteraction so balances + history queries
 // share keys with the header's chart and we don't double-fetch.

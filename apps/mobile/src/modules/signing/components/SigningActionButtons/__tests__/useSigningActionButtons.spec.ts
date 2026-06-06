@@ -80,7 +80,7 @@ describe('useSigningActionButtons', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
-        mockGetPreference.mockReturnValue(undefined)
+        mockGetPreference.mockReturnValue()
         setupPipeline()
         ;(useSigningRequest as Mock).mockReturnValue({
             currentRequest: undefined,
@@ -91,7 +91,7 @@ describe('useSigningActionButtons', () => {
         ;(useNavigation as Mock).mockReturnValue({
             navigate: mockNavigate,
         })
-        mockRequestBottomSheet.mockResolvedValue(undefined)
+        mockRequestBottomSheet.mockResolvedValue()
         ;(useBottomSheet as Mock).mockReturnValue({
             request: mockRequestBottomSheet,
         })
@@ -181,7 +181,7 @@ describe('useSigningActionButtons', () => {
         setupPipeline([
             { type: 'rekey', senderAddress: 'addr1', targetAddress: 'addr2' },
         ])
-        mockRequestBottomSheet.mockResolvedValue(undefined)
+        mockRequestBottomSheet.mockResolvedValue()
 
         const { result } = renderHook(() => useSigningActionButtons())
 

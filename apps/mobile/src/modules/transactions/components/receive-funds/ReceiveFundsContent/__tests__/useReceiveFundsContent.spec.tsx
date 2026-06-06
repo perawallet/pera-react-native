@@ -56,7 +56,7 @@ describe('useReceiveFundsContent', () => {
     })
 
     it('returns hasAccount false when no account and canSelectAccount is true', () => {
-        const { result } = renderHook(() => useReceiveFundsContent(undefined), {
+        const { result } = renderHook(() => useReceiveFundsContent(), {
             wrapper,
         })
 
@@ -94,7 +94,7 @@ describe('useReceiveFundsContent', () => {
     })
 
     it('sets onFinished callback', () => {
-        renderHook(() => useReceiveFundsContent(undefined), { wrapper })
+        renderHook(() => useReceiveFundsContent(), { wrapper })
 
         expect(mockSetOnFinished).toHaveBeenCalled()
     })
@@ -109,7 +109,7 @@ describe('useReceiveFundsContent', () => {
             .getState()
             .request<void>({ id: 'sheet-1', contents: null })
 
-        renderHook(() => useReceiveFundsContent(undefined), { wrapper })
+        renderHook(() => useReceiveFundsContent(), { wrapper })
 
         capturedFinishedCallback()
 

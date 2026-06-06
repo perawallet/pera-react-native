@@ -12,9 +12,9 @@
 
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { usePinCode } from '@perawallet/wallet-core-security'
-import { ReactElement, useEffect, useMemo, useState } from 'react'
+import { type ReactElement, useEffect, useMemo, useState } from 'react'
 import { PinSecurityPrompt } from '../PinSecurityPrompt/PinSecurityPrompt'
-import { PromptViewProps } from '@modules/prompts/models'
+import { type PromptViewProps } from '@modules/prompts/models'
 import { useHasAccounts } from '@perawallet/wallet-core-accounts'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { UserPreferences } from '@constants/user-preferences'
@@ -40,11 +40,11 @@ export const usePromptContainer = (): UsePromptContainerResult => {
     const { checkPinEnabled } = usePinCode()
     const hasAccounts = useHasAccounts()
     const [hiddenPrompts, setHiddenPrompts] = useState<Set<string>>(new Set())
-    const [nextPrompt, setNextPrompt] = useState<Optional<Prompt>>(undefined)
+    const [nextPrompt, setNextPrompt] = useState<Optional<Prompt>>()
 
     const prompt = useMemo(() => {
         if (!hasAccounts) {
-            return undefined
+            return
         }
 
         const prompt = Object.entries(PROMPT_SEQUENCE).find(p => {
@@ -58,7 +58,7 @@ export const usePromptContainer = (): UsePromptContainerResult => {
                 component: prompt[1],
             } as Prompt
         }
-        return undefined
+        return
     }, [getPreference, hiddenPrompts, hasAccounts])
 
     useEffect(() => {

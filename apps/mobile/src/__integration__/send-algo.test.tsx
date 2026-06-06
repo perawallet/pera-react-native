@@ -61,7 +61,7 @@ import {
 
 const RECEIVER_ADDRESS = HD_TEST_ADDRESS
 
-const SLOW_TEST_TIMEOUT_MS = 30000
+const SLOW_TEST_TIMEOUT_MS = 30_000
 
 // Mint a real algo25 key in the in-memory keystore from the pinned
 // mnemonic and register the matching account in the accounts store.
@@ -194,7 +194,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
                 () => {
                     expect(screen.getByTestId('PWResultView')).toBeTruthy()
                 },
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
 
             // Algod POST happened with the signed, grouped transaction.
@@ -356,7 +356,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
                 () => {
                     expect(screen.getByTestId('PWResultView')).toBeTruthy()
                 },
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
 
             // Algod received the signed payload. Reaching this branch
@@ -454,7 +454,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
                         vi.mocked(Notifier.showNotification),
                     ).toHaveBeenCalled()
                 },
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
             expect(sendSpy).not.toHaveBeenCalled()
         },

@@ -33,7 +33,7 @@ describe('CompactBanner', () => {
             <CompactBanner
                 primary={banner}
                 additionalCount={0}
-                onPress={() => undefined}
+                onPress={() => {}}
             />,
         )
         expect(screen.getByText('Vote in Period 12')).toBeTruthy()
@@ -44,7 +44,7 @@ describe('CompactBanner', () => {
             <CompactBanner
                 primary={{ ...banner, title: null, subtitle: 'Sub' }}
                 additionalCount={0}
-                onPress={() => undefined}
+                onPress={() => {}}
             />,
         )
         expect(screen.getByText('Sub')).toBeTruthy()
@@ -55,7 +55,7 @@ describe('CompactBanner', () => {
             <CompactBanner
                 primary={banner}
                 additionalCount={0}
-                onPress={() => undefined}
+                onPress={() => {}}
             />,
         )
         expect(screen.queryByTestId('compact_banner_more_badge')).toBeNull()
@@ -66,7 +66,7 @@ describe('CompactBanner', () => {
             <CompactBanner
                 primary={banner}
                 additionalCount={3}
-                onPress={() => undefined}
+                onPress={() => {}}
             />,
         )
         const label = screen.getByTestId('compact_banner_more_badge')

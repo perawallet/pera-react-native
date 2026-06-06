@@ -22,7 +22,7 @@ import { SEND_TRANSACTION_SOURCE } from '@perawallet/wallet-core-transactions'
 import { useSigningCompletedDriver } from '../useSigningCompletedDriver'
 
 const { requestBottomSheetMock } = vi.hoisted(() => ({
-    requestBottomSheetMock: vi.fn().mockResolvedValue(undefined),
+    requestBottomSheetMock: vi.fn().mockResolvedValue(),
 }))
 
 vi.mock('@modules/bottom-sheet', () => ({

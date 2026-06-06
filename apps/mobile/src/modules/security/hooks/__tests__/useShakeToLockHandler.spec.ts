@@ -78,7 +78,7 @@ const setupHappyPathDefaults = () => {
     mocks.getBooleanValue.mockImplementation(
         (_key: string, fallback: boolean) => fallback,
     )
-    mocks.getPreference.mockReturnValue(undefined)
+    mocks.getPreference.mockReturnValue()
     mocks.checkPinEnabled.mockResolvedValue(false)
 }
 

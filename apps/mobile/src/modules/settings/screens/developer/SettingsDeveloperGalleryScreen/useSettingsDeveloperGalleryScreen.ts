@@ -25,7 +25,7 @@ type UseSettingsDeveloperGalleryScreenResult = {
 }
 
 const NOOP_TOOLS = {
-    onSeedContacts: () => undefined,
+    onSeedContacts: () => {},
 }
 
 export const useSettingsDeveloperGalleryScreen =

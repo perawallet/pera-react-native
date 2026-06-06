@@ -20,8 +20,8 @@ import {
 import { useStyles } from './styles'
 
 import { PanelButton } from '@components/PanelButton'
-import { ParamListBase, useNavigation } from '@react-navigation/native'
-import { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { type ParamListBase, useNavigation } from '@react-navigation/native'
+import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { QRScannerView } from '@components/QRScannerView'
 import { useModalState } from '@hooks/useModalState'
 import { useLanguage } from '@hooks/useLanguage'

@@ -11,8 +11,8 @@
  */
 
 import { PWView } from '@components/core'
-import React, { PropsWithChildren, useEffect, useState } from 'react'
-import { StyleProp, ViewStyle, LayoutChangeEvent } from 'react-native'
+import React, { type PropsWithChildren, useEffect, useState } from 'react'
+import { type StyleProp, type ViewStyle, type LayoutChangeEvent } from 'react-native'
 import Animated, {
     useSharedValue,
     withTiming,

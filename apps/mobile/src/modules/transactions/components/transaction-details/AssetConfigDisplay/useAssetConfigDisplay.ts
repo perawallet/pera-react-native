@@ -11,7 +11,7 @@
  */
 
 import {
-    PeraDisplayableTransaction,
+    type PeraDisplayableTransaction,
     getAssetConfigType,
 } from '@perawallet/wallet-core-blockchain'
 import { useMemo } from 'react'
@@ -33,7 +33,7 @@ export const useAssetConfigDisplay = (
             : { amount: undefined, unit: undefined }
 
         if (!amount) {
-            return undefined
+            return
         }
 
         const { integer, fraction } = formatNumber(amount, 2)
@@ -42,7 +42,7 @@ export const useAssetConfigDisplay = (
 
     const metadataHash = useMemo(() => {
         if (!assetConfig?.params?.metadataHash) {
-            return undefined
+            return
         }
         return Buffer.from(assetConfig?.params?.metadataHash).toString('utf-8')
     }, [assetConfig?.params?.metadataHash])

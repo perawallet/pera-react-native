@@ -139,7 +139,7 @@ const mockSummary = {
 describe('useARC59SendSummaryScreen', () => {
     beforeEach(async () => {
         vi.clearAllMocks()
-        mockRequestBottomSheet.mockResolvedValue(undefined)
+        mockRequestBottomSheet.mockResolvedValue()
         ;(useSendFunds as Mock).mockReturnValue({
             selectedAssetId: '123',
             destination: 'RECEIVERADDR',
@@ -196,7 +196,7 @@ describe('useARC59SendSummaryScreen', () => {
     })
 
     it('does not navigate when warning is dismissed', async () => {
-        mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+        mockRequestBottomSheet.mockResolvedValueOnce()
         const { result } = renderHook(() => useARC59SendSummaryScreen())
 
         await act(async () => {

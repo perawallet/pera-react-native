@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { Contact, useContacts } from '@perawallet/wallet-core-contacts'
+import { type Contact, useContacts } from '@perawallet/wallet-core-contacts'
 import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
 import type { Maybe, Optional } from '@perawallet/wallet-core-shared'
 

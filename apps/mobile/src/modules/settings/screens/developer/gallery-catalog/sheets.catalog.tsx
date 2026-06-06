@@ -166,7 +166,7 @@ export const getSheetSections = (): GallerySection[] => [
                             <GallerySheetBoundary>
                                 <AccountOptionsContent
                                     account={mockAlgo25Account}
-                                    onShowAddress={() => undefined}
+                                    onShowAddress={() => {}}
                                 />
                             </GallerySheetBoundary>
                         ),
@@ -421,7 +421,7 @@ export const getSheetSections = (): GallerySection[] => [
             {
                 id: 'sheet-transaction-warnings',
                 label: 'Transaction warnings (needs live state)',
-                launch: { kind: 'action', run: () => undefined },
+                launch: { kind: 'action', run: () => {} },
             },
             {
                 id: 'sheet-view-text-details',
@@ -444,12 +444,12 @@ export const getSheetSections = (): GallerySection[] => [
             {
                 id: 'sheet-raw-transaction',
                 label: 'Raw transaction (needs live state)',
-                launch: { kind: 'action', run: () => undefined },
+                launch: { kind: 'action', run: () => {} },
             },
             {
                 id: 'sheet-add-note',
                 label: 'Add note (needs live state)',
-                launch: { kind: 'action', run: () => undefined },
+                launch: { kind: 'action', run: () => {} },
             },
         ],
     },
@@ -515,7 +515,7 @@ export const getSheetSections = (): GallerySection[] => [
             {
                 id: 'sheet-swap-confirmation',
                 label: 'Swap confirmation (needs live state)',
-                launch: { kind: 'action', run: () => undefined },
+                launch: { kind: 'action', run: () => {} },
             },
             {
                 id: 'sheet-swap-history',
@@ -557,7 +557,7 @@ export const getSheetSections = (): GallerySection[] => [
             {
                 id: 'sheet-swap-provider',
                 label: 'Swap provider (needs live state)',
-                launch: { kind: 'action', run: () => undefined },
+                launch: { kind: 'action', run: () => {} },
             },
         ],
     },
@@ -567,7 +567,7 @@ export const getSheetSections = (): GallerySection[] => [
             {
                 id: 'sheet-sign-request',
                 label: 'Sign request (needs live state)',
-                launch: { kind: 'action', run: () => undefined },
+                launch: { kind: 'action', run: () => {} },
             },
             {
                 id: 'sheet-signing-completed-transaction',
@@ -604,17 +604,17 @@ export const getSheetSections = (): GallerySection[] => [
             {
                 id: 'sheet-signing-warnings',
                 label: 'Signing warnings (needs live state)',
-                launch: { kind: 'action', run: () => undefined },
+                launch: { kind: 'action', run: () => {} },
             },
             {
                 id: 'sheet-ledger-signing',
                 label: 'Ledger signing (needs live state)',
-                launch: { kind: 'action', run: () => undefined },
+                launch: { kind: 'action', run: () => {} },
             },
             {
                 id: 'sheet-ledger-connection-issue',
                 label: 'Ledger connection issue (needs live state)',
-                launch: { kind: 'action', run: () => undefined },
+                launch: { kind: 'action', run: () => {} },
             },
             {
                 id: 'sheet-ledger-error',
@@ -632,9 +632,9 @@ export const getSheetSections = (): GallerySection[] => [
                                         isTroubleshootable: true,
                                         isRetryable: true,
                                     }}
-                                    onRetry={() => undefined}
-                                    onClose={() => undefined}
-                                    onOpenTroubleshooting={() => undefined}
+                                    onRetry={() => {}}
+                                    onClose={() => {}}
+                                    onOpenTroubleshooting={() => {}}
                                 />
                             </GallerySheetBoundary>
                         ),
@@ -655,7 +655,7 @@ export const getSheetSections = (): GallerySection[] => [
                                     currentTx={1}
                                     totalTxs={3}
                                     operation='transaction'
-                                    onCancel={() => undefined}
+                                    onCancel={() => {}}
                                 />
                             </GallerySheetBoundary>
                         ),
@@ -827,7 +827,7 @@ export const getSheetSections = (): GallerySection[] => [
             {
                 id: 'sheet-pending-signatures',
                 label: 'Pending signatures (needs live state)',
-                launch: { kind: 'action', run: () => undefined },
+                launch: { kind: 'action', run: () => {} },
             },
             {
                 id: 'sheet-multisig-invitation-detail',
@@ -882,7 +882,7 @@ export const getSheetSections = (): GallerySection[] => [
             {
                 id: 'sheet-wc-connection-view',
                 label: 'Connection view (needs live state)',
-                launch: { kind: 'action', run: () => undefined },
+                launch: { kind: 'action', run: () => {} },
             },
             {
                 id: 'sheet-wc-error',
@@ -1057,7 +1057,7 @@ export const getSheetSections = (): GallerySection[] => [
             {
                 id: 'sheet-view-passphrase',
                 label: 'View passphrase (needs live state)',
-                launch: { kind: 'action', run: () => undefined },
+                launch: { kind: 'action', run: () => {} },
             },
         ],
     },
@@ -1074,7 +1074,7 @@ export const getSheetSections = (): GallerySection[] => [
                             <GallerySheetBoundary>
                                 <SearchFilterContent
                                     scopes={['accounts', 'contacts', 'assets']}
-                                    onToggleScope={() => undefined}
+                                    onToggleScope={() => {}}
                                 />
                             </GallerySheetBoundary>
                         ),
@@ -1164,7 +1164,7 @@ export const getSheetSections = (): GallerySection[] => [
             {
                 id: 'sheet-full-screen-image-viewer',
                 label: 'Full screen image viewer (needs live state)',
-                launch: { kind: 'action', run: () => undefined },
+                launch: { kind: 'action', run: () => {} },
             },
             {
                 id: 'sheet-info-button-content',
@@ -1189,7 +1189,7 @@ export const getSheetSections = (): GallerySection[] => [
             {
                 id: 'sheet-rekeyed-account-info',
                 label: 'Rekeyed account info (needs live state)',
-                launch: { kind: 'action', run: () => undefined },
+                launch: { kind: 'action', run: () => {} },
             },
             {
                 id: 'sheet-rename-account',
@@ -1209,7 +1209,7 @@ export const getSheetSections = (): GallerySection[] => [
             {
                 id: 'sheet-receive-funds',
                 label: 'Receive funds (needs live state)',
-                launch: { kind: 'action', run: () => undefined },
+                launch: { kind: 'action', run: () => {} },
             },
             {
                 id: 'sheet-send-funds-info',
@@ -1239,7 +1239,7 @@ export const getSheetSections = (): GallerySection[] => [
                                     testID='previous-rekey-warning-gallery'
                                     currentAuthName='Ledger Account'
                                     sourceName='Mock Account'
-                                    onLearnMore={() => undefined}
+                                    onLearnMore={() => {}}
                                     confirmVariant='destructive'
                                 />
                             </GallerySheetBoundary>
@@ -1251,17 +1251,17 @@ export const getSheetSections = (): GallerySection[] => [
             {
                 id: 'sheet-webview',
                 label: 'WebView sheet (needs live state)',
-                launch: { kind: 'action', run: () => undefined },
+                launch: { kind: 'action', run: () => {} },
             },
             {
                 id: 'sheet-model-viewer',
                 label: 'Model viewer (needs live state)',
-                launch: { kind: 'action', run: () => undefined },
+                launch: { kind: 'action', run: () => {} },
             },
             {
                 id: 'sheet-photo-permission-denied',
                 label: 'Photo permission denied (needs live state)',
-                launch: { kind: 'action', run: () => undefined },
+                launch: { kind: 'action', run: () => {} },
             },
         ],
     },
@@ -1274,7 +1274,7 @@ const MOCK_WC_SESSION_REQUEST: WalletConnectSessionRequest = {
         url: 'https://mock-dapp.example.com',
         icons: [],
     },
-    chainId: 416001,
+    chainId: 416_001,
     permissions: ['algo_getAccounts', 'algo_signTxn'],
     clientId: 'mock-client-id',
 }

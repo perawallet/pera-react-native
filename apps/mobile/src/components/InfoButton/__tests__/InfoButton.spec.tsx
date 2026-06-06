@@ -15,7 +15,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Text } from 'react-native'
 import { InfoButton } from '../InfoButton'
 
-const mockRequest = vi.fn().mockResolvedValue(undefined)
+const mockRequest = vi.fn().mockResolvedValue()
 
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheet: () => ({

@@ -11,13 +11,13 @@
  */
 
 import {
-    PeraDisplayableTransaction,
+    type PeraDisplayableTransaction,
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
 import { useMemo } from 'react'
 import { useWebView } from '@modules/webview/hooks'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
-import { generateUniqueId, type Optional } from '@perawallet/wallet-core-shared'
+import { generateUniqueId } from '@perawallet/wallet-core-shared'
 
 export const useTransactionFooter = (
     transaction: PeraDisplayableTransaction,
@@ -37,7 +37,7 @@ export const useTransactionFooter = (
     )
 
     const assetUrl = useMemo(() => {
-        let url: Optional<string> = undefined
+        let url
         if (transaction.assetConfigTransaction?.params?.url) {
             url = transaction.assetConfigTransaction.params.url
         } else if (asset?.url) {

@@ -127,7 +127,7 @@ describe('useMultisigInvitationNameScreen', () => {
         vi.clearAllMocks()
         mockUseAllAccounts.mockReturnValue([])
         mockUseDeviceID.mockReturnValue('device-id')
-        mockMutateAsync.mockResolvedValue(undefined)
+        mockMutateAsync.mockResolvedValue()
         mockAddListener.mockReturnValue(vi.fn())
     })
 
@@ -353,7 +353,7 @@ describe('useMultisigInvitationNameScreen', () => {
         expect(mockMutateAsync).toHaveBeenCalledTimes(1)
 
         await act(async () => {
-            resolveMutation(undefined)
+            resolveMutation()
             await new Promise(resolve => setTimeout(resolve, 0))
         })
     })
@@ -385,7 +385,7 @@ describe('useMultisigInvitationNameScreen', () => {
         })
 
         await act(async () => {
-            resolveMutation(undefined)
+            resolveMutation()
             await new Promise(resolve => setTimeout(resolve, 0))
         })
 

@@ -13,7 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useAccountOptions } from '../useAccountOptions'
-import { AccountTypes, WalletAccount } from '@perawallet/wallet-core-accounts'
+import { AccountTypes, type WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const { mockCopyToClipboard } = vi.hoisted(() => ({
     mockCopyToClipboard: vi.fn(),
@@ -175,10 +175,12 @@ describe('useAccountOptions', () => {
                 case rekeyedAccount.address:
                 case rekeyedWatchAccount.address:
                 case hardwareAccount.address:
-                case multisigAccount.address:
+                case multisigAccount.address: {
                     return true
-                default:
+                }
+                default: {
                     return false
+                }
             }
         })
     })
@@ -393,7 +395,7 @@ describe('useAccountOptions', () => {
         })
 
         it('closes options sheet and requests rename bottom sheet when pressed', async () => {
-            mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+            mockRequestBottomSheet.mockResolvedValueOnce()
             const { result } = renderHook(() =>
                 useAccountOptions({
                     account: algo25Account,
@@ -452,7 +454,7 @@ describe('useAccountOptions', () => {
         })
 
         it('does not update the account when rename is cancelled', async () => {
-            mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+            mockRequestBottomSheet.mockResolvedValueOnce()
             const { result } = renderHook(() =>
                 useAccountOptions({
                     account: algo25Account,
@@ -473,7 +475,7 @@ describe('useAccountOptions', () => {
         })
 
         it('requests backup warning bottom sheet when remove is pressed for non-watch account', async () => {
-            mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+            mockRequestBottomSheet.mockResolvedValueOnce()
             const { result } = renderHook(() =>
                 useAccountOptions({
                     account: algo25Account,
@@ -502,7 +504,7 @@ describe('useAccountOptions', () => {
         })
 
         it('skips backup warning and goes straight to remove confirm for watch account', async () => {
-            mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+            mockRequestBottomSheet.mockResolvedValueOnce()
             const { result } = renderHook(() =>
                 useAccountOptions({
                     account: watchAccount,
@@ -527,7 +529,7 @@ describe('useAccountOptions', () => {
         it("opens remove confirm when backup warning resolves with 'continue'", async () => {
             mockRequestBottomSheet
                 .mockResolvedValueOnce('continue')
-                .mockResolvedValueOnce(undefined)
+                .mockResolvedValueOnce()
             const { result } = renderHook(() =>
                 useAccountOptions({
                     account: algo25Account,
@@ -734,7 +736,7 @@ describe('useAccountOptions', () => {
         })
 
         it('closes the options sheet and requests shared account details when shared-account-detail is pressed', async () => {
-            mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+            mockRequestBottomSheet.mockResolvedValueOnce()
             const { result } = renderHook(() =>
                 useAccountOptions({
                     account: multisigAccount,
@@ -762,7 +764,7 @@ describe('useAccountOptions', () => {
         })
 
         it('closes the options sheet and requests the export-share sheet when pressed', async () => {
-            mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+            mockRequestBottomSheet.mockResolvedValueOnce()
             const { result } = renderHook(() =>
                 useAccountOptions({
                     account: multisigAccount,

@@ -11,7 +11,7 @@
  */
 
 import { useState, useCallback } from 'react'
-import { HistoryPeriod, type Nullable } from '@perawallet/wallet-core-shared'
+import { type HistoryPeriod, type Nullable } from '@perawallet/wallet-core-shared'
 
 export function useChartInteraction<TDataPoint = unknown>(
     initialPeriod: HistoryPeriod = 'one-week',

@@ -15,14 +15,14 @@ import { useTheme } from '@rneui/themed'
 import React, { useCallback, useMemo, useRef, useState } from 'react'
 import {
     WebView,
-    WebViewMessageEvent,
-    WebViewProps,
+    type WebViewMessageEvent,
+    type WebViewProps,
 } from 'react-native-webview'
 import {
-    WebViewErrorEvent,
-    WebViewHttpErrorEvent,
-    WebViewNativeEvent,
-    WebViewNavigationEvent,
+    type WebViewErrorEvent,
+    type WebViewHttpErrorEvent,
+    type WebViewNativeEvent,
+    type WebViewNavigationEvent,
 } from 'react-native-webview/lib/WebViewTypes'
 import {
     baseJS,

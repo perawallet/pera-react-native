@@ -12,7 +12,7 @@
 
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useWebView } from '@modules/webview'
-import { PeraAsset, toWholeUnits } from '@perawallet/wallet-core-assets'
+import { type PeraAsset, toWholeUnits } from '@perawallet/wallet-core-assets'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import { formatWithUnits } from '@perawallet/wallet-core-shared'

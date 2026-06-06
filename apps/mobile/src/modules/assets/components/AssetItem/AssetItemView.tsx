@@ -13,10 +13,10 @@
 import { type ReactNode } from 'react'
 import {
     PWIcon,
-    PWIconSize,
+    type PWIconSize,
     PWText,
     PWTouchableOpacity,
-    PWTouchableOpacityProps,
+    type PWTouchableOpacityProps,
     PWView,
 } from '@components/core'
 import { CopyableText } from '@components/CopyableText'

@@ -13,14 +13,14 @@
 import {
     BottomSheetModal,
     BottomSheetBackdrop,
-    BottomSheetBackdropProps,
-    BottomSheetBackgroundProps,
+    type BottomSheetBackdropProps,
+    type BottomSheetBackgroundProps,
     BottomSheetView,
 } from '@gorhom/bottom-sheet'
 import { PWView } from '@components/core/PWView'
 import {
     createRef,
-    PropsWithChildren,
+    type PropsWithChildren,
     useCallback,
     useEffect,
     useRef,
@@ -28,12 +28,12 @@ import {
 import { useStyles } from './styles'
 import {
     Keyboard,
-    StyleProp,
+    type StyleProp,
     useWindowDimensions,
     View,
-    ViewStyle,
+    type ViewStyle,
 } from 'react-native'
-import { NotifierRoot, NotifierWrapper } from 'react-native-notifier'
+import { type NotifierRoot, NotifierWrapper } from 'react-native-notifier'
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWInBottomSheetContext } from './inSheetContext'

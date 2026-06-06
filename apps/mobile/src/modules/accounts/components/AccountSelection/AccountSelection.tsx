@@ -10,23 +10,23 @@
  limitations under the License
  */
 
-import { useCallback, ReactNode } from 'react'
+import { useCallback, type ReactNode } from 'react'
 import {
     useSelectedAccount,
-    WalletAccount,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useStyles } from './styles'
 import {
     AccountMenuContent,
-    AccountMenuContentResult,
+    type AccountMenuContentResult,
 } from '@modules/accounts/components/AccountMenuContent'
 import { AccountSortContent } from '@modules/accounts/components/AccountSortContent'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { StyleProp, TouchableOpacityProps, ViewStyle } from 'react-native'
+import { type StyleProp, type TouchableOpacityProps, type ViewStyle } from 'react-native'
 import { AccountDisplay } from '../AccountDisplay'
-import { AccountIconProps } from '../AccountIcon'
-import { PWIconProps, PWTextProps, PWTouchableOpacity } from '@components/core'
+import { type AccountIconProps } from '../AccountIcon'
+import { type PWIconProps, type PWTextProps, PWTouchableOpacity } from '@components/core'
 
 export type AccountSelectionProps = {
     onSelected?: (account: WalletAccount) => void
@@ -78,16 +78,19 @@ export const AccountSelection = ({
         if (!result) return
 
         switch (result.kind) {
-            case 'selected':
+            case 'selected': {
                 onSelected?.(result.account)
                 return
-            case 'add-account':
+            }
+            case 'add-account': {
                 navigation.navigate('AddAccount', { screen: 'AddAccountHome' })
                 return
-            case 'search':
+            }
+            case 'search': {
                 navigation.navigate('Search', { screen: 'SearchScreen' })
                 return
-            case 'sort':
+            }
+            case 'sort': {
                 await requestBottomSheet<void>({
                     contents: <AccountSortContent />,
                     options: {
@@ -100,6 +103,7 @@ export const AccountSelection = ({
                 // After sorting, reopen the account menu so the user can pick.
                 void openAccountMenu()
                 return
+            }
         }
     }, [
         requestBottomSheet,

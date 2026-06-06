@@ -28,8 +28,8 @@ vi.mock('@perawallet/wallet-core-security', () => ({
 }))
 
 const mockRemoveItem = vi.fn()
-const mockClearKeystore = vi.fn().mockResolvedValue(undefined)
-const mockClearDatabase = vi.fn().mockResolvedValue(undefined)
+const mockClearKeystore = vi.fn().mockResolvedValue()
+const mockClearDatabase = vi.fn().mockResolvedValue()
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     clearDataStores: vi.fn(),
@@ -57,7 +57,7 @@ vi.mock('@perawallet/wallet-core-device', () => ({
     useDeleteDeviceMutation: vi.fn(),
 }))
 
-const mockDeleteAllSessions = vi.fn().mockResolvedValue(undefined)
+const mockDeleteAllSessions = vi.fn().mockResolvedValue()
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
 }))
@@ -81,9 +81,9 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 describe('useDeleteAllData', () => {
     const mockDeleteKey = vi.fn()
     const mockRemoveQueries = vi.fn()
-    const mockCancelQueries = vi.fn().mockResolvedValue(undefined)
+    const mockCancelQueries = vi.fn().mockResolvedValue()
     const mockDeleteDevices = vi.fn()
-    const mockSavePin = vi.fn().mockResolvedValue(undefined)
+    const mockSavePin = vi.fn().mockResolvedValue()
 
     beforeEach(() => {
         vi.clearAllMocks()

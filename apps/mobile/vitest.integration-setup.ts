@@ -89,7 +89,7 @@ vi.mock('@algorandfoundation/algokit-utils', async () => {
     >('@algorandfoundation/algokit-utils')
     return {
         ...actual,
-        waitForConfirmation: vi.fn().mockResolvedValue(undefined),
+        waitForConfirmation: vi.fn().mockResolvedValue(),
     }
 })
 
@@ -190,8 +190,8 @@ vi.mock('@assets/icons/accounts/light/ledger-account.svg', () => {
 // `usePreventScreenCapture`, which has no behavior worth exercising in
 // a jsdom test.
 vi.mock('expo-screen-capture', () => ({
-    preventScreenCaptureAsync: vi.fn().mockResolvedValue(undefined),
-    allowScreenCaptureAsync: vi.fn().mockResolvedValue(undefined),
+    preventScreenCaptureAsync: vi.fn().mockResolvedValue(),
+    allowScreenCaptureAsync: vi.fn().mockResolvedValue(),
     addScreenshotListener: vi.fn(() => ({ remove: vi.fn() })),
     removeScreenshotListener: vi.fn(),
 }))
@@ -270,7 +270,7 @@ vi.mock('expo-file-system', () => {
 
 vi.mock('expo-media-library', () => ({
     requestPermissionsAsync: vi.fn().mockResolvedValue({ granted: true }),
-    saveToLibraryAsync: vi.fn().mockResolvedValue(undefined),
+    saveToLibraryAsync: vi.fn().mockResolvedValue(),
     createAssetAsync: vi.fn().mockResolvedValue({ id: 'asset-id' }),
 }))
 

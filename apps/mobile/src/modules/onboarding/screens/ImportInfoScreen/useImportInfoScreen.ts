@@ -12,8 +12,8 @@
 
 import { useCallback } from 'react'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { RouteProp, useRoute } from '@react-navigation/native'
-import { OnboardingStackParamList } from '../../routes/types'
+import { type RouteProp, useRoute } from '@react-navigation/native'
+import { type OnboardingStackParamList } from '../../routes/types'
 import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
 

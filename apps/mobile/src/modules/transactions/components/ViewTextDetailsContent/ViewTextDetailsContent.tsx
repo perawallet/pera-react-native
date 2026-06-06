@@ -41,12 +41,15 @@ export const ViewTextDetailsContent = ({
 
     const textToDisplay = useMemo(() => {
         switch (mode) {
-            case 'text':
+            case 'text': {
                 return text
-            case 'hex':
+            }
+            case 'hex': {
                 return Buffer.from(text).toString('hex')
-            case 'base64':
+            }
+            case 'base64': {
                 return Buffer.from(text).toString('base64')
+            }
         }
     }, [text, mode])
 

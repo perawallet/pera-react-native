@@ -37,14 +37,14 @@ export const useRemovePasskeyMutation = (): UseRemovePasskeyMutationResult => {
 
     const mutation = useMutation({
         mutationFn: async (passkey: Passkey): Promise<void> => {
-            await service.deleteCredential(passkey.keyId).catch(() => undefined)
+            await service.deleteCredential(passkey.keyId).catch(() => {})
 
             if (passkey.source === 'keystore') {
                 const provider = getProvider() as unknown as KeyStoreExtension
                 await provider.key.store.remove(passkey.keyId)
             }
 
-            await service.refreshCredentialIdentities().catch(() => undefined)
+            await service.refreshCredentialIdentities().catch(() => {})
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: passkeysQueryKey })

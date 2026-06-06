@@ -12,7 +12,7 @@
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { Keyboard } from 'react-native'
-import { Decimal } from 'decimal.js'
+import { type Decimal } from 'decimal.js'
 import {
     useAccountAssetBalanceQuery,
     useAccountBalancesInvalidator,

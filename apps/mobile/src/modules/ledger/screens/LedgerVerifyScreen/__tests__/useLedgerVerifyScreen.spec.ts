@@ -54,8 +54,8 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
         keyValueStorage: {
             getItem: vi.fn().mockResolvedValue(null),
-            setItem: vi.fn().mockResolvedValue(undefined),
-            removeItem: vi.fn().mockResolvedValue(undefined),
+            setItem: vi.fn().mockResolvedValue(),
+            removeItem: vi.fn().mockResolvedValue(),
         },
         hardwareWalletRegistry: {
             getProvider: () => ({ connect: mockConnect }),
@@ -90,9 +90,9 @@ beforeEach(() => {
     mockConnect.mockResolvedValue({
         getAddress: vi.fn(),
         signTransaction: vi.fn(),
-        disconnect: mockDisconnect.mockResolvedValue(undefined),
+        disconnect: mockDisconnect.mockResolvedValue(),
     })
-    mockVerify.mockResolvedValue(undefined)
+    mockVerify.mockResolvedValue()
     useAccountsStore.getState().setAccounts([])
 })
 

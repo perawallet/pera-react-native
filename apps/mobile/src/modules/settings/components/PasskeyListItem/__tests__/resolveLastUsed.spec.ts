@@ -15,7 +15,7 @@ import { resolveLastUsed } from '../resolveLastUsed'
 
 describe('resolveLastUsed', () => {
     it('reports "never" when the passkey has no lastUsedAt', () => {
-        expect(resolveLastUsed(undefined).kind).toBe('never')
+        expect(resolveLastUsed().kind).toBe('never')
     })
 
     it('reports "today" when lastUsedAt falls on the current calendar day', () => {

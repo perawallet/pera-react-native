@@ -44,7 +44,7 @@ import { LedgerSelectAccountsScreen } from '@modules/ledger/screens/LedgerSelect
 
 import { HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 
-const SLOW_TEST_TIMEOUT_MS = 30000
+const SLOW_TEST_TIMEOUT_MS = 30_000
 
 const LEDGER_ADDRESS = HD_TEST_ADDRESS
 
@@ -118,7 +118,7 @@ describe('Flow: Ledger imported account row checkbox', () => {
                             'ledger.select_accounts.already_imported',
                         ),
                     ).not.toBeNull(),
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
 
             expect(

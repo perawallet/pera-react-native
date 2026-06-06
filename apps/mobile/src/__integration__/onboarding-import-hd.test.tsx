@@ -135,7 +135,7 @@ const startHDImportThroughMnemonic = async (words: string[]) => {
 // Per-test timeout: HD import runs real BIP39 + xhd-wallet-api derivation,
 // followed by several screen transitions and an MSW round trip per
 // candidate address. Bump above the 5s vitest default.
-const SLOW_TEST_TIMEOUT_MS = 30000
+const SLOW_TEST_TIMEOUT_MS = 30_000
 
 describe('Flow: Onboarding → Import HD wallet', () => {
     beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))

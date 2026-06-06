@@ -231,7 +231,7 @@ describe('useClaimProcessingScreen', () => {
         })
 
         it('navigates back immediately without calling execute when account is not found', async () => {
-            mockUseFindAccountByAddress.mockReturnValue(undefined)
+            mockUseFindAccountByAddress.mockReturnValue()
 
             renderHook(() => useClaimProcessingScreen())
 

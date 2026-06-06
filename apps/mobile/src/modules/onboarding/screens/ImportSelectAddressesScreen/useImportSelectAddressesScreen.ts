@@ -11,12 +11,12 @@
  */
 
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
-import { RouteProp, useNavigation, useRoute } from '@react-navigation/native'
+import { type RouteProp, useNavigation, useRoute } from '@react-navigation/native'
 import {
     useAllAccounts,
     useSetAccounts,
     useSelectedAccountAddress,
-    HDWalletAccount,
+    type HDWalletAccount,
     useAccountDiscovery,
     useHDImportSession,
     DerivationTypes,
@@ -29,7 +29,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useAddressSelection } from '@hooks/useAddressSelection'
 import { useExitAccountFlow } from '@modules/onboarding/hooks'
-import { OnboardingStackParamList } from '../../routes/types'
+import { type OnboardingStackParamList } from '../../routes/types'
 
 type ImportSelectAddressesRouteProp = RouteProp<
     OnboardingStackParamList,

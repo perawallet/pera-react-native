@@ -64,10 +64,11 @@ export const getFilterTimes = (
     const toISODate = (d: Date) => d.toISOString().split('T')[0]
 
     switch (filter) {
-        case TransactionFilter.Today:
+        case TransactionFilter.Today: {
             return {
                 afterTime: toISODate(startOfDay),
             }
+        }
         case TransactionFilter.Yesterday: {
             const yesterdayStart = new Date(startOfDay)
             yesterdayStart.setDate(yesterdayStart.getDate() - 1)
@@ -117,7 +118,8 @@ export const getFilterTimes = (
             }
         }
         case TransactionFilter.AllTime:
-        default:
+        default: {
             return {}
+        }
     }
 }

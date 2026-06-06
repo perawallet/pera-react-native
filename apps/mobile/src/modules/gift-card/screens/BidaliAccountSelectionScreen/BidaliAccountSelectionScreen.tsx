@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 import { useNavigation } from '@react-navigation/native'
-import { useAllAccounts, WalletAccount } from '@perawallet/wallet-core-accounts'
+import { useAllAccounts, type WalletAccount } from '@perawallet/wallet-core-accounts'
 import { PWView } from '@components/core'
 import { ScreenHeader } from '@components/ScreenHeader'
 import { useLanguage } from '@hooks/useLanguage'

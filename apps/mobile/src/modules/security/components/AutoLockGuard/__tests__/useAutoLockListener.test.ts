@@ -163,7 +163,7 @@ describe('useAutoLockListener', () => {
     })
 
     it('should delete all data and reset state when handleResetData is called', async () => {
-        mockDeleteAllData.mockResolvedValue(undefined)
+        mockDeleteAllData.mockResolvedValue()
         mockCheckPinEnabled.mockResolvedValue(true)
 
         const { result } = renderHook(() => useAutoLockListener())
@@ -344,7 +344,7 @@ describe('useAutoLockListener', () => {
 
         act(() => {
             handleAppStateChange('unknown')
-            handleAppStateChange(undefined)
+            handleAppStateChange()
             handleAppStateChange(null)
         })
 

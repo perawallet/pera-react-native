@@ -20,14 +20,14 @@ import {
 import {
     useWalletConnect,
     useWalletConnectSessionRequests,
-    WalletConnectSessionRequest,
+    type WalletConnectSessionRequest,
 } from '@perawallet/wallet-core-walletconnect'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import React from 'react'
 import {
     useSigningAccounts,
-    WalletAccount,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { ConnectionViewHeader } from './ConnectionViewHeader'

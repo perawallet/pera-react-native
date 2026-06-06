@@ -165,7 +165,7 @@ describe('useInputScreen', () => {
                 assets: [{ assetId: 123, amount: 0n, isFrozen: false }],
             },
         })
-        mockRequestBottomSheet.mockResolvedValue(undefined)
+        mockRequestBottomSheet.mockResolvedValue()
     })
 
     it('calculates max amount for Algo correctly', () => {
@@ -299,7 +299,7 @@ describe('useInputScreen', () => {
                 assets: [{ assetId: 123, amount: 0n, isFrozen: false }],
             },
         })
-        mockRequestBottomSheet.mockResolvedValue(undefined)
+        mockRequestBottomSheet.mockResolvedValue()
 
         const { result } = renderHook(() => useInputScreen())
         act(() => {
@@ -438,7 +438,7 @@ describe('useInputScreen', () => {
                 assets: [],
             },
         })
-        mockRequestBottomSheet.mockResolvedValue(undefined)
+        mockRequestBottomSheet.mockResolvedValue()
 
         const { result } = renderHook(() => useInputScreen())
         act(() => {

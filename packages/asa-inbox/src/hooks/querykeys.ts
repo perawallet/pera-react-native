@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { Query } from '@tanstack/react-query'
+import { type Query } from '@tanstack/react-query'
 
 const MODULE_PREFIX = 'asa-inbox'
 

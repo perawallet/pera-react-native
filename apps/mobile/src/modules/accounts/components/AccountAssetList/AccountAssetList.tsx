@@ -16,8 +16,8 @@ import React, { useCallback, useEffect, useRef } from 'react'
 import { useStyles } from './styles'
 
 import {
-    WalletAccount,
-    AssetWithAccountBalance,
+    type WalletAccount,
+    type AssetWithAccountBalance,
 } from '@perawallet/wallet-core-accounts'
 import { ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
 

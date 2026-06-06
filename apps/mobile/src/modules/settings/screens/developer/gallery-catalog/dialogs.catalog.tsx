@@ -25,12 +25,12 @@ registerPreview({
         <PWDialog
             isVisible={true}
             title='Preview Dialog'
-            onBackdropPress={() => undefined}
+            onBackdropPress={() => {}}
             footer={
                 <PWButton
                     variant='primary'
                     title='Confirm'
-                    onPress={() => undefined}
+                    onPress={() => {}}
                 />
             }
         >
@@ -47,8 +47,8 @@ registerPreview({
     render: () => (
         <MultisigIntroductionDialog
             isVisible={true}
-            onContinue={() => undefined}
-            onDismiss={() => undefined}
+            onContinue={() => {}}
+            onDismiss={() => {}}
         />
     ),
 })

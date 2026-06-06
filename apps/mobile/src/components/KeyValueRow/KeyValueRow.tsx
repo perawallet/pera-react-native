@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWText, PWTextProps, PWView, PWViewProps } from '@components/core'
+import { PWText, type PWTextProps, PWView, type PWViewProps } from '@components/core'
 import { useStyles } from './styles'
 
 export type KeyValueRowProps = {

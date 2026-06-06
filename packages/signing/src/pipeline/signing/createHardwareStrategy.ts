@@ -137,8 +137,8 @@ const connectAndVerify = async (
         )
     } catch (error) {
         connectPromise
-            .then(t => t.disconnect().catch(() => undefined))
-            .catch(() => undefined)
+            .then(t => t.disconnect().catch(() => {}))
+            .catch(() => {})
         throw error
     }
 
@@ -162,7 +162,7 @@ const connectAndVerify = async (
         // Disconnect the (successfully connected) transport before surfacing
         // the verification error — otherwise the outer finally won't see a
         // transport handle and the BLE link leaks.
-        await transport.disconnect().catch(() => undefined)
+        await transport.disconnect().catch(() => {})
         throw error
     }
 

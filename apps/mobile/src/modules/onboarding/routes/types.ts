@@ -11,10 +11,10 @@
  */
 
 import {
-    WalletAccount,
-    HDWalletAccount,
-    ImportAccountType,
-    DerivationType,
+    type WalletAccount,
+    type HDWalletAccount,
+    type ImportAccountType,
+    type DerivationType,
 } from '@perawallet/wallet-core-accounts'
 import type { LedgerSelectableAccount } from '@perawallet/wallet-core-accounts'
 import type { LedgerTransportType } from '@perawallet/wallet-core-hardware-wallet'

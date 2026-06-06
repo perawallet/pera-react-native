@@ -35,14 +35,18 @@ const withAndroidLocalProperties = (config) => {
         const homeDir = require('os').homedir();
 
         switch (process.platform) {
-          case 'darwin':
+          case 'darwin': {
             return path.join(homeDir, 'Library/Android/sdk');
-          case 'win32':
+          }
+          case 'win32': {
             return path.join(process.env.LOCALAPPDATA || path.join(homeDir, 'AppData', 'Local'), 'Android', 'Sdk');
-          case 'linux':
+          }
+          case 'linux': {
             return path.join(homeDir, 'Android', 'Sdk');
-          default:
+          }
+          default: {
             return null;
+          }
         }
       };
 

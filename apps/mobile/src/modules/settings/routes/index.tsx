@@ -14,7 +14,7 @@ import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import { NavigationHeader } from '@components/NavigationHeader'
 import {
     createNativeStackNavigator,
-    NativeStackHeaderProps,
+    type NativeStackHeaderProps,
 } from '@react-navigation/native-stack'
 import { screenListeners } from '@routes/listeners'
 import { SettingsScreen } from '@modules/settings/screens/SettingsScreen'
@@ -27,8 +27,8 @@ import { SettingsThemeScreen } from '@modules/settings/screens/SettingsThemeScre
 import { SettingsDeveloperScreen } from '@modules/settings/screens/developer/SettingsDeveloperScreen'
 import { fullScreenLayout } from '@layouts/index'
 import { SettingsDeveloperNodeSettingsScreen } from '@modules/settings/screens/developer/SettingsDeveloperNodeSettingsScreen/SettingsDeveloperNodeSettingsScreen'
-import { NavigatorScreenParams } from '@react-navigation/native'
-import { WalletConnectConnection } from '@perawallet/wallet-core-walletconnect'
+import { type NavigatorScreenParams } from '@react-navigation/native'
+import { type WalletConnectConnection } from '@perawallet/wallet-core-walletconnect'
 import { SettingsWalletConnectDetailsScreen } from '@modules/settings/screens/SettingsWalletConnectDetailsScreen/SettingsWalletConnectDetailsScreen'
 import { SettingsDeveloperMenuScreen } from '../screens/developer/SettingsDeveloperMenuScreen/SettingsDeveloperMenuScreen'
 import { SettingsDeveloperFeatureFlagsScreen } from '../screens/developer/SettingsDeveloperFeatureFlagsScreen/SettingsDeveloperFeatureFlagsScreen'

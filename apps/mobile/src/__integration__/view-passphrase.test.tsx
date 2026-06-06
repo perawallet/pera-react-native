@@ -63,7 +63,7 @@ import {
     deriveTestHDAddress,
 } from './__fixtures__/onboarding'
 
-const SLOW_TEST_TIMEOUT_MS = 30000
+const SLOW_TEST_TIMEOUT_MS = 30_000
 
 // Tiny host that drives the imperative `useViewPassphraseFlow` hook
 // when the trigger is tapped. Models how `AccountOptionsContent` opens
@@ -71,7 +71,7 @@ const SLOW_TEST_TIMEOUT_MS = 30000
 // after dismissing the parent options sheet.
 const ViewPassphraseHost = ({
     address,
-    onClose = () => undefined,
+    onClose = () => {},
 }: {
     address: string
     onClose?: () => void

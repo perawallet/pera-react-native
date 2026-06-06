@@ -12,7 +12,7 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import {
-    WalletAccount,
+    type WalletAccount,
     isHDWalletAccount,
     isLedgerAccount,
     useCanSignWith,
@@ -23,7 +23,7 @@ import {
 import { microAlgosToAlgos } from '@perawallet/wallet-core-blockchain'
 import { useLanguage } from '@hooks/useLanguage'
 import { navigationRef } from '@routes/navigationRef'
-import { Decimal } from 'decimal.js'
+import { type Decimal } from 'decimal.js'
 import { useAccountTypeLabel } from '@modules/accounts/hooks/useAccountTypeLabel'
 import type { AccountTypeLabel } from '@modules/accounts/hooks/useAccountTypeLabel'
 import type { Nullable } from '@perawallet/wallet-core-shared'

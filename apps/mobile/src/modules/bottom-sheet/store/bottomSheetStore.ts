@@ -79,11 +79,11 @@ export const useBottomSheetStore: UseBoundStore<StoreApi<BottomSheetStore>> =
             if (existing) {
                 if (existing.isVisible) {
                     // Already open — ignore the duplicate request.
-                    return Promise.resolve(undefined) as Promise<Optional<T>>
+                    return Promise.resolve() as Promise<Optional<T>>
                 }
                 // Mid-dismiss dedupe (existing behaviour): replace the stale entry.
                 pendingValues.delete(id)
-                existing.resolver(undefined)
+                existing.resolver()
                 set(state => ({
                     requests: state.requests.map(r =>
                         r.id === id ? entry : r,
@@ -157,7 +157,7 @@ export const useBottomSheetStore: UseBoundStore<StoreApi<BottomSheetStore>> =
             // Resolve any pending promises with undefined so callers don't hang.
             set(state => {
                 for (const req of state.requests) {
-                    req.resolver(undefined)
+                    req.resolver()
                 }
                 return initialState
             })

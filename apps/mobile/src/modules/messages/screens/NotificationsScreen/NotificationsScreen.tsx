@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 import { useTheme } from '@rneui/themed'
-import { PeraNotification } from '@perawallet/wallet-core-messages'
+import { type PeraNotification } from '@perawallet/wallet-core-messages'
 import { RefreshControl } from 'react-native-gesture-handler'
 
 import { EmptyView } from '@components/EmptyView'

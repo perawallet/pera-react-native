@@ -35,7 +35,7 @@ import {
 import {
     generateOrderedUniqueId,
     logger,
-    Optional,
+    type Optional,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
@@ -55,16 +55,19 @@ const getCurrencyInfo = (
     network: 'mainnet' | 'testnet',
 ): Nullable<CurrencyInfo> => {
     switch (protocol) {
-        case 'algorand':
+        case 'algorand': {
             return { assetId: ALGO_ASSET_ID, decimals: ALGO_ASSET.decimals }
+        }
         case 'testusdcalgorand':
-        case 'usdcalgorand':
+        case 'usdcalgorand': {
             return {
                 assetId: getKnownAssetId('USDC', network),
                 decimals: ALGO_ASSET.decimals, //USDC has same number of decimals as algo
             }
-        default:
+        }
+        default: {
             return null
+        }
     }
 }
 
@@ -312,14 +315,17 @@ export const useBidaliTransport = (
             }
 
             switch (method) {
-                case 'bidaliPaymentRequest':
+                case 'bidaliPaymentRequest': {
                     handlePaymentRequest(params)
                     break
-                case 'openUrl':
+                }
+                case 'openUrl': {
                     handleOpenUrl(params)
                     break
-                default:
+                }
+                default: {
                     logger.warn('Bidali: unknown method', { method })
+                }
             }
         },
         [handlePaymentRequest, handleOpenUrl],

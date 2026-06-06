@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useQuery, UseQueryResult } from '@tanstack/react-query'
+import { useQuery, type UseQueryResult } from '@tanstack/react-query'
 import {
     useNetwork,
     isValidAlgorandAddress,
@@ -18,7 +18,7 @@ import {
 import { config } from '@perawallet/wallet-core-config'
 import { nfdBatchQueue } from '../services/nfdBatchQueue'
 import { nfdQueryKeys } from './querykeys'
-import { NfdName } from '../models'
+import { type NfdName } from '../models'
 
 /**
  * The batch queue coalesces enqueues that land in the same microtask.

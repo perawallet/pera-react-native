@@ -79,7 +79,7 @@ describe('useSettingsSecurityScreen', () => {
         vi.clearAllMocks()
         mockCheckPinEnabled.mockResolvedValue(false)
         mockCheckDuressPinEnabled.mockResolvedValue(false)
-        mockGetPreference.mockReturnValue(undefined)
+        mockGetPreference.mockReturnValue()
         mockVerifyPin.mockResolvedValue({ kind: 'fail' })
         ;(usePinCode as Mock).mockReturnValue({
             checkPinEnabled: mockCheckPinEnabled,
@@ -98,7 +98,7 @@ describe('useSettingsSecurityScreen', () => {
             setPreference: mockSetPreference,
             getPreference: mockGetPreference,
         })
-        mockRequestBottomSheet.mockResolvedValue(undefined)
+        mockRequestBottomSheet.mockResolvedValue()
     })
 
     it('should return initial state', async () => {
@@ -190,7 +190,7 @@ describe('useSettingsSecurityScreen', () => {
         })
 
         it('does nothing when the sheet is dismissed', async () => {
-            mockRequestBottomSheet.mockResolvedValue(undefined)
+            mockRequestBottomSheet.mockResolvedValue()
             const { result } = renderHook(() => useSettingsSecurityScreen())
 
             await waitFor(() => {
@@ -254,7 +254,7 @@ describe('useSettingsSecurityScreen', () => {
         })
 
         it('should call disableBiometrics when disabling biometrics', async () => {
-            mockDisableBiometrics.mockResolvedValue(undefined)
+            mockDisableBiometrics.mockResolvedValue()
 
             const { result } = renderHook(() => useSettingsSecurityScreen())
 

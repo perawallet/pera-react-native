@@ -11,7 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { getTypography, TypographyVariant } from '@theme/typography'
+import { getTypography, type TypographyVariant } from '@theme/typography'
 
 type PWInputStyleProps = {
     variant: TypographyVariant

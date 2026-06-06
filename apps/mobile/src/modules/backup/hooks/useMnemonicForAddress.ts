@@ -19,7 +19,7 @@ import {
     useKMS,
     type ExecuteWithMnemonicHandler,
 } from '@perawallet/wallet-core-kms'
-import { Optional } from '@perawallet/wallet-core-shared'
+import { type Optional } from '@perawallet/wallet-core-shared'
 
 export type UseMnemonicForAddressResult = {
     /**

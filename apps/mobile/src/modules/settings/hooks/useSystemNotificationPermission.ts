@@ -11,7 +11,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react'
-import { Linking, AppState, AppStateStatus } from 'react-native'
+import { Linking, AppState, type AppStateStatus } from 'react-native'
 import notifee, { AuthorizationStatus } from '@notifee/react-native'
 
 type UseSystemNotificationPermissionResult = {

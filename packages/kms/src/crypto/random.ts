@@ -16,7 +16,7 @@
 // mnemonic-word indices for a verification prompt).
 export const uniformIntBelow = (max: number): number => {
     if (max <= 0) return 0
-    const limit = Math.floor(0x100000000 / max) * max
+    const limit = Math.floor(0x1_00_00_00_00 / max) * max
     const buf = new Uint32Array(1)
     let value: number
     do {

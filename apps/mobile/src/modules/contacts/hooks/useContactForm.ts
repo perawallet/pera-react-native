@@ -26,7 +26,7 @@ import type {
 } from 'react-hook-form'
 import type { Contact } from '@perawallet/wallet-core-contacts'
 import type { PermissionDeniedState } from '@hooks/useImagePicker'
-import { Optional } from '@perawallet/wallet-core-shared'
+import { type Optional } from '@perawallet/wallet-core-shared'
 
 export type NfdState = {
     resolvedAddress: string

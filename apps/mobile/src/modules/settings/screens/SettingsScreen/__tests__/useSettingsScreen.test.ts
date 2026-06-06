@@ -80,11 +80,11 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
 describe('useSettingsScreen', () => {
     const mockPush = vi.fn()
     const mockPushWebView = vi.fn()
-    const mockDeleteAllData = vi.fn().mockResolvedValue(undefined)
+    const mockDeleteAllData = vi.fn().mockResolvedValue()
 
     beforeEach(() => {
         vi.clearAllMocks()
-        mockRequestBottomSheet.mockResolvedValue(undefined)
+        mockRequestBottomSheet.mockResolvedValue()
         ;(useAppNavigation as Mock).mockReturnValue({
             push: mockPush,
             navigate: vi.fn(),
@@ -160,7 +160,7 @@ describe('useSettingsScreen', () => {
 
     describe('openDeleteConfirm', () => {
         it('opens the confirm sheet but does not delete when user cancels', async () => {
-            mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+            mockRequestBottomSheet.mockResolvedValueOnce()
             const { result } = renderHook(() => useSettingsScreen())
 
             await act(async () => {
@@ -175,7 +175,7 @@ describe('useSettingsScreen', () => {
             // First call resolves true (confirm), second call is the success sheet.
             mockRequestBottomSheet
                 .mockResolvedValueOnce(true)
-                .mockResolvedValueOnce(undefined)
+                .mockResolvedValueOnce()
             const { result } = renderHook(() => useSettingsScreen())
 
             await act(async () => {

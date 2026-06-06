@@ -12,7 +12,7 @@
 
 import { useMemo } from 'react'
 import {
-    Optional,
+    type Optional,
     truncateAlgorandAddress,
 } from '@perawallet/wallet-core-shared'
 import {
@@ -87,13 +87,16 @@ const resolveUnifiedLabels = ({
 
 const formatAddress = (address: string, format: AddressFormat): string => {
     switch (format) {
-        case 'full':
+        case 'full': {
             return address
-        case 'long':
+        }
+        case 'long': {
             return truncateAlgorandAddress(address, LONG_ADDRESS_FORMAT)
+        }
         case 'short':
-        default:
+        default: {
             return truncateAlgorandAddress(address)
+        }
     }
 }
 

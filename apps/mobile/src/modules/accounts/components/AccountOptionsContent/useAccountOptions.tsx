@@ -12,7 +12,7 @@
 
 import { useCallback, useMemo } from 'react'
 import {
-    WalletAccount,
+    type WalletAccount,
     hasSigningKeys,
     isAlgo25Account,
     isHDWalletAccount,
@@ -36,7 +36,7 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { useViewPassphraseFlow } from '@modules/view-passphrase'
 import { ExportShareAccountContent } from '@modules/multisig/components/ExportShareAccountContent'
 import { SharedAccountDetailsContent } from '../SharedAccountDetailsContent'
-import { IconName } from '@components/core'
+import { type IconName } from '@components/core'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { RenameAccountContent } from './RenameAccountContent'
 

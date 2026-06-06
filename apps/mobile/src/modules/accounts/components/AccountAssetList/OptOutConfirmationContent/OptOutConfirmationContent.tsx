@@ -20,7 +20,7 @@ import {
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { AddressDisplay } from '@components/AddressDisplay'
 import {
-    AssetWithAccountBalance,
+    type AssetWithAccountBalance,
     useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
 import {

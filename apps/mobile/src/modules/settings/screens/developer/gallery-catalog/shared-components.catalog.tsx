@@ -373,7 +373,7 @@ registerPreview({
                                 <PWButton
                                     variant='primary'
                                     title='Add asset'
-                                    onPress={() => undefined}
+                                    onPress={() => {}}
                                 />
                             }
                         />
@@ -432,7 +432,7 @@ registerPreview({
                         <SearchInput
                             placeholder='Search accounts, assets…'
                             value=''
-                            onChangeText={() => undefined}
+                            onChangeText={() => {}}
                         />
                     ),
                 },
@@ -442,7 +442,7 @@ registerPreview({
                         <SearchInput
                             placeholder='Search accounts, assets…'
                             value='ALGO'
-                            onChangeText={() => undefined}
+                            onChangeText={() => {}}
                         />
                     ),
                 },
@@ -455,7 +455,7 @@ registerPreview({
     id: 'comp-number-pad',
     render: () => (
         <NumberPad
-            onPress={() => undefined}
+            onPress={() => {}}
             allowDecimal={true}
         />
     ),
@@ -473,7 +473,7 @@ registerPreview({
                             minPrecision={2}
                             maxPrecision={6}
                             value=''
-                            onChangeText={() => undefined}
+                            onChangeText={() => {}}
                         />
                     ),
                 },
@@ -484,7 +484,7 @@ registerPreview({
                             minPrecision={2}
                             maxPrecision={6}
                             value='42.5'
-                            onChangeText={() => undefined}
+                            onChangeText={() => {}}
                         />
                     ),
                 },
@@ -498,7 +498,7 @@ registerPreview({
     render: () => (
         <ChartPeriodSelection
             value='one-week'
-            onChange={() => undefined}
+            onChange={() => {}}
         />
     ),
 })
@@ -514,7 +514,7 @@ registerPreview({
                         <RoundButton
                             icon='transactions/send'
                             title='Send'
-                            onPress={() => undefined}
+                            onPress={() => {}}
                         />
                     ),
                 },
@@ -525,7 +525,7 @@ registerPreview({
                             icon='transactions/receive'
                             title='Receive'
                             variant='primary'
-                            onPress={() => undefined}
+                            onPress={() => {}}
                         />
                     ),
                 },
@@ -536,7 +536,7 @@ registerPreview({
                             icon='transactions/send'
                             title='Send'
                             size='sm'
-                            onPress={() => undefined}
+                            onPress={() => {}}
                         />
                     ),
                 },
@@ -545,7 +545,7 @@ registerPreview({
                     node: (
                         <RoundButton
                             icon='transactions/send'
-                            onPress={() => undefined}
+                            onPress={() => {}}
                         />
                     ),
                 },
@@ -568,7 +568,7 @@ registerPreview({
                             title='Connect Hardware Wallet'
                             description='Use a Ledger device to keep your keys offline'
                             titleWeight='h3'
-                            onPress={() => undefined}
+                            onPress={() => {}}
                         />
                     ),
                 },
@@ -580,7 +580,7 @@ registerPreview({
                             title='Remove account'
                             titleWeight='h4'
                             variant='error'
-                            onPress={() => undefined}
+                            onPress={() => {}}
                         />
                     ),
                 },
@@ -591,7 +591,7 @@ registerPreview({
                             leftIcon='bell'
                             title='Notifications'
                             titleWeight='h4'
-                            onPress={() => undefined}
+                            onPress={() => {}}
                         />
                     ),
                 },
@@ -708,8 +708,8 @@ registerPreview({
                             finishButtonTitle='Save'
                             loadingTitle='Saving…'
                             value='My Main Wallet'
-                            onChangeText={() => undefined}
-                            onFinish={() => undefined}
+                            onChangeText={() => {}}
+                            onFinish={() => {}}
                             isLoading={false}
                         />
                     ),
@@ -723,8 +723,8 @@ registerPreview({
                             finishButtonTitle='Save'
                             loadingTitle='Saving…'
                             value='My Main Wallet'
-                            onChangeText={() => undefined}
-                            onFinish={() => undefined}
+                            onChangeText={() => {}}
+                            onFinish={() => {}}
                             isLoading={true}
                         />
                     ),
@@ -886,7 +886,7 @@ export const getSharedComponentSections = (): GallerySection[] => [
             {
                 id: 'comp-contact-form',
                 label: 'ContactForm (needs RHF control + QR)',
-                launch: { kind: 'action', run: () => undefined },
+                launch: { kind: 'action', run: () => {} },
             },
         ],
     },
@@ -901,17 +901,17 @@ export const getSharedComponentSections = (): GallerySection[] => [
             {
                 id: 'comp-audio-player',
                 label: 'AudioPlayer (needs expo-audio)',
-                launch: { kind: 'action', run: () => undefined },
+                launch: { kind: 'action', run: () => {} },
             },
             {
                 id: 'comp-video-player',
                 label: 'VideoPlayer (needs expo-video)',
-                launch: { kind: 'action', run: () => undefined },
+                launch: { kind: 'action', run: () => {} },
             },
             {
                 id: 'comp-media-carousel',
                 label: 'MediaCarousel (needs expo-audio/video)',
-                launch: { kind: 'action', run: () => undefined },
+                launch: { kind: 'action', run: () => {} },
             },
         ],
     },
@@ -921,22 +921,22 @@ export const getSharedComponentSections = (): GallerySection[] => [
             {
                 id: 'comp-address-display',
                 label: 'AddressDisplay (needs live state)',
-                launch: { kind: 'action', run: () => undefined },
+                launch: { kind: 'action', run: () => {} },
             },
             {
                 id: 'comp-address-entry-field',
                 label: 'AddressEntryField (needs live state)',
-                launch: { kind: 'action', run: () => undefined },
+                launch: { kind: 'action', run: () => {} },
             },
             {
                 id: 'comp-address-search-view',
                 label: 'AddressSearchView (needs live state)',
-                launch: { kind: 'action', run: () => undefined },
+                launch: { kind: 'action', run: () => {} },
             },
             {
                 id: 'comp-searchable-list',
                 label: 'SearchableList (needs live state)',
-                launch: { kind: 'action', run: () => undefined },
+                launch: { kind: 'action', run: () => {} },
             },
         ],
     },
@@ -946,22 +946,22 @@ export const getSharedComponentSections = (): GallerySection[] => [
             {
                 id: 'comp-account-header-menu',
                 label: 'AccountHeaderMenu (needs live state)',
-                launch: { kind: 'action', run: () => undefined },
+                launch: { kind: 'action', run: () => {} },
             },
             {
                 id: 'comp-preferred-currency-display',
                 label: 'PreferredCurrencyDisplay (needs live state)',
-                launch: { kind: 'action', run: () => undefined },
+                launch: { kind: 'action', run: () => {} },
             },
             {
                 id: 'comp-wealth-chart',
                 label: 'WealthChart (needs live query)',
-                launch: { kind: 'action', run: () => undefined },
+                launch: { kind: 'action', run: () => {} },
             },
             {
                 id: 'comp-wealth-trend',
                 label: 'WealthTrend (needs live query)',
-                launch: { kind: 'action', run: () => undefined },
+                launch: { kind: 'action', run: () => {} },
             },
         ],
     },

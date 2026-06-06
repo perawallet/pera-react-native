@@ -138,36 +138,40 @@ export const useDeepLink = (): UseDeepLinkResult => {
 
         try {
             switch (parsedData.type) {
-                case DeeplinkType.ADD_CONTACT:
+                case DeeplinkType.ADD_CONTACT: {
                     navigateToScreen(replaceCurrentScreen, 'AddContact', {
                         address: parsedData.address,
                         label: parsedData.label,
                     })
                     break
+                }
 
-                case DeeplinkType.EDIT_CONTACT:
+                case DeeplinkType.EDIT_CONTACT: {
                     navigateToScreen(replaceCurrentScreen, 'EditContact', {
                         address: parsedData.address,
                         label: parsedData.label,
                     })
                     break
+                }
 
-                case DeeplinkType.ADD_WATCH_ACCOUNT:
+                case DeeplinkType.ADD_WATCH_ACCOUNT: {
                     navigateToScreen(replaceCurrentScreen, 'AddAccount', {
                         screen: 'WatchAccount',
                         params: { prefillAddress: parsedData.address },
                     })
                     break
+                }
 
-                case DeeplinkType.RECEIVER_ACCOUNT_SELECTION:
+                case DeeplinkType.RECEIVER_ACCOUNT_SELECTION: {
                     // Mirrors native: capture the address as the receiver and
                     // open the Send flow. Native invokes this from inside the
                     // Send destination picker; reaching it as a top-level
                     // deeplink falls back to opening Send fresh.
                     openSendFunds({ destination: parsedData.address })
                     break
+                }
 
-                case DeeplinkType.ADDRESS_ACTIONS:
+                case DeeplinkType.ADDRESS_ACTIONS: {
                     requestByType(
                         'account-actions',
                         {
@@ -177,8 +181,9 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         { enablePanDownToClose: true },
                     )
                     break
+                }
 
-                case DeeplinkType.ALGO_TRANSFER:
+                case DeeplinkType.ALGO_TRANSFER: {
                     openSendFunds({
                         assetId: '0',
                         destination: parsedData.receiverAddress,
@@ -190,8 +195,9 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         note: parsedData.note ?? parsedData.xnote,
                     })
                     break
+                }
 
-                case DeeplinkType.ASSET_TRANSFER:
+                case DeeplinkType.ASSET_TRANSFER: {
                     openSendFunds({
                         assetId: parsedData.assetId,
                         destination: parsedData.receiverAddress,
@@ -202,12 +208,14 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         note: parsedData.note ?? parsedData.xnote,
                     })
                     break
+                }
 
-                case DeeplinkType.KEYREG:
+                case DeeplinkType.KEYREG: {
                     await submitKeyreg(parsedData)
                     break
+                }
 
-                case DeeplinkType.RECOVER_ADDRESS:
+                case DeeplinkType.RECOVER_ADDRESS: {
                     await recoverAddress({
                         mnemonic: parsedData.mnemonic,
                         source,
@@ -215,6 +223,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         sourceUrl: parsedData.sourceUrl,
                     })
                     break
+                }
 
                 case DeeplinkType.WALLET_CONNECT: {
                     // `connect` constructs the WC v1 client + registers
@@ -259,7 +268,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
                     )
                     const sawNewSessionRequest = await waitForNewSessionRequest(
                         beforeIds,
-                        8_000,
+                        8000,
                     )
                     if (!sawNewSessionRequest) {
                         showError({
@@ -306,7 +315,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
                 }
 
                 case DeeplinkType.ASSET_DETAIL:
-                case DeeplinkType.ASSET_TRANSACTIONS:
+                case DeeplinkType.ASSET_TRANSACTIONS: {
                     setSelectedAccountAddress(parsedData.address)
                     navigateToScreen(replaceCurrentScreen, 'TabBar', {
                         screen: 'Home',
@@ -316,8 +325,9 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         },
                     })
                     break
+                }
 
-                case DeeplinkType.ASSET_INBOX:
+                case DeeplinkType.ASSET_INBOX: {
                     navigateToScreen(false, 'Messages', {
                         screen: 'AssetTransferRequests',
                         params: {
@@ -329,9 +339,10 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         },
                     })
                     break
+                }
 
                 case DeeplinkType.INTERNAL_BROWSER:
-                case DeeplinkType.DISCOVER_BROWSER:
+                case DeeplinkType.DISCOVER_BROWSER: {
                     if (
                         !openBrowser({
                             url: parsedData.url,
@@ -342,8 +353,9 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         return
                     }
                     break
+                }
 
-                case DeeplinkType.DISCOVER_PATH:
+                case DeeplinkType.DISCOVER_PATH: {
                     if (
                         !openDiscoverPath({
                             path: parsedData.path,
@@ -355,19 +367,22 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         return
                     }
                     break
+                }
 
-                case DeeplinkType.CARDS:
+                case DeeplinkType.CARDS: {
                     // TODO: Navigate to cards screen
                     infoToast('Cards', 'Cards screen not implemented yet')
                     break
+                }
 
-                case DeeplinkType.STAKING:
+                case DeeplinkType.STAKING: {
                     navigateToScreen(replaceCurrentScreen, 'Staking', {
                         path: parsedData.path,
                     })
                     break
+                }
 
-                case DeeplinkType.SWAP:
+                case DeeplinkType.SWAP: {
                     if (parsedData.address) {
                         setSelectedAccountAddress(parsedData.address)
                     }
@@ -379,8 +394,9 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         },
                     })
                     break
+                }
 
-                case DeeplinkType.BUY:
+                case DeeplinkType.BUY: {
                     if (parsedData.address) {
                         setSelectedAccountAddress(parsedData.address)
                     }
@@ -388,8 +404,9 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         screen: 'Fund',
                     })
                     break
+                }
 
-                case DeeplinkType.SELL:
+                case DeeplinkType.SELL: {
                     // Native Sell flows route through the Bidali gift-card
                     // marketplace (iOS BidaliFlowCoordinator, Android
                     // navToBidaliNavigation). Open the same Bidali sheet
@@ -408,31 +425,35 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         },
                     )
                     break
+                }
 
-                case DeeplinkType.ACCOUNT_DETAIL:
+                case DeeplinkType.ACCOUNT_DETAIL: {
                     setSelectedAccountAddress(parsedData.address)
                     navigateToScreen(replaceCurrentScreen, 'TabBar', {
                         screen: 'Home',
                         params: { screen: 'AccountDetails' },
                     })
                     break
+                }
 
-                case DeeplinkType.SHARED_ACCOUNT_IMPORT:
+                case DeeplinkType.SHARED_ACCOUNT_IMPORT: {
                     navigateToScreen(replaceCurrentScreen, 'Multisig', {
                         screen: 'ImportSharedAccount',
                         params: { address: parsedData.address },
                     })
                     break
+                }
 
-                case DeeplinkType.PERA_WEB_IMPORT:
+                case DeeplinkType.PERA_WEB_IMPORT: {
                     handlePeraWebImport({
                         data: parsedData,
                         source,
                         replaceCurrentScreen,
                     })
                     break
+                }
 
-                case DeeplinkType.LIQUID_AUTH:
+                case DeeplinkType.LIQUID_AUTH: {
                     if (parsedData.variant === 'fido') {
                         // A FIDO request derives its P256 key from the HD root,
                         // so an HD account must exist — otherwise register has
@@ -506,13 +527,15 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         )
                     }
                     break
+                }
 
                 case DeeplinkType.HOME:
-                default:
+                default: {
                     navigateToScreen(replaceCurrentScreen, 'TabBar', {
                         screen: 'Home',
                     })
                     break
+                }
             }
 
             onSuccess?.()

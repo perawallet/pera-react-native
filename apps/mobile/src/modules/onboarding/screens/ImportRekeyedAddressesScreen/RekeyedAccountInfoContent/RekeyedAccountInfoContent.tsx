@@ -19,7 +19,7 @@ import {
     PWView,
 } from '@components/core'
 import { CopyableText } from '@components/CopyableText'
-import { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import { ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'

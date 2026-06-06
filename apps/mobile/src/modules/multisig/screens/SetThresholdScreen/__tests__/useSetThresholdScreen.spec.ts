@@ -112,7 +112,7 @@ describe('useSetThresholdScreen', () => {
     })
 
     it('does not navigate when the before-create sheet is dismissed', async () => {
-        mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+        mockRequestBottomSheet.mockResolvedValueOnce()
         const { result } = renderHook(() => useSetThresholdScreen())
 
         await act(async () => {
@@ -123,7 +123,7 @@ describe('useSetThresholdScreen', () => {
     })
 
     it('requests the before-create sheet with size=auto', async () => {
-        mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+        mockRequestBottomSheet.mockResolvedValueOnce()
         const { result } = renderHook(() => useSetThresholdScreen())
 
         await act(async () => {

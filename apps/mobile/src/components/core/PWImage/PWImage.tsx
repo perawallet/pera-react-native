@@ -10,16 +10,16 @@
  limitations under the License
  */
 
-import { Image, ImageProps, ImageSource, ImageContentFit } from 'expo-image'
+import { Image, type ImageProps, type ImageSource, type ImageContentFit } from 'expo-image'
 
 import React, { useCallback, useState } from 'react'
 import {
     ActivityIndicator,
-    ImageSourcePropType,
-    StyleProp,
-    ImageStyle,
+    type ImageSourcePropType,
+    type StyleProp,
+    type ImageStyle,
     View,
-    ViewStyle,
+    type ViewStyle,
 } from 'react-native'
 
 import { useStyles } from './styles'

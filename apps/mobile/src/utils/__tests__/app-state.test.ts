@@ -26,7 +26,7 @@ describe('app-state utils', () => {
         expect(isActiveAppState('inactive')).toBe(false)
         expect(isActiveAppState('background')).toBe(false)
         expect(isActiveAppState('unknown')).toBe(false)
-        expect(isActiveAppState(undefined)).toBe(false)
+        expect(isActiveAppState()).toBe(false)
         expect(isActiveAppState(null)).toBe(false)
     })
 

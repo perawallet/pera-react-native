@@ -21,7 +21,7 @@ import {
 import { useLedgerSigningDriver } from '../useLedgerSigningDriver'
 
 const { requestBottomSheetMock, dismissMock } = vi.hoisted(() => ({
-    requestBottomSheetMock: vi.fn().mockResolvedValue(undefined),
+    requestBottomSheetMock: vi.fn().mockResolvedValue(),
     dismissMock: vi.fn(),
 }))
 

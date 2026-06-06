@@ -105,7 +105,7 @@ const defaultParams = {
 describe('useSwapToAssetSelectionList', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockGetQueryData.mockReturnValue(undefined)
+        mockGetQueryData.mockReturnValue()
         mockUseSelectedAccount.mockReturnValue({ address: 'TEST_ADDRESS' })
         mockUseAccountBalancesQuery.mockReturnValue({
             accountBalances: new Map([
@@ -163,7 +163,7 @@ describe('useSwapToAssetSelectionList', () => {
         })
 
         expect(mockUseAvailableAssetsQuery).toHaveBeenCalledWith(
-            31566704,
+            31_566_704,
             'USDC',
             true,
         )
@@ -173,7 +173,7 @@ describe('useSwapToAssetSelectionList', () => {
         renderHook(() => useSwapToAssetSelectionList(defaultParams))
 
         expect(mockUseAvailableAssetsQuery).toHaveBeenCalledWith(
-            31566704,
+            31_566_704,
             undefined,
             true,
         )
@@ -260,7 +260,7 @@ describe('useSwapToAssetSelectionList', () => {
         })
 
         it('seeds the query cache when the asset is not already cached', () => {
-            mockGetQueryData.mockReturnValue(undefined)
+            mockGetQueryData.mockReturnValue()
 
             const { result } = renderHook(() =>
                 useSwapToAssetSelectionList(defaultParams),

@@ -17,9 +17,12 @@
 // Determine app variant based on environment
 function getAppVariant() {
   switch (process.env.APP_ENV) {
-    case 'staging': return 'staging';
-    case 'production': return 'production';
-    default: return 'dev';
+    case 'staging': { return 'staging';
+    }
+    case 'production': { return 'production';
+    }
+    default: { return 'dev';
+    }
   }
 }
 

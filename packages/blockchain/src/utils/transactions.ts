@@ -18,7 +18,7 @@ import {
     type AssetFreezeTransactionFields,
     type KeyRegistrationTransactionFields,
     type AppCallTransactionFields,
-    OnApplicationComplete,
+    type OnApplicationComplete,
 } from '@algorandfoundation/algokit-utils/transact'
 import type {
     AssetConfigType,
@@ -30,7 +30,7 @@ import type {
 import { encodeAlgorandAddress } from './addresses'
 
 import {
-    OnCompletion,
+    type OnCompletion,
     type Transaction as IndexerTransaction,
 } from '@algorandfoundation/algokit-utils/indexer-client'
 import type { Nullable } from '@perawallet/wallet-core-shared'

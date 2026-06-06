@@ -78,20 +78,26 @@ export const useAccountTypeLabel = (
         }
 
         switch (account.type) {
-            case AccountTypes.hdWallet:
+            case AccountTypes.hdWallet: {
                 return plain(t('account_info.type_universal_wallet'))
-            case AccountTypes.algo25:
+            }
+            case AccountTypes.algo25: {
                 return plain(t('account_info.type_algo25'))
-            case AccountTypes.hardware:
+            }
+            case AccountTypes.hardware: {
                 return plain(t('account_info.type_ledger'))
-            case AccountTypes.multisig:
+            }
+            case AccountTypes.multisig: {
                 return canSign
                     ? plain(t('account_info.type_multisig'))
                     : plain(t('account_info.type_no_auth'))
-            case AccountTypes.watch:
+            }
+            case AccountTypes.watch: {
                 return plain(t('account_info.type_watch'))
-            default:
+            }
+            default: {
                 return plain(t('account_info.type_unknown'))
+            }
         }
     }, [account, canSign, rekeyTransition, t])
 }

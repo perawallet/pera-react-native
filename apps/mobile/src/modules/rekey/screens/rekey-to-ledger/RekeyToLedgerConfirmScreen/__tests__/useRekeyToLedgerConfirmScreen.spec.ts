@@ -76,7 +76,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
             if (address === 'SRC') return mockSourceAccount
             if (address === 'TGT') return mockTargetAccount
             if (address === 'AUTH') return mockAuthAccount
-            return undefined
+            return
         },
     }
 })
@@ -122,7 +122,7 @@ describe('useRekeyToLedgerConfirmScreen', () => {
     })
 
     it('handleConfirmPress submits and navigates on success when no previous rekey exists', async () => {
-        mockSubmitAsync.mockResolvedValueOnce(undefined)
+        mockSubmitAsync.mockResolvedValueOnce()
         const { result } = renderHook(() => useRekeyToLedgerConfirmScreen())
 
         await act(async () => {
@@ -158,7 +158,7 @@ describe('useRekeyToLedgerConfirmScreen', () => {
     it('submits after the warning sheet resolves with true', async () => {
         mockSourceAccount.rekeyAddress = 'AUTH'
         mockRequestBottomSheet.mockResolvedValueOnce(true)
-        mockSubmitAsync.mockResolvedValueOnce(undefined)
+        mockSubmitAsync.mockResolvedValueOnce()
         const { result } = renderHook(() => useRekeyToLedgerConfirmScreen())
 
         await act(async () => {

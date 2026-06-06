@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { RouteProp, useRoute } from '@react-navigation/native'
+import { type RouteProp, useRoute } from '@react-navigation/native'
 import type { PWResultViewVariant } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAsbImportFlowStore } from '@modules/onboarding/hooks'

@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { Decimal } from 'decimal.js'
+import { type Decimal } from 'decimal.js'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import {
     ALGO_ASSET,
@@ -123,9 +123,10 @@ const getTitle = (
         : t('transactions.list_item.receive')
 
     switch (tx.txType) {
-        case 'pay':
+        case 'pay': {
             return sendOrReceive
-        case 'axfer':
+        }
+        case 'axfer': {
             if (tx.closeTo) {
                 return t('transactions.list_item.opt_out')
             }
@@ -137,16 +138,22 @@ const getTitle = (
                 return t('transactions.list_item.opt_in')
             }
             return sendOrReceive
-        case 'acfg':
+        }
+        case 'acfg': {
             return t('transactions.list_item.asset_config')
-        case 'afrz':
+        }
+        case 'afrz': {
             return t('transactions.list_item.asset_freeze')
-        case 'appl':
+        }
+        case 'appl': {
             return t('transactions.list_item.app_call')
-        case 'keyreg':
+        }
+        case 'keyreg': {
             return t('transactions.list_item.key_registration')
-        default:
+        }
+        default: {
             return t('transactions.list_item.default')
+        }
     }
 }
 
@@ -172,7 +179,7 @@ export const useTransactionListItem = ({
         if (transaction.txType === 'pay' || transaction.txType === 'axfer') {
             return isOutgoing ? transaction.receiver : transaction.sender
         }
-        return undefined
+        return
     }, [transaction, isOutgoing])
 
     const { displayName: counterpartyDisplayName } = useResolvedAddress(

@@ -38,7 +38,7 @@ export const ConfettiAnimation = ({
         }
 
         setVisible(false)
-        return undefined
+        return
     }, [play])
 
     const handleAnimationFinish = () => {

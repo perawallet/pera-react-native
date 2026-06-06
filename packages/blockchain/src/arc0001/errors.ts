@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { Arc0001ErrorCode } from './types'
+import { type Arc0001ErrorCode } from './types'
 
 // Carries ARC-0001's numeric code + { index, field } so transports can
 // relay { code, message, data } to dApps verbatim.

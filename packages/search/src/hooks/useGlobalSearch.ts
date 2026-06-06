@@ -21,7 +21,7 @@ import type {
     PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import { useContacts } from '@perawallet/wallet-core-contacts'
-import { Nullable, useDebouncedValue } from '@perawallet/wallet-core-shared'
+import { type Nullable, useDebouncedValue } from '@perawallet/wallet-core-shared'
 import {
     EMPTY_GLOBAL_SEARCH_RESULTS,
     SEARCH_SCOPES,

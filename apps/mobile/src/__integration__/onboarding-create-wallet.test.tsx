@@ -51,7 +51,7 @@ describe('Flow: Onboarding → Create wallet', () => {
     // Per-test timeout: real BIP39 + xhd-wallet-api derivation runs end to
     // end, which under jsdom can take several seconds. Give the slow tests
     // headroom rather than mock the crypto.
-    const SLOW_TEST_TIMEOUT_MS = 30000
+    const SLOW_TEST_TIMEOUT_MS = 30_000
 
     it(
         'Given the user taps "Create wallet" and finishes naming, then a single HD wallet account is persisted and onboarding completes',
@@ -79,7 +79,7 @@ describe('Flow: Onboarding → Create wallet', () => {
                         screen.getByTestId('name_account_finish_button'),
                     ).toBeTruthy()
                 },
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
 
             // Finish: name is left as the default ("Wallet 1"), this exercises
@@ -94,7 +94,7 @@ describe('Flow: Onboarding → Create wallet', () => {
                         false,
                     )
                 },
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
 
             const accounts = useAccountsStore.getState().accounts
@@ -120,7 +120,7 @@ describe('Flow: Onboarding → Create wallet', () => {
             )
 
             await waitFor(() => screen.getByTestId('name_account_name_input'), {
-                timeout: 10000,
+                timeout: 10_000,
             })
 
             fireEvent.change(screen.getByTestId('name_account_name_input'), {
@@ -135,7 +135,7 @@ describe('Flow: Onboarding → Create wallet', () => {
                         false,
                     )
                 },
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
 
             expect(useAccountsStore.getState().accounts[0].name).toBe(
@@ -174,7 +174,7 @@ describe('Flow: Onboarding → Create wallet', () => {
                         screen.getByTestId('name_account_finish_button'),
                     ).toBeTruthy()
                 },
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
         },
         SLOW_TEST_TIMEOUT_MS,

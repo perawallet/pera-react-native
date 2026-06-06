@@ -158,7 +158,7 @@ describe('multisig creation flow', () => {
             (cb: FrameRequestCallback) => setTimeout(() => cb(0), 0) as unknown,
         )
         mockUseAllAccounts.mockReturnValue([])
-        mockMutateAsync.mockResolvedValue(undefined)
+        mockMutateAsync.mockResolvedValue()
         mockGenerateMultisigAddress.mockReturnValue('NEW_MULTISIG_ADDR')
         useMultisigCreationStore.getState().resetState()
     })

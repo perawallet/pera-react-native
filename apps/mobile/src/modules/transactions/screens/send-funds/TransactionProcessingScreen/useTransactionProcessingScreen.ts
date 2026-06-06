@@ -21,7 +21,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import {
-    SendTransactionParams,
+    type SendTransactionParams,
     useTransactionSendFlow,
 } from '@perawallet/wallet-core-transactions'
 import {
@@ -63,7 +63,7 @@ export const useTransactionProcessingScreen =
         )
         const { data: assets } = useAssetsQuery(assetIDs)
         const selectedAsset = useMemo(() => {
-            if (!selectedAssetId) return undefined
+            if (!selectedAssetId) return
             return assets.get(selectedAssetId)
         }, [selectedAssetId, assets])
         const selectedAccount = useSelectedAccount()

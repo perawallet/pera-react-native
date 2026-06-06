@@ -85,7 +85,7 @@ describe('useHandleInboxItemPress', () => {
     })
 
     it('requests the multisig invitation bottom sheet for multisig_import', async () => {
-        mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+        mockRequestBottomSheet.mockResolvedValueOnce()
         const createdAt = new Date('2025-01-15T00:00:00.000Z')
         const importItem = {
             type: 'multisig_import' as const,

@@ -95,13 +95,16 @@ export const classifyHandoffPoll = (
 ): HandoffPollOutcome => {
     switch (detail.status) {
         case 'ready':
-        case 'confirmed':
+        case 'confirmed': {
             return classifyReadyPoll(detail, handoff)
-        case 'declined':
+        }
+        case 'declined': {
             return { kind: 'soft-reject', reason: 'declined' }
-        case 'expired':
+        }
+        case 'expired': {
             return { kind: 'soft-reject', reason: 'expired' }
-        case 'failed':
+        }
+        case 'failed': {
             return {
                 kind: 'error',
                 reason: {
@@ -109,9 +112,11 @@ export const classifyHandoffPoll = (
                     displayReason: detail.fail_reason_display,
                 },
             }
-        default:
+        }
+        default: {
             // 'pending' / 'submitting' — keep polling.
             return { kind: 'keep-polling' }
+        }
     }
 }
 
@@ -174,12 +179,15 @@ export const errorReasonToMessage = (
     messages: ResolverMessages,
 ): string => {
     switch (reason.kind) {
-        case 'no-transactions':
+        case 'no-transactions': {
             return messages.noTransactions
-        case 'assembly-failed':
+        }
+        case 'assembly-failed': {
             return messages.assemblyFailed(reason.detail)
-        case 'backend-failed':
+        }
+        case 'backend-failed': {
             return reason.displayReason ?? messages.failed
+        }
     }
 }
 
@@ -214,7 +222,7 @@ export const resolveHandoffOutcome = async ({
     markConfirmed,
 }: ResolveHandoffOutcomeArgs): Promise<void> => {
     switch (outcome.kind) {
-        case 'ready':
+        case 'ready': {
             await deliverReady(
                 outcome.assembledBytes,
                 handoff,
@@ -222,6 +230,7 @@ export const resolveHandoffOutcome = async ({
                 markConfirmed,
             )
             return
+        }
         case 'soft-reject': {
             const message =
                 outcome.reason === 'declined'

@@ -71,7 +71,7 @@ describe('useSeedSwapRouteAssets', () => {
         renderHook(() => useSeedSwapRouteAssets({ assetOutId: OUT_ID }))
 
         const [, updater] = mockSetQueryData.mock.calls[0]
-        expect(updater(undefined)).toEqual([mockOutAsset])
+        expect(updater()).toEqual([mockOutAsset])
         expect(updater([])).toEqual([mockOutAsset])
     })
 

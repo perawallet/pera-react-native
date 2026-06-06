@@ -13,10 +13,10 @@
 import { useStyles } from './styles'
 import { PWView } from '@components/core'
 import { RoundButton } from '@components/RoundButton'
-import { ParamListBase, useNavigation } from '@react-navigation/native'
-import { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { type ParamListBase, useNavigation } from '@react-navigation/native'
+import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useCallback } from 'react'
-import { PeraAsset } from '@perawallet/wallet-core-assets'
+import { type PeraAsset } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
 import { SendFundsContent } from '@modules/transactions/components/send-funds/SendFundsContent'
 import { ReceiveFundsContent } from '@modules/transactions/components/receive-funds/ReceiveFundsContent'
@@ -24,7 +24,7 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import {
     useSelectedAccount,
     useCanSignWith,
-    AssetWithAccountBalance,
+    type AssetWithAccountBalance,
 } from '@perawallet/wallet-core-accounts'
 import { useSendFunds } from '@modules/transactions/hooks'
 import { useClipboard } from '@hooks/useClipboard'

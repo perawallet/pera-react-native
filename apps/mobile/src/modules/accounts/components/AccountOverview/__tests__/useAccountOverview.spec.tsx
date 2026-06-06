@@ -13,7 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useAccountOverview } from '../useAccountOverview'
-import { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const {
     mockSetSelectedAccount,
@@ -28,7 +28,7 @@ const {
     mockHistoryPending: { value: false },
     mockRequestBottomSheet: vi.fn(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (_req: any) => Promise.resolve(undefined) as Promise<unknown>,
+        (_req: any) => Promise.resolve() as Promise<unknown>,
     ),
 }))
 
@@ -87,7 +87,7 @@ describe('useAccountOverview', () => {
         vi.clearAllMocks()
         mockBalancesPending.value = false
         mockHistoryPending.value = false
-        mockRequestBottomSheet.mockResolvedValue(undefined)
+        mockRequestBottomSheet.mockResolvedValue()
     })
 
     it('requests the send funds bottom sheet when openSendFunds is called', () => {

@@ -75,7 +75,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         useFindAccountByAddress: (address: string) => {
             if (address === 'SRC') return mockSourceAccount
             if (address === 'AUTH') return mockAuthAccount
-            return undefined
+            return
         },
     }
 })
@@ -135,7 +135,7 @@ describe('useUndoRekeyConfirmScreen', () => {
 
     it('submits with source.address as rekey-to address and navigates on success when confirmed', async () => {
         mockRequestBottomSheet.mockResolvedValueOnce(true)
-        mockSubmitAsync.mockResolvedValueOnce(undefined)
+        mockSubmitAsync.mockResolvedValueOnce()
         const { result } = renderHook(() => useUndoRekeyConfirmScreen())
 
         await act(async () => {
