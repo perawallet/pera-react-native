@@ -53,6 +53,7 @@ import {
 } from '@test-utils/database-setup'
 import {
     AccountTypes,
+    insertAssetHolding,
     upsertAccountBalance,
     useAccountBalancesQuery,
     useAccountsStore,
@@ -182,6 +183,22 @@ describe('Flow: Settings → Network selection', () => {
                 authAddress: null,
             })
 
+            // ALGO is a regular holding row now; the balance hook reads it from
+            // the per-network holdings table (base units / microalgos), so seed
+            // the native balance there too — one row per network.
+            await insertAssetHolding({
+                accountAddress: SAME_ADDRESS_ACCOUNT.address,
+                assetId: '0',
+                network: 'mainnet',
+                amount: '100000000', // 100 ALGO
+            })
+            await insertAssetHolding({
+                accountAddress: SAME_ADDRESS_ACCOUNT.address,
+                assetId: '0',
+                network: 'testnet',
+                amount: '7000000', // 7 ALGO
+            })
+
             // Compose `useNetwork` + `useAccountBalancesQuery` in one
             // hook so they share the same render lifecycle. Toggling
             // `setNetwork` should make the balance query re-key off the
@@ -208,8 +225,8 @@ describe('Flow: Settings → Network selection', () => {
                     const algo = balance?.assetBalances.find(
                         b => b.assetId === '0',
                     )
-                    // 100 ALGO in micro-ALGO base units.
-                    expect(algo?.amount.toString()).toBe('100000000')
+                    // 100 ALGO in display units (base units / 10^6).
+                    expect(algo?.amount.toString()).toBe('100')
                 },
                 { timeout: 5000 },
             )
@@ -228,10 +245,9 @@ describe('Flow: Settings → Network selection', () => {
                     const algo = balance?.assetBalances.find(
                         b => b.assetId === '0',
                     )
-                    // 7 ALGO in micro-ALGO base units — proves the new
-                    // network's row is being read, not the cached
-                    // mainnet result.
-                    expect(algo?.amount.toString()).toBe('7000000')
+                    // 7 ALGO in display units — proves the new network's row
+                    // is being read, not the cached mainnet result.
+                    expect(algo?.amount.toString()).toBe('7')
                 },
                 { timeout: 5000 },
             )
@@ -249,7 +265,7 @@ describe('Flow: Settings → Network selection', () => {
                     const algo = balance?.assetBalances.find(
                         b => b.assetId === '0',
                     )
-                    expect(algo?.amount.toString()).toBe('100000000')
+                    expect(algo?.amount.toString()).toBe('100')
                 },
                 { timeout: 5000 },
             )
