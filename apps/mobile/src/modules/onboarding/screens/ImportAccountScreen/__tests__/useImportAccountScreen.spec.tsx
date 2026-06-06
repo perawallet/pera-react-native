@@ -128,7 +128,7 @@ describe('useImportAccountScreen', () => {
         vi.mocked(useMarkMnemonicBackupComplete).mockReturnValue(
             mockMarkBackupComplete,
         )
-        mockRequestBottomSheet.mockResolvedValue()
+        mockRequestBottomSheet.mockResolvedValue(undefined)
     })
 
     it('initializes with empty words', () => {

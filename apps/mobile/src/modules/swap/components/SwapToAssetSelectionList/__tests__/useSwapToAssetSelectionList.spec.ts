@@ -105,7 +105,7 @@ const defaultParams = {
 describe('useSwapToAssetSelectionList', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockGetQueryData.mockReturnValue()
+        mockGetQueryData.mockReturnValue(undefined)
         mockUseSelectedAccount.mockReturnValue({ address: 'TEST_ADDRESS' })
         mockUseAccountBalancesQuery.mockReturnValue({
             accountBalances: new Map([
@@ -260,7 +260,7 @@ describe('useSwapToAssetSelectionList', () => {
         })
 
         it('seeds the query cache when the asset is not already cached', () => {
-            mockGetQueryData.mockReturnValue()
+            mockGetQueryData.mockReturnValue(undefined)
 
             const { result } = renderHook(() =>
                 useSwapToAssetSelectionList(defaultParams),

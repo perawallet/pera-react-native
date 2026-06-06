@@ -193,7 +193,7 @@ export const AddressSearchView = ({
                     value={value}
                     placeholder={t('address_entry.search_placeholder')}
                     onChangeText={setValue}
-                    onFocus={() => {}}
+                    onFocus={() => undefined}
                 />
                 <PWFlatList
                     data={hasResults ? matchingItems : []}

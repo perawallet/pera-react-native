@@ -158,14 +158,14 @@ registerPreview({
     render: () => (
         <ConfettiAnimation
             play={true}
-            onFinish={() => {}}
+            onFinish={() => undefined}
         />
     ),
 })
 
 registerPreview({
     id: 'comp-nft-empty-state',
-    render: () => <NftEmptyState onOptInPress={() => {}} />,
+    render: () => <NftEmptyState onOptInPress={() => undefined} />,
 })
 
 registerPreview({
@@ -176,13 +176,13 @@ registerPreview({
                 title={mockAlgo25Account.name ?? 'Mock Algo25 Account'}
                 subtitle={mockAlgo25Account.address}
                 isSelected={true}
-                onToggle={() => {}}
+                onToggle={() => undefined}
             />
             <SelectableAccountCheckboxRow
                 title='Unselected Account'
                 subtitle='ABCDE...FGHIJ'
                 isSelected={false}
-                onToggle={() => {}}
+                onToggle={() => undefined}
                 isImported={false}
             />
         </PWView>
@@ -309,7 +309,7 @@ registerPreview({
             }}
             isOptedIn={false}
             isOptingIn={false}
-            onAdd={() => {}}
+            onAdd={() => undefined}
         />
     ),
 })
@@ -328,7 +328,7 @@ registerPreview({
                 asset: mockCollectible,
                 amount: new Decimal('1'),
             }}
-            onPress={() => {}}
+            onPress={() => undefined}
         />
     ),
 })
@@ -342,7 +342,7 @@ registerPreview({
                 asset: mockCollectible,
                 amount: new Decimal('2'),
             }}
-            onPress={() => {}}
+            onPress={() => undefined}
         />
     ),
 })
@@ -402,7 +402,7 @@ registerPreview({
     render: () => (
         <TransactionListItem
             transaction={mockTransaction}
-            onPress={() => {}}
+            onPress={() => undefined}
         />
     ),
 })
@@ -479,7 +479,7 @@ registerPreview({
         <SwapProviderRow
             quote={mockSwapQuote}
             selectionMode='auto'
-            onPress={() => {}}
+            onPress={() => undefined}
         />
     ),
 })
@@ -518,8 +518,8 @@ registerPreview({
             value={2}
             min={1}
             max={4}
-            onIncrement={() => {}}
-            onDecrement={() => {}}
+            onIncrement={() => undefined}
+            onDecrement={() => undefined}
         />
     ),
 })
@@ -531,8 +531,8 @@ registerPreview({
             participant={{ address: MOCK_ADDRESS, name: 'Alice' }}
             index={0}
             isInWallet={false}
-            onEdit={() => {}}
-            onRemove={() => {}}
+            onEdit={() => undefined}
+            onRemove={() => undefined}
         />
     ),
 })
@@ -569,7 +569,7 @@ registerPreview({
         <StakingProjectCard
             project={mockStakingProject}
             isLast={false}
-            onPress={() => {}}
+            onPress={() => undefined}
         />
     ),
 })
@@ -583,7 +583,7 @@ registerPreview({
                 data: mockAsaInbox,
                 createdAt: new Date(),
             }}
-            onPress={() => {}}
+            onPress={() => undefined}
         />
     ),
 })
@@ -617,7 +617,7 @@ registerPreview({
     render: () => (
         <LedgerDeviceItem
             device={mockLedgerDevice}
-            onPress={() => {}}
+            onPress={() => undefined}
         />
     ),
 })
@@ -663,8 +663,8 @@ registerPreview({
     render: () => (
         <BannerCard
             banner={mockBanner}
-            onPressCTA={() => {}}
-            onDismiss={() => {}}
+            onPressCTA={() => undefined}
+            onDismiss={() => undefined}
             isDismissable={true}
         />
     ),
@@ -676,7 +676,7 @@ registerPreview({
         <CompactBanner
             primary={mockBanner}
             additionalCount={2}
-            onPress={() => {}}
+            onPress={() => undefined}
         />
     ),
 })
@@ -725,7 +725,7 @@ registerPreview({
     render: () => (
         <PinEntry
             title='Enter your PIN'
-            onPinComplete={() => {}}
+            onPinComplete={() => undefined}
             isDisabled={false}
             hasError={false}
         />
@@ -736,8 +736,8 @@ registerPreview({
     id: 'comp-pin-security-prompt',
     render: () => (
         <PinSecurityPrompt
-            onDismiss={() => {}}
-            onHide={() => {}}
+            onDismiss={() => undefined}
+            onHide={() => undefined}
         />
     ),
 })
@@ -763,7 +763,7 @@ registerPreview({
     render: () => (
         <MnemonicSuggestionBar
             suggestions={['abandon', 'ability', 'able', 'about']}
-            onSelectSuggestion={() => {}}
+            onSelectSuggestion={() => undefined}
         />
     ),
 })
@@ -775,7 +775,7 @@ registerPreview({
             position={2}
             options={['abandon', 'ability', 'able']}
             selectedWord='able'
-            onSelect={() => {}}
+            onSelect={() => undefined}
         />
     ),
 })
@@ -808,32 +808,32 @@ export const getModuleComponentSections = (): GallerySection[] => [
             {
                 id: 'comp-account-info-card',
                 label: 'AccountInfoCard (needs live store)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-account-with-balance',
                 label: 'AccountWithBalance (needs live balances query)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-account-overview',
                 label: 'AccountOverview (needs live store)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-account-selection',
                 label: 'AccountSelection (needs live store)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-backup-reminder-banner',
                 label: 'BackupReminderBanner (needs live store)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-button-panel',
                 label: 'ButtonPanel (needs navigation context)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-confetti-animation',
@@ -848,12 +848,12 @@ export const getModuleComponentSections = (): GallerySection[] => [
             {
                 id: 'comp-no-funds-button-panel',
                 label: 'NoFundsButtonPanel (needs navigation context)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-portfolio-view',
                 label: 'PortfolioView (needs live store)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-selectable-account-checkbox-row',
@@ -863,32 +863,32 @@ export const getModuleComponentSections = (): GallerySection[] => [
             {
                 id: 'comp-selectable-account-row',
                 label: 'SelectableAccountRow (needs live balances query)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-watch-account-button-panel',
                 label: 'WatchAccountButtonPanel (needs navigation context)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-account-asset-list',
                 label: 'AccountAssetList (needs live store)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-account-history',
                 label: 'AccountHistory (needs live store)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-account-nfts',
                 label: 'AccountNfts (needs live store)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-account-menu',
                 label: 'AccountMenu (needs live store)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
         ],
     },
@@ -898,12 +898,12 @@ export const getModuleComponentSections = (): GallerySection[] => [
             {
                 id: 'comp-account-asset-selection-list',
                 label: 'AccountAssetSelectionList (needs live store)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-add-asset-view',
                 label: 'AddAssetView (needs live query)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-asset-favorite-button',
@@ -978,7 +978,7 @@ export const getModuleComponentSections = (): GallerySection[] => [
             {
                 id: 'comp-transaction-display',
                 label: 'TransactionDisplay (needs live transaction data)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-transaction-icon',
@@ -1003,7 +1003,7 @@ export const getModuleComponentSections = (): GallerySection[] => [
             {
                 id: 'comp-swap-amount-section',
                 label: 'SwapAmountSection (needs live swap store)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-swap-asset-pair-icon',
@@ -1013,22 +1013,22 @@ export const getModuleComponentSections = (): GallerySection[] => [
             {
                 id: 'comp-swap-asset-selector',
                 label: 'SwapAssetSelector (needs live assets query)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-swap-form',
                 label: 'SwapForm (needs live state)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-swap-history-list',
                 label: 'SwapHistoryList (needs live state)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-swap-pair-history-widget',
                 label: 'SwapPairHistoryWidget (needs live store)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-swap-provider-display',
@@ -1048,12 +1048,12 @@ export const getModuleComponentSections = (): GallerySection[] => [
             {
                 id: 'comp-swap-to-asset-selection-list',
                 label: 'SwapToAssetSelectionList (needs live state)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-swap-top-pairs',
                 label: 'SwapTopPairs (needs live state)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
         ],
     },
@@ -1063,47 +1063,47 @@ export const getModuleComponentSections = (): GallerySection[] => [
             {
                 id: 'comp-arbitrary-data-signing-view',
                 label: 'ArbitraryDataSigningView (needs live signing state)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-arc60-data-signing-view',
                 label: 'Arc60DataSigningView (needs live signing state)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-fee-display',
                 label: 'FeeDisplay (needs signing + navigation context)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-multiple-arbitrary-sign-request-view',
                 label: 'MultipleArbitrarySignRequestView (needs live signing state)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-sign-request-view',
                 label: 'SignRequestView (needs live signing state)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-signing-account-display',
                 label: 'SigningAccountDisplay (needs live accounts store)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-signing-action-buttons',
                 label: 'SigningActionButtons (needs signing pipeline)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-signing-warnings',
                 label: 'SigningWarnings (needs signing pipeline)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-single-arbitrary-sign-request-view',
                 label: 'SingleArbitrarySignRequestView (needs live signing state)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-source-metadata-badge',
@@ -1118,12 +1118,12 @@ export const getModuleComponentSections = (): GallerySection[] => [
             {
                 id: 'comp-transaction-signing-view',
                 label: 'TransactionSigningView (needs live signing state)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-transaction-summary-header',
                 label: 'TransactionSummaryHeader (needs PeraDisplayableTransaction)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
         ],
     },
@@ -1133,7 +1133,7 @@ export const getModuleComponentSections = (): GallerySection[] => [
             {
                 id: 'comp-multisig-decline-button',
                 label: 'MultisigDeclineButton (needs signing store)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-participant-list-item',
@@ -1178,12 +1178,12 @@ export const getModuleComponentSections = (): GallerySection[] => [
             {
                 id: 'comp-notification-item',
                 label: 'NotificationItem (needs live state)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-notifications-icon',
                 label: 'NotificationsIcon (needs live state)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-unread-indicator',
@@ -1218,7 +1218,7 @@ export const getModuleComponentSections = (): GallerySection[] => [
             {
                 id: 'comp-banner-carousel',
                 label: 'BannerCarousel (needs live state)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-banner-icon',
@@ -1233,17 +1233,17 @@ export const getModuleComponentSections = (): GallerySection[] => [
             {
                 id: 'comp-home-banners-strip',
                 label: 'HomeBannersStrip (needs live state)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-messages-spot-banners',
                 label: 'MessagesSpotBanners (needs live state)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-spot-banner-carousel',
                 label: 'SpotBannerCarousel (needs live state)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
         ],
     },
@@ -1258,17 +1258,17 @@ export const getModuleComponentSections = (): GallerySection[] => [
             {
                 id: 'comp-feature-flag-overrides',
                 label: 'FeatureFlagOverrides (needs live state)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-notification-settings-list',
                 label: 'NotificationSettingsList (needs live state)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-settings-walletconnect',
                 label: 'WalletConnect (needs live state)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
         ],
     },
@@ -1308,7 +1308,7 @@ export const getModuleComponentSections = (): GallerySection[] => [
             {
                 id: 'comp-pin-edit-view',
                 label: 'PinEditView (needs live state)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
         ],
     },
@@ -1323,7 +1323,7 @@ export const getModuleComponentSections = (): GallerySection[] => [
             {
                 id: 'comp-prompt-container',
                 label: 'PromptContainer (needs live state)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
         ],
     },
@@ -1333,7 +1333,7 @@ export const getModuleComponentSections = (): GallerySection[] => [
             {
                 id: 'comp-application-display',
                 label: 'ApplicationDisplay (needs live state)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
             {
                 id: 'comp-project-verification-icon',
@@ -1368,7 +1368,7 @@ export const getModuleComponentSections = (): GallerySection[] => [
             {
                 id: 'comp-webview-overlay',
                 label: 'WebViewOverlay (needs live state)',
-                launch: { kind: 'action', run: () => {} },
+                launch: { kind: 'action', run: () => undefined },
             },
         ],
     },

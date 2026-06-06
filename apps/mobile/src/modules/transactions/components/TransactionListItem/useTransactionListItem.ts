@@ -178,7 +178,7 @@ export const useTransactionListItem = ({
         if (transaction.txType === 'pay' || transaction.txType === 'axfer') {
             return isOutgoing ? transaction.receiver : transaction.sender
         }
-        return
+        return undefined
     }, [transaction, isOutgoing])
 
     const { displayName: counterpartyDisplayName } = useResolvedAddress(

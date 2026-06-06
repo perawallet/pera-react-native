@@ -41,7 +41,7 @@ export function useRekeyedAccountInfoContent({
         useAccountBalancesQuery([account], true)
 
     const authAccount = useMemo<Optional<WatchAccount>>(() => {
-        if (!account.rekeyAddress) return
+        if (!account.rekeyAddress) return undefined
         return {
             address: account.rekeyAddress,
             type: AccountTypes.watch,

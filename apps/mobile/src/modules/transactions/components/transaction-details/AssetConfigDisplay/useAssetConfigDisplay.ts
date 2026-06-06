@@ -33,7 +33,7 @@ export const useAssetConfigDisplay = (
             : { amount: undefined, unit: undefined }
 
         if (!amount) {
-            return
+            return undefined
         }
 
         const { integer, fraction } = formatNumber(amount, 2)
@@ -42,7 +42,7 @@ export const useAssetConfigDisplay = (
 
     const metadataHash = useMemo(() => {
         if (!assetConfig?.params?.metadataHash) {
-            return
+            return undefined
         }
         return Buffer.from(assetConfig?.params?.metadataHash).toString('utf-8')
     }, [assetConfig?.params?.metadataHash])

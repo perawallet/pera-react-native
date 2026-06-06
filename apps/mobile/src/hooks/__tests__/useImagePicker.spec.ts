@@ -122,7 +122,7 @@ describe('useImagePicker', () => {
         >)
         const openSettingsSpy = vi
             .spyOn(Linking, 'openSettings')
-            .mockResolvedValue()
+            .mockResolvedValue(undefined)
 
         const { result } = renderHook(() => useImagePicker())
         await act(async () => {

@@ -74,7 +74,7 @@ describe('useAccountTypeLabel', () => {
     })
 
     it('returns an empty label when no account is provided', () => {
-        const { result } = renderHook(() => useAccountTypeLabel())
+        const { result } = renderHook(() => useAccountTypeLabel(undefined))
         expect(result.current).toEqual({
             label: '',
             main: '',

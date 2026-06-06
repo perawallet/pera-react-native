@@ -125,7 +125,7 @@ const buildSignRequest = (
 
 describe('useMultisigSignRequestDecline', () => {
     beforeEach(() => {
-        declineMutateAsyncMock.mockReset().mockResolvedValue()
+        declineMutateAsyncMock.mockReset().mockResolvedValue(undefined)
         declineIsPendingMock.mockReset().mockReturnValue(false)
         errorToastMock.mockReset()
         useAllAccountsMock.mockReset().mockReturnValue([])

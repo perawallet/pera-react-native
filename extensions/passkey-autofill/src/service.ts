@@ -83,11 +83,11 @@ export class PasskeyAutofillService {
     }
 
     setMasterKey(hex: string): Promise<void> {
-        return this.invoke('setMasterKey', [normalizeHex(hex)])
+        return this.invoke('setMasterKey', [normalizeHex(hex)], undefined)
     }
 
     setHdRootKeyId(id: string): Promise<void> {
-        return this.invoke('setHdRootKeyId', [id])
+        return this.invoke('setHdRootKeyId', [id], undefined)
     }
 
     /**
@@ -97,7 +97,7 @@ export class PasskeyAutofillService {
      * (and Android) derive on demand, so this no-ops when absent.
      */
     setDerivedMainKey(hex: string): Promise<void> {
-        return this.invoke('setDerivedMainKey', [normalizeHex(hex)])
+        return this.invoke('setDerivedMainKey', [normalizeHex(hex)], undefined)
     }
 
     /**
@@ -109,15 +109,19 @@ export class PasskeyAutofillService {
         createAction: string,
     ): Promise<void> {
         if (Platform.OS !== 'android') return Promise.resolve()
-        return this.invoke('configureIntentActions', [getAction, createAction])
+        return this.invoke(
+            'configureIntentActions',
+            [getAction, createAction],
+            undefined,
+        )
     }
 
     clearCredentials(): Promise<void> {
-        return this.invoke('clearCredentials', [])
+        return this.invoke('clearCredentials', [], undefined)
     }
 
     deleteCredential(credentialId: string): Promise<void> {
-        return this.invoke('deleteCredential', [credentialId])
+        return this.invoke('deleteCredential', [credentialId], undefined)
     }
 
     getStoredCredentials(): Promise<NativeStoredCredential[]> {
@@ -130,7 +134,7 @@ export class PasskeyAutofillService {
 
     /** iOS-only — no-ops on Android, where the provider reads MMKV directly. */
     refreshCredentialIdentities(): Promise<void> {
-        return this.invoke('refreshCredentialIdentities', [])
+        return this.invoke('refreshCredentialIdentities', [], undefined)
     }
 
     isProviderActive(): Promise<boolean> {
@@ -158,7 +162,7 @@ export class PasskeyAutofillService {
         cb: PasskeyAutofillEventCallback,
     ): PasskeyAutofillSubscription {
         if (typeof this.native.addListener !== 'function') {
-            return { remove: () => {} }
+            return { remove: () => undefined }
         }
         return this.native.addListener(eventName, cb)
     }

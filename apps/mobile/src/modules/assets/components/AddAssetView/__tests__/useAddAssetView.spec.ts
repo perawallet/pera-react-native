@@ -152,7 +152,7 @@ describe('useAddAssetView', () => {
     })
 
     it('does not call optIn when user dismisses the confirmation sheet', async () => {
-        mockRequestByType.mockResolvedValueOnce()
+        mockRequestByType.mockResolvedValueOnce(undefined)
 
         const { result } = renderHook(() => useAddAssetView())
 

@@ -32,8 +32,8 @@ describe('BannerCard', () => {
         render(
             <BannerCard
                 banner={banner}
-                onPressCTA={() => {}}
-                onDismiss={() => {}}
+                onPressCTA={() => undefined}
+                onDismiss={() => undefined}
             />,
         )
         expect(screen.getByText('Stake your ALGOs')).toBeTruthy()
@@ -44,8 +44,8 @@ describe('BannerCard', () => {
         render(
             <BannerCard
                 banner={banner}
-                onPressCTA={() => {}}
-                onDismiss={() => {}}
+                onPressCTA={() => undefined}
+                onDismiss={() => undefined}
             />,
         )
         expect(screen.getByTestId('banner_card_cta')).toBeTruthy()
@@ -56,8 +56,8 @@ describe('BannerCard', () => {
         render(
             <BannerCard
                 banner={{ ...banner, buttonUrl: null }}
-                onPressCTA={() => {}}
-                onDismiss={() => {}}
+                onPressCTA={() => undefined}
+                onDismiss={() => undefined}
             />,
         )
         expect(screen.queryByTestId('banner_card_cta')).toBeNull()
@@ -69,7 +69,7 @@ describe('BannerCard', () => {
             <BannerCard
                 banner={banner}
                 onPressCTA={onPressCTA}
-                onDismiss={() => {}}
+                onDismiss={() => undefined}
             />,
         )
         fireEvent.click(screen.getByTestId('banner_card_cta'))
@@ -81,7 +81,7 @@ describe('BannerCard', () => {
         render(
             <BannerCard
                 banner={banner}
-                onPressCTA={() => {}}
+                onPressCTA={() => undefined}
                 onDismiss={onDismiss}
             />,
         )
@@ -94,8 +94,8 @@ describe('BannerCard', () => {
             <BannerCard
                 banner={banner}
                 isDismissable={false}
-                onPressCTA={() => {}}
-                onDismiss={() => {}}
+                onPressCTA={() => undefined}
+                onDismiss={() => undefined}
             />,
         )
         expect(screen.queryByTestId('banner_card_dismiss')).toBeNull()

@@ -74,7 +74,7 @@ describe('PhotoPermissionDeniedSheet', () => {
     })
 
     it('calls onClose when the sheet resolves with undefined', async () => {
-        mockRequestBottomSheet.mockResolvedValue()
+        mockRequestBottomSheet.mockResolvedValue(undefined)
         const onOpenSettings = vi.fn()
         const onClose = vi.fn()
         render(

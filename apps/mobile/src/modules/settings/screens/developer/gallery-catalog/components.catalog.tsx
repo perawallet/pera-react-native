@@ -83,7 +83,7 @@ registerPreview({
                         <PWButton
                             title='Primary button'
                             variant='primary'
-                            onPress={() => {}}
+                            onPress={() => undefined}
                         />
                     ),
                 },
@@ -93,7 +93,7 @@ registerPreview({
                         <PWButton
                             title='Secondary button'
                             variant='secondary'
-                            onPress={() => {}}
+                            onPress={() => undefined}
                         />
                     ),
                 },
@@ -103,7 +103,7 @@ registerPreview({
                         <PWButton
                             title='Helper button'
                             variant='helper'
-                            onPress={() => {}}
+                            onPress={() => undefined}
                         />
                     ),
                 },
@@ -113,7 +113,7 @@ registerPreview({
                         <PWButton
                             title='Destructive button'
                             variant='destructive'
-                            onPress={() => {}}
+                            onPress={() => undefined}
                         />
                     ),
                 },
@@ -123,7 +123,7 @@ registerPreview({
                         <PWButton
                             title='Link button'
                             variant='link'
-                            onPress={() => {}}
+                            onPress={() => undefined}
                         />
                     ),
                 },
@@ -134,7 +134,7 @@ registerPreview({
                             title='Send'
                             variant='primary'
                             icon='transactions/send'
-                            onPress={() => {}}
+                            onPress={() => undefined}
                         />
                     ),
                 },
@@ -145,7 +145,7 @@ registerPreview({
                             title='Disabled'
                             variant='primary'
                             isDisabled
-                            onPress={() => {}}
+                            onPress={() => undefined}
                         />
                     ),
                 },
@@ -156,7 +156,7 @@ registerPreview({
                             title='Loading…'
                             variant='primary'
                             isLoading
-                            onPress={() => {}}
+                            onPress={() => undefined}
                         />
                     ),
                 },
@@ -166,7 +166,7 @@ registerPreview({
                         <PWButton
                             title='This is a very long button title that should truncate gracefully'
                             variant='primary'
-                            onPress={() => {}}
+                            onPress={() => undefined}
                         />
                     ),
                 },
@@ -185,7 +185,7 @@ registerPreview({
                     node: (
                         <PWSlideToConfirm
                             title='Slide to confirm'
-                            onConfirm={() => {}}
+                            onConfirm={() => undefined}
                         />
                     ),
                 },
@@ -194,7 +194,7 @@ registerPreview({
                     node: (
                         <PWSlideToConfirm
                             title='Slide to confirm (disabled)'
-                            onConfirm={() => {}}
+                            onConfirm={() => undefined}
                             isDisabled
                         />
                     ),
@@ -204,7 +204,7 @@ registerPreview({
                     node: (
                         <PWSlideToConfirm
                             title='Slide to confirm (confirmed)'
-                            onConfirm={() => {}}
+                            onConfirm={() => undefined}
                             isConfirmed
                         />
                     ),
@@ -217,7 +217,7 @@ registerPreview({
 registerPreview({
     id: 'comp-pw-touchable-opacity',
     render: () => (
-        <PWTouchableOpacity onPress={() => {}}>
+        <PWTouchableOpacity onPress={() => undefined}>
             <PWText variant='body'>Touchable area</PWText>
         </PWTouchableOpacity>
     ),
@@ -233,7 +233,7 @@ registerPreview({
                     node: (
                         <PWTouchableIcon
                             name='bell'
-                            onPress={() => {}}
+                            onPress={() => undefined}
                         />
                     ),
                 },
@@ -244,7 +244,7 @@ registerPreview({
                             name='copy'
                             size='sm'
                             variant='secondary'
-                            onPress={() => {}}
+                            onPress={() => undefined}
                         />
                     ),
                 },
@@ -255,7 +255,7 @@ registerPreview({
                             name='trash'
                             size='lg'
                             variant='error'
-                            onPress={() => {}}
+                            onPress={() => undefined}
                         />
                     ),
                 },
@@ -274,7 +274,7 @@ registerPreview({
                     node: (
                         <PWInput
                             value=''
-                            onChangeText={() => {}}
+                            onChangeText={() => undefined}
                             placeholder='Enter text…'
                             label='Label'
                         />
@@ -285,7 +285,7 @@ registerPreview({
                     node: (
                         <PWInput
                             value='My Wallet Account'
-                            onChangeText={() => {}}
+                            onChangeText={() => undefined}
                             label='Account name'
                         />
                     ),
@@ -295,7 +295,7 @@ registerPreview({
                     node: (
                         <PWInput
                             value='bad!'
-                            onChangeText={() => {}}
+                            onChangeText={() => undefined}
                             label='Amount'
                             errorMessage='Amount must be greater than zero'
                             renderErrorMessage
@@ -307,7 +307,7 @@ registerPreview({
                     node: (
                         <PWInput
                             value='AAABBBCCC111222333444555666'
-                            onChangeText={() => {}}
+                            onChangeText={() => undefined}
                             label='Address'
                             editable={false}
                         />
@@ -328,7 +328,7 @@ registerPreview({
                     node: (
                         <PWCheckbox
                             checked={true}
-                            onPress={() => {}}
+                            onPress={() => undefined}
                             title='Accept terms and conditions'
                         />
                     ),
@@ -338,7 +338,7 @@ registerPreview({
                     node: (
                         <PWCheckbox
                             checked={false}
-                            onPress={() => {}}
+                            onPress={() => undefined}
                             title='Subscribe to newsletter'
                         />
                     ),
@@ -358,7 +358,7 @@ registerPreview({
                     node: (
                         <PWRadioButton
                             isSelected={true}
-                            onPress={() => {}}
+                            onPress={() => undefined}
                             title='Option A — selected'
                         />
                     ),
@@ -368,7 +368,7 @@ registerPreview({
                     node: (
                         <PWRadioButton
                             isSelected={false}
-                            onPress={() => {}}
+                            onPress={() => undefined}
                             title='Option B — unselected'
                         />
                     ),
@@ -379,7 +379,7 @@ registerPreview({
                         <PWRadioButton
                             isSelected={true}
                             isDisabled
-                            onPress={() => {}}
+                            onPress={() => undefined}
                             title='Option C — disabled selected'
                         />
                     ),
@@ -390,7 +390,7 @@ registerPreview({
                         <PWRadioButton
                             isSelected={false}
                             isDisabled
-                            onPress={() => {}}
+                            onPress={() => undefined}
                             title='Option D — disabled unselected'
                         />
                     ),
@@ -410,7 +410,7 @@ registerPreview({
                     node: (
                         <PWSwitch
                             value={true}
-                            onValueChange={() => {}}
+                            onValueChange={() => undefined}
                         />
                     ),
                 },
@@ -419,7 +419,7 @@ registerPreview({
                     node: (
                         <PWSwitch
                             value={false}
-                            onValueChange={() => {}}
+                            onValueChange={() => undefined}
                         />
                     ),
                 },
@@ -428,7 +428,7 @@ registerPreview({
                     node: (
                         <PWSwitch
                             value={true}
-                            onValueChange={() => {}}
+                            onValueChange={() => undefined}
                             disabled
                         />
                     ),
@@ -438,7 +438,7 @@ registerPreview({
                     node: (
                         <PWSwitch
                             value={false}
-                            onValueChange={() => {}}
+                            onValueChange={() => undefined}
                             disabled
                         />
                     ),
@@ -453,7 +453,7 @@ registerPreview({
     render: () => (
         <PWNumpad
             mode='pin'
-            onKeyPress={() => {}}
+            onKeyPress={() => undefined}
         />
     ),
 })
@@ -1035,8 +1035,8 @@ registerPreview({
             title='Header title'
             leftIcon='chevron-left'
             rightIcon='bell'
-            onLeftPress={() => {}}
-            onRightPress={() => {}}
+            onLeftPress={() => undefined}
+            onRightPress={() => undefined}
         />
     ),
 })
@@ -1063,7 +1063,7 @@ registerPreview({
                         <PWListItem
                             icon='bell'
                             title='Notifications'
-                            onPress={() => {}}
+                            onPress={() => undefined}
                         />
                     ),
                 },
@@ -1073,7 +1073,7 @@ registerPreview({
                         <PWListItem
                             icon='wallet'
                             title='This is a very long list item title that should be truncated by the component'
-                            onPress={() => {}}
+                            onPress={() => undefined}
                         />
                     ),
                 },
@@ -1083,7 +1083,7 @@ registerPreview({
                         <PWListItem
                             icon='gear'
                             title='Settings'
-                            onPress={() => {}}
+                            onPress={() => undefined}
                         />
                     ),
                 },
@@ -1105,7 +1105,7 @@ registerPreview({
                             body='Try adjusting your filters to find what you are looking for.'
                             primaryAction={{
                                 label: 'Refresh',
-                                onPress: () => {},
+                                onPress: () => undefined,
                             }}
                         />
                     ),
@@ -1118,11 +1118,11 @@ registerPreview({
                             body='We could not load your data. Please try again or contact support.'
                             primaryAction={{
                                 label: 'Retry',
-                                onPress: () => {},
+                                onPress: () => undefined,
                             }}
                             secondaryAction={{
                                 label: 'Contact support',
-                                onPress: () => {},
+                                onPress: () => undefined,
                             }}
                         />
                     ),
@@ -1146,7 +1146,7 @@ registerPreview({
                             body='Your transaction has been submitted successfully.'
                             primaryAction={{
                                 label: 'Done',
-                                onPress: () => {},
+                                onPress: () => undefined,
                             }}
                         />
                     ),
@@ -1160,11 +1160,11 @@ registerPreview({
                             body='The transaction could not be submitted. Please try again.'
                             primaryAction={{
                                 label: 'Retry',
-                                onPress: () => {},
+                                onPress: () => undefined,
                             }}
                             secondaryAction={{
                                 label: 'Cancel',
-                                onPress: () => {},
+                                onPress: () => undefined,
                             }}
                         />
                     ),
@@ -1178,11 +1178,11 @@ registerPreview({
                             body='This action cannot be undone. Please review before continuing.'
                             primaryAction={{
                                 label: 'Continue',
-                                onPress: () => {},
+                                onPress: () => undefined,
                             }}
                             secondaryAction={{
                                 label: 'Go back',
-                                onPress: () => {},
+                                onPress: () => undefined,
                             }}
                         />
                     ),
@@ -1205,9 +1205,9 @@ registerPreview({
                                 {
                                     label: 'Copy',
                                     icon: 'copy',
-                                    onPress: () => {},
+                                    onPress: () => undefined,
                                 },
-                                { label: 'Share', onPress: () => {} },
+                                { label: 'Share', onPress: () => undefined },
                             ]}
                         >
                             <PWText variant='body'>Open menu ▾</PWText>
@@ -1222,13 +1222,13 @@ registerPreview({
                                 {
                                     label: 'Edit',
                                     icon: 'edit-pen',
-                                    onPress: () => {},
+                                    onPress: () => undefined,
                                 },
                                 {
                                     label: 'Delete',
                                     icon: 'trash',
                                     variant: 'destructive',
-                                    onPress: () => {},
+                                    onPress: () => undefined,
                                 },
                             ]}
                         >
@@ -1246,7 +1246,7 @@ registerPreview({
     render: () => (
         <PWOverlay
             isVisible={true}
-            onBackdropPress={() => {}}
+            onBackdropPress={() => undefined}
         >
             <PWText variant='body'>Overlay content</PWText>
         </PWOverlay>

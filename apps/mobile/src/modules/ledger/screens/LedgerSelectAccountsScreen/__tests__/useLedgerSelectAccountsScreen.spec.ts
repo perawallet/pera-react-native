@@ -80,8 +80,8 @@ vi.mock('@react-navigation/native', () => ({
 
 const { mockPrefetch, mockRequest, mockQueryClient, mockRekeyedScan } =
     vi.hoisted(() => {
-        const mockPrefetch = vi.fn().mockResolvedValue()
-        const mockRequest = vi.fn().mockResolvedValue()
+        const mockPrefetch = vi.fn().mockResolvedValue(undefined)
+        const mockRequest = vi.fn().mockResolvedValue(undefined)
         const mockQueryClient = {}
         const mockRekeyedScan = vi.fn()
         return { mockPrefetch, mockRequest, mockQueryClient, mockRekeyedScan }
@@ -159,7 +159,7 @@ describe('useLedgerSelectAccountsScreen', () => {
 
         const transport = buildTransport()
         mockConnect.mockResolvedValue(transport)
-        mockDisconnectTransport.mockResolvedValue()
+        mockDisconnectTransport.mockResolvedValue(undefined)
         mockGetProviderRegistry.mockReturnValue({ connect: mockConnect })
         mockRekeyedScan.mockReturnValue({ rekeyed: [], isScanning: false })
     })

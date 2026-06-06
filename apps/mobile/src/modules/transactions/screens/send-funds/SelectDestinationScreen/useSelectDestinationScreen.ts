@@ -39,7 +39,7 @@ export const useSelectDestinationScreen = () => {
     )
     const { data: assets } = useAssetsQuery(assetIDs)
     const selectedAsset = useMemo(() => {
-        if (!selectedAssetId) return
+        if (!selectedAssetId) return undefined
         return assets.get(selectedAssetId)
     }, [selectedAssetId, assets])
 

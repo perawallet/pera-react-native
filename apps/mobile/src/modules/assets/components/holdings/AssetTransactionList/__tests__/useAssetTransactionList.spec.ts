@@ -774,7 +774,7 @@ describe('useAssetTransactionList', () => {
 
     describe('filter visibility', () => {
         it('handleOpenFilter requests the filter bottom sheet', async () => {
-            mockRequestBottomSheet.mockResolvedValueOnce()
+            mockRequestBottomSheet.mockResolvedValueOnce(undefined)
             const { result } = renderHook(() =>
                 useAssetTransactionList({
                     account: mockAccount,

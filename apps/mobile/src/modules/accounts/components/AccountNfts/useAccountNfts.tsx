@@ -268,7 +268,7 @@ export const useAccountNfts = (): UseAccountNftsResult => {
     )
 
     const flatListRef = useRef<React.ComponentRef<typeof PWFlatList>>(null)
-    const previousFirstItemIdRef = useRef<string | undefined>()
+    const previousFirstItemIdRef = useRef<string | undefined>(undefined)
 
     useEffect(() => {
         const currentFirstItemId = collectibles[0]?.assetId

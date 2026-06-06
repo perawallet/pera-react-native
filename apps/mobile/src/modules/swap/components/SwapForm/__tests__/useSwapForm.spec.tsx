@@ -225,7 +225,7 @@ describe('useSwapForm', () => {
     })
 
     it('handleOpenPayAssetSelection no-ops when picker is dismissed', async () => {
-        mockRequestBottomSheet.mockResolvedValueOnce()
+        mockRequestBottomSheet.mockResolvedValueOnce(undefined)
         const { result } = renderHook(() => useSwapForm())
 
         await act(async () => {
@@ -290,7 +290,7 @@ describe('useSwapForm', () => {
     })
 
     it('handleOpenReceiveAssetSelection no-ops when picker is dismissed', async () => {
-        mockRequestBottomSheet.mockResolvedValueOnce()
+        mockRequestBottomSheet.mockResolvedValueOnce(undefined)
         const { result } = renderHook(() => useSwapForm())
 
         await act(async () => {
@@ -382,7 +382,7 @@ describe('useSwapForm', () => {
     })
 
     it('handleOpenConfig no-ops when the config sheet is dismissed', async () => {
-        mockRequestBottomSheet.mockResolvedValueOnce()
+        mockRequestBottomSheet.mockResolvedValueOnce(undefined)
         const { result } = renderHook(() => useSwapForm())
 
         await act(async () => {

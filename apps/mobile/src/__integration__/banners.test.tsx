@@ -448,7 +448,7 @@ describe('Flow: Spot banners', () => {
 
             // Silence the expected network error log so it doesn't
             // clutter test output.
-            vi.spyOn(console, 'error').mockImplementation(() => {})
+            vi.spyOn(console, 'error').mockImplementation(() => undefined)
 
             const wrapper = buildWrapper()
             const { result } = renderHook(

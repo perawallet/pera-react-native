@@ -14,7 +14,7 @@ import { describe, it, expect } from 'vitest'
 import { getCategories, getPreviewEntry } from '..'
 
 const noopTools = {
-    onSeedContacts: () => {},
+    onSeedContacts: () => undefined,
 }
 
 describe('catalog integrity', () => {

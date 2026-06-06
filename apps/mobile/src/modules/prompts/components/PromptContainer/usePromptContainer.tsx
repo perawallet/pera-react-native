@@ -40,11 +40,11 @@ export const usePromptContainer = (): UsePromptContainerResult => {
     const { checkPinEnabled } = usePinCode()
     const hasAccounts = useHasAccounts()
     const [hiddenPrompts, setHiddenPrompts] = useState<Set<string>>(new Set())
-    const [nextPrompt, setNextPrompt] = useState<Optional<Prompt>>()
+    const [nextPrompt, setNextPrompt] = useState<Optional<Prompt>>(undefined)
 
     const prompt = useMemo(() => {
         if (!hasAccounts) {
-            return
+            return undefined
         }
 
         const prompt = Object.entries(PROMPT_SEQUENCE).find(p => {
@@ -58,7 +58,7 @@ export const usePromptContainer = (): UsePromptContainerResult => {
                 component: prompt[1],
             } as Prompt
         }
-        return
+        return undefined
     }, [getPreference, hiddenPrompts, hasAccounts])
 
     useEffect(() => {

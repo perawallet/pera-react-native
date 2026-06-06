@@ -56,7 +56,7 @@ const TEST_ADDRESS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 describe('useExportShareAccountContent', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockShareText.mockResolvedValue()
+        mockShareText.mockResolvedValue(undefined)
     })
 
     it('builds the export URL from the account address', () => {

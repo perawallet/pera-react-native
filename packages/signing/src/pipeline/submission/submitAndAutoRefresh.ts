@@ -148,7 +148,7 @@ export const submitAndAutoRefresh = async (
                 txId,
                 DEFAULT_ROUNDS_TO_WAIT,
                 (algokit as unknown as AlgorandClient).client.algod,
-            ).then(() => {}),
+            ).then(() => undefined),
         walletAddresses,
         network,
         onConfirmed: (addresses, networkAtSubmission) => {

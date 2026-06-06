@@ -96,7 +96,7 @@ describe('useRunMigration', () => {
     })
 
     it('toggles isMigrating during the in-flight call', async () => {
-        let resolveRun: (value: unknown) => void = () => {}
+        let resolveRun: (value: unknown) => void = () => undefined
         vi.mocked(runMigration).mockImplementationOnce(
             () =>
                 new Promise(
@@ -164,7 +164,7 @@ describe('useRunMigration', () => {
         })
         expect(result.current.result).not.toBeNull()
 
-        let resolveRun: (value: unknown) => void = () => {}
+        let resolveRun: (value: unknown) => void = () => undefined
         vi.mocked(runMigration).mockImplementationOnce(
             () =>
                 new Promise(

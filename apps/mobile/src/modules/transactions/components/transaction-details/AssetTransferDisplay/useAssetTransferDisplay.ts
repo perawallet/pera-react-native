@@ -51,7 +51,7 @@ export const useAssetTransferDisplay = (
         } else if (receiverAddress === referenceAddress) {
             return styles.amountPositive
         }
-        return
+        return undefined
     }, [amount])
 
     const metadataHash = useMemo(() => asset?.metadata, [asset])

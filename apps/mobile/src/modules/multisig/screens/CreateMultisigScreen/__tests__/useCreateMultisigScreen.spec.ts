@@ -162,7 +162,7 @@ describe('useCreateMultisigScreen', () => {
     })
 
     it('skips adding when the sheet is dismissed (resolves undefined)', async () => {
-        mockRequestBottomSheet.mockResolvedValueOnce()
+        mockRequestBottomSheet.mockResolvedValueOnce(undefined)
         const { result } = renderHook(() => useCreateMultisigScreen())
 
         await act(async () => {
@@ -173,7 +173,7 @@ describe('useCreateMultisigScreen', () => {
     })
 
     it('requests the add-participant sheet with size=modal', async () => {
-        mockRequestBottomSheet.mockResolvedValueOnce()
+        mockRequestBottomSheet.mockResolvedValueOnce(undefined)
         const { result } = renderHook(() => useCreateMultisigScreen())
 
         await act(async () => {

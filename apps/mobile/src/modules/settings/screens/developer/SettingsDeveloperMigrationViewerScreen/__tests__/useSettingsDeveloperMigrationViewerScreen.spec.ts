@@ -166,7 +166,7 @@ describe('useSettingsDeveloperMigrationViewerScreen', () => {
             expect(result.current.isLoading).toBe(false)
         })
 
-        let resolveLoad: (value: unknown) => void = () => {}
+        let resolveLoad: (value: unknown) => void = () => undefined
         migrationService.getLegacyData.mockImplementationOnce(
             () => new Promise(resolve => (resolveLoad = resolve)),
         )

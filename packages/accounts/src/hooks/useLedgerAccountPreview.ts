@@ -50,7 +50,7 @@ export const useLedgerAccountPreview = (
     const { data: prices } = useAssetPricesQuery(priceIds)
 
     const preview = useMemo<LedgerAccountPreview | undefined>(() => {
-        if (!onChain.data) return
+        if (!onChain.data) return undefined
 
         const algoBalance = microAlgosToAlgos(onChain.data.amount)
         const algoUsdPrice =

@@ -71,7 +71,7 @@ const SLOW_TEST_TIMEOUT_MS = 30_000
 // after dismissing the parent options sheet.
 const ViewPassphraseHost = ({
     address,
-    onClose = () => {},
+    onClose = () => undefined,
 }: {
     address: string
     onClose?: () => void

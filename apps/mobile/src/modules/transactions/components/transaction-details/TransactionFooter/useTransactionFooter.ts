@@ -17,7 +17,7 @@ import {
 import { useMemo } from 'react'
 import { useWebView } from '@modules/webview/hooks'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
-import { generateUniqueId } from '@perawallet/wallet-core-shared'
+import { generateUniqueId, type Optional } from '@perawallet/wallet-core-shared'
 
 export const useTransactionFooter = (
     transaction: PeraDisplayableTransaction,
@@ -37,7 +37,7 @@ export const useTransactionFooter = (
     )
 
     const assetUrl = useMemo(() => {
-        let url
+        let url: Optional<string> = undefined
         if (transaction.assetConfigTransaction?.params?.url) {
             url = transaction.assetConfigTransaction.params.url
         } else if (asset?.url) {

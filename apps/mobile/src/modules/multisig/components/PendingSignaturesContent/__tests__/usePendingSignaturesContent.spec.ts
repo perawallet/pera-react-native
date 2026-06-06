@@ -101,7 +101,7 @@ vi.mock('@perawallet/wallet-core-multisig', async importOriginal => {
         useSignRequestDetailQuery: (...args: unknown[]) =>
             useSignRequestDetailQueryMock(...args),
         useDeclineSignRequestMutation: () => ({
-            mutateAsync: vi.fn().mockResolvedValue(),
+            mutateAsync: vi.fn().mockResolvedValue(undefined),
             isPending: false,
         }),
     }
@@ -164,7 +164,7 @@ describe('usePendingSignaturesContent', () => {
         vi.setSystemTime(new Date('2026-05-06T10:00:00Z'))
         usePendingSignaturesSheetStore.setState({ signRequestId: null })
         useSignRequestDetailQueryMock.mockReset()
-        mockQueryReturn()
+        mockQueryReturn(undefined)
         localUnsignedSignersMock.mockReturnValue([])
         pendingSignRequestsMock.mockReturnValue([])
         addSignRequestMock.mockClear()
@@ -341,7 +341,7 @@ describe('usePendingSignaturesContent', () => {
 
         it('is false when signRequest data has not loaded yet', () => {
             usePendingSignaturesSheetStore.setState({ signRequestId: 'sr-1' })
-            mockQueryReturn()
+            mockQueryReturn(undefined)
             localUnsignedSignersMock.mockReturnValue([buildAccount('A')])
 
             const { result } = renderHook(() => usePendingSignaturesContent())
@@ -416,7 +416,7 @@ describe('usePendingSignaturesContent', () => {
 
         it('does nothing when there is no signRequest', () => {
             usePendingSignaturesSheetStore.setState({ signRequestId: 'sr-1' })
-            mockQueryReturn()
+            mockQueryReturn(undefined)
             localUnsignedSignersMock.mockReturnValue([buildAccount('A')])
 
             const { result } = renderHook(() => usePendingSignaturesContent())
@@ -543,7 +543,7 @@ describe('usePendingSignaturesContent', () => {
 
         it('is a no-op when there is no signRequest', () => {
             usePendingSignaturesSheetStore.setState({ signRequestId: 'sr-1' })
-            mockQueryReturn()
+            mockQueryReturn(undefined)
             localUnsignedSignersMock.mockReturnValue([
                 buildHardwareAccount('L'),
             ])

@@ -99,7 +99,7 @@ describe('useImportAccountOptionsScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         Platform.OS = 'ios'
-        mockRequestBottomSheet.mockResolvedValue()
+        mockRequestBottomSheet.mockResolvedValue(undefined)
         vi.mocked(useImportAccount).mockReturnValue(mockImportAccount)
         vi.mocked(useMarkMnemonicBackupComplete).mockReturnValue(
             mockMarkBackupComplete,

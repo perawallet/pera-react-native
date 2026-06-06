@@ -41,7 +41,7 @@ export const usePaymentTransactionDisplay = (
         } else if (receiverAddress === referenceAddress) {
             return styles.amountPositive
         }
-        return
+        return undefined
     }, [amount])
 
     const showWarnings = useMemo(() => {

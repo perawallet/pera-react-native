@@ -44,7 +44,7 @@ import { UserPreferences } from '@constants/user-preferences'
 describe('useDuressWipe', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mocks.wipeAllUserData.mockResolvedValue()
+        mocks.wipeAllUserData.mockResolvedValue(undefined)
         mocks.createHdWalletAccount.mockResolvedValue({
             id: 'decoy',
             address: 'DECOY',

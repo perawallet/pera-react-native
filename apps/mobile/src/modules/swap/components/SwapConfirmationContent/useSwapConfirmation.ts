@@ -93,13 +93,13 @@ export const useSwapConfirmation = ({
     }, [quote?.amountOut, quote?.assetOut])
 
     const payFiatDisplay = useMemo(() => {
-        if (!quote?.amountInUsdValue) return
+        if (!quote?.amountInUsdValue) return undefined
         const value = usdToPreferred(new Decimal(quote.amountInUsdValue))
         return formatCurrency(value, 2, preferredCurrency)
     }, [quote?.amountInUsdValue, usdToPreferred, preferredCurrency])
 
     const receiveFiatDisplay = useMemo(() => {
-        if (!quote?.amountOutUsdValue) return
+        if (!quote?.amountOutUsdValue) return undefined
         const value = usdToPreferred(new Decimal(quote.amountOutUsdValue))
         return formatCurrency(value, 2, preferredCurrency)
     }, [quote?.amountOutUsdValue, usdToPreferred, preferredCurrency])

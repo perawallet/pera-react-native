@@ -133,8 +133,8 @@ describe('Flow: Settings → Passkeys removal', () => {
         a.refreshCredentialIdentities.mockReset()
         a.isProviderActive.mockResolvedValue(true)
         a.getStoredCredentials.mockResolvedValue([])
-        a.deleteCredential.mockResolvedValue()
-        a.refreshCredentialIdentities.mockResolvedValue()
+        a.deleteCredential.mockResolvedValue(undefined)
+        a.refreshCredentialIdentities.mockResolvedValue(undefined)
 
         vi.mocked(Notifier.showNotification).mockClear()
     })

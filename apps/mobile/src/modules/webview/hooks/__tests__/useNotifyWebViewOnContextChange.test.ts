@@ -47,7 +47,7 @@ describe('useNotifyWebViewOnContextChange', () => {
     })
 
     it('does nothing when contextFingerprints is undefined', () => {
-        renderHook(() => useNotifyWebViewOnContextChange(webviewRef))
+        renderHook(() => useNotifyWebViewOnContextChange(webviewRef, undefined))
 
         expect(mockInjectJavaScript).not.toHaveBeenCalled()
     })
